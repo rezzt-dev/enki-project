@@ -297,6 +297,7 @@
   <data name="Files_DeleteFolderTooltip" xml:space="preserve"><value>Ordner löschen</value></data>
   <data name="Files_EmptyHint" xml:space="preserve"><value>Importiere eine Datei oder ziehe eine hinein, um loszulegen.</value></data>
   <data name="Files_EmptyTitle" xml:space="preserve"><value>Keine Dateien hier</value></data>
+  <data name="Files_LockedSession_Message" xml:space="preserve"><value>Diese Sitzung ist geschützt und gesperrt. Entsperre sie unter „Sitzungen“, um ihre Dateien zu sehen.</value></data>
   <data name="Files_Eyebrow" xml:space="preserve"><value>DATEIEN</value></data>
   <data name="Files_ImportButton" xml:space="preserve"><value>Importieren</value></data>
   <data name="Files_ImportFilesDialog_Title" xml:space="preserve"><value>Dateien importieren</value></data>
@@ -505,6 +506,7 @@
   <data name="Notes_RecentEyebrow" xml:space="preserve"><value>ZULETZT</value></data>
   <data name="Notes_RenameFolderTooltip" xml:space="preserve"><value>Ordner umbenennen</value></data>
   <data name="Notes_RenameMenuItem" xml:space="preserve"><value>Umbenennen</value></data>
+  <data name="Notes_RevealInSystemMenuItem" xml:space="preserve"><value>Im Datei-Explorer anzeigen</value></data>
   <data name="Notes_SearchPlaceholder" xml:space="preserve"><value>Notizen suchen</value></data>
   <data name="Notes_UnsavedTooltip" xml:space="preserve"><value>Ungespeicherte Änderungen</value></data>
   <data name="Notes_WordCount_one" xml:space="preserve"><value>{0} Wort</value></data>
@@ -649,6 +651,10 @@
   <data name="Sessions_CreateDialog_Eyebrow" xml:space="preserve"><value>NEUE SITZUNG</value></data>
   <data name="Sessions_CreateDialog_Heading" xml:space="preserve"><value>Neue Sitzung erstellen</value></data>
   <data name="Sessions_CreateDialog_Placeholder" xml:space="preserve"><value>Sitzungsname</value></data>
+  <data name="Sessions_CreateDialog_PasswordPlaceholder" xml:space="preserve"><value>Passwort</value></data>
+  <data name="Sessions_CreateDialog_PasswordConfirmPlaceholder" xml:space="preserve"><value>Passwort bestätigen</value></data>
+  <data name="Sessions_CreateDialog_ProtectToggleLabel" xml:space="preserve"><value>Mit Passwort schützen</value></data>
+  <data name="Sessions_CreateDialog_ProtectHint" xml:space="preserve"><value>Die Notizen der Sitzung werden auf der Festplatte verschlüsselt. Du erhältst 5 Wiederherstellungscodes für den Fall, dass du das Passwort vergisst.</value></data>
   <data name="Sessions_CreatedNotification_Message" xml:space="preserve"><value>Sitzung '{0}' erstellt.</value></data>
   <data name="Sessions_CreatedNotification_Title" xml:space="preserve"><value>Sitzung erstellt</value></data>
   <data name="Sessions_DefaultBadgeTooltip" xml:space="preserve"><value>Standard-Sitzung</value></data>
@@ -670,6 +676,21 @@
   <data name="Sessions_LinkModeInstructions" xml:space="preserve"><value>Wähle zwei Notizen aus derselben Sitzung aus, um einen Link zu erstellen.</value></data>
   <data name="Sessions_LinkedCardsTitle" xml:space="preserve"><value>Verknüpfte Karten</value></data>
   <data name="Sessions_ListError" xml:space="preserve"><value>Sitzungen konnten nicht aufgelistet werden: {0}</value></data>
+  <data name="Sessions_LockAction_Label" xml:space="preserve"><value>Sitzung sperren</value></data>
+  <data name="Sessions_Locked_Tooltip" xml:space="preserve"><value>Gesperrt — zum Entsperren klicken</value></data>
+  <data name="Sessions_RecoveryCodes_Body" xml:space="preserve"><value>Bewahre diese Codes an einem sicheren Ort auf. Jeder Code kann einmal verwendet werden, um das Passwort zurückzusetzen, falls du es vergisst — sonst kann niemand, auch wir nicht, es wiederherstellen.</value></data>
+  <data name="Sessions_RecoveryCodes_CloseButton" xml:space="preserve"><value>Ich habe diese Codes gespeichert</value></data>
+  <data name="Sessions_RecoveryCodes_CopiedNotification_Message" xml:space="preserve"><value>Die Wiederherstellungscodes wurden in die Zwischenablage kopiert.</value></data>
+  <data name="Sessions_RecoveryCodes_CopiedNotification_Title" xml:space="preserve"><value>Codes kopiert</value></data>
+  <data name="Sessions_RecoveryCodes_CopyButton" xml:space="preserve"><value>Kopieren</value></data>
+  <data name="Sessions_RecoveryCodes_DownloadButton" xml:space="preserve"><value>Herunterladen</value></data>
+  <data name="Sessions_RecoveryCodes_DownloadDialogTitle" xml:space="preserve"><value>Wiederherstellungscodes speichern</value></data>
+  <data name="Sessions_RecoveryCodes_DownloadedNotification_Message" xml:space="preserve"><value>Wiederherstellungscodes gespeichert unter {0}.</value></data>
+  <data name="Sessions_RecoveryCodes_DownloadedNotification_Title" xml:space="preserve"><value>Codes gespeichert</value></data>
+  <data name="Sessions_RecoveryCodes_DownloadFailedTitle" xml:space="preserve"><value>Wiederherstellungscodes konnten nicht gespeichert werden</value></data>
+  <data name="Sessions_RecoveryCodes_Eyebrow" xml:space="preserve"><value>Wiederherstellungscodes</value></data>
+  <data name="Sessions_RecoveryCodes_Heading" xml:space="preserve"><value>Speichere deine Wiederherstellungscodes</value></data>
+  <data name="Sessions_RecoveryCodes_TextFileType" xml:space="preserve"><value>Textdatei</value></data>
   <data name="Sessions_ManifestReadError" xml:space="preserve"><value>Sitzung '{0}' konnte nicht gelesen werden: {1}</value></data>
   <data name="Sessions_ManifestWriteError" xml:space="preserve"><value>Sitzung '{0}' konnte nicht gespeichert werden: {1}</value></data>
   <data name="Sessions_NewSessionButton" xml:space="preserve"><value>Neue Sitzung</value></data>
@@ -681,6 +702,21 @@
   <data name="Sessions_RefreshGraphTooltip" xml:space="preserve"><value>Graph aktualisieren</value></data>
   <data name="Sessions_RenameTooltip" xml:space="preserve"><value>Umbenennen</value></data>
   <data name="Sessions_Title" xml:space="preserve"><value>Sitzungen</value></data>
+  <data name="Sessions_Unlock_ConfirmButton" xml:space="preserve"><value>Entsperren</value></data>
+  <data name="Sessions_Unlock_Eyebrow" xml:space="preserve"><value>Geschützte Sitzung</value></data>
+  <data name="Sessions_Unlock_ForgotPasswordEyebrow" xml:space="preserve"><value>Passwort zurücksetzen</value></data>
+  <data name="Sessions_Unlock_ForgotPasswordHeading" xml:space="preserve"><value>Wiederherstellungscode verwenden</value></data>
+  <data name="Sessions_Unlock_ForgotPasswordLink" xml:space="preserve"><value>Passwort vergessen?</value></data>
+  <data name="Sessions_Unlock_InvalidRecoveryCode" xml:space="preserve"><value>Dieser Wiederherstellungscode ist ungültig oder wurde bereits verwendet.</value></data>
+  <data name="Sessions_Unlock_NewPasswordConfirmPlaceholder" xml:space="preserve"><value>Neues Passwort bestätigen</value></data>
+  <data name="Sessions_Unlock_NewPasswordPlaceholder" xml:space="preserve"><value>Neues Passwort</value></data>
+  <data name="Sessions_Unlock_PasswordMismatch" xml:space="preserve"><value>Die Passwörter stimmen nicht überein oder sind zu kurz.</value></data>
+  <data name="Sessions_Unlock_PasswordPlaceholder" xml:space="preserve"><value>Passwort</value></data>
+  <data name="Sessions_Unlock_PasswordResetMessage" xml:space="preserve"><value>Dein Passwort wurde zurückgesetzt. Die Sitzung ist jetzt entsperrt.</value></data>
+  <data name="Sessions_Unlock_PasswordResetTitle" xml:space="preserve"><value>Passwort zurückgesetzt</value></data>
+  <data name="Sessions_Unlock_RecoveryCodePlaceholder" xml:space="preserve"><value>Wiederherstellungscode</value></data>
+  <data name="Sessions_Unlock_ResetButton" xml:space="preserve"><value>Passwort zurücksetzen</value></data>
+  <data name="Sessions_Unlock_WrongPassword" xml:space="preserve"><value>Falsches Passwort.</value></data>
   <data name="Sessions_VaultOptionLabel" xml:space="preserve"><value>Tresor</value></data>
 
   <!-- ===================== Settings ===================== -->
@@ -856,6 +892,10 @@
   <data name="Settings_General_Diagnostics_Title" xml:space="preserve"><value>DIAGNOSE</value></data>
   <data name="Settings_General_Language_Description" xml:space="preserve"><value>Sprache der Benutzeroberfläche. Änderungen werden sofort übernommen.</value></data>
   <data name="Settings_General_Language_Title" xml:space="preserve"><value>Sprache</value></data>
+  <data name="Settings_General_Sidebar_CannotHideLast_Message" xml:space="preserve"><value>Mindestens ein Abschnitt der Seitenleiste muss sichtbar bleiben.</value></data>
+  <data name="Settings_General_Sidebar_CannotHideLast_Title" xml:space="preserve"><value>Dieser Abschnitt kann nicht ausgeblendet werden</value></data>
+  <data name="Settings_General_Sidebar_Description" xml:space="preserve"><value>Wähle aus, welche Abschnitte in der Seitenleiste angezeigt werden. Mindestens einer muss sichtbar bleiben.</value></data>
+  <data name="Settings_General_Sidebar_Title" xml:space="preserve"><value>Seitenleisten-Abschnitte</value></data>
   <data name="Settings_General_Startup_Calendar" xml:space="preserve"><value>KALENDER</value></data>
   <data name="Settings_General_Startup_Dashboard" xml:space="preserve"><value>DASHBOARD</value></data>
   <data name="Settings_General_Startup_Description" xml:space="preserve"><value>Wähle, welche Seite Enki beim Öffnen anzeigt.</value></data>

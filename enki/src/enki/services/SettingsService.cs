@@ -37,9 +37,7 @@ public sealed class SettingsService
     /// real settings file (see enki.Tests).</param>
     public SettingsService(string? storageDirectory = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
+        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(configDir);
         _settingsPath = Path.Combine(configDir, "settings.json");
         Settings = Load();

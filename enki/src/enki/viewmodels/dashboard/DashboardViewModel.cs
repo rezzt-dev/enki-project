@@ -124,6 +124,13 @@ public sealed partial class DashboardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isCalendarEnabled;
 
+    /// <summary>Columnas de la rejilla de "ACCESOS RÁPIDOS": 4 con la tarjeta de Calendario visible,
+    /// 3 cuando el panel está desactivado — sin esto la UniformGrid reservaría una celda vacía aunque
+    /// la tarjeta oculta no ocupe sitio (los hijos invisibles no se miden ni se colocan).</summary>
+    public int QuickAccessColumns => IsCalendarEnabled ? 4 : 3;
+
+    partial void OnIsCalendarEnabledChanged(bool value) => OnPropertyChanged(nameof(QuickAccessColumns));
+
     /// <summary>Ajustes › General "Mostrar barra de desplazamiento" (Panel principal) — alimenta
     /// <see cref="ScrollBarVisibility"/>, que solo se enlaza al ScrollViewer raíz de DashboardView.
     /// Se mantiene vivo desde <see cref="MainWindowViewModel"/> (mismo patrón de callback explícito que

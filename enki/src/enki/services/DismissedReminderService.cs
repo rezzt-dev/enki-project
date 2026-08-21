@@ -28,9 +28,7 @@ public sealed class DismissedReminderService
     /// running app, lets tests point persistence at a throwaway directory (see enki.Tests).</param>
     public DismissedReminderService(string? storageDirectory = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
+        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(configDir);
         _path = Path.Combine(configDir, "dismissed-reminders.json");
         _dismissed = Load();

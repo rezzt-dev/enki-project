@@ -38,9 +38,7 @@ public sealed class ReminderService
     /// (docs/analisis-proyecto/roadmap.md, Fase 4); defaults to "always null" for callers that don't care.</param>
     public ReminderService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
+        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(configDir);
         _path = Path.Combine(configDir, "reminders.json");
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);

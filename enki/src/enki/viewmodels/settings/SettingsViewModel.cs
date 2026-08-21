@@ -40,9 +40,15 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly Action<bool> _onNotificationsPanelChanged;
     private readonly Action<bool> _onRemindersPanelChanged;
     private readonly Action<bool> _onCalendarShowSidebarScrollbarChanged;
-    private readonly Action<bool> _onCalendarPanelChanged;
     private readonly Action<bool> _onDashboardShowScrollbarChanged;
-    private readonly Action<bool> _onSkillsPanelModeChanged;
+
+    /// <summary>Single callback covering every sidebar-section visibility toggle (Ajustes › General ›
+    /// Secciones de la barra lateral) — replaces what used to be one <c>Action&lt;bool&gt;</c> per section
+    /// (<c>onCalendarPanelChanged</c>, <c>onSkillsPanelModeChanged</c>) now that there are eight of them
+    /// instead of two; <see cref="MainWindowViewModel.OnSidebarSectionChanged"/> switches on the
+    /// <see cref="AppPage"/> to apply whatever page-specific side effect that section needs.</summary>
+    private readonly Action<AppPage, bool> _onSidebarSectionChanged;
+
     private readonly Action<bool> _onPolarShowTaskTagsChanged;
     private readonly Action<int> _onUiZoomChanged;
     private readonly Action _onLanguageChanged;
@@ -69,7 +75,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     /// <summary>Single callback for every other Calendario setting (docs/calendar-feature/
     /// 09-configuracion-y-ajustes.md §1) that the already-open <c>CalendarViewModel</c> needs to react to
     /// live — one callback covering the whole group rather than one per property (unlike
-    /// <see cref="_onCalendarShowSidebarScrollbarChanged"/>/<see cref="_onCalendarPanelChanged"/>, which
+    /// <see cref="_onCalendarShowSidebarScrollbarChanged"/>/<see cref="_onSidebarSectionChanged"/>, which
     /// are their own concerns: sidebar chrome and nav visibility, not "how the grid itself is laid out").
     /// Not fired for <c>CalendarDefaultView</c>, which only matters the next time the page opens.</summary>
     private readonly Action _onCalendarSettingsChanged;
@@ -258,6 +264,26 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _skillsPanelEnabled;
 
+    // ===================== Secciones de la barra lateral (Ajustes › General) =====================
+
+    [ObservableProperty]
+    private bool _dashboardPanelEnabled;
+
+    [ObservableProperty]
+    private bool _kanbanPanelEnabled;
+
+    [ObservableProperty]
+    private bool _notesPanelEnabled;
+
+    [ObservableProperty]
+    private bool _filesPanelEnabled;
+
+    [ObservableProperty]
+    private bool _sessionsPanelEnabled;
+
+    [ObservableProperty]
+    private bool _trashPanelEnabled;
+
     [ObservableProperty]
     private bool _polarShowTaskTags;
 
@@ -394,10 +420,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action<bool> onNotificationsPanelChanged,
         Action<bool> onRemindersPanelChanged,
         Action<bool> onCalendarShowSidebarScrollbarChanged,
-        Action<bool> onCalendarPanelChanged,
+        Action<AppPage, bool> onSidebarSectionChanged,
         Action onCalendarSettingsChanged,
         Action<bool> onDashboardShowScrollbarChanged,
-        Action<bool> onSkillsPanelModeChanged,
         Action<bool> onPolarShowTaskTagsChanged,
         Action<int> onUiZoomChanged,
         Action onLanguageChanged)
@@ -414,10 +439,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _onNotificationsPanelChanged = onNotificationsPanelChanged;
         _onRemindersPanelChanged = onRemindersPanelChanged;
         _onCalendarShowSidebarScrollbarChanged = onCalendarShowSidebarScrollbarChanged;
-        _onCalendarPanelChanged = onCalendarPanelChanged;
+        _onSidebarSectionChanged = onSidebarSectionChanged;
         _onCalendarSettingsChanged = onCalendarSettingsChanged;
         _onDashboardShowScrollbarChanged = onDashboardShowScrollbarChanged;
-        _onSkillsPanelModeChanged = onSkillsPanelModeChanged;
         _onPolarShowTaskTagsChanged = onPolarShowTaskTagsChanged;
         _onUiZoomChanged = onUiZoomChanged;
         _onLanguageChanged = onLanguageChanged;
@@ -482,6 +506,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _calendarTimeFormat24h = settingsService.Settings.CalendarTimeFormat24h;
         _calendarPanelEnabled = settingsService.Settings.CalendarPanelEnabled;
         _skillsPanelEnabled = settingsService.Settings.SkillsPanelEnabled;
+        _dashboardPanelEnabled = settingsService.Settings.DashboardPanelEnabled;
+        _kanbanPanelEnabled = settingsService.Settings.KanbanPanelEnabled;
+        _notesPanelEnabled = settingsService.Settings.NotesPanelEnabled;
+        _filesPanelEnabled = settingsService.Settings.FilesPanelEnabled;
+        _sessionsPanelEnabled = settingsService.Settings.SessionsPanelEnabled;
+        _trashPanelEnabled = settingsService.Settings.TrashPanelEnabled;
         _polarShowTaskTags = settingsService.Settings.PolarShowTaskTags;
         _notificationsPanelEnabled = settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = settingsService.Settings.RemindersPanelEnabled;
@@ -866,18 +896,106 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _onCalendarSettingsChanged();
     }
 
+    /// <summary>Minimum number of sidebar sections (Ajustes › General › Secciones de la barra lateral) that
+    /// must stay visible — an app with every entry hidden would still technically work (Ajustes itself is
+    /// reachable from its own title-bar button, not a <c>NavItems</c> entry), but would look broken, so each
+    /// <c>OnXPanelEnabledChanged</c> below refuses to turn off the last one still on.</summary>
+    private const int MinEnabledSidebarSections = 1;
+
+    private int CountEnabledSidebarSections()
+    {
+        var s = _settingsService.Settings;
+        var count = 0;
+        if (s.DashboardPanelEnabled) count++;
+        if (s.CalendarPanelEnabled) count++;
+        if (s.KanbanPanelEnabled) count++;
+        if (s.NotesPanelEnabled) count++;
+        if (s.FilesPanelEnabled) count++;
+        if (s.SkillsPanelEnabled) count++;
+        if (s.SessionsPanelEnabled) count++;
+        if (s.TrashPanelEnabled) count++;
+        return count;
+    }
+
+    /// <summary>Shared guard for every sidebar-section toggle below: refuses to turn the last remaining one
+    /// off, reverting the just-set <see cref="ObservableProperty"/> back to <c>true</c> (which re-enters this
+    /// same partial method with <paramref name="value"/> true, a no-op for this check) and surfacing why via
+    /// a toast, instead of silently emptying the sidebar down to nothing but the toggle the user is looking
+    /// at right now.</summary>
+    private bool BlockIfLastEnabledSidebarSection(bool value, Action revert)
+    {
+        if (value || CountEnabledSidebarSections() > MinEnabledSidebarSections) return false;
+
+        revert();
+        _notificationService.Push(
+            LocalizationService.Instance["Settings_General_Sidebar_CannotHideLast_Title"],
+            LocalizationService.Instance["Settings_General_Sidebar_CannotHideLast_Message"],
+            Models.NotificationSeverity.Warning);
+        return true;
+    }
+
+    partial void OnDashboardPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => DashboardPanelEnabled = true)) return;
+        _settingsService.Settings.DashboardPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Dashboard, value);
+    }
+
     partial void OnCalendarPanelEnabledChanged(bool value)
     {
+        if (BlockIfLastEnabledSidebarSection(value, () => CalendarPanelEnabled = true)) return;
         _settingsService.Settings.CalendarPanelEnabled = value;
         _settingsService.Save();
-        _onCalendarPanelChanged(value);
+        _onSidebarSectionChanged(AppPage.Calendar, value);
+    }
+
+    partial void OnKanbanPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => KanbanPanelEnabled = true)) return;
+        _settingsService.Settings.KanbanPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Kanban, value);
+    }
+
+    partial void OnNotesPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => NotesPanelEnabled = true)) return;
+        _settingsService.Settings.NotesPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Notes, value);
+    }
+
+    partial void OnFilesPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => FilesPanelEnabled = true)) return;
+        _settingsService.Settings.FilesPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Files, value);
     }
 
     partial void OnSkillsPanelEnabledChanged(bool value)
     {
+        if (BlockIfLastEnabledSidebarSection(value, () => SkillsPanelEnabled = true)) return;
         _settingsService.Settings.SkillsPanelEnabled = value;
         _settingsService.Save();
-        _onSkillsPanelModeChanged(value);
+        _onSidebarSectionChanged(AppPage.Skills, value);
+    }
+
+    partial void OnSessionsPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => SessionsPanelEnabled = true)) return;
+        _settingsService.Settings.SessionsPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Sessions, value);
+    }
+
+    partial void OnTrashPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => TrashPanelEnabled = true)) return;
+        _settingsService.Settings.TrashPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Trash, value);
     }
 
     partial void OnPolarShowTaskTagsChanged(bool value)
@@ -1076,8 +1194,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
             AllowMultiple = false
         });
 
-        var folder = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
-        if (string.IsNullOrWhiteSpace(folder)) return;
+        var pickedFolder = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+        if (string.IsNullOrWhiteSpace(pickedFolder)) return;
+
+        // Same "picked folder is a container, not the vault" resolution as VaultSetupViewModel — see
+        // VaultService.ResolveVaultFolder.
+        var folder = VaultService.ResolveVaultFolder(pickedFolder);
 
         _vaultService.SetVaultPath(folder);
         VaultPath = folder;

@@ -146,6 +146,75 @@
             </StackPanel>
           </Border>
 
+          <!-- ===================== Secciones de la barra lateral ===================== -->
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="PageLayoutSidebarLeft" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_General_Sidebar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_General_Sidebar_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="ViewDashboardOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Dashboard}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding DashboardPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Dashboard}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="CalendarBlankOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Calendar}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Calendar}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="ViewColumnOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Kanban}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Kanban}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="NoteTextOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Documents}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding NotesPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Documents}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="FileImageOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Files}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding FilesPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Files}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Skills}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkillsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Skills}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="SitemapOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Sessions}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SessionsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Sessions}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Trash}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding TrashPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Trash}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
           <!-- ===================== Diagnóstico (Fase 0, docs/analisis-proyecto/analisis-deficiencias-proyecto.md §2) ===================== -->
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">

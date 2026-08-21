@@ -254,13 +254,23 @@
                 </ItemsControl>
               </ScrollViewer>
 
-              <StackPanel IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center"
+              <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center"
                           Spacing="12">
                 <mi:MaterialIcon Kind="FileOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
                         HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Tr Files_EmptyTitle}" Classes="muted" HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Tr Files_EmptyHint}" Classes="faint"
                            HorizontalAlignment="Center" />
+              </StackPanel>
+
+              <!-- Sesión protegida y bloqueada: ni siquiera los nombres de los adjuntos se listan (§6,
+                   "Sesiones protegidas con contraseña") — hay que desbloquearla desde Sesiones primero. -->
+              <StackPanel IsVisible="{Binding IsSelectedSessionLocked}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Spacing="12" MaxWidth="280">
+                <mi:MaterialIcon Kind="LockOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
+                        HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Files_LockedSession_Message}" Classes="muted" HorizontalAlignment="Center"
+                           TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
           </Grid>

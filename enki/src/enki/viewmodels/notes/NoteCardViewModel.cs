@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
+using enki.Services;
 
 namespace enki.ViewModels;
 
@@ -48,4 +49,7 @@ public sealed partial class NoteCardViewModel : ObservableObject
 
     [RelayCommand]
     private void CancelRename() => IsRenaming = false;
+
+    [RelayCommand]
+    private void RevealInSystem() => FolderOpener.RevealFile(Note.FullPath);
 }

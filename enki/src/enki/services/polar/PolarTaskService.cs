@@ -34,9 +34,7 @@ public sealed class PolarTaskService
     /// keep working unchanged.</param>
     public PolarTaskService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
+        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(configDir);
         _path = Path.Combine(configDir, "polar-tasks.json");
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);

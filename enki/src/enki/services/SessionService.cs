@@ -21,6 +21,11 @@ public sealed class SessionService
 
     private readonly VaultService _vaultService;
 
+    /// <summary>The same instance <see cref="_vaultService"/> was constructed with — reused rather than
+    /// injected separately, so there's only ever one shared unlocked-DEK cache between content read/write
+    /// (in <see cref="VaultService"/>) and the unlock/lock lifecycle (here).</summary>
+    private readonly SessionEncryptionService _encryptionService;
+
     /// <summary>Raised when a <c>.session.json</c> read or write fails with an I/O error (locked, moved,
     /// deleted out-of-band, disco lleno) — <see cref="ViewModels.MainWindowViewModel"/> lo reenvía a
     /// <c>NotificationService</c> en vez de dejar el fallo en silencio (03-problemas-y-deuda-tecnica.md
@@ -31,6 +36,7 @@ public sealed class SessionService
     public SessionService(VaultService vaultService)
     {
         _vaultService = vaultService;
+        _encryptionService = vaultService.EncryptionService;
     }
 
     private string SessionsRoot => Path.Combine(_vaultService.VaultPath, ".sessions");
@@ -90,6 +96,27 @@ public sealed class SessionService
 
     public Session Create(string desiredName, bool isDefault = false)
     {
+        var (path, manifest) = CreateFolderAndManifest(desiredName, isDefault, encryption: null);
+        return ToSession(path, manifest);
+    }
+
+    /// <summary>Creates a password-protected session: same folder/manifest creation as <see cref="Create"/>,
+    /// plus a freshly-generated Data Encryption Key wrapped under <paramref name="password"/> and 5
+    /// independent recovery codes (see <see cref="SessionEncryptionService.CreateEncryptionInfo"/>). The
+    /// returned codes exist only in this call's return value — nothing here persists them anywhere; the
+    /// caller (the create-session UI) is responsible for showing them to the user exactly once. The new
+    /// session is left unlocked (the user just supplied the password themselves, no need to ask again
+    /// immediately).</summary>
+    public (Session Session, IReadOnlyList<string> RecoveryCodes) CreateEncrypted(string desiredName, string password, bool isDefault = false)
+    {
+        var encryption = SessionEncryptionService.CreateEncryptionInfo(password, out var recoveryCodes);
+        var (path, manifest) = CreateFolderAndManifest(desiredName, isDefault, encryption);
+        _encryptionService.TryUnlockWithPassword(path, encryption, password);
+        return (ToSession(path, manifest), recoveryCodes);
+    }
+
+    private (string Path, SessionManifest Manifest) CreateFolderAndManifest(string desiredName, bool isDefault, SessionEncryptionInfo? encryption)
+    {
         Directory.CreateDirectory(SessionsRoot);
 
         var name = string.IsNullOrWhiteSpace(desiredName) ? LocalizationService.Instance["Sessions_DefaultName"] : desiredName.Trim();
@@ -109,11 +136,54 @@ public sealed class SessionService
             Id = Guid.NewGuid().ToString("N"),
             Name = name,
             CreatedUtc = DateTime.UtcNow,
-            IsDefault = isDefault
+            IsDefault = isDefault,
+            Encryption = encryption
         };
         WriteManifest(path, manifest);
 
-        return ToSession(path, manifest);
+        return (path, manifest);
+    }
+
+    /// <summary>Unwraps the session's DEK with <paramref name="password"/> and, on success, caches it as
+    /// unlocked so <see cref="VaultService"/>'s content read/write transparently decrypts/encrypts this
+    /// session from here on. Returns false on a wrong password or a non-encrypted session — never throws
+    /// for either.</summary>
+    public bool Unlock(Session session, string password)
+    {
+        var manifest = ReadManifest(session.RootPath);
+        if (manifest?.Encryption is not { } encryption) return false;
+
+        return _encryptionService.TryUnlockWithPassword(session.RootPath, encryption, password);
+    }
+
+    /// <summary>Drops the session's unlocked DEK and any plaintext of its notes cached in
+    /// <see cref="VaultService"/>'s in-memory note cache — after this, reading any of its content throws
+    /// <see cref="SessionLockedException"/> again until it's unlocked (or its manifest isn't encrypted at
+    /// all, in which case this is a no-op).</summary>
+    public void Lock(Session session)
+    {
+        _encryptionService.Lock(session.RootPath);
+        _vaultService.InvalidateCacheUnderPath(session.RootPath);
+    }
+
+    public bool IsUnlocked(Session session) => !session.IsEncrypted || _encryptionService.IsUnlocked(session.RootPath);
+
+    /// <summary>"Forgot my password": proves <paramref name="recoveryCode"/> is one of the 5 unused codes,
+    /// then rewraps the DEK under <paramref name="newPassword"/> and persists the updated manifest. Leaves
+    /// the session unlocked on success (the DEK was just recovered, no reason to ask the user to unlock it
+    /// again with the password they just chose). Returns false for a non-encrypted session, a wrong/already
+    /// -used code, without throwing.</summary>
+    public bool ResetPasswordWithRecoveryCode(Session session, string recoveryCode, string newPassword)
+    {
+        var manifest = ReadManifest(session.RootPath);
+        if (manifest?.Encryption is not { } encryption) return false;
+
+        if (!_encryptionService.TryUnlockWithRecoveryCode(session.RootPath, encryption, recoveryCode, out var usedSlotIndex))
+            return false;
+
+        manifest.Encryption = _encryptionService.ResetPassword(session.RootPath, encryption, usedSlotIndex!.Value, newPassword);
+        WriteManifest(session.RootPath, manifest);
+        return true;
     }
 
     /// <summary>Called once, right after a brand-new vault is created — guarantees it always starts with
@@ -243,6 +313,11 @@ public sealed class SessionService
     /// edges derived from <c>[[wikilinks]]</c> in note content and manually-drawn edges from the manifest.</summary>
     public SessionGraph LoadGraph(Session session)
     {
+        // A locked encrypted session contributes nothing to the graph — not even opaque placeholder nodes,
+        // since a node's label is a note's decrypted title. Short-circuits before any disk read (no
+        // GetAllNotesRecursiveWithContent call at all), so nothing here ever touches SessionLockedException.
+        if (session.IsEncrypted && !_encryptionService.IsUnlocked(session.RootPath)) return new SessionGraph();
+
         var manifest = ReadManifest(session.RootPath) ?? EmptyManifestFor(session);
         // Reads every note's content exactly once — the metadata (title) and the wikilink edges below both
         // need it, and re-reading each file a second time to extract [[wikilinks]] (the old SafeRead call)
@@ -469,7 +544,8 @@ public sealed class SessionService
         NoteCount = Directory.Exists(path)
             ? Directory.EnumerateFiles(path, "*.md", SearchOption.AllDirectories).Count()
             : 0,
-        IsDefault = manifest.IsDefault
+        IsDefault = manifest.IsDefault,
+        IsEncrypted = manifest.Encryption is not null
     };
 
     /// <summary>Same as <see cref="ToSession"/> but skips the recursive directory walk behind
@@ -484,7 +560,8 @@ public sealed class SessionService
         CreatedUtc = manifest.CreatedUtc,
         ModifiedUtc = manifest.CreatedUtc,
         NoteCount = 0,
-        IsDefault = manifest.IsDefault
+        IsDefault = manifest.IsDefault,
+        IsEncrypted = manifest.Encryption is not null
     };
 
     /// <summary>Reconstructs a manifest shell from a <see cref="Session"/> already in hand, for the rare

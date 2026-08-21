@@ -37,18 +37,54 @@ public sealed partial class MainWindowViewModel
         NotificationCenter.RefreshLocalizedLabels();
         ReminderInbox.RefreshLocalizedLabels();
 
+        RebuildNavItems();
+    }
+
+    /// <summary>Icon/label-key for every toggleable sidebar section (Ajustes › General › Secciones de la
+    /// barra lateral), in the fixed order they always appear in <see cref="NavItems"/> — the single source
+    /// of truth <see cref="RebuildNavItems"/> and <see cref="IsSidebarSectionEnabled"/> both read from, so
+    /// adding another toggleable section only means adding one entry here instead of touching three
+    /// duplicated blocks like before this list existed.</summary>
+    private static readonly (AppPage Page, MaterialIconKind Icon, string LabelKey)[] SidebarSectionDefinitions =
+    [
+        (AppPage.Dashboard, MaterialIconKind.ViewDashboardOutline, "Nav_Dashboard"),
+        (AppPage.Calendar, MaterialIconKind.CalendarBlankOutline, "Nav_Calendar"),
+        (AppPage.Kanban, MaterialIconKind.ViewColumnOutline, "Nav_Kanban"),
+        (AppPage.Notes, MaterialIconKind.NoteTextOutline, "Nav_Documents"),
+        (AppPage.Files, MaterialIconKind.FileImageOutline, "Nav_Files"),
+        (AppPage.Skills, MaterialIconKind.Brain, "Nav_Skills"),
+        (AppPage.Sessions, MaterialIconKind.SitemapOutline, "Nav_Sessions"),
+        (AppPage.Trash, MaterialIconKind.TrashCanOutline, "Nav_Trash")
+    ];
+
+    private bool IsSidebarSectionEnabled(AppPage page) => page switch
+    {
+        AppPage.Dashboard => DashboardPanelEnabled,
+        AppPage.Calendar => CalendarPanelEnabled,
+        AppPage.Kanban => KanbanPanelEnabled,
+        AppPage.Notes => NotesPanelEnabled,
+        AppPage.Files => FilesPanelEnabled,
+        AppPage.Skills => SkillsPanelEnabled,
+        AppPage.Sessions => SessionsPanelEnabled,
+        AppPage.Trash => TrashPanelEnabled,
+        _ => true
+    };
+
+    /// <summary>Rebuilds <see cref="NavItems"/> from scratch off the current *PanelEnabled flags, in the
+    /// fixed order of <see cref="SidebarSectionDefinitions"/> — used both at startup
+    /// (<see cref="InitializeShell"/>) and every time a toggle changes (<see cref="OnSidebarSectionChanged"/>)
+    /// or the UI language changes (<see cref="RefreshAllLocalizedLabels"/>), instead of the old approach of
+    /// inserting/removing one item at a specific index per toggle, which didn't scale past the original two
+    /// (Calendario/Skills).</summary>
+    private void RebuildNavItems()
+    {
         var activePages = NavItems.Where(n => n.IsActive).Select(n => n.Page).ToHashSet();
         NavItems.Clear();
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Dashboard"], Icon = MaterialIconKind.ViewDashboardOutline, Page = AppPage.Dashboard });
-        if (CalendarPanelEnabled)
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Calendar"], Icon = MaterialIconKind.CalendarBlankOutline, Page = AppPage.Calendar });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Kanban"], Icon = MaterialIconKind.ViewColumnOutline, Page = AppPage.Kanban });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Documents"], Icon = MaterialIconKind.NoteTextOutline, Page = AppPage.Notes });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Files"], Icon = MaterialIconKind.FileImageOutline, Page = AppPage.Files });
-        if (SkillsPanelEnabled)
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Skills"], Icon = MaterialIconKind.Brain, Page = AppPage.Skills });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Sessions"], Icon = MaterialIconKind.SitemapOutline, Page = AppPage.Sessions });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Trash"], Icon = MaterialIconKind.TrashCanOutline, Page = AppPage.Trash });
+        foreach (var def in SidebarSectionDefinitions)
+        {
+            if (!IsSidebarSectionEnabled(def.Page)) continue;
+            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[def.LabelKey], Icon = def.Icon, Page = def.Page });
+        }
         foreach (var item in NavItems) item.IsActive = activePages.Contains(item.Page);
         UpdateCalendarBadge();
         UpdateTrashBadge();
@@ -87,51 +123,36 @@ public sealed partial class MainWindowViewModel
 
     private void OnPolarShowTaskTagsChanged(bool value) => Kanban!.TaskManagement.ShowTagFilter = value;
 
-    /// <summary>Shows/hides the "Calendario" nav entry entirely (docs/calendar-feature/
-    /// 09-configuracion-y-ajustes.md §1) — filters <see cref="NavItems"/> itself rather than adding a
-    /// per-item visibility flag to <see cref="NavItemViewModel"/>, since that's the only member of the
-    /// collection that's ever conditionally shown; every other entry is unconditional. Redirects to
-    /// Dashboard if the user happened to be on the Calendario page when it gets disabled.</summary>
-    private void OnCalendarPanelModeChanged(bool value)
+    /// <summary>Single callback for every sidebar-section visibility toggle (Ajustes › General › Secciones
+    /// de la barra lateral) — applies the page-specific side effect a couple of sections need (Calendario
+    /// tells Dashboard's own calendar widget to hide too; Skills seeds the vault's default skills the first
+    /// time it's turned on), then rebuilds <see cref="NavItems"/> and, if the section that just got hidden
+    /// was the one on screen, redirects to whichever section is now first in the nav (or does nothing if the
+    /// user somehow got down to zero — <see cref="SettingsViewModel"/> already blocks disabling the last
+    /// one, so that's only a defensive fallback here).</summary>
+    private void OnSidebarSectionChanged(AppPage page, bool value)
     {
-        CalendarPanelEnabled = value;
-        Dashboard!.SetCalendarEnabled(value);
-        var existing = NavItems.FirstOrDefault(n => n.Page == AppPage.Calendar);
+        switch (page)
+        {
+            case AppPage.Dashboard: DashboardPanelEnabled = value; break;
+            case AppPage.Calendar:
+                CalendarPanelEnabled = value;
+                Dashboard!.SetCalendarEnabled(value);
+                break;
+            case AppPage.Kanban: KanbanPanelEnabled = value; break;
+            case AppPage.Notes: NotesPanelEnabled = value; break;
+            case AppPage.Files: FilesPanelEnabled = value; break;
+            case AppPage.Skills:
+                SkillsPanelEnabled = value;
+                if (value) Skills?.EnsureDefaultSkills();
+                break;
+            case AppPage.Sessions: SessionsPanelEnabled = value; break;
+            case AppPage.Trash: TrashPanelEnabled = value; break;
+        }
 
-        if (value && existing is null)
-        {
-            NavItems.Insert(1, new NavItemViewModel { Label = LocalizationService.Instance["Nav_Calendar"], Icon = MaterialIconKind.CalendarBlankOutline, Page = AppPage.Calendar });
-            UpdateCalendarBadge();
-        }
-        else if (!value && existing is not null)
-        {
-            var wasActive = existing.IsActive;
-            NavItems.Remove(existing);
-            if (wasActive) Navigate(AppPage.Dashboard);
-        }
-    }
-
-    /// <summary>Shows/hides la entrada "Skills" del sidebar (docs/ia-skills/especificacion-desarrollo.md
-    /// §8/§9) — mismo patrón "filtra NavItems directamente" que <see cref="OnCalendarPanelModeChanged"/>.
-    /// La primera vez que se activa, copia las skills por defecto al vault activo.</summary>
-    private void OnSkillsPanelModeChanged(bool value)
-    {
-        SkillsPanelEnabled = value;
-        var existing = NavItems.FirstOrDefault(n => n.Page == AppPage.Skills);
-
-        if (value && existing is null)
-        {
-            var filesIndex = NavItems.ToList().FindIndex(n => n.Page == AppPage.Files);
-            var insertAt = filesIndex >= 0 ? filesIndex + 1 : NavItems.Count;
-            NavItems.Insert(insertAt, new NavItemViewModel { Label = LocalizationService.Instance["Nav_Skills"], Icon = MaterialIconKind.Brain, Page = AppPage.Skills });
-            Skills?.EnsureDefaultSkills();
-        }
-        else if (!value && existing is not null)
-        {
-            var wasActive = existing.IsActive;
-            NavItems.Remove(existing);
-            if (wasActive) Navigate(AppPage.Dashboard);
-        }
+        var wasActive = NavItems.FirstOrDefault(n => n.Page == page)?.IsActive ?? false;
+        RebuildNavItems();
+        if (!value && wasActive && NavItems.FirstOrDefault()?.Page is { } fallback) Navigate(fallback);
     }
 
     /// <summary>Pushes every other live-reactive Calendario setting (docs/calendar-feature/

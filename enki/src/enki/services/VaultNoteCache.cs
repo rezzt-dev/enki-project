@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using enki.Models;
 
 namespace enki.Services;
@@ -69,5 +70,21 @@ internal sealed class VaultNoteCache
     public void Invalidate(string fullPath)
     {
         lock (_lock) { _entries.Remove(fullPath); }
+    }
+
+    /// <summary>Drops every cached entry under <paramref name="rootPath"/> — called when a session is
+    /// locked, so no plaintext content cached in memory while it was unlocked survives the lock (the cache
+    /// itself never persists to disk, but keeping decrypted content resident in memory after the user
+    /// deliberately locked the session would defeat the point of locking it).</summary>
+    public void InvalidatePrefix(string rootPath)
+    {
+        lock (_lock)
+        {
+            var prefix = rootPath.EndsWith(Path.DirectorySeparatorChar) ? rootPath : rootPath + Path.DirectorySeparatorChar;
+            var toRemove = _entries.Keys
+                .Where(key => key.StartsWith(prefix, VaultService.PathComparison) || string.Equals(key, rootPath, VaultService.PathComparison))
+                .ToList();
+            foreach (var key in toRemove) _entries.Remove(key);
+        }
     }
 }

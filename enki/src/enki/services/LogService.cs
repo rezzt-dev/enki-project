@@ -43,9 +43,7 @@ public static class LogService
     {
         try
         {
-            _logDirectory = storageDirectory ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Enki", "logs");
+            _logDirectory = storageDirectory ?? Path.Combine(AppDataDirectory.Resolve(), "logs");
             Directory.CreateDirectory(_logDirectory);
             PurgeOldLogFiles();
         }

@@ -670,4 +670,58 @@ public class VaultServiceTests : IDisposable
         var ex = Assert.Throws<VaultUnavailableException>(() => vault.CreateNote("Nota", _vaultPath));
         Assert.IsAssignableFrom<IOException>(ex);
     }
+
+    // ===================== ResolveVaultFolder =====================
+    // Covers the fix for a folder-picker vault (or "Cambiar carpeta del vault") turning a general-purpose
+    // folder like "Documents" into the vault itself instead of nesting Enki's own files inside it.
+
+    [Fact]
+    public void ResolveVaultFolder_OnPlainEmptyFolder_NestsEnkiDocumentsSubfolder()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "Documentos");
+        Directory.CreateDirectory(picked);
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(Path.Combine(picked, "enki-documents"), resolved);
+    }
+
+    [Fact]
+    public void ResolveVaultFolder_OnFolderAlreadyNamedEnkiDocuments_UsesItAsIs()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "enki-documents");
+        Directory.CreateDirectory(picked);
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(picked, resolved);
+    }
+
+    [Fact]
+    public void ResolveVaultFolder_OnExistingFlatVaultWithNotes_UsesItAsIs()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "MisNotas");
+        Directory.CreateDirectory(picked);
+        File.WriteAllText(Path.Combine(picked, "nota.md"), "# Nota");
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(picked, resolved);
+    }
+
+    [Fact]
+    public void ResolveVaultFolder_WhenParentAlreadyHasNestedVault_ReusesTheNestedFolder()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "Documentos");
+        var nested = Path.Combine(picked, "enki-documents");
+        Directory.CreateDirectory(nested);
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(nested, resolved);
+    }
 }

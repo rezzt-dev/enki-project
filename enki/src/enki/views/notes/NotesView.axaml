@@ -265,6 +265,11 @@
                                 <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                               </MenuItem.Icon>
                             </MenuItem>
+                            <MenuItem Header="{loc:Tr Notes_RevealInSystemMenuItem}" Command="{Binding RevealInSystemCommand}">
+                              <MenuItem.Icon>
+                                <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                              </MenuItem.Icon>
+                            </MenuItem>
                             <MenuItem Header="{loc:Tr Common_Delete}"
                                       Command="{Binding #Root.((vm:NotesViewModel)DataContext).DeleteNoteCommand}"
                                       CommandParameter="{Binding}">

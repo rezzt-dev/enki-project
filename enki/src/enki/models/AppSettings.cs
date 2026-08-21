@@ -145,6 +145,30 @@ public sealed class AppSettings
     /// Disabled by default because it is intended for advanced users.</summary>
     public bool SkillsPanelEnabled { get; set; }
 
+    // ===================== Secciones de la barra lateral (Ajustes › General) =====================
+    // Same "hide the nav entry entirely" idea as CalendarPanelEnabled/SkillsPanelEnabled above, extended to
+    // every other always-on sidebar section so the user can declutter the app down to only what they use.
+    // Settings itself has no toggle here — it's opened from its own title-bar button, not a NavItems entry,
+    // so it stays reachable no matter which of these are off.
+
+    /// <summary>Shows/hides the "Panel" entry in the main nav.</summary>
+    public bool DashboardPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Kanban" entry in the main nav.</summary>
+    public bool KanbanPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Documentos" entry in the main nav.</summary>
+    public bool NotesPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Archivos" entry in the main nav.</summary>
+    public bool FilesPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Sesiones" entry in the main nav.</summary>
+    public bool SessionsPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Papelera" entry in the main nav.</summary>
+    public bool TrashPanelEnabled { get; set; } = true;
+
     // ===================== Zona de peligro (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md) =====================
 
     /// <summary>Whether the four "RequestDelete*" confirmation dialogs (Kanban card, calendar item, Polar

@@ -26,8 +26,7 @@ public sealed class VaultBackupService
     public VaultBackupService(VaultService vaultService, string? appDataDirectory = null)
     {
         _vaultService = vaultService;
-        _appDataDirectory = appDataDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Enki");
+        _appDataDirectory = appDataDirectory ?? AppDataDirectory.Resolve();
     }
 
     /// <summary>Empaqueta el vault activo bajo <c>vault/</c> y los ficheros de estado de

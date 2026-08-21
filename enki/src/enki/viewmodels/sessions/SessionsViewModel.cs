@@ -5,6 +5,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Controls;
+using Avalonia.Input.Platform;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
@@ -80,6 +83,53 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private string _newSessionName = string.Empty;
 
     [ObservableProperty]
+    private bool _newSessionIsProtected;
+
+    [ObservableProperty]
+    private string _newSessionPassword = string.Empty;
+
+    [ObservableProperty]
+    private string _newSessionPasswordConfirm = string.Empty;
+
+    private const int MinPasswordLength = 8;
+
+    /// <summary>Non-null while the "here are your 5 recovery codes" dialog is open — opened once, right
+    /// after <see cref="ConfirmCreateSession"/> creates a protected session, and never reopened later (the
+    /// codes only ever exist in memory here, for this one screen).</summary>
+    [ObservableProperty]
+    private bool _isRecoveryCodesDialogOpen;
+
+    public ObservableCollection<string> PendingRecoveryCodes { get; } = [];
+
+    /// <summary>Name of the just-created protected session, used to build the suggested download filename
+    /// for <see cref="DownloadRecoveryCodes"/> — captured at creation time since
+    /// <see cref="PendingRecoveryCodes"/> outlives any particular <see cref="SelectedSession"/>.</summary>
+    private string _pendingRecoveryCodesSessionName = string.Empty;
+
+    /// <summary>Non-null while the unlock dialog is open for this session — covers both "enter your
+    /// password" and (when <see cref="IsForgotPasswordMode"/>) "reset it with a recovery code".</summary>
+    [ObservableProperty]
+    private SessionListItemViewModel? _sessionPendingUnlock;
+
+    [ObservableProperty]
+    private string _unlockPasswordInput = string.Empty;
+
+    [ObservableProperty]
+    private string? _unlockError;
+
+    [ObservableProperty]
+    private bool _isForgotPasswordMode;
+
+    [ObservableProperty]
+    private string _recoveryCodeInput = string.Empty;
+
+    [ObservableProperty]
+    private string _newPasswordInput = string.Empty;
+
+    [ObservableProperty]
+    private string _newPasswordConfirmInput = string.Empty;
+
+    [ObservableProperty]
     private bool _isLinkMode;
 
     [ObservableProperty]
@@ -88,7 +138,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
     [ObservableProperty]
     private int _edgeCount;
 
-    public bool CanConfirmCreate => !string.IsNullOrWhiteSpace(NewSessionName);
+    public bool CanConfirmCreate =>
+        !string.IsNullOrWhiteSpace(NewSessionName) &&
+        (!NewSessionIsProtected || (NewSessionPassword.Length >= MinPasswordLength && NewSessionPassword == NewSessionPasswordConfirm));
 
     /// <summary>Raised when the whole graph document should be (re)rendered from scratch — the page was
     /// (re)opened, a session was created/renamed/deleted, or notes were created/renamed/deleted from the
@@ -163,6 +215,12 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     partial void OnNewSessionNameChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
 
+    partial void OnNewSessionIsProtectedChanged(bool value) => OnPropertyChanged(nameof(CanConfirmCreate));
+
+    partial void OnNewSessionPasswordChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
+
+    partial void OnNewSessionPasswordConfirmChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
+
     partial void OnNodeCountChanged(int value) => OnPropertyChanged(nameof(GraphSummaryLabel));
 
     partial void OnEdgeCountChanged(int value) => OnPropertyChanged(nameof(GraphSummaryLabel));
@@ -217,7 +275,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
         if (generation != _loadGeneration) return; // superseded by a newer Reload/LoadGraph call
 
         Sessions.Clear();
-        foreach (var session in sessions) Sessions.Add(new SessionListItemViewModel(session));
+        foreach (var session in sessions)
+        {
+            Sessions.Add(new SessionListItemViewModel(session) { IsUnlocked = _sessionService.IsUnlocked(session) });
+        }
         IsEmpty = Sessions.Count == 0;
 
         SelectedSession = previouslySelectedId is null
@@ -261,14 +322,106 @@ public sealed partial class SessionsViewModel : ViewModelBase
     [RelayCommand]
     private void OpenInNotes()
     {
-        if (SelectedSession is null) return;
-        _onOpenInNotes(SelectedSession.Session, null);
+        if (SelectedSession is not { } item) return;
+
+        if (item.IsEncrypted && !item.IsUnlocked)
+        {
+            RequestUnlockSession(item);
+            return;
+        }
+
+        _onOpenInNotes(item.Session, null);
+    }
+
+    // ===================== Bloqueo/desbloqueo de sesiones protegidas =====================
+
+    [RelayCommand]
+    private void RequestUnlockSession(SessionListItemViewModel item)
+    {
+        SessionPendingUnlock = item;
+        UnlockPasswordInput = string.Empty;
+        UnlockError = null;
+        IsForgotPasswordMode = false;
+        RecoveryCodeInput = string.Empty;
+        NewPasswordInput = string.Empty;
+        NewPasswordConfirmInput = string.Empty;
+    }
+
+    [RelayCommand]
+    private void ConfirmUnlock()
+    {
+        if (SessionPendingUnlock is not { } item) return;
+
+        if (_sessionService.Unlock(item.Session, UnlockPasswordInput))
+        {
+            item.IsUnlocked = true;
+            SessionPendingUnlock = null;
+            _onOpenInNotes(item.Session, null);
+            LoadGraph();
+        }
+        else
+        {
+            UnlockError = LocalizationService.Instance["Sessions_Unlock_WrongPassword"];
+        }
+    }
+
+    [RelayCommand]
+    private void BeginForgotPassword()
+    {
+        IsForgotPasswordMode = true;
+        UnlockError = null;
+    }
+
+    [RelayCommand]
+    private void ConfirmPasswordReset()
+    {
+        if (SessionPendingUnlock is not { } item) return;
+
+        if (NewPasswordInput.Length < MinPasswordLength || NewPasswordInput != NewPasswordConfirmInput)
+        {
+            UnlockError = LocalizationService.Instance["Sessions_Unlock_PasswordMismatch"];
+            return;
+        }
+
+        if (_sessionService.ResetPasswordWithRecoveryCode(item.Session, RecoveryCodeInput.Trim(), NewPasswordInput))
+        {
+            item.IsUnlocked = true;
+            SessionPendingUnlock = null;
+            _onOpenInNotes(item.Session, null);
+            LoadGraph();
+            _notificationService.Push(
+                LocalizationService.Instance["Sessions_Unlock_PasswordResetTitle"],
+                LocalizationService.Instance["Sessions_Unlock_PasswordResetMessage"],
+                NotificationSeverity.Success);
+        }
+        else
+        {
+            UnlockError = LocalizationService.Instance["Sessions_Unlock_InvalidRecoveryCode"];
+        }
+    }
+
+    [RelayCommand]
+    private void CancelUnlock()
+    {
+        SessionPendingUnlock = null;
+        IsForgotPasswordMode = false;
+    }
+
+    [RelayCommand]
+    private void LockSession(SessionListItemViewModel item)
+    {
+        _sessionService.Lock(item.Session);
+        item.IsUnlocked = false;
+        if (SelectedSession == item) LoadGraph();
     }
 
     [RelayCommand]
     private void BeginCreateSession()
     {
         NewSessionName = string.Empty;
+        NewSessionIsProtected = false;
+        NewSessionPassword = string.Empty;
+        NewSessionPasswordConfirm = string.Empty;
         IsCreateDialogOpen = true;
     }
 
@@ -280,7 +433,22 @@ public sealed partial class SessionsViewModel : ViewModelBase
     {
         if (!CanConfirmCreate) return;
 
-        var created = _sessionService.Create(NewSessionName.Trim());
+        Session created;
+        if (NewSessionIsProtected)
+        {
+            var (session, codes) = _sessionService.CreateEncrypted(NewSessionName.Trim(), NewSessionPassword);
+            created = session;
+
+            _pendingRecoveryCodesSessionName = created.Name;
+            PendingRecoveryCodes.Clear();
+            foreach (var code in codes) PendingRecoveryCodes.Add(code);
+            IsRecoveryCodesDialogOpen = true;
+        }
+        else
+        {
+            created = _sessionService.Create(NewSessionName.Trim());
+        }
+
         IsCreateDialogOpen = false;
         Reload();
         SelectedSession = Sessions.FirstOrDefault(s => s.Session.Id == created.Id);
@@ -289,6 +457,66 @@ public sealed partial class SessionsViewModel : ViewModelBase
             LocalizationService.Instance["Sessions_CreatedNotification_Title"],
             string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_CreatedNotification_Message"], created.Name),
             NotificationSeverity.Success);
+    }
+
+    /// <summary>Saves <see cref="PendingRecoveryCodes"/> as a plain-text file the user picks the location
+    /// for — deliberately a "Save as" picker rather than silently writing to the OS Downloads folder, so
+    /// the user chooses where these end up, same as the manual vault backup export.</summary>
+    [RelayCommand]
+    private async Task DownloadRecoveryCodes()
+    {
+        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
+        if (topLevel?.StorageProvider is null) return;
+
+        var safeName = VaultService.SanitizeFileName(_pendingRecoveryCodesSessionName);
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = LocalizationService.Instance["Sessions_RecoveryCodes_DownloadDialogTitle"],
+            SuggestedFileName = $"enki-{safeName}-recovery-codes.txt",
+            DefaultExtension = "txt",
+            FileTypeChoices = [new FilePickerFileType(LocalizationService.Instance["Sessions_RecoveryCodes_TextFileType"]) { Patterns = ["*.txt"] }]
+        });
+
+        var destination = file?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(destination)) return;
+
+        try
+        {
+            await File.WriteAllTextAsync(destination, string.Join(Environment.NewLine, PendingRecoveryCodes));
+            _notificationService.Push(
+                LocalizationService.Instance["Sessions_RecoveryCodes_DownloadedNotification_Title"],
+                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_RecoveryCodes_DownloadedNotification_Message"], destination),
+                NotificationSeverity.Success);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _notificationService.Push(
+                LocalizationService.Instance["Sessions_RecoveryCodes_DownloadFailedTitle"],
+                ex.Message,
+                NotificationSeverity.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyRecoveryCodesToClipboard()
+    {
+        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
+        var clipboard = topLevel?.Clipboard;
+        if (clipboard is null) return;
+
+        await clipboard.SetTextAsync(string.Join(Environment.NewLine, PendingRecoveryCodes));
+        _notificationService.Push(
+            LocalizationService.Instance["Sessions_RecoveryCodes_CopiedNotification_Title"],
+            LocalizationService.Instance["Sessions_RecoveryCodes_CopiedNotification_Message"],
+            NotificationSeverity.Success);
+    }
+
+    [RelayCommand]
+    private void CloseRecoveryCodesDialog()
+    {
+        IsRecoveryCodesDialogOpen = false;
+        PendingRecoveryCodes.Clear();
+        _pendingRecoveryCodesSessionName = string.Empty;
     }
 
     [RelayCommand]

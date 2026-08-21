@@ -168,7 +168,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         IsTasksEmpty = Tasks.Count == 0;
 
         Files.Clear();
-        foreach (var file in _vaultService.GetTrashedFiles()) Files.Add(new FileCardViewModel(file));
+        foreach (var file in _vaultService.GetTrashedFiles()) Files.Add(new FileCardViewModel(_vaultService, file));
         IsFilesEmpty = Files.Count == 0;
 
         Reminders.Clear();

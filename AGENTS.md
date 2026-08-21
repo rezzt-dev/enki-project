@@ -21,9 +21,15 @@ tener que inferirlas releyendo todo `enki/src/enki/`.
 Mismo patrón en todos los servicios (`KanbanService`, `PolarTaskService`, `ReminderService`,
 `SettingsService`, `NotificationService`):
 
-- JSON en `%AppData%/Enki/*.json` (`~/.config/Enki/` en Linux).
+- JSON en `%AppData%/Enki/*.json` (`~/.config/Enki/` en Linux) — resuelto vía `AppDataDirectory.Resolve()`
+  (`services/AppDataDirectory.cs`), no repetido inline en cada servicio.
+- En un build de Debug compilado desde el código fuente, `AppDataDirectory.Resolve()` redirige a
+  `src/enki/.devdata/` (en `.gitignore`) en vez de `%AppData%/Enki`, para que compilar desde una copia
+  recién clonada arranque siempre en blanco (sin vault, sin Polar vinculado) y no mezcle datos de
+  desarrollo con una instalación Release real en la misma máquina. Para resetear el estado de desarrollo,
+  borra esa carpeta.
 - Constructor que acepta un `storageDirectory` opcional para poder testear sin tocar el disco real del
-  desarrollador.
+  desarrollador (ni el real de `%AppData%/Enki` ni el de desarrollo en `.devdata/`).
 - Un método `Save()` que serializa y dispara un evento `Action?` de cambio (p. ej.
   `KanbanService.BoardChanged`, `PolarTaskService.DataChanged`, `NotificationService.NotificationAdded`) —
   así otras pantallas se mantienen al día sin necesitar una referencia directa al servicio que originó el

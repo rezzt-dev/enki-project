@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using Avalonia.Threading;
 using enki.Localization;
 using enki.Services;
@@ -88,6 +89,12 @@ public sealed partial class MainWindowViewModel
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
         _calendarPanelEnabled = _settingsService.Settings.CalendarPanelEnabled;
         _skillsPanelEnabled = _settingsService.Settings.SkillsPanelEnabled;
+        _dashboardPanelEnabled = _settingsService.Settings.DashboardPanelEnabled;
+        _kanbanPanelEnabled = _settingsService.Settings.KanbanPanelEnabled;
+        _notesPanelEnabled = _settingsService.Settings.NotesPanelEnabled;
+        _filesPanelEnabled = _settingsService.Settings.FilesPanelEnabled;
+        _sessionsPanelEnabled = _settingsService.Settings.SessionsPanelEnabled;
+        _trashPanelEnabled = _settingsService.Settings.TrashPanelEnabled;
         _uiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
 
         // Always live (not gated behind vault readiness): the kanban board and the notification log are
@@ -324,22 +331,12 @@ public sealed partial class MainWindowViewModel
         Settings = new SettingsViewModel(_settingsService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
-            OnCalendarPanelModeChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged, OnSkillsPanelModeChanged,
+            OnSidebarSectionChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
 
-        NavItems.Clear();
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Dashboard"], Icon = MaterialIconKind.ViewDashboardOutline, Page = AppPage.Dashboard });
-        if (CalendarPanelEnabled)
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Calendar"], Icon = MaterialIconKind.CalendarBlankOutline, Page = AppPage.Calendar });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Kanban"], Icon = MaterialIconKind.ViewColumnOutline, Page = AppPage.Kanban });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Documents"], Icon = MaterialIconKind.NoteTextOutline, Page = AppPage.Notes });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Files"], Icon = MaterialIconKind.FileImageOutline, Page = AppPage.Files });
-        if (SkillsPanelEnabled)
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Skills"], Icon = MaterialIconKind.Brain, Page = AppPage.Skills });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Sessions"], Icon = MaterialIconKind.SitemapOutline, Page = AppPage.Sessions });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Trash"], Icon = MaterialIconKind.TrashCanOutline, Page = AppPage.Trash });
+        RebuildNavItems();
 
         var startupPage = ResolveStartupPage();
         CurrentPage = startupPage switch
@@ -360,19 +357,26 @@ public sealed partial class MainWindowViewModel
     }
 
     /// <summary>Reads <c>AppSettings.StartupPage</c> (Ajustes › General) and falls back to
-    /// <see cref="AppPage.Dashboard"/> when the stored value isn't parseable, isn't one of the selectable
-    /// start pages, or points at a page currently hidden by another setting (e.g. "Calendar" while
-    /// <see cref="CalendarPanelEnabled"/> is off) — an app that always failed to start would be worse than
-    /// one that silently lands on the default.</summary>
+    /// <see cref="FallbackStartupPage"/> when the stored value isn't parseable, isn't one of the selectable
+    /// start pages, or points at a page currently hidden by one of the sidebar-section toggles (Ajustes ›
+    /// General › Secciones de la barra lateral) — an app that always failed to start would be worse than
+    /// one that silently lands on a page that's actually visible.</summary>
     private AppPage ResolveStartupPage()
     {
-        if (!Enum.TryParse<AppPage>(_settingsService.Settings.StartupPage, out var page)) return AppPage.Dashboard;
+        if (!Enum.TryParse<AppPage>(_settingsService.Settings.StartupPage, out var page)) return FallbackStartupPage();
 
         var isSelectable = page is AppPage.Dashboard or AppPage.Calendar or AppPage.Kanban or AppPage.Notes
             or AppPage.Files or AppPage.Sessions;
-        if (!isSelectable) return AppPage.Dashboard;
-        if (page == AppPage.Calendar && !CalendarPanelEnabled) return AppPage.Dashboard;
+        if (!isSelectable) return FallbackStartupPage();
+        if (!IsSidebarSectionEnabled(page)) return FallbackStartupPage();
 
         return page;
     }
+
+    /// <summary>Dashboard used to be a safe unconditional fallback; now that it's a toggleable sidebar
+    /// section too, falls further back to whichever section is first in <see cref="NavItems"/> (built by
+    /// <see cref="RebuildNavItems"/> right before this runs), and only to Dashboard itself if the whole nav
+    /// somehow ended up empty.</summary>
+    private AppPage FallbackStartupPage() =>
+        DashboardPanelEnabled ? AppPage.Dashboard : NavItems.FirstOrDefault()?.Page ?? AppPage.Dashboard;
 }

@@ -52,8 +52,8 @@ public class SettingsViewModelTests : IDisposable
             settingsService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
-            onCalendarPanelChanged: _ => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
-            onSkillsPanelModeChanged: _ => { }, onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { },
+            onSidebarSectionChanged: (_, _) => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
+            onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { },
             onLanguageChanged: () => { });
 
         return (vm, settingsService, vault, vaultSettingsService);
@@ -74,7 +74,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
+            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         Assert.Equal(16, vm.EditorFontSize);
         Assert.True(vm.IsDarkTheme);
@@ -106,7 +106,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, v => notified = v, _ => { }, _ => { }, _ => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
+            () => { }, _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         vm.NotificationsPanelEnabled = false;
 
@@ -213,7 +213,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { }, _ => { }, _ => { }, _ => { }, v => notified = v, () => { });
+            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, _ => { }, _ => { }, v => notified = v, () => { });
 
         vm.UiZoomPercent = 150;
 

@@ -141,6 +141,24 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _skillsPanelEnabled;
 
+    [ObservableProperty]
+    private bool _dashboardPanelEnabled;
+
+    [ObservableProperty]
+    private bool _kanbanPanelEnabled;
+
+    [ObservableProperty]
+    private bool _notesPanelEnabled;
+
+    [ObservableProperty]
+    private bool _filesPanelEnabled;
+
+    [ObservableProperty]
+    private bool _sessionsPanelEnabled;
+
+    [ObservableProperty]
+    private bool _trashPanelEnabled;
+
     /// <summary>Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md) — factor aplicado al
     /// <c>ScaleTransform</c> que envuelve el <c>Grid</c> raíz de <c>MainWindow.axaml</c>. Derivado de
     /// <c>VaultSettings.UiZoomPercent</c> (por-vault, no global), refrescado en <see cref="InitializeShell"/>

@@ -73,7 +73,7 @@
                   <DataTemplate DataType="vm:SessionListItemViewModel">
                     <Border Classes="folder-row" Classes.active="{Binding IsSelected}"
                             Padding="14,9" PointerPressed="SessionRow_PointerPressed">
-                      <Grid ColumnDefinitions="*,Auto,Auto">
+                      <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                         <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis"
                                      IsVisible="{Binding !IsRenaming}" />
@@ -86,19 +86,33 @@
                                      IsVisible="{Binding !IsRenaming}" />
                         </StackPanel>
                         <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20"
+                                IsVisible="{Binding ShowLockedIndicator}"
+                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestUnlockSessionCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Locked_Tooltip}"
+                                AutomationProperties.Name="{loc:Tr Sessions_Locked_Tooltip}">
+                          <mi:MaterialIcon Kind="LockOutline" Width="12" Height="12" />
+                        </Button>
+                        <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20"
+                                IsVisible="{Binding ShowUnlockedIndicator}"
+                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).LockSessionCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_LockAction_Label}"
+                                AutomationProperties.Name="{loc:Tr Sessions_LockAction_Label}">
+                          <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="12" Height="12" />
+                        </Button>
+                        <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20"
                                 Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginRenameSessionCommand}"
                                 CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_RenameTooltip}"
                                 AutomationProperties.Name="{loc:Tr Sessions_RenameTooltip}">
                           <mi:MaterialIcon Kind="PencilOutline" Width="12" Height="12" />
                         </Button>
-                        <Button Grid.Column="2" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
+                        <Button Grid.Column="3" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
                                 IsVisible="{Binding !IsDefault}"
                                 Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestDeleteSessionCommand}"
                                 CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_DeleteTooltip}"
                                 AutomationProperties.Name="{loc:Tr Sessions_DeleteTooltip}">
                           <mi:MaterialIcon Kind="TrashCanOutline" Width="12" Height="12" />
                         </Button>
-                        <mi:MaterialIcon Grid.Column="2" Kind="ShieldCheckOutline" Width="14" Height="14"
+                        <mi:MaterialIcon Grid.Column="3" Kind="ShieldCheckOutline" Width="14" Height="14"
                                           Foreground="{DynamicResource Ink30}"
                                           IsVisible="{Binding IsDefault}"
                                           ToolTip.Tip="{loc:Tr Sessions_DefaultBadgeTooltip}" />
@@ -204,6 +218,20 @@
                     Text="{Binding NewSessionName}" Name="NewSessionNameBox"
                     KeyDown="NewSessionNameBox_KeyDown" />
 
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="{loc:Tr Sessions_CreateDialog_ProtectToggleLabel}" VerticalAlignment="Center" FontSize="13" />
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding NewSessionIsProtected}" OnContent="" OffContent=""
+                          AutomationProperties.Name="{loc:Tr Sessions_CreateDialog_ProtectToggleLabel}" />
+          </Grid>
+
+          <StackPanel Spacing="10" IsVisible="{Binding NewSessionIsProtected}">
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_CreateDialog_PasswordPlaceholder}"
+                      Text="{Binding NewSessionPassword}" PasswordChar="●" />
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_CreateDialog_PasswordConfirmPlaceholder}"
+                      Text="{Binding NewSessionPasswordConfirm}" PasswordChar="●" />
+            <TextBlock Text="{loc:Tr Sessions_CreateDialog_ProtectHint}" Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+
           <Grid ColumnDefinitions="*,Auto,Auto">
             <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelCreateSessionCommand}" Margin="0,0,18,0">
               <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
@@ -213,6 +241,119 @@
               <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- ===================== Diálogo: códigos de recuperación ===================== -->
+    <Border Classes="modal-overlay" IsVisible="{Binding IsRecoveryCodesDialogOpen}"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18" MaxWidth="360">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_Heading, Converter={StaticResource UpperCaseConverter}}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" />
+          </StackPanel>
+
+          <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_Body}" Classes="muted" TextWrapping="Wrap" />
+
+          <Border Classes="card" Padding="14">
+            <ItemsControl ItemsSource="{Binding PendingRecoveryCodes}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" FontFamily="{StaticResource MonoFontFamily}" FontSize="14" LetterSpacing="0.5" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Button Grid.Column="0" Classes="ghost" Command="{Binding CopyRecoveryCodesToClipboardCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_CopyButton, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="1" Classes="ghost" Command="{Binding DownloadRecoveryCodesCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Download" Width="14" Height="14" />
+                <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_DownloadButton, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <Button Classes="pill-primary" Command="{Binding CloseRecoveryCodesDialogCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_CloseButton, Converter={StaticResource UpperCaseConverter}}" />
+          </Button>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- ===================== Diálogo: desbloquear sesión / olvidé mi contraseña ===================== -->
+    <Border Classes="modal-overlay" IsVisible="{Binding SessionPendingUnlock, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18" MaxWidth="340">
+
+          <!-- Modo normal: pedir la contraseña -->
+          <StackPanel Spacing="18" IsVisible="{Binding !IsForgotPasswordMode}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Tr Sessions_Unlock_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+              <TextBlock Text="{Binding SessionPendingUnlock.Name}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_PasswordPlaceholder}"
+                      Text="{Binding UnlockPasswordInput}" PasswordChar="●" Name="UnlockPasswordBox" />
+
+            <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                        TextWrapping="Wrap" IsVisible="{Binding UnlockError, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+            <Button Classes="dropdown-item" Command="{Binding BeginForgotPasswordCommand}" HorizontalAlignment="Left" Padding="0">
+              <TextBlock Text="{loc:Tr Sessions_Unlock_ForgotPasswordLink}" Classes="muted" TextDecorations="Underline" FontSize="12" />
+            </Button>
+
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelUnlockCommand}" Margin="0,0,18,0">
+                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmUnlockCommand}">
+                <TextBlock Text="{loc:Tr Sessions_Unlock_ConfirmButton, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
+
+          <!-- Modo "olvidé mi contraseña": pedir un código de recuperación + nueva contraseña -->
+          <StackPanel Spacing="18" IsVisible="{Binding IsForgotPasswordMode}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Tr Sessions_Unlock_ForgotPasswordEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+              <TextBlock Text="{loc:Tr Sessions_Unlock_ForgotPasswordHeading, Converter={StaticResource UpperCaseConverter}}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" />
+            </StackPanel>
+
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_RecoveryCodePlaceholder}"
+                      Text="{Binding RecoveryCodeInput}" FontFamily="{StaticResource MonoFontFamily}" />
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_NewPasswordPlaceholder}"
+                      Text="{Binding NewPasswordInput}" PasswordChar="●" />
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_NewPasswordConfirmPlaceholder}"
+                      Text="{Binding NewPasswordConfirmInput}" PasswordChar="●" />
+
+            <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                        TextWrapping="Wrap" IsVisible="{Binding UnlockError, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelUnlockCommand}" Margin="0,0,18,0">
+                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmPasswordResetCommand}">
+                <TextBlock Text="{loc:Tr Sessions_Unlock_ResetButton, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
+
         </StackPanel>
       </Border>
     </Border>

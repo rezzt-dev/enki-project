@@ -138,60 +138,65 @@
       <StackPanel Spacing="16">
         <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
 
-        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1">
-          <Grid ColumnDefinitions="*,1,*,1,*,1,*" Background="{DynamicResource Ink10}">
+        <!-- UniformGrid en vez del WrapPanel de tarjetas de ancho fijo (230px) que había: aquel dejaba
+             las tarjetas apiñadas a la izquierda con un hueco muerto a la derecha y, al saltar a 2x2,
+             alturas distintas entre tarjetas según el largo del subtítulo. Aquí todas las celdas son
+             iguales y rellenan el ancho completo de la página, como el resto de secciones del dashboard;
+             el texto va a una sola línea con recorte en elipsis (no wrap) para que ninguna tarjeta crezca
+             en alto. Los hijos invisibles no ocupan celda (UniformGrid los salta), así que al ocultar
+             Calendario basta con enlazar Columns a QuickAccessColumns (3) para no dejar el hueco. -->
+        <UniformGrid Columns="{Binding QuickAccessColumns}" ColumnSpacing="10">
 
-            <Button Grid.Column="0" Classes="card" IsVisible="{Binding IsCalendarEnabled}"
-                    Command="{Binding NavigateToCalendarCommand}">
-              <Grid ColumnDefinitions="Auto,*">
-                <mi:MaterialIcon Grid.Column="0" Kind="CalendarBlankOutline" Width="18" Height="18"
-                                  Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Calendar_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Calendar_Subtitle}" Classes="faint" TextWrapping="Wrap" />
-                </StackPanel>
-              </Grid>
-            </Button>
+          <Button Classes="card" IsVisible="{Binding IsCalendarEnabled}"
+                  Command="{Binding NavigateToCalendarCommand}">
+            <Grid ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Grid.Column="0" Kind="CalendarBlankOutline" Width="18" Height="18"
+                                Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Calendar_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Calendar_Subtitle}" Classes="faint" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              </StackPanel>
+            </Grid>
+          </Button>
 
-            <Button Grid.Column="2" Classes="card" Command="{Binding OpenRemindersCommand}">
-              <Grid ColumnDefinitions="Auto,*">
-                <mi:MaterialIcon Grid.Column="0" Kind="CalendarClockOutline" Width="18" Height="18"
-                                  Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Reminders_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Reminders_Subtitle}" Classes="faint" TextWrapping="Wrap" />
-                </StackPanel>
-              </Grid>
-            </Button>
+          <Button Classes="card" Command="{Binding OpenRemindersCommand}">
+            <Grid ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Grid.Column="0" Kind="CalendarClockOutline" Width="18" Height="18"
+                                Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Reminders_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Reminders_Subtitle}" Classes="faint" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              </StackPanel>
+            </Grid>
+          </Button>
 
-            <Button Grid.Column="4" Classes="card" Command="{Binding OpenNotificationsCommand}">
-              <Grid ColumnDefinitions="Auto,*">
-                <Panel Grid.Column="0" Width="18" Height="18" Margin="0,0,12,0" VerticalAlignment="Center">
-                  <mi:MaterialIcon Kind="BellRingOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
-                  <Border Classes="titlebar-badge" IsVisible="{Binding HasUnreadNotifications}">
-                    <TextBlock Classes="titlebar-badge-text" Text="{Binding UnreadNotificationCount}" />
-                  </Border>
-                </Panel>
-                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Notifications_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Notifications_Subtitle}" Classes="faint" TextWrapping="Wrap" />
-                </StackPanel>
-              </Grid>
-            </Button>
+          <Button Classes="card" Command="{Binding OpenNotificationsCommand}">
+            <Grid ColumnDefinitions="Auto,*">
+              <Panel Grid.Column="0" Width="18" Height="18" Margin="0,0,12,0" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="BellRingOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+                <Border Classes="titlebar-badge" IsVisible="{Binding HasUnreadNotifications}">
+                  <TextBlock Classes="titlebar-badge-text" Text="{Binding UnreadNotificationCount}" />
+                </Border>
+              </Panel>
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Notifications_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Notifications_Subtitle}" Classes="faint" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              </StackPanel>
+            </Grid>
+          </Button>
 
-            <Button Grid.Column="6" Classes="card" Command="{Binding OpenSettingsCommand}">
-              <Grid ColumnDefinitions="Auto,*">
-                <mi:MaterialIcon Grid.Column="0" Kind="CogOutline" Width="18" Height="18"
-                                  Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Settings_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
-                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Settings_Subtitle}" Classes="faint" TextWrapping="Wrap" />
-                </StackPanel>
-              </Grid>
-            </Button>
+          <Button Classes="card" Command="{Binding OpenSettingsCommand}">
+            <Grid ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Grid.Column="0" Kind="CogOutline" Width="18" Height="18"
+                                Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Settings_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Settings_Subtitle}" Classes="faint" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              </StackPanel>
+            </Grid>
+          </Button>
 
-          </Grid>
-        </Border>
+        </UniformGrid>
       </StackPanel>
 
       <!-- Bento: "HOY" manda como tarjeta grande (2/3) — el resto (identidad del vault, actividad,

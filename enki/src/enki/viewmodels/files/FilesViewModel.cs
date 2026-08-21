@@ -35,6 +35,18 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     public string EffectiveRootPath => SelectedSessionOption?.Session?.RootPath ?? _vaultService.VaultPath;
 
+    /// <summary>True while browsing a password-protected session that isn't currently unlocked — attachment
+    /// file names are metadata, not decrypted content, but they can still be sensitive, so this page
+    /// refuses to list them (not just refuses to preview them) while locked, same as the combined graph
+    /// excludes a locked session's notes entirely rather than showing anything about them.</summary>
+    public bool IsSelectedSessionLocked =>
+        SelectedSessionOption?.Session is { IsEncrypted: true } session && !_sessionService.IsUnlocked(session);
+
+    /// <summary>The regular "no files here" empty state — distinct from <see cref="IsSelectedSessionLocked"/>'s
+    /// own placeholder, which takes over instead when the reason the grid is empty is that the session is
+    /// locked rather than genuinely having no files.</summary>
+    public bool ShowEmptyState => IsEmpty && !IsSelectedSessionLocked;
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -105,10 +117,14 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
+        OnPropertyChanged(nameof(IsSelectedSessionLocked));
+        OnPropertyChanged(nameof(ShowEmptyState));
         CurrentFolder = null;
         ReloadFolders();
         Reload();
     }
+
+    partial void OnIsEmptyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
 
     public void ReloadSessions()
     {
@@ -133,18 +149,37 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     public void Reload()
     {
+        // Drop any decrypted PDF temp copies the outgoing cards were holding onto before discarding them —
+        // Reload() runs on every folder switch/search keystroke, so this is the main point at which those
+        // temp files would otherwise leak for the lifetime of the process.
+        foreach (var card in Files) card.PdfDocument?.Close();
+
+        if (IsSelectedSessionLocked)
+        {
+            Files.Clear();
+            IsEmpty = true;
+            return;
+        }
+
         var all = _vaultService.GetFiles(CurrentFolderPath);
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? all
             : all.Where(f => f.FileName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         Files.Clear();
-        foreach (var file in filtered) Files.Add(new FileCardViewModel(file));
+        foreach (var file in filtered) Files.Add(new FileCardViewModel(_vaultService, file));
         IsEmpty = Files.Count == 0;
     }
 
     public void ReloadFolders()
     {
+        if (IsSelectedSessionLocked)
+        {
+            RootFolders.Clear();
+            CurrentFolder = null;
+            return;
+        }
+
         var expandedPaths = CollectExpandedPaths(RootFolders).ToHashSet();
         var selectedPath = CurrentFolder?.FullPath;
 
@@ -236,12 +271,31 @@ public sealed partial class FilesViewModel : ViewModelBase
     [RelayCommand]
     private void OpenWithSystem(FileCardViewModel card)
     {
+        var readablePath = card.File.FullPath;
+        var isTempCopy = false;
         try
         {
-            Process.Start(new ProcessStartInfo(card.File.FullPath) { UseShellExecute = true });
+            // A file inside a protected session is ciphertext on disk — the OS shell can't open that
+            // directly, so hand it a decrypted temp copy instead. Throws SessionLockedException if the
+            // session isn't unlocked, caught below alongside every other failure this command can hit.
+            readablePath = _vaultService.ResolveReadablePath(card.File.FullPath);
+            isTempCopy = readablePath != card.File.FullPath;
+
+            Process.Start(new ProcessStartInfo(readablePath) { UseShellExecute = true });
+
+            // UseShellExecute hands the file to whatever app the OS picks and returns immediately — there's
+            // no reliable cross-platform signal for "that app is done reading it," so an immediate delete
+            // would race a slow-to-open viewer. Cleaning up after a delay is a documented best-effort
+            // tradeoff, not a leak-proof guarantee (see docs plan for "Sesiones protegidas con contraseña").
+            if (isTempCopy)
+            {
+                var tempPath = readablePath;
+                _ = Task.Delay(TimeSpan.FromMinutes(5)).ContinueWith(_ => VaultService.TryCleanupDecryptedTempFile(tempPath));
+            }
         }
         catch
         {
+            if (isTempCopy) VaultService.TryCleanupDecryptedTempFile(readablePath);
             _notificationService.Push(
                 LocalizationService.Instance["Files_OpenWithSystem_FailedTitle"],
                 string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Files_OpenWithSystem_FailedMessage"], card.FileName),
@@ -315,6 +369,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     private void DeleteFile(FileCardViewModel card)
     {
         if (ActivePreview == card) ActivePreview = null;
+        card.PdfDocument?.Close();
         _vaultService.DeleteFile(card.File);
         Reload();
     }

@@ -152,7 +152,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
     }
 
     /// <summary>Copia las skills por defecto la primera vez que se activa la sección — llamado desde
-    /// <c>MainWindowViewModel.OnSkillsPanelModeChanged</c> al recibir el toggle de Ajustes.</summary>
+    /// <c>MainWindowViewModel.OnSidebarSectionChanged</c> al recibir el toggle de Ajustes.</summary>
     public void EnsureDefaultSkills() => _skillService.EnsureDefaultSkills();
 
     public void Reload()

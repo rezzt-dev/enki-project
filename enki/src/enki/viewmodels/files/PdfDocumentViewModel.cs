@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using enki.Services;
 
 namespace enki.ViewModels;
 
@@ -24,7 +25,19 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     private const double ZoomStep = 0.25;
     private const int ThumbnailWidth = 120;
 
-    private readonly string _fullPath;
+    private readonly VaultService _vaultService;
+    private readonly string _rawFullPath;
+
+    /// <summary>The path every render call below actually reads from — <paramref name="fullPath"/>
+    /// unchanged for a plain file, or a decrypted temp copy (see <see cref="_isTempCopy"/>) resolved once
+    /// in <see cref="LoadAsync"/> for a file in a protected session. Empty until that first resolve
+    /// completes.</summary>
+    private string _fullPath = string.Empty;
+
+    /// <summary>Whether <see cref="_fullPath"/> is a decrypted temp copy that <see cref="Close"/> needs to
+    /// delete — false for a plain (non-encrypted-session) PDF, where <see cref="_fullPath"/> just is
+    /// <see cref="_rawFullPath"/> and there's nothing to clean up.</summary>
+    private bool _isTempCopy;
 
     // Bumped on every page/zoom change and compared after the matching background render completes —
     // a stale render (superseded by a newer page turn or zoom click before it finished) is dropped
@@ -63,9 +76,10 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     /// <see cref="IsLoading"/>/<see cref="IsFaulted"/>.</summary>
     public bool IsReady => !IsLoading && !IsFaulted;
 
-    public PdfDocumentViewModel(string fullPath)
+    public PdfDocumentViewModel(VaultService vaultService, string fullPath)
     {
-        _fullPath = fullPath;
+        _vaultService = vaultService;
+        _rawFullPath = fullPath;
     }
 
     public async Task LoadAsync()
@@ -74,6 +88,12 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         IsFaulted = false;
         try
         {
+            // Resolved once, up front — a protected session's PDF needs a real decrypted temp file for
+            // PdfRenderHelper's native (path-based) reader; every render below reuses this same path
+            // instead of re-decrypting per page.
+            _fullPath = await Task.Run(() => _vaultService.ResolveReadablePath(_rawFullPath));
+            _isTempCopy = _fullPath != _rawFullPath;
+
             var count = await Task.Run(() => PdfRenderHelper.GetPageCount(_fullPath));
             if (count <= 0) throw new InvalidOperationException("El PDF no tiene páginas.");
 
@@ -191,4 +211,13 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     [RelayCommand]
     private void ResetZoom() => ZoomFactor = 1.0;
+
+    /// <summary>Best-effort cleanup of the decrypted temp copy <see cref="LoadAsync"/> may have made — a
+    /// no-op for a PDF outside a protected session. Called by <see cref="FileCardViewModel.UpdateFile"/>
+    /// before this instance is discarded (rename/refresh); not called on every preview close, since this
+    /// document is deliberately kept around so reopening the same card's preview doesn't re-render it.</summary>
+    public void Close()
+    {
+        if (_isTempCopy) VaultService.TryCleanupDecryptedTempFile(_fullPath);
+    }
 }

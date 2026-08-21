@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using enki.Localization;
@@ -12,7 +14,19 @@ namespace enki.Services;
 
 public sealed class VaultService
 {
+    /// <summary>Filename of a session's manifest, duplicated from <see cref="SessionService"/>'s own
+    /// constant — <see cref="ResolveEncryptedSessionRoot"/> reads it directly instead of going through
+    /// <see cref="SessionService"/>, which itself depends on <see cref="VaultService"/> and would create a
+    /// circular dependency.</summary>
+    private const string SessionManifestFileName = ".session.json";
+
     private readonly SettingsService _settingsService;
+    private readonly SessionEncryptionService _encryptionService;
+
+    /// <summary>Shared with <see cref="SessionService"/> (constructed from the same <see cref="VaultService"/>
+    /// instance) so both sides of the choke point — content read/write here, unlock/lock lifecycle there —
+    /// agree on which sessions are currently unlocked.</summary>
+    public SessionEncryptionService EncryptionService => _encryptionService;
 
     /// <summary>Shared by every note-reading method below so a full vault scan reads each <c>.md</c> file
     /// at most once per change instead of every consumer (backlinks, search, quick switcher, the note
@@ -41,10 +55,100 @@ public sealed class VaultService
     /// references point at the same file on disk.</summary>
     public static bool PathsEqual(string a, string b) => string.Equals(a, b, PathComparison);
 
-    public VaultService(SettingsService settingsService)
+    public VaultService(SettingsService settingsService) : this(settingsService, new SessionEncryptionService())
+    {
+    }
+
+    public VaultService(SettingsService settingsService, SessionEncryptionService encryptionService)
     {
         _settingsService = settingsService;
+        _encryptionService = encryptionService;
         VaultPath = settingsService.Settings.VaultPath ?? string.Empty;
+    }
+
+    /// <summary>Null if <paramref name="fullPath"/> isn't under any session, or is under a plain-text one.
+    /// Otherwise, the root path of the encrypted session it belongs to — the same identifier
+    /// <see cref="SessionEncryptionService"/> uses as its unlocked-DEK cache key. Reads
+    /// <c>.session.json</c> directly with its own minimal JSON read (see <see cref="SessionManifestFileName"/>'s
+    /// doc comment for why this doesn't go through <see cref="SessionService"/>). Consulted by every
+    /// content read/write below, so a session's encryption status is effectively re-checked on every call —
+    /// acceptable for now since the manifest is tiny and this only runs for paths actually under
+    /// <c>.sessions/</c>; worth caching later if profiling ever shows it matters.</summary>
+    private string? ResolveEncryptedSessionRoot(string fullPath)
+    {
+        if (string.IsNullOrEmpty(VaultPath)) return null;
+
+        // The vault-wide trash sits outside every session's .sessions/<name>/ boundary, so a note/file
+        // moved there by DeleteNote/DeleteFile can no longer be recognized as belonging to an encrypted
+        // session just from its current (trash) path — resolve against the path it was trashed FROM
+        // instead, recorded by RecordTrashOrigin at delete time. Without this, a trashed item from a
+        // protected session was silently treated as plain-text: read as garbage while in the trash, and
+        // left permanently undecryptable once restored, since AES-GCM ciphertext bytes were never
+        // recognized as needing decryption again.
+        if (PathsEqual(Path.GetDirectoryName(fullPath) ?? string.Empty, TrashPath) &&
+            ReadTrashOrigins().TryGetValue(fullPath, out var originalPath))
+        {
+            fullPath = originalPath;
+        }
+
+        var sessionsRoot = Path.Combine(VaultPath, ".sessions");
+        var relative = Path.GetRelativePath(sessionsRoot, fullPath);
+        if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative)) return null;
+
+        var sessionFolder = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
+        if (string.IsNullOrEmpty(sessionFolder)) return null;
+
+        var sessionRoot = Path.Combine(sessionsRoot, sessionFolder);
+        var manifestPath = Path.Combine(sessionRoot, SessionManifestFileName);
+        if (!File.Exists(manifestPath)) return null;
+
+        try
+        {
+            var manifest = JsonSerializer.Deserialize<SessionManifest>(File.ReadAllText(manifestPath));
+            return manifest?.Encryption is not null ? sessionRoot : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return null; // orphaned/corrupt manifest — treat the session as unencrypted rather than throw
+        }
+    }
+
+    /// <summary>Fixed (non-localized) name of the subfolder Enki keeps its vault content in, nested one
+    /// level below whatever folder the user picks in the folder dialog (docs/ajustes-docs — "el usuario
+    /// elige 'Documentos', el vault real vive en 'Documentos/enki-documents'"). Keeping it constant across
+    /// languages/OSes means a vault created under one locale is still recognized as one after a language
+    /// change.</summary>
+    private const string VaultSubfolderName = "enki-documents";
+
+    /// <summary>Resolves the folder a user just picked in an OS folder dialog to the actual vault root to
+    /// use — never the picked folder itself unless it already looks like a vault. Without this, picking a
+    /// general-purpose folder like "Documentos" turned that whole folder into the vault, scattering
+    /// <c>.trash</c>/<c>.sessions</c>/notes directly alongside the user's unrelated files. Instead:
+    /// <list type="bullet">
+    /// <item>a folder that already looks like a vault (its name is already
+    /// <see cref="VaultSubfolderName"/>, or it already holds vault content — notes, sessions, or a trash
+    /// folder) is used as-is, so an existing vault (old-style flat layout, or one already nested under
+    /// <see cref="VaultSubfolderName"/> from a prior pick) is never silently orphaned;</item>
+    /// <item>otherwise, <see cref="VaultSubfolderName"/> nested inside the picked folder is used/created —
+    /// covering both a brand-new pick and re-selecting the same parent folder a second time.</item>
+    /// </list></summary>
+    public static string ResolveVaultFolder(string pickedFolder)
+    {
+        var nested = Path.Combine(pickedFolder, VaultSubfolderName);
+        if (Directory.Exists(nested)) return nested;
+        if (LooksLikeExistingVaultRoot(pickedFolder)) return pickedFolder;
+        return nested;
+    }
+
+    private static bool LooksLikeExistingVaultRoot(string folder)
+    {
+        var name = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (string.Equals(name, VaultSubfolderName, StringComparison.OrdinalIgnoreCase)) return true;
+
+        if (!Directory.Exists(folder)) return false;
+        return Directory.Exists(Path.Combine(folder, ".sessions"))
+            || Directory.Exists(Path.Combine(folder, ".trash"))
+            || Directory.EnumerateFiles(folder, "*.md", SearchOption.TopDirectoryOnly).Any();
     }
 
     /// <summary>Configures the vault at <paramref name="path"/>, creating the directory if needed.
@@ -159,6 +263,56 @@ public sealed class VaultService
         lock (_vaultSizeLock) { _vaultSizeCacheValid = false; }
     }
 
+    /// <summary>Drops every note cached under <paramref name="rootPath"/> from <see cref="_noteCache"/> —
+    /// called by <see cref="SessionService.Lock"/> so no plaintext content read while a session was
+    /// unlocked stays resident in memory after it's locked again.</summary>
+    public void InvalidateCacheUnderPath(string rootPath) => _noteCache.InvalidatePrefix(rootPath);
+
+    /// <summary>Reads a file's plaintext bytes into memory, decrypting first if it falls under an
+    /// encrypted session — for callers (image thumbnail decoding) that can consume a byte buffer directly
+    /// and don't need a real path on disk. Throws <see cref="SessionLockedException"/> if the session is
+    /// encrypted but locked.</summary>
+    public byte[] ReadFileBytes(string fullPath)
+    {
+        var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
+        var raw = File.ReadAllBytes(fullPath);
+        return encryptedRoot is null ? raw : _encryptionService.Decrypt(encryptedRoot, raw);
+    }
+
+    /// <summary>For a file under a currently-unlocked encrypted session, decrypts it to a fresh temp file
+    /// under the OS temp directory and returns that path — for callers (PDF rendering via PDFium, "open
+    /// with the system app") that need a real path on disk rather than a byte buffer. For a file outside
+    /// any encrypted session, returns <paramref name="fullPath"/> unchanged — the overwhelmingly common
+    /// case pays zero extra I/O. Throws <see cref="SessionLockedException"/> if the session is encrypted
+    /// but locked. The caller owns cleanup of a temp copy via <see cref="TryCleanupDecryptedTempFile"/> —
+    /// compare the returned path against <paramref name="fullPath"/> to know whether one was made.</summary>
+    public string ResolveReadablePath(string fullPath)
+    {
+        var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
+        if (encryptedRoot is null) return fullPath;
+
+        var plaintext = _encryptionService.Decrypt(encryptedRoot, File.ReadAllBytes(fullPath));
+        var tempPath = Path.Combine(Path.GetTempPath(), $"enki-dec-{Guid.NewGuid():N}{Path.GetExtension(fullPath)}");
+        File.WriteAllBytes(tempPath, plaintext);
+        return tempPath;
+    }
+
+    /// <summary>Best-effort delete of a decrypted temp file produced by <see cref="ResolveReadablePath"/>
+    /// — swallows failures. A temp copy still in use by an external viewer (see
+    /// <c>FilesViewModel.OpenWithSystem</c>) or already gone isn't worth surfacing an error over; the OS
+    /// temp directory gets cleaned up eventually regardless.</summary>
+    public static void TryCleanupDecryptedTempFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning($"No se pudo borrar el temporal descifrado '{path}'", ex);
+        }
+    }
+
     private (long Size, bool Incomplete) ComputeVaultSizeBytes()
     {
         if (string.IsNullOrWhiteSpace(VaultPath) || !Directory.Exists(VaultPath)) return (0, false);
@@ -232,9 +386,9 @@ public sealed class VaultService
     private static IEnumerable<FileInfo> EnumerateMarkdownFiles(string root, SearchOption option) =>
         new DirectoryInfo(root).EnumerateFiles("*.md", option);
 
-    private static (NoteFile Note, string Content) ReadNoteAndContent(FileInfo info)
+    private (NoteFile Note, string Content) ReadNoteAndContent(FileInfo info)
     {
-        var content = SafeReadAllText(info.FullName);
+        var content = SafeReadContent(info.FullName);
         return (ReadNoteMetadata(info, content), content);
     }
 
@@ -371,7 +525,7 @@ public sealed class VaultService
         return candidate;
     }
 
-    private static NoteFile ReadNoteMetadata(string fullPath) => ReadNoteMetadata(new FileInfo(fullPath), SafeReadAllText(fullPath));
+    private NoteFile ReadNoteMetadata(string fullPath) => ReadNoteMetadata(new FileInfo(fullPath), SafeReadContent(fullPath));
 
     private static NoteFile ReadNoteMetadata(FileInfo info, string content)
     {
@@ -390,10 +544,34 @@ public sealed class VaultService
         };
     }
 
-    private static string SafeReadAllText(string path)
+    /// <summary>Reads a note's text content — transparently decrypting it first if <paramref name="path"/>
+    /// falls under an encrypted session (see <see cref="ResolveEncryptedSessionRoot"/>). Unlike the old
+    /// plain-text-only version of this method, a locked session is NOT collapsed to <c>""</c>: that would
+    /// be indistinguishable from "this note has no content", so <see cref="SessionLockedException"/>
+    /// propagates instead and callers must handle it explicitly. A missing file, or any other read failure
+    /// on a plain-text note, still returns <c>""</c> exactly as before.</summary>
+    private string SafeReadContent(string path)
     {
-        try { return File.ReadAllText(path); }
+        var encryptedRoot = ResolveEncryptedSessionRoot(path);
+        if (encryptedRoot is null)
+        {
+            try { return File.ReadAllText(path); }
+            catch { return string.Empty; }
+        }
+
+        byte[] raw;
+        try { raw = File.ReadAllBytes(path); }
         catch { return string.Empty; }
+
+        try
+        {
+            return Encoding.UTF8.GetString(_encryptionService.Decrypt(encryptedRoot, raw));
+        }
+        catch (CryptographicException ex)
+        {
+            LogService.Error($"No se pudo descifrar '{path}' (contenido dañado o corrupto)", ex);
+            return string.Empty;
+        }
     }
 
     private static (string Title, string Preview) ExtractTitleAndPreview(string content, string fallbackTitle)
@@ -505,12 +683,17 @@ public sealed class VaultService
     /// Logs and rethrows on <see cref="IOException"/>/<see cref="UnauthorizedAccessException"/> (which also
     /// covers <see cref="DirectoryNotFoundException"/>) instead of swallowing it, so a disk-full, permission,
     /// or missing-path failure leaves a trace in <see cref="LogService"/> and still reaches the caller.</summary>
-    private static void WriteFileAtomic(string path, string content)
+    private void WriteFileAtomic(string path, string content)
     {
+        var encryptedRoot = ResolveEncryptedSessionRoot(path);
+        var bytes = encryptedRoot is null
+            ? Encoding.UTF8.GetBytes(content)
+            : _encryptionService.Encrypt(encryptedRoot, Encoding.UTF8.GetBytes(content)); // throws SessionLockedException if locked
+
         try
         {
             var tempPath = $"{path}.tmp-{Guid.NewGuid():N}";
-            File.WriteAllText(tempPath, content);
+            File.WriteAllBytes(tempPath, bytes);
             File.Move(tempPath, path, overwrite: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -533,20 +716,102 @@ public sealed class VaultService
             suffix++;
         }
 
-        File.Copy(sourcePath, destination);
+        var encryptedRoot = ResolveEncryptedSessionRoot(destination);
+        if (encryptedRoot is null)
+        {
+            File.Copy(sourcePath, destination);
+        }
+        else
+        {
+            var ciphertext = _encryptionService.Encrypt(encryptedRoot, File.ReadAllBytes(sourcePath));
+            File.WriteAllBytes(destination, ciphertext);
+        }
+
         InvalidateVaultSizeCache();
         return ReadNoteMetadata(destination);
     }
 
     private string TrashPath => Path.Combine(VaultPath, ".trash");
 
+    /// <summary>Sidecar JSON mapping a trashed item's current (flat, top-level) path under
+    /// <see cref="TrashPath"/> back to the full path it was trashed from — the only place that
+    /// association survives once <see cref="DeleteNote"/>/<see cref="DeleteFile"/> move a file out from
+    /// under its session folder. Only ever written for an item that came from an encrypted session (see
+    /// <see cref="RecordTrashOrigin"/>); a vault with no encrypted sessions never creates this file.</summary>
+    private string TrashOriginsPath => Path.Combine(TrashPath, ".trash-origins.json");
+
+    private Dictionary<string, string> ReadTrashOrigins()
+    {
+        var comparer = PathComparison == StringComparison.OrdinalIgnoreCase
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
+
+        if (!File.Exists(TrashOriginsPath)) return new Dictionary<string, string>(comparer);
+
+        try
+        {
+            var json = File.ReadAllText(TrashOriginsPath);
+            var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            return loaded is null ? new Dictionary<string, string>(comparer) : new Dictionary<string, string>(loaded, comparer);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return new Dictionary<string, string>(comparer);
+        }
+    }
+
+    private void WriteTrashOrigins(Dictionary<string, string> origins)
+    {
+        Directory.CreateDirectory(TrashPath);
+        var tempPath = $"{TrashOriginsPath}.tmp-{Guid.NewGuid():N}";
+        File.WriteAllText(tempPath, JsonSerializer.Serialize(origins));
+        File.Move(tempPath, TrashOriginsPath, overwrite: true);
+    }
+
+    /// <summary>Records that <paramref name="trashPath"/> (an item's new location, flat under
+    /// <see cref="TrashPath"/>) was trashed from <paramref name="originalPath"/> — called only when
+    /// <paramref name="originalPath"/> resolved to an encrypted session, since a plain-text item never
+    /// needs this to read/restore correctly.</summary>
+    private void RecordTrashOrigin(string trashPath, string originalPath)
+    {
+        var origins = ReadTrashOrigins();
+        origins[trashPath] = originalPath;
+        WriteTrashOrigins(origins);
+    }
+
+    /// <summary>Drops the origin recorded for <paramref name="trashPath"/> once it's no longer in the
+    /// trash (restored or purged) — a no-op if none was ever recorded (the common, plain-text case).</summary>
+    private void RemoveTrashOrigin(string trashPath)
+    {
+        var origins = ReadTrashOrigins();
+        if (origins.Remove(trashPath)) WriteTrashOrigins(origins);
+    }
+
+    /// <summary>True for a trashed note/file whose recorded origin (see <see cref="RecordTrashOrigin"/>)
+    /// is an encrypted session that isn't currently unlocked — <see cref="GetTrashedNotes"/> and
+    /// <see cref="GetTrashedFiles"/> exclude these from their lists entirely instead of letting
+    /// <see cref="SafeReadContent"/> throw <see cref="SessionLockedException"/> while building the trash
+    /// view, or exposing a locked session's attachment names, mirroring the same "a locked session
+    /// contributes nothing" stance <see cref="SessionService.LoadGraph"/> already takes.</summary>
+    private bool IsTrashedItemFromLockedSession(string trashPath)
+    {
+        if (!ReadTrashOrigins().TryGetValue(trashPath, out var originalPath)) return false;
+        var sessionRoot = ResolveEncryptedSessionRoot(originalPath);
+        return sessionRoot is not null && !_encryptionService.IsUnlocked(sessionRoot);
+    }
+
     public void DeleteNote(NoteFile note)
     {
         if (!File.Exists(note.FullPath)) return;
 
+        var originalPath = note.FullPath;
+        var wasEncrypted = ResolveEncryptedSessionRoot(originalPath) is not null;
+
         Directory.CreateDirectory(TrashPath);
-        MoveWithUniqueSuffix(note.FullPath, TrashPath);
-        _noteCache.Invalidate(note.FullPath);
+        var trashPath = MoveWithUniqueSuffix(originalPath, TrashPath);
+        if (wasEncrypted) RecordTrashOrigin(trashPath, originalPath);
+
+        _noteCache.Invalidate(originalPath);
         InvalidateVaultSizeCache();
     }
 
@@ -555,16 +820,31 @@ public sealed class VaultService
         if (!Directory.Exists(TrashPath)) return [];
 
         return EnumerateMarkdownFiles(TrashPath, SearchOption.TopDirectoryOnly)
+            .Where(info => !IsTrashedItemFromLockedSession(info.FullName))
             .Select(info => _noteCache.GetOrRead(info, ReadNoteAndContent).Note)
             .OrderByDescending(n => n.ModifiedUtc)
             .ToList();
     }
 
+    /// <summary>Restores <paramref name="note"/> from the trash — back into the session folder it was
+    /// trashed from when that's recorded and still exists (see <see cref="RecordTrashOrigin"/>), so an
+    /// encrypted note lands back under a path <see cref="ResolveEncryptedSessionRoot"/> recognizes and can
+    /// decrypt again; to the vault root otherwise, same as before this distinction existed.</summary>
     public void RestoreNote(NoteFile note)
     {
         if (!File.Exists(note.FullPath)) return;
-        MoveWithUniqueSuffix(note.FullPath, VaultPath);
-        _noteCache.Invalidate(note.FullPath);
+
+        var trashPath = note.FullPath;
+        var origins = ReadTrashOrigins();
+        var originalFolder = origins.TryGetValue(trashPath, out var originalPath)
+            ? Path.GetDirectoryName(originalPath)
+            : null;
+        var destinationFolder = originalFolder is not null && Directory.Exists(originalFolder) ? originalFolder : VaultPath;
+
+        note.FullPath = MoveWithUniqueSuffix(trashPath, destinationFolder);
+        if (origins.Remove(trashPath)) WriteTrashOrigins(origins);
+
+        _noteCache.Invalidate(trashPath);
         InvalidateVaultSizeCache();
     }
 
@@ -574,6 +854,7 @@ public sealed class VaultService
         File.Delete(note.FullPath);
         _noteCache.Invalidate(note.FullPath);
         InvalidateVaultSizeCache();
+        RemoveTrashOrigin(note.FullPath);
     }
 
     /// <summary>Renames <paramref name="note"/>'s file and, unlike before Fase 5, keeps the rest of the
@@ -648,7 +929,7 @@ public sealed class VaultService
     /// suffix. Writes go through the same atomic path as everything else in this class; a note that fails
     /// to rewrite (locked, permissions) is logged and skipped rather than aborting the rename that already
     /// succeeded — a stale link on one note is recoverable, an interrupted rename is not.</summary>
-    private static void RewriteWikilinksToRenamedNote(
+    private void RewriteWikilinksToRenamedNote(
         IReadOnlyList<(NoteFile Note, string Content)> notesBeforeRename, string oldPath, string newLinkName)
     {
         var notesSnapshot = notesBeforeRename.Select(t => t.Note).ToList();
@@ -769,8 +1050,12 @@ public sealed class VaultService
     {
         if (!File.Exists(file.FullPath)) return;
 
+        var originalPath = file.FullPath;
+        var wasEncrypted = ResolveEncryptedSessionRoot(originalPath) is not null;
+
         Directory.CreateDirectory(TrashPath);
-        MoveWithUniqueSuffix(file.FullPath, TrashPath);
+        var trashPath = MoveWithUniqueSuffix(originalPath, TrashPath);
+        if (wasEncrypted) RecordTrashOrigin(trashPath, originalPath);
     }
 
     public List<VaultFile> GetTrashedFiles()
@@ -779,15 +1064,30 @@ public sealed class VaultService
 
         return Directory.EnumerateFiles(TrashPath, "*", SearchOption.TopDirectoryOnly)
             .Where(path => !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            .Where(path => !PathsEqual(path, TrashOriginsPath))
+            .Where(path => !IsTrashedItemFromLockedSession(path))
             .Select(ReadFileMetadata)
             .OrderByDescending(f => f.ModifiedUtc)
             .ToList();
     }
 
+    /// <summary>Restores <paramref name="file"/> from the trash — back into the session folder it was
+    /// trashed from when that's recorded and still exists (see <see cref="RecordTrashOrigin"/>), so an
+    /// encrypted attachment lands back under a path <see cref="ResolveEncryptedSessionRoot"/> recognizes
+    /// and can decrypt again; to the vault root otherwise, same as before this distinction existed.</summary>
     public void RestoreFile(VaultFile file)
     {
         if (!File.Exists(file.FullPath)) return;
-        MoveWithUniqueSuffix(file.FullPath, VaultPath);
+
+        var trashPath = file.FullPath;
+        var origins = ReadTrashOrigins();
+        var originalFolder = origins.TryGetValue(trashPath, out var originalPath)
+            ? Path.GetDirectoryName(originalPath)
+            : null;
+        var destinationFolder = originalFolder is not null && Directory.Exists(originalFolder) ? originalFolder : VaultPath;
+
+        file.FullPath = MoveWithUniqueSuffix(trashPath, destinationFolder);
+        if (origins.Remove(trashPath)) WriteTrashOrigins(origins);
     }
 
     public void PermanentlyDelete(VaultFile file)
@@ -795,6 +1095,7 @@ public sealed class VaultService
         if (!File.Exists(file.FullPath)) return;
         File.Delete(file.FullPath);
         InvalidateVaultSizeCache();
+        RemoveTrashOrigin(file.FullPath);
     }
 
     internal static string SanitizeFileName(string name, string? fallback = null)

@@ -1,9 +1,11 @@
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Models;
+using enki.Services;
 using Material.Icons;
 
 namespace enki.ViewModels;
@@ -11,6 +13,8 @@ namespace enki.ViewModels;
 public sealed partial class FileCardViewModel : ObservableObject
 {
     private const int GridThumbnailWidth = 200;
+
+    private readonly VaultService _vaultService;
 
     public VaultFile File { get; private set; }
 
@@ -45,13 +49,15 @@ public sealed partial class FileCardViewModel : ObservableObject
 
     private bool _thumbnailLoadAttempted;
 
-    public FileCardViewModel(VaultFile file)
+    public FileCardViewModel(VaultService vaultService, VaultFile file)
     {
+        _vaultService = vaultService;
         File = file;
     }
 
     public void UpdateFile(VaultFile file)
     {
+        PdfDocument?.Close();
         File = file;
         _thumbnailLoadAttempted = false;
         Thumbnail = null;
@@ -81,6 +87,7 @@ public sealed partial class FileCardViewModel : ObservableObject
 
         var fullPath = File.FullPath;
         var isImage = IsImage;
+        var vaultService = _vaultService;
         Task.Run(() =>
         {
             try
@@ -88,12 +95,25 @@ public sealed partial class FileCardViewModel : ObservableObject
                 Bitmap bitmap;
                 if (isImage)
                 {
-                    using var stream = System.IO.File.OpenRead(fullPath);
+                    // Decrypts straight into memory if this file lives in a protected session — no temp
+                    // file needed since Bitmap can decode from any stream, unlike the PDF path below.
+                    var bytes = vaultService.ReadFileBytes(fullPath);
+                    using var stream = new MemoryStream(bytes);
                     bitmap = new Bitmap(stream);
                 }
                 else
                 {
-                    bitmap = PdfRenderHelper.RenderPageByWidth(fullPath, pageIndex: 0, GridThumbnailWidth);
+                    // PdfRenderHelper opens the file by path (native PDFium binding) — a protected
+                    // session's PDF needs a real decrypted temp file, cleaned up right after rendering.
+                    var readablePath = vaultService.ResolveReadablePath(fullPath);
+                    try
+                    {
+                        bitmap = PdfRenderHelper.RenderPageByWidth(readablePath, pageIndex: 0, GridThumbnailWidth);
+                    }
+                    finally
+                    {
+                        if (readablePath != fullPath) VaultService.TryCleanupDecryptedTempFile(readablePath);
+                    }
                 }
                 Dispatcher.UIThread.Post(() => Thumbnail = bitmap);
             }
@@ -110,7 +130,7 @@ public sealed partial class FileCardViewModel : ObservableObject
     public void EnsurePdfDocumentLoaded()
     {
         if (!IsPdf || PdfDocument is not null) return;
-        PdfDocument = new PdfDocumentViewModel(File.FullPath);
+        PdfDocument = new PdfDocumentViewModel(_vaultService, File.FullPath);
         OnPropertyChanged(nameof(PdfDocument));
         _ = PdfDocument.LoadAsync();
     }

@@ -4,6 +4,10 @@ obj/
 out/
 publish/
 
+# Datos de Enki en builds de Debug compilados desde el código fuente (ver services/AppDataDirectory.cs) —
+# settings.json, kanban.json, polar-tasks.json, etc. de desarrollo/pruebas, aisladas de %AppData%/Enki.
+.devdata/
+
 # .NET
 *.user
 *.suo

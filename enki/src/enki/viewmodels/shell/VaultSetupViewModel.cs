@@ -52,8 +52,14 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
             AllowMultiple = false
         });
 
-        var folder = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
-        if (string.IsNullOrWhiteSpace(folder)) return;
+        var pickedFolder = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+        if (string.IsNullOrWhiteSpace(pickedFolder)) return;
+
+        // The picked folder (e.g. "Documents") is a general-purpose folder, not the vault itself — the
+        // actual vault lives nested one level inside it so Enki's own files never scatter alongside the
+        // user's unrelated ones. See VaultService.ResolveVaultFolder for how an already-existing vault
+        // (old-style flat, or already nested) is recognized and left untouched instead of double-nested.
+        var folder = VaultService.ResolveVaultFolder(pickedFolder);
 
         try
         {

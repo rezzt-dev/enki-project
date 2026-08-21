@@ -37,9 +37,7 @@ public sealed class KanbanService
     /// real kanban file.</param>
     public KanbanService(string? storageDirectory = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
+        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(configDir);
         _boardPath = Path.Combine(configDir, "kanban.json");
         Board = Load();

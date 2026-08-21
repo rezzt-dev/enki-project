@@ -39,9 +39,7 @@ public sealed class NotificationService
     {
         _settingsService = settingsService;
 
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
+        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(configDir);
         _path = Path.Combine(configDir, "notifications.json");
         Notifications = Load();
