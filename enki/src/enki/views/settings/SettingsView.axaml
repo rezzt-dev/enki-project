@@ -1,0 +1,1192 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
+             x:Class="enki.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+  <Grid ColumnDefinitions="220,*">
+
+    <!-- ===================== Section nav ===================== -->
+    <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0">
+      <StackPanel Spacing="24" Margin="18,30,14,30">
+        <StackPanel Spacing="6" Margin="4,0,0,0">
+          <TextBlock Text="{loc:Tr Settings_Nav_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <TextBlock Text="{loc:Tr Settings_Nav_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" FontSize="26" />
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding Sections}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="4" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:SettingsSectionViewModel">
+              <Button Classes="nav-item"
+                      Classes.active="{Binding IsActive}"
+                      Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).SelectSectionCommand}"
+                      CommandParameter="{Binding Section}">
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <!-- ===================== Section content ===================== -->
+    <!-- Margin en el contenido en vez de Padding en el ScrollViewer (mismo motivo que en
+         DashboardView: Avalonia 12 resta el padding del extent scrolleable, dejando los últimos 60px
+         de la sección fuera de alcance). -->
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Margin="36,30,36,30" Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
+
+        <!-- ===================== General ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=General}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_General_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_General_Description}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="FolderOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_General_VaultFolder_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_General_VaultFolder_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
+                      BorderThickness="1" Padding="12,10">
+                <TextBlock Text="{Binding VaultPath}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
+                           TextTrimming="CharacterEllipsis" />
+              </Border>
+              <Button Classes="pill" Command="{Binding ChangeVaultFolderCommand}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="FolderMoveOutline" Width="14" Height="14" />
+                  <TextBlock Text="{loc:Tr Settings_General_VaultFolder_ChangeButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="TranslateVariant" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_General_Language_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_General_Language_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" AutomationProperties.Name="{loc:Tr Settings_General_Language_Title}"
+                        HorizontalAlignment="Stretch" MaxDropDownHeight="320">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate DataType="loc:SupportedLanguageInfo">
+                    <TextBlock Text="{Binding NativeName}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="HomeVariantOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_General_Startup_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_General_Startup_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <WrapPanel>
+                <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Dashboard, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                             IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Dashboard, Mode=OneWay}"
+                             Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Dashboard}" />
+                <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Calendar, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                             IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Calendar, Mode=OneWay}"
+                             Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Calendar}" />
+                <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Kanban, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                             IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Kanban, Mode=OneWay}"
+                             Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Kanban}" />
+                <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Notes, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                             IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Notes, Mode=OneWay}"
+                             Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Notes}" />
+                <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Files, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                             IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Files, Mode=OneWay}"
+                             Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Files}" />
+                <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Sessions, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                             IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Sessions, Mode=OneWay}"
+                             Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Sessions}" />
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ViewDashboardOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_General_Dashboard_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding DashboardShowScrollbar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Label}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- ===================== Diagnóstico (Fase 0, docs/analisis-proyecto/analisis-deficiencias-proyecto.md §2) ===================== -->
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="BugReport" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_General_Diagnostics_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_General_Diagnostics_DebugLogging_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_General_Diagnostics_DebugLogging_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding DebugLoggingEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_Diagnostics_DebugLogging_Label}" />
+              </Grid>
+
+              <Button Classes="pill" Command="{Binding OpenLogsFolderCommand}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                  <TextBlock Text="{loc:Tr Settings_General_Diagnostics_OpenLogsFolderButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <!-- ===================== Zona de peligro (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md) ===================== -->
+          <Border Classes="card" Padding="22" BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="AlertCircleOutline" Width="15" Height="15" Foreground="{DynamicResource DangerBrush}" />
+                <TextBlock Text="{loc:Tr Settings_General_DangerZone_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource DangerBrush}" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_VaultSize_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_VaultSize_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding VaultSizeLabel}" Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+
+              <Button Classes="pill" Command="{Binding OpenVaultFolderCommand}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_OpenVaultFolderButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+
+              <TextBlock Text="{loc:Tr Settings_General_DangerZone_BackupHint}"
+                         Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              <Button Classes="pill" Command="{Binding CreateBackupCommand}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="14" Height="14" />
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_CreateBackupButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_AutoBackup_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_AutoBackup_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoBackupEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_Label}" />
+              </Grid>
+
+              <!-- Intervalo y retención (Fase 10, docs/analisis-proyecto/roadmap.md): antes fijos en su
+                   valor por defecto para todo el mundo, solo el interruptor de arriba tenía control real. -->
+              <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding AutoBackupEnabled}" Margin="0,-4,0,0">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_DangerZone_AutoBackup_IntervalLabel}" FontSize="12.5" Classes="muted" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalDays}" Minimum="1" Maximum="30" Increment="1"
+                               Width="110" ShowButtonSpinner="True" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_IntervalLabel}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding AutoBackupEnabled}">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_DangerZone_AutoBackup_RetentionLabel}" FontSize="12.5" Classes="muted" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupRetentionCount}" Minimum="1" Maximum="30" Increment="1"
+                               Width="110" ShowButtonSpinner="True" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_RetentionLabel}" />
+              </Grid>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ConfirmBeforeDelete}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Label}" />
+              </Grid>
+
+              <TextBlock Classes="muted" FontSize="11.5" TextWrapping="Wrap"
+                         Text="{loc:Tr Settings_General_DangerZone_TrashRetention_Description}" />
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+
+              <TextBlock Text="{loc:Tr Settings_General_DangerZone_ExportHint}"
+                         Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="pill" Command="{Binding ExportSettingsCommand}" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="FileExportOutline" Width="14" Height="14" />
+                    <TextBlock Text="{loc:Tr Settings_General_DangerZone_ExportSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="pill" Command="{Binding ImportSettingsCommand}" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="FileImportOutline" Width="14" Height="14" />
+                    <TextBlock Text="{loc:Tr Settings_General_DangerZone_ImportSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+
+              <Button Classes="pill-primary-danger" Command="{Binding RequestResetSettingsCommand}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="RestoreAlert" Width="14" Height="14" />
+                  <TextBlock Text="{loc:Tr Settings_General_DangerZone_ResetSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+
+        <!-- ===================== Apariencia ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Appearance}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_Appearance_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Appearance_Description}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ThemeLightDark" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Appearance_Theme_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Appearance_Theme_DarkLabel}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Appearance_Theme_Description}" Classes="muted" FontSize="11.5" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsDarkTheme}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Appearance_Theme_DarkLabel}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="FormatFont" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Appearance_InterfaceFont_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Appearance_InterfaceFont_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding InterfaceFontFamily}" AutomationProperties.Name="{loc:Tr Settings_Appearance_InterfaceFont_Title}"
+                        HorizontalAlignment="Stretch" MaxDropDownHeight="320" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="MagnifyPlusOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Appearance_Zoom_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Appearance_Zoom_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Appearance_Zoom_LevelLabel}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding UiZoomPercentLabel}"
+                           Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <Button Grid.Column="0" Classes="icon-btn" Width="26" Height="26"
+                        Command="{Binding ZoomOutCommand}" ToolTip.Tip="{loc:Tr Settings_Appearance_Zoom_OutTooltip}"
+                        AutomationProperties.Name="{loc:Tr Settings_Appearance_Zoom_OutTooltip}">
+                  <mi:MaterialIcon Kind="MagnifyMinusOutline" Width="15" Height="15" />
+                </Button>
+                <!-- Barra de solo lectura: visualiza el nivel de zoom actual dentro del rango 50%-200%,
+                     ocupando el ancho completo disponible, y un marcador fijo en el 100% (valor por
+                     defecto). Sin thumb arrastrable a propósito — el ajuste se hace con los botones -/+,
+                     no arrastrando la barra. El relleno usa columnas "Star" (proporción, no píxeles) para
+                     que se adapte a cualquier ancho de tarjeta/ventana. -->
+                <Grid Grid.Column="1" Height="6" VerticalAlignment="Center">
+                  <Border Background="{DynamicResource Ink10}" CornerRadius="0" />
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="{Binding UiZoomBarFillStar}" />
+                      <ColumnDefinition Width="{Binding UiZoomBarRemainderStar}" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="{DynamicResource Ink50}" CornerRadius="0" />
+                  </Grid>
+                  <!-- Marcador del 100%: rango fijo 50%-200%, así que su posición (a 1/3 desde la
+                       izquierda) es una proporción constante, no depende del zoom actual. -->
+                  <Grid ColumnDefinitions="1*,2*">
+                    <Border Grid.Column="0" Width="2" Height="10" HorizontalAlignment="Right"
+                            Background="{DynamicResource Ink70}" ToolTip.Tip="{loc:Tr Settings_Appearance_Zoom_DefaultMarkerTooltip}" />
+                  </Grid>
+                </Grid>
+                <Button Grid.Column="2" Classes="icon-btn" Width="26" Height="26"
+                        Command="{Binding ZoomInCommand}" ToolTip.Tip="{loc:Tr Settings_Appearance_Zoom_InTooltip}"
+                        AutomationProperties.Name="{loc:Tr Settings_Appearance_Zoom_InTooltip}">
+                  <mi:MaterialIcon Kind="MagnifyPlusOutline" Width="15" Height="15" />
+                </Button>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="DockWindow" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Appearance_TitleBar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Appearance_TitleBar_UseCustomLabel}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Appearance_TitleBar_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseCustomTitleBar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Appearance_TitleBar_UseCustomLabel}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+
+        <!-- ===================== Editor ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Editor}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_Editor_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Editor_Description}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="FormatFont" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Editor_Font_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Editor_Font_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding EditorFontFamily}" AutomationProperties.Name="{loc:Tr Settings_Editor_Font_Title}"
+                        HorizontalAlignment="Stretch" MaxDropDownHeight="320" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="FormatSize" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Editor_SizeLayout_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Editor_FontSize_Label}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding EditorFontSizeLabel}"
+                           Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <Slider Minimum="12" Maximum="20" Value="{Binding EditorFontSize}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Editor_FontSize_Label}" />
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Editor_ColumnWidth_Label}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding EditorColumnWidthLabel}"
+                           Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <TextBlock Text="{loc:Tr Settings_Editor_ColumnWidth_Description}"
+                         Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              <Slider Minimum="480" Maximum="1400" Value="{Binding EditorColumnWidth}" TickFrequency="20" AutomationProperties.Name="{loc:Tr Settings_Editor_ColumnWidth_Label}" />
+
+              <StackPanel Spacing="8" Margin="0,4,0,0">
+                <TextBlock Text="{loc:Tr Settings_Editor_ColumnPosition_Label}" FontSize="13" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <RadioButton Classes="segment" GroupName="ColumnPosition" Content="{loc:Tr Settings_Editor_ColumnPosition_Centered, Converter={StaticResource UpperCaseConverter}}"
+                               IsChecked="{Binding !IsColumnLeftAligned}" />
+                  <RadioButton Classes="segment" GroupName="ColumnPosition" Content="{loc:Tr Settings_Editor_ColumnPosition_Left, Converter={StaticResource UpperCaseConverter}}"
+                               IsChecked="{Binding IsColumnLeftAligned}" />
+                </StackPanel>
+              </StackPanel>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Editor_WordWrap_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Editor_WordWrap_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorWordWrap}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_WordWrap_Label}" />
+              </Grid>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Editor_ShowScrollbar_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Editor_ShowScrollbar_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorShowScrollbar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_ShowScrollbar_Label}" />
+              </Grid>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Editor_LineNumbers_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Editor_LineNumbers_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorLineNumbers}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_LineNumbers_Label}" />
+              </Grid>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Editor_SidePanel_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Editor_SidePanel_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorSidePanelVisible}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_SidePanel_Label}" />
+              </Grid>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Editor_TabSize_Label}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding EditorTabSizeLabel}"
+                           Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <Slider Minimum="2" Maximum="8" Value="{Binding EditorTabSize}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Editor_TabSize_Label}" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ContentSaveOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Editor_Autosave_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                         Text="{loc:Tr Settings_Editor_Autosave_Description}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- ===================== Notificaciones ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Notifications}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_Notifications_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Notifications_Description}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="BellRingOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Notifications_Panels_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Bell_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Bell_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding NotificationsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Bell_Label}" />
+              </Grid>
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Notifications_RemindersTray_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Notifications_RemindersTray_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding RemindersPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_RemindersTray_Label}" />
+              </Grid>
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Toast_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Toast_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowDesktopToasts}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Toast_Label}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="BellOffOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Notifications_MuteByCategory_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Notifications_MuteByCategory_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Info_Label}" FontSize="13" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteInfoNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Info_Label}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Success_Label}" FontSize="13" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteSuccessNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Success_Label}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Warning_Label}" FontSize="13" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteWarningNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Warning_Label}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Error_Label}" FontSize="13" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteErrorNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Error_Label}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="CalendarClockOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Notifications_Reminders_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Label}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding ReminderSoonWindowDaysLabel}"
+                           Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <TextBlock Text="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Description}"
+                         Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              <Slider Minimum="1" Maximum="30" Value="{Binding ReminderSoonWindowDays}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Label}" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="MoonWaningCrescent" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Notifications_DndSound_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Dnd_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Dnd_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding DoNotDisturbEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Dnd_Label}" />
+              </Grid>
+
+              <StackPanel Orientation="Horizontal" Spacing="12" IsEnabled="{Binding DoNotDisturbEnabled}">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Dnd_FromLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBox Classes="search" Text="{Binding DoNotDisturbStart}" Width="90" PlaceholderText="22:00" AutomationProperties.Name="{loc:Tr Settings_Notifications_Dnd_FromLabel}" />
+                </StackPanel>
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Dnd_ToLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBox Classes="search" Text="{Binding DoNotDisturbEnd}" Width="90" PlaceholderText="08:00" AutomationProperties.Name="{loc:Tr Settings_Notifications_Dnd_ToLabel}" />
+                </StackPanel>
+              </StackPanel>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Sound_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Sound_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding NotificationSoundEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Sound_Label}" />
+              </Grid>
+
+              <StackPanel Spacing="8" IsEnabled="{Binding NotificationSoundEnabled}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Sound_Volume_Label}" FontSize="13" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding NotificationSoundVolumeLabel}"
+                             Classes="faint" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Text="{loc:Tr Settings_Notifications_Sound_Volume_Description}"
+                           Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                  <Slider Grid.Column="0" Minimum="0" Maximum="100" TickFrequency="5"
+                          Value="{Binding NotificationSoundVolume}" VerticalAlignment="Center" AutomationProperties.Name="{loc:Tr Settings_Notifications_Sound_Volume_Label}" />
+                  <Button Grid.Column="1" Classes="ghost" Margin="10,0,0,0"
+                          Content="{loc:Tr Settings_Notifications_Sound_TestButton, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding TestNotificationSoundCommand}" />
+                </Grid>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- ===================== Calendario ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Calendar}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_Calendar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Calendar_Description}"
+                       Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ViewGridOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Calendar_DefaultView_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Calendar_DefaultView_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <RadioButton Classes="segment" GroupName="CalendarDefaultView" Content="{loc:Tr Settings_Calendar_View_Month, Converter={StaticResource UpperCaseConverter}}"
+                             IsChecked="{Binding CalendarDefaultView, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Month, Mode=OneWay}"
+                             Command="{Binding SetCalendarDefaultViewCommand}" CommandParameter="{x:Static vm:CalendarViewMode.Month}" />
+                <RadioButton Classes="segment" GroupName="CalendarDefaultView" Content="{loc:Tr Settings_Calendar_View_Week, Converter={StaticResource UpperCaseConverter}}"
+                             IsChecked="{Binding CalendarDefaultView, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Week, Mode=OneWay}"
+                             Command="{Binding SetCalendarDefaultViewCommand}" CommandParameter="{x:Static vm:CalendarViewMode.Week}" />
+                <RadioButton Classes="segment" GroupName="CalendarDefaultView" Content="{loc:Tr Settings_Calendar_View_Day, Converter={StaticResource UpperCaseConverter}}"
+                             IsChecked="{Binding CalendarDefaultView, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Day, Mode=OneWay}"
+                             Command="{Binding SetCalendarDefaultViewCommand}" CommandParameter="{x:Static vm:CalendarViewMode.Day}" />
+                <RadioButton Classes="segment" GroupName="CalendarDefaultView" Content="{loc:Tr Settings_Calendar_View_Agenda, Converter={StaticResource UpperCaseConverter}}"
+                             IsChecked="{Binding CalendarDefaultView, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Agenda, Mode=OneWay}"
+                             Command="{Binding SetCalendarDefaultViewCommand}" CommandParameter="{x:Static vm:CalendarViewMode.Agenda}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="CalendarWeekOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Calendar_Week_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Calendar_WeekStartsMonday_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Calendar_WeekStartsMonday_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarWeekStartsOnMonday}" OnContent="" OffContent="" />
+              </Grid>
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Calendar_ShowWeekends_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Calendar_ShowWeekends_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarShowWeekends}" OnContent="" OffContent="" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ClockTimeEightOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Calendar_WorkingHours_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Calendar_WorkingHours_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Calendar_WorkingHours_StartLabel}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding CalendarWorkingHoursStart, StringFormat={}{0:00}:00}"
+                           Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <Slider Minimum="0" Maximum="23" Value="{Binding CalendarWorkingHoursStart}" TickFrequency="1" />
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Calendar_WorkingHours_EndLabel}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding CalendarWorkingHoursEnd, StringFormat={}{0:00}:00}"
+                           Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <Slider Minimum="1" Maximum="24" Value="{Binding CalendarWorkingHoursEnd}" TickFrequency="1" />
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Calendar_TimeFormat24h_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Calendar_TimeFormat24h_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarTimeFormat24h}" OnContent="" OffContent="" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="PageLayoutSidebarLeft" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Calendar_PanelSidebar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Calendar_ShowInNav_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Calendar_ShowInNav_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarPanelEnabled}" OnContent="" OffContent="" />
+              </Grid>
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Calendar_SidebarScrollbar_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Calendar_SidebarScrollbar_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarShowSidebarScrollbar}" OnContent="" OffContent="" />
+              </Grid>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- ===================== Cuenta ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Account}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_Account_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Account_Description}"
+                       Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <!-- Sin configuración de Supabase en este equipo (falta local.properties) -->
+          <Border Classes="card" Padding="22" IsVisible="{Binding !IsSupabaseConfigured}">
+            <StackPanel Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="AlertCircleOutline" Width="15" Height="15" Foreground="{DynamicResource DangerBrush}" />
+                <TextBlock Text="{loc:Tr Settings_Account_SupabaseNotConfigured_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource DangerBrush}" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Account_SupabaseNotConfigured_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <!-- Vinculado -->
+          <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ShieldCheckOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Account_LinkPolar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Account_LinkedAccount_Label}" FontSize="13" />
+                  <TextBlock Text="{Binding PolarLinkedEmail}" Classes="muted" FontSize="11.5" />
+                </StackPanel>
+                <Border Grid.Column="1" Background="{DynamicResource Ink10}" Padding="8,4" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Settings_Account_LinkedBadge}" Classes="faint" FontSize="10" LetterSpacing="1" />
+                </Border>
+              </Grid>
+              <TextBlock Text="{loc:Tr Settings_Account_LinkedDescription}"
+                         Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              <Button Classes="pill" Command="{Binding UnlinkPolarCommand}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="LinkOff" Width="14" Height="14" />
+                  <TextBlock Text="{loc:Tr Settings_Account_UnlinkButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <!-- No vinculado (formulario) -->
+          <Border Classes="card" Padding="22" IsVisible="{Binding !IsPolarLinked}">
+            <StackPanel Spacing="14" IsEnabled="{Binding IsSupabaseConfigured}">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="LinkVariant" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Account_LinkPolar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Account_LinkForm_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Tr Settings_Account_EmailLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <TextBox Classes="search" Text="{Binding PolarEmailInput}" PlaceholderText="{loc:Tr Settings_Account_EmailPlaceholder}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Tr Settings_Account_PasswordLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <TextBox Classes="search" Text="{Binding PolarPasswordInput}" PasswordChar="●" />
+              </StackPanel>
+
+              <TextBlock Text="{Binding PolarLinkError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                         TextWrapping="Wrap" IsVisible="{Binding PolarLinkError, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+
+              <Button Classes="pill-primary" Command="{Binding LinkPolarCommand}" HorizontalAlignment="Left"
+                      IsEnabled="{Binding !IsLinkingPolar}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" />
+                  <TextBlock Text="{Binding LinkButtonLabel, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="TagMultipleOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Account_TaskManagement_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Account_ShowTags_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Account_ShowTags_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PolarShowTaskTags}" OnContent="" OffContent="" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- ===================== Sincronización (docs/ajustes-docs/03-cuenta-y-sincronizacion-polar.md) ===================== -->
+          <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="SyncCircle" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Account_Sync_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Account_LastSynced_Label}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding LastSyncedLabel}" Classes="faint" VerticalAlignment="Center" />
+              </Grid>
+              <TextBlock Text="{Binding SyncErrorLabel}" Foreground="{DynamicResource DangerBrush}"
+                         FontSize="11.5" TextWrapping="Wrap"
+                         IsVisible="{Binding SyncErrorLabel, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+              <TextBlock Text="{Binding NextRetryLabel}" Classes="faint" FontSize="11.5"
+                         IsVisible="{Binding NextRetryLabel, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+              <TextBlock Text="{loc:Tr Polar_Sync_AlreadyRunningNotice}" Classes="faint" FontSize="11.5"
+                         IsVisible="{Binding LastSyncNowWasSkipped}" />
+              <Button Classes="pill" Command="{Binding SyncNowCommand}" HorizontalAlignment="Left"
+                      IsEnabled="{Binding !IsSyncingNow}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="SyncCircle" Width="14" Height="14" Classes.spin="{Binding IsSyncingNow}" />
+                  <TextBlock Text="{Binding SyncNowButtonLabel, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
+            <StackPanel Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="InformationCircleOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Account_Management_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                         Text="{loc:Tr Settings_Account_Management_Description}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- ===================== Skills ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Skills}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_Skills_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Skills_Description}"
+                       Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Skills_Section_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Skills_ShowSkills_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Skills_ShowSkills_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkillsPanelEnabled}" OnContent="" OffContent="" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Button Classes="card" Padding="18,16" Command="{Binding OpenCommunitySkillsCommand}"
+                  ToolTip.Tip="{loc:Tr Settings_Skills_CommunityLink_Tooltip}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="CompassOutline" Width="20" Height="20"
+                                Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,14,0" />
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Tr Settings_Skills_CommunityLink_Title, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" FontSize="13" />
+                <TextBlock Text="{loc:Tr Settings_Skills_CommunityLink_Description}"
+                           Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="{Binding CommunitySkillsUrlDisplay}" Classes="faint" FontSize="11" VerticalAlignment="Center" />
+                <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
+        </StackPanel>
+
+        <!-- ===================== Atajos de teclado (solo lectura, docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §1) ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Shortcuts}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_Shortcuts_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Shortcuts_Description}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="CompassOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Navigation_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="9">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+1" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToDashboard}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+2" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToNotes}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+3" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToKanban}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+4" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToCalendar}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Ctrl+5" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToFiles}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Ctrl+6" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToSessions}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Ctrl+7" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToTrash}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Ctrl+8" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToSkills}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="Ctrl+," FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="8" Grid.Column="1" Text="{loc:Tr Settings_Navigation_OpenSettings}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="9" Grid.Column="0" Text="{loc:Tr Settings_Navigation_GlobalSearchKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="9" Grid.Column="1" Text="{loc:Tr Settings_Navigation_GlobalSearch}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="10" Grid.Column="0" Text="{loc:Tr Settings_Navigation_QuickNoteKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="10" Grid.Column="1" Text="{loc:Tr Settings_Navigation_QuickNote}" Classes="muted" FontSize="12" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="MagnifyPlusOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_ViewZoom_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="9">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl++ / Ctrl+-" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_ViewZoom_IncreaseDecrease}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+0" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_ViewZoom_Reset}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr Settings_ViewZoom_WheelKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_ViewZoom_IncreaseDecrease}" Classes="muted" FontSize="12" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="PencilOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_EditDocs_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="9">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+B" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_Bold}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+I" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_Italic}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+K" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_InsertLink}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+F" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_SearchInNote}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Ctrl+W" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_CloseTab}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="{loc:Tr Settings_EditDocs_SwitchTabKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_NextPrevTab}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="{loc:Tr Settings_EditDocs_PageTabKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_NextPrevTab}" Classes="muted" FontSize="12" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ViewColumnOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_KanbanSection_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="9">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+F" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_SearchBoard}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="N" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_NewCard}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr Settings_KanbanSection_DeleteKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_DeleteCard}" Classes="muted" FontSize="12" />
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Esc" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_CloseDialog}" Classes="muted" FontSize="12" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="FileImageOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_PdfViewer_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto" RowSpacing="9">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr Settings_PdfViewer_NavKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12" FontWeight="Bold" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_PdfViewer_PrevNextPage}" Classes="muted" FontSize="12" />
+              </Grid>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- ===================== Acerca de ===================== -->
+        <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=About}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Settings_About_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_About_Description}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="16">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Border Width="40" Height="40" CornerRadius="0" Background="{DynamicResource InkBrush}">
+                  <TextBlock Text="E" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource InkOnBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="ENKI" FontSize="16" FontWeight="Bold" LetterSpacing="1" />
+                  <TextBlock Text="{Binding AppVersionLabel}" Classes="faint" />
+                </StackPanel>
+              </StackPanel>
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
+              <TextBlock Text="{loc:Tr Settings_About_Tagline}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="BookOpenPageVariantOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_About_WhatIsEnki_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                         Text="{loc:Tr Settings_About_WhatIsEnki_Description}" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ViewGridOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_About_Modules_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="9">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Dashboard_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Dashboard_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Notes_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Notes_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Sessions_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Sessions_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Kanban_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Kanban_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Polar_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Polar_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Calendar_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Calendar_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Reminders_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Reminders_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Trash_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Trash_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Settings_Name}" FontSize="12.5" FontWeight="Bold" />
+                <TextBlock Grid.Row="8" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Settings_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="CodeTags" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_About_Technology_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                         Text="{loc:Tr Settings_About_Technology_Description}" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ShieldLockOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_About_Privacy_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                         Text="{loc:Tr Settings_About_Privacy_Description}" />
+              <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
+                      BorderThickness="1" Padding="12,10">
+                <TextBlock Text="{Binding VaultPath}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
+                           TextTrimming="CharacterEllipsis" />
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="TranslateVariant" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_About_Language_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                         Text="{loc:Tr Settings_About_Language_Description}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ===================== Diálogo: restablecer ajustes por defecto ===================== -->
+    <Border Grid.ColumnSpan="2" Classes="modal-overlay"
+            IsVisible="{Binding PendingResetSettings}"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Settings_DangerZone_ResetDialog_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <TextBlock Text="{loc:Tr Settings_DangerZone_ResetDialog_Message}"
+                     FontSize="14" TextWrapping="Wrap" MaxWidth="320" />
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelResetSettingsCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmResetSettingsCommand}">
+              <TextBlock Text="{loc:Tr Settings_General_DangerZone_ResetSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
+</UserControl>

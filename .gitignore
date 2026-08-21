@@ -1,0 +1,41 @@
+# Build artifacts
+bin/
+obj/
+out/
+publish/
+
+# .NET
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.dbmdl
+*.pdb
+
+# Local secrets / machine-specific config (contains Supabase keys, etc.)
+local.properties
+
+# JetBrains Rider / IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml

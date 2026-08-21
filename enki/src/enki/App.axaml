@@ -1,0 +1,35 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:enki.Converters"
+             x:Class="enki.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+        <StyleInclude Source="avares://Material.Icons.Avalonia/MaterialIconStyles.axaml" />
+        <StyleInclude Source="avares://enki/styles/Styles.axaml" />
+    </Application.Styles>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://enki/styles/Colors.axaml" />
+                <ResourceInclude Source="avares://enki/styles/ControlThemes.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <conv:UpperCaseConverter x:Key="UpperCaseConverter" />
+            <conv:UpperCaseSpacedBulletConverter x:Key="UpperCaseSpacedBulletConverter" />
+            <conv:EnumEqualsConverter x:Key="EnumEqualsConverter" />
+            <conv:DepthIndentConverter x:Key="DepthIndentConverter" />
+            <conv:ExpandChevronConverter x:Key="ExpandChevronConverter" />
+            <conv:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
+            <conv:OutlineIndentConverter x:Key="OutlineIndentConverter" />
+            <conv:SessionIconConverter x:Key="SessionIconConverter" />
+            <conv:HexColorToBrushConverter x:Key="HexColorToBrushConverter" />
+            <conv:TopOffsetToMarginConverter x:Key="TopOffsetToMarginConverter" />
+            <conv:DoubleToTranslateYConverter x:Key="DoubleToTranslateYConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+
+</Application>

@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="enki.Views.VaultSetupView"
+             x:DataType="vm:VaultSetupViewModel"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <!-- No sidebar brand header exists on this screen (see MainWindow's TitleBar_PointerPressed) to drag
+       the window from, so the whole background here doubles as the drag surface while the custom
+       title bar setting is on. -->
+  <Grid Background="Transparent" PointerPressed="Background_PointerPressed">
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+    <StackPanel Spacing="28" MaxWidth="420">
+
+      <StackPanel Spacing="10" HorizontalAlignment="Center">
+        <Border Width="44" Height="44" Background="{DynamicResource InkBrush}" HorizontalAlignment="Center">
+          <TextBlock Text="E" FontSize="21" FontWeight="Bold" Foreground="{DynamicResource InkOnBrush}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="{loc:Tr VaultSetup_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" HorizontalAlignment="Center" TextAlignment="Center" />
+        <TextBlock Text="{loc:Tr VaultSetup_Subtitle}"
+                   Classes="page-subtitle" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <TextBlock Text="{Binding InfoMessage}" Classes="page-subtitle" FontWeight="Bold"
+                 HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                 IsVisible="{Binding InfoMessage, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+
+      <StackPanel Spacing="12">
+        <Button Classes="pill-primary" Command="{Binding CreateNewVaultCommand}" HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="FolderPlusOutline" Width="16" Height="16" />
+            <TextBlock Text="{loc:Tr VaultSetup_CreateNewButton, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+
+        <Button Classes="pill" Command="{Binding OpenExistingVaultCommand}" HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" />
+            <TextBlock Text="{loc:Tr VaultSetup_OpenExistingButton, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+
+      <TextBlock Text="{Binding ErrorMessage}" Classes="faint" Foreground="{DynamicResource DangerBrush}"
+                 HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                 IsVisible="{Binding ErrorMessage, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+
+    </StackPanel>
+  </Grid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,250 @@
+using System;
+using System.Collections.Generic;
+
+namespace enki.Models;
+
+public sealed class AppSettings
+{
+    public string? VaultPath { get; set; }
+    public bool SidebarExpanded { get; set; } = true;
+
+    /// <summary>BCP-47 code of the UI language the user picked ("es-ES", "en-US", "en-GB", "de-DE",
+    /// "fr-FR", "es-419") — see docs/agent-docs/internacionalizacion-i18n.md §2.1. Null/empty means "not
+    /// chosen yet", which is the signal the first-run flow uses to show the language picker before anything
+    /// else (§3.1); once set it is always applied at startup (see <c>App.axaml.cs</c>) and can be changed
+    /// later from Ajustes › General.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>Which nav page (<c>ViewModels.AppPage</c> member name) the app lands on right after a
+    /// vault finishes loading — Ajustes › General. Stored as a plain string for the same reason as
+    /// <see cref="Theme"/>/<see cref="EditorColumnPosition"/>. If the stored page is hidden by another
+    /// setting (e.g. "Calendar" while <see cref="CalendarPanelEnabled"/> is off) or isn't one of the
+    /// selectable start pages, <c>MainWindowViewModel</c> falls back to "Dashboard".</summary>
+    public string StartupPage { get; set; } = "Dashboard";
+
+    public string Theme { get; set; } = "Dark";
+    public double EditorFontSize { get; set; } = 14;
+    public double EditorColumnWidth { get; set; } = 760;
+    public string EditorColumnPosition { get; set; } = "Center";
+    public bool EditorShowScrollbar { get; set; } = true;
+
+    /// <summary>When true, Enki draws its own title bar (drag region + minimize/maximize/close) instead
+    /// of the OS window decorations.</summary>
+    public bool UseCustomTitleBar { get; set; } = true;
+
+    /// <summary>Shows la barra de desplazamiento vertical del Dashboard — Ajustes › General. Por
+    /// defecto activada (que es como se comportaba antes de existir el ajuste); apagarla solo oculta el
+    /// raíl y el pulgar, el scroll con rueda/teclado sigue funcionando igual.</summary>
+    public bool DashboardShowScrollbar { get; set; } = true;
+
+    /// <summary>System font family name for the app UI. Null/empty means the bundled Space Grotesk.</summary>
+    public string? InterfaceFontFamily { get; set; }
+
+    /// <summary>System font family name for the markdown editor (edit + preview), independent of <see cref="InterfaceFontFamily"/>. Null/empty means the bundled Space Grotesk.</summary>
+    public string? EditorFontFamily { get; set; }
+
+    // ===================== Notificaciones y recordatorios (Ajustes › Notificaciones) =====================
+
+    /// <summary>Shows/hides the bell (system event log) button in the title bar entirely.</summary>
+    public bool NotificationsPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the inbox (due-date reminders) button in the title bar entirely.</summary>
+    public bool RemindersPanelEnabled { get; set; } = true;
+
+    /// <summary>Whether a new notification push also raises an OS-style toast (see
+    /// <c>enki.Services.ToastService</c>), on top of the bell badge.</summary>
+    public bool ShowDesktopToasts { get; set; } = true;
+
+    public bool MuteInfoNotifications { get; set; }
+    public bool MuteSuccessNotifications { get; set; }
+    public bool MuteWarningNotifications { get; set; }
+    public bool MuteErrorNotifications { get; set; }
+
+    /// <summary>How many days ahead a kanban card's due date counts as "próxima a vencer" in the
+    /// reminder inbox — see <c>ReminderInboxViewModel.Reload</c>.</summary>
+    public int ReminderSoonWindowDays { get; set; } = 7;
+
+    // ===================== Vínculo con Polar (Ajustes › Cuenta) =====================
+    // See docs/supabase-sync/ — enabling this unlocks the "Gestión de tareas" view in Kanban and turns
+    // on background sync (task lists/tasks/subtasks/reminders) against the shared Supabase project.
+    // Tokens are persisted here like the rest of Enki's local state (%AppData%/Enki/settings.json) —
+    // this is a single-user desktop app with no other secrets-at-rest story, consistent with how
+    // local.properties already keeps the Supabase anon key in plain text next to the executable.
+
+    public bool PolarLinked { get; set; }
+    public string? PolarUserId { get; set; }
+    public string? PolarEmail { get; set; }
+    public string? PolarAccessToken { get; set; }
+    public string? PolarRefreshToken { get; set; }
+    public long PolarAccessTokenExpiresAtUtcMs { get; set; }
+
+    /// <summary>Sync cursor (epoch millis) — see <c>PolarSyncService</c>. A single global cursor is
+    /// enough per docs/supabase-sync/04-estrategia-sincronizacion.md ("un global es suficiente si se usa
+    /// el mínimo updated_at de las 4 consultas").</summary>
+    public long PolarLastSyncAtUtcMs { get; set; }
+
+    /// <summary>Shows/hides the tag-chip filter row in Kanban → "Gestión de tareas" (Ajustes › Cuenta).
+    /// Defaults to hidden — the row starts collapsed behind the setting until the user opts in.</summary>
+    public bool PolarShowTaskTags { get; set; }
+
+    // ===================== Calendario (docs/calendar-feature/07-filtros-busqueda-y-capas.md §1/§3) =====================
+    // Fase 4: layer visibility persists as the set of *hidden* keys rather than the active ones, so a
+    // newly created Polar list (or the fixed "kanban"/"reminder" layers) is active by default without any
+    // migration step — matches "estado por defecto: todas las capas activas" without needing to enumerate
+    // every possible key up front.
+
+    /// <summary>Layer keys ("kanban", "reminder", or a <c>PolarTaskList.Id</c>) the user has switched off —
+    /// see <c>CalendarViewModel.Layers</c>.</summary>
+    public List<string> CalendarHiddenLayerKeys { get; set; } = [];
+
+    /// <summary>"Ocultar completadas" filter (doc 07 §3) — defaults to off (completed items stay visible,
+    /// dimmed) because seeing "hoy completé esto" is more useful in a calendar than hiding it outright.</summary>
+    public bool CalendarHideCompletedItems { get; set; }
+
+    /// <summary>"Ocultar ocurrencias fantasma" (doc 07 §3, shared with doc 09) — defaults to off so the
+    /// recurrence preview that's the whole point of Fase 4's ghost occurrences is visible out of the box.</summary>
+    public bool CalendarHideGhostOccurrences { get; set; }
+
+    /// <summary>Shows the vertical scrollbar on the Calendario sidebar (mini-calendario, filtros, sin
+    /// programar) — Ajustes › Calendario. Defaults to off (hidden), matching how it's hidden by default
+    /// everywhere else in the app. Scrolling still works either way, only the track/thumb are affected.</summary>
+    public bool CalendarShowSidebarScrollbar { get; set; }
+
+    // ===================== Calendario (docs/calendar-feature/09-configuracion-y-ajustes.md §1, Fase 5) =====================
+
+    /// <summary>Which view (<c>ViewModels.CalendarViewMode</c> member name) the Calendario page opens on —
+    /// stored as a string rather than the enum itself so <c>Models</c> never has to reference
+    /// <c>ViewModels</c>, same reasoning as <see cref="Theme"/>/<see cref="EditorColumnPosition"/> already
+    /// being plain strings instead of enums.</summary>
+    public string CalendarDefaultView { get; set; } = "Month";
+
+    /// <summary>Whether the week starts on Monday (Spanish/European convention, the default) or Sunday —
+    /// affects the Mes/Semana grids and the mini-calendario.</summary>
+    public bool CalendarWeekStartsOnMonday { get; set; } = true;
+
+    /// <summary>Shows/hides Saturday/Sunday in the Mes/Semana grids, for whoever only plans working days.</summary>
+    public bool CalendarShowWeekends { get; set; } = true;
+
+    /// <summary>Working-hours band (0–23) highlighted in the Semana/Día hour grid and used as the initial
+    /// scroll position on those views.</summary>
+    public int CalendarWorkingHoursStart { get; set; } = 9;
+
+    public int CalendarWorkingHoursEnd { get; set; } = 18;
+
+    /// <summary>24h vs. 12h AM/PM time labels in the hour grid/chips.</summary>
+    public bool CalendarTimeFormat24h { get; set; } = true;
+
+    /// <summary>Shows/hides the "Calendario" entry in the main nav entirely — same spirit as
+    /// <see cref="RemindersPanelEnabled"/>/<see cref="NotificationsPanelEnabled"/>, for whoever prefers not
+    /// to see it.</summary>
+    public bool CalendarPanelEnabled { get; set; } = true;
+
+    // ===================== IA Skills (docs/ia-skills/especificacion-desarrollo.md) =====================
+
+    /// <summary>Shows/hides the "IA SKILLS" entry in the main nav and settings section.
+    /// Disabled by default because it is intended for advanced users.</summary>
+    public bool SkillsPanelEnabled { get; set; }
+
+    // ===================== Zona de peligro (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md) =====================
+
+    /// <summary>Whether the four "RequestDelete*" confirmation dialogs (Kanban card, calendar item, Polar
+    /// task, skill) show up before deleting — Ajustes › General. Defaults to true (current behavior).
+    /// Permanent deletion from the trash always confirms regardless of this setting, since that step is
+    /// irreversible.</summary>
+    public bool ConfirmBeforeDelete { get; set; } = true;
+
+    // ===================== Editor (docs/ajustes-docs/04-editor-y-notificaciones.md §1) =====================
+
+    /// <summary>Number of spaces a Tab press inserts in the note editor — Ajustes › Editor.</summary>
+    public int EditorTabSize { get; set; } = 4;
+
+    /// <summary>Shows line numbers in the note editor — Ajustes › Editor.</summary>
+    public bool EditorLineNumbers { get; set; }
+
+    /// <summary>Enables word wrap in the note editor — Ajustes › Editor.</summary>
+    public bool EditorWordWrap { get; set; } = true;
+
+    /// <summary>Whether the editor's side panel (outline, backlinks, stats) is visible.</summary>
+    public bool EditorSidePanelVisible { get; set; } = true;
+
+    /// <summary>Which tab is active in the editor's side panel: "Outline", "Backlinks" or "Stats".</summary>
+    public string EditorSidePanelTab { get; set; } = "Outline";
+
+    /// <summary>Whether the formatting toolbar (all groups) is shown at all, independent of which
+    /// individual groups below are expanded/collapsed.</summary>
+    public bool EditorToolbarVisible { get; set; } = true;
+
+    // Formatting-toolbar group visibility (Fase 4 §"Editor de notas", gap 17) — each group (text style,
+    // headings, lists, insert, code) can be collapsed independently via its own toggle chevron, and the
+    // choice is remembered across notes/tabs and app restarts, same persistence shape as
+    // EditorSidePanelVisible above.
+    public bool EditorToolbarTextStyleExpanded { get; set; } = true;
+    public bool EditorToolbarHeadingsExpanded { get; set; } = true;
+    public bool EditorToolbarListsExpanded { get; set; } = true;
+    public bool EditorToolbarInsertExpanded { get; set; } = true;
+    public bool EditorToolbarCodeExpanded { get; set; } = true;
+
+    // ===================== Notificaciones — horario "no molestar" y sonido =====================
+    // docs/ajustes-docs/04-editor-y-notificaciones.md §2 — ventana horaria en la que un evento nuevo se
+    // sigue registrando en la campana pero no dispara el toast del sistema, y sonido opcional al llegar.
+
+    public bool DoNotDisturbEnabled { get; set; }
+
+    /// <summary>"HH:mm" — mismo criterio que <see cref="Theme"/> de guardar como string en vez de un tipo
+    /// más rico, para no acoplar <c>Models</c> a nada de formato de UI.</summary>
+    public string DoNotDisturbStart { get; set; } = "22:00";
+
+    public string DoNotDisturbEnd { get; set; } = "08:00";
+
+    public bool NotificationSoundEnabled { get; set; }
+
+    /// <summary>Volumen del sonido de notificación, 0–100. En 0 no suena nada aunque
+    /// <see cref="NotificationSoundEnabled"/> esté activo — equivale a silenciarlo sin tocar el
+    /// interruptor. Ver <c>NotificationSoundPlayer.Play</c>: los backends que reproducen el asset
+    /// empaquetado (afplay/paplay) sí escalan el volumen real; el pitido de <c>Console.Beep</c> y el
+    /// sonido nativo de Windows (winmm) no exponen control de volumen en su propia API, así que ahí solo
+    /// se respeta el "silencio en 0", no la escala intermedia.</summary>
+    public double NotificationSoundVolume { get; set; } = 70;
+
+    // ===================== Restaurar pestañas abiertas (docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §2) =====================
+
+    /// <summary>Rutas completas de las notas abiertas en pestañas al cerrar Enki, en el orden en que
+    /// estaban — <see cref="ViewModels.NotesViewModel"/> las reabre al arrancar. Una ruta que ya no exista
+    /// se ignora sin error.</summary>
+    public List<string> OpenNotePaths { get; set; } = [];
+
+    /// <summary>Cuál de <see cref="OpenNotePaths"/> era la pestaña activa.</summary>
+    public string? ActiveNotePath { get; set; }
+
+    /// <summary>Últimas notas abiertas o editadas, más reciente primero. Se limita a 10 entradas en
+    /// <see cref="ViewModels.NotesViewModel"/>.</summary>
+    public List<string> RecentNotePaths { get; set; } = [];
+
+    // ===================== Diagnóstico (Ajustes › General, Fase 0 de docs/analisis-proyecto/analisis-deficiencias-proyecto.md §2) =====================
+
+    /// <summary>Baja el nivel mínimo de <c>LogService</c> de <c>Warning</c> (por defecto) a <c>Debug</c>.
+    /// Apagado por defecto para no llenar el fichero de log con detalle innecesario en uso normal; se
+    /// activa desde Ajustes › General cuando hace falta diagnosticar un problema concreto.</summary>
+    public bool DebugLoggingEnabled { get; set; }
+
+    // ===================== Backup automático (docs/analisis-proyecto/roadmap.md, Fase 1) =====================
+    // Complemento al backup manual (zip, todo-o-nada) de la zona de peligro: sin esto, una edición
+    // destructiva entre dos backups manuales no tenía ninguna versión anterior a la que volver.
+
+    /// <summary>Activa el backup automático periódico — Ajustes › General, zona de peligro. Apagado por
+    /// defecto: es un ajuste nuevo y opt-in, no un cambio de comportamiento para instalaciones existentes.</summary>
+    public bool AutoBackupEnabled { get; set; }
+
+    /// <summary>Cada cuántos días se crea un backup automático nuevo, contados desde
+    /// <see cref="LastAutoBackupUtc"/>.</summary>
+    public int AutoBackupIntervalDays { get; set; } = 1;
+
+    /// <summary>Cuántos backups automáticos se conservan en <c>%AppData%/Enki/backups/</c> antes de que
+    /// <see cref="Services.VaultBackupService.RunScheduledBackupIfDue"/> empiece a borrar los más
+    /// antiguos.</summary>
+    public int AutoBackupRetentionCount { get; set; } = 5;
+
+    /// <summary>Cuándo se creó el último backup automático — null antes del primero. Persistido para que
+    /// el intervalo se respete correctamente aunque Enki se cierre y reabra varias veces al día.</summary>
+    public DateTime? LastAutoBackupUtc { get; set; }
+}

@@ -1,0 +1,1162 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- ===================== Accessibility (A11y) ===================== -->
+  <data name="A11y_Files_FileNameField" xml:space="preserve"><value>Nombre del archivo</value></data>
+  <data name="A11y_Files_FolderNameField" xml:space="preserve"><value>Nombre de la carpeta</value></data>
+  <data name="A11y_Files_FolderPanelSplitter" xml:space="preserve"><value>Redimensionar panel de carpetas</value></data>
+  <data name="A11y_Files_SessionSelector" xml:space="preserve"><value>Selector de sesión</value></data>
+  <data name="A11y_Files_ToggleFolder" xml:space="preserve"><value>Expandir o contraer carpeta</value></data>
+  <data name="A11y_Kanban_ListPanelSplitter" xml:space="preserve"><value>Redimensionar panel de listas</value></data>
+  <data name="A11y_Notes_FolderPanelSplitter" xml:space="preserve"><value>Redimensionar panel de carpetas</value></data>
+  <data name="A11y_Notes_SessionSelector" xml:space="preserve"><value>Selector de sesión</value></data>
+  <data name="A11y_Notes_ToggleFolder" xml:space="preserve"><value>Expandir o contraer carpeta</value></data>
+  <data name="A11y_Reminders_NotifyHourField" xml:space="preserve"><value>Hora de aviso</value></data>
+  <data name="A11y_Reminders_NotifyMinuteField" xml:space="preserve"><value>Minuto de aviso</value></data>
+
+  <!-- ===================== Calendar ===================== -->
+  <data name="Calendar_Agenda_CreateItemButton" xml:space="preserve"><value>Crear elemento</value></data>
+  <data name="Calendar_Agenda_EmptyMessage" xml:space="preserve"><value>No hay eventos programados</value></data>
+  <data name="Calendar_ContextMenu_CreateKanbanHere" xml:space="preserve"><value>Crear tarjeta Kanban aquí</value></data>
+  <data name="Calendar_ContextMenu_CreatePolarTaskHere" xml:space="preserve"><value>Crear tarea Polar aquí</value></data>
+  <data name="Calendar_ContextMenu_CreateReminderHere" xml:space="preserve"><value>Crear recordatorio aquí</value></data>
+  <data name="Calendar_DeleteDialog_Message" xml:space="preserve"><value>El elemento seleccionado se eliminará de forma permanente.</value></data>
+  <data name="Calendar_DeleteDialog_Title" xml:space="preserve"><value>Eliminar elemento</value></data>
+  <data name="Calendar_Header_FullDate" xml:space="preserve"><value>{0} {1} DE {2}</value></data>
+  <data name="Calendar_Header_MonthYear" xml:space="preserve"><value>{0} {1}</value></data>
+  <data name="Calendar_Header_WeekdayDay" xml:space="preserve"><value>{0} {1}</value></data>
+  <data name="Calendar_Item_Completed" xml:space="preserve"><value>Completado</value></data>
+  <data name="Calendar_Item_GhostOccurrenceNote" xml:space="preserve"><value>Movido desde {0}</value></data>
+  <data name="Calendar_Item_MarkCompleted" xml:space="preserve"><value>Marcar como completado</value></data>
+  <data name="Calendar_Item_Overdue" xml:space="preserve"><value>Atrasado</value></data>
+  <data name="Calendar_Item_ResizeTooltip" xml:space="preserve"><value>Arrastrad para cambiar el tamaño</value></data>
+  <data name="Calendar_Label_Kanban" xml:space="preserve"><value>Kanban</value></data>
+  <data name="Calendar_Label_Reminder" xml:space="preserve"><value>Recordatorio</value></data>
+  <data name="Calendar_MiniCalendar_NextMonthTooltip" xml:space="preserve"><value>Mes siguiente</value></data>
+  <data name="Calendar_MiniCalendar_PreviousMonthTooltip" xml:space="preserve"><value>Mes anterior</value></data>
+  <data name="Calendar_Month_DayPopoverHeader" xml:space="preserve"><value>{0}</value></data>
+  <data name="Calendar_Month_OverflowMore" xml:space="preserve"><value>+{0} MÁS</value></data>
+  <data name="Calendar_PageEyebrow" xml:space="preserve"><value>Calendario</value></data>
+  <data name="Calendar_PageSubtitle" xml:space="preserve"><value>Planificad vuestra agenda</value></data>
+  <data name="Calendar_PageTitle" xml:space="preserve"><value>Calendario</value></data>
+  <data name="Calendar_QuickCreate_AddTimeLabel" xml:space="preserve"><value>Añadir hora</value></data>
+  <data name="Calendar_QuickCreate_ColumnLabel" xml:space="preserve"><value>Columna</value></data>
+  <data name="Calendar_QuickCreate_DateLabel" xml:space="preserve"><value>Fecha</value></data>
+  <data name="Calendar_QuickCreate_DurationLabel" xml:space="preserve"><value>Duración</value></data>
+  <data name="Calendar_QuickCreate_DurationUnitMinutes" xml:space="preserve"><value>min</value></data>
+  <data name="Calendar_QuickCreate_Eyebrow" xml:space="preserve"><value>Creación rápida</value></data>
+  <data name="Calendar_QuickCreate_ListLabel" xml:space="preserve"><value>Lista</value></data>
+  <data name="Calendar_QuickCreate_MoreOptionsButton" xml:space="preserve"><value>Más opciones</value></data>
+  <data name="Calendar_QuickCreate_Title" xml:space="preserve"><value>Nuevo evento</value></data>
+  <data name="Calendar_QuickCreate_TitleFieldLabel" xml:space="preserve"><value>Título</value></data>
+  <data name="Calendar_QuickCreate_TitlePlaceholder" xml:space="preserve"><value>Título del evento</value></data>
+  <data name="Calendar_QuickCreate_TypeHint" xml:space="preserve"><value>Crea una tarjeta Kanban, una tarea Polar o un recordatorio nuevo. No edita los elementos existentes.</value></data>
+  <data name="Calendar_QuickCreate_TypeLabel" xml:space="preserve"><value>Tipo</value></data>
+  <data name="Calendar_Notify_ItemCreated_Title" xml:space="preserve"><value>Elemento creado</value></data>
+  <data name="Calendar_Notify_ItemCreated_Message" xml:space="preserve"><value>Se ha creado "{0}" como {1}.</value></data>
+  <data name="Calendar_Sidebar_FiltersHeader" xml:space="preserve"><value>Filtros</value></data>
+  <data name="Calendar_Sidebar_HideCompleted" xml:space="preserve"><value>Ocultar completados</value></data>
+  <data name="Calendar_Sidebar_HideGhostOccurrences" xml:space="preserve"><value>Ocultar ocurrencias fantasma</value></data>
+  <data name="Calendar_Sidebar_LayersHeader" xml:space="preserve"><value>Capas</value></data>
+  <data name="Calendar_Sidebar_PriorityHeader" xml:space="preserve"><value>Prioridad</value></data>
+  <data name="Calendar_Sidebar_SearchHeader" xml:space="preserve"><value>Búsqueda</value></data>
+  <data name="Calendar_Sidebar_SearchPlaceholder" xml:space="preserve"><value>Buscar eventos...</value></data>
+  <data name="Calendar_Sidebar_TagsHeader" xml:space="preserve"><value>Etiquetas</value></data>
+  <data name="Calendar_Sidebar_UnscheduledHeader" xml:space="preserve"><value>Sin programar</value></data>
+  <data name="Calendar_Sidebar_UnscheduledHint" xml:space="preserve"><value>Arrastrad los elementos al calendario para programarlos</value></data>
+  <data name="Calendar_Source_PolarSubtask" xml:space="preserve"><value>Subtarea de Polar</value></data>
+  <data name="Calendar_Source_PolarTask" xml:space="preserve"><value>Tarea de Polar</value></data>
+  <data name="Calendar_Toolbar_NextPeriodTooltip" xml:space="preserve"><value>Periodo siguiente</value></data>
+  <data name="Calendar_Toolbar_PreviousPeriodTooltip" xml:space="preserve"><value>Periodo anterior</value></data>
+  <data name="Calendar_Toolbar_TodayButton" xml:space="preserve"><value>Hoy</value></data>
+  <data name="Calendar_Toolbar_ToggleSidebarTooltip" xml:space="preserve"><value>Mostrar u ocultar barra lateral</value></data>
+  <data name="Calendar_ViewMode_Agenda" xml:space="preserve"><value>Agenda</value></data>
+  <data name="Calendar_ViewMode_Day" xml:space="preserve"><value>Día</value></data>
+  <data name="Calendar_ViewMode_Month" xml:space="preserve"><value>Mes</value></data>
+  <data name="Calendar_ViewMode_Week" xml:space="preserve"><value>Semana</value></data>
+  <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve"><value>Todo el día</value></data>
+
+  <!-- ===================== Common ===================== -->
+  <data name="Common_Back" xml:space="preserve"><value>Volver</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Cerrar</value></data>
+  <data name="Common_Confirm" xml:space="preserve"><value>Confirmar</value></data>
+  <data name="Common_Create" xml:space="preserve"><value>Crear</value></data>
+  <data name="Common_Delete" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="Common_Edit" xml:space="preserve"><value>Editar</value></data>
+  <data name="Common_Error_AccessDenied" xml:space="preserve"><value>No tenéis permiso para hacer eso.</value></data>
+  <data name="Common_Error_IOFailure" xml:space="preserve"><value>No se ha podido completar la operación. Comprobad que haya espacio libre en disco y que el archivo no esté en uso en otro sitio.</value></data>
+  <data name="Common_Never" xml:space="preserve"><value>Nunca</value></data>
+  <data name="Common_No" xml:space="preserve"><value>No</value></data>
+  <data name="Common_OK" xml:space="preserve"><value>Aceptar</value></data>
+  <data name="Common_RelativeTime_DaysAgo_one" xml:space="preserve"><value>hace {0} día</value></data>
+  <data name="Common_RelativeTime_DaysAgo_other" xml:space="preserve"><value>hace {0} días</value></data>
+  <data name="Common_RelativeTime_HoursAgo_one" xml:space="preserve"><value>hace {0} hora</value></data>
+  <data name="Common_RelativeTime_HoursAgo_other" xml:space="preserve"><value>hace {0} horas</value></data>
+  <data name="Common_RelativeTime_InMinutes_one" xml:space="preserve"><value>en {0} minuto</value></data>
+  <data name="Common_RelativeTime_InMinutes_other" xml:space="preserve"><value>en {0} minutos</value></data>
+  <data name="Common_RelativeTime_JustNow" xml:space="preserve"><value>ahora mismo</value></data>
+  <data name="Common_RelativeTime_MinutesAgo_one" xml:space="preserve"><value>hace {0} min</value></data>
+  <data name="Common_RelativeTime_MinutesAgo_other" xml:space="preserve"><value>hace {0} min</value></data>
+  <data name="Common_RelativeTime_Soon" xml:space="preserve"><value>en un momento</value></data>
+  <data name="Common_Save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Buscar</value></data>
+  <data name="Common_Yes" xml:space="preserve"><value>Sí</value></data>
+
+  <!-- ===================== Dashboard ===================== -->
+  <data name="Dashboard_Activity_EmptyState" xml:space="preserve"><value>Sin actividad reciente</value></data>
+  <data name="Dashboard_Activity_PolarSummary_Overdue_one" xml:space="preserve"><value>{0} vencido en Polar</value></data>
+  <data name="Dashboard_Activity_PolarSummary_Overdue_other" xml:space="preserve"><value>{0} vencidos en Polar</value></data>
+  <data name="Dashboard_Activity_PolarSummary_Pending_one" xml:space="preserve"><value>{0} pendiente</value></data>
+  <data name="Dashboard_Activity_PolarSummary_Pending_other" xml:space="preserve"><value>{0} pendientes</value></data>
+  <data name="Dashboard_Activity_Title" xml:space="preserve"><value>ACTIVIDAD</value></data>
+  <data name="Dashboard_BoardTasks_DoneColumnTitle" xml:space="preserve"><value>HECHO</value></data>
+  <data name="Dashboard_BoardTasks_DoneEmptyState" xml:space="preserve"><value>Aún nada hecho</value></data>
+  <data name="Dashboard_BoardTasks_GoToBoard" xml:space="preserve"><value>Ir al tablero</value></data>
+  <data name="Dashboard_BoardTasks_InProgressColumnTitle" xml:space="preserve"><value>EN PROGRESO</value></data>
+  <data name="Dashboard_BoardTasks_InProgressEmptyState" xml:space="preserve"><value>Nada en progreso</value></data>
+  <data name="Dashboard_BoardTasks_PendingColumnTitle" xml:space="preserve"><value>PENDIENTES</value></data>
+  <data name="Dashboard_BoardTasks_PendingEmptyState" xml:space="preserve"><value>Nada pendiente</value></data>
+  <data name="Dashboard_BoardTasks_ProgressLabel" xml:space="preserve"><value>{0}% COMPLETADO</value></data>
+  <data name="Dashboard_BoardTasks_Title" xml:space="preserve"><value>TAREAS DEL TABLERO</value></data>
+  <data name="Dashboard_Eyebrow" xml:space="preserve"><value>INICIO</value></data>
+  <data name="Dashboard_HasSubtasksLabel" xml:space="preserve"><value>Tiene subtareas</value></data>
+  <data name="Dashboard_NewNote" xml:space="preserve"><value>Nota nueva</value></data>
+  <data name="Dashboard_QuickAccess_Calendar_Subtitle" xml:space="preserve"><value>Ver vuestra agenda</value></data>
+  <data name="Dashboard_QuickAccess_Calendar_Title" xml:space="preserve"><value>Calendario</value></data>
+  <data name="Dashboard_QuickAccess_Notifications_Subtitle" xml:space="preserve"><value>Ver actividad reciente</value></data>
+  <data name="Dashboard_QuickAccess_Notifications_Title" xml:space="preserve"><value>Notificaciones</value></data>
+  <data name="Dashboard_QuickAccess_Reminders_Subtitle" xml:space="preserve"><value>Gestionad vuestros recordatorios</value></data>
+  <data name="Dashboard_QuickAccess_Reminders_Title" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Dashboard_QuickAccess_Settings_Subtitle" xml:space="preserve"><value>Configurad Enki</value></data>
+  <data name="Dashboard_QuickAccess_Settings_Title" xml:space="preserve"><value>Ajustes</value></data>
+  <data name="Dashboard_QuickAccess_Title" xml:space="preserve"><value>ACCESO RÁPIDO</value></data>
+  <data name="Dashboard_RecentNotes_CreateFirstNote" xml:space="preserve"><value>Cread vuestra primera nota</value></data>
+  <data name="Dashboard_RecentNotes_EmptyOthers" xml:space="preserve"><value>Aún no hay nada más aquí</value></data>
+  <data name="Dashboard_RecentNotes_EmptyState" xml:space="preserve"><value>Aún no hay notas</value></data>
+  <data name="Dashboard_RecentNotes_GoToNotes" xml:space="preserve"><value>Ir a notas</value></data>
+  <data name="Dashboard_RecentNotes_Title" xml:space="preserve"><value>NOTAS RECIENTES</value></data>
+  <data name="Dashboard_RecentNotes_TrashButton" xml:space="preserve"><value>Papelera</value></data>
+  <data name="Dashboard_Sessions_GoLabel" xml:space="preserve"><value>Ir a sesiones</value></data>
+  <data name="Dashboard_Sessions_GraphSummary_Links_one" xml:space="preserve"><value>{0} enlace</value></data>
+  <data name="Dashboard_Sessions_GraphSummary_Links_other" xml:space="preserve"><value>{0} enlaces</value></data>
+  <data name="Dashboard_Sessions_GraphSummary_Notes_one" xml:space="preserve"><value>{0} nota</value></data>
+  <data name="Dashboard_Sessions_GraphSummary_Notes_other" xml:space="preserve"><value>{0} notas</value></data>
+  <data name="Dashboard_Sessions_Loading" xml:space="preserve"><value>Cargando…</value></data>
+  <data name="Dashboard_Sessions_Subtitle" xml:space="preserve"><value>Grafo visual de cómo se conectan vuestras notas</value></data>
+  <data name="Dashboard_Sessions_Title" xml:space="preserve"><value>SESIONES</value></data>
+  <data name="Dashboard_Subtitle" xml:space="preserve"><value>Un resumen de vuestras notas, tareas y actividad</value></data>
+  <data name="Dashboard_Title" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Dashboard_Today_EmptyState" xml:space="preserve"><value>Nada programado para hoy</value></data>
+  <data name="Dashboard_Today_PolarChip_Overdue_one" xml:space="preserve"><value>{0} VENCIDO</value></data>
+  <data name="Dashboard_Today_PolarChip_Overdue_other" xml:space="preserve"><value>{0} VENCIDOS</value></data>
+  <data name="Dashboard_Today_PolarChip_Pending_one" xml:space="preserve"><value>{0} PENDIENTE POLAR</value></data>
+  <data name="Dashboard_Today_PolarChip_Pending_other" xml:space="preserve"><value>{0} PENDIENTES POLAR</value></data>
+  <data name="Dashboard_Today_Title" xml:space="preserve"><value>HOY</value></data>
+  <data name="Dashboard_Today_UnreadNotifChip_one" xml:space="preserve"><value>{0} NOTIFICACIÓN SIN LEER</value></data>
+  <data name="Dashboard_Today_UnreadNotifChip_other" xml:space="preserve"><value>{0} NOTIFICACIONES SIN LEER</value></data>
+  <data name="Dashboard_VaultSizeIncomplete_Message" xml:space="preserve"><value>No se han podido medir algunos archivos, así que el total mostrado puede ser menor que el tamaño real.</value></data>
+  <data name="Dashboard_VaultSizeIncomplete_Title" xml:space="preserve"><value>Tamaño del almacén incompleto</value></data>
+  <data name="Dashboard_Vault_NotesLabel" xml:space="preserve"><value>NOTAS</value></data>
+  <data name="Dashboard_Vault_SessionsLabel" xml:space="preserve"><value>SESIONES</value></data>
+  <data name="Dashboard_Vault_SizeLabel" xml:space="preserve"><value>TAMAÑO</value></data>
+  <data name="Dashboard_Vault_Title" xml:space="preserve"><value>ALMACÉN</value></data>
+
+  <!-- ===================== Editor ===================== -->
+  <data name="Editor_Backlinks_Empty" xml:space="preserve"><value>No hay enlaces entrantes</value></data>
+  <data name="Editor_Backlinks_TabLabel" xml:space="preserve"><value>Enlaces</value></data>
+  <data name="Editor_Backlinks_Tooltip" xml:space="preserve"><value>Enlaces entrantes</value></data>
+  <data name="Editor_FindReplace_MatchStatus" xml:space="preserve"><value>Coincidencia {0} de {1}</value></data>
+  <data name="Editor_FindReplace_NextTooltip" xml:space="preserve"><value>Siguiente</value></data>
+  <data name="Editor_FindReplace_NoMatches" xml:space="preserve"><value>No hay coincidencias</value></data>
+  <data name="Editor_FindReplace_PreviousTooltip" xml:space="preserve"><value>Anterior</value></data>
+  <data name="Editor_FindReplace_ReplaceAllTooltip" xml:space="preserve"><value>Reemplazar todo</value></data>
+  <data name="Editor_FindReplace_ReplacePlaceholder" xml:space="preserve"><value>Reemplazar por…</value></data>
+  <data name="Editor_FindReplace_ReplaceTooltip" xml:space="preserve"><value>Reemplazar</value></data>
+  <data name="Editor_FindReplace_SearchPlaceholder" xml:space="preserve"><value>Buscar…</value></data>
+  <data name="Editor_LinkInsert_Placeholder" xml:space="preserve"><value>[texto](url)</value></data>
+  <data name="Editor_LinkedCards_Label" xml:space="preserve"><value>Tareas vinculadas</value></data>
+  <data name="Editor_Outline_Empty" xml:space="preserve"><value>No hay encabezados</value></data>
+  <data name="Editor_Outline_TabLabel" xml:space="preserve"><value>Esquema</value></data>
+  <data name="Editor_Outline_Tooltip" xml:space="preserve"><value>Esquema</value></data>
+  <data name="Editor_SaveStatus_Saved" xml:space="preserve"><value>Guardado</value></data>
+  <data name="Editor_SaveStatus_SavedAt" xml:space="preserve"><value>Guardado a las {0}</value></data>
+  <data name="Editor_SaveStatus_Unsaved" xml:space="preserve"><value>Cambios sin guardar</value></data>
+  <data name="Editor_SlashCommand_BulletList_Label" xml:space="preserve"><value>Lista con viñetas</value></data>
+  <data name="Editor_SlashCommand_CodeBlock_Label" xml:space="preserve"><value>Bloque de código</value></data>
+  <data name="Editor_SlashCommand_FilterPlaceholder" xml:space="preserve"><value>Comando…</value></data>
+  <data name="Editor_SlashCommand_H1_Label" xml:space="preserve"><value>Encabezado 1</value></data>
+  <data name="Editor_SlashCommand_H2_Label" xml:space="preserve"><value>Encabezado 2</value></data>
+  <data name="Editor_SlashCommand_H3_Label" xml:space="preserve"><value>Encabezado 3</value></data>
+  <data name="Editor_SlashCommand_InlineCode_Label" xml:space="preserve"><value>Código en línea</value></data>
+  <data name="Editor_SlashCommand_Link_Label" xml:space="preserve"><value>Enlace</value></data>
+  <data name="Editor_SlashCommand_Quote_Label" xml:space="preserve"><value>Cita</value></data>
+  <data name="Editor_SlashCommand_Table_Label" xml:space="preserve"><value>Tabla</value></data>
+  <data name="Editor_SlashCommand_TaskList_Label" xml:space="preserve"><value>Lista de tareas</value></data>
+  <data name="Editor_SlashCommand_TodayDate_Label" xml:space="preserve"><value>Fecha de hoy</value></data>
+  <data name="Editor_Stats_CharsLabel" xml:space="preserve"><value>Caracteres</value></data>
+  <data name="Editor_Stats_CharsNoSpacesLabel" xml:space="preserve"><value>Caracteres sin espacios</value></data>
+  <data name="Editor_Stats_CreatedLabel" xml:space="preserve"><value>Creado</value></data>
+  <data name="Editor_Stats_FileSectionLabel" xml:space="preserve"><value>ARCHIVO</value></data>
+  <data name="Editor_Stats_LinesLabel" xml:space="preserve"><value>Líneas</value></data>
+  <data name="Editor_Stats_ModifiedLabel" xml:space="preserve"><value>Modificado</value></data>
+  <data name="Editor_Stats_ParagraphsLabel" xml:space="preserve"><value>Párrafos</value></data>
+  <data name="Editor_Stats_ReadingSectionLabel" xml:space="preserve"><value>LECTURA</value></data>
+  <data name="Editor_Stats_ReadingTime_Format" xml:space="preserve"><value>{0} min</value></data>
+  <data name="Editor_Stats_ReadingTime_RowLabel" xml:space="preserve"><value>Tiempo de lectura</value></data>
+  <data name="Editor_Stats_TabLabel" xml:space="preserve"><value>Estadísticas</value></data>
+  <data name="Editor_Stats_Tooltip" xml:space="preserve"><value>Estadísticas del documento</value></data>
+  <data name="Editor_Stats_WordsLabel" xml:space="preserve"><value>Palabras</value></data>
+  <data name="Editor_Tags_Placeholder" xml:space="preserve"><value>Añadir etiquetas…</value></data>
+  <data name="Editor_Title_Placeholder" xml:space="preserve"><value>Sin título</value></data>
+  <data name="Editor_Title_RenameTooltip" xml:space="preserve"><value>Renombrar</value></data>
+  <data name="Editor_Toolbar_Back_Tooltip" xml:space="preserve"><value>Volver</value></data>
+  <data name="Editor_Toolbar_Bold_Tooltip" xml:space="preserve"><value>Negrita</value></data>
+  <data name="Editor_Toolbar_BulletList_Tooltip" xml:space="preserve"><value>Lista con viñetas</value></data>
+  <data name="Editor_Toolbar_CodeBlock_Tooltip" xml:space="preserve"><value>Bloque de código</value></data>
+  <data name="Editor_Toolbar_Delete_Tooltip" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="Editor_Toolbar_H1_Tooltip" xml:space="preserve"><value>Encabezado 1</value></data>
+  <data name="Editor_Toolbar_H2_Tooltip" xml:space="preserve"><value>Encabezado 2</value></data>
+  <data name="Editor_Toolbar_H3_Tooltip" xml:space="preserve"><value>Encabezado 3</value></data>
+  <data name="Editor_Toolbar_HorizontalRule_Tooltip" xml:space="preserve"><value>Línea horizontal</value></data>
+  <data name="Editor_Toolbar_Image_Tooltip" xml:space="preserve"><value>Imagen</value></data>
+  <data name="Editor_Toolbar_InlineCode_Tooltip" xml:space="preserve"><value>Código en línea</value></data>
+  <data name="Editor_Toolbar_Italic_Tooltip" xml:space="preserve"><value>Cursiva</value></data>
+  <data name="Editor_Toolbar_Link_Tooltip" xml:space="preserve"><value>Enlace</value></data>
+  <data name="Editor_Toolbar_OrderedList_Tooltip" xml:space="preserve"><value>Lista numerada</value></data>
+  <data name="Editor_Toolbar_Quote_Tooltip" xml:space="preserve"><value>Cita</value></data>
+  <data name="Editor_Toolbar_Strikethrough_Tooltip" xml:space="preserve"><value>Tachado</value></data>
+  <data name="Editor_Toolbar_TaskList_Tooltip" xml:space="preserve"><value>Lista de tareas</value></data>
+  <data name="Editor_Toolbar_ToggleGroup_Tooltip" xml:space="preserve"><value>Mostrar/ocultar este grupo de botones</value></data>
+  <data name="Editor_Toolbar_ToggleToolbar_Tooltip" xml:space="preserve"><value>Mostrar/ocultar barra de herramientas</value></data>
+  <data name="Editor_Toolbar_ToggleSidePanel_Tooltip" xml:space="preserve"><value>Mostrar/ocultar panel lateral</value></data>
+
+  <!-- ===================== Files ===================== -->
+  <data name="Files_AllFolder" xml:space="preserve"><value>Todos los archivos</value></data>
+  <data name="Files_BackToGridTooltip" xml:space="preserve"><value>Volver a la cuadrícula</value></data>
+  <data name="Files_CountLabel_one" xml:space="preserve"><value>{0} archivo</value></data>
+  <data name="Files_CountLabel_other" xml:space="preserve"><value>{0} archivos</value></data>
+  <data name="Files_DeleteFolderTooltip" xml:space="preserve"><value>Eliminar carpeta</value></data>
+  <data name="Files_EmptyHint" xml:space="preserve"><value>Importad un archivo o arrastrad uno para empezar.</value></data>
+  <data name="Files_EmptyTitle" xml:space="preserve"><value>No hay archivos aquí</value></data>
+  <data name="Files_Eyebrow" xml:space="preserve"><value>ARCHIVOS</value></data>
+  <data name="Files_ImportButton" xml:space="preserve"><value>Importar</value></data>
+  <data name="Files_ImportFilesDialog_Title" xml:space="preserve"><value>Importar archivos</value></data>
+  <data name="Files_NewFolderButton" xml:space="preserve"><value>Nueva carpeta</value></data>
+  <data name="Files_NextPageTooltip" xml:space="preserve"><value>Página siguiente</value></data>
+  <data name="Files_NoPreviewAvailable" xml:space="preserve"><value>No hay vista previa disponible para este archivo.</value></data>
+  <data name="Files_OpenWithSystemButton" xml:space="preserve"><value>Abrir con visor del sistema</value></data>
+  <data name="Files_OpenWithSystemFallbackButton" xml:space="preserve"><value>Abrir con visor del sistema</value></data>
+  <data name="Files_OpenWithSystemMenuItem" xml:space="preserve"><value>Abrir con visor del sistema</value></data>
+  <data name="Files_OpenWithSystem_FailedMessage" xml:space="preserve"><value>No se encontró una aplicación asociada para abrir "{0}".</value></data>
+  <data name="Files_OpenWithSystem_FailedTitle" xml:space="preserve"><value>No se pudo abrir el archivo</value></data>
+  <data name="Files_PageSubtitle" xml:space="preserve"><value>Imágenes, PDF y otros archivos de vuestro almacén</value></data>
+  <data name="Files_PageTitle" xml:space="preserve"><value>Archivos</value></data>
+  <data name="Files_PdfRenderErrorMessage" xml:space="preserve"><value>No se ha podido renderizar este PDF.</value></data>
+  <data name="Files_PdfRenderingLabel" xml:space="preserve"><value>Renderizando PDF…</value></data>
+  <data name="Files_PrevPageTooltip" xml:space="preserve"><value>Página anterior</value></data>
+  <data name="Files_RenameAction" xml:space="preserve"><value>Renombrar</value></data>
+  <data name="Files_SearchPlaceholder" xml:space="preserve"><value>Buscar archivos…</value></data>
+  <data name="Files_ZoomInTooltip" xml:space="preserve"><value>Acercar</value></data>
+  <data name="Files_ZoomOutTooltip" xml:space="preserve"><value>Alejar</value></data>
+
+  <!-- ===================== Kanban ===================== -->
+  <data name="Kanban_Board_AddColumnButton" xml:space="preserve"><value>Nueva columna</value></data>
+  <data name="Kanban_Board_AddColumnGhost" xml:space="preserve"><value>AÑADIR COLUMNA</value></data>
+  <data name="Kanban_Board_Eyebrow" xml:space="preserve"><value>TABLERO LOCAL</value></data>
+  <data name="Kanban_Board_Subtitle" xml:space="preserve"><value>Organizad vuestro trabajo en columnas y moved las tarjetas hacia adelante a medida que progresan.</value></data>
+  <data name="Kanban_Board_TabKanban" xml:space="preserve"><value>KANBAN</value></data>
+  <data name="Kanban_Board_TabTaskManagement" xml:space="preserve"><value>GESTIÓN DE TAREAS</value></data>
+  <data name="Kanban_Calendar_AddTimeLabel" xml:space="preserve"><value>Añadir hora</value></data>
+  <data name="Kanban_Calendar_NextMonthTooltip" xml:space="preserve"><value>Mes siguiente</value></data>
+  <data name="Kanban_Calendar_PrevMonthTooltip" xml:space="preserve"><value>Mes anterior</value></data>
+  <data name="Kanban_Calendar_WeekdayFri" xml:space="preserve"><value>VI</value></data>
+  <data name="Kanban_Calendar_WeekdayMon" xml:space="preserve"><value>LU</value></data>
+  <data name="Kanban_Calendar_WeekdaySat" xml:space="preserve"><value>SA</value></data>
+  <data name="Kanban_Calendar_WeekdaySun" xml:space="preserve"><value>DO</value></data>
+  <data name="Kanban_Calendar_WeekdayThu" xml:space="preserve"><value>JU</value></data>
+  <data name="Kanban_Calendar_WeekdayTue" xml:space="preserve"><value>MA</value></data>
+  <data name="Kanban_Calendar_WeekdayWed" xml:space="preserve"><value>MI</value></data>
+  <data name="Kanban_CardEditor_CreateTitle" xml:space="preserve"><value>Nueva tarjeta</value></data>
+  <data name="Kanban_CardEditor_DescriptionPlaceholder" xml:space="preserve"><value>Detalle breve de la tarea (opcional)…</value></data>
+  <data name="Kanban_CardEditor_DurationToggleLabel" xml:space="preserve"><value>Duración (bloque de tiempo)</value></data>
+  <data name="Kanban_CardEditor_EditEyebrow" xml:space="preserve"><value>EDITAR TARJETA</value></data>
+  <data name="Kanban_CardEditor_EditTitle" xml:space="preserve"><value>Editar tarjeta</value></data>
+  <data name="Kanban_CardEditor_LinkNotePlaceholder" xml:space="preserve"><value>Vincular nota…</value></data>
+  <data name="Kanban_CardEditor_MinutesAbbr" xml:space="preserve"><value>MIN</value></data>
+  <data name="Kanban_CardEditor_NewEyebrow" xml:space="preserve"><value>NUEVA TARJETA</value></data>
+  <data name="Kanban_CardEditor_SelectDatePlaceholder" xml:space="preserve"><value>Seleccionar fecha</value></data>
+  <data name="Kanban_CardEditor_TitlePlaceholder" xml:space="preserve"><value>Título de la tarjeta…</value></data>
+  <data name="Kanban_Card_ChangePriorityTooltip" xml:space="preserve"><value>Cambiar prioridad</value></data>
+  <data name="Kanban_Card_DeleteTooltip" xml:space="preserve"><value>Eliminar tarjeta</value></data>
+  <data name="Kanban_Card_EditTooltip" xml:space="preserve"><value>Editar tarjeta</value></data>
+  <data name="Kanban_Column_AddCard" xml:space="preserve"><value>AÑADIR TARJETA</value></data>
+  <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve"><value>Columna base del flujo de trabajo: no se puede eliminar</value></data>
+  <data name="Kanban_Column_DefaultTitle" xml:space="preserve"><value>Nueva columna</value></data>
+  <data name="Kanban_Column_DeleteTooltip" xml:space="preserve"><value>Eliminar columna</value></data>
+  <data name="Kanban_Column_RenameTooltip" xml:space="preserve"><value>Renombrar columna</value></data>
+  <data name="Kanban_DeleteCard_Message" xml:space="preserve"><value>¿Eliminar esta tarjeta? Esta acción no se puede deshacer.</value></data>
+  <data name="Kanban_DeleteCard_Title" xml:space="preserve"><value>ELIMINAR TARJETA</value></data>
+  <data name="Kanban_DeleteColumn_Cards_one" xml:space="preserve"><value>{0} tarjeta</value></data>
+  <data name="Kanban_DeleteColumn_Cards_other" xml:space="preserve"><value>{0} tarjetas</value></data>
+  <data name="Kanban_DeleteColumn_Message" xml:space="preserve"><value>¿Eliminar esta columna? Se moverá a la papelera junto con {0}.</value></data>
+  <data name="Kanban_DeleteColumn_Title" xml:space="preserve"><value>ELIMINAR COLUMNA</value></data>
+  <data name="Kanban_DeleteList_Message" xml:space="preserve"><value>¿Eliminar esta lista? Sus tareas y subtareas también se eliminarán.</value></data>
+  <data name="Kanban_DeleteList_Title" xml:space="preserve"><value>ELIMINAR LISTA</value></data>
+  <data name="Kanban_DeleteTask_Message" xml:space="preserve"><value>¿Eliminar esta tarea? Esta acción no se puede deshacer.</value></data>
+  <data name="Kanban_DeleteTask_Title" xml:space="preserve"><value>ELIMINAR TAREA</value></data>
+  <data name="Kanban_DueDate_ClearButton" xml:space="preserve"><value>Borrar</value></data>
+  <data name="Kanban_DueDate_TodayButton" xml:space="preserve"><value>Hoy</value></data>
+  <data name="Kanban_Field_ColumnLabel" xml:space="preserve"><value>COLUMNA</value></data>
+  <data name="Kanban_Field_DescriptionLabel" xml:space="preserve"><value>DESCRIPCIÓN</value></data>
+  <data name="Kanban_Field_DueDateLabel" xml:space="preserve"><value>FECHA DE VENCIMIENTO</value></data>
+  <data name="Kanban_Field_LinkedNoteLabel" xml:space="preserve"><value>NOTA VINCULADA</value></data>
+  <data name="Kanban_Field_PriorityLabel" xml:space="preserve"><value>PRIORIDAD</value></data>
+  <data name="Kanban_Field_RecurrenceLabel" xml:space="preserve"><value>RECURRENCIA</value></data>
+  <data name="Kanban_Field_SubtasksLabel" xml:space="preserve"><value>SUBTAREAS</value></data>
+  <data name="Kanban_Field_TagsLabel" xml:space="preserve"><value>ETIQUETAS (SEPARADAS POR COMAS)</value></data>
+  <data name="Kanban_Field_TagsReadonlyLabel" xml:space="preserve"><value>ETIQUETAS</value></data>
+  <data name="Kanban_Field_TitleLabel" xml:space="preserve"><value>TÍTULO</value></data>
+  <data name="Kanban_Home_EmptyTitle" xml:space="preserve"><value>No tenéis tareas pendientes</value></data>
+  <data name="Kanban_LinkedNote_RemoveTooltip" xml:space="preserve"><value>Eliminar vínculo</value></data>
+  <data name="Kanban_LinkedNote_ViewTooltip" xml:space="preserve"><value>Ver nota vinculada</value></data>
+  <data name="Kanban_ListEditor_ChainToggleDescription" xml:space="preserve"><value>Solo la primera tarea pendiente está desbloqueada; el resto permanece bloqueado hasta su turno.</value></data>
+  <data name="Kanban_ListEditor_ChainToggleLabel" xml:space="preserve"><value>Cadena de dependencias</value></data>
+  <data name="Kanban_ListEditor_IconLabel" xml:space="preserve"><value>ICONO</value></data>
+  <data name="Kanban_ListEditor_NamePlaceholder" xml:space="preserve"><value>Nombre de la lista…</value></data>
+  <data name="Kanban_List_ChainBadge" xml:space="preserve"><value>CADENA</value></data>
+  <data name="Kanban_List_DependencyChainTooltip" xml:space="preserve"><value>Cadena de dependencias: solo la primera tarea pendiente está desbloqueada</value></data>
+  <data name="Kanban_Lists_EmptyTitle" xml:space="preserve"><value>Aún no hay listas</value></data>
+  <data name="Kanban_Lists_SelectPrompt" xml:space="preserve"><value>Cread una lista para empezar</value></data>
+  <data name="Kanban_NotePicker_NoResults" xml:space="preserve"><value>Sin resultados</value></data>
+  <data name="Kanban_NotePicker_SearchPlaceholder" xml:space="preserve"><value>Buscar notas…</value></data>
+  <data name="Kanban_NotePicker_VaultWorkspaceLabel" xml:space="preserve"><value>Almacén</value></data>
+  <data name="Kanban_Notify_ColumnDeleted_Message" xml:space="preserve"><value>'{0}' eliminada — {1} en la papelera.</value></data>
+  <data name="Kanban_Notify_ColumnDeleted_Title" xml:space="preserve"><value>Columna eliminada</value></data>
+  <data name="Kanban_Priority_High" xml:space="preserve"><value>ALTA PRIORIDAD</value></data>
+  <data name="Kanban_Priority_Low" xml:space="preserve"><value>BAJA PRIORIDAD</value></data>
+  <data name="Kanban_Priority_Medium" xml:space="preserve"><value>MEDIA PRIORIDAD</value></data>
+  <data name="Kanban_Recurrence_FirstDayMonth" xml:space="preserve"><value>DÍA 1 DEL MES</value></data>
+  <data name="Kanban_Recurrence_MonWed" xml:space="preserve"><value>LUN Y MIÉ</value></data>
+  <data name="Kanban_Recurrence_None" xml:space="preserve"><value>NINGUNA</value></data>
+  <data name="Kanban_Search_Placeholder" xml:space="preserve"><value>Buscar tarjetas…</value></data>
+  <data name="Kanban_Search_Tooltip" xml:space="preserve"><value>Buscar por título o descripción (Ctrl+F)</value></data>
+  <data name="Kanban_Seed_BoardTitle" xml:space="preserve"><value>Tablero principal</value></data>
+  <data name="Kanban_Seed_Card1_Description" xml:space="preserve"><value>Listad las columnas y campos esenciales para la primera versión.</value></data>
+  <data name="Kanban_Seed_Card1_Title" xml:space="preserve"><value>Definir alcance del tablero</value></data>
+  <data name="Kanban_Seed_Card2_Title" xml:space="preserve"><value>Boceto de tarjeta de tarea</value></data>
+  <data name="Kanban_Seed_Card3_Description" xml:space="preserve"><value>Estructura base: columnas, tarjetas, arrastrar y soltar.</value></data>
+  <data name="Kanban_Seed_Card3_Title" xml:space="preserve"><value>Esqueleto de sección Kanban</value></data>
+  <data name="Kanban_Seed_Card4_Title" xml:space="preserve"><value>Elegir el sistema de diseño</value></data>
+  <data name="Kanban_Seed_ColumnDone" xml:space="preserve"><value>Hecho</value></data>
+  <data name="Kanban_Seed_ColumnInProgress" xml:space="preserve"><value>En progreso</value></data>
+  <data name="Kanban_Seed_ColumnTodo" xml:space="preserve"><value>Por hacer</value></data>
+  <data name="Kanban_Sort_Created" xml:space="preserve"><value>CREACIÓN</value></data>
+  <data name="Kanban_Sort_DueDate" xml:space="preserve"><value>FECHA DE VENCIMIENTO</value></data>
+  <data name="Kanban_Sort_Manual" xml:space="preserve"><value>MANUAL</value></data>
+  <data name="Kanban_Sort_ManualTooltip" xml:space="preserve"><value>Orden manual (arrastrar y soltar)</value></data>
+  <data name="Kanban_Sort_Priority" xml:space="preserve"><value>PRIORIDAD</value></data>
+  <data name="Kanban_Stat_Columns" xml:space="preserve"><value>COLUMNAS</value></data>
+  <data name="Kanban_Stat_HighPriority" xml:space="preserve"><value>ALTA PRIORIDAD</value></data>
+  <data name="Kanban_Stat_Lists" xml:space="preserve"><value>LISTAS</value></data>
+  <data name="Kanban_Stat_Overdue" xml:space="preserve"><value>VENCIDAS</value></data>
+  <data name="Kanban_Stat_Pending" xml:space="preserve"><value>PENDIENTES</value></data>
+  <data name="Kanban_Stat_TotalCards" xml:space="preserve"><value>TARJETAS TOTALES</value></data>
+  <data name="Kanban_Stat_TotalTasks" xml:space="preserve"><value>TAREAS TOTALES</value></data>
+  <data name="Kanban_Subtask_AddPlaceholder" xml:space="preserve"><value>Añadir subtarea…</value></data>
+  <data name="Kanban_Subtask_AddTooltip" xml:space="preserve"><value>Añadir subtarea</value></data>
+  <data name="Kanban_Subtask_RemoveTooltip" xml:space="preserve"><value>Eliminar subtarea</value></data>
+  <data name="Kanban_Subtask_ToggleTooltip" xml:space="preserve"><value>Marcar como completada</value></data>
+  <data name="Kanban_Subtasks_EmptyLabel" xml:space="preserve"><value>Sin subtareas</value></data>
+  <data name="Kanban_TagFilter_HiddenHint" xml:space="preserve"><value>Las etiquetas están ocultas. Podéis mostrarlas de nuevo desde Ajustes → General → Gestión de tareas.</value></data>
+  <data name="Kanban_Tags_PlaceholderExample" xml:space="preserve"><value>casa, urgente…</value></data>
+  <data name="Kanban_TaskDetail_DetailsLabel" xml:space="preserve"><value>DETALLES</value></data>
+  <data name="Kanban_TaskEditor_DescriptionPlaceholder" xml:space="preserve"><value>Detalle breve (opcional)…</value></data>
+  <data name="Kanban_TaskEditor_SaveToAddSubtasksHint" xml:space="preserve"><value>Guardad la tarea para añadir subtareas.</value></data>
+  <data name="Kanban_TaskEditor_TimeEstimateLabel" xml:space="preserve"><value>ESTIMACIÓN (MINUTOS)</value></data>
+  <data name="Kanban_TaskEditor_TitlePlaceholder" xml:space="preserve"><value>Título de la tarea…</value></data>
+  <data name="Kanban_TaskList_AllDoneTooltip" xml:space="preserve"><value>Todas las tareas completadas</value></data>
+  <data name="Kanban_TaskList_DeleteTooltip" xml:space="preserve"><value>Eliminar lista</value></data>
+  <data name="Kanban_TaskList_EditTooltip" xml:space="preserve"><value>Editar lista</value></data>
+  <data name="Kanban_TaskMgmt_CompletedSectionHeader" xml:space="preserve"><value>COMPLETADAS ({0})</value></data>
+  <data name="Kanban_TaskMgmt_Eyebrow" xml:space="preserve"><value>POLAR · SUPABASE</value></data>
+  <data name="Kanban_TaskMgmt_LastSyncedLabel" xml:space="preserve"><value>ÚLTIMA SINC.: {0}</value></data>
+  <data name="Kanban_TaskMgmt_LockedHint" xml:space="preserve"><value>Vinculad vuestra cuenta de Polar en Ajustes › Cuenta para desbloquear esta vista.</value></data>
+  <data name="Kanban_TaskMgmt_NewListButton" xml:space="preserve"><value>Nueva lista</value></data>
+  <data name="Kanban_TaskMgmt_NewTaskButton" xml:space="preserve"><value>Nueva tarea</value></data>
+  <data name="Kanban_TaskMgmt_Subtitle" xml:space="preserve"><value>Listas, tareas y subtareas compartidas con Polar.</value></data>
+  <data name="Kanban_TaskMgmt_SyncErrorLabel" xml:space="preserve"><value>No se ha podido sincronizar: {0}</value></data>
+  <data name="Kanban_TaskMgmt_SyncNowTooltip" xml:space="preserve"><value>Sincronizar ahora</value></data>
+  <data name="Kanban_TaskMgmt_TabHome" xml:space="preserve"><value>INICIO</value></data>
+  <data name="Kanban_TaskMgmt_TabLists" xml:space="preserve"><value>LISTAS</value></data>
+  <data name="Kanban_TaskMgmt_Title" xml:space="preserve"><value>Gestión de tareas</value></data>
+  <data name="Kanban_TaskMgmt_UnlockedHint" xml:space="preserve"><value>Listas, tareas y subtareas sincronizadas con Polar.</value></data>
+  <data name="Kanban_Task_BlockedBadge" xml:space="preserve"><value>BLOQUEADA</value></data>
+  <data name="Kanban_Task_BlockedTooltip" xml:space="preserve"><value>Bloqueada: completad primero las tareas anteriores de la cadena</value></data>
+  <data name="Kanban_Task_DeleteTooltip" xml:space="preserve"><value>Eliminar tarea</value></data>
+  <data name="Kanban_Task_EditTooltip" xml:space="preserve"><value>Editar tarea</value></data>
+  <data name="Kanban_Task_ViewDetailTooltip" xml:space="preserve"><value>Ver detalle de la tarea</value></data>
+  <data name="Kanban_Tasks_EmptyTitle" xml:space="preserve"><value>No hay tareas en esta lista</value></data>
+  <data name="Kanban_TimeStepper_Add5Tooltip" xml:space="preserve"><value>Añadir 5 minutos</value></data>
+  <data name="Kanban_TimeStepper_AddHourTooltip" xml:space="preserve"><value>Añadir hora</value></data>
+  <data name="Kanban_TimeStepper_AddMinuteTooltip" xml:space="preserve"><value>Añadir minutos</value></data>
+  <data name="Kanban_TimeStepper_Subtract5Tooltip" xml:space="preserve"><value>Restar 5 minutos</value></data>
+  <data name="Kanban_TimeStepper_SubtractHourTooltip" xml:space="preserve"><value>Restar hora</value></data>
+  <data name="Kanban_TimeStepper_SubtractMinuteTooltip" xml:space="preserve"><value>Restar minutos</value></data>
+
+  <!-- ===================== LanguageSetup ===================== -->
+  <data name="LanguageSetup_Subtitle" xml:space="preserve"><value>Puedes cambiarlo más tarde en Ajustes › General.</value></data>
+  <data name="LanguageSetup_Title" xml:space="preserve"><value>Elige tu idioma</value></data>
+
+  <!-- ===================== Nav ===================== -->
+  <data name="Nav_Calendar" xml:space="preserve"><value>Calendario</value></data>
+  <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Nav_Documents" xml:space="preserve"><value>Notas</value></data>
+  <data name="Nav_Files" xml:space="preserve"><value>Archivos</value></data>
+  <data name="Nav_Kanban" xml:space="preserve"><value>Kanban</value></data>
+  <data name="Nav_NotificationsLabel" xml:space="preserve"><value>Notificaciones</value></data>
+  <data name="Nav_NotificationsTooltip" xml:space="preserve"><value>Notificaciones</value></data>
+  <data name="Nav_RemindersLabel" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Nav_RemindersTooltip" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Nav_Sessions" xml:space="preserve"><value>Sesiones</value></data>
+  <data name="Nav_SettingsLabel" xml:space="preserve"><value>Ajustes</value></data>
+  <data name="Nav_SettingsTooltip" xml:space="preserve"><value>Ajustes</value></data>
+  <data name="Nav_Skills" xml:space="preserve"><value>Habilidades</value></data>
+  <data name="Nav_Trash" xml:space="preserve"><value>Papelera</value></data>
+
+  <!-- ===================== Notes ===================== -->
+  <data name="Notes_AllFolderLabel" xml:space="preserve"><value>Todas las notas</value></data>
+  <data name="Notes_CloseAllTabsTooltip" xml:space="preserve"><value>Cerrar todas las pestañas</value></data>
+  <data name="Notes_CloseTabTooltip" xml:space="preserve"><value>Cerrar pestaña</value></data>
+  <data name="Notes_CountLabel_one" xml:space="preserve"><value>{0} nota</value></data>
+  <data name="Notes_CountLabel_other" xml:space="preserve"><value>{0} notas</value></data>
+  <data name="Notes_DailyNoteButton" xml:space="preserve"><value>Nota diaria</value></data>
+  <data name="Notes_DeleteFolderTooltip" xml:space="preserve"><value>Eliminar carpeta</value></data>
+  <data name="Notes_EmptyNotePreview" xml:space="preserve"><value>Sin vista previa</value></data>
+  <data name="Notes_EmptyState_CreateButton" xml:space="preserve"><value>Crear nota</value></data>
+  <data name="Notes_EmptyState_Message" xml:space="preserve"><value>Aún no hay notas</value></data>
+  <data name="Notes_Eyebrow" xml:space="preserve"><value>NOTAS</value></data>
+  <data name="Notes_FoldersEyebrow" xml:space="preserve"><value>CARPETAS</value></data>
+  <data name="Notes_ImportButton" xml:space="preserve"><value>Importar</value></data>
+  <data name="Notes_ImportFileDialog_Title" xml:space="preserve"><value>Importar notas</value></data>
+  <data name="Notes_NewFolderButton" xml:space="preserve"><value>Nueva carpeta</value></data>
+  <data name="Notes_NewNoteButton" xml:space="preserve"><value>Nueva nota</value></data>
+  <data name="Notes_NewTabTooltip" xml:space="preserve"><value>Nueva nota</value></data>
+  <data name="Notes_PageSubtitle" xml:space="preserve"><value>Organizad vuestras notas e ideas</value></data>
+  <data name="Notes_PageTitle" xml:space="preserve"><value>Notas</value></data>
+  <data name="Notes_RecentEyebrow" xml:space="preserve"><value>RECIENTES</value></data>
+  <data name="Notes_RenameFolderTooltip" xml:space="preserve"><value>Renombrar carpeta</value></data>
+  <data name="Notes_RenameMenuItem" xml:space="preserve"><value>Renombrar</value></data>
+  <data name="Notes_SearchPlaceholder" xml:space="preserve"><value>Buscar notas</value></data>
+  <data name="Notes_UnsavedTooltip" xml:space="preserve"><value>Cambios sin guardar</value></data>
+  <data name="Notes_WordCount_one" xml:space="preserve"><value>{0} palabra</value></data>
+  <data name="Notes_WordCount_other" xml:space="preserve"><value>{0} palabras</value></data>
+
+  <!-- ===================== Notification ===================== -->
+  <data name="Notification_BellTooltip" xml:space="preserve"><value>Notificaciones</value></data>
+  <data name="Notification_Empty" xml:space="preserve"><value>Sin notificaciones</value></data>
+  <data name="Notification_KanbanCorrupt_Message" xml:space="preserve"><value>El archivo kanban.json estaba corrupto, así que se ha creado un tablero nuevo vacío. Los datos anteriores siguen en el disco.</value></data>
+  <data name="Notification_KanbanCorrupt_Title" xml:space="preserve"><value>No se ha podido leer el tablero Kanban</value></data>
+  <data name="Notification_LinkedNoteMissing_Message" xml:space="preserve"><value>No se ha encontrado la nota vinculada a esta tarjeta. Puede que se haya movido, renombrado o eliminado.</value></data>
+  <data name="Notification_LinkedNoteMissing_Title" xml:space="preserve"><value>Nota vinculada no encontrada</value></data>
+  <data name="Notification_MarkAllRead" xml:space="preserve"><value>Marcar todo como leído</value></data>
+  <data name="Notification_PanelTitle" xml:space="preserve"><value>NOTIFICACIONES</value></data>
+  <data name="Notification_PolarConflictOverwritten_Items_one" xml:space="preserve"><value>Tu edición de «{0}»</value></data>
+  <data name="Notification_PolarConflictOverwritten_Items_other" xml:space="preserve"><value>{0} de tus ediciones locales</value></data>
+  <data name="Notification_PolarConflictOverwritten_Message" xml:space="preserve"><value>{0} — una versión más reciente sincronizada desde otro dispositivo se ha impuesto.</value></data>
+  <data name="Notification_PolarConflictOverwritten_Title" xml:space="preserve"><value>Edición local sobrescrita por la sincronización</value></data>
+  <data name="Notification_PolarSessionExpired_Message" xml:space="preserve"><value>Iniciad sesión de nuevo desde Ajustes › Cuenta para seguir sincronizando con Polar.</value></data>
+  <data name="Notification_PolarSessionExpired_Title" xml:space="preserve"><value>Sesión de Polar expirada</value></data>
+  <data name="Notification_PolarSyncFailed_Title" xml:space="preserve"><value>Error de sincronización con Polar</value></data>
+  <data name="Notification_PolarUnlinked_TasksCleared_Message" xml:space="preserve"><value>Se ha desvinculado la cuenta, así que se ha borrado la copia local de tus listas, tareas y subtareas de Polar para evitar mezclar datos entre cuentas.</value></data>
+  <data name="Notification_PolarUnlinked_TasksCleared_Title" xml:space="preserve"><value>Tareas de Polar borradas</value></data>
+  <data name="Notification_ReminderDue_Title" xml:space="preserve"><value>Recordatorio: {0}</value></data>
+  <data name="Notification_SessionError_Title" xml:space="preserve"><value>Error de sesión</value></data>
+  <data name="Notification_Severity_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Notification_Severity_Info" xml:space="preserve"><value>Información</value></data>
+  <data name="Notification_Severity_Success" xml:space="preserve"><value>Éxito</value></data>
+  <data name="Notification_Severity_Warning" xml:space="preserve"><value>Advertencia</value></data>
+  <data name="Notification_VaultChanged_Message" xml:space="preserve"><value>La carpeta del almacén se ha cambiado correctamente.</value></data>
+  <data name="Notification_VaultChanged_Title" xml:space="preserve"><value>Almacén cambiado</value></data>
+
+  <!-- ===================== Notifications ===================== -->
+  <data name="Notifications_ClearAllButton" xml:space="preserve"><value>Borrar todo</value></data>
+  <data name="Notifications_ClearAllModal_Message" xml:space="preserve"><value>Se eliminarán todas las notificaciones. Esta acción no se puede deshacer.</value></data>
+  <data name="Notifications_ClearAllModal_Title" xml:space="preserve"><value>¿Borrar todas las notificaciones?</value></data>
+  <data name="Notifications_Detail_DetailLabel" xml:space="preserve"><value>Detalles</value></data>
+  <data name="Notifications_Detail_ReceivedLabel" xml:space="preserve"><value>Recibida</value></data>
+  <data name="Notifications_EmptyState" xml:space="preserve"><value>No hay notificaciones</value></data>
+  <data name="Notifications_Eyebrow" xml:space="preserve"><value>Actividad</value></data>
+  <data name="Notifications_MarkAllReadButton" xml:space="preserve"><value>Marcar todo como leído</value></data>
+  <data name="Notifications_Subtitle" xml:space="preserve"><value>Eventos recientes y alertas de vuestro espacio de trabajo.</value></data>
+  <data name="Notifications_Title" xml:space="preserve"><value>Notificaciones</value></data>
+
+  <!-- ===================== Polar ===================== -->
+  <data name="Polar_Auth_Error_ConnectionFailed" xml:space="preserve"><value>No se ha podido conectar con Supabase: {0}</value></data>
+  <data name="Polar_Auth_Error_InvalidCredentials" xml:space="preserve"><value>No se ha podido iniciar sesión. Comprobad el correo y la contraseña.</value></data>
+  <data name="Polar_Auth_Error_MissingCredentials" xml:space="preserve"><value>Introducid el correo y la contraseña.</value></data>
+  <data name="Polar_Auth_Error_NoConfig" xml:space="preserve"><value>No se encontró la configuración de Supabase (local.properties) en este equipo.</value></data>
+  <data name="Polar_Auth_Error_Timeout" xml:space="preserve"><value>Se ha agotado el tiempo de espera al conectar con Supabase.</value></data>
+  <data name="Polar_Auth_Error_UnexpectedResponse" xml:space="preserve"><value>Respuesta inesperada del servidor de autenticación.</value></data>
+  <data name="Polar_Editor_ConfirmCreate" xml:space="preserve"><value>CREAR</value></data>
+  <data name="Polar_Editor_ConfirmSave" xml:space="preserve"><value>GUARDAR</value></data>
+  <data name="Polar_ListEditor_CreateTitle" xml:space="preserve"><value>Nueva lista</value></data>
+  <data name="Polar_ListEditor_EditEyebrow" xml:space="preserve"><value>EDITAR LISTA</value></data>
+  <data name="Polar_ListEditor_EditTitle" xml:space="preserve"><value>Editar lista</value></data>
+  <data name="Polar_ListEditor_NewEyebrow" xml:space="preserve"><value>NUEVA LISTA</value></data>
+  <data name="Polar_Priority_High" xml:space="preserve"><value>ALTA</value></data>
+  <data name="Polar_Priority_Low" xml:space="preserve"><value>BAJA</value></data>
+  <data name="Polar_Priority_Medium" xml:space="preserve"><value>MEDIA</value></data>
+  <data name="Polar_Priority_None" xml:space="preserve"><value>NINGUNA</value></data>
+  <data name="Polar_Recurrence_Daily" xml:space="preserve"><value>DIARIA</value></data>
+  <data name="Polar_Recurrence_DayOfMonth" xml:space="preserve"><value>DÍA {0} DEL MES</value></data>
+  <data name="Polar_Recurrence_DaysJoiner" xml:space="preserve"><value> Y </value></data>
+  <data name="Polar_Recurrence_Monthly" xml:space="preserve"><value>MENSUAL</value></data>
+  <data name="Polar_Recurrence_Weekly" xml:space="preserve"><value>SEMANAL</value></data>
+  <data name="Polar_Sync_AlreadyRunningNotice" xml:space="preserve"><value>Ya hay una sincronización en curso — inténtalo de nuevo en unos segundos.</value></data>
+  <data name="Polar_Sync_Error_Forbidden" xml:space="preserve"><value>No tenéis permiso para acceder a este recurso de Polar.</value></data>
+  <data name="Polar_Sync_Error_NoConnection" xml:space="preserve"><value>No se ha podido contactar con Polar. Comprobad vuestra conexión a internet.</value></data>
+  <data name="Polar_Sync_Error_ServerError" xml:space="preserve"><value>El servidor de Polar ha tenido un problema. Intentadlo de nuevo más tarde.</value></data>
+  <data name="Polar_Sync_Error_Timeout" xml:space="preserve"><value>La petición de sincronización ha caducado. Intentadlo de nuevo.</value></data>
+  <data name="Polar_Sync_Error_TooManyRequests" xml:space="preserve"><value>Demasiadas peticiones — intentadlo de nuevo en un momento.</value></data>
+  <data name="Polar_Sync_Error_Unauthorized" xml:space="preserve"><value>Vuestra sesión de Polar ha expirado. Iniciad sesión de nuevo.</value></data>
+  <data name="Polar_Sync_NextRetryLabel" xml:space="preserve"><value>Reintentando {0}</value></data>
+  <data name="Polar_TaskDetail_Completed" xml:space="preserve"><value>Completada</value></data>
+  <data name="Polar_TaskDetail_MarkCompleted" xml:space="preserve"><value>Marcar como completada</value></data>
+  <data name="Polar_TaskEditor_CreateTitle" xml:space="preserve"><value>Nueva tarea</value></data>
+  <data name="Polar_TaskEditor_EditEyebrow" xml:space="preserve"><value>EDITAR TAREA</value></data>
+  <data name="Polar_TaskEditor_EditTitle" xml:space="preserve"><value>Editar tarea</value></data>
+  <data name="Polar_TaskEditor_NewEyebrow" xml:space="preserve"><value>NUEVA TAREA</value></data>
+  <data name="Polar_TaskEditor_SelectDate" xml:space="preserve"><value>Seleccionar fecha</value></data>
+  <data name="Polar_Task_TimeEstimateMinutes" xml:space="preserve"><value>{0} MIN</value></data>
+
+  <!-- ===================== QuickSwitcher ===================== -->
+  <data name="QuickSwitcher_Prompt" xml:space="preserve"><value>Escribid para saltar a una nota…</value></data>
+  <data name="QuickSwitcher_SearchPlaceholder" xml:space="preserve"><value>Ir a la nota…</value></data>
+
+  <!-- ===================== Reminder ===================== -->
+  <data name="Reminder_Bucket_Overdue" xml:space="preserve"><value>VENCIDOS</value></data>
+  <data name="Reminder_Bucket_Soon" xml:space="preserve"><value>PRÓXIMOS</value></data>
+  <data name="Reminder_Bucket_Today" xml:space="preserve"><value>HOY</value></data>
+  <data name="Reminder_DismissTooltip" xml:space="preserve"><value>Descartar</value></data>
+  <data name="Reminder_DismissedUndoMessage" xml:space="preserve"><value>Recordatorio descartado</value></data>
+  <data name="Reminder_InboxEmpty" xml:space="preserve"><value>Sin recordatorios</value></data>
+  <data name="Reminder_InboxTitle" xml:space="preserve"><value>RECORDATORIOS</value></data>
+  <data name="Reminder_InboxTooltip" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Reminder_UndoDismiss" xml:space="preserve"><value>Deshacer</value></data>
+
+  <!-- ===================== Reminders ===================== -->
+  <data name="Reminders_ClearAllButton" xml:space="preserve"><value>Borrar todo</value></data>
+  <data name="Reminders_ClearAllModal_Message" xml:space="preserve"><value>¿Estáis seguros de que queréis borrar todos los recordatorios? Esta acción no se puede deshacer.</value></data>
+  <data name="Reminders_ClearAllModal_Title" xml:space="preserve"><value>Borrar todos los recordatorios</value></data>
+  <data name="Reminders_DescriptionLabel" xml:space="preserve"><value>Descripción</value></data>
+  <data name="Reminders_Detail_CreatedLabel" xml:space="preserve"><value>Creado</value></data>
+  <data name="Reminders_Detail_DeleteTooltip" xml:space="preserve"><value>Eliminar recordatorio</value></data>
+  <data name="Reminders_Detail_ToggleCompletedTooltip" xml:space="preserve"><value>Cambiar estado completado</value></data>
+  <data name="Reminders_Editor_DescriptionPlaceholder" xml:space="preserve"><value>Añadir una descripción...</value></data>
+  <data name="Reminders_Editor_Eyebrow" xml:space="preserve"><value>Recordatorio</value></data>
+  <data name="Reminders_Editor_IconFieldLabel" xml:space="preserve"><value>Icono</value></data>
+  <data name="Reminders_Editor_NextMonthTooltip" xml:space="preserve"><value>Mes siguiente</value></data>
+  <data name="Reminders_Editor_NotifyDateFieldLabel" xml:space="preserve"><value>Fecha de notificación</value></data>
+  <data name="Reminders_Editor_NotifyTimeFieldLabel" xml:space="preserve"><value>Hora de notificación</value></data>
+  <data name="Reminders_Editor_PreviousMonthTooltip" xml:space="preserve"><value>Mes anterior</value></data>
+  <data name="Reminders_Editor_RecurrenceFieldLabel" xml:space="preserve"><value>Recurrencia</value></data>
+  <data name="Reminders_Editor_SelectDatePlaceholder" xml:space="preserve"><value>Seleccionar una fecha</value></data>
+  <data name="Reminders_Editor_Title" xml:space="preserve"><value>Nuevo recordatorio</value></data>
+  <data name="Reminders_Editor_TitleFieldLabel" xml:space="preserve"><value>Título</value></data>
+  <data name="Reminders_Editor_TitlePlaceholder" xml:space="preserve"><value>Título del recordatorio</value></data>
+  <data name="Reminders_Editor_TodayButton" xml:space="preserve"><value>Hoy</value></data>
+  <data name="Reminders_EmptyState" xml:space="preserve"><value>No hay recordatorios</value></data>
+  <data name="Reminders_EmptyState_CreateButton" xml:space="preserve"><value>Crear recordatorio</value></data>
+  <data name="Reminders_Eyebrow" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Reminders_MarkAllReadButton" xml:space="preserve"><value>Marcar todo como leído</value></data>
+  <data name="Reminders_NewButton" xml:space="preserve"><value>Nuevo recordatorio</value></data>
+  <data name="Reminders_PolarSyncStatusLabel" xml:space="preserve"><value>Sincronizado con Polar {0}</value></data>
+  <data name="Reminders_Status_Overdue" xml:space="preserve"><value>Atrasado</value></data>
+  <data name="Reminders_Status_Scheduled" xml:space="preserve"><value>Programado</value></data>
+  <data name="Reminders_Subtitle" xml:space="preserve"><value>Seguimiento de tareas próximas</value></data>
+  <data name="Reminders_SyncErrorLabel" xml:space="preserve"><value>No se ha podido sincronizar con Polar: {0}</value></data>
+  <data name="Reminders_SyncNowTooltip" xml:space="preserve"><value>Sincronizar ahora</value></data>
+  <data name="Reminders_Title" xml:space="preserve"><value>Recordatorios</value></data>
+
+  <!-- ===================== Search ===================== -->
+  <data name="Search_InProgress" xml:space="preserve"><value>Buscando…</value></data>
+  <data name="Search_NoResults" xml:space="preserve"><value>Sin resultados</value></data>
+  <data name="Search_Prompt" xml:space="preserve"><value>Buscar notas, tareas, archivos y más…</value></data>
+  <data name="Search_UnknownPolarList" xml:space="preserve"><value>Lista desconocida</value></data>
+
+  <!-- ===================== Sessions ===================== -->
+  <data name="Sessions_CountLabel_one" xml:space="preserve"><value>{0} sesión</value></data>
+  <data name="Sessions_CountLabel_other" xml:space="preserve"><value>{0} sesiones</value></data>
+  <data name="Sessions_CreateDialog_Eyebrow" xml:space="preserve"><value>Nueva sesión</value></data>
+  <data name="Sessions_CreateDialog_Heading" xml:space="preserve"><value>Cread una sesión nueva</value></data>
+  <data name="Sessions_CreateDialog_Placeholder" xml:space="preserve"><value>Nombre de la sesión</value></data>
+  <data name="Sessions_CreatedNotification_Message" xml:space="preserve"><value>Sesión '{0}' creada.</value></data>
+  <data name="Sessions_CreatedNotification_Title" xml:space="preserve"><value>Sesión creada</value></data>
+  <data name="Sessions_DefaultBadgeTooltip" xml:space="preserve"><value>Sesión predeterminada</value></data>
+  <data name="Sessions_DefaultName" xml:space="preserve"><value>Nueva sesión</value></data>
+  <data name="Sessions_DefaultSessionName" xml:space="preserve"><value>Predeterminada</value></data>
+  <data name="Sessions_DeleteModal_Message" xml:space="preserve"><value>La sesión '{0}' se moverá a la papelera junto con {1}.</value></data>
+  <data name="Sessions_DeleteModal_Title" xml:space="preserve"><value>¿Eliminar la sesión?</value></data>
+  <data name="Sessions_DeleteTooltip" xml:space="preserve"><value>Eliminar sesión</value></data>
+  <data name="Sessions_EmptyState_CreateButton" xml:space="preserve"><value>Crear sesión</value></data>
+  <data name="Sessions_EmptyState_Description" xml:space="preserve"><value>Organizad vuestras notas y enlaces en sesiones enfocadas.</value></data>
+  <data name="Sessions_Eyebrow" xml:space="preserve"><value>Sesiones</value></data>
+  <data name="Sessions_Graph_LoadingLabel" xml:space="preserve"><value>Cargando el grafo…</value></data>
+  <data name="Sessions_Graph_Summary_Links_one" xml:space="preserve"><value>{0} enlace</value></data>
+  <data name="Sessions_Graph_Summary_Links_other" xml:space="preserve"><value>{0} enlaces</value></data>
+  <data name="Sessions_Graph_Summary_Notes_one" xml:space="preserve"><value>{0} nota</value></data>
+  <data name="Sessions_Graph_Summary_Notes_other" xml:space="preserve"><value>{0} notas</value></data>
+  <data name="Sessions_Graph_Unavailable" xml:space="preserve"><value>La vista de grafo no está disponible.</value></data>
+  <data name="Sessions_LinkModeButton" xml:space="preserve"><value>Modo de enlaces</value></data>
+  <data name="Sessions_LinkModeInstructions" xml:space="preserve"><value>Seleccionad dos notas de la misma sesión para crear un enlace.</value></data>
+  <data name="Sessions_LinkedCardsTitle" xml:space="preserve"><value>Tarjetas enlazadas</value></data>
+  <data name="Sessions_ListError" xml:space="preserve"><value>No se han podido listar las sesiones: {0}</value></data>
+  <data name="Sessions_ManifestReadError" xml:space="preserve"><value>No se ha podido leer la sesión '{0}': {1}</value></data>
+  <data name="Sessions_ManifestWriteError" xml:space="preserve"><value>No se ha podido guardar la sesión '{0}': {1}</value></data>
+  <data name="Sessions_NewSessionButton" xml:space="preserve"><value>Nueva sesión</value></data>
+  <data name="Sessions_NoteCount_one" xml:space="preserve"><value>{0} nota</value></data>
+  <data name="Sessions_NoteCount_other" xml:space="preserve"><value>{0} notas</value></data>
+  <data name="Sessions_OpenInNotesButton" xml:space="preserve"><value>Abrir en notas</value></data>
+  <data name="Sessions_PageSubtitle" xml:space="preserve"><value>Organizad notas, enlaces y tareas en sesiones estructuradas.</value></data>
+  <data name="Sessions_PageTitle" xml:space="preserve"><value>Sesiones</value></data>
+  <data name="Sessions_RefreshGraphTooltip" xml:space="preserve"><value>Actualizar grafo</value></data>
+  <data name="Sessions_RenameTooltip" xml:space="preserve"><value>Renombrar</value></data>
+  <data name="Sessions_Title" xml:space="preserve"><value>Sesiones</value></data>
+  <data name="Sessions_VaultOptionLabel" xml:space="preserve"><value>Bóveda</value></data>
+
+  <!-- ===================== Settings ===================== -->
+  <data name="Settings_About_Description" xml:space="preserve"><value>Información sobre la versión, los módulos y la privacidad.</value></data>
+  <data name="Settings_About_Language_Description" xml:space="preserve"><value>Seleccionad el idioma de la interfaz de Enki.</value></data>
+  <data name="Settings_About_Language_Title" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Settings_About_Module_Calendar_Description" xml:space="preserve"><value>Vista general de tareas y eventos programados.</value></data>
+  <data name="Settings_About_Module_Calendar_Name" xml:space="preserve"><value>Calendario</value></data>
+  <data name="Settings_About_Module_Dashboard_Description" xml:space="preserve"><value>Resumen del enfoque diario y la actividad.</value></data>
+  <data name="Settings_About_Module_Dashboard_Name" xml:space="preserve"><value>Panel</value></data>
+  <data name="Settings_About_Module_Kanban_Description" xml:space="preserve"><value>Tableros visuales de tareas por estado.</value></data>
+  <data name="Settings_About_Module_Kanban_Name" xml:space="preserve"><value>Kanban</value></data>
+  <data name="Settings_About_Module_Notes_Description" xml:space="preserve"><value>Documentos Markdown y notas rápidas.</value></data>
+  <data name="Settings_About_Module_Notes_Name" xml:space="preserve"><value>Notas</value></data>
+  <data name="Settings_About_Module_Polar_Description" xml:space="preserve"><value>Sincronización en la nube e integración de tareas con Polar.</value></data>
+  <data name="Settings_About_Module_Polar_Name" xml:space="preserve"><value>Sincronización con Polar</value></data>
+  <data name="Settings_About_Module_Reminders_Description" xml:space="preserve"><value>Recordatorios basados en tiempo y ubicación.</value></data>
+  <data name="Settings_About_Module_Reminders_Name" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Settings_About_Module_Sessions_Description" xml:space="preserve"><value>Sesiones de trabajo enfocadas y descansos.</value></data>
+  <data name="Settings_About_Module_Sessions_Name" xml:space="preserve"><value>Sesiones</value></data>
+  <data name="Settings_About_Module_Settings_Description" xml:space="preserve"><value>Configuración y preferencias de la aplicación.</value></data>
+  <data name="Settings_About_Module_Settings_Name" xml:space="preserve"><value>Configuración</value></data>
+  <data name="Settings_About_Module_Trash_Description" xml:space="preserve"><value>Elementos eliminados pendientes de eliminación permanente.</value></data>
+  <data name="Settings_About_Module_Trash_Name" xml:space="preserve"><value>Papelera</value></data>
+  <data name="Settings_About_Modules_Title" xml:space="preserve"><value>Módulos</value></data>
+  <data name="Settings_About_Privacy_Description" xml:space="preserve"><value>Enki almacena vuestros datos de forma local de manera predeterminada. Vinculad una cuenta Polar solo si queréis sincronizar tareas entre dispositivos.</value></data>
+  <data name="Settings_About_Privacy_Title" xml:space="preserve"><value>Privacidad</value></data>
+  <data name="Settings_About_Tagline" xml:space="preserve"><value>Un espacio de trabajo enfocado para tareas, notas y tiempo.</value></data>
+  <data name="Settings_About_Technology_Description" xml:space="preserve"><value>Desarrollado con Avalonia UI, .NET y CommunityToolkit.Mvvm. Fuentes: Space Grotesk y JetBrains Mono.</value></data>
+  <data name="Settings_About_Technology_Title" xml:space="preserve"><value>Tecnología</value></data>
+  <data name="Settings_About_Title" xml:space="preserve"><value>Acerca de</value></data>
+  <data name="Settings_About_VersionLabel" xml:space="preserve"><value>Versión {0}</value></data>
+  <data name="Settings_About_WhatIsEnki_Description" xml:space="preserve"><value>Enki es una aplicación de productividad para escritorio que reúne notas, tareas, recordatorios y sesiones de enfoque en una única interfaz orientada al teclado.</value></data>
+  <data name="Settings_About_WhatIsEnki_Title" xml:space="preserve"><value>¿Qué es Enki?</value></data>
+  <data name="Settings_Account_Description" xml:space="preserve"><value>Administrar el enlace de vuestra cuenta Polar y las preferencias de sincronización.</value></data>
+  <data name="Settings_Account_EmailLabel" xml:space="preserve"><value>Correo electrónico</value></data>
+  <data name="Settings_Account_EmailPlaceholder" xml:space="preserve"><value>vuestro@email.com</value></data>
+  <data name="Settings_Account_LastSynced_Label" xml:space="preserve"><value>Última sincronización</value></data>
+  <data name="Settings_Account_LinkForm_Description" xml:space="preserve"><value>Introducid vuestras credenciales de Polar para activar la sincronización en la nube.</value></data>
+  <data name="Settings_Account_LinkPolar_Title" xml:space="preserve"><value>Vincular cuenta Polar</value></data>
+  <data name="Settings_Account_LinkedAccount_Label" xml:space="preserve"><value>Cuenta vinculada</value></data>
+  <data name="Settings_Account_LinkedBadge" xml:space="preserve"><value>VINCULADA</value></data>
+  <data name="Settings_Account_LinkedDescription" xml:space="preserve"><value>Vuestra cuenta Polar está conectada. Las tareas se sincronizarán automáticamente cuando Enki esté en línea.</value></data>
+  <data name="Settings_Account_LinkingButton" xml:space="preserve"><value>Vinculando...</value></data>
+  <data name="Settings_Account_Management_Description" xml:space="preserve"><value>Revisad o eliminad vuestra cuenta vinculada y los datos de sincronización locales.</value></data>
+  <data name="Settings_Account_Management_Title" xml:space="preserve"><value>Gestión de la cuenta</value></data>
+  <data name="Settings_Account_PasswordLabel" xml:space="preserve"><value>Contraseña</value></data>
+  <data name="Settings_Account_ShowTags_Description" xml:space="preserve"><value>Mostrar las etiquetas de las tareas Polar sincronizadas en las vistas Kanban y Calendario.</value></data>
+  <data name="Settings_Account_ShowTags_Label" xml:space="preserve"><value>Mostrar etiquetas de Polar</value></data>
+  <data name="Settings_Account_SupabaseNotConfigured_Description" xml:space="preserve"><value>La sincronización no está disponible porque el backend de Polar no está configurado. Contactad con el administrador o consultad la documentación de la aplicación.</value></data>
+  <data name="Settings_Account_SupabaseNotConfigured_Title" xml:space="preserve"><value>Polar no configurado</value></data>
+  <data name="Settings_Account_SyncErrorLabel" xml:space="preserve"><value>No se ha podido sincronizar: {0}</value></data>
+  <data name="Settings_Account_SyncNowButton" xml:space="preserve"><value>Sincronizar ahora</value></data>
+  <data name="Settings_Account_Sync_Title" xml:space="preserve"><value>Sincronización</value></data>
+  <data name="Settings_Account_SyncingButton" xml:space="preserve"><value>Sincronizando...</value></data>
+  <data name="Settings_Account_TaskManagement_Title" xml:space="preserve"><value>Gestión de tareas</value></data>
+  <data name="Settings_Account_Title" xml:space="preserve"><value>Cuenta</value></data>
+  <data name="Settings_Account_UnlinkButton" xml:space="preserve"><value>Desvincular cuenta</value></data>
+  <data name="Settings_Appearance_Description" xml:space="preserve"><value>Tema, fuentes, zoom y barra de título.</value></data>
+  <data name="Settings_Appearance_Font_DefaultLabel" xml:space="preserve"><value>Predeterminado del sistema</value></data>
+  <data name="Settings_Appearance_InterfaceFont_Description" xml:space="preserve"><value>Fuente usada en toda la interfaz de la app (no el editor).</value></data>
+  <data name="Settings_Appearance_InterfaceFont_Title" xml:space="preserve"><value>Fuente de la interfaz</value></data>
+  <data name="Settings_Appearance_Theme_DarkLabel" xml:space="preserve"><value>Tema oscuro</value></data>
+  <data name="Settings_Appearance_Theme_Description" xml:space="preserve"><value>Cambiar entre tema claro y oscuro.</value></data>
+  <data name="Settings_Appearance_Theme_Title" xml:space="preserve"><value>Tema</value></data>
+  <data name="Settings_Appearance_Title" xml:space="preserve"><value>APARIENCIA</value></data>
+  <data name="Settings_Appearance_TitleBar_Description" xml:space="preserve"><value>Usar la barra de título propia de Enki en vez de la del sistema operativo.</value></data>
+  <data name="Settings_Appearance_TitleBar_Title" xml:space="preserve"><value>Barra de título</value></data>
+  <data name="Settings_Appearance_TitleBar_UseCustomLabel" xml:space="preserve"><value>Usar barra de título personalizada</value></data>
+  <data name="Settings_Appearance_Zoom_DefaultMarkerTooltip" xml:space="preserve"><value>Predeterminado (100%)</value></data>
+  <data name="Settings_Appearance_Zoom_Description" xml:space="preserve"><value>Escalar toda la interfaz hacia arriba o hacia abajo.</value></data>
+  <data name="Settings_Appearance_Zoom_InTooltip" xml:space="preserve"><value>Acercar</value></data>
+  <data name="Settings_Appearance_Zoom_LevelLabel" xml:space="preserve"><value>Nivel de zoom</value></data>
+  <data name="Settings_Appearance_Zoom_OutTooltip" xml:space="preserve"><value>Alejar</value></data>
+  <data name="Settings_Appearance_Zoom_PercentUnit" xml:space="preserve"><value>{0} %</value></data>
+  <data name="Settings_Appearance_Zoom_Title" xml:space="preserve"><value>Zoom de la interfaz</value></data>
+  <data name="Settings_Calendar_DefaultView_Description" xml:space="preserve"><value>Vista en la que se abre el Calendario.</value></data>
+  <data name="Settings_Calendar_DefaultView_Title" xml:space="preserve"><value>Vista predeterminada</value></data>
+  <data name="Settings_Calendar_Description" xml:space="preserve"><value>Vista predeterminada, configuración de semana y horario laboral.</value></data>
+  <data name="Settings_Calendar_PanelSidebar_Title" xml:space="preserve"><value>Panel lateral</value></data>
+  <data name="Settings_Calendar_ShowInNav_Description" xml:space="preserve"><value>Mostrar la entrada del Calendario en la barra lateral.</value></data>
+  <data name="Settings_Calendar_ShowInNav_Label" xml:space="preserve"><value>Mostrar en navegación</value></data>
+  <data name="Settings_Calendar_ShowWeekends_Description" xml:space="preserve"><value>Mostrar sábado y domingo en las vistas de mes y semana.</value></data>
+  <data name="Settings_Calendar_ShowWeekends_Label" xml:space="preserve"><value>Mostrar fines de semana</value></data>
+  <data name="Settings_Calendar_SidebarScrollbar_Description" xml:space="preserve"><value>Mostrar la barra de desplazamiento en el panel lateral del Calendario.</value></data>
+  <data name="Settings_Calendar_SidebarScrollbar_Label" xml:space="preserve"><value>Mostrar barra de desplazamiento</value></data>
+  <data name="Settings_Calendar_TimeFormat24h_Description" xml:space="preserve"><value>Mostrar horas en formato 24 horas en vez de AM/PM.</value></data>
+  <data name="Settings_Calendar_TimeFormat24h_Label" xml:space="preserve"><value>Formato 24 horas</value></data>
+  <data name="Settings_Calendar_Title" xml:space="preserve"><value>CALENDARIO</value></data>
+  <data name="Settings_Calendar_View_Agenda" xml:space="preserve"><value>AGENDA</value></data>
+  <data name="Settings_Calendar_View_Day" xml:space="preserve"><value>DÍA</value></data>
+  <data name="Settings_Calendar_View_Month" xml:space="preserve"><value>MES</value></data>
+  <data name="Settings_Calendar_View_Week" xml:space="preserve"><value>SEMANA</value></data>
+  <data name="Settings_Calendar_WeekStartsMonday_Description" xml:space="preserve"><value>Empezar la semana el lunes en vez de domingo.</value></data>
+  <data name="Settings_Calendar_WeekStartsMonday_Label" xml:space="preserve"><value>La semana empieza el lunes</value></data>
+  <data name="Settings_Calendar_Week_Title" xml:space="preserve"><value>Semana</value></data>
+  <data name="Settings_Calendar_WorkingHours_Description" xml:space="preserve"><value>Horas resaltadas en la vista de semana.</value></data>
+  <data name="Settings_Calendar_WorkingHours_EndLabel" xml:space="preserve"><value>Fin</value></data>
+  <data name="Settings_Calendar_WorkingHours_StartLabel" xml:space="preserve"><value>Inicio</value></data>
+  <data name="Settings_Calendar_WorkingHours_Title" xml:space="preserve"><value>Horario laboral</value></data>
+  <data name="Settings_DangerZone_ResetDialog_Message" xml:space="preserve"><value>Esto restablecerá todos los ajustes a sus valores predeterminados. No se eliminarán vuestras notas, tareas ni datos de la bóveda.</value></data>
+  <data name="Settings_DangerZone_ResetDialog_Title" xml:space="preserve"><value>¿Restablecer ajustes?</value></data>
+  <data name="Settings_EditDocs_Bold" xml:space="preserve"><value>Negrita</value></data>
+  <data name="Settings_EditDocs_CloseTab" xml:space="preserve"><value>Cerrar la pestaña activa</value></data>
+  <data name="Settings_EditDocs_InsertLink" xml:space="preserve"><value>Insertar un enlace</value></data>
+  <data name="Settings_EditDocs_Italic" xml:space="preserve"><value>Cursiva</value></data>
+  <data name="Settings_EditDocs_NextPrevTab" xml:space="preserve"><value>Ir a la pestaña siguiente o anterior</value></data>
+  <data name="Settings_EditDocs_PageTabKey" xml:space="preserve"><value>Cambiar a una pestaña específica por número</value></data>
+  <data name="Settings_EditDocs_SearchInNote" xml:space="preserve"><value>Buscar en la nota actual</value></data>
+  <data name="Settings_EditDocs_SwitchTabKey" xml:space="preserve"><value>Cambiar el foco entre pestañas</value></data>
+  <data name="Settings_EditDocs_Title" xml:space="preserve"><value>Atajos del editor</value></data>
+  <data name="Settings_Editor_Autosave_Description" xml:space="preserve"><value>Las notas se guardan automáticamente mientras escribís.</value></data>
+  <data name="Settings_Editor_Autosave_Title" xml:space="preserve"><value>Guardado automático</value></data>
+  <data name="Settings_Editor_ColumnPosition_Centered" xml:space="preserve"><value>CENTRADA</value></data>
+  <data name="Settings_Editor_ColumnPosition_Label" xml:space="preserve"><value>Posición de columna</value></data>
+  <data name="Settings_Editor_ColumnPosition_Left" xml:space="preserve"><value>IZQUIERDA</value></data>
+  <data name="Settings_Editor_ColumnWidth_Description" xml:space="preserve"><value>Ancho máximo de la columna de texto.</value></data>
+  <data name="Settings_Editor_ColumnWidth_Label" xml:space="preserve"><value>Ancho de columna</value></data>
+  <data name="Settings_Editor_ColumnWidth_Unit" xml:space="preserve"><value>{0} PX</value></data>
+  <data name="Settings_Editor_Description" xml:space="preserve"><value>Fuente, diseño y comportamiento del editor de notas.</value></data>
+  <data name="Settings_Editor_FontSize_Label" xml:space="preserve"><value>Tamaño de fuente</value></data>
+  <data name="Settings_Editor_FontSize_Unit" xml:space="preserve"><value>{0} PX</value></data>
+  <data name="Settings_Editor_Font_Description" xml:space="preserve"><value>Fuente usada en el editor de notas.</value></data>
+  <data name="Settings_Editor_Font_Title" xml:space="preserve"><value>Fuente</value></data>
+  <data name="Settings_Editor_LineNumbers_Description" xml:space="preserve"><value>Mostrar números de línea en el margen del editor.</value></data>
+  <data name="Settings_Editor_LineNumbers_Label" xml:space="preserve"><value>Números de línea</value></data>
+  <data name="Settings_Editor_ShowScrollbar_Description" xml:space="preserve"><value>Mostrar la barra de desplazamiento del editor.</value></data>
+  <data name="Settings_Editor_ShowScrollbar_Label" xml:space="preserve"><value>Mostrar barra de desplazamiento</value></data>
+  <data name="Settings_Editor_SidePanel_Description" xml:space="preserve"><value>Mostrar el panel lateral de esquema/enlaces inversos/estadísticas por defecto.</value></data>
+  <data name="Settings_Editor_SidePanel_Label" xml:space="preserve"><value>Panel lateral</value></data>
+  <data name="Settings_Editor_SizeLayout_Title" xml:space="preserve"><value>Tamaño y diseño</value></data>
+  <data name="Settings_Editor_TabSize_Label" xml:space="preserve"><value>Tamaño de tabulación</value></data>
+  <data name="Settings_Editor_Title" xml:space="preserve"><value>EDITOR</value></data>
+  <data name="Settings_Editor_WordWrap_Description" xml:space="preserve"><value>Ajustar líneas largas en vez de desplazar horizontalmente.</value></data>
+  <data name="Settings_Editor_WordWrap_Label" xml:space="preserve"><value>Ajuste de línea</value></data>
+  <data name="Settings_General_ChangeVaultFolder_DialogTitle" xml:space="preserve"><value>Seleccionar nueva carpeta de bóveda</value></data>
+  <data name="Settings_General_DangerZone_BackupCreatedMessage" xml:space="preserve"><value>Copia de seguridad creada en {0}</value></data>
+  <data name="Settings_General_DangerZone_BackupCreatedTitle" xml:space="preserve"><value>Copia de seguridad creada</value></data>
+  <data name="Settings_General_DangerZone_BackupDialogTitle" xml:space="preserve"><value>Guardar copia de seguridad de la bóveda</value></data>
+  <data name="Settings_General_DangerZone_BackupFailedTitle" xml:space="preserve"><value>Error en la copia de seguridad</value></data>
+  <data name="Settings_General_DangerZone_BackupHint" xml:space="preserve"><value>Guarda una copia comprimida de todo vuestro almacén.</value></data>
+  <data name="Settings_General_DangerZone_ConfirmBeforeDelete_Description" xml:space="preserve"><value>Pedir confirmación antes de eliminar elementos permanentemente.</value></data>
+  <data name="Settings_General_DangerZone_ConfirmBeforeDelete_Label" xml:space="preserve"><value>Confirmar antes de eliminar</value></data>
+  <data name="Settings_General_DangerZone_CreateBackupButton" xml:space="preserve"><value>Crear copia de seguridad</value></data>
+  <data name="Settings_General_DangerZone_ExportDialogTitle" xml:space="preserve"><value>Exportar ajustes</value></data>
+  <data name="Settings_General_DangerZone_ExportFailedTitle" xml:space="preserve"><value>Error al exportar</value></data>
+  <data name="Settings_General_DangerZone_ExportSettingsButton" xml:space="preserve"><value>Exportar ajustes</value></data>
+  <data name="Settings_General_DangerZone_ExportHint" xml:space="preserve"><value>El fichero exportado no incluye tu sesión de Polar — tendrás que volver a iniciar sesión después de importarlo en otro equipo.</value></data>
+  <data name="Settings_General_DangerZone_ExportedMessage" xml:space="preserve"><value>Ajustes exportados a {0}. Tu sesión de Polar no se ha incluido.</value></data>
+  <data name="Settings_General_DangerZone_ExportedTitle" xml:space="preserve"><value>Ajustes exportados</value></data>
+  <data name="Settings_General_DangerZone_ImportDialogTitle" xml:space="preserve"><value>Importar ajustes</value></data>
+  <data name="Settings_General_DangerZone_ImportFailedTitle" xml:space="preserve"><value>Error al importar</value></data>
+  <data name="Settings_General_DangerZone_ImportSettingsButton" xml:space="preserve"><value>Importar ajustes</value></data>
+  <data name="Settings_General_DangerZone_ImportedMessage" xml:space="preserve"><value>Ajustes importados correctamente. Reiniciad Enki para aplicar todos los cambios.</value></data>
+  <data name="Settings_General_DangerZone_ImportedTitle" xml:space="preserve"><value>Ajustes importados</value></data>
+  <data name="Settings_General_DangerZone_JsonFileType" xml:space="preserve"><value>Archivos JSON</value></data>
+  <data name="Settings_General_DangerZone_OpenVaultFolderButton" xml:space="preserve"><value>Abrir carpeta del almacén</value></data>
+  <data name="Settings_General_DangerZone_ResetDoneMessage" xml:space="preserve"><value>Todos los ajustes se han restaurado a los valores predeterminados.</value></data>
+  <data name="Settings_General_DangerZone_ResetDoneTitle" xml:space="preserve"><value>Ajustes restablecidos</value></data>
+  <data name="Settings_General_DangerZone_ResetSettingsButton" xml:space="preserve"><value>Restaurar ajustes</value></data>
+  <data name="Settings_General_DangerZone_Title" xml:space="preserve"><value>ZONA PELIGROSA</value></data>
+  <data name="Settings_General_DangerZone_TrashRetention_Description" xml:space="preserve"><value>Los elementos de la papelera se eliminan permanentemente después de 30 días.</value></data>
+  <data name="Settings_General_DangerZone_VaultSize_Description" xml:space="preserve"><value>Tamaño total de todo lo guardado en la carpeta del almacén.</value></data>
+  <data name="Settings_General_DangerZone_VaultSize_Label" xml:space="preserve"><value>TAMAÑO DEL ALMACÉN</value></data>
+  <data name="Settings_General_DangerZone_ZipFileType" xml:space="preserve"><value>Archivos ZIP</value></data>
+  <data name="Settings_General_Dashboard_ShowScrollbar_Description" xml:space="preserve"><value>Mostrar la barra de desplazamiento en el panel lateral del Dashboard.</value></data>
+  <data name="Settings_General_Dashboard_ShowScrollbar_Label" xml:space="preserve"><value>Mostrar barra de desplazamiento</value></data>
+  <data name="Settings_General_Dashboard_Title" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Settings_General_Description" xml:space="preserve"><value>Ubicación del almacén, página de inicio y comportamiento general.</value></data>
+  <data name="Settings_General_Diagnostics_DebugLogging_Description" xml:space="preserve"><value>Escribe entradas detalladas (nivel Debug) en el fichero de registro, útil para diagnosticar un problema. Desactivado por defecto: solo se registran avisos y errores.</value></data>
+  <data name="Settings_General_Diagnostics_DebugLogging_Label" xml:space="preserve"><value>Registro de depuración</value></data>
+  <data name="Settings_General_Diagnostics_OpenLogsFolderButton" xml:space="preserve"><value>Abrir carpeta de logs</value></data>
+  <data name="Settings_General_Diagnostics_Title" xml:space="preserve"><value>DIAGNÓSTICO</value></data>
+  <data name="Settings_General_Language_Description" xml:space="preserve"><value>Idioma de la interfaz. Los cambios se aplican inmediatamente.</value></data>
+  <data name="Settings_General_Language_Title" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Settings_General_Startup_Calendar" xml:space="preserve"><value>CALENDARIO</value></data>
+  <data name="Settings_General_Startup_Dashboard" xml:space="preserve"><value>DASHBOARD</value></data>
+  <data name="Settings_General_Startup_Description" xml:space="preserve"><value>Elegid la página que abre Enki al iniciarse.</value></data>
+  <data name="Settings_General_Startup_Files" xml:space="preserve"><value>ARCHIVOS</value></data>
+  <data name="Settings_General_Startup_Kanban" xml:space="preserve"><value>Kanban</value></data>
+  <data name="Settings_General_Startup_Notes" xml:space="preserve"><value>NOTAS</value></data>
+  <data name="Settings_General_Startup_Sessions" xml:space="preserve"><value>SESIONES</value></data>
+  <data name="Settings_General_Startup_Title" xml:space="preserve"><value>Página de inicio</value></data>
+  <data name="Settings_General_Title" xml:space="preserve"><value>GENERAL</value></data>
+  <data name="Settings_General_VaultFolder_ChangeButton" xml:space="preserve"><value>Cambiar</value></data>
+  <data name="Settings_General_VaultFolder_Description" xml:space="preserve"><value>Carpeta donde se guardan vuestras notas y archivos.</value></data>
+  <data name="Settings_General_VaultFolder_Title" xml:space="preserve"><value>Carpeta del almacén</value></data>
+  <data name="Settings_KanbanSection_CloseDialog" xml:space="preserve"><value>Cerrar el diálogo actual o los detalles de la tarjeta</value></data>
+  <data name="Settings_KanbanSection_DeleteCard" xml:space="preserve"><value>Eliminar la tarjeta seleccionada</value></data>
+  <data name="Settings_KanbanSection_DeleteKey" xml:space="preserve"><value>Tecla Eliminar</value></data>
+  <data name="Settings_KanbanSection_NewCard" xml:space="preserve"><value>Crear una tarjeta nueva</value></data>
+  <data name="Settings_KanbanSection_SearchBoard" xml:space="preserve"><value>Buscar tarjetas en el tablero</value></data>
+  <data name="Settings_KanbanSection_Title" xml:space="preserve"><value>Atajos de Kanban</value></data>
+  <data name="Settings_Nav_About" xml:space="preserve"><value>Acerca de</value></data>
+  <data name="Settings_Nav_Account" xml:space="preserve"><value>Cuenta</value></data>
+  <data name="Settings_Nav_Appearance" xml:space="preserve"><value>Apariencia</value></data>
+  <data name="Settings_Nav_Calendar" xml:space="preserve"><value>Calendario</value></data>
+  <data name="Settings_Nav_Editor" xml:space="preserve"><value>Editor</value></data>
+  <data name="Settings_Nav_Eyebrow" xml:space="preserve"><value>AJUSTES</value></data>
+  <data name="Settings_Nav_General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_Nav_Notifications" xml:space="preserve"><value>Notificaciones</value></data>
+  <data name="Settings_Nav_Shortcuts" xml:space="preserve"><value>Atajos</value></data>
+  <data name="Settings_Nav_Skills" xml:space="preserve"><value>Habilidades</value></data>
+  <data name="Settings_Nav_Title" xml:space="preserve"><value>Ajustes</value></data>
+  <data name="Settings_Navigation_GlobalSearch" xml:space="preserve"><value>Abrir la búsqueda global</value></data>
+  <data name="Settings_Navigation_GlobalSearchKey" xml:space="preserve"><value>Tecla de búsqueda global</value></data>
+  <data name="Settings_Navigation_OpenSettings" xml:space="preserve"><value>Abrir Configuración</value></data>
+  <data name="Settings_Navigation_QuickNote" xml:space="preserve"><value>Abrir nota rápida</value></data>
+  <data name="Settings_Navigation_QuickNoteKey" xml:space="preserve"><value>Tecla de nota rápida</value></data>
+  <data name="Settings_Navigation_Title" xml:space="preserve"><value>Atajos de navegación</value></data>
+  <data name="Settings_Navigation_ToCalendar" xml:space="preserve"><value>Ir a Calendario</value></data>
+  <data name="Settings_Navigation_ToDashboard" xml:space="preserve"><value>Ir al Panel</value></data>
+  <data name="Settings_Navigation_ToFiles" xml:space="preserve"><value>Ir a Archivos</value></data>
+  <data name="Settings_Navigation_ToKanban" xml:space="preserve"><value>Ir a Kanban</value></data>
+  <data name="Settings_Navigation_ToNotes" xml:space="preserve"><value>Ir a Notas</value></data>
+  <data name="Settings_Navigation_ToSessions" xml:space="preserve"><value>Ir a Sesiones</value></data>
+  <data name="Settings_Navigation_ToSkills" xml:space="preserve"><value>Ir a Habilidades</value></data>
+  <data name="Settings_Navigation_ToTrash" xml:space="preserve"><value>Ir a Papelera</value></data>
+  <data name="Settings_Notifications_Bell_Description" xml:space="preserve"><value>Mostrar la campana de notificaciones en la barra de título.</value></data>
+  <data name="Settings_Notifications_Bell_Label" xml:space="preserve"><value>Campana de notificaciones</value></data>
+  <data name="Settings_Notifications_Description" xml:space="preserve"><value>Notificaciones del sistema, sonidos y comportamiento de recordatorios y notificaciones.</value></data>
+  <data name="Settings_Notifications_DndSound_Title" xml:space="preserve"><value>No molestar y sonido</value></data>
+  <data name="Settings_Notifications_Dnd_Description" xml:space="preserve"><value>Silenciar notificaciones durante una franja horaria programada.</value></data>
+  <data name="Settings_Notifications_Dnd_FromLabel" xml:space="preserve"><value>DESDE</value></data>
+  <data name="Settings_Notifications_Dnd_Label" xml:space="preserve"><value>No molestar</value></data>
+  <data name="Settings_Notifications_Dnd_ToLabel" xml:space="preserve"><value>HASTA</value></data>
+  <data name="Settings_Notifications_MuteByCategory_Description" xml:space="preserve"><value>Silenciar tipos específicos de notificación.</value></data>
+  <data name="Settings_Notifications_MuteByCategory_Title" xml:space="preserve"><value>Silenciar por categoría</value></data>
+  <data name="Settings_Notifications_Mute_Error_Label" xml:space="preserve"><value>Error</value></data>
+  <data name="Settings_Notifications_Mute_Info_Label" xml:space="preserve"><value>Información</value></data>
+  <data name="Settings_Notifications_Mute_Success_Label" xml:space="preserve"><value>Éxito</value></data>
+  <data name="Settings_Notifications_Mute_Warning_Label" xml:space="preserve"><value>Advertencia</value></data>
+  <data name="Settings_Notifications_Panels_Title" xml:space="preserve"><value>Paneles</value></data>
+  <data name="Settings_Notifications_RemindersTray_Description" xml:space="preserve"><value>Mostrar la bandeja de recordatorios en la barra de título.</value></data>
+  <data name="Settings_Notifications_RemindersTray_Label" xml:space="preserve"><value>Bandeja de recordatorios</value></data>
+  <data name="Settings_Notifications_Reminders_SoonWindow_Description" xml:space="preserve"><value>Antelación con la que se marca un recordatorio como próximo.</value></data>
+  <data name="Settings_Notifications_Reminders_SoonWindow_Label" xml:space="preserve"><value>Ventana de 'próximamente'</value></data>
+  <data name="Settings_Notifications_Reminders_SoonWindow_Unit" xml:space="preserve"><value>{0} DÍAS</value></data>
+  <data name="Settings_Notifications_Reminders_Title" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Settings_Notifications_Sound_Description" xml:space="preserve"><value>Reproducir un sonido cuando llegue una notificación.</value></data>
+  <data name="Settings_Notifications_Sound_Label" xml:space="preserve"><value>Sonido de notificación</value></data>
+  <data name="Settings_Notifications_Sound_TestButton" xml:space="preserve"><value>Probar</value></data>
+  <data name="Settings_Notifications_Sound_Volume_Description" xml:space="preserve"><value>El volumen con el que suena la notificación.</value></data>
+  <data name="Settings_Notifications_Sound_Volume_Label" xml:space="preserve"><value>Volumen</value></data>
+  <data name="Settings_Notifications_Sound_Volume_Unit" xml:space="preserve"><value>{0}%</value></data>
+  <data name="Settings_Notifications_Title" xml:space="preserve"><value>NOTIFICACIONES</value></data>
+  <data name="Settings_Notifications_Toast_Description" xml:space="preserve"><value>Mostrar una notificación del sistema para eventos importantes.</value></data>
+  <data name="Settings_Notifications_Toast_Label" xml:space="preserve"><value>Notificaciones del sistema</value></data>
+  <data name="Settings_PdfViewer_NavKey" xml:space="preserve"><value>Navegación de páginas</value></data>
+  <data name="Settings_PdfViewer_PrevNextPage" xml:space="preserve"><value>Página anterior o siguiente</value></data>
+  <data name="Settings_PdfViewer_Title" xml:space="preserve"><value>Visor de PDF</value></data>
+  <data name="Settings_Shortcuts_Description" xml:space="preserve"><value>Atajos de teclado para navegación, editor, Kanban y zoom de la vista.</value></data>
+  <data name="Settings_Shortcuts_Title" xml:space="preserve"><value>Atajos de teclado</value></data>
+  <data name="Settings_Skills_CommunityLink_Description" xml:space="preserve"><value>Explorad e instalad habilidades compartidas por la comunidad de Enki.</value></data>
+  <data name="Settings_Skills_CommunityLink_Title" xml:space="preserve"><value>Habilidades de la comunidad</value></data>
+  <data name="Settings_Skills_CommunityLink_Tooltip" xml:space="preserve"><value>Abrir la página de habilidades de la comunidad</value></data>
+  <data name="Settings_Skills_Description" xml:space="preserve"><value>Administrad las habilidades que amplían Enki con nuevas capacidades e integraciones.</value></data>
+  <data name="Settings_Skills_Section_Title" xml:space="preserve"><value>Habilidades instaladas</value></data>
+  <data name="Settings_Skills_ShowSkills_Description" xml:space="preserve"><value>Mostrar u ocultar la sección Habilidades en la navegación principal.</value></data>
+  <data name="Settings_Skills_ShowSkills_Label" xml:space="preserve"><value>Mostrar Habilidades</value></data>
+  <data name="Settings_Skills_Title" xml:space="preserve"><value>Habilidades</value></data>
+  <data name="Settings_ViewZoom_IncreaseDecrease" xml:space="preserve"><value>Aumentar o disminuir el nivel de zoom</value></data>
+  <data name="Settings_ViewZoom_Reset" xml:space="preserve"><value>Restablecer el zoom al 100%</value></data>
+  <data name="Settings_ViewZoom_Title" xml:space="preserve"><value>Zoom de la vista</value></data>
+  <data name="Settings_ViewZoom_WheelKey" xml:space="preserve"><value>Zoom con la rueda del ratón</value></data>
+
+  <!-- ===================== Shell ===================== -->
+  <data name="Shell_BrandTagline" xml:space="preserve"><value>NOTAS MARKDOWN</value></data>
+  <data name="Shell_MaximizeRestoreTooltip" xml:space="preserve"><value>Maximizar/Restaurar</value></data>
+  <data name="Shell_MinimizeTooltip" xml:space="preserve"><value>Minimizar</value></data>
+  <data name="Shell_SearchPlaceholder" xml:space="preserve"><value>Buscar en todo…</value></data>
+  <data name="Shell_SearchTooltip" xml:space="preserve"><value>Buscar</value></data>
+  <data name="Shell_ToggleSidebarTooltip" xml:space="preserve"><value>Mostrar/ocultar barra lateral</value></data>
+  <data name="Shell_VaultLoadFailed_Message" xml:space="preserve"><value>No se ha encontrado la carpeta de almacén guardada. Puede que se haya movido o eliminado.</value></data>
+  <data name="Shell_VaultLoadFailed_Title" xml:space="preserve"><value>No se ha podido cargar el almacén</value></data>
+  <data name="Shell_WindowTitle" xml:space="preserve"><value>Enki — Notas Markdown</value></data>
+
+  <!-- ===================== Skills ===================== -->
+  <data name="Skills_Badge_Default" xml:space="preserve"><value>Predeterminada</value></data>
+  <data name="Skills_Badge_DefaultReadOnly" xml:space="preserve"><value>Predeterminada · Solo lectura</value></data>
+  <data name="Skills_Cancel_Button" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Skills_Card_ToggleExport_Tooltip" xml:space="preserve"><value>Seleccionar para exportar</value></data>
+  <data name="Skills_Community_Description" xml:space="preserve"><value>Examinad el catálogo de habilidades de la comunidad y descargad las que necesitéis.</value></data>
+  <data name="Skills_Community_Title" xml:space="preserve"><value>Comunidad</value></data>
+  <data name="Skills_Count_one" xml:space="preserve"><value>{0} habilidad</value></data>
+  <data name="Skills_Count_other" xml:space="preserve"><value>{0} habilidades</value></data>
+  <data name="Skills_DeleteModal_Message" xml:space="preserve"><value>Esta acción no se puede deshacer.</value></data>
+  <data name="Skills_DeleteModal_Title" xml:space="preserve"><value>Eliminar habilidad</value></data>
+  <data name="Skills_Detail_Close_Tooltip" xml:space="preserve"><value>Cerrar</value></data>
+  <data name="Skills_Detail_Content_Label" xml:space="preserve"><value>Contenido</value></data>
+  <data name="Skills_Detail_CopyContent_Tooltip" xml:space="preserve"><value>Copiar contenido</value></data>
+  <data name="Skills_Detail_DeleteButton" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="Skills_Detail_Description_Label" xml:space="preserve"><value>Descripción</value></data>
+  <data name="Skills_Detail_DuplicateButton" xml:space="preserve"><value>Duplicar</value></data>
+  <data name="Skills_Detail_EditButton" xml:space="preserve"><value>Editar</value></data>
+  <data name="Skills_Detail_Permissions_Label" xml:space="preserve"><value>Permisos</value></data>
+  <data name="Skills_Detail_Tags_Label" xml:space="preserve"><value>Etiquetas</value></data>
+  <data name="Skills_Detail_Tools_Label" xml:space="preserve"><value>Herramientas</value></data>
+  <data name="Skills_Detail_Vibe_Label" xml:space="preserve"><value>Estilo</value></data>
+  <data name="Skills_Duplicate_Tooltip" xml:space="preserve"><value>Duplicar</value></data>
+  <data name="Skills_Editor_BackTooltip" xml:space="preserve"><value>Volver</value></data>
+  <data name="Skills_Editor_SaveStatus_Saved" xml:space="preserve"><value>Guardado</value></data>
+  <data name="Skills_Editor_SaveStatus_Unsaved" xml:space="preserve"><value>Cambios sin guardar</value></data>
+  <data name="Skills_Empty_Description" xml:space="preserve"><value>Importad una habilidad para empezar.</value></data>
+  <data name="Skills_Empty_ImportButton" xml:space="preserve"><value>Importar habilidad</value></data>
+  <data name="Skills_Empty_Title" xml:space="preserve"><value>Aún no hay habilidades</value></data>
+  <data name="Skills_Error_CannotDeleteDefault" xml:space="preserve"><value>Las habilidades predeterminadas no se pueden eliminar.</value></data>
+  <data name="Skills_Error_NameExists" xml:space="preserve"><value>Ya existe una habilidad llamada '{0}'.</value></data>
+  <data name="Skills_ExportDialog_Title" xml:space="preserve"><value>Guardar exportación de habilidad</value></data>
+  <data name="Skills_Export_Button" xml:space="preserve"><value>Exportar</value></data>
+  <data name="Skills_Export_Tooltip" xml:space="preserve"><value>Exportar</value></data>
+  <data name="Skills_Eyebrow" xml:space="preserve"><value>Habilidades</value></data>
+  <data name="Skills_ImportConflict_Message" xml:space="preserve"><value>Ya existe una habilidad con este nombre. ¿Qué queréis hacer?</value></data>
+  <data name="Skills_ImportConflict_OverwriteButton" xml:space="preserve"><value>Sobrescribir</value></data>
+  <data name="Skills_ImportConflict_RenameButton" xml:space="preserve"><value>Renombrar</value></data>
+  <data name="Skills_ImportConflict_Title" xml:space="preserve"><value>Conflicto de nombre</value></data>
+  <data name="Skills_ImportFilesDialog_Title" xml:space="preserve"><value>Importar archivos de habilidad</value></data>
+  <data name="Skills_ImportFolderDialog_Title" xml:space="preserve"><value>Importar carpeta de habilidades</value></data>
+  <data name="Skills_ImportFolder_Button" xml:space="preserve"><value>Importar carpeta</value></data>
+  <data name="Skills_ImportFolder_Tooltip" xml:space="preserve"><value>Importar carpeta</value></data>
+  <data name="Skills_Import_Button" xml:space="preserve"><value>Importar</value></data>
+  <data name="Skills_Import_Tooltip" xml:space="preserve"><value>Importar</value></data>
+  <data name="Skills_NamePrompt_CopyIdSuffix" xml:space="preserve"><value>-copia</value></data>
+  <data name="Skills_NamePrompt_CreateCopy_Confirm" xml:space="preserve"><value>Crear copia</value></data>
+  <data name="Skills_NamePrompt_Duplicate_Title" xml:space="preserve"><value>Duplicar habilidad</value></data>
+  <data name="Skills_NamePrompt_EditDefault_Title" xml:space="preserve"><value>Editar habilidad predeterminada</value></data>
+  <data name="Skills_NamePrompt_EmptyNameError" xml:space="preserve"><value>Introducid un nombre.</value></data>
+  <data name="Skills_NoDescription" xml:space="preserve"><value>Sin descripción</value></data>
+  <data name="Skills_NoResults_ForQuery" xml:space="preserve"><value>Sin resultados para '{0}'</value></data>
+  <data name="Skills_NoResults_ForTags" xml:space="preserve"><value>Ninguna habilidad coincide con las etiquetas seleccionadas</value></data>
+  <data name="Skills_NoResults_Title" xml:space="preserve"><value>Sin resultados</value></data>
+  <data name="Skills_Notify_ContentCopied_Message" xml:space="preserve"><value>Contenido de '{0}' copiado al portapapeles</value></data>
+  <data name="Skills_Notify_ContentCopied_Title" xml:space="preserve"><value>Contenido copiado</value></data>
+  <data name="Skills_Notify_CopyFailed_Title" xml:space="preserve"><value>No se ha podido copiar</value></data>
+  <data name="Skills_Notify_DeleteFailed_Title" xml:space="preserve"><value>No se ha podido eliminar la habilidad</value></data>
+  <data name="Skills_Notify_DuplicateFailed_Title" xml:space="preserve"><value>No se ha podido duplicar la habilidad</value></data>
+  <data name="Skills_Notify_ExportFailed_Title" xml:space="preserve"><value>Exportación fallida</value></data>
+  <data name="Skills_Notify_Exported_Message_one" xml:space="preserve"><value>{0} habilidad exportada a {1}</value></data>
+  <data name="Skills_Notify_Exported_Message_other" xml:space="preserve"><value>{0} habilidades exportadas a {1}</value></data>
+  <data name="Skills_Notify_Exported_Title" xml:space="preserve"><value>Exportación completada</value></data>
+  <data name="Skills_Notify_ImportFailed_Title" xml:space="preserve"><value>Importación fallida</value></data>
+  <data name="Skills_Notify_Imported_Message_one" xml:space="preserve"><value>{0} habilidad importada</value></data>
+  <data name="Skills_Notify_Imported_Message_other" xml:space="preserve"><value>{0} habilidades importadas</value></data>
+  <data name="Skills_Notify_Imported_Title" xml:space="preserve"><value>Importación completada</value></data>
+  <data name="Skills_Notify_NothingToExport_Message" xml:space="preserve"><value>Seleccionad al menos una habilidad para exportar.</value></data>
+  <data name="Skills_Notify_NothingToExport_Title" xml:space="preserve"><value>Nada que exportar</value></data>
+  <data name="Skills_Notify_Skipped_Message_one" xml:space="preserve"><value>{0} habilidad omitida (ya existe)</value></data>
+  <data name="Skills_Notify_Skipped_Message_other" xml:space="preserve"><value>{0} habilidades omitidas (ya existen)</value></data>
+  <data name="Skills_Notify_SomeSkipped_Title" xml:space="preserve"><value>Se han omitido algunas habilidades</value></data>
+  <data name="Skills_Page_StaticNotice" xml:space="preserve"><value>Son plantillas de prompt estáticas para usar con un asistente de IA externo — Enki no incluye ni se conecta a ningún motor de IA por sí misma.</value></data>
+  <data name="Skills_Page_Subtitle" xml:space="preserve"><value>Gestionad las habilidades disponibles para vuestro asistente.</value></data>
+  <data name="Skills_Page_Title" xml:space="preserve"><value>Habilidades</value></data>
+  <data name="Skills_Search_Placeholder" xml:space="preserve"><value>Buscar habilidades…</value></data>
+  <data name="Skills_Search_Tooltip" xml:space="preserve"><value>Buscar</value></data>
+
+  <!-- ===================== TagFilter ===================== -->
+  <data name="TagFilter_Empty" xml:space="preserve"><value>Sin etiquetas</value></data>
+
+  <!-- ===================== Trash ===================== -->
+  <data name="Trash_DeleteForeverButton" xml:space="preserve"><value>Eliminar para siempre</value></data>
+  <data name="Trash_DeleteForeverModal_Message" xml:space="preserve"><value>'{0}' se eliminará de forma permanente. Esta acción no se puede deshacer.</value></data>
+  <data name="Trash_DeleteForeverModal_Title" xml:space="preserve"><value>¿Eliminar de forma permanente?</value></data>
+  <data name="Trash_DeleteForeverTooltip" xml:space="preserve"><value>Eliminar para siempre</value></data>
+  <data name="Trash_Documents_Empty" xml:space="preserve"><value>No hay documentos en la papelera</value></data>
+  <data name="Trash_Documents_Eyebrow" xml:space="preserve"><value>Documentos</value></data>
+  <data name="Trash_EmptyAllButton" xml:space="preserve"><value>Vaciar papelera</value></data>
+  <data name="Trash_EmptyAllModal_Message" xml:space="preserve"><value>Se eliminarán de forma permanente todos los elementos de la papelera. Esta acción no se puede deshacer.</value></data>
+  <data name="Trash_EmptyAllModal_Title" xml:space="preserve"><value>¿Vaciar la papelera?</value></data>
+  <data name="Trash_EmptyButton" xml:space="preserve"><value>Vaciar</value></data>
+  <data name="Trash_EmptyDocumentsModal_Message" xml:space="preserve"><value>Se eliminarán de forma permanente todos los documentos de la papelera. Esta acción no se puede deshacer.</value></data>
+  <data name="Trash_EmptyDocumentsModal_Title" xml:space="preserve"><value>¿Vaciar los documentos?</value></data>
+  <data name="Trash_EmptyFilesModal_Message" xml:space="preserve"><value>Se eliminarán de forma permanente todos los archivos de la papelera. Esta acción no se puede deshacer.</value></data>
+  <data name="Trash_EmptyFilesModal_Title" xml:space="preserve"><value>¿Vaciar los archivos?</value></data>
+  <data name="Trash_EmptyRemindersModal_Message" xml:space="preserve"><value>Se eliminarán de forma permanente todos los recordatorios de la papelera. Esta acción no se puede deshacer.</value></data>
+  <data name="Trash_EmptyRemindersModal_Title" xml:space="preserve"><value>¿Vaciar los recordatorios?</value></data>
+  <data name="Trash_EmptySessionsModal_Message" xml:space="preserve"><value>Se eliminarán de forma permanente todas las sesiones de la papelera, junto con sus notas. Esta acción no se puede deshacer.</value></data>
+  <data name="Trash_EmptySessionsModal_Title" xml:space="preserve"><value>¿Vaciar las sesiones?</value></data>
+  <data name="Trash_EmptyTasksModal_Message" xml:space="preserve"><value>Se eliminarán de forma permanente todas las tareas de la papelera. Esta acción no se puede deshacer.</value></data>
+  <data name="Trash_EmptyTasksModal_Title" xml:space="preserve"><value>¿Vaciar las tareas?</value></data>
+  <data name="Trash_Eyebrow" xml:space="preserve"><value>Papelera</value></data>
+  <data name="Trash_Files_Empty" xml:space="preserve"><value>No hay archivos en la papelera</value></data>
+  <data name="Trash_Files_Eyebrow" xml:space="preserve"><value>Archivos</value></data>
+  <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve"><value>'{0}' permanece en la papelera porque el tablero no tiene ninguna columna donde devolverla.</value></data>
+  <data name="Trash_Notify_CardRestoreFailed_Title" xml:space="preserve"><value>No se pudo restaurar la tarjeta</value></data>
+  <data name="Trash_Notify_CardRestored_Message" xml:space="preserve"><value>{0} se ha restaurado en {1}</value></data>
+  <data name="Trash_Notify_CardRestored_Title" xml:space="preserve"><value>Tarjeta restaurada</value></data>
+  <data name="Trash_Notify_DocumentsCount_one" xml:space="preserve"><value>{0} documento</value></data>
+  <data name="Trash_Notify_DocumentsCount_other" xml:space="preserve"><value>{0} documentos</value></data>
+  <data name="Trash_Notify_FilesCount_one" xml:space="preserve"><value>{0} archivo</value></data>
+  <data name="Trash_Notify_FilesCount_other" xml:space="preserve"><value>{0} archivos</value></data>
+  <data name="Trash_Notify_ListConjunction" xml:space="preserve"><value>y</value></data>
+  <data name="Trash_Notify_ReminderRestored_Message" xml:space="preserve"><value>Recordatorio '{0}' restaurado.</value></data>
+  <data name="Trash_Notify_ReminderRestored_Title" xml:space="preserve"><value>Recordatorio restaurado</value></data>
+  <data name="Trash_Notify_RemindersCount_one" xml:space="preserve"><value>{0} recordatorio</value></data>
+  <data name="Trash_Notify_RemindersCount_other" xml:space="preserve"><value>{0} recordatorios</value></data>
+  <data name="Trash_Notify_SessionRestored_Message" xml:space="preserve"><value>Sesión '{0}' restaurada.</value></data>
+  <data name="Trash_Notify_SessionRestored_Title" xml:space="preserve"><value>Sesión restaurada</value></data>
+  <data name="Trash_Notify_SessionsCount_one" xml:space="preserve"><value>{0} sesión</value></data>
+  <data name="Trash_Notify_SessionsCount_other" xml:space="preserve"><value>{0} sesiones</value></data>
+  <data name="Trash_Notify_TasksCount_one" xml:space="preserve"><value>{0} tarea</value></data>
+  <data name="Trash_Notify_TasksCount_other" xml:space="preserve"><value>{0} tareas</value></data>
+  <data name="Trash_Notify_TrashEmptied_Message" xml:space="preserve"><value>Se ha vaciado la papelera: {0}</value></data>
+  <data name="Trash_Notify_TrashEmptied_Title" xml:space="preserve"><value>Papelera vaciada</value></data>
+  <data name="Trash_PageSubtitle" xml:space="preserve"><value>Los elementos eliminados permanecen aquí hasta que los restauréis o los eliminéis de forma permanente.</value></data>
+  <data name="Trash_PageTitle" xml:space="preserve"><value>Papelera</value></data>
+  <data name="Trash_Reminders_Empty" xml:space="preserve"><value>No hay recordatorios en la papelera</value></data>
+  <data name="Trash_Reminders_Eyebrow" xml:space="preserve"><value>Recordatorios</value></data>
+  <data name="Trash_RestoreTooltip" xml:space="preserve"><value>Restaurar</value></data>
+  <data name="Trash_Sessions_Empty" xml:space="preserve"><value>No hay sesiones en la papelera</value></data>
+  <data name="Trash_Sessions_Eyebrow" xml:space="preserve"><value>Sesiones</value></data>
+  <data name="Trash_Task_WasInColumn" xml:space="preserve"><value>Estaba en {0}</value></data>
+  <data name="Trash_Tasks_Empty" xml:space="preserve"><value>No hay tareas en la papelera</value></data>
+  <data name="Trash_Tasks_Eyebrow" xml:space="preserve"><value>Tareas</value></data>
+
+  <!-- ===================== Vault ===================== -->
+  <data name="Vault_DefaultFolderName" xml:space="preserve"><value>Nueva carpeta</value></data>
+  <data name="Vault_DefaultNoteTitle" xml:space="preserve"><value>Nota sin título</value></data>
+  <data name="Vault_UntitledNoteTitle" xml:space="preserve"><value>Sin título</value></data>
+
+  <!-- ===================== VaultSetup ===================== -->
+  <data name="VaultSetup_AnotherInstance_Info" xml:space="preserve"><value>Enki ya está en ejecución. Usad la ventana existente.</value></data>
+  <data name="VaultSetup_CreateFolderPickerTitle" xml:space="preserve"><value>Elegid una carpeta para el nuevo almacén</value></data>
+  <data name="VaultSetup_CreateNewButton" xml:space="preserve"><value>Crear almacén nuevo</value></data>
+  <data name="VaultSetup_Error_AccessDenied" xml:space="preserve"><value>No tenéis permiso para usar esa carpeta.</value></data>
+  <data name="VaultSetup_Error_Generic" xml:space="preserve"><value>No se ha podido usar esa carpeta: {0}</value></data>
+  <data name="VaultSetup_Error_IOFailure" xml:space="preserve"><value>No se ha podido leer o escribir en esa carpeta. Comprobad que la unidad esté conectada y tenga espacio libre.</value></data>
+  <data name="VaultSetup_Error_InvalidPath" xml:space="preserve"><value>Esa no es una ruta de carpeta válida.</value></data>
+  <data name="VaultSetup_Error_PathTooLong" xml:space="preserve"><value>La ruta de esa carpeta es demasiado larga.</value></data>
+  <data name="VaultSetup_OpenExistingButton" xml:space="preserve"><value>Abrir almacén existente</value></data>
+  <data name="VaultSetup_OpenFolderPickerTitle" xml:space="preserve"><value>Elegid la carpeta del almacén</value></data>
+  <data name="VaultSetup_Subtitle" xml:space="preserve"><value>Elegid una carpeta para guardar vuestras notas, o abrid una que hayáis usado antes.</value></data>
+  <data name="VaultSetup_Title" xml:space="preserve"><value>Bienvenido a Enki</value></data>
+  <data name="VaultSetup_VaultMissing_Info" xml:space="preserve"><value>No se ha encontrado la carpeta de almacén guardada la última vez. Elegid una carpeta para continuar.</value></data>
+
+  <!-- ===================== WebView ===================== -->
+  <data name="WebView_Unavailable_Generic" xml:space="preserve"><value>No se ha encontrado ningún motor WebView compatible en este sistema.</value></data>
+  <data name="WebView_Unavailable_Linux" xml:space="preserve"><value>Falta el motor WebView del sistema. Instalad 'wpewebkit' (o 'webkit2gtk-4.1') y reiniciad Enki.</value></data>
+
+  <!-- ===================== WelcomeNote ===================== -->
+  <data name="WelcomeNote_Content" xml:space="preserve"><value># Bienvenido a Enki
+
+Este es vuestro espacio de trabajo personal para el conocimiento. Podéis escribir notas en Markdown, organizar tareas con tableros Kanban, gestionar recordatorios y conectar ideas en sesiones.
+
+**Empezad:**
+- Cread una nota desde la vista Notas.
+- Añadid una tarea en la vista Polar.
+- Cambiad entre sesiones desde la vista Sesiones.
+
+Disfrutad escribiendo.</value></data>
+  <data name="WelcomeNote_FileName" xml:space="preserve"><value>Bienvenida.md</value></data>
+  <data name="Notification_VaultUnavailable_Reason" xml:space="preserve"><value>Vuestro almacén no está disponible ahora mismo: comprobad que la unidad esté conectada.</value></data>
+  <data name="Notification_SaveFailed_Reason_PathNotFound" xml:space="preserve"><value>No se ha encontrado la carpeta del archivo.</value></data>
+  <data name="Notification_NoteSaveFailed_Title" xml:space="preserve"><value>No se ha podido guardar la nota</value></data>
+  <data name="Notification_NoteSaveFailed_Message" xml:space="preserve"><value>"{0}" no se ha guardado: {1} Enki seguirá intentándolo automáticamente.</value></data>
+  <data name="Notification_NoteRenameFailed_Title" xml:space="preserve"><value>No se ha podido renombrar la nota</value></data>
+  <data name="Notification_NoteRenameFailed_Message" xml:space="preserve"><value>"{0}" no se ha podido renombrar: {1}</value></data>
+  <data name="Notification_VaultWriteFailed_Title" xml:space="preserve"><value>Ha fallado una operación del almacén</value></data>
+  <data name="Notification_SkillSaveFailed_Title" xml:space="preserve"><value>No se ha podido guardar la skill</value></data>
+  <data name="Notification_SkillSaveFailed_Message" xml:space="preserve"><value>"{0}" no se ha guardado: {1} Enki seguirá intentándolo automáticamente.</value></data>
+  <data name="Notification_SettingsCorrupt_Title" xml:space="preserve"><value>No se han podido leer los ajustes</value></data>
+  <data name="Notification_SettingsCorrupt_Message" xml:space="preserve"><value>El archivo settings.json estaba corrupto, así que Enki ha restablecido vuestros ajustes a los valores por defecto, incluido el vínculo con la cuenta Polar si estaba vinculada. Los ajustes anteriores siguen en el disco.</value></data>
+  <data name="Notification_NotificationsCorrupt_Title" xml:space="preserve"><value>No se ha podido leer el registro de notificaciones</value></data>
+  <data name="Notification_NotificationsCorrupt_Message" xml:space="preserve"><value>El archivo notifications.json estaba corrupto, así que el registro de notificaciones se ha restablecido. El archivo anterior sigue en el disco.</value></data>
+  <data name="Notification_RemindersCorrupt_Title" xml:space="preserve"><value>No se ha podido leer el archivo de recordatorios</value></data>
+  <data name="Notification_RemindersCorrupt_Message" xml:space="preserve"><value>El archivo reminders.json estaba corrupto, así que vuestra lista de recordatorios se ha restablecido. El archivo anterior sigue en el disco.</value></data>
+  <data name="Settings_General_DangerZone_BackupIncompleteTitle" xml:space="preserve"><value>Copia de seguridad creada con archivos que faltan</value></data>
+  <data name="Settings_General_DangerZone_BackupIncompleteMessage_one" xml:space="preserve"><value>Copia de seguridad creada en {1}, pero {0} archivo no se ha podido incluir (bloqueado o ilegible).</value></data>
+  <data name="Settings_General_DangerZone_BackupIncompleteMessage_other" xml:space="preserve"><value>Copia de seguridad creada en {1}, pero {0} archivos no se han podido incluir (bloqueados o ilegibles).</value></data>
+  <data name="Settings_General_DangerZone_AutoBackup_Label" xml:space="preserve"><value>Copia de seguridad automática</value></data>
+  <data name="Settings_General_DangerZone_AutoBackup_Description" xml:space="preserve"><value>Crea una copia de seguridad automáticamente una vez al día y conserva las últimas 5, además de la copia manual de arriba.</value></data>
+  <data name="Settings_General_DangerZone_AutoBackup_IntervalLabel" xml:space="preserve"><value>Intervalo de copia (días)</value></data>
+  <data name="Settings_General_DangerZone_AutoBackup_RetentionLabel" xml:space="preserve"><value>Copias a conservar</value></data>
+  <data name="Notification_NoteDeletedWithBacklinks_Title" xml:space="preserve"><value>Nota eliminada</value></data>
+  <data name="Notification_NoteDeletedWithBacklinks_Message" xml:space="preserve"><value>«{0}» se eliminó. Notas que aún enlazan a ella: {1}.</value></data>
+  <data name="Notification_NoteDeletedWithBacklinks_Notes_one" xml:space="preserve"><value>{0} nota</value></data>
+  <data name="Notification_NoteDeletedWithBacklinks_Notes_other" xml:space="preserve"><value>{0} notas</value></data>
+  <data name="Notification_NoteRenameCollision_Title" xml:space="preserve"><value>Nombre ya en uso</value></data>
+  <data name="Notification_NoteRenameCollision_Message" xml:space="preserve"><value>Ya existía una nota con ese nombre — se guardó como «{0}» en su lugar.</value></data>
+</root>

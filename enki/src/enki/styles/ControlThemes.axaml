@@ -1,0 +1,76 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ===================================================================
+       Re-templates completos para controles Fluent que no se pueden llevar
+       a "cero radio / rectangular" solo con Setters de propiedad
+       (ToggleSwitch, ScrollBar). Ver §7.4 y §7.14 de la guía de diseño.
+       Vive en Application.Resources para tener prioridad sobre los
+       ControlTheme implícitos de FluentTheme.
+       =================================================================== -->
+
+  <!-- ===================== Toggle switch (§7.4) ===================== -->
+  <!-- Track/knob del estado "off" resueltos vía la rampa Ink (Fase 1, gap 25: antes hardcodeaban
+       #353535/#919191 — grises fijos que no seguían la inversión de polaridad de Colors.axaml al
+       cambiar a tema claro, a diferencia de todo lo demás en este re-template). -->
+  <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <Border x:Name="SwitchTrack"
+                  Width="36" Height="18"
+                  CornerRadius="0"
+                  Background="{DynamicResource Ink20}"
+                  HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Border.Transitions>
+              <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+              </Transitions>
+            </Border.Transitions>
+            <Panel x:Name="PART_MovingKnobs">
+              <Border x:Name="SwitchKnob"
+                      Width="14" Height="14"
+                      CornerRadius="0"
+                      Background="{DynamicResource Ink40}"
+                      HorizontalAlignment="Left" VerticalAlignment="Center"
+                      Margin="2,0,0,0">
+                <Border.Transitions>
+                  <Transitions>
+                    <ThicknessTransition Property="Margin" Duration="0:0:0.3" Easing="BackEaseOut" />
+                    <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                  </Transitions>
+                </Border.Transitions>
+              </Border>
+            </Panel>
+          </Border>
+
+          <ContentPresenter x:Name="PART_OnContentPresenter"
+                             Content="{TemplateBinding OnContent}"
+                             IsVisible="{TemplateBinding IsChecked}"
+                             VerticalAlignment="Center" />
+          <ContentPresenter x:Name="PART_OffContentPresenter"
+                             Content="{TemplateBinding OffContent}"
+                             IsVisible="{Binding !IsChecked, RelativeSource={RelativeSource TemplatedParent}}"
+                             VerticalAlignment="Center" />
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:checked /template/ Border#SwitchTrack">
+      <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#SwitchKnob">
+      <Setter Property="Margin" Value="20,0,0,0" />
+      <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.4" />
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+  </ControlTheme>
+
+</ResourceDictionary>

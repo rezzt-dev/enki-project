@@ -1,0 +1,28 @@
+<Project>
+  <!-- Shared MSBuild settings for every project under src/. Individual .csproj files can still override these. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <Product>Enki</Product>
+    <Company>rezztdev</Company>
+    <Copyright>Copyright (c) 2026 rezztdev. All rights reserved.</Copyright>
+    <!-- Primera versión etiquetada tras el cierre de la Fase 8 del roadmap de deficiencias
+         (docs/analisis-proyecto/roadmap.md) — la app no había tenido nunca un número de versión real
+         hasta ahora (el SDK generaba 1.0.0.0 por defecto al no fijarse aquí). Subir este número junto a
+         CHANGELOG.md en cada release real; ver ese fichero para el criterio de versionado. -->
+    <Version>0.1.0</Version>
+
+    <!-- Fase 8 del roadmap de deficiencias (docs/analisis-proyecto/roadmap.md): antes de esto nada
+         bloqueaba un commit con warnings o tests rotos salvo la disciplina manual. Activado una vez
+         confirmado en local que las tres compilaciones (enki, enki.Tests, enki.UITests) ya daban 0
+         warnings con el código actual, y cableado en .github/workflows/ci.yml para que un warning nuevo
+         rompa el build en vez de acumularse silenciosamente.
+
+         `AnalysisLevel` se queda en el valor por defecto del SDK aquí (compartido por los tres proyectos)
+         a propósito: la Fase 10 del roadmap lo sube a `latest-recommended` solo en `src/enki/enki.csproj`
+         — ver el comentario de ese fichero para el porqué de no hacerlo también aquí. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+  </PropertyGroup>
+</Project>

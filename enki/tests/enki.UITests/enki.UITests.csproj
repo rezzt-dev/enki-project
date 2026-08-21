@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Fase 6 (roadmap §11): basic UI-layer tests (create note, move a Kanban card, open the calendar) and
+       theme/zoom regression tests, run against real Views bound to real ViewModels via Avalonia's headless
+       test platform (see HeadlessApp.cs). Kept in a project of its own, separate from enki.Tests: any test
+       process that touches a DispatcherTimer (several ViewModel constructors do, e.g. NotesViewModel's
+       search debounce) lazily creates a portable, no-platform Dispatcher singleton the moment it runs — if
+       that happens anywhere in the same process before Avalonia.Headless's AppBuilder.Setup() runs, Setup
+       fails outright ("a different thread owns it" / "Setup was already called"). enki.Tests already has
+       450+ such ViewModel/service tests; isolating the Avalonia-platform-dependent tests in their own test
+       host process sidesteps that conflict instead of fighting for execution-order control over a suite
+       this project doesn't own the ordering of. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageReference Include="Avalonia.Headless" Version="12.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/enki/enki.csproj" />
+  </ItemGroup>
+
+</Project>

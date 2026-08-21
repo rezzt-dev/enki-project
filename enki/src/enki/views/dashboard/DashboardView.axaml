@@ -1,0 +1,513 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="960"
+             x:Class="enki.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+  <UserControl.Resources>
+
+    <!-- Fila de una tarjeta Kanban en las tres mini-columnas de "TAREAS DEL TABLERO" (Pendientes / En
+         progreso / Hecho) — una única plantilla compartida entre las tres para que quede garantizado que
+         se vean idénticas. -->
+    <DataTemplate x:Key="BoardTaskRowTemplate" DataType="vm:KanbanCardViewModel">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+        <Ellipse Grid.Column="0" Classes="priority-dot" VerticalAlignment="Center" Margin="0,0,10,0"
+                 Classes.low="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Low}"
+                 Classes.medium="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium}"
+                 Classes.high="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High}" />
+        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12.5"
+                   TextTrimming="CharacterEllipsis" MaxLines="1" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding DueDateLabel}" Classes="faint"
+                   Classes.overdue="{Binding IsOverdue}" IsVisible="{Binding HasDueDate}"
+                   Margin="10,0,0,0" VerticalAlignment="Center" />
+      </Grid>
+    </DataTemplate>
+
+    <!-- Fila de "NOTAS RECIENTES" que no es la tarjeta destacada (§ más abajo) — lista compacta al lado. -->
+    <DataTemplate x:Key="OtherNoteRowTemplate" DataType="vm:NoteCardViewModel">
+      <Button Classes="dropdown-item"
+              Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).OpenCardCommand}"
+              CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Ellipse Grid.Column="0" Width="5" Height="5" Fill="{DynamicResource Ink40}" Margin="1,0,10,0" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Spacing="3">
+            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold"
+                       TextTrimming="CharacterEllipsis" MaxLines="1" />
+            <TextBlock Text="{Binding ModifiedLabel}" Classes="faint" />
+          </StackPanel>
+          <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="14" Height="14"
+                            Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="8,0,0,0" />
+        </Grid>
+      </Button>
+    </DataTemplate>
+
+    <!-- Fila de "HOY": tarjeta clickeable con barra de color del origen, icono, prioridad,
+         contexto y hora/vencimiento en un chip. -->
+    <DataTemplate x:Key="TodayItemTemplate" DataType="vm:CalendarItemViewModel">
+      <Button Classes="card" Padding="0"
+              Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).NavigateToCalendarCommand}" AutomationProperties.Name="{Binding Title}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              Margin="0,0,0,12">
+        <Grid ColumnDefinitions="Auto,*">
+          <Border Grid.Column="0" Width="3"
+                  Background="{Binding LayerColorHex, Converter={StaticResource HexColorToBrushConverter}}"
+                  VerticalAlignment="Stretch" />
+          <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" Margin="14,12">
+            <StackPanel Grid.Column="0" Spacing="6" Margin="0,0,12,0" VerticalAlignment="Center">
+              <mi:MaterialIcon Kind="{Binding IconKind}" Width="18" Height="18"
+                               Foreground="{DynamicResource Ink40}" />
+              <Ellipse Width="7" Height="7" HorizontalAlignment="Center"
+                       Classes="priority-dot"
+                       IsVisible="{Binding HasPriority}"
+                       Classes.low="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Low}"
+                       Classes.medium="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium}"
+                       Classes.high="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding SourceLabel}" Classes="faint" FontSize="10" />
+                <TextBlock Text="·" Classes="faint" FontSize="10" IsVisible="{Binding HasParentContext}" />
+                <TextBlock Text="{Binding ParentContextLabel}" Classes="faint" FontSize="10" IsVisible="{Binding HasParentContext}" />
+              </StackPanel>
+              <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold"
+                         TextTrimming="CharacterEllipsis" MaxLines="1" />
+              <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasSubtasksOrChildren}">
+                <mi:MaterialIcon Kind="SubdirectoryArrowRight" Width="12" Height="12"
+                                 Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Dashboard_HasSubtasksLabel}" Classes="faint" FontSize="10" />
+              </StackPanel>
+            </StackPanel>
+            <Border Grid.Column="2" Classes="today-time-chip"
+                    Classes.overdue="{Binding IsPastDue}"
+                    VerticalAlignment="Center" Margin="12,0,0,0">
+              <TextBlock Text="{Binding DueDateLabel}" Classes="faint" FontSize="11"
+                         Classes.overdue="{Binding IsPastDue}" />
+            </Border>
+          </Grid>
+        </Grid>
+      </Button>
+    </DataTemplate>
+
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="Border.today-time-chip">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="8,4" />
+    </Style>
+    <Style Selector="Border.today-time-chip.overdue">
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- El respiro de la página va como Margin del contenido, NO como Padding del ScrollViewer: en
+       Avalonia 12 el padding se descuenta del extent scrolleable en vez de sumarse, así que con
+       Padding="36,30,36,30" los últimos 60px (arriba + abajo) del contenido quedan fuera de alcance y la
+       última sección — "NOTAS RECIENTES" — se ve cortada aunque hayas llegado al final del scroll. -->
+  <ScrollViewer VerticalScrollBarVisibility="{Binding ScrollBarVisibility}">
+    <StackPanel Margin="36,30,36,30" Spacing="28" MaxWidth="1320" HorizontalAlignment="Stretch">
+
+      <!-- Header -->
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0" Spacing="6">
+          <TextBlock Text="{loc:Tr Dashboard_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <TextBlock Text="{loc:Tr Dashboard_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
+          <TextBlock Text="{loc:Tr Dashboard_Subtitle}" Classes="page-subtitle" />
+        </StackPanel>
+        <Button Grid.Column="1" Classes="pill" Command="{Binding NewNoteCommand}"
+                VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
+            <TextBlock Text="{loc:Tr Dashboard_NewNote, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <!-- Accesos rápidos: enlaces directos a las áreas de la app que ninguna otra sección de este
+           dashboard ya cubre (Kanban/Sesiones/Documentos/Papelera tienen su propio botón "IR" más abajo,
+           así que repetirlos aquí sería ruido) — para que el panel funcione de verdad como un centro de
+           mando desde el que se llega a casi cualquier rincón de Enki, no solo a un resumen de notas. -->
+      <StackPanel Spacing="16">
+        <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+
+        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1">
+          <Grid ColumnDefinitions="*,1,*,1,*,1,*" Background="{DynamicResource Ink10}">
+
+            <Button Grid.Column="0" Classes="card" IsVisible="{Binding IsCalendarEnabled}"
+                    Command="{Binding NavigateToCalendarCommand}">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="CalendarBlankOutline" Width="18" Height="18"
+                                  Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Calendar_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Calendar_Subtitle}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Button>
+
+            <Button Grid.Column="2" Classes="card" Command="{Binding OpenRemindersCommand}">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="CalendarClockOutline" Width="18" Height="18"
+                                  Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Reminders_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Reminders_Subtitle}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Button>
+
+            <Button Grid.Column="4" Classes="card" Command="{Binding OpenNotificationsCommand}">
+              <Grid ColumnDefinitions="Auto,*">
+                <Panel Grid.Column="0" Width="18" Height="18" Margin="0,0,12,0" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="BellRingOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+                  <Border Classes="titlebar-badge" IsVisible="{Binding HasUnreadNotifications}">
+                    <TextBlock Classes="titlebar-badge-text" Text="{Binding UnreadNotificationCount}" />
+                  </Border>
+                </Panel>
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Notifications_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Notifications_Subtitle}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Button>
+
+            <Button Grid.Column="6" Classes="card" Command="{Binding OpenSettingsCommand}">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="CogOutline" Width="18" Height="18"
+                                  Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Settings_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="11.5" FontWeight="Bold" LetterSpacing="0.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Settings_Subtitle}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Button>
+
+          </Grid>
+        </Border>
+      </StackPanel>
+
+      <!-- Bento: "HOY" manda como tarjeta grande (2/3) — el resto (identidad del vault, actividad,
+           sesiones) se apila en la columna angosta de al lado (1/3), en vez de la fila de 4 cajas de
+           estadística + fila aparte que había antes. La columna 0 es un Grid Auto/* (no un StackPanel)
+           para que la tarjeta de HOY se estire hasta igualar la altura de la columna lateral — un
+           StackPanel no reparte el espacio sobrante entre sus hijos. -->
+      <Grid ColumnDefinitions="2*,20,1*">
+
+        <Grid Grid.Column="0" RowDefinitions="Auto,*">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
+            <TextBlock Grid.Column="0" Text="{loc:Tr Dashboard_Today_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+            <Border Grid.Column="1" Classes="graph-chip" Margin="0,0,10,0" IsVisible="{Binding HasUnreadNotifications}">
+              <TextBlock Text="{Binding TodayUnreadChipLabel}" Classes="faint" FontSize="10.5" />
+            </Border>
+            <Border Grid.Column="2" Classes="graph-chip" IsVisible="{Binding IsPolarLinked}">
+              <TextBlock Text="{Binding TodayPolarChipLabel}" Classes="faint" FontSize="10.5" />
+            </Border>
+          </Grid>
+
+          <Border Grid.Row="1" Classes="card" Padding="20" Margin="0,16,0,0">
+            <Grid>
+              <ItemsControl ItemsSource="{Binding TodayItems}" IsVisible="{Binding HasTodayItems}"
+                            ItemTemplate="{StaticResource TodayItemTemplate}"
+                            VerticalAlignment="Top" />
+
+              <StackPanel IsVisible="{Binding !HasTodayItems}" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="CalendarCheckOutline" Width="26" Height="26" Foreground="{DynamicResource TextMutedBrush}"
+                                  HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Dashboard_Today_EmptyState}" Classes="muted" FontSize="12.5" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </Grid>
+
+        <!-- Columna lateral: identidad del vault, actividad reciente, vista previa del grafo -->
+        <StackPanel Grid.Column="2" Spacing="20">
+
+          <StackPanel Spacing="16">
+            <TextBlock Text="{loc:Tr Dashboard_Vault_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+            <Border Classes="card" Padding="18">
+              <StackPanel Spacing="13">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="NoteTextOutline" Width="15" Height="15"
+                                    Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_NotesLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding TotalNoteCount}" FontSize="19" FontWeight="Bold" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="SitemapOutline" Width="15" Height="15"
+                                    Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SessionsLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding SessionCount}" FontSize="19" FontWeight="Bold" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="Harddisk" Width="15" Height="15"
+                                    Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SizeLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding VaultSizeLabel}" FontSize="15" FontWeight="Bold" />
+                </Grid>
+                <Border Height="1" Background="{DynamicResource Ink10}" />
+                <Grid ColumnDefinitions="Auto,*">
+                  <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="14" Height="14"
+                                    Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,9,0" />
+                  <TextBlock Grid.Column="1" Text="{Binding VaultPath}" Classes="faint" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding VaultPath}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="16">
+            <TextBlock Text="{loc:Tr Dashboard_Activity_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+
+            <Border Classes="card" Padding="18">
+              <StackPanel Spacing="14">
+
+                <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsPolarLinked}">
+                  <mi:MaterialIcon Kind="SyncCircle" Width="15" Height="15"
+                                    Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding ActivityPolarSummaryLabel}" FontSize="12.5" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Border Height="1" Background="{DynamicResource Ink10}"
+                        IsVisible="{Binding IsPolarLinked}" />
+
+                <ItemsControl ItemsSource="{Binding RecentNotifications}" IsVisible="{Binding HasRecentNotifications}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:NotificationItemViewModel">
+                      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+                        <mi:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIcon}" Width="14" Height="14"
+                                          Margin="0,2,10,0" VerticalAlignment="Top" Classes="severity-icon"
+                                          Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
+                                          Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
+                                          Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1"
+                                   Classes.faint="{Binding IsRead}" VerticalAlignment="Top" />
+                        <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" Classes="faint" FontSize="9"
+                                   Margin="8,1,0,0" VerticalAlignment="Top" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel IsVisible="{Binding HasNoActivity}" Spacing="8" HorizontalAlignment="Center" Margin="0,6">
+                  <mi:MaterialIcon Kind="BellRingOutline" Width="20" Height="20" Foreground="{DynamicResource TextMutedBrush}"
+                                    HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Tr Dashboard_Activity_EmptyState}" Classes="muted" FontSize="11.5" HorizontalAlignment="Center" />
+                </StackPanel>
+
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Vista previa del grafo de sesiones (§04-1: "conecta visualmente Sesiones con el resto") -->
+          <StackPanel Spacing="16">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Tr Dashboard_Sessions_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="ghost" Command="{Binding NavigateToSessionsCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{loc:Tr Dashboard_Sessions_GoLabel, Converter={StaticResource UpperCaseConverter}}" />
+                  <mi:MaterialIcon Kind="ArrowRightThin" Width="15" Height="15" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- No live WebView here on purpose: an embedded NativeWebView doesn't clip/scroll correctly
+                 inside this page's ScrollViewer (native "airspace" problem) — the real interactive graph
+                 stays on the Sesiones page, which hosts its WebView in a fixed, non-scrolling panel. -->
+            <Button Classes="card" Padding="18" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToSessionsCommand}">
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="Sitemap" Width="22" Height="22" Foreground="{DynamicResource Ink40}"
+                                  IsVisible="{Binding !IsGraphLoading}" />
+                <mi:MaterialIcon Classes="spin" Kind="Loading" Width="22" Height="22" Foreground="{DynamicResource Ink40}"
+                                  IsVisible="{Binding IsGraphLoading}" />
+                <TextBlock Text="{Binding SessionsGraphSummaryLabel}" FontSize="14" FontWeight="Bold" TextWrapping="Wrap" IsVisible="{Binding !IsGraphLoading}" />
+                <TextBlock Text="{loc:Tr Dashboard_Sessions_Loading}" FontSize="14" FontWeight="Bold" IsVisible="{Binding IsGraphLoading}" />
+                <TextBlock Text="{loc:Tr Dashboard_Sessions_Subtitle}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+
+        </StackPanel>
+      </Grid>
+
+      <!-- Tareas del tablero: una única tarjeta ancha con las tres columnas núcleo dentro (en vez de tres
+           tarjetas bordeadas por separado) — misma rejilla con "costura" de 1px que Accesos rápidos. -->
+      <StackPanel Spacing="16">
+        <TextBlock Text="{loc:Tr Dashboard_BoardTasks_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+
+        <Border Classes="card" Padding="22">
+          <StackPanel Spacing="20">
+
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
+                          IsVisible="{Binding HasBoardCards}">
+                <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                  <Border Width="{Binding PendingBarWidth}" Height="6" Background="{DynamicResource Ink20}" />
+                  <Border Width="{Binding InProgressBarWidth}" Height="6" Background="{DynamicResource Ink50}" />
+                  <Border Width="{Binding DoneBarWidth}" Height="6" Background="{DynamicResource InkBrush}" />
+                </StackPanel>
+                <TextBlock Text="{Binding BoardProgressLabel}" Classes="faint" FontSize="10.5" />
+              </StackPanel>
+              <Button Grid.Column="2" Classes="ghost" Command="{Binding NavigateToKanbanCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{loc:Tr Dashboard_BoardTasks_GoToBoard, Converter={StaticResource UpperCaseConverter}}" />
+                  <mi:MaterialIcon Kind="ArrowRightThin" Width="15" Height="15" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1">
+              <Grid ColumnDefinitions="*,1,*,1,*" Background="{DynamicResource Ink10}">
+
+                <!-- Pendientes ("Por hacer") -->
+                <Border Grid.Column="0" Background="{DynamicResource PanelBackgroundBrush}" Padding="18">
+                  <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <mi:MaterialIcon Grid.Column="0" Kind="TrayFull" Width="15" Height="15"
+                                        Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_BoardTasks_PendingColumnTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5"
+                                 Margin="8,0,0,0" VerticalAlignment="Center" />
+                      <Border Grid.Column="2" Background="{DynamicResource Ink10}" Padding="7,2">
+                        <TextBlock Text="{Binding PendingTaskCount}" Classes="faint" FontSize="10.5" />
+                      </Border>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding PendingTasks}" IsVisible="{Binding HasPendingTasks}"
+                                  ItemTemplate="{StaticResource BoardTaskRowTemplate}" />
+
+                    <StackPanel IsVisible="{Binding !HasPendingTasks}" Spacing="8" HorizontalAlignment="Center" Margin="0,6">
+                      <mi:MaterialIcon Kind="InboxOutline" Width="20" Height="20" Foreground="{DynamicResource TextMutedBrush}"
+                                        HorizontalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr Dashboard_BoardTasks_PendingEmptyState}" Classes="muted" FontSize="11.5" HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+
+                <!-- En progreso -->
+                <Border Grid.Column="2" Background="{DynamicResource PanelBackgroundBrush}" Padding="18">
+                  <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <mi:MaterialIcon Grid.Column="0" Kind="ProgressClock" Width="15" Height="15"
+                                        Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_BoardTasks_InProgressColumnTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5"
+                                 Margin="8,0,0,0" VerticalAlignment="Center" />
+                      <Border Grid.Column="2" Background="{DynamicResource Ink10}" Padding="7,2">
+                        <TextBlock Text="{Binding InProgressTaskCount}" Classes="faint" FontSize="10.5" />
+                      </Border>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding InProgressTasks}" IsVisible="{Binding HasInProgressTasks}"
+                                  ItemTemplate="{StaticResource BoardTaskRowTemplate}" />
+
+                    <StackPanel IsVisible="{Binding !HasInProgressTasks}" Spacing="8" HorizontalAlignment="Center" Margin="0,6">
+                      <mi:MaterialIcon Kind="InboxOutline" Width="20" Height="20" Foreground="{DynamicResource TextMutedBrush}"
+                                        HorizontalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr Dashboard_BoardTasks_InProgressEmptyState}" Classes="muted" FontSize="11.5" HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+
+                <!-- Hecho -->
+                <Border Grid.Column="4" Background="{DynamicResource PanelBackgroundBrush}" Padding="18">
+                  <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <mi:MaterialIcon Grid.Column="0" Kind="CheckCircleOutline" Width="15" Height="15"
+                                        Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_BoardTasks_DoneColumnTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5"
+                                 Margin="8,0,0,0" VerticalAlignment="Center" />
+                      <Border Grid.Column="2" Background="{DynamicResource Ink10}" Padding="7,2">
+                        <TextBlock Text="{Binding DoneTaskCount}" Classes="faint" FontSize="10.5" />
+                      </Border>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding DoneTasks}" IsVisible="{Binding HasDoneTasks}"
+                                  ItemTemplate="{StaticResource BoardTaskRowTemplate}" />
+
+                    <StackPanel IsVisible="{Binding !HasDoneTasks}" Spacing="8" HorizontalAlignment="Center" Margin="0,6">
+                      <mi:MaterialIcon Kind="InboxOutline" Width="20" Height="20" Foreground="{DynamicResource TextMutedBrush}"
+                                        HorizontalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr Dashboard_BoardTasks_DoneEmptyState}" Classes="muted" FontSize="11.5" HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+
+              </Grid>
+            </Border>
+
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <!-- Notas recientes: la más reciente como tarjeta grande destacada (2/3) — el resto como lista
+           compacta al lado (1/3) — en vez de la rejilla plana de tarjetas idénticas que había antes. -->
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <TextBlock Grid.Column="0" Text="{loc:Tr Dashboard_RecentNotes_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="ghost" Command="{Binding NavigateToTrashCommand}" Margin="0,0,20,0">
+            <TextBlock Text="{loc:Tr Dashboard_RecentNotes_TrashButton, Converter={StaticResource UpperCaseConverter}}" />
+          </Button>
+          <Button Grid.Column="3" Classes="ghost" Command="{Binding NavigateToNotesCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{loc:Tr Dashboard_RecentNotes_GoToNotes, Converter={StaticResource UpperCaseConverter}}" />
+              <mi:MaterialIcon Kind="ArrowRightThin" Width="15" Height="15" />
+            </StackPanel>
+          </Button>
+        </Grid>
+
+        <Grid ColumnDefinitions="7*,20,5*" IsVisible="{Binding HasFeaturedNote}">
+
+          <Button Grid.Column="0" Classes="note-card" Padding="22" HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch" Command="{Binding OpenCardCommand}"
+                  CommandParameter="{Binding FeaturedNote}" AutomationProperties.Name="{Binding FeaturedNote.Title}">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+              <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                <Ellipse Width="6" Height="6" Fill="{DynamicResource InkBrush}" />
+                <TextBlock Text="{Binding FeaturedNote.ModifiedLabel}" Classes="faint" />
+              </StackPanel>
+              <TextBlock Grid.Row="1" Text="{Binding FeaturedNote.Title}"
+                         FontWeight="Bold" FontSize="20" LetterSpacing="0.2" Margin="0,14,0,0"
+                         TextTrimming="CharacterEllipsis" MaxLines="1" />
+              <TextBlock Grid.Row="2" Text="{Binding FeaturedNote.Preview}" Classes="muted" FontSize="13"
+                         Margin="0,10,0,0" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="6" />
+              <TextBlock Grid.Row="3" Text="{Binding FeaturedNote.WordCountLabel}" Classes="faint" Margin="0,16,0,0" />
+            </Grid>
+          </Button>
+
+          <Border Grid.Column="2" Classes="card" Padding="6">
+            <Grid>
+              <ItemsControl ItemsSource="{Binding OtherRecentNotes}" IsVisible="{Binding HasOtherRecentNotes}"
+                            ItemTemplate="{StaticResource OtherNoteRowTemplate}" />
+              <StackPanel IsVisible="{Binding !HasOtherRecentNotes}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Tr Dashboard_RecentNotes_EmptyOthers}" Classes="muted" FontSize="11.5" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+        </Grid>
+
+        <!-- Empty state accionable. -->
+        <StackPanel IsVisible="{Binding !HasFeaturedNote}" Spacing="12" HorizontalAlignment="Center" Margin="0,6">
+          <mi:MaterialIcon Kind="NoteTextOutline" Width="20" Height="20" Foreground="{DynamicResource TextMutedBrush}"
+                            HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Tr Dashboard_RecentNotes_EmptyState}" Classes="muted" FontSize="11.5" HorizontalAlignment="Center" />
+          <Button Classes="pill" Command="{Binding NewNoteCommand}" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Plus" Width="12" Height="12" />
+              <TextBlock Text="{loc:Tr Dashboard_RecentNotes_CreateFirstNote, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

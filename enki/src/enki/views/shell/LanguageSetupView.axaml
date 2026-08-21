@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="enki.Views.LanguageSetupView"
+             x:DataType="vm:LanguageSetupViewModel"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <!-- La pantalla de primer arranque no tiene sidebar ni barra de título propia; el fondo sirve como
+       superficie de arrastre mientras el ajuste de barra de título personalizada esté activo. -->
+  <Grid Background="Transparent" PointerPressed="Background_PointerPressed">
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel Spacing="28" MaxWidth="420">
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center">
+          <Border Width="44" Height="44" CornerRadius="0" Background="{DynamicResource InkBrush}" HorizontalAlignment="Center">
+            <TextBlock Text="E" FontSize="21" FontWeight="Bold" Foreground="{DynamicResource InkOnBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="ENKI" FontSize="15" FontWeight="Bold" LetterSpacing="1" HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Tr LanguageSetup_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" HorizontalAlignment="Center" TextAlignment="Center" />
+          <TextBlock Text="{loc:Tr LanguageSetup_Subtitle}"
+                     Classes="page-subtitle" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <StackPanel Spacing="10">
+          <ItemsControl ItemsSource="{Binding Languages}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="loc:SupportedLanguageInfo">
+                <Button Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Command="{Binding $parent[ItemsControl].((vm:LanguageSetupViewModel)DataContext).SelectLanguageCommand}"
+                        CommandParameter="{Binding CultureCode}">
+                  <TextBlock Text="{Binding NativeName}" FontWeight="Medium" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

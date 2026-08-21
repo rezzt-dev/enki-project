@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancela una ejecución en curso si llega un push nuevo a la misma rama/PR, en vez de acumular runs
+# redundantes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # enki/global.json fija la versión del SDK usada para compilar; se instala también 8.0.x de forma
+      # explícita porque enki/src/enki/enki.csproj apunta a net8.0 — sin el runtime 8.0.x presente,
+      # `dotnet test` falla al lanzar el test host aunque la compilación tenga éxito con un SDK más nuevo
+      # (RollForward de la app no siempre lo cubre en el proceso de vstest).
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      # No hay .sln en el repo (ver README.md, "Cómo compilar y correr") — se restauran los tres
+      # proyectos por separado, igual que se compilan/testean a continuación.
+      - name: Restore
+        run: |
+          dotnet restore enki/src/enki/enki.csproj
+          dotnet restore enki/tests/enki.Tests/enki.Tests.csproj
+          dotnet restore enki/tests/enki.UITests/enki.UITests.csproj
+
+      - name: Build (main app)
+        run: dotnet build enki/src/enki/enki.csproj --configuration Release --no-restore
+
+      - name: Build (unit tests)
+        run: dotnet build enki/tests/enki.Tests/enki.Tests.csproj --configuration Release --no-restore
+
+      - name: Build (UI tests)
+        run: dotnet build enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --no-restore
+
+      - name: Run unit tests (enki.Tests)
+        run: dotnet test enki/tests/enki.Tests/enki.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
+
+      # enki.UITests usa Avalonia.Headless — sin display real, pero sin necesitar uno tampoco (headless
+      # de verdad). Ver el comentario en enki/tests/enki.UITests/enki.UITests.csproj sobre por qué vive en
+      # un proyecto de test separado de enki.Tests.
+      - name: Run UI tests (enki.UITests)
+        run: dotnet test enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --no-build --logger "console;verbosity=normal"

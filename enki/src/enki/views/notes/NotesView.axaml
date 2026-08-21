@@ -1,0 +1,407 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:views="clr-namespace:enki.Views"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="enki.Views.NotesView"
+             x:Name="Root"
+             x:DataType="vm:NotesViewModel">
+
+  <!-- Atajos de gestión de pestañas — el foco vive casi siempre dentro del AvaloniaEdit del editor
+       activo, pero ninguno de estos gestos es algo que AvaloniaEdit maneje por su cuenta, así que el
+       KeyDown sigue subiendo sin interceptar hasta llegar aquí. -->
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseActiveEditorCommand}" />
+    <KeyBinding Gesture="Ctrl+Tab" Command="{Binding SelectNextEditorCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding SelectPreviousEditorCommand}" />
+    <KeyBinding Gesture="Ctrl+PageDown" Command="{Binding SelectNextEditorCommand}" />
+    <KeyBinding Gesture="Ctrl+PageUp" Command="{Binding SelectPreviousEditorCommand}" />
+  </UserControl.KeyBindings>
+
+  <UserControl.DataTemplates>
+    <!-- Plantilla recursiva: un ItemsControl bindado a Children reutiliza esta misma plantilla
+         implícita (por DataType) a cualquier profundidad, sin necesidad de TreeView. -->
+    <DataTemplate DataType="vm:NoteFolderViewModel">
+      <StackPanel>
+        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+                Padding="{Binding Depth, Converter={StaticResource DepthIndentConverter}}"
+                DragDrop.AllowDrop="True"
+                PointerPressed="FolderRow_PointerPressed"
+                DragDrop.DragEnter="FolderRow_DragEnter"
+                DragDrop.DragOver="FolderRow_DragOver"
+                DragDrop.DragLeave="FolderRow_DragLeave"
+                DragDrop.Drop="FolderRow_Drop">
+          <!-- Column 0 is a fixed 18px (not Auto) so it reserves the chevron's width even on leaf
+               folders, where the button is hidden — otherwise a childless folder's icon shifts left
+               to fill that gap and lines up almost flush under its parent's icon instead of reading
+               as nested one level in. -->
+          <Grid ColumnDefinitions="20,Auto,*,Auto,Auto" Height="34">
+            <Button Grid.Column="0" Classes="icon-btn" Width="20" Height="20"
+                    IsVisible="{Binding Children.Count, Converter={StaticResource CountToBoolConverter}}"
+                    Command="{Binding ToggleExpandCommand}"
+                    AutomationProperties.Name="{loc:Tr A11y_Notes_ToggleFolder}">
+              <mi:MaterialIcon Kind="{Binding IsExpanded, Converter={StaticResource ExpandChevronConverter}}"
+                                Width="16" Height="16" />
+            </Button>
+            <mi:MaterialIcon Grid.Column="1" Kind="FolderOutline" Width="15" Height="15" Margin="2,0,8,0"
+                              Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="{Binding Name}" VerticalAlignment="Center" FontSize="13.5"
+                       TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsRenaming}" />
+            <TextBox Grid.Column="2" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
+                      VerticalAlignment="Center" FontSize="13.5" Padding="4,2"
+                      KeyDown="FolderNameEdit_KeyDown" LostFocus="FolderNameEdit_LostFocus"
+                      Initialized="FolderNameEdit_Initialized"
+                      PropertyChanged="FolderNameEdit_PropertyChanged" />
+            <Button Grid.Column="3" Classes="icon-btn" Width="20" Height="20" Command="{Binding BeginRenameCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_RenameFolderTooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_RenameFolderTooltip}">
+              <mi:MaterialIcon Kind="FolderEditOutline" Width="14" Height="14" />
+            </Button>
+            <Button Grid.Column="4" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
+                    Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).DeleteFolderCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Notes_DeleteFolderTooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_DeleteFolderTooltip}">
+              <mi:MaterialIcon Kind="FolderRemoveOutline" Width="14" Height="14" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding IsExpanded}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <Grid>
+
+    <!-- ===================== Browsing mode ===================== -->
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="{Binding ActiveEditor, Converter={x:Static conv:ObjectConverters.IsNull}}">
+
+      <StackPanel Grid.Row="0" Spacing="6" Margin="36,30,36,20">
+        <TextBlock Text="{loc:Tr Notes_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+        <TextBlock Text="{loc:Tr Notes_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
+        <TextBlock Text="{loc:Tr Notes_PageSubtitle}"
+                   Classes="page-subtitle" />
+      </StackPanel>
+
+      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="36,0,36,18">
+        <Button Grid.Column="0" Classes="pill" Height="36" Command="{Binding NewNoteCommand}" Margin="0,0,10,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="NotePlusOutline" Width="15" Height="15" />
+            <TextBlock Text="{loc:Tr Notes_NewNoteButton, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+
+        <Button Grid.Column="1" Classes="pill" Height="36" Command="{Binding ImportCommand}" Margin="0,0,14,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" />
+            <TextBlock Text="{loc:Tr Notes_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+
+        <Button Grid.Column="2" Classes="pill" Height="36" Command="{Binding OpenDailyNoteCommand}" Margin="0,0,14,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CalendarToday" Width="15" Height="15" />
+            <TextBlock Text="{loc:Tr Notes_DailyNoteButton, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+
+        <!-- Workspace selector: the vault itself, o una de sus sesiones aisladas (§ sesiones). -->
+        <ComboBox Grid.Column="3" Height="36" Margin="0,0,14,0" MinWidth="190"
+                  ItemsSource="{Binding SessionOptions}" SelectedItem="{Binding SelectedSessionOption}"
+                  AutomationProperties.Name="{loc:Tr A11y_Notes_SessionSelector}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate DataType="vm:SessionOptionViewModel">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="{Binding IsVault, Converter={StaticResource SessionIconConverter}}"
+                                  Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBox Grid.Column="4" Classes="search" Height="36" PlaceholderText="{loc:Tr Notes_SearchPlaceholder}" Text="{Binding SearchText}"
+                  MaxWidth="360" HorizontalAlignment="Left" VerticalAlignment="Center">
+          <TextBox.InnerLeftContent>
+            <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                    Margin="10,0,0,0" />
+          </TextBox.InnerLeftContent>
+        </TextBox>
+
+        <Border Grid.Column="5" Classes="card" Padding="14,9" VerticalAlignment="Center">
+          <TextBlock Text="{Binding NotesCountLabel}" Classes="faint" FontSize="10.5" />
+        </Border>
+      </Grid>
+
+      <!-- Notas recientes -->
+      <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="36,0,36,12"
+                  IsVisible="{Binding RecentNotes.Count, Converter={StaticResource CountToBoolConverter}}">
+        <TextBlock Text="{loc:Tr Notes_RecentEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" Margin="0,0,4,0" />
+        <ItemsControl ItemsSource="{Binding RecentNotes}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="8" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:NoteCardViewModel">
+              <Button Classes="pill" Padding="10,6"
+                      Command="{Binding $parent[ItemsControl].((vm:NotesViewModel)DataContext).OpenCardCommand}"
+                      CommandParameter="{Binding .}">
+                <TextBlock Text="{Binding Title}" FontSize="10.5" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <views:TagFilterView Grid.Row="3" DataContext="{Binding TagFilter}" Margin="36,0,36,12" />
+
+      <Grid Grid.Row="4" Margin="24,0,24,24">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="260" MinWidth="180" MaxWidth="480" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ===================== Panel de carpetas ===================== -->
+        <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,0,1"
+                Background="{DynamicResource AppBackgroundAltBrush}" Padding="10,12">
+          <Grid RowDefinitions="Auto,Auto,Auto,*">
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="12,0,0,10">
+              <mi:MaterialIcon Kind="FolderOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr Notes_FoldersEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <Button Grid.Row="1" Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Padding="10,8" Margin="0,0,0,12" Command="{Binding NewFolderCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" />
+                <TextBlock Text="{loc:Tr Notes_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" FontSize="11" />
+              </StackPanel>
+            </Button>
+
+            <Border Grid.Row="2" Classes="folder-row" Margin="0,0,0,4"
+                    Classes.active="{Binding CurrentFolder, Converter={x:Static conv:ObjectConverters.IsNull}}"
+                    Classes.drag-over="{Binding IsRootDropTarget}"
+                    DragDrop.AllowDrop="True"
+                    PointerPressed="RootFolderRow_PointerPressed"
+                    DragDrop.DragEnter="RootFolderRow_DragEnter"
+                    DragDrop.DragOver="RootFolderRow_DragOver"
+                    DragDrop.DragLeave="RootFolderRow_DragLeave"
+                    DragDrop.Drop="RootFolderRow_Drop">
+              <StackPanel Orientation="Horizontal" Spacing="8" Height="34" VerticalAlignment="Center" Margin="14,0,0,0">
+                <mi:MaterialIcon Kind="ViewGridOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Notes_AllFolderLabel}" FontSize="13.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="3">
+              <ItemsControl ItemsSource="{Binding RootFolders}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+
+        <!-- Separador arrastrable: cambia el ancho de la ColumnDefinition[0] (con Min/MaxWidth arriba)
+             dejando intacto el resto del layout. La costura visible es una Border de 1px propia
+             (mismo lenguaje que el resto de bordes Ink10/InkBrush); el GridSplitter en sí queda
+             transparente y sólo aporta el área de agarre de 7px, más cómoda que un borde de 1px. -->
+        <Border Grid.Column="1" Width="1" HorizontalAlignment="Center"
+                Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
+        <GridSplitter Grid.Column="1" Classes="folder-panel-splitter" Width="7"
+                      Background="Transparent" ResizeDirection="Columns"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      AutomationProperties.Name="{loc:Tr A11y_Notes_FolderPanelSplitter}" />
+
+        <!-- ===================== Rejilla de notas ===================== -->
+        <Border Grid.Column="2" ClipToBounds="True"
+                BorderBrush="{DynamicResource Ink10}" BorderThickness="1"
+                Background="{DynamicResource AppBackgroundAltBrush}">
+          <Grid RowDefinitions="Auto,*">
+
+            <TextBlock Grid.Row="0" Text="{Binding CurrentFolderLabel}"
+                       Classes="eyebrow" Margin="24,16,24,0" />
+
+            <Grid Grid.Row="1">
+              <!-- Margin en el contenido en vez de Padding en el ScrollViewer (mismo motivo que en
+                   DashboardView: Avalonia 12 resta el padding del extent scrolleable, así que la última
+                   fila de tarjetas quedaba cortada al llegar al final del scroll). -->
+              <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding Notes}" Margin="24">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:NoteCardViewModel">
+                      <Button Classes="note-card" Margin="0,0,16,16" Width="224" Height="150"
+                              Command="{Binding $parent[ItemsControl].((vm:NotesViewModel)DataContext).OpenCardCommand}"
+                              CommandParameter="{Binding}"
+                              Initialized="NoteCard_Initialized"
+                              AutomationProperties.Name="{Binding Title}">
+                        <Button.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{loc:Tr Notes_RenameMenuItem}" Command="{Binding BeginRenameCommand}">
+                              <MenuItem.Icon>
+                                <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
+                              </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{loc:Tr Common_Delete}"
+                                      Command="{Binding #Root.((vm:NotesViewModel)DataContext).DeleteNoteCommand}"
+                                      CommandParameter="{Binding}">
+                              <MenuItem.Icon>
+                                <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                              </MenuItem.Icon>
+                            </MenuItem>
+                          </ContextMenu>
+                        </Button.ContextMenu>
+                        <Grid RowDefinitions="Auto,*,Auto,Auto">
+                          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                            <Ellipse Width="6" Height="6" Fill="{DynamicResource InkBrush}" />
+                            <TextBlock Text="{Binding ModifiedLabel}" Classes="faint" />
+                          </StackPanel>
+                          <StackPanel Grid.Row="1" Spacing="5" Margin="0,10,0,0">
+                            <TextBlock Text="{Binding Title}"
+                                       FontWeight="Bold" FontSize="14" LetterSpacing="0.3"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                                       IsVisible="{Binding !IsRenaming}" />
+                            <TextBox Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
+                                      FontSize="13" Padding="4,2"
+                                      KeyDown="NoteNameEdit_KeyDown" LostFocus="NoteNameEdit_LostFocus"
+                                      Initialized="NoteNameEdit_Initialized"
+                                      PropertyChanged="NoteNameEdit_PropertyChanged" />
+                            <TextBlock Text="{Binding Preview}" Classes="muted" FontSize="12"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="3" />
+                          </StackPanel>
+                          <TextBlock Grid.Row="2" Text="{Binding WordCountLabel}" Classes="faint" />
+                          <TextBlock Grid.Row="3" Text="{Binding TagsLabel}" Classes="faint"
+                                     TextTrimming="CharacterEllipsis" MaxLines="1"
+                                     IsVisible="{Binding HasTags}" Margin="0,4,0,0" />
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+
+              <StackPanel IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Spacing="12">
+                <mi:MaterialIcon Kind="NoteTextOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
+                        HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Notes_EmptyState_Message}" Classes="muted" HorizontalAlignment="Center" />
+                <Button Classes="pill-primary" Command="{Binding NewNoteCommand}" HorizontalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Notes_EmptyState_CreateButton, Converter={StaticResource UpperCaseConverter}}" />
+                </Button>
+              </StackPanel>
+            </Grid>
+          </Grid>
+        </Border>
+      </Grid>
+    </Grid>
+
+    <!-- ===================== Editor mode ===================== -->
+    <Grid RowDefinitions="Auto,*"
+          IsVisible="{Binding ActiveEditor, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+
+      <!-- Pestañas: cada nota abierta (desde una tarjeta, el dashboard o un doble clic en el grafo de
+           sesiones — todos pasan por NotesViewModel.OpenNote, que reutiliza la pestaña si ya está abierta
+           en vez de duplicarla) queda visible aquí, permitiendo tener varias notas abiertas a la vez.
+           Cada pestaña es a la vez el selector (clic), el origen y destino de reordenar (arrastrar,
+           ver EditorTab_PointerMoved/Drop) y se cierra con clic medio o el botón "x" — el mismo lenguaje
+           de gestión de pestañas de un editor de código. -->
+      <!-- AppBackgroundBrush, not the AppBackgroundAltBrush this alt-panel pattern uses elsewhere
+           (folder/session side panels below) — this bar sits flush against the window's own top edge,
+           right under the floating window controls' reserved clearance (see MainWindow.axaml), so any
+           shade other than the plain app background shows up as a seam right at that boundary. -->
+      <Border Grid.Row="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+              Background="{DynamicResource AppBackgroundBrush}">
+        <Grid ColumnDefinitions="*,Auto">
+          <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <!-- El botón "+" vive dentro de este mismo StackPanel horizontal, como un elemento más
+                 después del ItemsControl — así queda pegado a la última pestaña (con el mismo
+                 Spacing="8" de separación) y se desplaza con ellas al abrir/cerrar, en vez de quedar
+                 fijo en el borde derecho del contenedor. -->
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,8,8,8">
+              <ItemsControl ItemsSource="{Binding OpenEditors}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="8" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:EditorViewModel">
+                    <Border Classes="editor-tab" Classes.active="{Binding IsActive}"
+                            Classes.drag-over="{Binding IsDropTarget}"
+                            ToolTip.Tip="{Binding Note.FullPath}"
+                            DragDrop.AllowDrop="True"
+                            PointerPressed="EditorTab_PointerPressed"
+                            PointerMoved="EditorTab_PointerMoved"
+                            DragDrop.DragEnter="EditorTab_DragEnter"
+                            DragDrop.DragOver="EditorTab_DragOver"
+                            DragDrop.DragLeave="EditorTab_DragLeave"
+                            DragDrop.Drop="EditorTab_Drop">
+                      <StackPanel Orientation="Horizontal" Spacing="8" Margin="12,0" VerticalAlignment="Center">
+                        <mi:MaterialIcon Kind="FileDocumentOutline" Width="14" Height="14"
+                                         Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource DangerBrush}"
+                                 VerticalAlignment="Center"
+                                 IsVisible="{Binding IsDirty}" ToolTip.Tip="{loc:Tr Notes_UnsavedTooltip}" />
+                        <TextBlock Text="{Binding Title}" FontSize="13" MaxWidth="160" LineHeight="18"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <Button Classes="icon-btn icon-btn-danger" Width="20" Height="20" VerticalAlignment="Center"
+                                Command="{Binding $parent[ItemsControl].((vm:NotesViewModel)DataContext).CloseEditorTabCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Notes_CloseTabTooltip}"
+                                AutomationProperties.Name="{loc:Tr Notes_CloseTabTooltip}">
+                          <mi:MaterialIcon Kind="Close" Width="12" Height="12" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                        </Button>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- Nueva pestaña: reutiliza NewNoteCommand (crea "Nueva nota" y la abre), el mismo
+                   comando que el botón "NUEVA NOTA" del modo de exploración. -->
+              <Button Classes="tab-add" VerticalAlignment="Center"
+                      Command="{Binding NewNoteCommand}" ToolTip.Tip="{loc:Tr Notes_NewTabTooltip}"
+                      AutomationProperties.Name="{loc:Tr Notes_NewTabTooltip}">
+                <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
+              </Button>
+            </StackPanel>
+          </ScrollViewer>
+
+          <!-- Same outline-square language as the "+" tab button (Button.tab-add) instead of the
+               generic faint-fill icon-btn, so the two sit as a matched pair at opposite ends of the
+               tab strip. -->
+          <Button Grid.Column="1" Classes="tab-add" Margin="0,8,8,8" VerticalAlignment="Center"
+                  Command="{Binding CloseAllEditorsCommand}" ToolTip.Tip="{loc:Tr Notes_CloseAllTabsTooltip}"
+                  AutomationProperties.Name="{loc:Tr Notes_CloseAllTabsTooltip}">
+            <mi:MaterialIcon Kind="TabRemove" Width="16" Height="16" />
+          </Button>
+        </Grid>
+      </Border>
+
+      <views:EditorView Grid.Row="1" DataContext="{Binding ActiveEditor}" />
+    </Grid>
+
+  </Grid>
+</UserControl>

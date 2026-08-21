@@ -1,0 +1,2040 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+  <!-- ===================================================================
+       Brutalismo editorial suizo, monocromo — ver docs/sistema-diseno-web.md
+       Cero radio de esquina salvo indicadores circulares. Bordes de 1px en
+       vez de sombras. Inversión de color en hover. Mayúsculas + tracking
+       ancho en toda etiqueta de navegación/UI. 300ms CubicEaseOut por defecto.
+       =================================================================== -->
+
+  <!-- ===================== Base ===================== -->
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}" />
+  </Style>
+
+  <Style Selector="UserControl">
+    <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}" />
+  </Style>
+
+  <!-- Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md §1/§7bis): por defecto, Avalonia renderiza
+       Popup (y por tanto ComboBox/ContextMenu/ToolTip, que se construyen sobre él) como una superficie
+       de ventana nativa aparte, fuera del árbol visual — así que no hereda el ScaleTransform del
+       LayoutTransformControl que envuelve el Grid raíz de MainWindow.axaml. ShouldUseOverlayLayer=True
+       hace que el popup se dibuje dentro del propio Window (su OverlayLayer, ya presente en la
+       plantilla por defecto), como un control más del árbol visual — con eso sí queda dentro del
+       alcance del ScaleTransform y escala junto con el resto de la interfaz. Auditado en Fase 1 del
+       roadmap de mejora continua (docs/agent-docs/inventario-funcionalidades-y-mejora-continua.md, gap 26):
+       este único selector global cubre TODOS los Popup de la app (no hay ningún Flyout ni ningún diálogo
+       implementado como Window secundaria en `views/` — solo `MainWindow.axaml` es una Window real), así
+       que no existe ningún popover/diálogo que dependa de una regla propia; los que faltaban por auditar
+       aquí ya quedan cubiertos por construcción. Sigue pendiente solo la verificación visual interactiva
+       (no hay entorno gráfico disponible en la sesión donde se escribió esto para confirmarlo a ojo). -->
+  <Style Selector="Popup">
+    <Setter Property="ShouldUseOverlayLayer" Value="True" />
+  </Style>
+
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock.faint">
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="10.5" />
+  </Style>
+
+  <!-- Titular gigante: negro/black (peso máximo disponible), mayúsculas, tracking apretado -->
+  <Style Selector="TextBlock.page-title">
+    <Setter Property="FontSize" Value="34" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="-1" />
+  </Style>
+
+  <Style Selector="TextBlock.page-subtitle">
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="LetterSpacing" Value="0.1" />
+  </Style>
+
+  <!-- "Eyebrow": el micro-label más distintivo del sistema (§2.2) -->
+  <Style Selector="TextBlock.eyebrow">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="4" />
+    <Setter Property="Foreground" Value="{DynamicResource Ink40}" />
+  </Style>
+
+  <Style Selector="TextBlock.section-title">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+  </Style>
+
+  <!-- ===================== Selección de texto invertida (§7.15) ===================== -->
+  <Style Selector="TextBox">
+    <Setter Property="SelectionBrush" Value="{DynamicResource SelectionBackgroundBrush}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SelectionForegroundBrush}" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- ===================== Sidebar nav item (§7.8) ===================== -->
+  <Style Selector="Button.nav-item">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="Padding" Value="13,10" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <!-- The hover/active setters below animate the ContentPresenter template part (that's what
+       actually draws Background), so the transition has to live there too — putting it on the
+       Button itself (as before) animated a property nothing ever reads, and the color snapped instantly. -->
+  <Style Selector="Button.nav-item /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.nav-item:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="Button.nav-item:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="Button.nav-item.active /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+  </Style>
+  <Style Selector="Button.nav-item.active TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.nav-item.active mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.nav-item TextBlock">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+  </Style>
+
+  <!-- Collapsed rail: nav items shrink from a stretched, left-aligned row into a centered square
+       matching the logo and the icon-only buttons (32x32 — see Button.icon-btn.sidebar-toggle below
+       and the logo Border in MainWindow.axaml), so every rail element — including the hover/active
+       highlight, which is painted on this same box — lines up and reads as the same shape. The
+       active-state left border only makes sense against a full-width row, so it's dropped here in
+       favor of the plain background fill. -->
+  <Style Selector="Button.nav-item.collapsed">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Button.nav-item.collapsed.active /template/ ContentPresenter">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <!-- Brand header: centers on the logo alone once the sidebar text disappears (see MainWindow.axaml
+       for why a plain HorizontalAlignment flip is enough — Star columns don't claim width here). -->
+  <Style Selector="Grid.brand-header.collapsed">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <!-- ===================== Fila de carpeta (árbol de Notas) ===================== -->
+  <Style Selector="Border.folder-row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.folder-row:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="Border.folder-row.active">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Border.folder-row.active TextBlock">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Border.folder-row.drag-over">
+    <Setter Property="Background" Value="{DynamicResource Ink15}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Separador arrastrable del panel de carpetas (§ NotesView): sin relleno en reposo — la
+       costura de 1px la pinta una Border aparte — y sólo se tiñe al pasar el cursor o arrastrar,
+       para señalar la zona de agarre sin sumar ruido visual permanente. -->
+  <Style Selector="GridSplitter.folder-panel-splitter">
+    <Setter Property="Cursor" Value="SizeWestEast" />
+  </Style>
+  <Style Selector="GridSplitter.folder-panel-splitter:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="GridSplitter.folder-panel-splitter:pressed">
+    <Setter Property="Background" Value="{DynamicResource Ink15}" />
+  </Style>
+
+  <!-- ===================== Pestañas de editor (Notas) =====================
+       Mismo lenguaje que Button.pill (§ Botones más abajo): caja con borde de 1.5px, esquinas a
+       cero radio, sin relleno en reposo. A diferencia del pill, aquí el borde es sutil (Ink15) en
+       reposo y sólo sube a InkBrush en hover/activa — con muchas pestañas abiertas a la vez, un
+       borde InkBrush pleno en todas se leería como ruido en vez de como una fila de casillas.
+       Height fija a 41 (en vez de dejar que la marque el contenido + Margin del StackPanel interno)
+       para que coincida por diseño, pixel a pixel, con Button.tab-add — dejarlo al cálculo automático
+       es fragil ante cualquier cambio futuro de fuente/spacing en el contenido. -->
+  <Style Selector="Border.editor-tab">
+    <Setter Property="Height" Value="41" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink15}" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.editor-tab:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+  <Style Selector="Border.editor-tab.active">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Border.editor-tab.active TextBlock">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <!-- Reordering tabs by drag: same treatment as Border.folder-row.drag-over (§ carpetas) for a
+       consistent drop-target language across the app. -->
+  <Style Selector="Border.editor-tab.drag-over">
+    <Setter Property="Background" Value="{DynamicResource Ink15}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <!-- Icono de documento de cada pestaña: tinte tenue en reposo, más legible en hover/activa. -->
+  <Style Selector="Border.editor-tab mi|MaterialIcon">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.editor-tab:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="Border.editor-tab.active mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- CheckBox de lista de tareas en el editor Markdown live-preview: cuadrado monocromo
+       de 16px con esquinas a cero, borde tenue en reposo e inversión total al marcar.
+       El tamaño coincide con la altura del texto del editor para mantener la línea
+       alineada y evitar que el texto vecino se desplace verticalmente. -->
+  <Style Selector="CheckBox.markdown-checkbox">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <!-- FluentTheme's base CheckBox reserves a larger touch-friendly MinWidth/MinHeight (~20px);
+         left unset, that floor wins over the 16px Width/Height above and the box renders oversized,
+         throwing off the line's vertical rhythm wherever a task item sits. -->
+    <Setter Property="MinWidth" Value="16" />
+    <Setter Property="MinHeight" Value="16" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Width="{TemplateBinding Width}"
+                Height="{TemplateBinding Height}"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}">
+          <mi:MaterialIcon Kind="Check" Width="12" Height="12"
+                           Foreground="{DynamicResource InkOnBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="CheckBox.markdown-checkbox:checked">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="CheckBox.markdown-checkbox:not(:checked) mi|MaterialIcon">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="CheckBox.markdown-checkbox:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Botón "+" para abrir una pestaña nueva: mismo outline que Button.pill (borde InkBrush 1.5px,
+       invierte a solido en hover) pero cuadrado, con el mismo lado (41) que la Height fija de
+       Border.editor-tab de arriba, para sentarse justo después de la última pestaña con
+       exactamente su misma altura. -->
+  <Style Selector="Button.tab-add">
+    <Setter Property="Width" Value="41" />
+    <Setter Property="Height" Value="41" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.tab-add /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.tab-add mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.tab-add:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.tab-add:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+
+  <!-- ===================== Botones (§7.2) ===================== -->
+  <!-- Outline: invierte a solido en hover -->
+  <Style Selector="Button.pill">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="20,11" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- The app-wide "TextBlock" style (line ~22) sets Foreground explicitly on every TextBlock, which
+       otherwise wins over inheriting the button's own (pointerover-inverted) Foreground — same issue
+       documented above for RadioButton.segment, so the label needs its own explicit setters here too.
+       MaterialIcon doesn't reliably inherit Foreground from the Button either (see icon-btn/nav-item
+       below, which already work around it the same way), so it needs the same explicit treatment. -->
+  <Style Selector="Button.pill TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.pill:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.pill:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.pill:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.pill:pressed">
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+
+  <!-- Primario sólido. Hover mirrors Button.pill's inversion (border-outline <-> solid fill) instead
+       of a generic opacity fade, so it reads as the same "invert on hover" language as the rest of
+       the app — just starting from the opposite end (solid at rest, outline on hover). BorderThickness
+       is set once, non-conditionally, so only its color changes on hover and the button never resizes. -->
+  <Style Selector="Button.pill-primary">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="18,10" />
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill-primary /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- Same TextBlock-Foreground override issue as Button.pill above, but here it breaks the resting
+       state too: the button's InkOnBrush Foreground (needed for contrast against its solid ink fill)
+       never reaches the label, which renders in the near-white TextPrimaryBrush instead — text all
+       but invisible against the light fill. MaterialIcon needs the same explicit override. -->
+  <Style Selector="Button.pill-primary TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill-primary mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill-primary:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.pill-primary:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.pill-primary:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.pill-primary:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.pill-primary:pointerover">
+    <Setter Property="Opacity" Value="0.85" />
+  </Style>
+  <Style Selector="Button.pill-primary:pressed">
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+
+  <!-- Primario destructivo: mismo lenguaje que pill-primary (invierte a outline en hover) pero
+       en el único color de "estado" del sistema (§1.3), reservado para el diálogo de borrado. -->
+  <Style Selector="Button.pill-primary-danger">
+    <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="18,10" />
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill-primary-danger /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill-primary-danger TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pill-primary-danger:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.pill-primary-danger:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.pill-primary-danger:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.pill-primary-danger:pressed">
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+
+  <!-- Ghost / texto -->
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.ghost TextBlock">
+    <Setter Property="LetterSpacing" Value="2" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover">
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
+  <Style Selector="Button.ghost:pressed">
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+
+  <!-- Ghost usado como "Cancelar" junto a un pill-primary/pill-primary-danger en un modal (§7.10):
+       mismo padding y grosor de borde (transparente) que su pareja, para que ambos botones midan
+       igual pese a que el cancelar siga siendo texto plano sin relleno. -->
+  <Style Selector="Button.ghost.modal-cancel">
+    <Setter Property="Padding" Value="18,10" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+
+  <!-- ===================== Segmented control (RadioButton, GroupName) ===================== -->
+  <Style Selector="RadioButton.segment">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}"
+                BorderBrush="{DynamicResource Ink10}"
+                BorderThickness="1"
+                CornerRadius="0"
+                Transitions="{TemplateBinding Transitions}">
+          <ContentPresenter Content="{TemplateBinding Content}"
+                             Padding="{TemplateBinding Padding}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.segment TextBlock">
+    <Setter Property="LetterSpacing" Value="1.5" />
+  </Style>
+  <Style Selector="RadioButton.segment:checked">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="RadioButton.segment:checked mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <!-- The app-wide "TextBlock" style (line ~22) sets Foreground explicitly on every TextBlock, which
+       otherwise wins over inheriting the checked segment's (InkOnBrush) foreground — so it must be
+       overridden here explicitly too, not just on the RadioButton itself. -->
+  <Style Selector="RadioButton.segment:checked TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="RadioButton.segment:not(:checked):pointerover">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- Barra de tabs del panel lateral del editor. No reutiliza la plantilla completa de .segment
+       (bordes en los cuatro lados) porque las tres pestañas en columnas iguales se veían recargadas
+       y con bordes dobles. En su lugar dibujamos solo una línea inferior como acento, manteniendo el
+       mismo lenguaje monocromo de inversión y hover. -->
+  <Style Selector="RadioButton.side-panel-tab">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="4,8" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="0,0,0,1"
+                CornerRadius="0"
+                Transitions="{TemplateBinding Transitions}">
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.side-panel-tab TextBlock">
+    <Setter Property="FontSize" Value="9.5" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="0.6" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="RadioButton.side-panel-tab mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="RadioButton.side-panel-tab:checked">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="RadioButton.side-panel-tab:checked TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="RadioButton.side-panel-tab:checked mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="RadioButton.side-panel-tab:not(:checked):pointerover">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="RadioButton.side-panel-tab:checked:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- ===================== Tag chip (filtro de etiquetas) =====================
+       Mismo lenguaje de inversión que Button.pill / RadioButton.segment: outline
+       de 1px en reposo, sólido InkBrush cuando está activado, hover sutil Ink05. -->
+  <Style Selector="ToggleButton.tag-chip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="Margin" Value="0,0,8,8" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.tag-chip /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.tag-chip:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="ToggleButton.tag-chip:checked /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.tag-chip:checked">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <!-- El estilo global TextBlock fija Foreground, por lo que heredar el del ToggleButton no basta
+       cuando está activado: hay que forzar el color del texto explícitamente. -->
+  <Style Selector="ToggleButton.tag-chip:checked TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.tag-chip:checked:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.tag-chip:checked:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+
+  <!-- ===================== Icon-only buttons ===================== -->
+  <Style Selector="Button.icon-btn">
+    <Setter Property="Width" Value="34" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <!-- Transitions have to sit on the exact element whose property the hover/danger states below
+       change — Background on the ContentPresenter template part, Foreground on the icon/text
+       children — otherwise the color snaps instead of fading. -->
+  <Style Selector="Button.icon-btn /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.icon-btn TextBlock">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.icon-btn mi|MaterialIcon">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.icon-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="Button.icon-btn:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.icon-btn:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.icon-btn:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink20}" />
+  </Style>
+  <!-- Toggle activo (p. ej. el botón de búsqueda de IA Skills mientras el cuadro está abierto) — mismo
+       tratamiento visual que :pointerover pero persistente mientras la clase esté presente. -->
+  <Style Selector="Button.icon-btn.active /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="Button.icon-btn.active mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Per-group collapse chevron in the note editor's formatting toolbar (Fase 4 §"Editor de notas") —
+       deliberately dimmer than a real formatting action so it reads as toolbar chrome, not one more
+       button competing with Bold/Italic/etc. for attention. -->
+  <Style Selector="Button.icon-btn.toolbar-group-toggle mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.icon-btn.toolbar-group-toggle:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <!-- Collapsed-group state (Classes.active bound to "!IsToolbarXExpanded" in EditorView.axaml) — the
+       chevron-direction flip alone was too subtle at 11px to notice a group had buttons hidden behind
+       it, so a collapsed toggle also gets the same highlighted box + brighter icon every other active
+       icon-btn uses, instead of blending into the always-dim Ink30 chrome color above. -->
+  <Style Selector="Button.icon-btn.toolbar-group-toggle.active mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- ===================== Calendario — barra de navegación/vista (HOY/MES/SEMANA/DÍA/AGENDA) =====================
+       Modificador propio en vez de agrandar Button.pill/RadioButton.segment/Button.icon-btn de base
+       (compartidas por el resto de la app, ver Trash/Dashboard/Sessions/etc.) — solo la barra de esta
+       vista necesita más presencia, así que se aplica junto a la clase base directamente en
+       CalendarView.axaml (p.ej. Classes="segment calendar-toolbar-btn"). -->
+  <Style Selector="Button.pill.calendar-toolbar-btn">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="20,11" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="RadioButton.segment.calendar-toolbar-btn">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="18,11" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Button.icon-btn.calendar-toolbar-btn">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+  </Style>
+
+  <Style Selector="Button.icon-btn-danger:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.icon-btn-danger:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.icon-btn-danger:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+  </Style>
+
+  <!-- Collapsed rail: the sidebar toggle sits right-aligned next to the brand text when expanded,
+       but centers like every other rail square once that text is gone. -->
+  <Style Selector="Button.icon-btn.collapsed">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Sidebar toggle: only element in its row, so "right-aligned when expanded" is style-driven
+       here (not a local value on the Button) so the .collapsed rule above can win once collapsed.
+       Also overrides the base icon-btn 34x34 box (shared with toolbar buttons elsewhere in the app)
+       down to 32x32, so the toggle's own hover square matches the logo and the rest of the rail. -->
+  <Style Selector="Button.icon-btn.sidebar-toggle">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+  </Style>
+  <Style Selector="Button.icon-btn.sidebar-toggle.collapsed">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Fixed-size hover box for the sidebar toggle (see MainWindow.axaml) — matches the logo Border's
+       32x32/CornerRadius 0 exactly instead of relying on the Button's own ContentPresenter background. -->
+  <Style Selector="Border.sidebar-toggle-box">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.icon-btn.sidebar-toggle:pointerover Border.sidebar-toggle-box">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <!-- Cancels the generic Button.icon-btn:pointerover fill on this button's own ContentPresenter so
+       only the sharp-cornered Border above paints the hover, instead of two overlapping fills of
+       possibly-different sizes. -->
+  <Style Selector="Button.icon-btn.sidebar-toggle:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- ===================== Custom title bar controls (§ ventana propia) =====================
+       Same outline language as Button.pill — 1px-ish border, transparent fill at rest, inverts to a
+       solid border-colored fill on hover with the icon flipping to InkOnBrush for contrast. Square
+       (not the pill's rounded/wide shape) and small, with its own breathing room via Margin so the
+       three buttons don't sit flush against each other or the window edge. -->
+  <Style Selector="Button.titlebar-btn">
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Margin" Value="5" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1.2" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.titlebar-btn /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.titlebar-btn mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.14" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- The maximize/restore glyph is a plain drawn square (not a MaterialIcon) — see MainWindow.axaml —
+       so its BorderBrush needs the same rest/hover treatment the icons get above. -->
+  <Style Selector="Button.titlebar-btn Border.titlebar-glyph">
+    <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.titlebar-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.titlebar-btn:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.titlebar-btn:pointerover Border.titlebar-glyph">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.titlebar-btn:pressed">
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+
+  <!-- Close: same outline/invert language, in the danger color instead of ink. -->
+  <Style Selector="Button.titlebar-btn-close">
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.titlebar-btn-close mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.titlebar-btn-close:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.titlebar-btn-close:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+
+  <!-- Bell/inbox variant: same box and hover-invert language as titlebar-btn, minus the resting
+       outline — their icons are sized up (see MainWindow.axaml) to carry the same visual weight
+       as the bordered window-control buttons instead. -->
+  <Style Selector="Button.titlebar-btn.titlebar-btn-plain">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <!-- Small count badge pinned to the corner of the bell/inbox icons — square (not a dot/pill) to
+       match the rest of the app's zero-corner-radius language, solid danger fill so it reads as
+       "needs attention" against the outline titlebar-btn it sits on. -->
+  <Style Selector="Border.titlebar-badge">
+    <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+    <Setter Property="MinWidth" Value="12" />
+    <Setter Property="Height" Value="12" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="2,0" />
+    <Setter Property="Margin" Value="0,-4,-4,0" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="TextBlock.titlebar-badge-text">
+    <Setter Property="FontSize" Value="8.5" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="LineHeight" Value="12" />
+  </Style>
+
+  <!-- ===================== Notificaciones / recordatorios: panel emergente =====================
+       Same panel language as Border.calendar-popover (hairline Ink20, cero radio) so the two new
+       dropdowns read as part of the same family as the kanban date picker instead of introducing a
+       second "popup" visual language. -->
+  <Style Selector="Border.dropdown-popover">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="MaxHeight" Value="420" />
+  </Style>
+
+  <Style Selector="Button.dropdown-item">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="Margin" Value="-8,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.dropdown-item /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.dropdown-item:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- Severity icon in the notification list: monochrome by default, only success/warning/error break
+       out of the palette — same "cero color de marca salvo danger/success" rule as the rest of the app. -->
+  <Style Selector="mi|MaterialIcon.severity-icon">
+    <Setter Property="Foreground" Value="{DynamicResource Ink50}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.severity-icon.success">
+    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.severity-icon.warning">
+    <Setter Property="Foreground" Value="{DynamicResource DangerMutedBrush}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.severity-icon.error">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+
+  <!-- Reminder bucket label: "VENCIDA" breaks into full danger, "VENCE HOY" into muted danger (same
+       ramp as the warning severity icon above), "PRÓXIMA" stays in the faint/muted default. -->
+  <Style Selector="TextBlock.faint.overdue">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="TextBlock.faint.today">
+    <Setter Property="Foreground" Value="{DynamicResource DangerMutedBrush}" />
+  </Style>
+
+  <!-- Reminder item: left accent bar keyed to urgency (same danger ramp as the bucket label) so the
+       inbox scans by color, not just by reading the small label text — echoes the left-border accent
+       already used on Button.nav-item.active. Extra left padding clears the 3px bar. -->
+  <Style Selector="Button.dropdown-item.reminder-item">
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="Padding" Value="13,8,8,8" />
+  </Style>
+  <Style Selector="Button.dropdown-item.reminder-item.today">
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerMutedBrush}" />
+  </Style>
+  <Style Selector="Button.dropdown-item.reminder-item.overdue">
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+  </Style>
+
+  <!-- ===================== Tarjetas (§7.5) ===================== -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+
+  <Style Selector="Border.note-card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.note-card:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+  </Style>
+
+  <Style Selector="Button.note-card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- Without this, the border-color fade above lands on the ContentPresenter part (which never got
+       a Transitions setter of its own) and snaps instantly, out of sync with the smooth 300ms float —
+       that mismatch is what read as "the hover animation looks a bit off". -->
+  <Style Selector="Button.note-card /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.note-card:pointerover /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.note-card:pointerover">
+    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+  </Style>
+
+  <!-- Estado "seleccionada" (IA Skills: tarjeta cuya skill se está previsualizando en el panel de
+       detalle) — mismo lenguaje de acento que Border.folder-row.active: borde InkBrush + tinte de
+       fondo, en vez de un estilo nuevo. -->
+  <Style Selector="Button.note-card.active /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.note-card.active">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- Tarjeta de IA Skills: hermana de note-card pero con más aire, acciones más grandes y un estado
+       de selección más definido para el panel de detalle. El fondo y el borde se aplican al
+       ContentPresenter del template para poder animarlos suavemente sin que el Button los sobreescriba. -->
+  <Style Selector="Button.skill-card">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.skill-card /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="18" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.skill-card:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.skill-card:pointerover">
+    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+  </Style>
+  <Style Selector="Button.skill-card.active /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.skill-card.active:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Tarjeta de la sección Archivos (docs/seccion-archivos.md §7): copia exacta de las reglas de
+       Button.note-card de arriba — misma familia visual, solo cambia el contenido (thumbnail/icono +
+       nombre + tamaño + fecha en vez de título/preview/palabras). -->
+  <Style Selector="Button.file-card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.file-card /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.file-card:pointerover /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.file-card:pointerover">
+    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+  </Style>
+
+  <!-- Panel de la rejilla de Archivos mientras un arrastre de archivos del explorador del SO pasa por
+       encima (docs/seccion-archivos.md §5/§7) — mismo lenguaje "borde InkBrush" que Border.folder-row.drag-over. -->
+  <Style Selector="Border.files-grid-panel.drag-over">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Miniatura de página en el rail del visor de PDF (docs/seccion-archivos.md §6) — mismo lenguaje
+       "borde que se resalta al activarse" que Border.folder-row.active, sobre un Button en vez de un
+       Border porque cada miniatura es clicable (salta a esa página). -->
+  <Style Selector="Button.pdf-page-thumb">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.pdf-page-thumb Border">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.pdf-page-thumb:pointerover Border">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.pdf-page-thumb.active Border">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
+  <!-- Spinner de carga genérico: rotación infinita del icono al que se le aplique esta clase (usado hoy
+       por el visor de PDF mientras renderiza, ver FilesView.axaml). -->
+  <Style Selector="mi|MaterialIcon.spin">
+    <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    <Setter Property="RenderTransform">
+      <RotateTransform />
+    </Setter>
+    <Style.Animations>
+      <Animation Duration="0:0:1" IterationCount="INFINITE">
+        <KeyFrame Cue="0%">
+          <Setter Property="RotateTransform.Angle" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="RotateTransform.Angle" Value="360" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Button variante de Border.card (§ arriba): la misma tarjeta plana con borde de 1px, pero clicable,
+       con el mismo hover "eleva + aclara borde" que Button.note-card — para vistas previas navegables
+       (p.ej. la tarjeta de Sesiones y los accesos rápidos del Dashboard) que deben leerse como la MISMA
+       familia visual que las tarjetas estáticas de al lado, no como un botón de FluentTheme sin
+       tematizar (sin esta regla, Classes="card" en un Button no matchea el selector "Border.card" de
+       arriba — selectors de Avalonia son por tipo de control — y cae al chrome redondeado por defecto). -->
+  <Style Selector="Button.card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="18,16" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.card /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.card:pointerover /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.card:pointerover">
+    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+  </Style>
+
+  <Style Selector="Button.ghost-card">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.ghost-card /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.ghost-card:pointerover /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Stat card: sin borde propio, vive dentro de una rejilla "gap-1px" -->
+  <Style Selector="Border.stat-card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="Padding" Value="18,16" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.stat-card:pointerover">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundHoverBrush}" />
+  </Style>
+
+  <!-- ===================== Search / inputs (§7.3) ===================== -->
+  <Style Selector="TextBox.search">
+    <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="TextBox.search:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+
+  <Style Selector="TextBox.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Renombrar en línea (título de nota, § EditorView): un TextBox.ghost por sí solo no se distingue
+       de una etiqueta estática, así que esta capa añade el mínimo indicio de que es editable — un
+       hairline que aparece en hover y se vuelve sólido (mismo InkBrush que el resto de estados
+       "activos" del sistema) al enfocar, más un tinte de fondo — sin tocar el resto de usos de
+       TextBox.ghost. -->
+  <Style Selector="TextBox.title-edit">
+    <Setter Property="Padding" Value="4,3" />
+    <Setter Property="Margin" Value="-4,0,0,0" />
+    <Setter Property="BorderThickness" Value="0,0,0,1.5" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Cursor" Value="IBeam" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- BorderBrush has to target the template's own Border#PART_BorderElement, not the TextBox itself
+       (same reasoning as TextBox.search:focus above): FluentTheme's built-in :pointerover/:focus states
+       set that border's BorderBrush directly on the template part, which always wins over whatever
+       reaches it through the TextBox's TemplateBinding. Background isn't contested the same way, so it
+       stays a plain setter on the TextBox. -->
+  <Style Selector="TextBox.title-edit:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="TextBox.title-edit:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1.5" />
+  </Style>
+  <Style Selector="TextBox.title-edit:focus">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="TextBox.title-edit:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1.5" />
+  </Style>
+
+  <!-- Input compacto de etiquetas en el header del editor (dentro de una tarjeta con icono de tag). -->
+  <Style Selector="TextBox.search.tag-input">
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.search.tag-input:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+
+  <!-- ===================== ComboBox (§7.3, mismo lenguaje que los inputs) ===================== -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ComboBox:focus-within /template/ Border#Background">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+  <Style Selector="ComboBoxItem">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Padding" Value="12,8" />
+  </Style>
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- ===================== NumericUpDown (RemindersView, KanbanView, CalendarView) =====================
+       Mismo lenguaje de input que TextBox/ComboBox (fondo InputBackgroundBrush, hairline Ink10, cero
+       radio incluidos los botones del spinner) en vez del control Fluent redondeado por defecto, que
+       desentonaba con el resto del sistema visual. -->
+  <Style Selector="NumericUpDown">
+    <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="NumericUpDown:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+  <Style Selector="NumericUpDown:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+  <Style Selector="NumericUpDown /template/ Button">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="NumericUpDown /template/ Button:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+
+  <!-- ===================== Rejilla "gap de 1px" (§3.2 / §7.5) ===================== -->
+  <Style Selector="ItemsControl.seam-grid">
+    <Setter Property="Background" Value="{DynamicResource GridSeamBrush}" />
+  </Style>
+
+  <!-- ===================== Scrollbar polish (§7.14) ===================== -->
+  <Style Selector="ScrollBar">
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
+
+  <!-- ===================== Confirm dialog / modal (§7.10) ===================== -->
+  <Style Selector="Border.modal-overlay">
+    <Setter Property="Background" Value="#E6050505" />
+  </Style>
+  <Style Selector="Border.modal-card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="28" />
+    <Setter Property="MaxWidth" Value="380" />
+  </Style>
+
+  <!-- ===================== Grafo de sesiones (§9 — chips flotantes sobre el WebView) ===================== -->
+  <Style Selector="Border.graph-chip">
+    <Setter Property="Background" Value="#CC131313" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="12,9" />
+  </Style>
+
+  <Style Selector="Button.link-mode-toggle">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="14,9" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.link-mode-toggle TextBlock">
+    <Setter Property="LetterSpacing" Value="1.5" />
+  </Style>
+  <Style Selector="Button.link-mode-toggle.active /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.link-mode-toggle.active">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.link-mode-toggle.active TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.link-mode-toggle.active mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+
+  <!-- ===================== Tableros Kanban ===================== -->
+  <!-- Columna: hace de "sección" (fondo alterno, §1.1) para que las tarjetas lean como paneles
+       elevados encima, en vez de fundirse con el fondo de la app. -->
+  <!-- Fondo: Ink05 (5% blanco superpuesto), no AppBackgroundAltBrush — ese color es más oscuro que
+       el fondo de la propia página (§1.1 Colors.axaml), así que la columna quedaba invisible sobre el
+       fondo general en vez de leer como una superficie elevada. Ink05 es la misma técnica de "overlay
+       de opacidad de blanco" que el resto del sistema (§1.2 del sistema de diseño). -->
+  <Style Selector="Border.kanban-column">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.kanban-column.drag-over">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- The card is a Button (not a Border) so a plain click opens the read-only detail dialog for
+       free via its own Click gesture — same migration note-card went through, see the /template/
+       ContentPresenter override below for why that's needed alongside the Background/BorderBrush
+       transitions. -->
+  <Style Selector="Button.kanban-card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="14" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.kanban-card /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.kanban-card:pointerover">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundHoverBrush}" />
+  </Style>
+  <Style Selector="Button.kanban-card:pointerover /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.kanban-card.drag-over">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="Button.kanban-card.drag-over /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Punto de prioridad: sin color de marca, solo intensidad de tinta (§1.3) — más opaco = más
+       prioridad, en vez de un semáforo rojo/ámbar/verde. -->
+  <Style Selector="Ellipse.priority-dot">
+    <Setter Property="Width" Value="7" />
+    <Setter Property="Height" Value="7" />
+  </Style>
+  <Style Selector="Ellipse.priority-dot.low">
+    <Setter Property="Fill" Value="{DynamicResource Ink20}" />
+  </Style>
+  <Style Selector="Ellipse.priority-dot.medium">
+    <Setter Property="Fill" Value="{DynamicResource Ink50}" />
+  </Style>
+  <Style Selector="Ellipse.priority-dot.high">
+    <Setter Property="Fill" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Vencida: único uso de color real en el tablero, reservado a "danger" (§1.3). -->
+  <Style Selector="TextBlock.faint.overdue">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.overdue">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+
+  <!-- Subtarea completada: tachado + atenuada, dentro del formulario de tarjeta (§7.10). -->
+  <Style Selector="TextBlock.subtask-title.done">
+    <Setter Property="TextDecorations" Value="Strikethrough" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+
+  <!-- ===================== Selector de fecha límite: calendario emergente (§7.10) =====================
+       El disparador reutiliza el lenguaje visual de TextBox.search (mismo fondo/borde de input) pero
+       como Button, ya que el campo ya no admite tecleo manual — la fecha se elige siempre en el
+       calendario emergente que se abre debajo. -->
+  <Style Selector="Button.date-picker-trigger">
+    <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.date-picker-trigger:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+  <Style Selector="TextBlock.placeholder">
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+
+  <!-- Stepper de hora/minuto (Fecha límite → Agregar hora): mismo lenguaje que
+       Button.date-picker-trigger (fondo InputBackgroundBrush, hairline Ink10, cero radio) en vez
+       del NumericUpDown por defecto, que no encajaba con el resto del sistema visual. -->
+  <Style Selector="Border.time-stepper">
+    <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Width" Value="92" />
+    <Setter Property="Height" Value="34" />
+  </Style>
+  <Style Selector="Button.icon-btn.time-stepper-btn">
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="32" />
+  </Style>
+  <Style Selector="TextBlock.time-stepper-value">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Tarjeta del calendario: mismo lenguaje que Border.modal-card (panel + hairline Ink20, cero
+       radio) para que el emergente lea como parte de la misma familia que el formulario que lo abre. -->
+  <Style Selector="Border.calendar-popover">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="18" />
+  </Style>
+
+  <Style Selector="Button.icon-btn.calendar-nav">
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="26" />
+  </Style>
+
+  <Style Selector="TextBlock.calendar-weekday">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,0,0,4" />
+  </Style>
+
+  <!-- Celda de día: mismo "invierte en hover/activo" que el resto del sistema — Ink10 en hover,
+       inversión total (ActivePillBackgroundBrush) cuando es la fecha elegida, aro sutil para "hoy". -->
+  <Style Selector="Button.calendar-day">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="Margin" Value="2" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.calendar-day /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.calendar-day:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="Button.calendar-day.outside TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+  <Style Selector="Button.calendar-day.today">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Button.calendar-day.selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActivePillBackgroundBrush}" />
+  </Style>
+  <Style Selector="Button.calendar-day.selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ActivePillForegroundBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.calendar-day.selected.today">
+    <Setter Property="BorderBrush" Value="{DynamicResource ActivePillBackgroundBrush}" />
+  </Style>
+
+  <!-- ===================== Calendario — vista Mes (docs/calendar-feature/10-diseno-visual-y-componentes.md §2) =====================
+       Contorno exterior: BorderThickness real de 1px en los 4 lados — un único elemento, siempre
+       exacto, sin redondeo posible. Costuras interiores: mismo truco de "fondo de costura" que las
+       columnas de KanbanView (GridSeamBrush) — el contenedor pinta de ese color todo el interior
+       que queda dentro del borde, y cada celda se dibuja encima con 1px de margen a la derecha/
+       abajo; la línea es el estado por defecto que asoma en ese margen, así que nunca depende de
+       que la última fila/columna de la UniformGrid caiga exactamente en el píxel esperado cuando
+       el control se estira para llenar el alto disponible (con dos Border.BorderThickness intentando
+       cerrar el mismo borde, esa imprecisión de redondeo dejaba un hueco transparente = la línea
+       "desaparecía"; con el fondo siempre puesto detrás, la imprecisión como mucho corre la línea
+       un píxel, nunca la borra). -->
+  <Style Selector="Border.calendar-month-grid">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource GridSeamBrush}" />
+  </Style>
+  <Style Selector="Border.calendar-month-cell">
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    <Setter Property="Margin" Value="0,0,1,1" />
+  </Style>
+  <!-- Last column/row skip their own right/bottom seam margin, otherwise it doubles up with
+       Border.calendar-month-grid's own 1px border on those two edges. -->
+  <Style Selector="Border.calendar-month-cell.calendar-last-col">
+    <Setter Property="Margin" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.calendar-month-cell.calendar-last-row">
+    <Setter Property="Margin" Value="0,0,1,0" />
+  </Style>
+  <Style Selector="Border.calendar-month-cell.calendar-last-col.calendar-last-row">
+    <Setter Property="Margin" Value="0" />
+  </Style>
+
+  <!-- Fase 3: arrastrar y soltar para reprogramar (docs/calendar-feature/
+       05-interacciones-y-microinteracciones.md §2) — mismo lenguaje "borde blanco sólido" que
+       Border.kanban-column.drag-over ya usa para el mismo gesto en el tablero. -->
+  <Style Selector="Border.calendar-month-cell.drag-over">
+    <Setter Property="Background" Value="{DynamicResource Ink15}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <!-- Número de día: círculo relleno solo para "hoy" (único radio no-cero de la pieza, ver §1). -->
+  <Style Selector="Border.calendar-day-badge">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.calendar-day-badge.today">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="TextBlock.calendar-day-number">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.calendar-day-number.today">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.calendar-day-number.outside">
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+
+  <!-- Chip de CalendarItem (§4): fondo/borde vienen del LayerColor por binding directo en la vista (ver
+       CalendarView.axaml), así que este estilo solo aporta la estructura y el hover. -->
+  <Style Selector="ToggleButton.calendar-chip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="5,2" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.calendar-chip:pointerover">
+    <Setter Property="RenderTransform" Value="translateY(-1px)" />
+  </Style>
+  <Style Selector="ToggleButton.calendar-chip.completed TextBlock">
+    <Setter Property="TextDecorations" Value="Strikethrough" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+
+  <!-- Fase 4 — ocurrencia fantasma (docs/calendar-feature/10-diseno-visual-y-componentes.md §4):
+       "opacidad reducida al 50% + un glifo pequeño de repetición... sin fondo relleno". The transparent
+       fill itself comes from CalendarItemViewModel.ChipBackgroundColorHex (bound locally, so a style
+       setter here couldn't override it); this only supplies the opacity half of the rule. -->
+  <Style Selector="ToggleButton.calendar-chip.ghost">
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+
+  <!-- Chip posicionado en la rejilla de horas de Semana/Día (CalendarTimedChipTemplate): mismo lenguaje
+       que ToggleButton.calendar-chip de arriba, pero con más aire — la celda de Mes es diminuta y no
+       puede permitírselo, la franja horaria de Semana/Día sí, así que aquí el chip puede leerse como una
+       tarjeta real en vez de una etiqueta compacta. -->
+  <Style Selector="ToggleButton.calendar-chip.calendar-chip-timed">
+    <Setter Property="Padding" Value="7,5" />
+    <Setter Property="BorderThickness" Value="1.25" />
+    <!-- Bug real (no solo "poco visible"): ToggleButton.calendar-chip nunca fijaba VerticalAlignment, así
+         que el botón se quedaba con su alto automático (ajustado al texto) en vez de llenar el Panel
+         posicionador que sí tiene el alto real de la franja horaria (CalendarTimedItemViewModel.Height) —
+         pasaba desapercibido con la convención fija de 40 min de siempre (el alto automático del botón
+         quedaba parecido), pero con una duración real más larga dejaba un hueco vacío entre el chip y el
+         asa de redimensionado, que sí estaba anclada correctamente al fondo del Panel. -->
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <!-- Stretch, no Top: el contenido (el Panel con título/horas) también tiene que llenar el botón
+         entero, si no la hora de fin (VerticalAlignment="Bottom" dentro de ese Panel, CalendarView.axaml)
+         no tendría hasta dónde "abajo" alinearse — cada TextBlock de dentro ya se ancla Top/Bottom por su
+         cuenta, así que esto no cambia dónde se ve el título. -->
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+
+  <!-- Franja horaria (docs/calendar-feature/05-interacciones-y-microinteracciones.md §2b): asa de
+       redimensionado en el borde inferior de un chip de Kanban con duración. La marca es visible de forma
+       sutil siempre, no solo en hover — Enki no tiene ningún tour de onboarding separado, así que el
+       propio chip tiene que enseñar el gesto la primera vez que el usuario lo ve. -->
+  <Style Selector="Border.calendar-chip-resize-handle">
+    <Setter Property="Height" Value="7" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Cursor" Value="SizeNorthSouth" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.calendar-chip-resize-handle Rectangle">
+    <Setter Property="Height" Value="2" />
+    <Setter Property="Width" Value="18" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Fill" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Border.calendar-chip-resize-handle:pointerover Rectangle">
+    <Setter Property="Fill" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Franja horaria: hora de fin anclada al borde inferior del chip, junto al asa de arriba — un poco
+       más marcada que el resto de texto "faint" (peso semibold) para que se lea como el cierre de un par
+       "empieza / termina", no como una etiqueta secundaria cualquiera. -->
+  <Style Selector="TextBlock.calendar-chip-end-time">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <!-- Fila de la vista Agenda: mismo lenguaje "fondo sólido de tarjeta sobre costura Ink10" que
+       Button.kanban-card (arriba), en vez del chip transparente y compacto de Mes/franja "todo el día" —
+       la Agenda es una lista de ancho completo, así que la fila puede ser una tarjeta real con más aire. -->
+  <Style Selector="ToggleButton.calendar-agenda-card">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.calendar-agenda-card:pointerover">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+    <Setter Property="RenderTransform" Value="translateY(-1px)" />
+  </Style>
+  <Style Selector="ToggleButton.calendar-agenda-card.completed TextBlock">
+    <Setter Property="TextDecorations" Value="Strikethrough" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.calendar-agenda-card.ghost">
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+
+  <!-- Fase 4 — búsqueda activa (docs/calendar-feature/07-filtros-busqueda-y-capas.md §2): "resalta los
+       chips que coinciden". A bottom accent bar rather than overriding Border/Background, both of which
+       are already locally bound to LayerColor/EffectiveBorderColorHex on the chip itself. -->
+  <Style Selector="Border.calendar-chip-search-accent">
+    <Setter Property="Height" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Fase 4 — fila del panel "sin programadas" (docs/calendar-feature/04-vistas-y-navegacion.md §8):
+       mismo lenguaje "fondo sólido de fila sobre costura Ink10" que el panel de capas de arriba. -->
+  <Style Selector="Border.calendar-unscheduled-item">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="Padding" Value="7,6" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+
+  <Style Selector="ToggleButton.calendar-overflow-trigger">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="5,1" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="ToggleButton.calendar-overflow-trigger:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock.calendar-detail-title.completed">
+    <Setter Property="TextDecorations" Value="Strikethrough" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+
+  <!-- Fase 3: capa de clic invisible detrás de los chips de una celda/franja vacía (docs/calendar-
+       feature/05-interacciones-y-microinteracciones.md §3) — un Button transparente a pantalla completa
+       de la celda, sentado por debajo de los chips en el z-order del Panel/Grid que lo contiene, así que
+       solo intercepta clics en el espacio realmente vacío. Un tinte Ink05 al pasar el ratón es la única
+       pista de que ese espacio es interactivo. -->
+  <Style Selector="Button.calendar-cell-click-layer">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.calendar-cell-click-layer /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.calendar-cell-click-layer:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- ===================== Calendario — resaltado "seleccionado" (Fase 2, docs/calendar-feature/
+       04-vistas-y-navegacion.md §7): un anillo fino, distinto del círculo relleno de "hoy", para que el
+       clic en el mini-calendario pueda resaltar un día en la vista Mes sin inventar un lenguaje visual
+       nuevo — mismo dispositivo circular, un peso más sutil. -->
+  <Style Selector="Border.calendar-day-badge.selected">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <!-- ===================== Calendario — mini-calendario del sidebar (Fase 2) =====================
+       Reutiliza literalmente Button.calendar-day (mismo picker que ya usa la fecha límite de Kanban);
+       este único punto marca los días con al menos un CalendarItem, sin chips. -->
+  <Style Selector="Border.calendar-mini-dot">
+    <Setter Property="Width" Value="4" />
+    <Setter Property="Height" Value="4" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{DynamicResource Ink40}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,1,0,0" />
+  </Style>
+
+  <!-- Separador vertical entre el mini-calendario/sidebar y el contenido principal — misma línea de 1px
+       que el resto de la rejilla, no una sombra. -->
+  <Style Selector="Border.calendar-sidebar">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="0,0,1,0" />
+    <Setter Property="Padding" Value="0,0,20,0" />
+  </Style>
+
+  <!-- ===================== Calendario — grilla de horas Semana/Día (docs/calendar-feature/
+       10-diseno-visual-y-componentes.md §3) =====================
+       Separador White05 (el más sutil de la rampa) para no competir con los propios chips; el rango de
+       horario laboral se distingue con el mismo Ink05 pero como relleno en vez de línea — dos usos
+       distintos del mismo token, no un color nuevo. -->
+  <Style Selector="Border.calendar-hour-row">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <!-- Fase 3: un Background explícito (aunque transparente) es lo que hace que este Border reciba
+         clics/soltar en su espacio "vacío" — sin uno, Avalonia deja pasar el hit-test hacia lo que haya
+         detrás en vez de rutar el evento aquí (docs/calendar-feature/05-interacciones-y-microinteracciones.md
+         §2–3). El selector más específico ".working" de abajo sigue ganando cuando aplica. -->
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.calendar-hour-row.working">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <!-- Fase 3: mismo resaltado de destino de arrastre que Border.calendar-month-cell.drag-over,
+       aplicado a una franja horaria de Semana/Día. -->
+  <Style Selector="Border.calendar-hour-row.drag-over">
+    <Setter Property="Background" Value="{DynamicResource Ink15}" />
+  </Style>
+
+  <!-- Costura vertical entre columnas de día (Semana) — mismo Ink10 que el resto de rejillas del
+       calendario. -->
+  <Style Selector="Border.calendar-week-column">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="0,0,1,0" />
+    <!-- Fase 3: mismo motivo que Border.calendar-hour-row de arriba — necesario para que el clic vacío
+         y el soltar de arrastre lleguen a este Border. -->
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <!-- Fase 3: mismo resaltado al soltar sobre la franja "todo el día" (conserva la hora original, ver
+       CalendarViewModel.MoveItem). -->
+  <Style Selector="Border.calendar-week-column.drag-over">
+    <Setter Property="Background" Value="{DynamicResource Ink15}" />
+  </Style>
+
+  <!-- Cabecera de columna de día (Semana/Día): mismo lenguaje "eyebrow" que el resto de micro-labels;
+       "hoy" se marca con el mismo acento de peligro que la línea de "ahora" (10-diseno-visual-y-
+       componentes.md §3), no un color nuevo. -->
+  <Style Selector="Border.calendar-week-header">
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Padding" Value="0,8" />
+  </Style>
+  <Style Selector="Border.calendar-week-header.today">
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="TextBlock.calendar-week-header-label.today">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Línea de "ahora" (§3): único elemento de color saturado permitido en la grilla — 2px de
+       DangerBrush con un pequeño círculo relleno al inicio (el punto se dibuja aparte en la vista). -->
+  <Style Selector="Border.calendar-now-line">
+    <Setter Property="Height" Value="2" />
+    <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Ellipse.calendar-now-dot">
+    <Setter Property="Width" Value="7" />
+    <Setter Property="Height" Value="7" />
+    <Setter Property="Fill" Value="{DynamicResource DangerBrush}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+
+</Styles>

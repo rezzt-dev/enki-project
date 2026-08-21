@@ -1,0 +1,646 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:vm="clr-namespace:enki.ViewModels"
+        xmlns:views="clr-namespace:enki.Views"
+        xmlns:conv="clr-namespace:enki.Converters"
+        xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+        xmlns:loc="clr-namespace:enki.Localization"
+        mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="820"
+        x:Class="enki.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Width="1320" Height="820" MinWidth="980" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Title="{loc:Tr Shell_WindowTitle}">
+
+  <Design.DataContext>
+    <vm:MainWindowViewModel />
+  </Design.DataContext>
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+      <views:DashboardView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:CalendarViewModel}">
+      <views:CalendarView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:NotesViewModel}">
+      <views:NotesView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:FilesViewModel}">
+      <views:FilesView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:SkillsViewModel}">
+      <views:SkillsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:SessionsViewModel}">
+      <views:SessionsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:KanbanViewModel}">
+      <views:KanbanView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:TrashViewModel}">
+      <views:TrashView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+      <views:SettingsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:RemindersViewModel}">
+      <views:RemindersView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:NotificationsViewModel}">
+      <views:NotificationsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:VaultSetupViewModel}">
+      <views:VaultSetupView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:LanguageSetupViewModel}">
+      <views:LanguageSetupView />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <!-- Atajo global para abrir la búsqueda. Ctrl+Shift+F evita solaparse con atajos comunes del
+       editor de notas (p. ej. Ctrl+K para búsqueda o pliegue en AvaloniaEdit).
+       Atajos globales de navegación — Ctrl+1..7 recorren el sidebar en el mismo orden en que sus
+       NavItemViewModel se añaden en
+       MainWindowViewModel.InitializeShell, y Ctrl+, abre Ajustes como en VS Code/Obsidian. -->
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding OpenGlobalSearchCommand}" />
+    <KeyBinding Gesture="Ctrl+P" Command="{Binding OpenQuickSwitcherCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding QuickNewNoteCommand}" />
+    <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Dashboard}" />
+    <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Notes}" />
+    <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Kanban}" />
+    <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Calendar}" />
+    <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Files}" />
+    <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Sessions}" />
+    <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Trash}" />
+    <KeyBinding Gesture="Ctrl+D8" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Skills}" />
+    <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding OpenSettingsCommand}" />
+    <!-- Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md §3), estilo Obsidian: Ctrl+/Ctrl- en
+         ambas variantes de teclado (OEM y numérico) más Ctrl+0 para volver a 100%. Ctrl+rueda del
+         ratón se maneja aparte en MainWindow.axaml.cs (necesita interceptar antes que el scroll
+         normal de listas/tablero, algo que un KeyBinding no puede hacer). -->
+    <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding ZoomInCommand}" />
+    <KeyBinding Gesture="Ctrl+Add" Command="{Binding ZoomInCommand}" />
+    <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding ZoomOutCommand}" />
+    <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
+    <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomResetCommand}" />
+    <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomResetCommand}" />
+  </Window.KeyBindings>
+
+  <!-- Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md §1): LayoutTransformControl en vez de un
+       RenderTransform suelto porque mide a su hijo y reporta el tamaño YA escalado como su propio
+       DesiredSize — así el layout entero (sidebar + contenido + botones flotantes de la barra de
+       título) reflowea correctamente al hacer zoom en vez de recortarse o dejar hueco muerto. -->
+  <LayoutTransformControl>
+    <LayoutTransformControl.LayoutTransform>
+      <ScaleTransform ScaleX="{Binding UiZoomScale}" ScaleY="{Binding UiZoomScale}" />
+    </LayoutTransformControl.LayoutTransform>
+
+  <Grid>
+
+  <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsVaultReady}">
+
+    <!-- ===================== Sidebar (glass, flotante — §5.3/§9.5) ===================== -->
+    <Border Grid.Column="0" Margin="10,10,0,10">
+      <Border Width="{Binding SidebarWidth}" CornerRadius="0"
+              Background="{DynamicResource SidebarBackgroundBrush}">
+        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0">
+          <Border.Transitions>
+            <Transitions>
+              <DoubleTransition Property="Width" Duration="0:0:0.16" Easing="CubicEaseOut" />
+            </Transitions>
+          </Border.Transitions>
+
+          <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="14,18,14,16">
+
+            <!-- Brand header — logo, text, and (only while expanded) the toggle button all share this
+                 one row so they line up on the same vertical center. Collapsed: the toggle moves to its
+                 own row below (see the second Button further down) instead of squeezing into this row,
+                 because the collapsed rail (76px) never has to fit the logo and a 34px button side by
+                 side — the middle "*" column's contribution drops to 0 once the title StackPanel hides,
+                 so centering the Grid makes the logo sit with equal margins on both sides instead of
+                 flush left. The logo is sized to 32x32 so its solid fill reads at the same visual weight
+                 as the borderless 20px icons in the rail below it, instead of looking undersized next to
+                 them. -->
+            <Grid Grid.Row="0" Classes="brand-header" Classes.collapsed="{Binding !IsSidebarExpanded}"
+                  ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,14"
+                  Background="Transparent" PointerPressed="TitleBar_PointerPressed">
+              <Border Grid.Column="0" Width="32" Height="32" CornerRadius="0">
+                <Image Name="BrandIcon" Width="32" Height="32" />
+              </Border>
+
+              <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center"
+                          IsVisible="{Binding IsSidebarExpanded}">
+                <TextBlock Text="ENKI" FontSize="15" FontWeight="Bold" LetterSpacing="1" />
+                <TextBlock Text="{loc:Tr Shell_BrandTagline}" Classes="faint" FontSize="9.5" LetterSpacing="1.5" />
+              </StackPanel>
+
+              <!-- Expanded-only toggle: same row as the logo/title, vertically centered alongside them.
+                   The collapsed-rail toggle below is a separate Button (own row) rather than this one
+                   just moving, since collapsing this row's "*" column to 0 would otherwise pull the
+                   toggle flush against the logo instead of leaving it centered in a 76px rail. -->
+              <Button Grid.Column="2" Classes="icon-btn sidebar-toggle" VerticalAlignment="Center"
+                      Command="{Binding ToggleSidebarCommand}" ToolTip.Tip="{loc:Tr Shell_ToggleSidebarTooltip}"
+                      AutomationProperties.Name="{loc:Tr Shell_ToggleSidebarTooltip}"
+                      IsVisible="{Binding IsSidebarExpanded}">
+                <Border Classes="sidebar-toggle-box" Width="32" Height="32" CornerRadius="0"
+                        Background="Transparent">
+                  <mi:MaterialIcon Kind="{Binding SidebarToggleIcon}" Width="20" Height="20"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Button>
+            </Grid>
+
+            <!-- Collapsed-rail toggle: own row, centered like every other rail square. Hidden while
+                 expanded (see the Button above, inside the header row, for that state) instead of both
+                 being visible and just repositioned via alignment, since IsVisible="False" collapses
+                 this row to 0 height and removes it from layout entirely. -->
+            <Button Grid.Row="1" Classes="icon-btn sidebar-toggle collapsed"
+                    Command="{Binding ToggleSidebarCommand}"
+                    Margin="4,0,4,14" ToolTip.Tip="{loc:Tr Shell_ToggleSidebarTooltip}"
+                    AutomationProperties.Name="{loc:Tr Shell_ToggleSidebarTooltip}"
+                    IsVisible="{Binding !IsSidebarExpanded}">
+              <!-- Hover fill lives on this Border instead of the Button's own ContentPresenter so it's
+                   pixel-exact 32x32 with sharp corners — same box as the logo Border above — instead of
+                   trusting FluentTheme's default Button padding/border-thickness to net out to the same
+                   size. -->
+              <Border Classes="sidebar-toggle-box" Width="32" Height="32" CornerRadius="0"
+                      Background="Transparent">
+                <mi:MaterialIcon Kind="{Binding SidebarToggleIcon}" Width="20" Height="20"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+            </Button>
+
+            <!-- Nav items -->
+            <ItemsControl Grid.Row="2" ItemsSource="{Binding NavItems}" Margin="0,24,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="4" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:NavItemViewModel">
+                  <Button Classes="nav-item"
+                          Classes.active="{Binding IsActive}"
+                          Classes.collapsed="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NavigateCommand}"
+                          CommandParameter="{Binding Page}"
+                          ToolTip.Tip="{Binding Label}"
+                          ToolTip.ServiceEnabled="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                      <!-- Badge de conteo (Fase 2 §9) — solo "Papelera" y "Calendario" lo fijan (ver
+                           MainWindowViewModel.UpdateTrashBadge/UpdateCalendarBadge); el resto siempre
+                           queda en 0 y el Border no se muestra. -->
+                      <Panel Width="20" Height="20">
+                        <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Center" />
+                        <Border Classes="titlebar-badge" IsVisible="{Binding HasCount}">
+                          <TextBlock Classes="titlebar-badge-text" Text="{Binding Count}" />
+                        </Border>
+                      </Panel>
+                      <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}"
+                                 VerticalAlignment="Center"
+                                 IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+
+            <!-- Recordatorios row -->
+            <Button Grid.Row="4" Classes="nav-item"
+                    Classes.active="{Binding IsRemindersActive}"
+                    Classes.collapsed="{Binding !IsSidebarExpanded}"
+                    Command="{Binding OpenRemindersCommand}" ToolTip.Tip="{loc:Tr Nav_RemindersTooltip}"
+                    ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}">
+              <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Panel Width="20" Height="20">
+                  <mi:MaterialIcon Kind="CalendarClockOutline" Width="20" Height="20" HorizontalAlignment="Center" />
+                  <Border Classes="titlebar-badge" IsVisible="{Binding Reminders.UnreadCount, Converter={StaticResource CountToBoolConverter}}">
+                    <TextBlock Classes="titlebar-badge-text" Text="{Binding Reminders.UnreadCount}" />
+                  </Border>
+                </Panel>
+                <TextBlock Text="{loc:Tr Nav_RemindersLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center"
+                           IsVisible="{Binding IsSidebarExpanded}" />
+              </StackPanel>
+            </Button>
+
+            <!-- Notificaciones row -->
+            <Button Grid.Row="5" Classes="nav-item"
+                    Classes.active="{Binding IsNotificationsActive}"
+                    Classes.collapsed="{Binding !IsSidebarExpanded}"
+                    Command="{Binding OpenNotificationsCommand}" ToolTip.Tip="{loc:Tr Nav_NotificationsTooltip}"
+                    ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}">
+              <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Panel Width="20" Height="20">
+                  <mi:MaterialIcon Kind="BellRingOutline" Width="20" Height="20" HorizontalAlignment="Center" />
+                  <Border Classes="titlebar-badge" IsVisible="{Binding Notifications.UnreadCount, Converter={StaticResource CountToBoolConverter}}">
+                    <TextBlock Classes="titlebar-badge-text" Text="{Binding Notifications.UnreadCount}" />
+                  </Border>
+                </Panel>
+                <TextBlock Text="{loc:Tr Nav_NotificationsLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center"
+                           IsVisible="{Binding IsSidebarExpanded}" />
+              </StackPanel>
+            </Button>
+
+            <!-- Settings row -->
+            <Button Grid.Row="6" Classes="nav-item"
+                    Classes.active="{Binding IsSettingsActive}"
+                    Classes.collapsed="{Binding !IsSidebarExpanded}"
+                    Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{loc:Tr Nav_SettingsTooltip}"
+                    ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}">
+              <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="CogOutline" Width="20" Height="20" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Nav_SettingsLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center"
+                           IsVisible="{Binding IsSidebarExpanded}" />
+              </StackPanel>
+            </Button>
+
+          </Grid>
+        </Border>
+      </Border>
+    </Border>
+
+    <!-- ===================== Content ===================== -->
+    <Grid Grid.Column="1" RowDefinitions="Auto,*">
+      <!-- Reserves clearance for the floating window controls (bottom of this file) so pages whose
+           own top-right corner holds a button — the notes tab bar's "cerrar todas las pestañas", for
+           one — don't render underneath them. Just empty space, not a visible bar. Always on (not
+           gated by UseCustomTitleBar like it used to be) because the notifications/reminders buttons
+           float here regardless of title-bar mode, unlike minimize/maximize/close which the OS draws
+           itself once UseCustomTitleBar is off. -->
+      <Border Grid.Row="0" Height="44" />
+
+      <Grid Grid.Row="1">
+        <!-- Animación de entrada de página — mismo Opacity 0→1 + TranslateY 8px/250ms CubicEaseOut que
+             el "reveal" del Calendario
+             (CalendarViewModel.AnimateReveal), aplicado una sola vez a nivel de shell alrededor de
+             CurrentPage en vez de duplicarlo en cada página. -->
+        <ContentControl Content="{Binding CurrentPage}"
+                         Opacity="{Binding PageRevealOpacity}"
+                         RenderTransform="{Binding PageRevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
+          <ContentControl.Transitions>
+            <Transitions>
+              <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
+              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
+            </Transitions>
+          </ContentControl.Transitions>
+        </ContentControl>
+
+        <!-- Grano de película sutil sobre todo el shell (§5.1) -->
+        <Border Background="{DynamicResource GrainBrush}" IsHitTestVisible="False" />
+      </Grid>
+    </Grid>
+
+  </Grid>
+
+  <views:LanguageSetupView DataContext="{Binding LanguageSetup}"
+                           IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LanguageSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+
+  <views:VaultSetupView DataContext="{Binding VaultSetup}"
+                        IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).VaultSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+
+    <!-- ===================== Resize grips (§ ajuste "Usar barra de título propia") =====================
+         WindowDecorations.None (see MainWindow.axaml.cs) drops the OS/Avalonia-drawn resize border
+         along with its title bar, so these thin hit-test strips stand in for it — otherwise a
+         maximized-only window would be the only way to resize once the setting is on. Declared before
+         the window-control buttons below so those buttons win the corner pixels they share. -->
+    <Border Background="Transparent" Height="4" VerticalAlignment="Top" Cursor="SizeNorthSouth"
+            IsVisible="{Binding UseCustomTitleBar}" Tag="North" PointerPressed="ResizeGrip_PointerPressed" />
+    <Border Background="Transparent" Height="4" VerticalAlignment="Bottom" Cursor="SizeNorthSouth"
+            IsVisible="{Binding UseCustomTitleBar}" Tag="South" PointerPressed="ResizeGrip_PointerPressed" />
+    <Border Background="Transparent" Width="4" HorizontalAlignment="Left" Cursor="SizeWestEast"
+            IsVisible="{Binding UseCustomTitleBar}" Tag="West" PointerPressed="ResizeGrip_PointerPressed" />
+    <Border Background="Transparent" Width="4" HorizontalAlignment="Right" Cursor="SizeWestEast"
+            IsVisible="{Binding UseCustomTitleBar}" Tag="East" PointerPressed="ResizeGrip_PointerPressed" />
+    <Border Background="Transparent" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Top"
+            Cursor="TopLeftCorner" IsVisible="{Binding UseCustomTitleBar}" Tag="NorthWest" PointerPressed="ResizeGrip_PointerPressed" />
+    <Border Background="Transparent" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top"
+            Cursor="TopRightCorner" IsVisible="{Binding UseCustomTitleBar}" Tag="NorthEast" PointerPressed="ResizeGrip_PointerPressed" />
+    <Border Background="Transparent" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+            Cursor="BottomLeftCorner" IsVisible="{Binding UseCustomTitleBar}" Tag="SouthWest" PointerPressed="ResizeGrip_PointerPressed" />
+    <Border Background="Transparent" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+            Cursor="BottomRightCorner" IsVisible="{Binding UseCustomTitleBar}" Tag="SouthEast" PointerPressed="ResizeGrip_PointerPressed" />
+
+    <!-- ===================== Notificaciones + recordatorios =====================
+         Two buttons — deliberately NOT gated by UseCustomTitleBar like the window controls below, since
+         they carry app content (not window chrome) and stay meaningful whether Enki or the OS is
+         drawing the title bar. Each is independently hideable from Ajustes › Notificaciones
+         (MainWindowViewModel.NotificationsPanelEnabled/RemindersPanelEnabled) instead. They are NOT the
+         same feature: the bell is a push-driven system event log (NotificationCenterViewModel — vault
+         switched, sync errors…); the inbox is a pull-driven view over kanban due dates
+         (ReminderInboxViewModel — "what's due soon"). See docs/notificaciones-y-recordatorios.md for the
+         fuller design. -->
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0">
+
+      <!-- Global search: abre un popup con consulta en paralelo a notas, tarjetas, tareas y recordatorios. -->
+      <Grid>
+        <Button Name="GlobalSearchTrigger" Classes="titlebar-btn titlebar-btn-plain"
+                Command="{Binding OpenGlobalSearchCommand}" ToolTip.Tip="{loc:Tr Shell_SearchTooltip}"
+                AutomationProperties.Name="{loc:Tr Shell_SearchTooltip}">
+          <mi:MaterialIcon Kind="Magnify" Width="19" Height="19"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+
+        <Popup Name="GlobalSearchPopup" PlacementTarget="{Binding #GlobalSearchTrigger}"
+               Placement="BottomEdgeAlignedRight" VerticalOffset="6"
+               IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #GlobalSearchTrigger}"
+               IsOpen="{Binding GlobalSearch.IsOpen, Mode=TwoWay}" Width="600" MaxHeight="520"
+               Opened="GlobalSearchPopup_Opened">
+          <Border Classes="dropdown-popover" Width="600" MaxHeight="520">
+            <StackPanel Spacing="12">
+              <TextBox Name="GlobalSearchTextBox" Classes="search"
+                       Text="{Binding GlobalSearch.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="{loc:Tr Shell_SearchPlaceholder}"
+                       AutomationProperties.Name="{loc:Tr Shell_SearchPlaceholder}" />
+
+              <TextBlock Text="{loc:Tr Search_Prompt}"
+                         Classes="faint" TextWrapping="Wrap"
+                         IsVisible="{Binding GlobalSearch.ShowSearchPrompt}" />
+
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding GlobalSearch.IsSearching}">
+                <mi:MaterialIcon Classes="spin" Kind="Loading" Width="14" Height="14" />
+                <TextBlock Text="{loc:Tr Search_InProgress}" Classes="faint" />
+              </StackPanel>
+
+              <TextBlock Text="{loc:Tr Search_NoResults}"
+                         Classes="faint" TextWrapping="Wrap"
+                         IsVisible="{Binding GlobalSearch.ShowNoResults}" />
+
+              <ScrollViewer IsVisible="{Binding GlobalSearch.HasResults}" MaxHeight="380">
+                <ItemsControl ItemsSource="{Binding GlobalSearch.Results}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="2" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:GlobalSearchResultViewModel">
+                      <Button Classes="dropdown-item"
+                              Command="{Binding $parent[ItemsControl].DataContext.GlobalSearchResultSelectedCommand}"
+                              CommandParameter="{Binding}"
+                              AutomationProperties.Name="{Binding Title}">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16"
+                                            Margin="0,2,10,0" VerticalAlignment="Top" />
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Subtitle}" Classes="faint" FontSize="11"
+                                       TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- Quick Switcher: Ctrl+P para saltar a una nota. -->
+      <Grid>
+        <Popup Name="QuickSwitcherPopup" PlacementTarget="{Binding #GlobalSearchTrigger}"
+               Placement="BottomEdgeAlignedRight" VerticalOffset="6"
+               IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #GlobalSearchTrigger}"
+               IsOpen="{Binding QuickSwitcher.IsOpen, Mode=TwoWay}" Width="500" MaxHeight="420"
+               Opened="QuickSwitcherPopup_Opened">
+          <Border Classes="dropdown-popover" Width="500" MaxHeight="420">
+            <StackPanel Spacing="10">
+              <TextBox Name="QuickSwitcherTextBox" Classes="search"
+                       Text="{Binding QuickSwitcher.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="{loc:Tr QuickSwitcher_SearchPlaceholder}"
+                       AutomationProperties.Name="{loc:Tr QuickSwitcher_SearchPlaceholder}"
+                       KeyDown="QuickSwitcherTextBox_KeyDown" />
+
+              <TextBlock Text="{loc:Tr QuickSwitcher_Prompt}"
+                         Classes="faint" TextWrapping="Wrap"
+                         IsVisible="{Binding QuickSwitcher.ShowPrompt}" />
+
+              <ScrollViewer IsVisible="{Binding QuickSwitcher.HasResults}" MaxHeight="320">
+                <ItemsControl ItemsSource="{Binding QuickSwitcher.Results}"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="2" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:QuickSwitcherItemViewModel">
+                      <Button Classes="dropdown-item"
+                              Classes.active="{Binding IsSelected}"
+                              Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).QuickSwitcher.OpenNoteCommand}"
+                              CommandParameter="{Binding .}"
+                              AutomationProperties.Name="{Binding Title}">
+                        <Grid ColumnDefinitions="Auto,*">
+                          <mi:MaterialIcon Grid.Column="0" Kind="NoteTextOutline" Width="16" Height="16"
+                                            Margin="0,2,10,0" VerticalAlignment="Top" />
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Preview}" Classes="faint" FontSize="11"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                          </StackPanel>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- Bell: system notifications -->
+      <Grid DataContext="{Binding NotificationCenter}"
+            IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NotificationsPanelEnabled}">
+        <Button Name="NotificationsTrigger" Classes="titlebar-btn titlebar-btn-plain" Command="{Binding ToggleCommand}"
+                ToolTip.Tip="{loc:Tr Notification_BellTooltip}"
+                AutomationProperties.Name="{loc:Tr Notification_BellTooltip}">
+          <Panel Width="20" Height="20">
+            <mi:MaterialIcon Kind="BellRingOutline" Width="19" Height="19"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Border Classes="titlebar-badge" IsVisible="{Binding UnreadCount, Converter={StaticResource CountToBoolConverter}}">
+              <TextBlock Classes="titlebar-badge-text" Text="{Binding UnreadCount}" />
+            </Border>
+          </Panel>
+        </Button>
+
+        <Popup PlacementTarget="{Binding #NotificationsTrigger}" Placement="BottomEdgeAlignedRight"
+               VerticalOffset="6" IsLightDismissEnabled="True"
+               OverlayInputPassThroughElement="{Binding #NotificationsTrigger}"
+               IsOpen="{Binding IsOpen, Mode=TwoWay}">
+          <Border Classes="dropdown-popover" Width="320">
+            <StackPanel Spacing="12">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Notification_PanelTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="10.5"
+                           VerticalAlignment="Center" MinWidth="0" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="1" Classes="ghost" Command="{Binding MarkAllReadCommand}"
+                        Margin="8,0,0,0"
+                        IsVisible="{Binding UnreadCount, Converter={StaticResource CountToBoolConverter}}">
+                  <TextBlock Text="{loc:Tr Notification_MarkAllRead, Converter={StaticResource UpperCaseConverter}}" />
+                </Button>
+              </Grid>
+
+              <TextBlock Text="{loc:Tr Notification_Empty}" Classes="faint" IsVisible="{Binding !HasItems}" />
+
+              <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="2" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:NotificationItemViewModel">
+                    <Button Classes="dropdown-item"
+                            Command="{Binding $parent[ItemsControl].DataContext.SelectItemCommand}"
+                            CommandParameter="{Binding}"
+                            AutomationProperties.Name="{Binding Title}">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <mi:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIcon}" Width="15" Height="15"
+                                          Margin="0,2,10,0" VerticalAlignment="Top" Classes="severity-icon"
+                                          Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
+                                          Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
+                                          Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
+                        <StackPanel Grid.Column="1" Spacing="2">
+                          <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"
+                                     Classes.faint="{Binding IsRead}" />
+                          <TextBlock Text="{Binding Message}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                                     IsVisible="{Binding HasMessage}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" Classes="faint" FontSize="9.5"
+                                   Margin="8,2,0,0" VerticalAlignment="Top" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- Inbox: vencimientos de tarjetas Kanban con fecha límite — distinto de la página "Recordatorios"
+           (entidad Reminder). Renombrado para disambiguar (ver docs/notificaciones-y-recordatorios.md). -->
+      <Grid DataContext="{Binding ReminderInbox}"
+            IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemindersPanelEnabled}">
+        <Button Name="RemindersTrigger" Classes="titlebar-btn titlebar-btn-plain" Command="{Binding ToggleCommand}"
+                ToolTip.Tip="{loc:Tr Reminder_InboxTooltip}"
+                AutomationProperties.Name="{loc:Tr Reminder_InboxTooltip}">
+          <Panel Width="20" Height="20">
+            <mi:MaterialIcon Kind="InboxOutline" Width="19" Height="19"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Border Classes="titlebar-badge" IsVisible="{Binding OverdueCount, Converter={StaticResource CountToBoolConverter}}">
+              <TextBlock Classes="titlebar-badge-text" Text="{Binding OverdueCount}" />
+            </Border>
+          </Panel>
+        </Button>
+
+        <Popup PlacementTarget="{Binding #RemindersTrigger}" Placement="BottomEdgeAlignedRight"
+               VerticalOffset="6" IsLightDismissEnabled="True"
+               OverlayInputPassThroughElement="{Binding #RemindersTrigger}"
+               IsOpen="{Binding IsOpen, Mode=TwoWay}">
+          <Border Classes="dropdown-popover" Width="320">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{loc:Tr Reminder_InboxTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="10.5" />
+
+              <!-- Aviso "Deshacer" tras un Dismiss (Fase 10, docs/analisis-proyecto/roadmap.md) — mismo
+                   patrón visual de texto+botón fantasma inline que Polar_Sync_AlreadyRunningNotice
+                   (views/reminders/RemindersView.axaml), sin componente de toast nuevo. -->
+              <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasLastDismissed}">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Reminder_DismissedUndoMessage}" Classes="faint" FontSize="11.5"
+                           VerticalAlignment="Center" TextWrapping="Wrap" />
+                <Button Grid.Column="1" Classes="ghost" Padding="6,2" Command="{Binding UndoDismissCommand}">
+                  <TextBlock Text="{loc:Tr Reminder_UndoDismiss, Converter={StaticResource UpperCaseConverter}}" FontSize="11" FontWeight="Bold" />
+                </Button>
+              </Grid>
+
+              <TextBlock Text="{loc:Tr Reminder_InboxEmpty}" Classes="faint" IsVisible="{Binding !HasItems}" />
+
+              <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="4" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ReminderItemViewModel">
+                    <!-- Three-row hierarchy — metadata (bucket/due date), title, column tag — instead of
+                         a flat text stack, plus a left accent bar (see Button.dropdown-item.reminder-item)
+                         so urgency reads at a glance across the whole list. -->
+                    <Button Classes="dropdown-item reminder-item"
+                            Classes.overdue="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Overdue}"
+                            Classes.today="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Today}"
+                            Command="{Binding $parent[ItemsControl].DataContext.OpenCardCommand}"
+                            CommandParameter="{Binding}"
+                            AutomationProperties.Name="{Binding Title}">
+                      <StackPanel Spacing="5">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Grid.Column="0" Text="{Binding BucketLabel}" Classes="faint" FontSize="9.5"
+                                     FontWeight="Bold" LetterSpacing="1"
+                                     Classes.overdue="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Overdue}"
+                                     Classes.today="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Today}" />
+                          <TextBlock Grid.Column="1" Text="{Binding DueDateLabel}" Classes="faint" FontSize="9.5" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="Bold" FontSize="13"
+                                     TextWrapping="Wrap" VerticalAlignment="Center" />
+                          <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20" Margin="8,0,0,0"
+                                  VerticalAlignment="Top"
+                                  Command="{Binding $parent[ItemsControl].DataContext.DismissCommand}"
+                                  CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Reminder_DismissTooltip}">
+                            <mi:MaterialIcon Kind="Close" Width="11" Height="11" />
+                          </Button>
+                        </Grid>
+                        <TextBlock Text="{Binding ColumnTitle}" Classes="faint" FontSize="10.5" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- ===================== Window controls (§ ajuste "Usar barra de título propia") =====================
+           Floats over whatever page is showing instead of reserving a bar of its own — dragging the
+           window happens from the sidebar's brand header (see TitleBar_PointerPressed above), not from
+           here. Individually gated by UseCustomTitleBar (not the whole StackPanel, unlike before) so
+           the bell/inbox pair above stays visible when the OS draws its own min/max/close instead. -->
+      <Button Classes="titlebar-btn" Click="Minimize_Click" ToolTip.Tip="{loc:Tr Shell_MinimizeTooltip}"
+              Margin="85,5,5,5"
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+        <mi:MaterialIcon Kind="WindowMinimize" Width="13" Height="13" />
+      </Button>
+      <Button Classes="titlebar-btn" Click="MaximizeRestore_Click" ToolTip.Tip="{loc:Tr Shell_MaximizeRestoreTooltip}"
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+        <!-- Plain drawn square instead of a MaterialIcon glyph. MaximizeGlyph is the resting
+             "maximize" square; RestoreGlyph (two overlapping squares, classic restore mark) swaps
+             in once the window is maximized — toggled in MainWindow.axaml.cs. -->
+        <Grid Width="12" Height="12">
+          <Border x:Name="MaximizeGlyph" Classes="titlebar-glyph" Width="10" Height="10"
+                  BorderThickness="1.2" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Panel x:Name="RestoreGlyph" IsVisible="False">
+            <Border Classes="titlebar-glyph" Width="8" Height="8" BorderThickness="1.2"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" />
+            <Border Classes="titlebar-glyph" Width="8" Height="8" BorderThickness="1.2"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+          </Panel>
+        </Grid>
+      </Button>
+      <Button Classes="titlebar-btn titlebar-btn-close" Click="Close_Click" ToolTip.Tip="{loc:Tr Common_Close}"
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+        <mi:MaterialIcon Kind="WindowClose" Width="14" Height="14" />
+      </Button>
+    </StackPanel>
+
+  </Grid>
+  </LayoutTransformControl>
+</Window>

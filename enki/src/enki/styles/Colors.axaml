@@ -1,0 +1,177 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ===================================================================
+       Sistema de diseño monocromo — brutalismo editorial suizo (dark-first)
+       Ver docs/sistema-diseno-web.md. Blanco/negro puro + rampa de
+       opacidades de blanco. Cero color de marca salvo danger/success.
+       =================================================================== -->
+
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="AppBackgroundColor">#121212</Color>
+      <Color x:Key="AppBackgroundAltColor">#0D0D0D</Color>
+      <Color x:Key="SidebarBackgroundColor">#131313</Color>
+      <Color x:Key="SurfaceColor">#1A1A1A</Color>
+      <Color x:Key="PanelBackgroundColor">#1B1B1B</Color>
+      <Color x:Key="PanelBackgroundHoverColor">#1F1F1F</Color>
+      <Color x:Key="InputBackgroundColor">#141414</Color>
+      <Color x:Key="RowBackgroundColor">#131313</Color>
+      <Color x:Key="RowBackgroundHoverColor">#181818</Color>
+
+      <Color x:Key="TextPrimaryColor">#F5F5F5</Color>
+      <Color x:Key="TextSecondaryColor">#C6C6C6</Color>
+      <Color x:Key="TextMutedColor">#474747</Color>
+
+      <Color x:Key="InkColor">#FFFFFF</Color>
+      <Color x:Key="InkOnColor">#000000</Color>
+
+      <Color x:Key="BorderOpColor">#FFFFFF</Color>
+      <Color x:Key="ScrollTrackColor">#121212</Color>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Light">
+      <!-- Mismo lenguaje, polaridad invertida: negro puro sobre blanco casi puro. -->
+      <Color x:Key="AppBackgroundColor">#F5F5F5</Color>
+      <Color x:Key="AppBackgroundAltColor">#EDEDED</Color>
+      <Color x:Key="SidebarBackgroundColor">#F0F0F0</Color>
+      <Color x:Key="SurfaceColor">#FAFAFA</Color>
+      <Color x:Key="PanelBackgroundColor">#EAEAEA</Color>
+      <Color x:Key="PanelBackgroundHoverColor">#E2E2E2</Color>
+      <Color x:Key="InputBackgroundColor">#EFEFEF</Color>
+      <Color x:Key="RowBackgroundColor">#F0F0F0</Color>
+      <Color x:Key="RowBackgroundHoverColor">#E6E6E6</Color>
+
+      <Color x:Key="TextPrimaryColor">#0A0A0A</Color>
+      <Color x:Key="TextSecondaryColor">#39393B</Color>
+      <Color x:Key="TextMutedColor">#B8B8B8</Color>
+
+      <Color x:Key="InkColor">#000000</Color>
+      <Color x:Key="InkOnColor">#FFFFFF</Color>
+
+      <Color x:Key="BorderOpColor">#000000</Color>
+      <Color x:Key="ScrollTrackColor">#F5F5F5</Color>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- ===================== Estado (únicos colores reales) ===================== -->
+  <Color x:Key="DangerColor">#F87171</Color>
+  <Color x:Key="SuccessColor">#4ADE80</Color>
+
+  <!-- ===================== Brushes de fondo / superficie ===================== -->
+  <SolidColorBrush x:Key="AppBackgroundBrush" Color="{DynamicResource AppBackgroundColor}" />
+  <SolidColorBrush x:Key="AppBackgroundAltBrush" Color="{DynamicResource AppBackgroundAltColor}" />
+  <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{DynamicResource SidebarBackgroundColor}" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
+  <SolidColorBrush x:Key="PanelBackgroundBrush" Color="{DynamicResource PanelBackgroundColor}" />
+  <SolidColorBrush x:Key="PanelBackgroundHoverBrush" Color="{DynamicResource PanelBackgroundHoverColor}" />
+  <SolidColorBrush x:Key="InputBackgroundBrush" Color="{DynamicResource InputBackgroundColor}" />
+  <SolidColorBrush x:Key="RowBackgroundBrush" Color="{DynamicResource RowBackgroundColor}" />
+  <SolidColorBrush x:Key="RowBackgroundHoverBrush" Color="{DynamicResource RowBackgroundColor}" />
+  <SolidColorBrush x:Key="RowBackgroundHoverActiveBrush" Color="{DynamicResource RowBackgroundHoverColor}" />
+  <SolidColorBrush x:Key="GridSeamBrush" Color="{DynamicResource InkColor}" Opacity="0.10" />
+  <SolidColorBrush x:Key="ScrollTrackBrush" Color="{DynamicResource ScrollTrackColor}" />
+
+  <!-- Compat con nombres previos usados en el resto de la app -->
+  <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource PanelBackgroundColor}" />
+  <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource PanelBackgroundHoverColor}" />
+  <SolidColorBrush x:Key="EditorBackgroundBrush" Color="{DynamicResource AppBackgroundAltColor}" />
+
+  <!-- ===================== Texto ===================== -->
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
+  <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMutedColor}" />
+
+  <!-- ===================== La tinta: blanco puro (o negro en claro) ===================== -->
+  <SolidColorBrush x:Key="InkBrush" Color="{DynamicResource InkColor}" />
+  <SolidColorBrush x:Key="InkOnBrush" Color="{DynamicResource InkOnColor}" />
+
+  <!-- ===================== Rampa de opacidad sobre la tinta (Ink05…Ink90) =====================
+       El 90% de los matices de la UI no son colores nuevos: son la tinta a distintas
+       opacidades sobre el fondo. Ver §1.2 de la guía de diseño. -->
+  <SolidColorBrush x:Key="Ink05" Color="{DynamicResource InkColor}" Opacity="0.05" />
+  <SolidColorBrush x:Key="Ink10" Color="{DynamicResource InkColor}" Opacity="0.10" />
+  <SolidColorBrush x:Key="Ink15" Color="{DynamicResource InkColor}" Opacity="0.15" />
+  <SolidColorBrush x:Key="Ink20" Color="{DynamicResource InkColor}" Opacity="0.20" />
+  <SolidColorBrush x:Key="Ink30" Color="{DynamicResource InkColor}" Opacity="0.30" />
+  <SolidColorBrush x:Key="Ink40" Color="{DynamicResource InkColor}" Opacity="0.40" />
+  <SolidColorBrush x:Key="Ink50" Color="{DynamicResource InkColor}" Opacity="0.50" />
+  <SolidColorBrush x:Key="Ink60" Color="{DynamicResource InkColor}" Opacity="0.60" />
+  <SolidColorBrush x:Key="Ink70" Color="{DynamicResource InkColor}" Opacity="0.70" />
+  <SolidColorBrush x:Key="Ink80" Color="{DynamicResource InkColor}" Opacity="0.80" />
+  <SolidColorBrush x:Key="Ink90" Color="{DynamicResource InkColor}" Opacity="0.90" />
+
+  <!-- Compat: los "border brushes" antiguos ahora son la rampa de opacidad -->
+  <SolidColorBrush x:Key="BorderBrush1" Color="{DynamicResource InkColor}" Opacity="0.10" />
+  <SolidColorBrush x:Key="BorderSubtleBrush" Color="{DynamicResource InkColor}" Opacity="0.05" />
+
+  <!-- ===================== Estado / feedback ===================== -->
+  <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+  <SolidColorBrush x:Key="DangerMutedBrush" Color="{StaticResource DangerColor}" Opacity="0.6" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+
+  <!-- Botón/elemento activo: inversión total (fondo tinta, texto fondo) -->
+  <SolidColorBrush x:Key="ActivePillBackgroundBrush" Color="{DynamicResource InkColor}" />
+  <SolidColorBrush x:Key="ActivePillForegroundBrush" Color="{DynamicResource InkOnColor}" />
+
+  <!-- Selección de texto invertida: fondo blanco, texto negro -->
+  <SolidColorBrush x:Key="SelectionBackgroundBrush" Color="{DynamicResource InkColor}" />
+  <SolidColorBrush x:Key="SelectionForegroundBrush" Color="{DynamicResource InkOnColor}" />
+
+  <!-- ===================== Tipografía ===================== -->
+  <FontFamily x:Key="DisplayFontFamily">avares://enki/assets/fonts#Space Grotesk</FontFamily>
+  <FontFamily x:Key="MonoFontFamily">avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono</FontFamily>
+
+  <!-- ===================== AccentColor de Fluent → monocromo =====================
+       Nada de azul: se sobreescribe la paleta de acento del sistema para que
+       cualquier control Fluent (focus, checked, selección) caiga en blanco/gris. -->
+  <Color x:Key="SystemAccentColor">#FFFFFF</Color>
+  <Color x:Key="SystemAccentColorDark1">#F0F0F0</Color>
+  <Color x:Key="SystemAccentColorDark2">#DADADA</Color>
+  <Color x:Key="SystemAccentColorDark3">#C4C4C4</Color>
+  <Color x:Key="SystemAccentColorLight1">#FFFFFF</Color>
+  <Color x:Key="SystemAccentColorLight2">#FFFFFF</Color>
+  <Color x:Key="SystemAccentColorLight3">#FFFFFF</Color>
+
+  <!-- ===================== Texturas ===================== -->
+
+  <!-- Grano de película: ruido vectorial disperso a opacidad mínima (§5.1). -->
+  <DrawingBrush x:Key="GrainBrush"
+                TileMode="Tile"
+                Stretch="None"
+                Opacity="0.05"
+                SourceRect="0,0,48,48"
+                DestinationRect="0,0,48,48">
+    <DrawingBrush.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="{DynamicResource InkBrush}">
+          <GeometryDrawing.Geometry>
+            <GeometryGroup>
+              <EllipseGeometry Center="3,7" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="14,2" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="9,15" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="22,9" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="31,4" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="27,18" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="39,13" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="44,24" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="6,22" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="18,28" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="35,31" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="2,36" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="12,41" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="24,38" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="41,42" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="46,3" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="16,46" RadiusX="0.5" RadiusY="0.5" />
+              <EllipseGeometry Center="30,45" RadiusX="0.5" RadiusY="0.5" />
+            </GeometryGroup>
+          </GeometryDrawing.Geometry>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+
+</ResourceDictionary>

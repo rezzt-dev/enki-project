@@ -1,0 +1,530 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:models="clr-namespace:enki.Models"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="enki.Views.EditorView"
+             x:DataType="vm:EditorViewModel">
+
+  <Grid RowDefinitions="Auto,Auto,*" Margin="36,26,36,26">
+
+    <!-- Header: título a la izquierda, metadatos/acciones a la derecha en una sola fila -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,20">
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <Button Classes="icon-btn" Command="{Binding BackCommand}"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_Back_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_Toolbar_Back_Tooltip}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
+        </Button>
+
+        <!-- UpdateSourceTrigger=LostFocus (+ OnTitleKeyDown committing on Enter below) is deliberate:
+             Title's setter renames the file on disk (VaultService.RenameNote), and the note's FullPath is
+             the tab's identity — the default PropertyChanged trigger would rename the file on every
+             keystroke while typing a new title, hammering disk I/O and reloading the note grid mid-word.
+             "ghost title-edit" layers a rename-specific affordance on top of the chrome-less ghost base
+             (§ Styles.axaml) — a hairline underline that only shows on hover/focus. -->
+        <TextBox Classes="ghost title-edit" FontSize="24" FontWeight="Bold" LetterSpacing="-0.5"
+                 Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                 PlaceholderText="{loc:Tr Editor_Title_Placeholder}" VerticalAlignment="Center"
+                 AutomationProperties.Name="{loc:Tr Editor_Title_Placeholder}"
+                 ToolTip.Tip="{loc:Tr Editor_Title_RenameTooltip}"
+                 KeyDown="OnTitleKeyDown" GotFocus="OnTitleGotFocus" />
+      </StackPanel>
+
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <!-- Etiquetas con icono y fondo de tarjeta para agrupar visualmente -->
+        <Border Classes="card" Padding="8,5" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="TagOutline" Width="14" Height="14"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+            <TextBox Classes="search tag-input"
+                     Width="180" VerticalAlignment="Center"
+                     Text="{Binding TagsInput, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     PlaceholderText="{loc:Tr Editor_Tags_Placeholder}"
+                     AutomationProperties.Name="{loc:Tr Editor_Tags_Placeholder}"
+                     KeyDown="OnTagsKeyDown" LostFocus="OnTagsLostFocus" />
+          </StackPanel>
+        </Border>
+
+        <!-- Indicador de guardado prominente (Fase 2 §2) -->
+        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <mi:MaterialIcon Width="14" Height="14" Kind="CheckCircleOutline" Classes="severity-icon success"
+                           IsVisible="{Binding ShowSavedIcon}" />
+          <mi:MaterialIcon Width="14" Height="14" Kind="CircleMedium" Classes="severity-icon warning"
+                           IsVisible="{Binding !ShowSavedIcon}" />
+          <TextBlock Text="{Binding SaveStatus, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" FontSize="11"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Button Classes="icon-btn" Classes.active="{Binding IsToolbarVisible}"
+                Command="{Binding ToggleToolbarCommand}"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleToolbar_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleToolbar_Tooltip}">
+          <mi:MaterialIcon Kind="FormatFont" Width="17" Height="17" />
+        </Button>
+
+        <Button Classes="icon-btn" Classes.active="{Binding IsSidePanelVisible}"
+                Command="{Binding ToggleSidePanelCommand}"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleSidePanel_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleSidePanel_Tooltip}">
+          <mi:MaterialIcon Kind="{Binding SidePanelToggleIcon}" Width="17" Height="17" />
+        </Button>
+
+        <Button Classes="icon-btn icon-btn-danger" Command="{Binding DeleteCommand}"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_Delete_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_Toolbar_Delete_Tooltip}">
+          <mi:MaterialIcon Kind="TrashCanOutline" Width="17" Height="17" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- Formatting toolbar — split into five independently collapsible groups (Fase 4 §"Editor de notas",
+         gap 17). Each group's own chevron button stays put whether or not the group is expanded, so it's
+         always where the user left it; only the ButtonsPanel underneath collapses/expands. -->
+    <StackPanel x:Name="FormattingToolbar" Grid.Row="1" Orientation="Horizontal" Spacing="2" Margin="0,0,0,16"
+                HorizontalAlignment="Center" IsVisible="{Binding IsToolbarVisible}">
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button Classes="icon-btn toolbar-group-toggle" Classes.active="{Binding !IsToolbarTextStyleExpanded}" Width="16" Height="26"
+                Command="{Binding ToggleToolbarGroupCommand}" CommandParameter="TextStyle"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleGroup_Tooltip}">
+          <Panel>
+            <mi:MaterialIcon Kind="ChevronLeft" Width="11" Height="11" IsVisible="{Binding IsToolbarTextStyleExpanded}" />
+            <mi:MaterialIcon Kind="ChevronRight" Width="11" Height="11" IsVisible="{Binding !IsToolbarTextStyleExpanded}" />
+          </Panel>
+        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarTextStyleExpanded}">
+          <Button Classes="icon-btn" Click="OnBoldClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Bold_Tooltip}">
+            <mi:MaterialIcon Kind="FormatBold" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnItalicClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Italic_Tooltip}">
+            <mi:MaterialIcon Kind="FormatItalic" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnStrikethroughClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}">
+            <mi:MaterialIcon Kind="FormatStrikethrough" Width="16" Height="16" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
+      <Rectangle Width="1" Height="18" Fill="{DynamicResource Ink10}" Margin="6,0" />
+
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button Classes="icon-btn toolbar-group-toggle" Classes.active="{Binding !IsToolbarHeadingsExpanded}" Width="16" Height="26"
+                Command="{Binding ToggleToolbarGroupCommand}" CommandParameter="Headings"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleGroup_Tooltip}">
+          <Panel>
+            <mi:MaterialIcon Kind="ChevronLeft" Width="11" Height="11" IsVisible="{Binding IsToolbarHeadingsExpanded}" />
+            <mi:MaterialIcon Kind="ChevronRight" Width="11" Height="11" IsVisible="{Binding !IsToolbarHeadingsExpanded}" />
+          </Panel>
+        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarHeadingsExpanded}">
+          <Button Classes="icon-btn" Click="OnH1Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H1_Tooltip}">
+            <mi:MaterialIcon Kind="FormatHeader1" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnH2Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H2_Tooltip}">
+            <mi:MaterialIcon Kind="FormatHeader2" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnH3Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H3_Tooltip}">
+            <mi:MaterialIcon Kind="FormatHeader3" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnQuoteClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Quote_Tooltip}">
+            <mi:MaterialIcon Kind="FormatQuoteClose" Width="16" Height="16" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
+      <Rectangle Width="1" Height="18" Fill="{DynamicResource Ink10}" Margin="6,0" />
+
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button Classes="icon-btn toolbar-group-toggle" Classes.active="{Binding !IsToolbarListsExpanded}" Width="16" Height="26"
+                Command="{Binding ToggleToolbarGroupCommand}" CommandParameter="Lists"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleGroup_Tooltip}">
+          <Panel>
+            <mi:MaterialIcon Kind="ChevronLeft" Width="11" Height="11" IsVisible="{Binding IsToolbarListsExpanded}" />
+            <mi:MaterialIcon Kind="ChevronRight" Width="11" Height="11" IsVisible="{Binding !IsToolbarListsExpanded}" />
+          </Panel>
+        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarListsExpanded}">
+          <Button Classes="icon-btn" Click="OnBulletClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_BulletList_Tooltip}">
+            <mi:MaterialIcon Kind="FormatListBulleted" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnOrderedClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_OrderedList_Tooltip}">
+            <mi:MaterialIcon Kind="FormatListNumbered" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnTaskListClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_TaskList_Tooltip}">
+            <mi:MaterialIcon Kind="FormatListChecks" Width="16" Height="16" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
+      <Rectangle Width="1" Height="18" Fill="{DynamicResource Ink10}" Margin="6,0" />
+
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button Classes="icon-btn toolbar-group-toggle" Classes.active="{Binding !IsToolbarInsertExpanded}" Width="16" Height="26"
+                Command="{Binding ToggleToolbarGroupCommand}" CommandParameter="Insert"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleGroup_Tooltip}">
+          <Panel>
+            <mi:MaterialIcon Kind="ChevronLeft" Width="11" Height="11" IsVisible="{Binding IsToolbarInsertExpanded}" />
+            <mi:MaterialIcon Kind="ChevronRight" Width="11" Height="11" IsVisible="{Binding !IsToolbarInsertExpanded}" />
+          </Panel>
+        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarInsertExpanded}">
+          <Button Classes="icon-btn" Click="OnLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Link_Tooltip}">
+            <mi:MaterialIcon Kind="LinkVariant" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}">
+            <mi:MaterialIcon Kind="ImageOutline" Width="16" Height="16" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
+      <Rectangle Width="1" Height="18" Fill="{DynamicResource Ink10}" Margin="6,0" />
+
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button Classes="icon-btn toolbar-group-toggle" Classes.active="{Binding !IsToolbarCodeExpanded}" Width="16" Height="26"
+                Command="{Binding ToggleToolbarGroupCommand}" CommandParameter="Code"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleGroup_Tooltip}">
+          <Panel>
+            <mi:MaterialIcon Kind="ChevronLeft" Width="11" Height="11" IsVisible="{Binding IsToolbarCodeExpanded}" />
+            <mi:MaterialIcon Kind="ChevronRight" Width="11" Height="11" IsVisible="{Binding !IsToolbarCodeExpanded}" />
+          </Panel>
+        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarCodeExpanded}">
+          <Button Classes="icon-btn" Click="OnCodeClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_InlineCode_Tooltip}">
+            <mi:MaterialIcon Kind="CodeTags" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnCodeBlockClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}">
+            <mi:MaterialIcon Kind="CodeBraces" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnHorizontalRuleClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_HorizontalRule_Tooltip}">
+            <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Tareas vinculadas (enlace nota↔tarea, "Capa 1") — lado inverso, derivado, del enlace nota↔tarea
+         que se fija desde el editor de tarjeta Kanban. -->
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,14"
+                VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                IsVisible="{Binding HasLinkedCards}">
+      <TextBlock Text="{loc:Tr Editor_LinkedCards_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" VerticalAlignment="Center" />
+      <ItemsControl ItemsSource="{Binding LinkedCards}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="6" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:LinkedCardItemViewModel">
+            <Button Classes="pill" Padding="10,4"
+                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).OpenLinkedCardCommand}"
+                    CommandParameter="{Binding Id}">
+              <TextBlock Text="{Binding Title}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="160" />
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
+    <!-- Body -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+      <Border Grid.Column="0" x:Name="EditorBorder" Classes="card" Padding="4">
+        <Grid RowDefinitions="Auto,*">
+          <!-- Find & Replace panel -->
+          <Border Grid.Row="0" x:Name="FindReplacePanel"
+                  Background="{DynamicResource AppBackgroundAltBrush}"
+                  BorderBrush="{DynamicResource Ink10}"
+                  BorderThickness="0,0,0,1"
+                  Padding="12,10"
+                  IsVisible="{Binding FindReplace.IsOpen}">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto,Auto,Auto">
+              <TextBox Grid.Row="0" Grid.Column="0" x:Name="FindReplaceSearchTextBox"
+                       Classes="search"
+                       Text="{Binding FindReplace.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="{loc:Tr Editor_FindReplace_SearchPlaceholder}" />
+              <TextBox Grid.Row="1" Grid.Column="0"
+                       Classes="search"
+                       Text="{Binding FindReplace.ReplaceText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="{loc:Tr Editor_FindReplace_ReplacePlaceholder}"
+                       IsVisible="{Binding FindReplace.IsReplaceMode}"
+                       Margin="0,8,0,0" />
+
+              <StackPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
+                          Orientation="Horizontal" Spacing="6" Margin="12,0,0,0"
+                          VerticalAlignment="Center">
+                <ToggleButton Classes="tag-chip"
+                              IsChecked="{Binding FindReplace.MatchCase}"
+                              Content="Aa" />
+                <Button Classes="icon-btn" Command="{Binding FindReplace.FindPreviousCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_PreviousTooltip}">
+                  <mi:MaterialIcon Kind="ChevronUp" Width="16" Height="16" />
+                </Button>
+                <Button Classes="icon-btn" Command="{Binding FindReplace.FindNextCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_NextTooltip}">
+                  <mi:MaterialIcon Kind="ChevronDown" Width="16" Height="16" />
+                </Button>
+                <Button Classes="icon-btn" Command="{Binding FindReplace.ReplaceCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_ReplaceTooltip}"
+                        IsVisible="{Binding FindReplace.IsReplaceMode}">
+                  <mi:MaterialIcon Kind="PencilOutline" Width="16" Height="16" />
+                </Button>
+                <Button Classes="icon-btn" Command="{Binding FindReplace.ReplaceAllCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_ReplaceAllTooltip}"
+                        IsVisible="{Binding FindReplace.IsReplaceMode}">
+                  <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" />
+                </Button>
+                <Button Classes="icon-btn" Command="{Binding FindReplace.CloseCommand}" ToolTip.Tip="{loc:Tr Common_Close}">
+                  <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+                </Button>
+              </StackPanel>
+
+              <TextBlock Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2"
+                         Text="{Binding FindReplace.StatusLabel}"
+                         Classes="faint" FontSize="10.5"
+                         VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                         Margin="12,8,0,0" />
+            </Grid>
+          </Border>
+
+          <!-- EditorColumnHost is the readable-column container: ApplyColumnLayout() (in code-behind)
+               sets its MaxWidth/HorizontalAlignment per the Settings page, and Editor simply stretches
+               to fill it. Constraining a plain Border this way is more reliable than constraining the
+               ae:TextEditor directly, since TextEditor is a templated control. The 8px margin keeps the
+               text off the card's edges even when the column is left-aligned or its width fills the card. -->
+          <Border Grid.Row="1" x:Name="EditorColumnHost" Margin="8">
+            <ae:TextEditor x:Name="Editor"
+                           Background="Transparent"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           FontSize="14.5"
+                           Padding="20"
+                           LineNumbersForeground="{DynamicResource TextMutedBrush}" />
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Panel lateral derecho, host: outline, backlinks y estadísticas. Its own Width is bound to
+           EditorViewModel.SidePanelWidth (0 when collapsed) rather than the panel just toggling
+           IsVisible inside a fixed grid column, so hiding it actually gives the editor's "*" column the
+           freed space back instead of leaving it as dead space — and animating that Width (instead of
+           snapping) is what gives the show/hide its slide. ClipToBounds crops the separator+panel's own
+           fixed-width content as the host shrinks past it, instead of letting it overflow past the host's
+           shrinking bounds mid-animation. -->
+      <Grid Grid.Column="1" x:Name="SidePanelHost" ColumnDefinitions="Auto,Auto"
+            Width="{Binding SidePanelWidth}" ClipToBounds="True">
+        <Grid.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Width" Duration="0:0:0.2" Easing="CubicEaseOut" />
+          </Transitions>
+        </Grid.Transitions>
+
+        <!-- Separador fino entre editor y panel lateral -->
+        <Border Grid.Column="0" Width="1" HorizontalAlignment="Center"
+                Background="{DynamicResource Ink10}" IsHitTestVisible="False" Margin="10,0" />
+
+        <!-- Panel lateral derecho: outline, backlinks y estadísticas -->
+        <Border Grid.Column="1" x:Name="SidePanel" Classes="card" Padding="0" Width="340"
+                Background="{DynamicResource AppBackgroundAltBrush}">
+          <Grid RowDefinitions="Auto,*">
+            <!-- Barra de tabs con acento inferior. Cada opción ocupa un tercio del ancho para evitar
+                 que etiquetas largas choquen con el borde; el estilo .side-panel-tab dibuja solo la
+                 línea inferior, eliminando los bordes dobles del segmented control genérico. -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,*,*">
+              <RadioButton Grid.Column="0" Classes="side-panel-tab" GroupName="SidePanelTab"
+                           IsChecked="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Outline}"
+                           Command="{Binding SelectSidePanelTabCommand}" CommandParameter="Outline"
+                           ToolTip.Tip="{loc:Tr Editor_Outline_Tooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <mi:MaterialIcon Kind="FormatListBulleted" Width="13" Height="13" />
+                  <TextBlock Text="{loc:Tr Editor_Outline_TabLabel, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </RadioButton>
+              <RadioButton Grid.Column="1" Classes="side-panel-tab" GroupName="SidePanelTab"
+                           IsChecked="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Backlinks}"
+                           Command="{Binding SelectSidePanelTabCommand}" CommandParameter="Backlinks"
+                           ToolTip.Tip="{loc:Tr Editor_Backlinks_Tooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <mi:MaterialIcon Kind="LinkVariant" Width="13" Height="13" />
+                  <TextBlock Text="{loc:Tr Editor_Backlinks_TabLabel, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </RadioButton>
+              <RadioButton Grid.Column="2" Classes="side-panel-tab" GroupName="SidePanelTab"
+                           IsChecked="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Stats}"
+                           Command="{Binding SelectSidePanelTabCommand}" CommandParameter="Stats"
+                           ToolTip.Tip="{loc:Tr Editor_Stats_Tooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <mi:MaterialIcon Kind="ChartBoxOutline" Width="13" Height="13" />
+                  <TextBlock Text="{loc:Tr Editor_Stats_TabLabel, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </RadioButton>
+            </Grid>
+
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1">
+              <StackPanel Margin="16,14,16,18" Spacing="16">
+
+                <!-- Outline -->
+                <StackPanel IsVisible="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Outline}">
+                  <ItemsControl ItemsSource="{Binding Outline.Items}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Spacing="1" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:EditorOutlineItemViewModel">
+                        <Button Classes="nav-item"
+                                Classes.active="{Binding IsActive}"
+                                Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).Outline.NavigateCommand}"
+                                CommandParameter="{Binding .}"
+                                Margin="{Binding Level, Converter={StaticResource OutlineIndentConverter}}">
+                          <TextBlock Text="{Binding Title}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <Border IsVisible="{Binding !Outline.HasItems}" Classes="card" Padding="14">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="FormatListBulleted" Width="22" Height="22" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr Editor_Outline_Empty}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" FontSize="11" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+
+                <!-- Backlinks -->
+                <StackPanel IsVisible="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Backlinks}">
+                  <ItemsControl ItemsSource="{Binding Backlinks.Items}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Spacing="1" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="models:EditorBacklink">
+                        <Button Classes="nav-item" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                Padding="10,9"
+                                Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).Backlinks.OpenCommand}"
+                                CommandParameter="{Binding .}">
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Context}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <Border IsVisible="{Binding Backlinks.IsEmpty}" Classes="card" Padding="14">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="LinkVariantOff" Width="22" Height="22" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr Editor_Backlinks_Empty}" Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" FontSize="11" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+
+                <!-- Stats -->
+                <StackPanel IsVisible="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Stats}" Spacing="12">
+                  <Border Classes="card" Padding="14">
+                    <StackPanel Spacing="10">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="BookOpenOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                        <TextBlock Text="{loc:Tr Editor_Stats_ReadingSectionLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
+                      </StackPanel>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr Editor_Stats_WordsLabel}" Classes="muted" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Stats.WordCount}" FontSize="12" FontWeight="Bold" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr Editor_Stats_CharsLabel}" Classes="muted" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Stats.CharCount}" FontSize="12" FontWeight="Bold" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr Editor_Stats_CharsNoSpacesLabel}" Classes="muted" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Stats.CharCountNoSpaces}" FontSize="12" FontWeight="Bold" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr Editor_Stats_ParagraphsLabel}" Classes="muted" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Stats.ParagraphCount}" FontSize="12" FontWeight="Bold" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr Editor_Stats_LinesLabel}" Classes="muted" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Stats.LineCount}" FontSize="12" FontWeight="Bold" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr Editor_Stats_ReadingTime_RowLabel}" Classes="muted" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Stats.ReadingTimeLabel}" FontSize="12" FontWeight="Bold" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Classes="card" Padding="14">
+                    <StackPanel Spacing="10">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="FileClockOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                        <TextBlock Text="{loc:Tr Editor_Stats_FileSectionLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
+                      </StackPanel>
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Editor_Stats_CreatedLabel}" Classes="muted" FontSize="11" />
+                        <TextBlock Text="{Binding Stats.CreatedLabel}" FontSize="12" />
+                      </StackPanel>
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Editor_Stats_ModifiedLabel}" Classes="muted" FontSize="11" />
+                        <TextBlock Text="{Binding Stats.ModifiedLabel}" FontSize="12" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+      </Grid>
+    </Grid>
+
+    <!-- Slash commands popup -->
+    <Popup x:Name="SlashCommandsPopup"
+           PlacementTarget="{Binding #EditorBorder}"
+           Placement="AnchorAndGravity"
+           PlacementAnchor="TopLeft"
+           PlacementGravity="BottomRight"
+           HorizontalOffset="60" VerticalOffset="60"
+           IsLightDismissEnabled="False"
+           IsOpen="{Binding SlashCommands.IsOpen, Mode=TwoWay}"
+           Width="260" MaxHeight="320">
+      <Border Classes="dropdown-popover" Width="260" MaxHeight="320">
+        <Grid RowDefinitions="Auto,*">
+          <TextBox Grid.Row="0" x:Name="SlashCommandFilter"
+                   Classes="search"
+                   Text="{Binding SlashCommands.Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                   PlaceholderText="{loc:Tr Editor_SlashCommand_FilterPlaceholder}"
+                   Margin="12,12,12,0" />
+          <ScrollViewer Grid.Row="1" Margin="0,8,0,0">
+            <ItemsControl ItemsSource="{Binding SlashCommands.FilteredCommands}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="2" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:SlashCommandItemViewModel">
+                  <Button Classes="dropdown-item"
+                          Classes.active="{Binding IsSelected}"
+                          Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).SlashCommands.SelectCommand}"
+                          CommandParameter="{Binding .}">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="16" Height="16"
+                                        Margin="0,2,10,0" VerticalAlignment="Top" />
+                      <StackPanel Grid.Column="1" Spacing="2">
+                        <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" FontSize="12" />
+                        <TextBlock Text="{Binding Key, StringFormat={}/{0}/}" Classes="faint" FontSize="10" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Popup>
+
+  </Grid>
+</UserControl>

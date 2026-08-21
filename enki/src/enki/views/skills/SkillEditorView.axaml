@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="enki.Views.SkillEditorView"
+             x:DataType="vm:SkillEditorViewModel">
+
+  <!-- Sin toolbar propia: el encabezado (volver, título, estado de guardado) vive en SkillsView, que
+       embebe este control (Opción A, docs/ia-skills/especificacion-desarrollo.md §10). Mismo estilo
+       visual que EditorView.axaml — misma fuente, mismo padding — pero enlazado a un string plano
+       (SkillEditorViewModel.Text) en vez de un TextDocument por pestaña, ya que aquí no hay varias
+       skills abiertas a la vez que necesiten conservar su propio historial de deshacer. -->
+  <ae:TextEditor x:Name="Editor"
+                 Background="Transparent"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 FontSize="14.5"
+                 ShowLineNumbers="False"
+                 WordWrap="True"
+                 Padding="20"
+                 LineNumbersForeground="{DynamicResource TextMutedBrush}" />
+</UserControl>
