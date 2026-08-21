@@ -1,34 +1,89 @@
-# Enki
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/project-icons/dark-icon/enki-icon-light.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/project-icons/light-icon/enki-icon-dark.png">
+    <img alt="Enki" src="docs/project-icons/dark-icon/enki-icon-light.png" width="96">
+  </picture>
 
-*[Leer en español](README.md)*
+  <h1>Enki</h1>
+  <p><em>Your second brain, on your desktop.</em></p>
 
-Enki is a desktop app (Windows/Linux/macOS via [Avalonia UI](https://avaloniaui.net/), .NET 8, MVVM with
-`CommunityToolkit.Mvvm`) built as a personal "second brain": local markdown notes with wikilinks, work
-sessions with a visual graph, local tasks (Kanban) and cloud tasks (Polar, synced via Supabase and shared
-with a same-name Android app), a unified calendar, reminders, a notification center and a cross-cutting
-trash.
+  <p>
+    <a href="README.md">Leer en español</a>
+  </p>
+</div>
 
-## Modules
+---
 
-| Module | What it does |
-|---|---|
-| Dashboard | Command center: summarizes the rest of the modules. |
-| Notes | Local markdown vault with wikilinks (`[[Note]]`). |
-| Sessions | Note sub-spaces with a visual relationship graph. |
-| Kanban | Local task board. |
-| Polar | Cloud-synced tasks (Supabase), shared with the Android app. |
-| Calendar | Unified view of Kanban + Polar + Reminders. |
-| Reminders | Standalone date-based alerts, independent of Kanban/Polar. |
-| Trash | Recovery of deleted items in Notes and Kanban. |
-| Settings | Cross-cutting configuration (vault, theme, typography, Polar link). |
+**Enki** is a desktop app built for one person: you. It is not a collaborative suite, a SaaS, or another tool that forces you to think like its product team. It is a private space to store ideas, tasks, projects, and reminders so that everything stays connected, within reach, and nothing gets lost.
 
-## Building and running
+It was born out of the frustration of having to open five different apps to know what to do today: notes in one place, tasks in another, the calendar in another, and reminders in yet another. Enki brings all of that into a single window without forcing everything together. Each thing keeps its place, and you decide how to connect them.
 
-Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download) or newer (`enki/global.json` pins the
-exact version with `rollForward: latestMajor`). The main project (`enki.csproj`) targets `net8.0` — if
-`dotnet test` fails to launch the test host with a "You must install or update .NET" message even though
-the build itself succeeds, the machine is missing the 8.0.x *runtime* (not just a newer SDK); install it,
-or use `DOTNET_ROLL_FORWARD=LatestMajor dotnet test ...` as a one-off workaround.
+> The goal is not for you to use Enki all day. It is that, when you open it, you know exactly where what you need is.
+
+---
+
+## What can you do with Enki?
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>📝 Notes</h3>
+      <p>A Markdown vault that lives on your disk. No lock-in, no proprietary formats. Create folders, drag notes around, tag them with <code>tags</code>, and link notes to each other using <code>[[wikilinks]]</code>.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🗂️ Kanban</h3>
+      <p>A local task board with columns, priorities, due dates, and subtasks. Drag cards between columns, link them to a note, and recover deleted cards from the trash.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>☁️ Polar</h3>
+      <p>Cloud-synced tasks shared with the companion Android app. It is optional: if you do not link it, Enki works exactly the same with your local notes and Kanban.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🗓️ Calendar</h3>
+      <p>A unified view of Kanban, Polar, and reminders. Drag a task to reschedule it, create reminders directly from an empty slot, and filter by what actually matters.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🔔 Reminders</h3>
+      <p>Standalone alerts with date and time. They appear on the calendar, feed the due-date inbox, and sync with Polar if it is enabled.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🕸️ Sessions</h3>
+      <p>Note subspaces with a visual relationship graph. Useful for isolated projects: a thesis, a trip, a product. Sessions limit what you see without deleting the rest.</p>
+    </td>
+  </tr>
+</table>
+
+In addition, Enki includes a **dashboard** that summarizes your day, **global search** (`Ctrl+Shift+F`), a **quick switcher** to jump to notes (`Ctrl+P`), a **notification center**, a **cross-cutting trash**, and granular settings so the interface adapts to you, not the other way around.
+
+---
+
+## Philosophy
+
+- **Your data is yours.** Notes are plain Markdown files in a folder you choose. You can open them with any editor, back them up with any tool, and take them with you.
+- **Connected, not cluttered.** Each module can stand alone, but it gains meaning when crossed with the others: a note linked to a Kanban card, a Polar task dragged on the calendar, a reminder that shows up in today's inbox.
+- **No distractions.** Monochrome interface, clear typography, sharp corners, and restrained motion. No gamification, no constant notifications, no productivity pressure.
+- **Works offline.** Polar is optional. Enki's core — notes, Kanban, reminders, calendar — works completely offline.
+
+---
+
+## Project status
+
+> 🚧 **Actively under development.** This repository is private and for personal use for now. There is no published installer or third-party support.
+
+Enki is already functional for daily use: notes, Kanban, calendar, reminders, search, and trash are operational. Polar sync requires Supabase credentials and is currently intended only for the author's environment.
+
+If you are reading this, it is probably yourself a few months from now. Technical documentation lives in `docs/`, the change history in `CHANGELOG.md`, and code conventions in `AGENTS.md`.
+
+---
+
+## Getting started
+
+If you have the development environment set up:
 
 ```bash
 # Build
@@ -41,43 +96,33 @@ dotnet run --project enki/src/enki/enki.csproj
 dotnet test enki/tests/enki.Tests/enki.Tests.csproj
 ```
 
-### Polar sync (optional)
+The first time you launch Enki, it will ask you to choose a language and a vault folder. From then on, everything you create is stored there.
 
-Cloud sync (the Polar module) requires Supabase credentials in `enki/local.properties` (git-ignored, never
-committed):
+To sync with Polar, add your Supabase credentials to `enki/local.properties` (this file is git-ignored and never committed):
 
+```properties
+SUPABASE_URL=<project-url>
+SUPABASE_ANON_KEY=<anon-key>
 ```
-SUPABASE_URL=<supabase-project-url>
-SUPABASE_ANON_KEY=<public-anon-key>
-```
 
-Without that file the app still works, and every feature that doesn't depend on Polar stays available —
-`SupabaseConfig.IsConfigured` stays `false` and the Polar screens disable themselves gracefully. See
-[docs/supabase-sync/08-configuracion-y-credenciales.md](docs/supabase-sync/08-configuracion-y-credenciales.md)
-for details (Spanish only, like the rest of `docs/`).
+Without that file, Enki still works perfectly in local mode.
+
+---
 
 ## Documentation
 
-Every document under `docs/` is in Spanish, the project's primary working language — see
-[AGENTS.md](AGENTS.md) for that convention. Pointers, for reference:
+The `docs/` folder collects the product analysis, improvement roadmap, and module specifications. Some useful entry points:
 
-- [docs/analisis-proyecto/](docs/analisis-proyecto/) — full product-level analysis: what exists, what's
-  missing, and the ongoing improvement roadmap (recommended starting point for understanding current
-  state).
-- [docs/calendar-feature/](docs/calendar-feature/) — design and implementation of the Calendar module.
-- [docs/supabase-sync/](docs/supabase-sync/) — Polar↔Supabase sync and the contract with the Android app.
-- [docs/ajustes-docs/](docs/ajustes-docs/) — reference for every Settings section (continuity/backup,
-  productivity, account and Polar sync, editor and notifications).
-- [docs/ia-skills/especificacion-desarrollo.md](docs/ia-skills/especificacion-desarrollo.md) — what a
-  "skill" is in Enki and how the Skills section works.
-- [docs/seccion-archivos.md](docs/seccion-archivos.md) — Files module (vault navigation, PDF viewer).
-- [docs/funcionalidad-zoom-interfaz.md](docs/funcionalidad-zoom-interfaz.md) — global UI zoom.
-- [docs/notificaciones-y-recordatorios.md](docs/notificaciones-y-recordatorios.md) — notification bell,
-  Kanban due-date inbox and the Reminders module.
-- [docs/sistema-diseno-web.md](docs/sistema-diseno-web.md) — visual design system (typography, color,
-  reusable components).
-- [docs/agent-docs/](docs/agent-docs/) — targeted technical notes: internationalization, feature inventory,
-  packaging/distribution, migrating the session graph off WebGL.
+- [`docs/agent-docs/analisis-proyecto/analisis-deficiencias-proyecto.md`](docs/agent-docs/analisis-proyecto/analisis-deficiencias-proyecto.md) — audit of the current state and priorities.
+- [`docs/agent-docs/analisis-proyecto/roadmap.md`](docs/agent-docs/analisis-proyecto/roadmap.md) — phased correction plan.
+- [`docs/agent-docs/inventario-funcionalidades-y-mejora-continua.md`](docs/agent-docs/inventario-funcionalidades-y-mejora-continua.md) — full feature inventory.
+- [`docs/agent-docs/calendar-feature/01-contexto-y-vision-de-producto.md`](docs/agent-docs/calendar-feature/01-contexto-y-vision-de-producto.md) — why the Calendar exists.
+- [`docs/agent-docs/notificaciones-y-recordatorios.md`](docs/agent-docs/notificaciones-y-recordatorios.md) — how reminders and notifications work.
+- [`docs/agent-docs/sistema-diseno-web.md`](docs/agent-docs/sistema-diseno-web.md) — visual design system principles.
 
-See also `AGENTS.md` for the project's code conventions, [CHANGELOG.md](CHANGELOG.md) for the version
-history, and [LICENSE](LICENSE) for the code's terms of use.
+---
+
+<div align="center">
+  <p><sub>Built with patience for personal use.</sub></p>
+  <p><a href="CHANGELOG.md">Changelog</a> · <a href="LICENSE">License</a></p>
+</div>
