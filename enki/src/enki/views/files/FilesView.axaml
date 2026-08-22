@@ -393,9 +393,12 @@
           </Border>
 
           <Grid Grid.Column="1">
-            <ScrollViewer IsVisible="{Binding IsReady}">
-              <Image Source="{Binding CurrentPageImage}" Stretch="None" Margin="24"
-                     HorizontalAlignment="Center" VerticalAlignment="Top" />
+            <ScrollViewer IsVisible="{Binding IsReady}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+              <Panel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="24"
+                     Width="{Binding CurrentPageImageWidth}" Height="{Binding CurrentPageImageHeight}"
+                     Background="Transparent">
+                <Image Source="{Binding CurrentPageImage}" Stretch="None" />
+              </Panel>
             </ScrollViewer>
 
             <StackPanel IsVisible="{Binding IsLoading}" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -418,6 +421,7 @@
               </Button>
             </StackPanel>
           </Grid>
+
         </Grid>
         </Panel>
 

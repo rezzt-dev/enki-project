@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -76,6 +77,9 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     /// <see cref="IsLoading"/>/<see cref="IsFaulted"/>.</summary>
     public bool IsReady => !IsLoading && !IsFaulted;
 
+    public int CurrentPageImageWidth => CurrentPageImage?.PixelSize.Width ?? 0;
+    public int CurrentPageImageHeight => CurrentPageImage?.PixelSize.Height ?? 0;
+
     public PdfDocumentViewModel(VaultService vaultService, string fullPath)
     {
         _vaultService = vaultService;
@@ -132,6 +136,12 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         OnPropertyChanged(nameof(CanZoomIn));
         OnPropertyChanged(nameof(CanZoomOut));
         _ = RenderCurrentPageAsync();
+    }
+
+    partial void OnCurrentPageImageChanged(Bitmap? value)
+    {
+        OnPropertyChanged(nameof(CurrentPageImageWidth));
+        OnPropertyChanged(nameof(CurrentPageImageHeight));
     }
 
     private async Task RenderCurrentPageAsync()

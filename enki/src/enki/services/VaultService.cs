@@ -146,9 +146,25 @@ public sealed class VaultService
         if (string.Equals(name, VaultSubfolderName, StringComparison.OrdinalIgnoreCase)) return true;
 
         if (!Directory.Exists(folder)) return false;
-        return Directory.Exists(Path.Combine(folder, ".sessions"))
-            || Directory.Exists(Path.Combine(folder, ".trash"))
-            || Directory.EnumerateFiles(folder, "*.md", SearchOption.TopDirectoryOnly).Any();
+        if (Directory.Exists(Path.Combine(folder, ".sessions")) || Directory.Exists(Path.Combine(folder, ".trash")))
+            return true;
+
+        try
+        {
+            // A real vault can have every single one of its notes filed away in subfolders (e.g. "Trabajo/",
+            // "Personal/") without ever having used sessions or the trash — TopDirectoryOnly missed that
+            // case entirely, so re-selecting exactly that folder as "open existing vault" (after syncing it
+            // to a new machine, or reinstalling) got it classified as a general-purpose folder and nested a
+            // brand-new, empty enki-documents/ inside it instead of recognizing it
+            // (docs/version-alfa-3/01-analisis-detallado.md §4.5, hallazgo crítico).
+            return EnumerateMarkdownFiles(folder, SearchOption.AllDirectories).Any();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // An inaccessible subfolder somewhere under a general-purpose folder shouldn't block vault
+            // setup — fall through to "doesn't look like a vault yet" and nest enki-documents/ as usual.
+            return false;
+        }
     }
 
     /// <summary>Configures the vault at <paramref name="path"/>, creating the directory if needed.
@@ -544,6 +560,19 @@ public sealed class VaultService
         };
     }
 
+    /// <summary>True when <paramref name="fullPath"/> falls under an encrypted session that isn't
+    /// currently unlocked — the check-before-read counterpart to letting <see cref="SafeReadContent"/>/
+    /// <see cref="WriteFileAtomic"/> throw <see cref="SessionLockedException"/> after the fact. Every
+    /// caller able to react proactively (skip a locked note while restoring tabs, refuse an autosave
+    /// instead of crashing) should prefer this over a try/catch, mirroring
+    /// <c>FilesViewModel.IsSelectedSessionLocked</c> — the one place that already got this right before
+    /// Notas/Editor did (docs/version-alfa-3/01-analisis-detallado.md §4.1).</summary>
+    public bool IsPathInLockedSession(string fullPath)
+    {
+        var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
+        return encryptedRoot is not null && !_encryptionService.IsUnlocked(encryptedRoot);
+    }
+
     /// <summary>Reads a note's text content — transparently decrypting it first if <paramref name="path"/>
     /// falls under an encrypted session (see <see cref="ResolveEncryptedSessionRoot"/>). Unlike the old
     /// plain-text-only version of this method, a locked session is NOT collapsed to <c>""</c>: that would
@@ -683,6 +712,13 @@ public sealed class VaultService
     /// Logs and rethrows on <see cref="IOException"/>/<see cref="UnauthorizedAccessException"/> (which also
     /// covers <see cref="DirectoryNotFoundException"/>) instead of swallowing it, so a disk-full, permission,
     /// or missing-path failure leaves a trace in <see cref="LogService"/> and still reaches the caller.</summary>
+    internal void WriteTextFile(string path, string content) => WriteFileAtomic(path, content);
+
+    /// <summary>Shared atomic-write primitive for plain (non-JSON) vault content — a temp file next to
+    /// <paramref name="path"/>, then an atomic <see cref="File.Move(string, string, bool)"/> onto it.
+    /// Logs and rethrows on <see cref="IOException"/>/<see cref="UnauthorizedAccessException"/> (which also
+    /// covers <see cref="DirectoryNotFoundException"/>) instead of swallowing it, so a disk-full, permission,
+    /// or missing-path failure leaves a trace in <see cref="LogService"/> and still reaches the caller.</summary>
     private void WriteFileAtomic(string path, string content)
     {
         var encryptedRoot = ResolveEncryptedSessionRoot(path);
@@ -796,8 +832,7 @@ public sealed class VaultService
     private bool IsTrashedItemFromLockedSession(string trashPath)
     {
         if (!ReadTrashOrigins().TryGetValue(trashPath, out var originalPath)) return false;
-        var sessionRoot = ResolveEncryptedSessionRoot(originalPath);
-        return sessionRoot is not null && !_encryptionService.IsUnlocked(sessionRoot);
+        return IsPathInLockedSession(originalPath);
     }
 
     public void DeleteNote(NoteFile note)
@@ -1086,16 +1121,18 @@ public sealed class VaultService
             : null;
         var destinationFolder = originalFolder is not null && Directory.Exists(originalFolder) ? originalFolder : VaultPath;
 
-        file.FullPath = MoveWithUniqueSuffix(trashPath, destinationFolder);
+        var newPath = MoveWithUniqueSuffix(trashPath, destinationFolder);
+        file.FullPath = newPath;
         if (origins.Remove(trashPath)) WriteTrashOrigins(origins);
     }
 
     public void PermanentlyDelete(VaultFile file)
     {
         if (!File.Exists(file.FullPath)) return;
-        File.Delete(file.FullPath);
+        var path = file.FullPath;
+        File.Delete(path);
         InvalidateVaultSizeCache();
-        RemoveTrashOrigin(file.FullPath);
+        RemoveTrashOrigin(path);
     }
 
     internal static string SanitizeFileName(string name, string? fallback = null)

@@ -38,27 +38,25 @@
 
 ### D. Organización estructurada
 17. Notas "tabla" con propiedades tipadas (mini base de datos por nota, al estilo Obsidian Bases).
-18. Canvas/lienzo libre para brainstorming visual (distinto del grafo automático de Sesiones).
 
 ### E. Continuidad y multi-dispositivo
-19. Sincronización opcional de notas (no solo tareas) reutilizando el backend de Polar, con cifrado extremo a extremo opcional.
-20. Multi-vault: cambiar de vault sin reiniciar, lista de "vaults recientes".
-21. Captura rápida desde la app Android de Polar (una nota corta que aparece en el vault al sincronizar).
+18. Sincronización opcional de notas (no solo tareas) reutilizando el backend de Polar, con cifrado extremo a extremo opcional.
+19. Multi-vault: cambiar de vault sin reiniciar, lista de "vaults recientes".
+20. Captura rápida desde la app Android de Polar (una nota corta que aparece en el vault al sincronizar).
 
 ### F. Archivos y adjuntos
-22. Notas de voz adjuntas a una nota o recordatorio, con transcripción local opcional.
-23. Anotaciones sobre PDF (resaltado, comentarios) en el visor ya existente.
-24. Pegar capturas de pantalla/imágenes directamente en el editor como adjunto versionado.
+21. Notas de voz adjuntas a una nota o recordatorio, con transcripción local opcional.
+22. Pegar capturas de pantalla/imágenes directamente en el editor como adjunto versionado.
 
 ### G. Interacción y flujo de trabajo
-25. Paleta de comandos unificada (`Ctrl+K`) para ejecutar acciones, no solo navegar.
-26. Automatizaciones simples tipo "cuando ocurra X en el módulo A, haz Y en el módulo B".
-27. Dashboard configurable por el usuario (elegir y ordenar qué tarjetas se muestran).
-28. Exportar/imprimir el Calendario o el tablero Kanban como imagen o PDF.
+24. Paleta de comandos unificada (`Ctrl+K`) para ejecutar acciones, no solo navegar.
+25. Automatizaciones simples tipo "cuando ocurra X en el módulo A, haz Y en el módulo B".
+26. Dashboard configurable por el usuario (elegir y ordenar qué tarjetas se muestran).
+27. Exportar/imprimir el Calendario o el tablero Kanban como imagen o PDF.
 
 ### H. Plataforma y personalización
-29. Atajos de teclado remapeables por el usuario.
-30. Sistema de plugins/extensiones a futuro (sandbox simple sobre las Skills existentes).
+28. Atajos de teclado remapeables por el usuario.
+29. Sistema de plugins/extensiones a futuro (sandbox simple sobre las Skills existentes).
 
 ---
 
@@ -411,29 +409,7 @@ Para casos donde una lista simple de Markdown no basta (una lista de libros con 
 
 ---
 
-#### 18. Canvas / lienzo libre
-
-El grafo de Sesiones conecta notas automáticamente por wikilinks; un canvas es lo opuesto: un lienzo en blanco donde el usuario coloca libremente notas, texto suelto, imágenes y flechas para brainstorming visual, sin que la posición tenga significado semántico automático.
-
-**Sub-funcionalidades:**
-- Nuevo tipo de "nota" (o sección propia) que es un lienzo infinito con zoom/pan (mismo mecanismo de `ScaleTransform` ya usado para el zoom de interfaz, aplicado aquí a un lienzo, no a toda la ventana).
-- Tarjetas de texto libre, tarjetas que embeben una nota existente (enlace visual a `[[Nota]]`), imágenes arrastradas, y flechas de conexión dibujadas a mano por el usuario.
-- Persistencia como un archivo propio del vault (ej. `<vault>/.canvases/<nombre>.canvas.json`), siguiendo el patrón de "carpeta oculta con manifiesto JSON" ya usado por Sesiones.
-- Independiente del grafo de Sesiones — uno es automático (relaciones reales), el otro es manual (organización espacial libre).
-
-**Usuario nuevo**: no lo necesita de entrada; es una herramienta de pensamiento visual para quien ya sabe qué quiere planear.
-
-**Usuario habitual (50 %)**: quizás lo pruebe para planear un proyecto grande antes de trocearlo en tarjetas Kanban.
-
-**Usuario avanzado**: lo usa como espacio de pensamiento previo a la ejecución — un canvas por proyecto grande, que luego alimenta notas y tarjetas Kanban concretas.
-
-**Desarrollador**: complejidad **alta**; es esencialmente construir un motor de lienzo con arrastre, zoom, conexiones y serialización de posiciones — más cercano en esfuerzo al renderizador del grafo de sesiones que a cualquier otra propuesta de este documento. Candidato claro a ser la funcionalidad de mayor esfuerzo de todo este listado; solo recomendable si el usuario valida que realmente lo usaría, dado el coste de construir y mantener un lienzo interactivo propio en Avalonia.
-
----
-
-### E. Continuidad y multi-dispositivo
-
-#### 19. Sincronización opcional de notas
+#### 18. Sincronización opcional de notas
 
 Polar ya demuestra que Enki puede sincronizar con Supabase de forma offline-first, opcional y sin comprometer el uso local. Extender ese mismo mecanismo a las notas (hoy exclusivamente locales) permitiría tener el vault disponible en más de un equipo, siempre como opción explícita.
 
@@ -453,7 +429,7 @@ Polar ya demuestra que Enki puede sincronizar con Supabase de forma offline-firs
 
 ---
 
-#### 20. Multi-vault sin reiniciar
+#### 19. Multi-vault sin reiniciar
 
 Hoy cambiar de vault implica ir a Ajustes y apuntar a otra carpeta, perdiendo el contexto de la sesión actual. Un selector rápido de "vaults recientes" (similar en espíritu al selector de workspace que ya existe entre vault completo y sesión) reduce la fricción para quien separa, por ejemplo, un vault personal y uno de trabajo.
 
@@ -472,7 +448,7 @@ Hoy cambiar de vault implica ir a Ajustes y apuntar a otra carpeta, perdiendo el
 
 ---
 
-#### 21. Captura rápida desde la app Android de Polar
+#### 20. Captura rápida desde la app Android de Polar
 
 Polar ya sincroniza tareas con una app Android homónima. Extender esa misma app (o una función ligera dentro de ella) para capturar una nota corta de texto que llegue al vault de escritorio al sincronizar, cierra el caso de uso de "se me ocurre algo en la calle y no tengo el portátil".
 
@@ -493,7 +469,7 @@ Polar ya sincroniza tareas con una app Android homónima. Extender esa misma app
 
 ### F. Archivos y adjuntos
 
-#### 22. Notas de voz
+#### 21. Notas de voz
 
 Una idea capturada hablando (en el coche, caminando) es tan válida como una nota escrita. Adjuntar audio a una nota o recordatorio, con transcripción local opcional, cierra ese modo de captura.
 
@@ -513,27 +489,7 @@ Una idea capturada hablando (en el coche, caminando) es tan válida como una not
 
 ---
 
-#### 23. Anotaciones sobre PDF
-
-El visor de PDF ya existe (`PdfDocumentViewModel`, `PdfRenderHelper`) pero es de solo lectura. Añadir resaltado y comentarios convierte los PDFs guardados en el vault (artículos, papers, manuales) en material de trabajo activo en vez de solo consulta.
-
-**Sub-funcionalidades:**
-- Resaltar texto seleccionado con un color (monocromo + el verde/rojo ya establecidos, sin paleta arcoíris).
-- Comentarios anclados a una zona del PDF, visibles en un panel lateral (mismo patrón que Outline/Backlinks del editor de notas).
-- Las anotaciones se guardan en un archivo compañero (ej. `<archivo>.pdf.annotations.json`), nunca modificando el PDF original — coherente con "tus datos son tuyos" y con no tocar el archivo fuente del usuario.
-- Exportar el PDF con las anotaciones "quemadas" como opción explícita, si el usuario quiere compartirlo fuera de Enki.
-
-**Usuario nuevo**: no lo necesita hasta que empieza a guardar PDFs de referencia en su vault.
-
-**Usuario habitual (50 %)**: es quien ya usa el módulo de Archivos para guardar PDFs pero hoy solo puede leerlos, no trabajar sobre ellos.
-
-**Usuario avanzado**: los usa activamente para estudio o investigación, con resaltados y comentarios que después conecta a notas propias vía wikilinks.
-
-**Desarrollador**: complejidad **media-alta**; depende de qué tan flexible sea la librería de render de PDF ya integrada para superponer capas interactivas de anotación sobre las páginas renderizadas — es la parte técnica a validar primero antes de comprometerse con el alcance completo.
-
----
-
-#### 24. Pegar capturas de pantalla directamente en el editor
+#### 22. Pegar capturas de pantalla directamente en el editor
 
 Hoy insertar una imagen en una nota requiere el flujo de "insertar imagen" del toolbar de Markdown, que probablemente exige tener el archivo ya guardado en disco. Pegar una captura de pantalla directamente desde el portapapeles (`Ctrl+V`) y que Enki la guarde automáticamente como adjunto es una fricción menos, muy usada en herramientas comparables.
 
@@ -554,7 +510,7 @@ Hoy insertar una imagen en una nota requiere el flujo de "insertar imagen" del t
 
 ### G. Interacción y flujo de trabajo
 
-#### 25. Paleta de comandos unificada
+#### 24. Paleta de comandos unificada
 
 Enki ya tiene Quick Switcher (`Ctrl+P`, solo navega a notas) y Búsqueda global (`Ctrl+Shift+F`, solo busca contenido). Falta la tercera pieza clásica: una paleta de **comandos** (`Ctrl+K`) que ejecuta acciones — crear una nota nueva, cambiar de tema, abrir Ajustes, crear una tarjeta Kanban — sin necesidad de navegar con el ratón.
 
@@ -573,7 +529,7 @@ Enki ya tiene Quick Switcher (`Ctrl+P`, solo navega a notas) y Búsqueda global 
 
 ---
 
-#### 26. Automatizaciones simples
+#### 25. Automatizaciones simples
 
 Un motor de reglas ligero ("cuando ocurra X en el módulo A, haz Y en el módulo B") formaliza conexiones que hoy el usuario hace a mano — ej. "cuando complete todas las subtareas de una tarjeta, márcala como hecha" (que ya existe como automatismo fijo) generalizado a reglas configurables por el usuario.
 
@@ -592,7 +548,7 @@ Un motor de reglas ligero ("cuando ocurra X en el módulo A, haz Y en el módulo
 
 ---
 
-#### 27. Dashboard configurable
+#### 26. Dashboard configurable
 
 El Dashboard actual tiene una composición fija (resumen de hoy, notas recientes, tareas del tablero, identidad del vault, actividad, accesos rápidos). Dejar que el usuario elija qué secciones ver y en qué orden respeta que cada persona usa Enki de forma distinta — quien no usa Polar no necesita ver su resumen; quien no usa Kanban no necesita esa sección.
 
@@ -611,7 +567,7 @@ El Dashboard actual tiene una composición fija (resumen de hoy, notas recientes
 
 ---
 
-#### 28. Exportar/imprimir Calendario o tablero Kanban
+#### 27. Exportar/imprimir Calendario o tablero Kanban
 
 Complementa la propuesta 6 (exportar notas): a veces lo que se necesita compartir o archivar no es una nota, sino una vista completa — la semana planeada, o el estado actual de un tablero.
 
@@ -631,7 +587,7 @@ Complementa la propuesta 6 (exportar notas): a veces lo que se necesita comparti
 
 ### H. Plataforma y personalización
 
-#### 29. Atajos de teclado remapeables
+#### 28. Atajos de teclado remapeables
 
 Enki ya tiene una buena cantidad de atajos fijos (`Ctrl+Shift+F`, `Ctrl+P`, `Ctrl++`/`Ctrl+-`/`Ctrl+0`, etc.). Permitir remapearlos es un detalle pequeño pero muy valorado por usuarios de teclado intensivo, y barato de construir dado que ya existe una capa de comandos (`[RelayCommand]`) sobre la que apoyarse.
 
@@ -650,7 +606,7 @@ Enki ya tiene una buena cantidad de atajos fijos (`Ctrl+Shift+F`, `Ctrl+P`, `Ctr
 
 ---
 
-#### 30. Sistema de plugins/extensiones (a futuro)
+#### 29. Sistema de plugins/extensiones (a futuro)
 
 La sección de Skills ya tiene la forma de una plantilla de extensibilidad (archivos `.md` con frontmatter, importables, exportables, con un catálogo externo). Evolucionar eso a un sistema de plugins reales — módulos que añaden una vista, un comando o una integración sin tocar el core — es la vía natural para que la comunidad (si el proyecto se abre más allá de uso personal) aporte funcionalidad sin que todo pase por el mismo desarrollador.
 
@@ -665,7 +621,7 @@ La sección de Skills ya tiene la forma de una plantilla de extensibilidad (arch
 
 **Usuario avanzado**: es quien instalaría plugins de terceros o incluso escribiría los suyos propios.
 
-**Desarrollador**: es, junto con el Canvas (punto 18) y la sincronización de notas (punto 19), de las propuestas de **mayor esfuerzo** de todo el documento — no tanto por la ejecución de plugins en sí (Avalonia y .NET tienen mecanismos de carga dinámica de ensamblados), sino por el coste de mantener una superficie de API estable a largo plazo y un modelo de seguridad serio (un plugin mal hecho o malicioso podría leer todo el vault). Se recomienda **no abordarlo** hasta que el proyecto tenga usuarios más allá del propio autor, y mientras tanto seguir creciendo Skills como plantillas de texto, tal como está documentado hoy.
+**Desarrollador**: es, junto con la sincronización de notas (punto 18), de las propuestas de **mayor esfuerzo** de todo el documento — no tanto por la ejecución de plugins en sí (Avalonia y .NET tienen mecanismos de carga dinámica de ensamblados), sino por el coste de mantener una superficie de API estable a largo plazo y un modelo de seguridad serio (un plugin mal hecho o malicioso podría leer todo el vault). Se recomienda **no abordarlo** hasta que el proyecto tenga usuarios más allá del propio autor, y mientras tanto seguir creciendo Skills como plantillas de texto, tal como está documentado hoy.
 
 ---
 
@@ -676,10 +632,10 @@ Ordenado de menor a mayor esfuerzo/riesgo relativo, para decidir por dónde empe
 **Bajo esfuerzo, alto valor inmediato** (candidatos para empezar):
 - Plantillas de notas (1)
 - Modo enfoque/zen (7)
-- Pegar capturas de pantalla (24)
+- Pegar capturas de pantalla (23)
 - Notas diarias mejoradas (8)
 - Panel de notas relacionadas sin IA (12)
-- Exportar Calendario/Kanban como imagen (28)
+- Exportar Calendario/Kanban como imagen (27)
 
 **Esfuerzo medio, valor alto** (segunda ola):
 - Gestor global de etiquetas (4)
@@ -688,20 +644,18 @@ Ordenado de menor a mayor esfuerzo/riesgo relativo, para decidir por dónde empe
 - Registro de tiempo vinculado a tareas (14)
 - Página de Estadísticas (15)
 - Seguimiento de hábitos (13)
-- Paleta de comandos (25)
-- Dashboard configurable (27)
-- Multi-vault (20)
+- Paleta de comandos (24)
+- Dashboard configurable (26)
+- Multi-vault (19)
 
 **Esfuerzo alto o riesgo alto** (evaluar con calma, posiblemente por fases):
 - Motor de IA opcional (10) → luego búsqueda semántica (11)
-- Sincronización de notas (19) — requiere el historial de versiones (3) como prerrequisito
+- Sincronización de notas (18) — requiere el historial de versiones (3) como prerrequisito
 - Notas tabla (17)
-- Canvas libre (18)
-- Automatizaciones (26) — mantener acotado desde el diseño
+- Automatizaciones (25) — mantener acotado desde el diseño
 - Web clipper (9) — riesgo de mantenimiento por dependencia de sitios externos
-- Anotaciones sobre PDF (23)
-- Notas de voz con transcripción (22) — grabación primero, transcripción después
-- Sistema de plugins (30) — no recomendado mientras el uso siga siendo personal
+- Notas de voz con transcripción (21) — grabación primero, transcripción después
+- Sistema de plugins (29) — no recomendado mientras el uso siga siendo personal
 
 ---
 

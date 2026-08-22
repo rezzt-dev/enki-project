@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="760"
@@ -91,9 +92,8 @@
    </Grid>
 
     <!-- ===================== Diálogo: detalle de notificación ===================== -->
-    <Border Classes="modal-overlay"
-            IsVisible="{Binding Detail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost
+        IsOpen="{Binding Detail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               MaxWidth="440" DataContext="{Binding Detail}" x:DataType="vm:NotificationItemViewModel">
         <StackPanel Spacing="18" MinWidth="380">
@@ -125,12 +125,11 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>    </Border>
+      </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: limpiar notificaciones ===================== -->
-    <Border Classes="modal-overlay"
-            IsVisible="{Binding PendingClearAll}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding PendingClearAll}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <Grid ColumnDefinitions="Auto,*">
@@ -151,7 +150,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>    </Border>
+      </Border>
+    </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

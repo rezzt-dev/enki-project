@@ -73,7 +73,7 @@ public sealed class SessionService
     /// deficiencias (docs/analisis-proyecto/analisis-deficiencias-proyecto.md §2, "Concurrencia/async"):
     /// esto es lo único entre un permiso denegado/unidad desconectada al listar <c>.sessions</c> y una
     /// excepción no capturable propagándose por los <c>async void Reload</c>/<c>LoadGraph</c> de
-    /// <c>SessionsViewModel</c> (vía <see cref="List"/>/<see cref="LoadCombinedGraph"/>). La sobrecarga con
+    /// <c>SessionsViewModel</c> (vía <see cref="List"/>/<see cref="LoadGlobalGraph"/>). La sobrecarga con
     /// <paramref name="root"/> reutiliza la misma guarda para la papelera de sesiones
     /// (<see cref="ListTrashedSessions"/>).</summary>
     private List<string> ListSessionDirectories() => ListSessionDirectories(SessionsRoot);
@@ -282,31 +282,189 @@ public sealed class SessionService
         if (Directory.Exists(session.RootPath)) Directory.Delete(session.RootPath, recursive: true);
     }
 
-    /// <summary>Resolves the combined graph across every session in the vault at once — each session's
-    /// notes stay a separate cluster (wikilinks and manual links never cross session boundaries, since
-    /// each session is its own isolated note tree) but they're all handed back as one <see cref="SessionGraph"/>
-    /// so the Sessions page can render a single, always-on graph that doesn't depend on any one session
-    /// being selected.</summary>
-    public SessionGraph LoadCombinedGraph()
+    /// <summary>Resolves the true global graph of the vault: every session's own notes (each still its own
+    /// cluster for node positions/manual links, exactly as before) plus every note living directly at the
+    /// vault root outside any session — all handed back as one <see cref="SessionGraph"/>, with wikilinks
+    /// resolved across the <em>whole</em> combined note set, not just within each note's own session. That
+    /// last part is what makes this a genuinely global graph rather than "every session's graph glued
+    /// together": a <c>[[wikilink]]</c> from a session note to a vault-root note, or to a note in a
+    /// different session, now actually produces an edge (see <see cref="ComputeGlobalWikiLinkEdges"/>),
+    /// where it previously couldn't resolve at all because each session's wikilinks were only ever matched
+    /// against its own note set. Same-scope edges (within one session, or between two vault-root notes)
+    /// are still contributed by each scope's own resolution pass — the global pass only adds edges that
+    /// cross a scope boundary, so nothing is computed twice.</summary>
+    public SessionGraph LoadGlobalGraph()
     {
         var combined = new SessionGraph();
+
+        // Every note currently known anywhere in the vault, keyed by its GlobalId — the universe the
+        // cross-scope wikilink pass resolves against below. Seeded with vault-root notes first since they
+        // have no session loop of their own to fold them in from.
+        var byGlobalId = new Dictionary<string, NoteFile>(StringComparer.OrdinalIgnoreCase);
+        var contentByGlobalId = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        var (rootNodes, rootEdges) = LoadRootGroup(byGlobalId, contentByGlobalId);
+        combined.Nodes.AddRange(rootNodes);
+        combined.Edges.AddRange(rootEdges);
+
         // Enumerates sessions directly instead of going through List() — List()'s Session.NoteCount is
         // for the sidebar's session list and costs its own recursive directory walk per session; nothing
         // below reads NoteCount, so paying for that walk here (once per session, on every graph load) was
         // pure waste on top of the walk LoadGraph itself already does to build the node set.
         foreach (var (path, manifest) in EnumerateSessionManifests())
         {
-            var graph = LoadGraph(ToSessionLight(path, manifest));
+            var session = ToSessionLight(path, manifest);
+            var graph = LoadGraph(session);
             combined.Nodes.AddRange(graph.Nodes);
             combined.Edges.AddRange(graph.Edges);
+
+            // A locked encrypted session already contributed nothing above (LoadGraph short-circuits to an
+            // empty graph for it) — its content can't be decrypted to scan for wikilinks either, so it's
+            // left out of the cross-scope universe too, same as it's left out of everything else.
+            if (session.IsEncrypted && !_encryptionService.IsUnlocked(session.RootPath)) continue;
+
+            foreach (var (note, content) in _vaultService.GetAllNotesRecursiveWithContent(session.RootPath))
+            {
+                var relativePath = RelativePath(session.RootPath, note.FullPath);
+                var globalId = $"{session.Id}::{relativePath}";
+                byGlobalId[globalId] = note;
+                contentByGlobalId[globalId] = content;
+            }
         }
+
+        var crossEdgeKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (fromGlobalId, toGlobalId) in ComputeGlobalWikiLinkEdges(byGlobalId, contentByGlobalId))
+        {
+            var (fromGroupId, fromRelativePath) = SplitGlobalId(fromGlobalId);
+            var (toGroupId, toRelativePath) = SplitGlobalId(toGlobalId);
+            if (fromGroupId == toGroupId) continue; // already covered by that scope's own resolution pass above
+
+            if (!crossEdgeKeys.Add(EdgeKey(fromGlobalId, toGlobalId))) continue;
+            combined.Edges.Add(new SessionGraphEdge
+            {
+                FromSessionId = fromGroupId,
+                ToSessionId = toGroupId,
+                FromRelativePath = fromRelativePath,
+                ToRelativePath = toRelativePath
+            });
+        }
+
         return combined;
     }
 
-    /// <summary>Async wrapper around <see cref="LoadCombinedGraph"/> — see <see cref="ListAsync"/> for why
+    /// <summary>Async wrapper around <see cref="LoadGlobalGraph"/> — see <see cref="ListAsync"/> for why
     /// this exists (the same synchronous-I/O-off-the-UI-thread rationale, only worse here: this walks and
-    /// reads every note in every session).</summary>
-    public Task<SessionGraph> LoadCombinedGraphAsync() => Task.Run(() => LoadCombinedGraph());
+    /// reads every note in every session, plus every note at the vault root).</summary>
+    public Task<SessionGraph> LoadGlobalGraphAsync() => Task.Run(() => LoadGlobalGraph());
+
+    /// <summary>Builds the vault-root pseudo-group's own nodes and within-group wikilink edges — the notes
+    /// living directly under the vault path, outside every session folder (<see cref="VaultService.GetAllNotesRecursiveWithContent"/>
+    /// already excludes any path under a dot-prefixed directory, so this naturally excludes <c>.sessions</c>
+    /// and <c>.trash</c>). Mirrors <see cref="LoadGraph"/>'s self-healing/position-persistence behavior for
+    /// a real session, but against a vault-level <c>.graph.json</c> (see <see cref="ReadRootManifest"/>)
+    /// since root notes have no session folder to keep a manifest in. Also feeds every root note's GlobalId
+    /// and content into <paramref name="byGlobalId"/>/<paramref name="contentByGlobalId"/> so the caller's
+    /// cross-scope wikilink pass can resolve links into/out of this group too.</summary>
+    private (List<SessionGraphNode> Nodes, List<SessionGraphEdge> Edges) LoadRootGroup(
+        Dictionary<string, NoteFile> byGlobalId, Dictionary<string, string> contentByGlobalId)
+    {
+        var manifest = ReadRootManifest();
+        var notesWithContent = _vaultService.GetAllNotesRecursiveWithContent(_vaultService.VaultPath);
+
+        var byPath = new Dictionary<string, NoteFile>(StringComparer.OrdinalIgnoreCase);
+        var contentByPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (note, content) in notesWithContent)
+        {
+            var relativePath = RelativePath(_vaultService.VaultPath, note.FullPath);
+            byPath[relativePath] = note;
+            contentByPath[relativePath] = content;
+
+            var globalId = $"{SessionGraph.RootGroupId}::{relativePath}";
+            byGlobalId[globalId] = note;
+            contentByGlobalId[globalId] = content;
+        }
+
+        var storedPositions = manifest.Nodes.ToDictionary(n => n.RelativePath, StringComparer.OrdinalIgnoreCase);
+        var changed = manifest.Nodes.RemoveAll(n => !byPath.ContainsKey(n.RelativePath)) > 0;
+
+        var rootGroupName = LocalizationService.Instance["Sessions_Graph_RootGroupName"];
+        var nodes = new List<SessionGraphNode>();
+        foreach (var (relativePath, note) in byPath)
+        {
+            if (storedPositions.TryGetValue(relativePath, out var stored))
+            {
+                nodes.Add(new SessionGraphNode
+                {
+                    SessionId = SessionGraph.RootGroupId,
+                    SessionName = rootGroupName,
+                    RelativePath = relativePath,
+                    Title = note.Title,
+                    X = stored.X,
+                    Y = stored.Y,
+                    Z = stored.Z,
+                    HasStoredPosition = true
+                });
+            }
+            else
+            {
+                var (x, y, z) = InitialPosition(relativePath);
+                nodes.Add(new SessionGraphNode
+                {
+                    SessionId = SessionGraph.RootGroupId,
+                    SessionName = rootGroupName,
+                    RelativePath = relativePath,
+                    Title = note.Title,
+                    X = x,
+                    Y = y,
+                    Z = z
+                });
+                changed = true;
+            }
+        }
+
+        var edges = new List<SessionGraphEdge>();
+        var edgeKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (from, to) in ComputeWikiLinkEdges(byPath, contentByPath))
+        {
+            if (edgeKeys.Add(EdgeKey(from, to)))
+            {
+                edges.Add(new SessionGraphEdge
+                {
+                    FromSessionId = SessionGraph.RootGroupId,
+                    ToSessionId = SessionGraph.RootGroupId,
+                    FromRelativePath = from,
+                    ToRelativePath = to
+                });
+            }
+        }
+
+        if (changed)
+        {
+            manifest.Nodes = nodes.Select(n => new SessionManifestNode { RelativePath = n.RelativePath, X = n.X, Y = n.Y, Z = n.Z }).ToList();
+            WriteRootManifest(manifest);
+        }
+
+        return (nodes, edges);
+    }
+
+    /// <summary>Batch-persists final node coordinates for vault-root notes — the vault-level counterpart of
+    /// <see cref="SavePositions"/>, since root notes have no session manifest of their own to save into.</summary>
+    public void SaveRootPositions(IEnumerable<(string RelativePath, double X, double Y, double Z)> positions)
+    {
+        var manifest = ReadRootManifest();
+        var byPath = manifest.Nodes.ToDictionary(n => n.RelativePath, StringComparer.OrdinalIgnoreCase);
+        foreach (var (relativePath, x, y, z) in positions)
+        {
+            if (byPath.TryGetValue(relativePath, out var node))
+            {
+                node.X = x;
+                node.Y = y;
+                node.Z = z;
+            }
+        }
+
+        WriteRootManifest(manifest);
+    }
 
     /// <summary>Resolves a single session's graph: every note file on disk under the session root as a
     /// node (self-healing against the manifest — new files get a node, deleted files lose theirs), plus
@@ -377,7 +535,7 @@ public sealed class SessionService
         foreach (var derived in ComputeWikiLinkEdges(byPath, contentByPath))
         {
             if (edgeKeys.Add(EdgeKey(derived.From, derived.To)))
-                edges.Add(new SessionGraphEdge { SessionId = session.Id, FromRelativePath = derived.From, ToRelativePath = derived.To });
+                edges.Add(new SessionGraphEdge { FromSessionId = session.Id, ToSessionId = session.Id, FromRelativePath = derived.From, ToRelativePath = derived.To });
         }
 
         if (manifest.ManualLinks.RemoveAll(e => !byPath.ContainsKey(e.FromRelativePath) || !byPath.ContainsKey(e.ToRelativePath)) > 0)
@@ -388,7 +546,7 @@ public sealed class SessionService
             var key = EdgeKey(manual.FromRelativePath, manual.ToRelativePath);
             if (edgeKeys.Add(key))
             {
-                edges.Add(new SessionGraphEdge { SessionId = session.Id, FromRelativePath = manual.FromRelativePath, ToRelativePath = manual.ToRelativePath, IsManual = true });
+                edges.Add(new SessionGraphEdge { FromSessionId = session.Id, ToSessionId = session.Id, FromRelativePath = manual.FromRelativePath, ToRelativePath = manual.ToRelativePath, IsManual = true });
             }
             else
             {
@@ -492,6 +650,66 @@ public sealed class SessionService
         }
     }
 
+    /// <summary>Same resolution strategy as <see cref="ComputeWikiLinkEdges"/> (exact filename first, else
+    /// an unambiguous title match, self-links dropped), run over the whole vault-wide note universe instead
+    /// of one session's — keyed by GlobalId so a target can resolve to a note in any group. A vault with
+    /// several sessions routinely has more than one note sharing the same starting title (every fresh note
+    /// begins as "# Nueva nota"), so both the filename and the title maps are ambiguity-aware here: a
+    /// filename or title held by more than one note vault-wide resolves to nothing rather than an arbitrary
+    /// guess, exactly like <see cref="ComputeWikiLinkEdges"/> already does for titles within one session.</summary>
+    private static IEnumerable<(string FromGlobalId, string ToGlobalId)> ComputeGlobalWikiLinkEdges(
+        Dictionary<string, NoteFile> byGlobalId, Dictionary<string, string> contentByGlobalId)
+    {
+        var byFileName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var ambiguousFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var byTitle = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var ambiguousTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (globalId, note) in byGlobalId)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(note.FullPath);
+            if (!ambiguousFileNames.Contains(fileName))
+            {
+                if (!byFileName.TryAdd(fileName, globalId))
+                {
+                    byFileName.Remove(fileName);
+                    ambiguousFileNames.Add(fileName);
+                }
+            }
+
+            if (ambiguousTitles.Contains(note.Title)) continue;
+            if (!byTitle.TryAdd(note.Title, globalId))
+            {
+                byTitle.Remove(note.Title);
+                ambiguousTitles.Add(note.Title);
+            }
+        }
+
+        foreach (var (globalId, note) in byGlobalId)
+        {
+            var content = contentByGlobalId[globalId];
+            foreach (var target in WikiLinkParser.ExtractTargets(content))
+            {
+                if (!byFileName.TryGetValue(target, out var resolved) && !byTitle.TryGetValue(target, out resolved))
+                    continue;
+                if (string.Equals(resolved, globalId, StringComparison.OrdinalIgnoreCase)) continue;
+
+                yield return (globalId, resolved);
+            }
+        }
+    }
+
+    /// <summary>Splits a <see cref="SessionGraphNode.GlobalId"/>-shaped string ("{groupId}::{relativePath}")
+    /// back into its parts — the inverse of how every GlobalId in this file is built. Safe against a
+    /// relative path itself containing "::" (vanishingly unlikely, but not impossible on some filesystems)
+    /// since only the *first* occurrence is treated as the separator, matching how every GlobalId here is
+    /// always constructed as exactly one groupId followed by one relative path.</summary>
+    private static (string GroupId, string RelativePath) SplitGlobalId(string globalId)
+    {
+        var separatorIndex = globalId.IndexOf("::", StringComparison.Ordinal);
+        return separatorIndex < 0 ? (globalId, string.Empty) : (globalId[..separatorIndex], globalId[(separatorIndex + 2)..]);
+    }
+
     private static string EdgeKey(string a, string b)
     {
         var ordered = string.CompareOrdinal(a, b) <= 0 ? (a, b) : (b, a);
@@ -549,7 +767,7 @@ public sealed class SessionService
     };
 
     /// <summary>Same as <see cref="ToSession"/> but skips the recursive directory walk behind
-    /// <see cref="Session.NoteCount"/> — for callers (<see cref="LoadCombinedGraph"/>) that only need
+    /// <see cref="Session.NoteCount"/> — for callers (<see cref="LoadGlobalGraph"/>) that only need
     /// <see cref="Session.Id"/>/<see cref="Session.Name"/>/<see cref="Session.RootPath"/> to load a graph
     /// and never read NoteCount at all.</summary>
     private static Session ToSessionLight(string path, SessionManifest manifest) => new()
@@ -611,6 +829,64 @@ public sealed class SessionService
             // Manifiesto legible pero con JSON inválido: tolerado en silencio, igual que antes — los
             // llamadores ya reconstruyen un manifiesto vacío con EmptyManifestFor cuando esto pasa.
             return null;
+        }
+    }
+
+    private const string RootGraphManifestFileName = ".graph.json";
+
+    /// <summary>On-disk shape of the vault-root graph's own "fichero de localización" (<c>&lt;vault&gt;/.graph.json</c>)
+    /// — just the cached layout of vault-root notes, the vault-level counterpart of <see cref="SessionManifest.Nodes"/>.
+    /// Vault-root notes have no manual links or encryption of their own (both are session concepts), so
+    /// this carries none of the rest of <see cref="SessionManifest"/>'s shape.</summary>
+    private sealed class RootGraphManifest
+    {
+        public List<SessionManifestNode> Nodes { get; set; } = [];
+    }
+
+    private RootGraphManifest ReadRootManifest()
+    {
+        var manifestPath = Path.Combine(_vaultService.VaultPath, RootGraphManifestFileName);
+        if (!File.Exists(manifestPath)) return new RootGraphManifest();
+
+        try
+        {
+            var json = File.ReadAllText(manifestPath);
+            return JsonSerializer.Deserialize<RootGraphManifest>(json, JsonOptions) ?? new RootGraphManifest();
+        }
+        catch (IOException ex)
+        {
+            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestReadError"], RootGraphManifestFileName, ex.Message));
+            return new RootGraphManifest();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestReadError"], RootGraphManifestFileName, ex.Message));
+            return new RootGraphManifest();
+        }
+        catch (JsonException)
+        {
+            // Readable but invalid JSON: tolerated in silence, same as a corrupt session manifest — the
+            // caller already reconstructs an empty manifest whenever this happens.
+            return new RootGraphManifest();
+        }
+    }
+
+    private void WriteRootManifest(RootGraphManifest manifest)
+    {
+        var manifestPath = Path.Combine(_vaultService.VaultPath, RootGraphManifestFileName);
+        try
+        {
+            var tempPath = $"{manifestPath}.tmp-{Guid.NewGuid():N}";
+            File.WriteAllText(tempPath, JsonSerializer.Serialize(manifest, JsonOptions));
+            File.Move(tempPath, manifestPath, overwrite: true);
+        }
+        catch (IOException ex)
+        {
+            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestWriteError"], RootGraphManifestFileName, ex.Message));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestWriteError"], RootGraphManifestFileName, ex.Message));
         }
     }
 

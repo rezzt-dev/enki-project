@@ -543,21 +543,22 @@ public sealed partial class DashboardViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasTodayItems));
     }
 
-    /// <summary>Note/link counts for the "SESIONES" stat card — same vault-wide combined graph
-    /// <see cref="SessionsViewModel"/> renders, but read here only for its two counts, never for a live
-    /// render: an embedded <c>NativeWebView</c> is a real platform child window (backed by
-    /// <c>NativeControlHost</c>), and those don't clip/scroll correctly inside a <c>ScrollViewer</c>
-    /// (the classic cross-framework "airspace" problem) — which is exactly why
-    /// <c>views/sessions/SessionsView.axaml</c> only ever hosts its own graph WebView in a fixed,
-    /// non-scrolling panel. The Dashboard is a scrolling page, so it stays out of the WebView business
-    /// entirely and just links to the real page (<see cref="NavigateToSessions"/>) for the actual graph.
-    /// <see cref="_graphLoadGeneration"/> discards a stale result in case <see cref="Reload"/> is called
-    /// again before this finishes, same pattern as <see cref="SessionsViewModel.LoadGraphCoreAsync"/>.</summary>
+    /// <summary>Note/link counts for the "SESIONES" stat card — same global vault graph
+    /// <see cref="SessionsViewModel"/> renders (every session's notes plus every vault-root note, wikilinks
+    /// resolved across all of it), but read here only for its two counts, never for a live render: an
+    /// embedded <c>NativeWebView</c> is a real platform child window (backed by <c>NativeControlHost</c>),
+    /// and those don't clip/scroll correctly inside a <c>ScrollViewer</c> (the classic cross-framework
+    /// "airspace" problem) — which is exactly why <c>views/sessions/SessionsView.axaml</c> only ever hosts
+    /// its own graph WebView in a fixed, non-scrolling panel. The Dashboard is a scrolling page, so it
+    /// stays out of the WebView business entirely and just links to the real page
+    /// (<see cref="NavigateToSessions"/>) for the actual graph. <see cref="_graphLoadGeneration"/> discards
+    /// a stale result in case <see cref="Reload"/> is called again before this finishes, same pattern as
+    /// <see cref="SessionsViewModel.LoadGraphCoreAsync"/>.</summary>
     private async System.Threading.Tasks.Task LoadGraphAsync()
     {
         var generation = ++_graphLoadGeneration;
         IsGraphLoading = true;
-        var graph = await _sessionService.LoadCombinedGraphAsync();
+        var graph = await _sessionService.LoadGlobalGraphAsync();
         if (generation != _graphLoadGeneration) return;
 
         GraphNodeCount = graph.Nodes.Count;

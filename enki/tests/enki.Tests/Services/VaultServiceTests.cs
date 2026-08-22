@@ -724,4 +724,25 @@ public class VaultServiceTests : IDisposable
 
         Assert.Equal(nested, resolved);
     }
+
+    /// <summary>The exact repro from docs/version-alfa-3/01-analisis-detallado.md §4.5 (hallazgo crítico):
+    /// a real vault organized entirely into subfolders ("Trabajo/", "Personal/"), never having used
+    /// sessions or the trash, and with zero top-level <c>.md</c> files. Before the fix, none of the vault
+    /// root heuristic's checks matched — re-selecting this exact folder as "open existing vault" (after
+    /// syncing it to a new machine, or reinstalling) silently nested a brand-new, empty
+    /// <c>enki-documents/</c> inside it instead of recognizing the folder itself as the vault.</summary>
+    [Fact]
+    public void ResolveVaultFolder_OnExistingVaultWithNotesOnlyInSubfolders_UsesItAsIs()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "MiVault");
+        Directory.CreateDirectory(Path.Combine(picked, "Trabajo"));
+        Directory.CreateDirectory(Path.Combine(picked, "Personal"));
+        File.WriteAllText(Path.Combine(picked, "Trabajo", "Proyecto.md"), "# Proyecto");
+        File.WriteAllText(Path.Combine(picked, "Personal", "Diario.md"), "# Diario");
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(picked, resolved);
+    }
 }

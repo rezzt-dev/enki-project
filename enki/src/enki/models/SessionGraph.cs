@@ -3,12 +3,20 @@ using System.Collections.Generic;
 namespace enki.Models;
 
 /// <summary>Resolved, render-ready view of a graph — every note currently on disk under one or more
-/// session roots as a node, plus the edges between them (derived from <c>[[wikilinks]]</c> and/or drawn
-/// manually), regardless of how the underlying manifest is stored. A graph can span a single session or
-/// every session in the vault at once (see <c>SessionService.LoadCombinedGraph</c>) — nodes and edges
-/// always carry their owning <see cref="SessionGraphNode.SessionId"/> so the two cases share one shape.</summary>
+/// session roots, plus every note living directly at the vault root outside any session, as nodes, with
+/// the edges between them (derived from <c>[[wikilinks]]</c> and/or drawn manually), regardless of how
+/// the underlying manifest is stored. A graph spans the whole vault at once (see
+/// <c>SessionService.LoadGlobalGraph</c>) — nodes and edges always carry their owning
+/// <see cref="SessionGraphNode.SessionId"/> so every group (a real session, or the vault-root pseudo-group
+/// <see cref="RootGroupId"/>) shares one shape.</summary>
 public sealed class SessionGraph
 {
+    /// <summary>Sentinel <see cref="SessionGraphNode.SessionId"/>/<see cref="SessionGraphEdge.FromSessionId"/>
+    /// value for notes living directly at the vault root — outside every session folder, so they have no
+    /// backing <c>Session</c>/<c>SessionManifest</c> of their own. Never collides with a real session id
+    /// (those are <c>Guid.ToString("N")</c>, hex-only).</summary>
+    public const string RootGroupId = "__vault_root__";
+
     public List<SessionGraphNode> Nodes { get; set; } = [];
     public List<SessionGraphEdge> Edges { get; set; } = [];
 }
@@ -32,11 +40,17 @@ public sealed class SessionGraphNode
 
 public sealed class SessionGraphEdge
 {
-    public required string SessionId { get; set; }
+    /// <summary>Owning group of each endpoint — equal for an edge derived within one session (or within
+    /// the vault-root group) exactly as before; different for a "global" edge, one whose two notes live in
+    /// different sessions (or a session and the vault root), which only cross-scope wikilink resolution
+    /// can produce (see <c>SessionService.LoadGlobalGraph</c>). A single shared <c>SessionId</c> used to be
+    /// enough back when every edge stayed inside one session's own graph.</summary>
+    public required string FromSessionId { get; set; }
+    public required string ToSessionId { get; set; }
     public required string FromRelativePath { get; set; }
     public required string ToRelativePath { get; set; }
     public bool IsManual { get; set; }
 
-    public string FromGlobalId => $"{SessionId}::{FromRelativePath}";
-    public string ToGlobalId => $"{SessionId}::{ToRelativePath}";
+    public string FromGlobalId => $"{FromSessionId}::{FromRelativePath}";
+    public string ToGlobalId => $"{ToSessionId}::{ToRelativePath}";
 }

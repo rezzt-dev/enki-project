@@ -22,7 +22,7 @@ public class SessionGraphRendererTests
         ],
         Edges =
         [
-            new SessionGraphEdge { SessionId = "s1", FromRelativePath = "A.md", ToRelativePath = "B.md", IsManual = true }
+            new SessionGraphEdge { FromSessionId = "s1", ToSessionId = "s1", FromRelativePath = "A.md", ToRelativePath = "B.md", IsManual = true }
         ]
     };
 

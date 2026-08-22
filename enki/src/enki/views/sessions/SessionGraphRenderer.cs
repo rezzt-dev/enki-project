@@ -1172,12 +1172,12 @@ public static class SessionGraphRenderer
         }
     }
 
-    /// <summary>Deterministic per-session node brightness. Nodes used to carry a rainbow per-session hue
-    /// so the combined graph (every session's notes in one scene, see <c>SessionService.LoadCombinedGraph</c>)
-    /// stayed visually grouped — but a premium, three.js-style graph reads as one coherent material, not a
-    /// pile of hues, so every node is pure white now and sessions are instead told apart by a stable, subtle
-    /// opacity variance. Alpha is baked into the rgba() string since sigma's default node renderer has no
-    /// separate node-opacity setter.</summary>
+    /// <summary>Deterministic per-group node brightness. Nodes used to carry a rainbow per-session hue so
+    /// the global graph (every session's notes plus every vault-root note in one scene, see
+    /// <c>SessionService.LoadGlobalGraph</c>) stayed visually grouped — but a premium, three.js-style graph
+    /// reads as one coherent material, not a pile of hues, so every node is pure white now and groups are
+    /// instead told apart by a stable, subtle opacity variance. Alpha is baked into the rgba() string since
+    /// sigma's default node renderer has no separate node-opacity setter.</summary>
     private static class NodeBrightness
     {
         public static string ColorFor(string sessionId)

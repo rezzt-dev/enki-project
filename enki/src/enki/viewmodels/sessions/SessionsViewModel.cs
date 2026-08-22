@@ -21,7 +21,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private readonly VaultService _vaultService;
     private readonly SessionService _sessionService;
     private readonly NotificationService _notificationService;
-    private readonly Action<Session, Models.NoteFile?> _onOpenInNotes;
+    /// <summary>Null <c>Session</c> means "open this note in the vault-root workspace" — the only way a
+    /// graph node can reach here without a real session (see <see cref="HandleNodeOpened"/>), since notes
+    /// living directly at the vault root have no session to pass.</summary>
+    private readonly Action<Session?, Models.NoteFile?> _onOpenInNotes;
     private readonly Action _onSessionsChanged;
     private readonly KanbanService? _kanbanService;
     private readonly Action<string>? _onOpenLinkedCard;
@@ -38,6 +41,17 @@ public sealed partial class SessionsViewModel : ViewModelBase
     public string GraphSummaryLabel =>
         Plural.Get("Sessions_Graph_Summary_Notes", NodeCount, NodeCount) + " · " +
         Plural.Get("Sessions_Graph_Summary_Links", EdgeCount, EdgeCount);
+
+    /// <summary>One row per group currently in the graph — every session plus the vault-root pseudo-group,
+    /// each with an on/off toggle — so the floating filter popover can let the user isolate the global
+    /// graph down to a subset (e.g. only "sin sesión", or exactly two sessions to see just what connects
+    /// them). Rebuilt whenever a fresh graph is loaded (see <see cref="RebuildGraphGroupFilters"/>),
+    /// preserving whatever selection was already in place.</summary>
+    public ObservableCollection<GraphGroupFilterItemViewModel> GraphGroupFilters { get; } = [];
+
+    /// <summary>Whether any group filter is currently narrowing the graph — drives the filter chip's
+    /// "active" visual state, same convention as <see cref="IsLinkMode"/>'s toggle button.</summary>
+    public bool IsGraphFiltered => GraphGroupFilters.Any(f => !f.IsActive);
 
     /// <summary>Tarjetas Kanban vinculadas a alguna nota del subárbol de <see cref="SelectedSession"/> —
     /// consecuencia derivada del enlace nota↔tarea, sin almacén propio: se recalcula contra
@@ -133,6 +147,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private bool _isLinkMode;
 
     [ObservableProperty]
+    private bool _isGraphFilterOpen;
+
+    [ObservableProperty]
     private int _nodeCount;
 
     [ObservableProperty]
@@ -144,7 +161,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     /// <summary>Raised when the whole graph document should be (re)rendered from scratch — the page was
     /// (re)opened, a session was created/renamed/deleted, or notes were created/renamed/deleted from the
-    /// Notes page while this page was idle. The graph always spans every session at once.</summary>
+    /// Notes page while this page was idle. The graph always spans the whole vault at once: every session
+    /// plus every note living directly at the vault root, minus whatever <see cref="GraphGroupFilters"/>
+    /// currently hides.</summary>
     public event Action<SessionGraph>? GraphReady;
 
     /// <summary>Raised when the graph changed in a way that should be pushed into the already-loaded
@@ -172,9 +191,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
     /// which note is pending.</summary>
     private string? _pendingLinkGlobalId;
 
-    /// <summary>The most recently computed combined graph, if any — lets <see cref="RepublishGraph"/>
-    /// re-raise <see cref="GraphReady"/> for a newly-(re)attached view without redoing the vault-wide
-    /// scan+parse <see cref="LoadGraph"/> just did a moment earlier.</summary>
+    /// <summary>The most recently computed global graph, unfiltered, if any — lets
+    /// <see cref="RepublishGraph"/> re-raise <see cref="GraphReady"/> for a newly-(re)attached view, and
+    /// lets <see cref="GraphGroupFilters"/> toggling re-derive the visible subset, without redoing the
+    /// vault-wide scan+parse <see cref="LoadGraph()"/> just did a moment earlier.</summary>
     private SessionGraph? LastGraph { get; set; }
 
     /// <summary>Bumped by every <see cref="Reload"/>/<see cref="LoadGraph"/>/link-toggle call so an older,
@@ -186,7 +206,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
         VaultService vaultService,
         SessionService sessionService,
         NotificationService notificationService,
-        Action<Session, Models.NoteFile?> onOpenInNotes,
+        Action<Session?, Models.NoteFile?> onOpenInNotes,
         Action onSessionsChanged,
         KanbanService? kanbanService = null,
         Action<string>? onOpenLinkedCard = null)
@@ -260,10 +280,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private void OpenLinkedCard(string cardId) => _onOpenLinkedCard?.Invoke(cardId);
 
     // Reload/LoadGraph used to run every bit of this synchronously on the UI thread: List() and
-    // LoadCombinedGraph() both walk the vault's directory tree and read+parse every note's content, which
+    // LoadGlobalGraph() both walk the vault's directory tree and read+parse every note's content, which
     // froze the whole app for the duration on every tab switch/session change, worse the more notes a
     // vault has. Both now hand the disk I/O to a background thread (see SessionService.ListAsync/
-    // LoadCombinedGraphAsync) and only touch bound properties once the result is back — "async void" is
+    // LoadGlobalGraphAsync) and only touch bound properties once the result is back — "async void" is
     // fine here since these are effectively fire-and-forget UI actions (constructor call, command,
     // navigation), same as every [RelayCommand] below already was from the caller's point of view.
     public async void Reload()
@@ -294,23 +314,82 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     private async Task LoadGraphCoreAsync(int generation)
     {
-        var graph = await _sessionService.LoadCombinedGraphAsync();
+        var graph = await _sessionService.LoadGlobalGraphAsync();
         if (generation != _loadGeneration) return;
 
-        NodeCount = graph.Nodes.Count;
-        EdgeCount = graph.Edges.Count;
         LastGraph = graph;
-        GraphReady?.Invoke(graph);
+        RebuildGraphGroupFilters(graph);
+        PublishGraph(fullReload: true);
     }
 
-    /// <summary>Re-raises <see cref="GraphReady"/> with the last graph already computed, instead of
-    /// redoing the vault-wide scan — for a view that just (re)attached and missed the event from whatever
-    /// load triggered it (see <see cref="LastGraph"/>'s doc comment). Falls back to a real load only if
-    /// nothing has been computed yet (the very first attach, before any load has completed).</summary>
+    /// <summary>Re-raises <see cref="GraphReady"/> with the last graph already computed (through the
+    /// current filter), instead of redoing the vault-wide scan — for a view that just (re)attached and
+    /// missed the event from whatever load triggered it (see <see cref="LastGraph"/>'s doc comment). Falls
+    /// back to a real load only if nothing has been computed yet (the very first attach, before any load
+    /// has completed).</summary>
     public void RepublishGraph()
     {
-        if (LastGraph is { } graph) GraphReady?.Invoke(graph);
+        if (LastGraph is not null) PublishGraph(fullReload: true);
         else LoadGraph();
+    }
+
+    /// <summary>Rebuilds <see cref="GraphGroupFilters"/> from whichever groups are actually present in
+    /// <paramref name="graph"/> — one row per distinct <see cref="SessionGraphNode.SessionId"/>, vault-root
+    /// first. Preserves each surviving group's on/off state across the rebuild (a session renamed, or a new
+    /// note appearing in a previously-empty group, shouldn't silently reset an in-progress filter).</summary>
+    private void RebuildGraphGroupFilters(SessionGraph graph)
+    {
+        var previousSelection = GraphGroupFilters.ToDictionary(f => f.GroupId, f => f.IsActive);
+        GraphGroupFilters.Clear();
+
+        var groups = graph.Nodes
+            .Select(n => (n.SessionId, n.SessionName))
+            .Distinct()
+            .OrderBy(g => g.SessionId == Models.SessionGraph.RootGroupId ? 0 : 1)
+            .ThenBy(g => g.SessionName, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (groupId, name) in groups)
+        {
+            var isActive = !previousSelection.TryGetValue(groupId, out var previouslyActive) || previouslyActive;
+            GraphGroupFilters.Add(new GraphGroupFilterItemViewModel(groupId, name, isActive, OnGraphFilterToggled));
+        }
+
+        OnPropertyChanged(nameof(IsGraphFiltered));
+    }
+
+    private void OnGraphFilterToggled()
+    {
+        OnPropertyChanged(nameof(IsGraphFiltered));
+        if (LastGraph is not null) PublishGraph(fullReload: false);
+    }
+
+    /// <summary>Applies <see cref="GraphGroupFilters"/> to <see cref="LastGraph"/> and pushes the result to
+    /// the WebView — a full document reload (<see cref="GraphReady"/>) when the graph document itself needs
+    /// (re)building (first load, or a freshly re-attached view), or an in-place update
+    /// (<see cref="GraphUpdated"/>) that leaves the camera/running simulation alone, for everything else
+    /// (a filter toggle, a manual link change). Also keeps <see cref="NodeCount"/>/<see cref="EdgeCount"/>
+    /// reflecting what's actually visible, not the unfiltered total.</summary>
+    private void PublishGraph(bool fullReload)
+    {
+        if (LastGraph is not { } graph) return;
+
+        var activeGroupIds = GraphGroupFilters.Where(f => f.IsActive).Select(f => f.GroupId).ToHashSet();
+        SessionGraph visible;
+        if (activeGroupIds.Count == GraphGroupFilters.Count)
+        {
+            visible = graph; // nothing filtered out — every group active (including the common "no filters yet" case)
+        }
+        else
+        {
+            visible = new SessionGraph();
+            visible.Nodes.AddRange(graph.Nodes.Where(n => activeGroupIds.Contains(n.SessionId)));
+            visible.Edges.AddRange(graph.Edges.Where(e => activeGroupIds.Contains(e.FromSessionId) && activeGroupIds.Contains(e.ToSessionId)));
+        }
+
+        NodeCount = visible.Nodes.Count;
+        EdgeCount = visible.Edges.Count;
+        if (fullReload) GraphReady?.Invoke(visible);
+        else GraphUpdated?.Invoke(visible);
     }
 
     [RelayCommand]
@@ -573,6 +652,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
         SetPendingLink(null);
     }
 
+    [RelayCommand]
+    private void ToggleGraphFilterPopover() => IsGraphFilterOpen = !IsGraphFilterOpen;
+
     // ===================== Messages posted from the graph's WebView =====================
     // The combined graph's node ids are "{sessionId}::{relativePath}" (SessionGraphNode.GlobalId) since
     // plain relative paths collide across sessions — every message coming back from it has to be
@@ -621,9 +703,21 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private void HandleNodeOpened(string globalId)
     {
         if (!TryParseGlobalId(globalId, out var sessionId, out var relativePath)) return;
-        if (FindSession(sessionId) is not { } session) return;
 
-        var fullPath = Path.Combine(session.RootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Session? session = null;
+        string rootPath;
+        if (sessionId == Models.SessionGraph.RootGroupId)
+        {
+            rootPath = _vaultService.VaultPath;
+        }
+        else
+        {
+            if (FindSession(sessionId) is not { } found) return;
+            session = found;
+            rootPath = session.RootPath;
+        }
+
+        var fullPath = Path.Combine(rootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
         var note = _vaultService.GetNote(fullPath);
         if (note is null)
         {
@@ -641,10 +735,11 @@ public sealed partial class SessionsViewModel : ViewModelBase
         if (!TryParseGlobalId(fromGlobalId, out var fromSessionId, out var fromRelativePath)) return;
         if (!TryParseGlobalId(toGlobalId, out var toSessionId, out var toRelativePath)) return;
 
-        // Notes only ever link within their own session's tree — a manual link can't span two sessions.
+        // Notes only ever link within their own session's tree — a manual link can't span two sessions,
+        // nor touch a vault-root note (root notes have no session manifest to store a manual link in).
         // This used to fail silently, which read as the whole link feature being broken (the click that
         // triggered it produced no visible reaction at all); now the WebView flashes both nodes instead.
-        if (fromSessionId != toSessionId)
+        if (fromSessionId != toSessionId || fromSessionId == Models.SessionGraph.RootGroupId)
         {
             LinkRejected?.Invoke(fromGlobalId, toGlobalId);
             return;
@@ -657,20 +752,19 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private async Task HandleLinkToggledAsync(Session session, string fromRelativePath, string toRelativePath)
     {
         var generation = ++_loadGeneration;
-        // The manifest write and the full combined-graph rescan that follows it are both synchronous disk
-        // I/O (see SessionService.ToggleManualLink/LoadCombinedGraph) — running them on a background thread
-        // keeps a single link click from freezing the UI for however long the vault-wide rescan takes.
+        // The manifest write and the full global-graph rescan that follows it are both synchronous disk I/O
+        // (see SessionService.ToggleManualLink/LoadGlobalGraph) — running them on a background thread keeps
+        // a single link click from freezing the UI for however long the vault-wide rescan takes.
         var graph = await Task.Run(() =>
         {
             _sessionService.ToggleManualLink(session, fromRelativePath, toRelativePath);
-            return _sessionService.LoadCombinedGraph();
+            return _sessionService.LoadGlobalGraph();
         });
         if (generation != _loadGeneration) return;
 
-        NodeCount = graph.Nodes.Count;
-        EdgeCount = graph.Edges.Count;
         LastGraph = graph;
-        GraphUpdated?.Invoke(graph);
+        RebuildGraphGroupFilters(graph);
+        PublishGraph(fullReload: false);
     }
 
     public void HandlePositionsReported(IReadOnlyList<(string RelativePath, double X, double Y, double Z)> positions)
@@ -678,9 +772,15 @@ public sealed partial class SessionsViewModel : ViewModelBase
         if (positions.Count == 0) return;
 
         var bySession = new Dictionary<string, List<(string RelativePath, double X, double Y, double Z)>>();
+        var rootPositions = new List<(string RelativePath, double X, double Y, double Z)>();
         foreach (var (globalId, x, y, z) in positions)
         {
             if (!TryParseGlobalId(globalId, out var sessionId, out var relativePath)) continue;
+            if (sessionId == Models.SessionGraph.RootGroupId)
+            {
+                rootPositions.Add((relativePath, x, y, z));
+                continue;
+            }
             if (!bySession.TryGetValue(sessionId, out var list)) bySession[sessionId] = list = [];
             list.Add((relativePath, x, y, z));
         }
@@ -689,15 +789,17 @@ public sealed partial class SessionsViewModel : ViewModelBase
             .Select(kv => (Session: FindSession(kv.Key), Positions: kv.Value))
             .Where(t => t.Session is not null)
             .ToList();
-        if (toSave.Count == 0) return;
+        if (toSave.Count == 0 && rootPositions.Count == 0) return;
 
         // Fires on every drag-settle — each save is a synchronous read+parse+serialize+write of a session's
-        // whole .session.json (see SessionService.SavePositions/WriteManifest). Running it on a background
-        // thread keeps that from hitching the UI right as a drag interaction ends, which is when it's most
-        // noticeable. Positions are last-write-wins per note, so an older save racing a newer one is harmless.
+        // whole .session.json, or the vault-level .graph.json for root notes (see
+        // SessionService.SavePositions/SaveRootPositions). Running it on a background thread keeps that
+        // from hitching the UI right as a drag interaction ends, which is when it's most noticeable.
+        // Positions are last-write-wins per note, so an older save racing a newer one is harmless.
         _ = Task.Run(() =>
         {
             foreach (var (session, list) in toSave) _sessionService.SavePositions(session!, list);
+            if (rootPositions.Count > 0) _sessionService.SaveRootPositions(rootPositions);
         });
     }
 

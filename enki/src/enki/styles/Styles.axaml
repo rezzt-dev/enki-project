@@ -1,6 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:controls="clr-namespace:enki.Controls">
 
   <!-- ===================================================================
        Brutalismo editorial suizo, monocromo — ver docs/sistema-diseno-web.md
@@ -136,6 +137,15 @@
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
   </Style>
   <Style Selector="Button.nav-item:pointerover TextBlock.danger">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.nav-item mi|MaterialIcon.danger">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.nav-item.active mi|MaterialIcon.danger">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.nav-item:pointerover mi|MaterialIcon.danger">
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
   </Style>
 
@@ -1543,6 +1553,30 @@
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="28" />
     <Setter Property="MaxWidth" Value="380" />
+  </Style>
+
+  <!-- ModalOverlayHost (controls/ModalOverlayHost.cs): plantilla del popup que hace que un diálogo
+       tape TODA la ventana (sidebar + barra de título propia) en vez de solo el Grid de su propia
+       página — el mismo Border.modal-overlay de arriba sigue dando el oscurecido, ahora sobre un Grid
+       dimensionado en C# al tamaño real del TopLevel en vez de "Stretch" dentro de su página. -->
+  <Style Selector="controls|ModalOverlayHost">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Popup Name="PART_Popup"
+               IsOpen="{TemplateBinding IsOpen}"
+               Placement="AnchorAndGravity"
+               PlacementAnchor="TopLeft"
+               PlacementGravity="BottomRight"
+               HorizontalOffset="0" VerticalOffset="0"
+               IsLightDismissEnabled="False">
+          <Grid>
+            <Border Classes="modal-overlay" />
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
+        </Popup>
+      </ControlTemplate>
+    </Setter>
   </Style>
 
   <!-- ===================== Grafo de sesiones (§9 — chips flotantes sobre el WebView) ===================== -->

@@ -310,7 +310,7 @@
                 </ItemsControl>
               </ScrollViewer>
 
-              <StackPanel IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center"
+              <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center"
                           Spacing="12">
                 <mi:MaterialIcon Kind="NoteTextOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
                         HorizontalAlignment="Center" />
@@ -318,6 +318,17 @@
                 <Button Classes="pill-primary" Command="{Binding NewNoteCommand}" HorizontalAlignment="Center">
                   <TextBlock Text="{loc:Tr Notes_EmptyState_CreateButton, Converter={StaticResource UpperCaseConverter}}" />
                 </Button>
+              </StackPanel>
+
+              <!-- Sesión protegida y bloqueada: leer el contenido de sus notas lanzaría SessionLockedException
+                   (docs/version-alfa-3/01-analisis-detallado.md §4.1) — hay que desbloquearla desde Sesiones
+                   primero, mismo tratamiento que ya tiene Archivos para el mismo caso. -->
+              <StackPanel IsVisible="{Binding IsSelectedSessionLocked}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Spacing="12" MaxWidth="280">
+                <mi:MaterialIcon Kind="LockOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
+                        HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Notes_LockedSession_Message}" Classes="muted" HorizontalAlignment="Center"
+                           TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
           </Grid>

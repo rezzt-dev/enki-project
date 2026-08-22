@@ -63,6 +63,19 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// browsing, creating and moving notes all stay scoped to whichever workspace is active.</summary>
     public string EffectiveRootPath => SelectedSessionOption?.Session?.RootPath ?? _vaultService.VaultPath;
 
+    /// <summary>True while browsing a password-protected session that isn't currently unlocked — mirrors
+    /// <c>FilesViewModel.IsSelectedSessionLocked</c> (docs/version-alfa-3/01-analisis-detallado.md §4.1):
+    /// reading a locked session's note content throws <see cref="SessionLockedException"/>, so
+    /// <see cref="Reload"/> checks this before ever calling into <see cref="VaultService"/> instead of
+    /// letting that exception escape from the notes grid.</summary>
+    public bool IsSelectedSessionLocked =>
+        SelectedSessionOption?.Session is { IsEncrypted: true } session && !_sessionService.IsUnlocked(session);
+
+    /// <summary>The regular "no notes here" empty state — distinct from <see cref="IsSelectedSessionLocked"/>'s
+    /// own placeholder, which takes over instead when the reason the grid is empty is that the session is
+    /// locked rather than genuinely having no notes.</summary>
+    public bool ShowEmptyState => IsEmpty && !IsSelectedSessionLocked;
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -142,6 +155,12 @@ public sealed partial class NotesViewModel : ViewModelBase
         var paths = _settingsService.Settings.RecentNotePaths;
         foreach (var path in paths)
         {
+            // A recent note can belong to any session, including one that's locked in this process (every
+            // encrypted session starts locked on launch) — reading its content to build the card would
+            // throw SessionLockedException, so it's skipped here the same tolerant way a deleted/moved
+            // path already is, rather than crashing the whole recent-notes refresh.
+            if (_vaultService.IsPathInLockedSession(path)) continue;
+
             var note = _vaultService.GetNote(path);
             if (note is not null) RecentNotes.Add(new NoteCardViewModel(note));
             if (RecentNotes.Count >= 10) break;
@@ -175,10 +194,14 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
+        OnPropertyChanged(nameof(IsSelectedSessionLocked));
+        OnPropertyChanged(nameof(ShowEmptyState));
         CurrentFolder = null;
         ReloadFolders();
         Reload();
     }
+
+    partial void OnIsEmptyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
 
     // Mirrors "which tab is selected" onto each EditorViewModel itself (see IsActive's doc comment there)
     // purely so the tab strip can highlight it — nothing about editing/saving depends on this.
@@ -235,6 +258,12 @@ public sealed partial class NotesViewModel : ViewModelBase
         var activePath = _settingsService.Settings.ActiveNotePath;
         foreach (var path in paths)
         {
+            // Every encrypted session starts locked on process launch, so a tab left open on one of its
+            // notes at the previous shutdown can't be restored now — skip it the same tolerant way a
+            // deleted/moved path already is, instead of letting GetNote throw SessionLockedException
+            // straight out of shell initialization (docs/version-alfa-3/01-analisis-detallado.md §4.1).
+            if (_vaultService.IsPathInLockedSession(path)) continue;
+
             var note = _vaultService.GetNote(path);
             if (note is not null) OpenNote(note);
         }
@@ -275,6 +304,15 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public void Reload()
     {
+        if (IsSelectedSessionLocked)
+        {
+            Notes.Clear();
+            IsEmpty = true;
+            TagFilter.Reload([]);
+            RefreshRecentNotes();
+            return;
+        }
+
         var all = _vaultService.GetNotes(CurrentFolderPath);
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? all
@@ -346,7 +384,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         {
             note = _vaultService.CreateNote(LocalizationService.Instance["Vault_DefaultNoteTitle"], CurrentFolderPath);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
             NotifyVaultWriteFailed(ex);
             return;
@@ -369,7 +407,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         {
             note = existing ?? _vaultService.CreateNote(title, CurrentFolderPath);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
             NotifyVaultWriteFailed(ex);
             return;
@@ -462,7 +500,7 @@ public sealed partial class NotesViewModel : ViewModelBase
             content = _vaultService.ReadContent(note);
             return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
             LogService.Error($"No se pudo leer la nota '{note.FullPath}' para exportarla", ex);
             _notificationService?.Push(
@@ -654,7 +692,7 @@ public sealed partial class NotesViewModel : ViewModelBase
             {
                 updated = _vaultService.RenameNote(card.Note, card.EditingName);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
             {
                 NotifyVaultWriteFailed(ex);
                 card.IsRenaming = false;
@@ -711,7 +749,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         {
             _vaultService.MoveNote(card.Note, destinationFolderPath);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
             NotifyVaultWriteFailed(ex);
             return;

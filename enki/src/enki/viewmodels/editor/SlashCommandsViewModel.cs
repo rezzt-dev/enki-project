@@ -15,8 +15,12 @@ public sealed partial class SlashCommandsViewModel : ObservableObject
     /// §5.5) — they're what the user types after "/", never shown on screen, and keeping them stable
     /// across a language change preserves muscle memory. Labels are resolved once here (Fase 2: no
     /// live-refresh-on-language-change wiring yet, that's Fase 4); InsertText for entries with real
-    /// language content (links, table headers) is resolved lazily per-insertion via InsertTextKey instead.</summary>
-    private static readonly IReadOnlyList<SlashCommand> AllCommands =
+    /// language content (links, table headers) is resolved lazily per-insertion via InsertTextKey instead.
+    /// Internal rather than private so <c>SlashCommandsViewModelTests</c> (via <c>InternalsVisibleTo</c>,
+    /// see enki.csproj) can assert every entry's <see cref="SlashCommand.InsertText"/> resolves to real
+    /// content instead of a missing-resource-key fallback — the exact bug that shipped for "/tabla"
+    /// (docs/version-alfa-3/01-analisis-detallado.md §4.2).</summary>
+    internal static readonly IReadOnlyList<SlashCommand> AllCommands =
     [
         new SlashCommand { Key = "h1", Label = LocalizationService.Instance["Editor_SlashCommand_H1_Label"], Icon = "FormatHeader1", InsertTextLiteral = "# ", CursorOffset = 2 },
         new SlashCommand { Key = "h2", Label = LocalizationService.Instance["Editor_SlashCommand_H2_Label"], Icon = "FormatHeader2", InsertTextLiteral = "## ", CursorOffset = 3 },
@@ -27,7 +31,11 @@ public sealed partial class SlashCommandsViewModel : ObservableObject
         new SlashCommand { Key = "enlace", Label = LocalizationService.Instance["Editor_SlashCommand_Link_Label"], Icon = "LinkVariant", InsertTextKey = "Editor_LinkInsert_Placeholder", CursorOffset = 1 },
         new SlashCommand { Key = "codigo", Label = LocalizationService.Instance["Editor_SlashCommand_InlineCode_Label"], Icon = "CodeTags", InsertTextLiteral = "``", CursorOffset = 1 },
         new SlashCommand { Key = "bloque", Label = LocalizationService.Instance["Editor_SlashCommand_CodeBlock_Label"], Icon = "CodeTags", InsertTextLiteral = "```\n\n```", CursorOffset = 4 },
-        new SlashCommand { Key = "tabla", Label = LocalizationService.Instance["Editor_SlashCommand_Table_Label"], Icon = "Table", InsertTextKey = "Editor_SlashCommand_Table_InsertText", CursorOffset = 53 },
+        // CursorOffset lands right after the opening "| " of the header row rather than inside the data
+        // row further down, since the header words themselves (translated per locale, see InsertTextKey)
+        // vary in length between languages and only a prefix that's identical across every translation is
+        // safe to index into with a single fixed offset — see análisis §4.2 for the crash this replaces.
+        new SlashCommand { Key = "tabla", Label = LocalizationService.Instance["Editor_SlashCommand_Table_Label"], Icon = "Table", InsertTextKey = "Editor_SlashCommand_Table_InsertText", CursorOffset = 2 },
         new SlashCommand { Key = "fecha", Label = LocalizationService.Instance["Editor_SlashCommand_TodayDate_Label"], Icon = "CalendarToday", InsertTextLiteral = "", CursorOffset = 0 }
     ];
 

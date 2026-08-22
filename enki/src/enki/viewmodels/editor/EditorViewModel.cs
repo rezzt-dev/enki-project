@@ -394,21 +394,25 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// is restarted so the next automatic tick retries on its own, without requiring another keystroke.</summary>
     public void Save(string currentText)
     {
+        // Check-before-write, same criterion as FilesViewModel.IsSelectedSessionLocked (docs/version-alfa-3/
+        // 01-analisis-detallado.md §4.1): this note's session can go from unlocked to locked while this tab
+        // is still open (the user locks it from Sessions, or every session simply starts locked again on
+        // the next launch) — every 600ms autosave tick after that must keep failing gracefully instead of
+        // trying to encrypt with a DEK that's no longer cached. The catch below stays as a safety net for
+        // the (much rarer) race where the lock happens between this check and the write itself.
+        if (_vaultService.IsPathInLockedSession(Note.FullPath))
+        {
+            HandleSaveFailure(new SessionLockedException(Note.FullPath), currentText);
+            return;
+        }
+
         try
         {
             _vaultService.WriteContent(Note, currentText);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
-            LogService.Error($"No se pudo guardar la nota '{Note.FullPath}'", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteSaveFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteSaveFailed_Message"], Title, DescribeFailureReason(ex)),
-                NotificationSeverity.Error);
-
-            _pendingText = currentText;
-            _saveTimer.Stop();
-            _saveTimer.Start();
+            HandleSaveFailure(ex, currentText);
             return;
         }
 
@@ -417,6 +421,22 @@ public sealed partial class EditorViewModel : ViewModelBase
         _lastSavedUtc = DateTime.UtcNow;
         SaveStatus = FormatSaveStatus(_lastSavedUtc);
         _onChanged();
+    }
+
+    /// <summary>Shared by both the proactive check and the defensive catch in <see cref="Save"/> — leaves
+    /// <paramref name="currentText"/> pending and restarts the save timer so the next automatic tick
+    /// retries on its own, without requiring another keystroke.</summary>
+    private void HandleSaveFailure(Exception ex, string currentText)
+    {
+        LogService.Error($"No se pudo guardar la nota '{Note.FullPath}'", ex);
+        _notificationService?.Push(
+            LocalizationService.Instance["Notification_NoteSaveFailed_Title"],
+            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteSaveFailed_Message"], Title, DescribeFailureReason(ex)),
+            NotificationSeverity.Error);
+
+        _pendingText = currentText;
+        _saveTimer.Stop();
+        _saveTimer.Start();
     }
 
     /// <summary>Maps an I/O failure to a translated, user-facing reason — shared by <see cref="Save"/> and

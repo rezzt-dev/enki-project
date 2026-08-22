@@ -196,7 +196,7 @@ public class SessionServiceTests : IDisposable
     }
 
     [Fact]
-    public void LoadCombinedGraph_KeepsEachSessionAsASeparateCluster()
+    public void LoadGlobalGraph_KeepsEachSessionAsASeparateCluster()
     {
         var service = CreateService();
         var sessionA = service.Create("A");
@@ -204,10 +204,73 @@ public class SessionServiceTests : IDisposable
         File.WriteAllText(Path.Combine(sessionA.RootPath, "Nota.md"), "# Nota");
         File.WriteAllText(Path.Combine(sessionB.RootPath, "Nota.md"), "# Nota");
 
-        var combined = service.LoadCombinedGraph();
+        var combined = service.LoadGlobalGraph();
 
         Assert.Equal(2, combined.Nodes.Count);
         Assert.Equal(2, combined.Nodes.Select(n => n.SessionId).Distinct().Count());
+    }
+
+    [Fact]
+    public void LoadGlobalGraph_IncludesVaultRootNotes_UnderTheRootGroup()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "En sesión.md"), "# En sesión");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+
+        var graph = service.LoadGlobalGraph();
+
+        Assert.Equal(2, graph.Nodes.Count);
+        var rootNode = Assert.Single(graph.Nodes, n => n.SessionId == SessionGraph.RootGroupId);
+        Assert.Equal("Suelta.md", rootNode.RelativePath);
+    }
+
+    [Fact]
+    public void LoadGlobalGraph_DerivesEdge_BetweenASessionNoteAndAVaultRootNote()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(_vaultPath, "Destino.md"), "# Destino");
+
+        var graph = service.LoadGlobalGraph();
+
+        var edge = Assert.Single(graph.Edges);
+        Assert.Equal(session.Id, edge.FromSessionId);
+        Assert.Equal(SessionGraph.RootGroupId, edge.ToSessionId);
+    }
+
+    [Fact]
+    public void LoadGlobalGraph_DerivesEdge_BetweenNotesInTwoDifferentSessions()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Destino.md"), "# Destino");
+
+        var graph = service.LoadGlobalGraph();
+
+        var edge = Assert.Single(graph.Edges);
+        Assert.Equal(sessionA.Id, edge.FromSessionId);
+        Assert.Equal(sessionB.Id, edge.ToSessionId);
+    }
+
+    [Fact]
+    public void SaveRootPositions_UpdatesStoredCoordinates_ForVaultRootNotes()
+    {
+        var service = CreateService();
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+        service.LoadGlobalGraph(); // seeds .graph.json with an initial node entry
+
+        service.SaveRootPositions([("Suelta.md", 1.5, 2.5, 3.5)]);
+        var reloaded = service.LoadGlobalGraph();
+
+        var node = Assert.Single(reloaded.Nodes);
+        Assert.True(node.HasStoredPosition);
+        Assert.Equal(1.5, node.X);
+        Assert.Equal(2.5, node.Y);
+        Assert.Equal(3.5, node.Z);
     }
 
     [Fact]

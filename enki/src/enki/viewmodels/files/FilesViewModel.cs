@@ -382,4 +382,5 @@ public sealed partial class FilesViewModel : ViewModelBase
         VaultService.MoveFile(card.File, destinationFolderPath);
         Reload();
     }
+
 }

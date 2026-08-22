@@ -100,12 +100,14 @@ public sealed partial class MainWindowViewModel
         Notes!.OpenNote(note);
     }
 
-    /// <summary>A node in the session graph was clicked (open that note), or "Abrir en notas" was pressed
-    /// (just switch context) — either way, land on the Notes page scoped to that session.</summary>
-    private void OpenSessionInNotes(Session session, NoteFile? note)
+    /// <summary>A node in the global vault graph was clicked (open that note), or "Abrir en notas" was
+    /// pressed (just switch context) — either way, land on the Notes page scoped to that session. A null
+    /// <paramref name="session"/> means the note lives at the vault root outside any session — the Notes
+    /// page already treats a null session id as "select the vault workspace" (<c>NotesViewModel.SelectSession</c>).</summary>
+    private void OpenSessionInNotes(Session? session, NoteFile? note)
     {
         Navigate(AppPage.Notes);
-        Notes!.SelectSession(session.Id);
+        Notes!.SelectSession(session?.Id);
         if (note is not null) Notes!.OpenNote(note);
     }
 

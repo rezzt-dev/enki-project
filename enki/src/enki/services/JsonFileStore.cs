@@ -24,7 +24,7 @@ namespace enki.Services;
 /// file.</summary>
 internal static class JsonFileStore
 {
-    private static readonly JsonSerializerOptions IndentedOptions = new() { WriteIndented = true };
+    internal static readonly JsonSerializerOptions IndentedOptions = new() { WriteIndented = true };
 
     /// <summary>Reads and deserializes <paramref name="path"/> under the file's lock. Returns
     /// <see langword="false"/> — instead of throwing — when the file doesn't exist, is empty, or fails to

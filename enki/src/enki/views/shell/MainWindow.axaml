@@ -188,7 +188,8 @@
                            MainWindowViewModel.UpdateTrashBadge/UpdateCalendarBadge); el resto siempre
                            queda en 0 y el Border no se muestra. -->
                       <Panel Width="20" Height="20">
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Center" />
+                        <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Center"
+                                         Classes.danger="{Binding IsDanger}" />
                         <Border Classes="titlebar-badge" IsVisible="{Binding HasCount}">
                           <TextBlock Classes="titlebar-badge-text" Text="{Binding Count}" />
                         </Border>

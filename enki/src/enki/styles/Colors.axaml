@@ -136,9 +136,11 @@
   <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}" />
   <SolidColorBrush x:Key="HighlightBrush" Color="{DynamicResource HighlightColor}" />
 
-  <!-- Superposición de modales: transparente — el desenfoque del fondo (ExperimentalAcrylicBorder,
-       ver Styles.axaml) es lo que da prioridad visual al popup, sin teñir el color de fondo. -->
-  <SolidColorBrush x:Key="ModalOverlayBrush" Color="Transparent" />
+  <!-- Superposición de modales: negro puro a ~15% de opacidad, independiente de la rampa Ink (que se
+       invierte entre temas — blanco en Dark, negro en Light) para que el fondo SIEMPRE se oscurezca en
+       vez de aclararse en modo oscuro. Da prioridad visual al diálogo y (vía ModalOverlayHost, ver
+       controls/ModalOverlayHost.cs) bloquea los clics sobre el resto de la ventana mientras está abierto. -->
+  <SolidColorBrush x:Key="ModalOverlayBrush" Color="#000000" Opacity="0.15" />
 
   <!-- Chips flotantes del grafo de sesiones: superficie semi-transparente. -->
   <SolidColorBrush x:Key="GraphChipBackgroundBrush" Color="{DynamicResource PanelBackgroundColor}" Opacity="0.80" />
