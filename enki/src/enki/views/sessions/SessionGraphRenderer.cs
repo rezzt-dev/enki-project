@@ -748,7 +748,7 @@ public static class SessionGraphRenderer
                     overlayCtx.save();
                     overlayCtx.textAlign = 'center';
                     overlayCtx.textBaseline = 'bottom';
-                    overlayCtx.fillStyle = 'rgba(255,255,255,0.7)';
+                    overlayCtx.fillStyle = THEME.ink70;
                     clusters.forEach(function (members, session) {
                       let sx = 0, minY = Infinity;
                       members.forEach(function (n) { sx += n.x; if (n.y < minY) minY = n.y; });
@@ -778,7 +778,7 @@ public static class SessionGraphRenderer
 
                     const scale = screenScale();
                     affinityCtx.save();
-                    affinityCtx.strokeStyle = '#FFFFFF';
+                    affinityCtx.strokeStyle = THEME.ink80;
                     affinityCtx.globalAlpha = AFFINITY_ALPHA;
                     affinityCtx.lineWidth = 0.6 * scale;
                     allSessionGroups.forEach(function (members) {
@@ -1094,13 +1094,18 @@ public static class SessionGraphRenderer
         public required string LinkManual;
         public required string Particle;
         public required string Danger;
+        public required string Ink;
+        public required string Ink70;
+        public required string Ink80;
         public required string TooltipBackground;
         public required string TooltipForeground;
         public required string TooltipBorder;
 
         public static GraphTheme FromApp() => new()
         {
-            Background = BuildPremiumBackground(FindColor("AppBackgroundAltBrush", "#0D0D0D")),
+            Background = BuildPremiumBackground(
+                FindColor("AppBackgroundAltBrush", "#0D0D0D"),
+                FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.05)),
             NodeActive = FindColor("InkBrush", "#FFFFFF"),
             // Bumped up from a barely-there 0.12 for the same reason LinkManual was bumped below: an
             // auto-derived [[wikilink]] edge is real, deliberate data (the user typed the link), and at
@@ -1113,6 +1118,9 @@ public static class SessionGraphRenderer
             LinkManual = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.9),
             Particle = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.5),
             Danger = FindColor("DangerBrush", "#F87171"),
+            Ink = FindColor("InkBrush", "#FFFFFF"),
+            Ink70 = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.7),
+            Ink80 = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.8),
             TooltipBackground = FindColor("PanelBackgroundBrush", "#1B1B1B"),
             TooltipForeground = FindColor("TextPrimaryBrush", "#F5F5F5"),
             TooltipBorder = FindColor("Ink20", "rgba(255,255,255,0.2)"),
@@ -1122,10 +1130,11 @@ public static class SessionGraphRenderer
         /// background color — this is what actually reads as "premium" instead of a flat fill, and because
         /// it's set as the document's <c>html/body</c> background (see the surrounding <c>&lt;style&gt;</c>
         /// block), it covers the graph panel's full rectangle with no seam, whether or not the canvases have
-        /// finished sizing themselves yet.</summary>
-        private static string BuildPremiumBackground(string baseColor) =>
-            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 1.6px) 0 0 / 26px 26px, "
-            + "radial-gradient(ellipse 70% 55% at 50% 28%, rgba(255,255,255,0.05), rgba(255,255,255,0) 72%), "
+        /// finished sizing themselves yet. Uses the tema activo's <c>InkBrush</c> para que la textura respete
+        /// tanto temas claros como oscuros.</summary>
+        private static string BuildPremiumBackground(string baseColor, string inkRgba) =>
+            $"radial-gradient(circle at 1px 1px, {inkRgba} 1px, transparent 1.6px) 0 0 / 26px 26px, "
+            + $"radial-gradient(ellipse 70% 55% at 50% 28%, {inkRgba}, rgba(0,0,0,0) 72%), "
             + baseColor;
 
         private static string FindColor(string key, string fallback, double? overrideAlpha = null)

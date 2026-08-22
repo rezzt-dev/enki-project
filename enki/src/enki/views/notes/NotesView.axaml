@@ -14,14 +14,9 @@
 
   <!-- Atajos de gestión de pestañas — el foco vive casi siempre dentro del AvaloniaEdit del editor
        activo, pero ninguno de estos gestos es algo que AvaloniaEdit maneje por su cuenta, así que el
-       KeyDown sigue subiendo sin interceptar hasta llegar aquí. -->
-  <UserControl.KeyBindings>
-    <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseActiveEditorCommand}" />
-    <KeyBinding Gesture="Ctrl+Tab" Command="{Binding SelectNextEditorCommand}" />
-    <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding SelectPreviousEditorCommand}" />
-    <KeyBinding Gesture="Ctrl+PageDown" Command="{Binding SelectNextEditorCommand}" />
-    <KeyBinding Gesture="Ctrl+PageUp" Command="{Binding SelectPreviousEditorCommand}" />
-  </UserControl.KeyBindings>
+       KeyDown sigue subiendo sin interceptar hasta llegar aquí. Remapeables (propuesta 29,
+       docs/propuesta-nuevas-funcionalidades.md), así que ya no son literales aquí — ver
+       NotesView.axaml.cs (BuildKeyBindings). -->
 
   <UserControl.DataTemplates>
     <!-- Plantilla recursiva: un ItemsControl bindado a Children reutiliza esta misma plantilla
@@ -270,6 +265,13 @@
                                 <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
                               </MenuItem.Icon>
                             </MenuItem>
+                            <MenuItem Header="{loc:Tr Notes_ExportHtmlMenuItem}"
+                                      Command="{Binding #Root.((vm:NotesViewModel)DataContext).ExportNoteAsHtmlCommand}"
+                                      CommandParameter="{Binding}">
+                              <MenuItem.Icon>
+                                <mi:MaterialIcon Kind="FileExportOutline" Width="14" Height="14" />
+                              </MenuItem.Icon>
+                            </MenuItem>
                             <MenuItem Header="{loc:Tr Common_Delete}"
                                       Command="{Binding #Root.((vm:NotesViewModel)DataContext).DeleteNoteCommand}"
                                       CommandParameter="{Binding}">
@@ -337,8 +339,9 @@
            (folder/session side panels below) — this bar sits flush against the window's own top edge,
            right under the floating window controls' reserved clearance (see MainWindow.axaml), so any
            shade other than the plain app background shows up as a seam right at that boundary. -->
-      <Border Grid.Row="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
-              Background="{DynamicResource AppBackgroundBrush}">
+      <Border x:Name="TabStripBar" Grid.Row="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+              Background="{DynamicResource AppBackgroundBrush}"
+              IsVisible="{Binding !IsZenMode}">
         <Grid ColumnDefinitions="*,Auto">
           <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <!-- El botón "+" vive dentro de este mismo StackPanel horizontal, como un elemento más

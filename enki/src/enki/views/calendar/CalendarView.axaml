@@ -155,7 +155,7 @@
                IsOpen="{Binding #ChipToggle.IsChecked, Mode=TwoWay}">
           <Border Classes="calendar-popover" Width="280">
             <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CalendarDetailBodyTemplate}" />
-          </Border>
+     </Border>
         </Popup>
       </Panel>
     </DataTemplate>
@@ -215,7 +215,7 @@
                IsOpen="{Binding #AgendaCardToggle.IsChecked, Mode=TwoWay}">
           <Border Classes="calendar-popover" Width="280">
             <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CalendarDetailBodyTemplate}" />
-          </Border>
+     </Border>
         </Popup>
       </Panel>
     </DataTemplate>
@@ -284,14 +284,14 @@
                 AutomationProperties.Name="{loc:Tr Calendar_Item_ResizeTooltip}"
                 Initialized="ResizeHandle_Initialized">
           <Rectangle />
-        </Border>
+   </Border>
 
         <Popup PlacementTarget="{Binding #TimedChipToggle}" Placement="Right" VerticalOffset="0"
                IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #TimedChipToggle}"
                IsOpen="{Binding #TimedChipToggle.IsChecked, Mode=TwoWay}">
           <Border Classes="calendar-popover" Width="280">
             <ContentControl Content="{Binding Item}" ContentTemplate="{StaticResource CalendarDetailBodyTemplate}" />
-          </Border>
+     </Border>
         </Popup>
       </Panel>
     </DataTemplate>
@@ -390,11 +390,11 @@
                       <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
                                     AutomationProperties.Name="{Binding Label}" />
                     </Grid>
-                  </Border>
+              </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-          </Border>
+     </Border>
         </StackPanel>
 
         <!-- ===================== Búsqueda — doc §2: "underline search" (TextBox.search, mismo
@@ -494,17 +494,17 @@
                                    IsVisible="{Binding HasParentContext}" />
                       </StackPanel>
                     </Grid>
-                  </Border>
+              </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-          </Border>
+     </Border>
           <TextBlock Text="{loc:Tr Calendar_Sidebar_UnscheduledHint}" Classes="faint" FontSize="9.5" TextWrapping="Wrap" />
         </StackPanel>
 
         </StackPanel>
         </ScrollViewer>
-      </Border>
+  </Border>
 
       <!-- ===================== Contenido: barra superior + vista activa ===================== -->
       <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" Margin="20,0,0,0">
@@ -631,7 +631,7 @@
                                 Classes.selected="{Binding IsSelected}" HorizontalAlignment="Left">
                           <TextBlock Text="{Binding DayLabel}" Classes="calendar-day-number"
                                      Classes.today="{Binding IsToday}" Classes.outside="{Binding !IsCurrentMonth}" />
-                        </Border>
+                   </Border>
 
                         <StackPanel Grid.Row="1" Spacing="2" Margin="0,4,0,0">
                           <ItemsControl ItemsSource="{Binding VisibleItems}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
@@ -649,16 +649,16 @@
                                 <TextBlock Text="{Binding OverflowPopoverHeaderLabel}" Classes="eyebrow" FontSize="10" />
                                 <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
                               </StackPanel>
-                            </Border>
+                       </Border>
                           </Popup>
                         </StackPanel>
                       </Grid>
                     </Grid>
-                  </Border>
+              </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-          </Border>
+     </Border>
         </ScrollViewer>
 
         <!-- ===================== Vistas Semana/Día (comparten CalendarWeekColumnViewModel —
@@ -686,7 +686,7 @@
                   <Border Classes="calendar-week-header" Classes.today="{Binding IsToday}">
                     <TextBlock Text="{Binding DayLabel}" Classes="eyebrow calendar-week-header-label"
                                Classes.today="{Binding IsToday}" FontSize="11.5" HorizontalAlignment="Center" />
-                  </Border>
+             </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -725,7 +725,7 @@
                       </ContextMenu>
                     </Border.ContextMenu>
                     <ItemsControl ItemsSource="{Binding AllDayItems}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
-                  </Border>
+             </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -1004,7 +1004,7 @@
                         </Button>
                       </Grid>
                     </StackPanel>
-                  </Border>
+             </Border>
                 </Popup>
               </StackPanel>
 
@@ -1029,7 +1029,6 @@
               <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
-
         </Grid>
       </Border>
     </Border>

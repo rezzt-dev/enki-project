@@ -938,6 +938,7 @@
   <data name="Settings_Navigation_ToNotes" xml:space="preserve"><value>Ir a Notas</value></data>
   <data name="Settings_Navigation_ToSessions" xml:space="preserve"><value>Ir a Sesiones</value></data>
   <data name="Settings_Navigation_ToSkills" xml:space="preserve"><value>Ir a Habilidades</value></data>
+  <data name="Settings_Navigation_ToStatistics" xml:space="preserve"><value>Ir a Estadísticas</value></data>
   <data name="Settings_Navigation_ToTrash" xml:space="preserve"><value>Ir a Papelera</value></data>
   <data name="Settings_Notifications_Bell_Description" xml:space="preserve"><value>Mostrar la campana de notificaciones en la barra de título.</value></data>
   <data name="Settings_Notifications_Bell_Label" xml:space="preserve"><value>Campana de notificaciones</value></data>
@@ -1199,4 +1200,204 @@ Feliz escritura.</value></data>
   <data name="Notification_NoteDeletedWithBacklinks_Notes_other" xml:space="preserve"><value>{0} notas</value></data>
   <data name="Notification_NoteRenameCollision_Title" xml:space="preserve"><value>Nombre ya en uso</value></data>
   <data name="Notification_NoteRenameCollision_Message" xml:space="preserve"><value>Ya existía una nota con ese nombre — se guardó como «{0}» en su lugar.</value></data>
+  <data name="Settings_Appearance_Theme_NewThemeButton" xml:space="preserve"><value>New theme</value></data>
+  <data name="Settings_Appearance_Theme_NewThemeName" xml:space="preserve"><value>New theme</value></data>
+  <data name="Settings_Appearance_Theme_EditorTitle" xml:space="preserve"><value>Theme editor</value></data>
+  <data name="Settings_Appearance_Theme_EditorNamePlaceholder" xml:space="preserve"><value>Theme name</value></data>
+  <data name="Settings_Appearance_Theme_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="Settings_Appearance_Theme_SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="Settings_Appearance_Theme_ResetButton" xml:space="preserve"><value>Reset</value></data>
+  <data name="Settings_Appearance_Theme_ExportButton" xml:space="preserve"><value>Export</value></data>
+  <data name="Settings_Appearance_Theme_Category_Backgrounds" xml:space="preserve"><value>Backgrounds</value></data>
+  <data name="Settings_Appearance_Theme_Category_Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Settings_Appearance_Theme_Category_Ink" xml:space="preserve"><value>Ink &amp; accent</value></data>
+  <data name="Settings_Appearance_Theme_Category_Scroll" xml:space="preserve"><value>Scroll</value></data>
+  <data name="Settings_Appearance_Theme_Category_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Settings_Appearance_Theme_AppBackground" xml:space="preserve"><value>App background</value></data>
+  <data name="Settings_Appearance_Theme_AppBackgroundAlt" xml:space="preserve"><value>Alt background</value></data>
+  <data name="Settings_Appearance_Theme_SidebarBackground" xml:space="preserve"><value>Sidebar</value></data>
+  <data name="Settings_Appearance_Theme_Surface" xml:space="preserve"><value>Surface</value></data>
+  <data name="Settings_Appearance_Theme_PanelBackground" xml:space="preserve"><value>Panel</value></data>
+  <data name="Settings_Appearance_Theme_PanelBackgroundHover" xml:space="preserve"><value>Panel hover</value></data>
+  <data name="Settings_Appearance_Theme_InputBackground" xml:space="preserve"><value>Input</value></data>
+  <data name="Settings_Appearance_Theme_RowBackground" xml:space="preserve"><value>Row</value></data>
+  <data name="Settings_Appearance_Theme_RowBackgroundHover" xml:space="preserve"><value>Row hover</value></data>
+  <data name="Settings_Appearance_Theme_TextPrimary" xml:space="preserve"><value>Primary text</value></data>
+  <data name="Settings_Appearance_Theme_TextSecondary" xml:space="preserve"><value>Secondary text</value></data>
+  <data name="Settings_Appearance_Theme_TextMuted" xml:space="preserve"><value>Muted text</value></data>
+  <data name="Settings_Appearance_Theme_Ink" xml:space="preserve"><value>Ink</value></data>
+  <data name="Settings_Appearance_Theme_InkOn" xml:space="preserve"><value>Ink inverse</value></data>
+  <data name="Settings_Appearance_Theme_Accent" xml:space="preserve"><value>Accent</value></data>
+  <data name="Settings_Appearance_Theme_ScrollTrack" xml:space="preserve"><value>Scroll track</value></data>
+  <data name="Settings_Appearance_Theme_Danger" xml:space="preserve"><value>Danger</value></data>
+  <data name="Settings_Appearance_Theme_Success" xml:space="preserve"><value>Success</value></data>
+  <!-- ===================== Additional keys (source fallback) ===================== -->
+  <data name="CommandPalette_Action_AddKanbanColumn" xml:space="preserve"><value>New Kanban column</value></data>
+  <data name="CommandPalette_Action_ImportNotes" xml:space="preserve"><value>Import notes</value></data>
+  <data name="CommandPalette_Action_OpenCommunitySkills" xml:space="preserve"><value>Open community Skills</value></data>
+  <data name="CommandPalette_Action_OpenDailyNote" xml:space="preserve"><value>Open today's daily note</value></data>
+  <data name="CommandPalette_Action_OpenGlobalSearch" xml:space="preserve"><value>Search everything</value></data>
+  <data name="CommandPalette_Action_OpenNotifications" xml:space="preserve"><value>Open Notifications</value></data>
+  <data name="CommandPalette_Action_OpenQuickSwitcher" xml:space="preserve"><value>Go to note…</value></data>
+  <data name="CommandPalette_Action_OpenReminders" xml:space="preserve"><value>Open Reminders</value></data>
+  <data name="CommandPalette_Action_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
+  <data name="CommandPalette_Action_OpenVaultFolder" xml:space="preserve"><value>Open vault folder</value></data>
+  <data name="CommandPalette_Action_QuickNewNote" xml:space="preserve"><value>New note</value></data>
+  <data name="CommandPalette_Action_SyncPolarNow" xml:space="preserve"><value>Sync Polar now</value></data>
+  <data name="CommandPalette_Action_ToggleSidebar" xml:space="preserve"><value>Toggle sidebar</value></data>
+  <data name="CommandPalette_Action_ToggleTheme" xml:space="preserve"><value>Toggle light/dark theme</value></data>
+  <data name="CommandPalette_Action_ToggleZenMode" xml:space="preserve"><value>Toggle focus mode</value></data>
+  <data name="CommandPalette_Action_ZoomIn" xml:space="preserve"><value>Zoom in</value></data>
+  <data name="CommandPalette_Action_ZoomOut" xml:space="preserve"><value>Zoom out</value></data>
+  <data name="CommandPalette_Action_ZoomReset" xml:space="preserve"><value>Reset zoom</value></data>
+  <data name="CommandPalette_GoToFormat" xml:space="preserve"><value>Go to {0}</value></data>
+  <data name="CommandPalette_NoResults" xml:space="preserve"><value>No matching commands</value></data>
+  <data name="CommandPalette_SearchPlaceholder" xml:space="preserve"><value>Type a command…</value></data>
+  <data name="Editor_Toolbar_ToggleZenMode_Tooltip" xml:space="preserve"><value>Toggle focus mode</value></data>
+  <data name="Notes_ExportHtmlMenuItem" xml:space="preserve"><value>Export as HTML…</value></data>
+  <data name="Export_HtmlDialog_Title" xml:space="preserve"><value>Export note as HTML</value></data>
+  <data name="Export_HtmlFileType" xml:space="preserve"><value>HTML file</value></data>
+  <data name="Notification_NoteExportSuccess_Title" xml:space="preserve"><value>Note exported</value></data>
+  <data name="Notification_NoteExportSuccess_Message" xml:space="preserve"><value>Saved to {0}</value></data>
+  <data name="Notification_NoteExportFailed_Title" xml:space="preserve"><value>Export failed</value></data>
+  <data name="Settings_Appearance_CustomTheme_Title" xml:space="preserve"><value>Custom theme</value></data>
+  <data name="Settings_Appearance_CustomTheme_Description" xml:space="preserve"><value>Download the default CSS template, change only its color values, and import it back. Only colors are customizable — the template's structure can't change, so a file with different variables is rejected.</value></data>
+  <data name="Settings_Appearance_CustomTheme_DownloadTemplateButton" xml:space="preserve"><value>Download template</value></data>
+  <data name="Settings_Appearance_CustomTheme_ImportButton" xml:space="preserve"><value>Import theme</value></data>
+  <data name="Settings_Appearance_CustomTheme_Empty" xml:space="preserve"><value>Import a theme to see it here.</value></data>
+  <data name="Settings_Appearance_CustomTheme_ActiveLabel" xml:space="preserve"><value>Active</value></data>
+  <data name="Settings_Appearance_CustomTheme_ActivateButton" xml:space="preserve"><value>Activate</value></data>
+  <data name="Settings_Appearance_CustomTheme_DeleteButton" xml:space="preserve"><value>Delete theme</value></data>
+  <data name="Settings_Appearance_CustomTheme_UseSystemThemeButton" xml:space="preserve"><value>Use system theme</value></data>
+  <data name="Settings_Appearance_CustomTheme_ActiveHint" xml:space="preserve"><value>Disabled while a custom theme is active.</value></data>
+  <data name="Settings_Appearance_CustomTheme_TemplateSaveDialog_Title" xml:space="preserve"><value>Save theme template</value></data>
+  <data name="Settings_Appearance_CustomTheme_ImportDialog_Title" xml:space="preserve"><value>Import custom theme</value></data>
+  <data name="Settings_Appearance_CustomTheme_CssFileType" xml:space="preserve"><value>CSS file</value></data>
+  <data name="Settings_Appearance_CustomTheme_Error_NoRootBlock" xml:space="preserve"><value>The file doesn't have a :root { ... } block.</value></data>
+  <data name="Settings_Appearance_CustomTheme_Error_MissingVariables" xml:space="preserve"><value>Missing variables: {0}.</value></data>
+  <data name="Settings_Appearance_CustomTheme_Error_UnexpectedVariables" xml:space="preserve"><value>This file has variables the template doesn't recognize: {0}. Only the template's color values can be changed — variables can't be added or removed.</value></data>
+  <data name="Settings_Appearance_CustomTheme_Error_InvalidColorValue" xml:space="preserve"><value>Invalid color value: {0}. Use the #RRGGBB format.</value></data>
+  <data name="Settings_Shortcuts_ApplyAnywayButton" xml:space="preserve"><value>Use anyway</value></data>
+  <data name="Settings_Shortcuts_CaptureHint" xml:space="preserve"><value>Click, then press a new key combination · Esc to cancel</value></data>
+  <data name="Settings_Shortcuts_Category_Reminders" xml:space="preserve"><value>Reminders Shortcuts</value></data>
+  <data name="Settings_Shortcuts_Category_Trash" xml:space="preserve"><value>Trash Shortcuts</value></data>
+  <data name="Settings_Shortcuts_CommandPalette" xml:space="preserve"><value>Open the command palette</value></data>
+  <data name="Settings_Shortcuts_ConflictMessage" xml:space="preserve"><value>Already used by "{0}". Use it anyway, or press a different combination.</value></data>
+  <data name="Settings_Shortcuts_EmptyTrash" xml:space="preserve"><value>Empty the trash</value></data>
+  <data name="Settings_Shortcuts_FindReplace" xml:space="preserve"><value>Find and replace in the note</value></data>
+  <data name="Settings_Shortcuts_NextTab" xml:space="preserve"><value>Switch to the next tab</value></data>
+  <data name="Settings_Shortcuts_PreviousTab" xml:space="preserve"><value>Switch to the previous tab</value></data>
+  <data name="Settings_Shortcuts_QuickSwitcher" xml:space="preserve"><value>Open the quick switcher</value></data>
+  <data name="Settings_Shortcuts_ReferenceSectionNote" xml:space="preserve"><value>Kanban and the PDF viewer use single-key shortcuts that can't be remapped yet, shown here for reference.</value></data>
+  <data name="Settings_Shortcuts_ReferenceSectionTitle" xml:space="preserve"><value>Fixed Shortcuts (Reference Only)</value></data>
+  <data name="Settings_Shortcuts_RemindersNew" xml:space="preserve"><value>Create a new reminder</value></data>
+  <data name="Settings_Shortcuts_RequiresModifierWarning" xml:space="preserve"><value>Shortcuts must include Ctrl, Alt, or Cmd (function keys are the only exception).</value></data>
+  <data name="Settings_Shortcuts_ResetAllButton" xml:space="preserve"><value>Restore Default Shortcuts</value></data>
+  <data name="Settings_Shortcuts_ResetRowTooltip" xml:space="preserve"><value>Reset to default</value></data>
+  <data name="Settings_Shortcuts_ToggleZenMode" xml:space="preserve"><value>Toggle focus mode</value></data>
+  <data name="Settings_Shortcuts_ZoomIn" xml:space="preserve"><value>Increase zoom</value></data>
+  <data name="Settings_Shortcuts_ZoomOut" xml:space="preserve"><value>Decrease zoom</value></data>
+  <data name="Notification_ThemeTemplateExported_Title" xml:space="preserve"><value>Template exported</value></data>
+  <data name="Notification_ThemeTemplateExported_Message" xml:space="preserve"><value>Saved to {0}</value></data>
+  <data name="Notification_ThemeTemplateExportFailed_Title" xml:space="preserve"><value>Export failed</value></data>
+  <data name="Notification_ThemeImportFailed_Title" xml:space="preserve"><value>Import failed</value></data>
+  <data name="Notification_ThemeImported_Title" xml:space="preserve"><value>Theme imported</value></data>
+  <data name="Notification_ThemeImported_Message" xml:space="preserve"><value>'{0}' was imported and activated.</value></data>
+  <!-- ===================== Additional keys (source fallback) ===================== -->
+  <data name="Settings_Appearance_Theme_Highlight" xml:space="preserve"><value>Highlight</value></data>
+  <data name="Settings_Appearance_Theme_DuplicateButton" xml:space="preserve"><value>Duplicate</value></data>
+  <data name="Settings_Appearance_Theme_DuplicateSuffix" xml:space="preserve"><value>(copy)</value></data>
+  <data name="Settings_Appearance_Theme_ExportDialogTitle" xml:space="preserve"><value>Export theme</value></data>
+  <data name="Settings_Appearance_CustomTheme_DuplicateButton" xml:space="preserve"><value>Duplicate</value></data>
+  <data name="Settings_Appearance_CustomTheme_EditButton" xml:space="preserve"><value>Edit</value></data>
+
+
+
+
+
+  <!-- ===================== Configuración del Dashboard (propuesta 27) ===================== -->
+  <data name="Settings_Nav_Dashboard" xml:space="preserve"><value>Panel</value></data>
+  <data name="Settings_Dashboard_Title" xml:space="preserve"><value>Diseño del panel</value></data>
+  <data name="Settings_Dashboard_Description" xml:space="preserve"><value>Elegid qué secciones del panel aparecen y en qué orden.</value></data>
+  <data name="Settings_Dashboard_SectionList_Title" xml:space="preserve"><value>Secciones</value></data>
+  <data name="Settings_Dashboard_Visible_Label" xml:space="preserve"><value>Visible</value></data>
+  <data name="Settings_Dashboard_DragHandleTooltip" xml:space="preserve"><value>Arrastrar para reordenar</value></data>
+  <data name="Settings_Dashboard_CannotHideLast_Title" xml:space="preserve"><value>No se puede ocultar la última sección</value></data>
+  <data name="Settings_Dashboard_CannotHideLast_Message" xml:space="preserve"><value>Debe quedar al menos una sección visible en el panel.</value></data>
+  <data name="DashboardSection_QuickAccess" xml:space="preserve"><value>Accesos rápidos</value></data>
+  <data name="DashboardSection_Today" xml:space="preserve"><value>Hoy</value></data>
+  <data name="DashboardSection_Vault" xml:space="preserve"><value>Almacén</value></data>
+  <data name="DashboardSection_Activity" xml:space="preserve"><value>Actividad</value></data>
+  <data name="DashboardSection_Sessions" xml:space="preserve"><value>Sesiones</value></data>
+  <data name="DashboardSection_BoardTasks" xml:space="preserve"><value>Tareas del tablero</value></data>
+  <data name="DashboardSection_RecentNotes" xml:space="preserve"><value>Notas recientes</value></data>
+  <data name="Settings_Dashboard_SectionList_Subtitle" xml:space="preserve"><value>Arrastra una fila para reordenarla, o usa las flechas. Desactiva una sección para ocultarla del panel.</value></data>
+  <data name="Settings_Dashboard_VisibleCount" xml:space="preserve"><value>{0} de {1} visibles</value></data>
+  <data name="Settings_Dashboard_Reset" xml:space="preserve"><value>Restablecer</value></data>
+  <data name="Settings_Dashboard_MoveUp_Tooltip" xml:space="preserve"><value>Subir</value></data>
+  <data name="Settings_Dashboard_MoveDown_Tooltip" xml:space="preserve"><value>Bajar</value></data>
+  <data name="Settings_Dashboard_Preview_Title" xml:space="preserve"><value>Vista previa</value></data>
+  <data name="Settings_Dashboard_Preview_Subtitle" xml:space="preserve"><value>Vista previa en vivo de tu panel, en este orden</value></data>
+  <data name="Settings_Dashboard_Hidden_Label" xml:space="preserve"><value>Oculta</value></data>
+  <data name="DashboardSection_QuickAccess_Description" xml:space="preserve"><value>Accesos directos a Calendario, Recordatorios, Notificaciones y Ajustes</value></data>
+  <data name="DashboardSection_Today_Description" xml:space="preserve"><value>Elementos que vencen hoy o están atrasados, entre Kanban, Polar y Recordatorios</value></data>
+  <data name="DashboardSection_Vault_Description" xml:space="preserve"><value>Notas, sesiones y tamaño en disco del almacén actual</value></data>
+  <data name="DashboardSection_Activity_Description" xml:space="preserve"><value>Notificaciones recientes y el resumen de tus tareas de Polar</value></data>
+  <data name="DashboardSection_Sessions_Description" xml:space="preserve"><value>Número de notas y enlaces del grafo combinado de sesiones</value></data>
+  <data name="DashboardSection_BoardTasks_Description" xml:space="preserve"><value>Una vista en vivo de las tres columnas principales del tablero Kanban</value></data>
+  <data name="DashboardSection_RecentNotes_Description" xml:space="preserve"><value>Las notas modificadas más recientemente en el almacén</value></data>
+  <data name="Settings_Dashboard_Layout_Title" xml:space="preserve"><value>Organización</value></data>
+  <data name="Settings_Dashboard_Layout_Subtitle" xml:space="preserve"><value>Elige cómo se organizan las secciones visibles en la página.</value></data>
+  <data name="DashboardLayout_Classic_Title" xml:space="preserve"><value>Clásica</value></data>
+  <data name="DashboardLayout_Classic_Description" xml:space="preserve"><value>Una fila a todo lo ancho por sección, de arriba a abajo.</value></data>
+  <data name="DashboardLayout_InvertedPyramid_Title" xml:space="preserve"><value>Pirámide invertida</value></data>
+  <data name="DashboardLayout_InvertedPyramid_Description" xml:space="preserve"><value>Una sección destacada arriba, que se estrecha en filas más pequeñas hacia abajo.</value></data>
+  <data name="DashboardLayout_Lateral_Title" xml:space="preserve"><value>Patrón lateral</value></data>
+  <data name="DashboardLayout_Lateral_Description" xml:space="preserve"><value>Contenido principal a la izquierda, una barra lateral compacta de secciones menores a la derecha.</value></data>
+  <data name="DashboardLayout_ModularGrid_Title" xml:space="preserve"><value>Rejilla modular</value></data>
+  <data name="DashboardLayout_ModularGrid_Description" xml:space="preserve"><value>Secciones anchas y compactas combinadas en una rejilla uniforme.</value></data>
+  <data name="DashboardLayout_Mosaic_Title" xml:space="preserve"><value>Mosaico</value></data>
+  <data name="DashboardLayout_Mosaic_Description" xml:space="preserve"><value>Una sección protagonista junto a una combinación asimétrica de secciones menores.</value></data>
+  <data name="Nav_Habits" xml:space="preserve"><value>Hábitos</value></data>
+  <data name="Nav_Statistics" xml:space="preserve"><value>Estadísticas</value></data>
+  <data name="Habits_Eyebrow" xml:space="preserve"><value>Hábitos</value></data>
+  <data name="Habits_Title" xml:space="preserve"><value>Hábitos</value></data>
+  <data name="Habits_Subtitle" xml:space="preserve"><value>Un registro discreto de lo que haces cada día</value></data>
+  <data name="Habits_NewButton" xml:space="preserve"><value>Nuevo hábito</value></data>
+  <data name="Habits_EmptyState" xml:space="preserve"><value>Todavía no hay hábitos</value></data>
+  <data name="Habits_EmptyState_CreateButton" xml:space="preserve"><value>Crear hábito</value></data>
+  <data name="Habits_ToggleTodayTooltip" xml:space="preserve"><value>Marcar hoy</value></data>
+  <data name="Habits_ArchiveTooltip" xml:space="preserve"><value>Archivar</value></data>
+  <data name="Habits_ArchiveModal_Title" xml:space="preserve"><value>Archivar hábito</value></data>
+  <data name="Habits_ArchiveModal_Message" xml:space="preserve"><value>Esto oculta el hábito de la lista, pero conserva su historial. No se puede deshacer desde aquí.</value></data>
+  <data name="Habits_Editor_Eyebrow" xml:space="preserve"><value>Hábito</value></data>
+  <data name="Habits_Editor_Title" xml:space="preserve"><value>Nuevo hábito</value></data>
+  <data name="Habits_Editor_NameFieldLabel" xml:space="preserve"><value>Nombre</value></data>
+  <data name="Habits_Editor_NamePlaceholder" xml:space="preserve"><value>p. ej. Meditar</value></data>
+  <data name="Habits_Editor_FrequencyFieldLabel" xml:space="preserve"><value>Frecuencia</value></data>
+  <data name="Habits_Editor_DaysFieldLabel" xml:space="preserve"><value>Días</value></data>
+  <data name="Habits_Frequency_Daily" xml:space="preserve"><value>Diario</value></data>
+  <data name="Habits_Frequency_Weekly" xml:space="preserve"><value>Semanal</value></data>
+  <data name="Habits_Frequency_SpecificDays" xml:space="preserve"><value>Días concretos</value></data>
+  <data name="DashboardSection_Habits" xml:space="preserve"><value>Hábitos</value></data>
+  <data name="DashboardSection_Habits_Description" xml:space="preserve"><value>Los hábitos de hoy y tu constancia de un vistazo.</value></data>
+  <data name="Dashboard_Habits_GoLabel" xml:space="preserve"><value>Ir a hábitos</value></data>
+  <data name="Dashboard_Habits_EmptyState" xml:space="preserve"><value>Todavía no hay hábitos</value></data>
+  <data name="Dashboard_Habits_CreateFirstHabit" xml:space="preserve"><value>Crear hábito</value></data>
+  <data name="Statistics_Eyebrow" xml:space="preserve"><value>Insights</value></data>
+  <data name="Statistics_Title" xml:space="preserve"><value>Estadísticas</value></data>
+  <data name="Statistics_Subtitle" xml:space="preserve"><value>Tendencias de notas, tareas y hábitos</value></data>
+  <data name="Statistics_Range_Week" xml:space="preserve"><value>Semana</value></data>
+  <data name="Statistics_Range_Month" xml:space="preserve"><value>Mes</value></data>
+  <data name="Statistics_Range_AllTime" xml:space="preserve"><value>Todo</value></data>
+  <data name="Statistics_EmptyState" xml:space="preserve"><value>Todavía no hay actividad suficiente — vuelve cuando lleves un tiempo usando Enki.</value></data>
+  <data name="Statistics_Tile_Notes" xml:space="preserve"><value>Notas esta semana</value></data>
+  <data name="Statistics_Tile_TasksCompleted" xml:space="preserve"><value>Tareas completadas</value></data>
+  <data name="Statistics_Tile_HabitConsistency" xml:space="preserve"><value>Constancia de hábitos</value></data>
+  <data name="Statistics_Tile_NoHabits" xml:space="preserve"><value>Sin hábitos registrados</value></data>
+  <data name="Statistics_Chart_ActivityTitle" xml:space="preserve"><value>Actividad por semana</value></data>
+  <data name="Statistics_Chart_NotesLegend" xml:space="preserve"><value>Notas</value></data>
+  <data name="Statistics_Chart_TasksLegend" xml:space="preserve"><value>Tareas completadas</value></data>
+  <data name="Statistics_Chart_HabitsTitle" xml:space="preserve"><value>Constancia de hábitos por semana</value></data>
+  <data name="Statistics_PolarNotLinkedNotice" xml:space="preserve"><value>Vincula tu cuenta de Polar en Ajustes para incluir aquí sus tareas.</value></data>
 </root>

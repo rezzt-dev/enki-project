@@ -165,6 +165,7 @@ public sealed class PolarTaskService
     public void SetTaskCompleted(PolarTask task, bool completed)
     {
         task.Completed = completed;
+        task.CompletedAtUtc = completed ? DateTime.UtcNow : null;
         Touch(task);
 
         foreach (var subtask in Store.Subtasks.Where(s => s.TaskId == task.Id && !s.IsDeleted))

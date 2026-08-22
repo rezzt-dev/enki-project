@@ -16,6 +16,15 @@ class Program
     {
         Trace.Listeners.Add(new ConsoleTraceListener());
 
+        // El motor WebView embebido (vista de impresión de notas, grafo de sesiones — ambos vía
+        // NativeWebView/WebViewHost) usa WPEWebKit en Linux. Su renderer DMA-BUF por defecto produce una
+        // superficie en negro/blanco con ciertas combinaciones de driver gráfico y compositor Wayland
+        // aunque el motor se reporte "instalado" y la navegación termine con éxito — variable de entorno
+        // estándar para forzar el camino de compatibilidad. Debe fijarse antes de que Avalonia inicialice
+        // cualquier NativeWebView, así que va aquí, antes de BuildAvaloniaApp.
+        if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("WEBKIT_DISABLE_DMABUF_RENDERER") is null)
+            Environment.SetEnvironmentVariable("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+
         // Fase 0 del roadmap de deficiencias (docs/analisis-proyecto/analisis-deficiencias-proyecto.md §2):
         // antes de esto, un fallo no controlado solo se veía en la consola (invisible en un WinExe en
         // Windows) y una tarea en segundo plano que fallaba desaparecía sin dejar rastro. Todo lo de abajo

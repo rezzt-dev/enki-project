@@ -11,12 +11,10 @@
              x:DataType="vm:RemindersViewModel"
              Focusable="True" Loaded="RemindersView_Loaded">
 
-  <!-- Atajos propios de la página (Fase 7 de docs/analisis-proyecto/roadmap.md): hasta aquí la vista solo
-       tenía los atajos globales del shell. Ctrl+N no choca con el editor abierto porque
-       RemindersViewModel.OpenCreateEditor no hace nada mientras ya haya un editor abierto. -->
-  <UserControl.KeyBindings>
-    <KeyBinding Gesture="Ctrl+N" Command="{Binding OpenCreateEditorCommand}" />
-  </UserControl.KeyBindings>
+  <!-- Atajo propio de la página (Fase 7 de docs/analisis-proyecto/roadmap.md): Ctrl+N no choca con el
+       editor abierto porque RemindersViewModel.OpenCreateEditor no hace nada mientras ya haya un editor
+       abierto. Remapeable (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) — ver
+       RemindersView.axaml.cs (BuildKeyBindings). -->
 
   <UserControl.DataTemplates>
     <!-- ===================== Celda del calendario (misma VM que Kanban, ver ReminderEditorViewModel) ===================== -->
@@ -118,7 +116,7 @@
                     <mi:MaterialIcon Kind="{Binding IconKind}" Width="17" Height="17"
                                       Foreground="{DynamicResource Ink70}"
                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  </Border>
+             </Border>
 
                   <StackPanel Grid.Column="1" Spacing="4" Margin="14,0">
                     <StackPanel Orientation="Horizontal" Spacing="7">
@@ -255,7 +253,7 @@
                       </Grid>
 
                     </StackPanel>
-                  </Border>
+             </Border>
                 </Popup>
               </StackPanel>
 
@@ -339,10 +337,9 @@
               <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
-
         </Grid>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: detalle de recordatorio ===================== -->
     <Border Classes="modal-overlay"
@@ -356,7 +353,7 @@
             <Border Width="44" Height="44" Background="{DynamicResource Ink05}">
               <mi:MaterialIcon Kind="{Binding IconKind}" Width="20" Height="20" Foreground="{DynamicResource Ink70}"
                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
+       </Border>
             <StackPanel Spacing="4" VerticalAlignment="Center">
               <TextBlock Text="{Binding StatusLabel}" Classes="faint" Classes.overdue="{Binding IsOverdue}" />
               <TextBlock Text="{Binding NotifyAtLabel}" Classes="muted" FontSize="12" />
@@ -400,8 +397,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: limpiar recordatorios ===================== -->
     <Border Classes="modal-overlay"
@@ -426,8 +423,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
   </Grid>
 </UserControl>

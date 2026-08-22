@@ -7,6 +7,58 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+Sistema de **temas personalizados** rediseñado para comportarse como un producto publicable:
+
+- El editor de temas incluye selector de color (`ColorPicker`) junto al campo HEX, botón de duplicar en
+  la lista y dentro del editor, y exportación con título y errores localizados.
+- El normalizador HEX acepta `#RGB`, `#RRGGBB` y variantes sin `#`/en minúsculas, en lugar de forzar a
+  negro cualquier formato que no fuera exactamente `#RRGGBB`.
+- El resaltado de búsqueda en Markdown y el fondo de la línea actual del editor ahora leen del tema
+  activo (`HighlightColor`/`InkBrush`) en vez de blanco/amarillo hardcodeados.
+- El grafo de sesiones deja de usar blancos literales para sus texturas y trazados; sigue el color de
+  tinta (`InkBrush`) del tema.
+- La ventana ya no arranca forzosamente en oscuro: `App.axaml` aplica la variante guardada antes de que
+  se muestre la ventana principal.
+- Las etiquetas del editor de temas se recargan al cambiar el idioma de la UI.
+
+Nueva funcionalidad: **paleta de comandos unificada** (propuesta 25 de
+`docs/propuesta-nuevas-funcionalidades.md`):
+
+- Atajo `Ctrl+Shift+K` abre un popup (mismo patrón de UI que el Quick Switcher y la búsqueda global) con
+  búsqueda por substring sobre el nombre de cada acción — no solo notas: navegar a cualquier sección de la
+  barra lateral, abrir Ajustes/Recordatorios/Notificaciones, alternar la barra lateral o el tema
+  claro/oscuro, zoom de interfaz, nota nueva/diaria, importar notas, alternar modo enfoque, nueva columna
+  Kanban, abrir la carpeta del vault, Skills de la comunidad y sincronizar Polar.
+- La lista de comandos se reconstruye cada vez que se abre el popup en vez de fijarse una sola vez al
+  arrancar, así que entradas que dependen de estado en vivo (qué secciones del sidebar están activas, si
+  hay una pestaña de nota abierta, si la cuenta Polar está vinculada) nunca quedan obsoletas ni se ofrecen
+  cuando no tendrían ningún efecto.
+- Ctrl+K a secas se dejó libre para el editor de notas (ya lo usa para insertar un enlace); el atajo de la
+  paleta sigue el mismo criterio que ya distingue Ctrl+F de Ctrl+Shift+F.
+
+Nueva funcionalidad: **modo enfoque/zen en el editor** (propuesta 7 de
+`docs/propuesta-nuevas-funcionalidades.md`):
+
+- Botón dedicado en la cabecera del editor (junto al de mostrar/ocultar panel lateral) y atajo
+  `Ctrl+Shift+Enter` que ocultan cabecera, barra de formato, tarjetas vinculadas y panel lateral de la nota
+  activa, además de la barra de pestañas y el sidebar de la app — dejando solo el cuerpo de la nota
+  centrado. `Escape` (con el foco en el editor) o el mismo atajo lo desactivan.
+- Es un modo compartido entre pestañas (activarlo desde una nota lo aplica a cualquiera que se abra
+  después) pero deliberadamente transitorio: no se persiste en disco y siempre arranca apagado al iniciar
+  la app o cambiar de vault.
+
+Nueva funcionalidad: **exportar notas a PDF/HTML y vista de impresión** (propuesta 6 de
+`docs/propuesta-nuevas-funcionalidades.md`):
+
+- "Exportar como HTML" (documento autónomo monocromo, con etiquetas incluidas) e "Imprimir / PDF" desde el
+  menú contextual de cada nota y desde la cabecera del editor.
+- La vista de impresión es un overlay a pantalla completa dentro de la ventana principal (no una ventana
+  secundaria, para respetar el zoom de interfaz) con previsualización real del documento, opción de
+  incluir o no las etiquetas, impresión vía diálogo del sistema y guardado como PDF — ambos a través del
+  motor WebView ya integrado, sin dependencias nuevas.
+- El render Markdown→HTML reutiliza el mismo parser que el live preview del editor e incrusta las imágenes
+  locales referenciadas como data URI para que el HTML exportado sea autocontenido.
+
 Cierra la Fase 10 (opcional) del roadmap de corrección de deficiencias (`docs/analisis-proyecto/roadmap.md`)
 — deuda técnica menor y mejoras de producto derivadas de la auditoría, cajón de sastre deliberado:
 

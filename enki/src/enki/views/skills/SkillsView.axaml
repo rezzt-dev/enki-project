@@ -432,8 +432,7 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>
-      </Border>
+        </Border>    </Border>
 
       <!-- ===================== Modal: pedir nombre (duplicar / copiar default) ===================== -->
       <Border Grid.Row="0" Grid.RowSpan="5" Classes="modal-overlay"
@@ -459,8 +458,7 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>
-      </Border>
+        </Border>    </Border>
 
       <!-- ===================== Modal: colisión de importación ===================== -->
       <Border Grid.Row="0" Grid.RowSpan="5" Classes="modal-overlay" IsVisible="{Binding HasImportConflicts}">
@@ -492,8 +490,7 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>
-      </Border>
+        </Border>    </Border>
 
     </Grid>
 

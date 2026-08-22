@@ -53,7 +53,7 @@
 
         <Border Grid.Column="3" Classes="card" Padding="14,9" VerticalAlignment="Center">
           <TextBlock Text="{Binding SessionsCountLabel}" Classes="faint" FontSize="10.5" />
-        </Border>
+   </Border>
       </Grid>
 
       <Grid Grid.Row="2" ColumnDefinitions="220,*" Margin="24,0,24,24">
@@ -117,7 +117,7 @@
                                           IsVisible="{Binding IsDefault}"
                                           ToolTip.Tip="{loc:Tr Sessions_DefaultBadgeTooltip}" />
                       </Grid>
-                    </Border>
+                </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -150,7 +150,7 @@
               </ItemsControl>
             </StackPanel>
           </Grid>
-        </Border>
+    </Border>
 
         <!-- ===================== Grafo (WebView + overlay nativo) ===================== -->
         <Border Grid.Column="1" x:Name="GraphHostPanel" ClipToBounds="True"
@@ -177,7 +177,7 @@
                         Margin="16" IsHitTestVisible="False">
               <Border Classes="graph-chip">
                 <TextBlock Text="{Binding GraphSummaryLabel}" Classes="faint" FontSize="10.5" />
-              </Border>
+         </Border>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16">
@@ -198,7 +198,7 @@
                     IsVisible="{Binding IsLinkMode}" MaxWidth="260" IsHitTestVisible="False">
               <TextBlock Classes="muted" FontSize="11" TextWrapping="Wrap"
                          Text="{loc:Tr Sessions_LinkModeInstructions}" />
-            </Border>
+     </Border>
           </Grid>
         </Border>
       </Grid>
@@ -242,8 +242,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: códigos de recuperación ===================== -->
     <Border Classes="modal-overlay" IsVisible="{Binding IsRecoveryCodesDialogOpen}"
@@ -270,7 +270,7 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-          </Border>
+     </Border>
 
           <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
             <Button Grid.Column="0" Classes="ghost" Command="{Binding CopyRecoveryCodesToClipboardCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
@@ -291,8 +291,8 @@
             <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_CloseButton, Converter={StaticResource UpperCaseConverter}}" />
           </Button>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: desbloquear sesión / olvidé mi contraseña ===================== -->
     <Border Classes="modal-overlay" IsVisible="{Binding SessionPendingUnlock, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
@@ -355,8 +355,8 @@
           </StackPanel>
 
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: eliminar sesión (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que los diálogos de confirmación de Kanban/Papelera; el mensaje (nombre de la
@@ -382,8 +382,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
   </Grid>
 </UserControl>

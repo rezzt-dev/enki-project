@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using enki.Services;
 using enki.ViewModels;
 
 namespace enki.Views;
@@ -28,9 +29,39 @@ public partial class NotesView : UserControl
     public NotesView()
     {
         InitializeComponent();
+
+        // Atajos de gestión de pestañas (propuesta 29, docs/propuesta-nuevas-funcionalidades.md): se
+        // reconstruyen cada vez que cambia el DataContext (una nueva instancia de NotesView por cada
+        // vuelta a la página, ver ContentControl.Content en MainWindow.axaml) o que Ajustes › Atajos
+        // remapea/restaura un gesto — suscrito solo mientras la vista está en el árbol visual para no
+        // acumular handlers sobre instancias ya descartadas.
+        DataContextChanged += (_, _) => BuildKeyBindings();
+        Loaded += (_, _) =>
+        {
+            ShortcutRegistry.Changed += BuildKeyBindings;
+            BuildKeyBindings();
+        };
+        Unloaded += (_, _) => ShortcutRegistry.Changed -= BuildKeyBindings;
     }
 
     private NotesViewModel? Vm => DataContext as NotesViewModel;
+
+    private void BuildKeyBindings()
+    {
+        if (Vm is not { } vm) return;
+
+        KeyBindings.Clear();
+        KeyBindings.Add(new KeyBinding { Gesture = ShortcutRegistry.GetGesture(ShortcutIds.NotesCloseTab), Command = vm.CloseActiveEditorCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = ShortcutRegistry.GetGesture(ShortcutIds.NotesNextTab), Command = vm.SelectNextEditorCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = ShortcutRegistry.GetGesture(ShortcutIds.NotesPreviousTab), Command = vm.SelectPreviousEditorCommand });
+        // Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — Escape para salir se
+        // maneja aparte, en EditorView.axaml.cs (solo mientras el foco está en el propio editor de texto).
+        KeyBindings.Add(new KeyBinding { Gesture = ShortcutRegistry.GetGesture(ShortcutIds.NotesToggleZenMode), Command = vm.ToggleZenModeCommand });
+
+        // Alias fijos de PageUp/PageDown (no remapeables) junto al gesto remapeable de Tab.
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.PageDown, KeyModifiers.Control), Command = vm.SelectNextEditorCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.PageUp, KeyModifiers.Control), Command = vm.SelectPreviousEditorCommand });
+    }
 
     // ===================== Folder selection =====================
 

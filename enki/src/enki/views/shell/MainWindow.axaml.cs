@@ -1,4 +1,5 @@
 using System;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -8,6 +9,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
+using enki.Services;
 using enki.ViewModels;
 
 namespace enki;
@@ -32,6 +34,12 @@ public partial class MainWindow : Window
 
         var viewModel = new MainWindowViewModel();
         DataContext = viewModel;
+
+        // Atajos globales del shell (propuesta 29, docs/propuesta-nuevas-funcionalidades.md): ya no son
+        // literales en MainWindow.axaml — se construyen aquí a partir de ShortcutRegistry y se reconstruyen
+        // cada vez que Ajustes › Atajos remapea o restaura uno, sin necesidad de reiniciar Enki.
+        BuildKeyBindings(viewModel);
+        ShortcutRegistry.Changed += () => BuildKeyBindings(viewModel);
 
         ApplyTitleBarMode(viewModel.UseCustomTitleBar);
         viewModel.PropertyChanged += (_, e) =>
@@ -64,6 +72,46 @@ public partial class MainWindow : Window
             // editing a skill silently dropped the last pending change.
             viewModel.Skills?.ActiveEditor?.FlushPendingSave();
         };
+    }
+
+    /// <summary>Rebuilds every remappable shell-level <c>KeyBinding</c> from the current effective gestures
+    /// in <see cref="ShortcutRegistry"/> — called once at startup and again whenever Ajustes › Atajos
+    /// remaps or resets a shortcut (see <see cref="ShortcutRegistry.Changed"/>). The numeric-keypad zoom
+    /// aliases (<c>Ctrl+Add</c>/<c>Ctrl+Subtract</c>/<c>Ctrl+NumPad0</c>) are intentionally not remappable —
+    /// they stay fixed alongside whatever gesture <see cref="ShortcutIds.ZoomIn"/>/<see cref="ShortcutIds.ZoomOut"/>/
+    /// <see cref="ShortcutIds.ZoomReset"/> currently resolve to, so numpad users keep zooming either way.</summary>
+    private void BuildKeyBindings(MainWindowViewModel vm)
+    {
+        KeyBindings.Clear();
+
+        void Add(string shortcutId, ICommand command, object? parameter = null)
+        {
+            var binding = new KeyBinding { Gesture = ShortcutRegistry.GetGesture(shortcutId), Command = command };
+            if (parameter is not null) binding.CommandParameter = parameter;
+            KeyBindings.Add(binding);
+        }
+
+        Add(ShortcutIds.GlobalSearch, vm.OpenGlobalSearchCommand);
+        Add(ShortcutIds.QuickSwitcher, vm.OpenQuickSwitcherCommand);
+        Add(ShortcutIds.CommandPalette, vm.OpenCommandPaletteCommand);
+        Add(ShortcutIds.QuickNewNote, vm.QuickNewNoteCommand);
+        Add(ShortcutIds.NavigateDashboard, vm.NavigateCommand, AppPage.Dashboard);
+        Add(ShortcutIds.NavigateNotes, vm.NavigateCommand, AppPage.Notes);
+        Add(ShortcutIds.NavigateKanban, vm.NavigateCommand, AppPage.Kanban);
+        Add(ShortcutIds.NavigateCalendar, vm.NavigateCommand, AppPage.Calendar);
+        Add(ShortcutIds.NavigateFiles, vm.NavigateCommand, AppPage.Files);
+        Add(ShortcutIds.NavigateSessions, vm.NavigateCommand, AppPage.Sessions);
+        Add(ShortcutIds.NavigateTrash, vm.NavigateCommand, AppPage.Trash);
+        Add(ShortcutIds.NavigateSkills, vm.NavigateCommand, AppPage.Skills);
+        Add(ShortcutIds.NavigateStatistics, vm.NavigateCommand, AppPage.Statistics);
+        Add(ShortcutIds.OpenSettings, vm.OpenSettingsCommand);
+        Add(ShortcutIds.ZoomIn, vm.ZoomInCommand);
+        Add(ShortcutIds.ZoomOut, vm.ZoomOutCommand);
+        Add(ShortcutIds.ZoomReset, vm.ZoomResetCommand);
+
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.Add, KeyModifiers.Control), Command = vm.ZoomInCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.Subtract, KeyModifiers.Control), Command = vm.ZoomOutCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.NumPad0, KeyModifiers.Control), Command = vm.ZoomResetCommand });
     }
 
     private void OnCtrlWheelChanged(object? sender, PointerWheelEventArgs e)
@@ -193,6 +241,14 @@ public partial class MainWindow : Window
         textBox?.SelectAll();
     }
 
+    private void CommandPalettePopup_Opened(object? sender, EventArgs e)
+    {
+        if (sender is not Popup popup) return;
+        var textBox = popup.FindDescendantOfType<TextBox>();
+        textBox?.Focus();
+        textBox?.SelectAll();
+    }
+
     /// <summary>Atajos de teclado dentro del buscador rápido: flechas para mover la selección,
     /// Enter para abrir la nota seleccionada, Escape la cierra.</summary>
     private void QuickSwitcherTextBox_KeyDown(object? sender, KeyEventArgs e)
@@ -217,6 +273,35 @@ public partial class MainWindow : Window
             case Key.Escape:
                 e.Handled = true;
                 vm.QuickSwitcher.IsOpen = false;
+                break;
+        }
+    }
+
+    /// <summary>Mismos atajos que <see cref="QuickSwitcherTextBox_KeyDown"/> para la paleta de comandos
+    /// (propuesta 25, docs/propuesta-nuevas-funcionalidades.md): flechas mueven la selección, Enter ejecuta
+    /// el comando seleccionado, Escape cierra el popup sin ejecutar nada.</summary>
+    private void CommandPaletteTextBox_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox textBox) return;
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        switch (e.Key)
+        {
+            case Key.Down:
+                e.Handled = true;
+                vm.CommandPalette.MoveSelectionDownCommand.Execute(null);
+                break;
+            case Key.Up:
+                e.Handled = true;
+                vm.CommandPalette.MoveSelectionUpCommand.Execute(null);
+                break;
+            case Key.Enter:
+                e.Handled = true;
+                vm.CommandPalette.OpenSelectedCommand.Execute(null);
+                break;
+            case Key.Escape:
+                e.Handled = true;
+                vm.CommandPalette.IsOpen = false;
                 break;
         }
     }

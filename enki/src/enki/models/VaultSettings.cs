@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace enki.Models;
 
 /// <summary>Settings scoped to a single vault, persisted at <c>&lt;vault&gt;/.enki/settings.json</c> —
@@ -12,4 +14,22 @@ public sealed class VaultSettings
     /// <c>ViewModels.MainWindowViewModel</c> (50–200, steps of 10); 100 is "no zoom", the size the app
     /// already shipped at.</summary>
     public int UiZoomPercent { get; set; } = 100;
+
+    // ===================== Dashboard configurable (propuesta 27) =====================
+
+    /// <summary>Ordered list of dashboard section keys (e.g. "QuickAccess", "Today", "Vault",
+    /// "Activity", "Sessions", "BoardTasks", "RecentNotes"). Missing sections are appended at the end
+    /// in their default order; unknown keys are ignored. An empty list means "use default order".</summary>
+    public List<string> DashboardSectionOrder { get; set; } = [];
+
+    /// <summary>Keys of dashboard sections the user has hidden. Hidden sections are skipped when
+    /// building the dashboard; an empty list means "show all".</summary>
+    public List<string> DashboardHiddenSections { get; set; } = [];
+
+    /// <summary>Which of the named layout templates (<c>Services.DashboardLayoutEngine</c>) arranges the
+    /// visible sections on screen — "Classic" (one full-width row per section, the original behaviour)
+    /// or one of the grid-based arrangements ("InvertedPyramid", "Lateral", "ModularGrid", "Mosaic").
+    /// <see cref="DashboardSectionOrder"/>/<see cref="DashboardHiddenSections"/> still decide which
+    /// sections appear and in what priority; this only decides the geometry they're poured into.</summary>
+    public string DashboardLayoutStyle { get; set; } = "Classic";
 }

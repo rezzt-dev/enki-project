@@ -43,6 +43,7 @@ public sealed class MarkdownStyle
         // markdown emphasis is the monochrome ink color, not a hue.
         var accent = FindBrush("InkBrush", "#F5F5F5");
         var danger = FindBrush("DangerBrush", "#F76B6B");
+        var highlight = FindBrush("HighlightBrush", "#F5C542");
         var border = FindBrush("BorderSubtleBrush", "#1A1A1E");
         var selectionForeground = FindBrush("SelectionForegroundBrush", "#000000");
         // PanelBackgroundBrush is the same color as the editor card behind it, so filling code blocks
@@ -61,7 +62,9 @@ public sealed class MarkdownStyle
             CodeInlineBackground = codeBackground,
             CodeBlockBackground = codeBackground,
             CodeBlockBorder = codeBorder,
-            HighlightBackground = new SolidColorBrush(Color.Parse("#F5C542"), 0.28),
+            HighlightBackground = highlight is SolidColorBrush solid
+                ? new SolidColorBrush(solid.Color, 0.28)
+                : new SolidColorBrush(Color.Parse("#F5C542"), 0.28),
             QuoteBar = accent,
             RuleLine = border,
             BodyFontFamily = bodyFont,

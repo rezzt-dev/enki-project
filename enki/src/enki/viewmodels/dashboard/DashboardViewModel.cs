@@ -21,6 +21,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private readonly PolarAuthService _polarAuthService;
     private readonly NotificationService _notificationService;
     private readonly CalendarAggregationService _calendarAggregationService;
+    private readonly HabitService _habitService;
+    private readonly VaultSettingsService? _vaultSettingsService;
     private readonly Action<NoteFile> _openNote;
     private readonly Action _newNote;
     private readonly Action _navigateToKanban;
@@ -31,6 +33,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private readonly Action _openReminders;
     private readonly Action _openNotifications;
     private readonly Action _openSettings;
+    private readonly Action _navigateToHabits;
 
     /// <summary>Evita repetir el aviso de tamaño parcial en cada <see cref="Reload"/> (p. ej. al navegar
     /// de un lado a otro del Dashboard) — solo se notifica en la transición de completo a incompleto,
@@ -55,6 +58,11 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// list beside the featured card.</summary>
     public ObservableCollection<NoteCardViewModel> OtherRecentNotes { get; } = [];
 
+    /// <summary>Configurable sections of the Dashboard, ordered and filtered according to
+    /// <see cref="Models.VaultSettings.DashboardSectionOrder"/> and
+    /// <see cref="Models.VaultSettings.DashboardHiddenSections"/>.</summary>
+    public ObservableCollection<DashboardSectionViewModel> Sections { get; } = [];
+
     /// <summary>Up to 5 cards from the board's "Por hacer" column, soonest due date first — see
     /// <see cref="LoadTaskColumn"/>. Read-only previews: editing/dragging still happens on the
     /// Kanban page itself.</summary>
@@ -78,6 +86,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// Reuses <see cref="NotificationItemViewModel"/> as-is, same severity icon/label the bell dropdown
     /// already renders — a read-only feed, opening/marking-as-read still only happens from the bell.</summary>
     public ObservableCollection<NotificationItemViewModel> RecentNotifications { get; } = [];
+
+    /// <summary>Up to 5 non-archived habits with today's done/not-done state, for the compact "Habits"
+    /// card — propuesta 13 (docs/propuesta-nuevas-funcionalidades.md §13). Built the same way
+    /// <see cref="HabitsViewModel.BuildItem"/> builds each row on the full Hábitos page, so both read
+    /// exactly the same consistency-grid logic.</summary>
+    public ObservableCollection<HabitItemViewModel> TodayHabits { get; } = [];
+
+    public bool HasTodayHabits => TodayHabits.Count > 0;
 
     [ObservableProperty]
     private string _vaultPath = string.Empty;
@@ -237,6 +253,59 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
     private int _graphLoadGeneration;
 
+    /// <summary>Default dashboard section order, used when <see cref="Models.VaultSettings.DashboardSectionOrder"/>
+    /// is empty or missing.</summary>
+    private static readonly string[] DefaultSectionOrder =
+    [
+        "QuickAccess", "Today", "Vault", "Activity", "Sessions", "BoardTasks", "RecentNotes", "Habits"
+    ];
+
+    /// <summary>Factory for every known section keyed by its persistence key. Each instance resolves its
+    /// localized title so the dashboard and settings share the same display name.</summary>
+    private static readonly Dictionary<string, Func<DashboardSectionViewModel>> SectionFactories = new()
+    {
+        ["QuickAccess"] = () => new QuickAccessSectionViewModel
+        {
+            Key = "QuickAccess",
+            Title = LocalizationService.Instance["DashboardSection_QuickAccess"]
+        },
+        ["Today"] = () => new TodaySectionViewModel
+        {
+            Key = "Today",
+            Title = LocalizationService.Instance["DashboardSection_Today"]
+        },
+        ["Vault"] = () => new VaultSectionViewModel
+        {
+            Key = "Vault",
+            Title = LocalizationService.Instance["DashboardSection_Vault"]
+        },
+        ["Activity"] = () => new ActivitySectionViewModel
+        {
+            Key = "Activity",
+            Title = LocalizationService.Instance["DashboardSection_Activity"]
+        },
+        ["Sessions"] = () => new SessionsSectionViewModel
+        {
+            Key = "Sessions",
+            Title = LocalizationService.Instance["DashboardSection_Sessions"]
+        },
+        ["BoardTasks"] = () => new BoardTasksSectionViewModel
+        {
+            Key = "BoardTasks",
+            Title = LocalizationService.Instance["DashboardSection_BoardTasks"]
+        },
+        ["RecentNotes"] = () => new RecentNotesSectionViewModel
+        {
+            Key = "RecentNotes",
+            Title = LocalizationService.Instance["DashboardSection_RecentNotes"]
+        },
+        ["Habits"] = () => new HabitsSectionViewModel
+        {
+            Key = "Habits",
+            Title = LocalizationService.Instance["DashboardSection_Habits"]
+        }
+    };
+
     public DashboardViewModel(
         VaultService vaultService,
         SessionService sessionService,
@@ -245,6 +314,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         PolarAuthService polarAuthService,
         NotificationService notificationService,
         CalendarAggregationService calendarAggregationService,
+        HabitService habitService,
         Action<NoteFile> openNote,
         Action newNote,
         Action navigateToKanban,
@@ -256,7 +326,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
         Action openReminders,
         Action openNotifications,
         Action openSettings,
-        bool showScrollbar)
+        Action navigateToHabits,
+        bool showScrollbar,
+        VaultSettingsService? vaultSettingsService = null)
     {
         _vaultService = vaultService;
         _sessionService = sessionService;
@@ -265,6 +337,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
         _polarAuthService = polarAuthService;
         _notificationService = notificationService;
         _calendarAggregationService = calendarAggregationService;
+        _habitService = habitService;
+        _vaultSettingsService = vaultSettingsService;
         _openNote = openNote;
         _newNote = newNote;
         _navigateToKanban = navigateToKanban;
@@ -275,6 +349,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         _openReminders = openReminders;
         _openNotifications = openNotifications;
         _openSettings = openSettings;
+        _navigateToHabits = navigateToHabits;
         IsCalendarEnabled = calendarEnabled;
         ShowScrollbar = showScrollbar;
         _notificationService.NotificationsChanged += OnNotificationsChanged;
@@ -373,7 +448,64 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
         ReloadNotifications();
 
+        ReloadHabits();
+
         _ = LoadGraphAsync();
+
+        RebuildSections();
+    }
+
+    /// <summary>Populates <see cref="TodayHabits"/> for the compact "Habits" card — same read-projection
+    /// logic <see cref="HabitsViewModel.BuildItem"/> uses for the full page, capped to 5 so the card stays
+    /// compact regardless of how many habits the vault has.</summary>
+    private void ReloadHabits()
+    {
+        TodayHabits.Clear();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        foreach (var habit in _habitService.Store.Habits.Where(h => !h.Archived).OrderBy(h => h.CreatedUtc).Take(5))
+            TodayHabits.Add(HabitsViewModel.BuildItem(habit, today));
+
+        OnPropertyChanged(nameof(HasTodayHabits));
+    }
+
+    /// <summary>Builds <see cref="Sections"/> from the per-vault settings, applying the user's order and
+    /// hiding disabled sections. Called by <see cref="Reload"/> so layout is refreshed on every dashboard
+    /// visit and whenever the active vault changes.</summary>
+    private void RebuildSections()
+    {
+        var settings = _vaultSettingsService?.Settings;
+        var order = settings?.DashboardSectionOrder;
+        var hidden = settings?.DashboardHiddenSections ?? [];
+
+        if (order is null || order.Count == 0)
+            order = DefaultSectionOrder.ToList();
+
+        // Make sure any new/unknown sections introduced by future versions land at the end, and drop
+        // stale keys that no longer exist.
+        var result = order
+            .Concat(DefaultSectionOrder.Except(order))
+            .Where(SectionFactories.ContainsKey)
+            .Where(key => !hidden.Contains(key))
+            .ToList();
+
+        var layoutStyle = settings?.DashboardLayoutStyle ?? DashboardLayoutEngine.Classic;
+        var slots = DashboardLayoutEngine.Compute(result, layoutStyle);
+
+        Sections.Clear();
+        foreach (var key in result)
+        {
+            if (!SectionFactories.TryGetValue(key, out var factory)) continue;
+
+            var section = factory();
+            if (slots.TryGetValue(key, out var slot))
+            {
+                section.GridRow = slot.Row;
+                section.GridColumn = slot.Column;
+                section.GridRowSpan = slot.RowSpan;
+                section.GridColumnSpan = slot.ColumnSpan;
+            }
+            Sections.Add(section);
+        }
     }
 
     /// <summary>Refreshes the notification counter in "ACCESOS RÁPIDOS" and the "ACTIVIDAD" feed every time
@@ -474,4 +606,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
     [RelayCommand]
     private void OpenSettings() => _openSettings();
+
+    [RelayCommand]
+    private void NavigateToHabits() => _navigateToHabits();
+
+    [RelayCommand]
+    private void ToggleHabitToday(HabitItemViewModel item)
+    {
+        _habitService.ToggleCompletion(item.Habit, DateOnly.FromDateTime(DateTime.Today));
+        ReloadHabits();
+    }
 }

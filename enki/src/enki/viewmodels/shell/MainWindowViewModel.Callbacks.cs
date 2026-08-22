@@ -34,17 +34,19 @@ public sealed partial class MainWindowViewModel
         Reminders?.RefreshLocalizedLabels();
         Notifications?.RefreshLocalizedLabels();
         Settings?.RefreshLocalizedLabels();
+        Habits?.RefreshLocalizedLabels();
+        Statistics?.RefreshLocalizedLabels();
         NotificationCenter.RefreshLocalizedLabels();
         ReminderInbox.RefreshLocalizedLabels();
 
         RebuildNavItems();
     }
 
-    /// <summary>Icon/label-key for every toggleable sidebar section (Ajustes › General › Secciones de la
-    /// barra lateral), in the fixed order they always appear in <see cref="NavItems"/> — the single source
-    /// of truth <see cref="RebuildNavItems"/> and <see cref="IsSidebarSectionEnabled"/> both read from, so
-    /// adding another toggleable section only means adding one entry here instead of touching three
-    /// duplicated blocks like before this list existed.</summary>
+    /// <summary>Icon/label-key for every toggleable sidebar section in the first (scrollable) group
+    /// (Ajustes › General › Secciones de la barra lateral), in the fixed order they always appear in
+    /// <see cref="NavItems"/> — the single source of truth <see cref="RebuildNavItems"/> and
+    /// <see cref="IsSidebarSectionEnabled"/> both read from. Recordatorios, Notificaciones, Estadísticas y
+    /// Ajustes forman un segundo grupo fijo en <see cref="MainWindow.axaml"/>; Ajustes nunca se oculta.</summary>
     private static readonly (AppPage Page, MaterialIconKind Icon, string LabelKey)[] SidebarSectionDefinitions =
     [
         (AppPage.Dashboard, MaterialIconKind.ViewDashboardOutline, "Nav_Dashboard"),
@@ -52,9 +54,10 @@ public sealed partial class MainWindowViewModel
         (AppPage.Kanban, MaterialIconKind.ViewColumnOutline, "Nav_Kanban"),
         (AppPage.Notes, MaterialIconKind.NoteTextOutline, "Nav_Documents"),
         (AppPage.Files, MaterialIconKind.FileImageOutline, "Nav_Files"),
-        (AppPage.Skills, MaterialIconKind.Brain, "Nav_Skills"),
         (AppPage.Sessions, MaterialIconKind.SitemapOutline, "Nav_Sessions"),
-        (AppPage.Trash, MaterialIconKind.TrashCanOutline, "Nav_Trash")
+        (AppPage.Habits, MaterialIconKind.ClipboardCheckOutline, "Nav_Habits"),
+        (AppPage.Trash, MaterialIconKind.TrashCanOutline, "Nav_Trash"),
+        (AppPage.Skills, MaterialIconKind.Brain, "Nav_Skills")
     ];
 
     private bool IsSidebarSectionEnabled(AppPage page) => page switch
@@ -67,6 +70,7 @@ public sealed partial class MainWindowViewModel
         AppPage.Skills => SkillsPanelEnabled,
         AppPage.Sessions => SessionsPanelEnabled,
         AppPage.Trash => TrashPanelEnabled,
+        AppPage.Habits => HabitsPanelEnabled,
         _ => true
     };
 
@@ -129,7 +133,8 @@ public sealed partial class MainWindowViewModel
     /// time it's turned on), then rebuilds <see cref="NavItems"/> and, if the section that just got hidden
     /// was the one on screen, redirects to whichever section is now first in the nav (or does nothing if the
     /// user somehow got down to zero — <see cref="SettingsViewModel"/> already blocks disabling the last
-    /// one, so that's only a defensive fallback here).</summary>
+    /// one, so that's only a defensive fallback here). Recordatorios, Notificaciones y Estadísticas se
+    /// manejan fuera de <see cref="NavItems"/> como parte del grupo fijo del sidebar.</summary>
     private void OnSidebarSectionChanged(AppPage page, bool value)
     {
         switch (page)
@@ -148,11 +153,24 @@ public sealed partial class MainWindowViewModel
                 break;
             case AppPage.Sessions: SessionsPanelEnabled = value; break;
             case AppPage.Trash: TrashPanelEnabled = value; break;
+            case AppPage.Habits: HabitsPanelEnabled = value; break;
+            case AppPage.Reminders: RemindersSidebarEnabled = value; break;
+            case AppPage.Notifications: NotificationsSidebarEnabled = value; break;
+            case AppPage.Statistics: StatisticsPanelEnabled = value; break;
         }
 
-        var wasActive = NavItems.FirstOrDefault(n => n.Page == page)?.IsActive ?? false;
+        var wasActive = page switch
+        {
+            AppPage.Reminders => IsRemindersActive,
+            AppPage.Notifications => IsNotificationsActive,
+            AppPage.Statistics => CurrentPage == Statistics,
+            _ => NavItems.FirstOrDefault(n => n.Page == page)?.IsActive ?? false
+        };
+
         RebuildNavItems();
-        if (!value && wasActive && NavItems.FirstOrDefault()?.Page is { } fallback) Navigate(fallback);
+
+        if (!value && wasActive && NavItems.FirstOrDefault()?.Page is { } fallback)
+            Navigate(fallback);
     }
 
     /// <summary>Pushes every other live-reactive Calendario setting (docs/calendar-feature/
@@ -268,6 +286,7 @@ public sealed partial class MainWindowViewModel
 
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
+        _habitService.Reload();
 
         // Any open editor tabs belong to the previous vault; keeping them open would show stale or
         // missing notes after the switch. Close them before reloading so the new vault starts clean.
@@ -282,6 +301,8 @@ public sealed partial class MainWindowViewModel
         Skills!.Reload();
         Sessions!.Reload();
         Trash!.Reload();
+        Habits!.Reload();
+        Statistics!.Reload();
         UpdateTrashBadge();
 
         _notificationService.Push(

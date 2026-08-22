@@ -4,7 +4,8 @@
   <!-- ===================================================================
        Sistema de diseño monocromo — brutalismo editorial suizo (dark-first)
        Ver docs/sistema-diseno-web.md. Blanco/negro puro + rampa de
-       opacidades de blanco. Cero color de marca salvo danger/success.
+       opacidades de blanco. Por defecto cero color de marca salvo danger/success;
+       los temas personalizados pueden sobrescribir cualquier token.
        =================================================================== -->
 
   <ResourceDictionary.ThemeDictionaries>
@@ -27,8 +28,21 @@
       <Color x:Key="InkColor">#FFFFFF</Color>
       <Color x:Key="InkOnColor">#000000</Color>
 
-      <Color x:Key="BorderOpColor">#FFFFFF</Color>
       <Color x:Key="ScrollTrackColor">#121212</Color>
+
+      <Color x:Key="AccentColor">#FFFFFF</Color>
+      <Color x:Key="DangerColor">#F87171</Color>
+      <Color x:Key="SuccessColor">#4ADE80</Color>
+      <Color x:Key="HighlightColor">#F5C542</Color>
+
+      <!-- Fluent accent palette: derivado del token AccentColor para anular el azul por defecto. -->
+      <Color x:Key="SystemAccentColor">#FFFFFF</Color>
+      <Color x:Key="SystemAccentColorDark1">#F0F0F0</Color>
+      <Color x:Key="SystemAccentColorDark2">#DADADA</Color>
+      <Color x:Key="SystemAccentColorDark3">#C4C4C4</Color>
+      <Color x:Key="SystemAccentColorLight1">#FFFFFF</Color>
+      <Color x:Key="SystemAccentColorLight2">#FFFFFF</Color>
+      <Color x:Key="SystemAccentColorLight3">#FFFFFF</Color>
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Light">
@@ -50,15 +64,23 @@
       <Color x:Key="InkColor">#000000</Color>
       <Color x:Key="InkOnColor">#FFFFFF</Color>
 
-      <Color x:Key="BorderOpColor">#000000</Color>
       <Color x:Key="ScrollTrackColor">#F5F5F5</Color>
+
+      <Color x:Key="AccentColor">#000000</Color>
+      <Color x:Key="DangerColor">#F87171</Color>
+      <Color x:Key="SuccessColor">#4ADE80</Color>
+      <Color x:Key="HighlightColor">#F5C542</Color>
+
+      <Color x:Key="SystemAccentColor">#000000</Color>
+      <Color x:Key="SystemAccentColorDark1">#1A1A1A</Color>
+      <Color x:Key="SystemAccentColorDark2">#393939</Color>
+      <Color x:Key="SystemAccentColorDark3">#5A5A5A</Color>
+      <Color x:Key="SystemAccentColorLight1">#000000</Color>
+      <Color x:Key="SystemAccentColorLight2">#000000</Color>
+      <Color x:Key="SystemAccentColorLight3">#000000</Color>
     </ResourceDictionary>
 
   </ResourceDictionary.ThemeDictionaries>
-
-  <!-- ===================== Estado (únicos colores reales) ===================== -->
-  <Color x:Key="DangerColor">#F87171</Color>
-  <Color x:Key="SuccessColor">#4ADE80</Color>
 
   <!-- ===================== Brushes de fondo / superficie ===================== -->
   <SolidColorBrush x:Key="AppBackgroundBrush" Color="{DynamicResource AppBackgroundColor}" />
@@ -69,7 +91,7 @@
   <SolidColorBrush x:Key="PanelBackgroundHoverBrush" Color="{DynamicResource PanelBackgroundHoverColor}" />
   <SolidColorBrush x:Key="InputBackgroundBrush" Color="{DynamicResource InputBackgroundColor}" />
   <SolidColorBrush x:Key="RowBackgroundBrush" Color="{DynamicResource RowBackgroundColor}" />
-  <SolidColorBrush x:Key="RowBackgroundHoverBrush" Color="{DynamicResource RowBackgroundColor}" />
+  <SolidColorBrush x:Key="RowBackgroundHoverBrush" Color="{DynamicResource RowBackgroundHoverColor}" />
   <SolidColorBrush x:Key="RowBackgroundHoverActiveBrush" Color="{DynamicResource RowBackgroundHoverColor}" />
   <SolidColorBrush x:Key="GridSeamBrush" Color="{DynamicResource InkColor}" Opacity="0.10" />
   <SolidColorBrush x:Key="ScrollTrackBrush" Color="{DynamicResource ScrollTrackColor}" />
@@ -108,9 +130,18 @@
   <SolidColorBrush x:Key="BorderSubtleBrush" Color="{DynamicResource InkColor}" Opacity="0.05" />
 
   <!-- ===================== Estado / feedback ===================== -->
-  <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
-  <SolidColorBrush x:Key="DangerMutedBrush" Color="{StaticResource DangerColor}" Opacity="0.6" />
-  <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+  <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+  <SolidColorBrush x:Key="DangerBrush" Color="{DynamicResource DangerColor}" />
+  <SolidColorBrush x:Key="DangerMutedBrush" Color="{DynamicResource DangerColor}" Opacity="0.6" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}" />
+  <SolidColorBrush x:Key="HighlightBrush" Color="{DynamicResource HighlightColor}" />
+
+  <!-- Superposición de modales: transparente — el desenfoque del fondo (ExperimentalAcrylicBorder,
+       ver Styles.axaml) es lo que da prioridad visual al popup, sin teñir el color de fondo. -->
+  <SolidColorBrush x:Key="ModalOverlayBrush" Color="Transparent" />
+
+  <!-- Chips flotantes del grafo de sesiones: superficie semi-transparente. -->
+  <SolidColorBrush x:Key="GraphChipBackgroundBrush" Color="{DynamicResource PanelBackgroundColor}" Opacity="0.80" />
 
   <!-- Botón/elemento activo: inversión total (fondo tinta, texto fondo) -->
   <SolidColorBrush x:Key="ActivePillBackgroundBrush" Color="{DynamicResource InkColor}" />
@@ -123,17 +154,6 @@
   <!-- ===================== Tipografía ===================== -->
   <FontFamily x:Key="DisplayFontFamily">avares://enki/assets/fonts#Space Grotesk</FontFamily>
   <FontFamily x:Key="MonoFontFamily">avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono</FontFamily>
-
-  <!-- ===================== AccentColor de Fluent → monocromo =====================
-       Nada de azul: se sobreescribe la paleta de acento del sistema para que
-       cualquier control Fluent (focus, checked, selección) caiga en blanco/gris. -->
-  <Color x:Key="SystemAccentColor">#FFFFFF</Color>
-  <Color x:Key="SystemAccentColorDark1">#F0F0F0</Color>
-  <Color x:Key="SystemAccentColorDark2">#DADADA</Color>
-  <Color x:Key="SystemAccentColorDark3">#C4C4C4</Color>
-  <Color x:Key="SystemAccentColorLight1">#FFFFFF</Color>
-  <Color x:Key="SystemAccentColorLight2">#FFFFFF</Color>
-  <Color x:Key="SystemAccentColorLight3">#FFFFFF</Color>
 
   <!-- ===================== Texturas ===================== -->
 

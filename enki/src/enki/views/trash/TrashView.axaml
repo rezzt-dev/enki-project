@@ -14,10 +14,8 @@
 
   <!-- Atajo propio de la página (Fase 7 de docs/analisis-proyecto/roadmap.md): abre el diálogo de
        confirmación de "vaciar papelera" — nunca purga directamente, mismo flujo que el botón.
-       RequestEmptyTrash no hace nada si la papelera está vacía (guarda IsFullyEmpty). -->
-  <UserControl.KeyBindings>
-    <KeyBinding Gesture="Ctrl+Shift+E" Command="{Binding RequestEmptyTrashCommand}" />
-  </UserControl.KeyBindings>
+       RequestEmptyTrash no hace nada si la papelera está vacía (guarda IsFullyEmpty). Remapeable
+       (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) — ver TrashView.axaml.cs (BuildKeyBindings). -->
 
   <Grid RowDefinitions="Auto,*" Margin="36,30,36,26">
 
@@ -91,7 +89,7 @@
                       </Button>
                     </StackPanel>
                   </Grid>
-                </Border>
+            </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -152,7 +150,7 @@
                       </Button>
                     </StackPanel>
                   </Grid>
-                </Border>
+            </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -212,7 +210,7 @@
                       </Button>
                     </StackPanel>
                   </Grid>
-                </Border>
+            </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -262,7 +260,7 @@
                       </Button>
                     </StackPanel>
                   </Grid>
-                </Border>
+            </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -318,7 +316,7 @@
                       </Button>
                     </StackPanel>
                   </Grid>
-                </Border>
+            </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -354,8 +352,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: borrado permanente individual (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que el de vaciado; el mensaje (con el título del elemento interpolado) viene
@@ -381,7 +379,7 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
   </Grid>
 </UserControl>

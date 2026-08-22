@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using Avalonia.Threading;
@@ -20,6 +21,15 @@ public sealed partial class MainWindowViewModel
     public MainWindowViewModel()
     {
         _settingsService = new SettingsService();
+        // Propuesta 29 (docs/propuesta-nuevas-funcionalidades.md): carga los overrides de atajos de teclado
+        // guardados antes de que cualquier vista construya sus KeyBindings, para que la primera ventana
+        // arranque ya con los gestos remapeados en vez de con los valores por defecto.
+        ShortcutRegistry.Initialize(_settingsService.Settings.ShortcutOverrides);
+        // Sistema de importación de temas personalizados (Ajustes › Apariencia): re-aplica el tema que
+        // estuviera activo la sesión anterior antes de que cualquier ventana lea un recurso de color, mismo
+        // criterio de orden que ShortcutRegistry.Initialize justo arriba.
+        _customThemeService = new CustomThemeService(_settingsService);
+        _customThemeService.ApplyActiveOnStartup();
         // Fase 0 del roadmap de deficiencias: Program.Main ya inicializó LogService con el nivel Warning
         // por defecto antes de que este ajuste (persistido en settings.json) exista siquiera — aquí es
         // donde se sube a Debug si el usuario lo activó en una sesión anterior. OnDebugLoggingEnabledChanged
@@ -28,6 +38,7 @@ public sealed partial class MainWindowViewModel
         _vaultService = new VaultService(_settingsService);
         _vaultBackupService = new VaultBackupService(_vaultService);
         _vaultSettingsService = new VaultSettingsService(_vaultService);
+        _habitService = new HabitService(_vaultService);
         _sessionService = new SessionService(_vaultService);
         _kanbanService = new KanbanService();
         _notificationService = new NotificationService(_settingsService);
@@ -87,6 +98,8 @@ public sealed partial class MainWindowViewModel
         _useCustomTitleBar = _settingsService.Settings.UseCustomTitleBar;
         _notificationsPanelEnabled = _settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
+        _notificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
+        _remindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
         _calendarPanelEnabled = _settingsService.Settings.CalendarPanelEnabled;
         _skillsPanelEnabled = _settingsService.Settings.SkillsPanelEnabled;
         _dashboardPanelEnabled = _settingsService.Settings.DashboardPanelEnabled;
@@ -95,6 +108,8 @@ public sealed partial class MainWindowViewModel
         _filesPanelEnabled = _settingsService.Settings.FilesPanelEnabled;
         _sessionsPanelEnabled = _settingsService.Settings.SessionsPanelEnabled;
         _trashPanelEnabled = _settingsService.Settings.TrashPanelEnabled;
+        _habitsPanelEnabled = _settingsService.Settings.HabitsPanelEnabled;
+        _statisticsPanelEnabled = _settingsService.Settings.StatisticsPanelEnabled;
         _uiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
 
         // Always live (not gated behind vault readiness): the kanban board and the notification log are
@@ -110,6 +125,10 @@ public sealed partial class MainWindowViewModel
             _vaultService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService,
             OnGlobalSearchResultSelected);
         QuickSwitcher = new QuickSwitcherViewModel(_vaultService, OpenNoteFromQuickSwitcher);
+        // El proveedor se llama de nuevo cada vez que se abre la paleta (ver CommandPaletteViewModel), así
+        // que puede referenciar con seguridad Notes/Kanban/Settings aunque todavía sean null aquí — para
+        // cuando el usuario realmente pulse Ctrl+Shift+K, InitializeShell ya los habrá construido.
+        CommandPalette = new CommandPaletteViewModel(BuildCommandPaletteItems);
 
         // Polls for reminders whose scheduled time has arrived and turns each into a real notification
         // (see CheckDueReminders) — independent of the vault folder, so it runs from app start regardless
@@ -301,9 +320,22 @@ public sealed partial class MainWindowViewModel
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
 
+        // Refrescar visibilidad del grupo fijo del sidebar por si cambió mientras el vault no estaba listo.
+        NotificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
+        RemindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
+
+        // Un modo enfoque/zen activo en el vault anterior no debe seguir ocultando el
+        // sidebar de este (propuesta 7, docs/propuesta-nuevas-funcionalidades.md). EditorPreferences.IsZenMode
+        // is the real source of truth every EditorViewModel initializes from, so it — not just the mirrored
+        // property below — has to be reset too, or the very first note opened in the new vault would read
+        // the previous vault's leftover "true" and silently re-enter zen mode.
+        EditorPreferences.IsZenMode = false;
+        IsZenMode = false;
+
         var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService);
         Calendar = new CalendarViewModel(calendarAggregationService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
         Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService);
+        Notes.PropertyChanged += OnNotesPropertyChanged;
         // Restaurar pestañas abiertas al reiniciar (docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §2) —
         // después de construir Notes pero antes de que la ventana quede lista, para que las pestañas ya
         // estén abiertas la primera vez que el usuario navega a Documentos.
@@ -315,12 +347,16 @@ public sealed partial class MainWindowViewModel
             ShowTagFilter = _settingsService.Settings.PolarShowTaskTags
         };
         Kanban = new KanbanViewModel(_kanbanService, _polarAuthService, taskManagement, _vaultService, _sessionService, OpenLinkedNoteFromKanban, _settingsService, _notificationService);
+        Habits = new HabitsViewModel(_habitService, _settingsService);
+        var statisticsAggregationService = new StatisticsAggregationService(_vaultService, _kanbanService, _polarTaskService, _polarAuthService, _habitService);
+        Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService);
         Dashboard = new DashboardViewModel(_vaultService, _sessionService, _kanbanService, _polarTaskService,
-            _polarAuthService, _notificationService, calendarAggregationService, OpenNoteFromDashboard,
+            _polarAuthService, _notificationService, calendarAggregationService, _habitService, OpenNoteFromDashboard,
             () => Notes.NewNoteCommand.Execute(null), () => Navigate(AppPage.Kanban), () => Navigate(AppPage.Sessions),
             () => Navigate(AppPage.Notes), () => Navigate(AppPage.Trash),
             CalendarPanelEnabled, () => Navigate(AppPage.Calendar), OpenReminders, OpenNotifications, OpenSettings,
-            _settingsService.Settings.DashboardShowScrollbar);
+            () => Navigate(AppPage.Habits),
+            _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService);
         Sessions = new SessionsViewModel(_vaultService, _sessionService, _notificationService, OpenSessionInNotes, OnSessionsChanged,
             _kanbanService, OpenKanbanCard);
         Trash = new TrashViewModel(_vaultService, _kanbanService, _reminderService, _notificationService, _sessionService, OnSessionsChanged);
@@ -328,7 +364,7 @@ public sealed partial class MainWindowViewModel
         {
             if (e.PropertyName == nameof(TrashViewModel.TotalCount)) UpdateTrashBadge();
         };
-        Settings = new SettingsViewModel(_settingsService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
+        Settings = new SettingsViewModel(_settingsService, _customThemeService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
             OnSidebarSectionChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
@@ -360,14 +396,16 @@ public sealed partial class MainWindowViewModel
     /// <see cref="FallbackStartupPage"/> when the stored value isn't parseable, isn't one of the selectable
     /// start pages, or points at a page currently hidden by one of the sidebar-section toggles (Ajustes ›
     /// General › Secciones de la barra lateral) — an app that always failed to start would be worse than
-    /// one that silently lands on a page that's actually visible.</summary>
+    /// one that silently lands on a page that's actually visible. Recordatorios y Notificaciones no son
+    /// páginas de inicio seleccionables; Estadísticas sigue siéndolo aunque ahora viva en el grupo fijo.</summary>
     private AppPage ResolveStartupPage()
     {
         if (!Enum.TryParse<AppPage>(_settingsService.Settings.StartupPage, out var page)) return FallbackStartupPage();
 
         var isSelectable = page is AppPage.Dashboard or AppPage.Calendar or AppPage.Kanban or AppPage.Notes
-            or AppPage.Files or AppPage.Sessions;
+            or AppPage.Files or AppPage.Sessions or AppPage.Habits or AppPage.Statistics;
         if (!isSelectable) return FallbackStartupPage();
+        if (page == AppPage.Statistics) return StatisticsPanelEnabled ? page : FallbackStartupPage();
         if (!IsSidebarSectionEnabled(page)) return FallbackStartupPage();
 
         return page;

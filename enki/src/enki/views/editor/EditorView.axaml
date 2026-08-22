@@ -13,8 +13,10 @@
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="36,26,36,26">
 
-    <!-- Header: título a la izquierda, metadatos/acciones a la derecha en una sola fila -->
-    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,20">
+    <!-- Header: título a la izquierda, metadatos/acciones a la derecha en una sola fila. Oculta por
+         completo en modo enfoque/zen (propuesta 7) — junto con la barra de formato y el panel lateral,
+         es lo que deja "solo el texto centrado" que pide esa propuesta. -->
+    <Grid x:Name="EditorHeader" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,20" IsVisible="{Binding !IsZenMode}">
       <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <Button Classes="icon-btn" Command="{Binding BackCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_Back_Tooltip}"
@@ -75,6 +77,24 @@
           <mi:MaterialIcon Kind="{Binding SidePanelToggleIcon}" Width="17" Height="17" />
         </Button>
 
+        <!-- Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md): oculta cabecera,
+             barra de formato, tarjetas vinculadas y panel lateral, dejando solo el cuerpo de la nota.
+             Ctrl+Shift+Enter (ver NotesView.axaml) lo activa/desactiva desde cualquier punto de la
+             pestaña; Escape lo desactiva (ver EditorView.axaml.cs, OnEditorKeyDown). -->
+        <Button Classes="icon-btn" Classes.active="{Binding IsZenMode}"
+                Command="{Binding ToggleZenModeCommand}"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleZenMode_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleZenMode_Tooltip}">
+          <mi:MaterialIcon Kind="{Binding ZenModeToggleIcon}" Width="17" Height="17" />
+        </Button>
+
+        <!-- Exportar (propuesta 6, docs/propuesta-nuevas-funcionalidades.md): HTML directo autónomo. -->
+        <Button Classes="icon-btn" Command="{Binding ExportAsHtmlCommand}"
+                ToolTip.Tip="{loc:Tr Notes_ExportHtmlMenuItem}"
+                AutomationProperties.Name="{loc:Tr Notes_ExportHtmlMenuItem}">
+          <mi:MaterialIcon Kind="FileExportOutline" Width="17" Height="17" />
+        </Button>
+
         <Button Classes="icon-btn icon-btn-danger" Command="{Binding DeleteCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_Delete_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_Delete_Tooltip}">
@@ -87,7 +107,7 @@
          gap 17). Each group's own chevron button stays put whether or not the group is expanded, so it's
          always where the user left it; only the ButtonsPanel underneath collapses/expands. -->
     <StackPanel x:Name="FormattingToolbar" Grid.Row="1" Orientation="Horizontal" Spacing="2" Margin="0,0,0,16"
-                HorizontalAlignment="Center" IsVisible="{Binding IsToolbarVisible}">
+                HorizontalAlignment="Center" IsVisible="{Binding ShowFormattingToolbar}">
       <StackPanel Orientation="Horizontal" Spacing="2">
         <Button Classes="icon-btn toolbar-group-toggle" Classes.active="{Binding !IsToolbarTextStyleExpanded}" Width="16" Height="26"
                 Command="{Binding ToggleToolbarGroupCommand}" CommandParameter="TextStyle"
@@ -207,7 +227,7 @@
          que se fija desde el editor de tarjeta Kanban. -->
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,14"
                 VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                IsVisible="{Binding HasLinkedCards}">
+                IsVisible="{Binding ShowLinkedCards}">
       <TextBlock Text="{loc:Tr Editor_LinkedCards_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" VerticalAlignment="Center" />
       <ItemsControl ItemsSource="{Binding LinkedCards}">
         <ItemsControl.ItemsPanel>

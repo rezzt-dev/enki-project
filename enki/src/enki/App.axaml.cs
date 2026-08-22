@@ -21,6 +21,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             ApplyStoredLanguage();
+            ApplyStoredThemeVariant();
 
             var window = new MainWindow();
             MainWindowRef = window;
@@ -40,5 +41,19 @@ public partial class App : Application
         var settingsService = new SettingsService();
         var language = settingsService.Settings.Language;
         if (!string.IsNullOrEmpty(language)) LocalizationService.Instance.SetLanguage(language);
+    }
+
+    /// <summary>Sets <see cref="RequestedThemeVariant"/> from the saved light/dark preference before the
+    /// main window is shown, avoiding a dark flash for users who saved the light theme. Custom themes are
+    /// re-applied later by <see cref="MainWindowViewModel"/>, so this only affects the built-in variant.</summary>
+    private static void ApplyStoredThemeVariant()
+    {
+        var settingsService = new SettingsService();
+        if (Current is not null)
+        {
+            Current.RequestedThemeVariant = settingsService.Settings.Theme == "Light"
+                ? Avalonia.Styling.ThemeVariant.Light
+                : Avalonia.Styling.ThemeVariant.Dark;
+        }
     }
 }

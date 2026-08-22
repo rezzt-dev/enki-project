@@ -75,7 +75,7 @@
                     IsVisible="{Binding HasSubtasks}">
               <Border Width="{Binding SubtaskProgressWidth}" Height="3" HorizontalAlignment="Left"
                       Background="{DynamicResource InkBrush}" />
-            </Border>
+       </Border>
           </StackPanel>
 
           <!-- Etiquetas -->
@@ -127,7 +127,7 @@
 
             <Border Grid.Column="1" Background="{DynamicResource Ink10}" Padding="7,2" Margin="8,0,0,0" VerticalAlignment="Center">
               <TextBlock Text="{Binding CardCount}" Classes="faint" FontSize="10.5" />
-            </Border>
+       </Border>
 
             <Button Grid.Column="2" Classes="icon-btn" Width="24" Height="24" Margin="4,0,0,0"
                     Command="{Binding BeginRenameCommand}" ToolTip.Tip="{loc:Tr Kanban_Column_RenameTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Column_RenameTooltip}">
@@ -173,9 +173,8 @@
               </Button>
             </StackPanel>
           </ScrollViewer>
-
         </Grid>
-      </Border>
+  </Border>
     </DataTemplate>
 
     <!-- ===================== Celda del calendario de fecha límite (§7.10) ===================== -->
@@ -223,7 +222,7 @@
                             IsVisible="{Binding IsFullyDone}" ToolTip.Tip="{loc:Tr Kanban_TaskList_AllDoneTooltip}" AutomationProperties.Name="{loc:Tr Kanban_TaskList_AllDoneTooltip}" />
           <Border Grid.Column="3" Background="{DynamicResource Ink10}" Padding="6,2" VerticalAlignment="Center" HorizontalAlignment="Center">
             <TextBlock Text="{Binding BadgeLabel}" Classes="faint" FontSize="10" />
-          </Border>
+     </Border>
           <Button Grid.Column="4" Classes="icon-btn" Width="22" Height="22"
                   Command="{Binding $parent[ItemsControl].((vm:PolarTaskManagementViewModel)DataContext).OpenEditListCommand}"
                   CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Kanban_TaskList_EditTooltip}" AutomationProperties.Name="{loc:Tr Kanban_TaskList_EditTooltip}">
@@ -268,7 +267,7 @@
                   <mi:MaterialIcon Kind="LockOutline" Width="10" Height="10" />
                   <TextBlock Text="{loc:Tr Kanban_Task_BlockedBadge, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9.5" />
                 </StackPanel>
-              </Border>
+         </Border>
             </Grid>
 
             <TextBlock Text="{Binding Description}" Classes="muted" FontSize="12" TextWrapping="Wrap"
@@ -326,7 +325,7 @@
             <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="13.5" LetterSpacing="0.3" />
             <Border Background="{DynamicResource Ink10}" Padding="6,2">
               <TextBlock Text="{Binding Tasks.Count}" Classes="faint" FontSize="10" />
-            </Border>
+       </Border>
           </StackPanel>
 
           <ItemsControl ItemsSource="{Binding Tasks}">
@@ -358,7 +357,7 @@
                             <mi:MaterialIcon Kind="LockOutline" Width="10" Height="10" />
                             <TextBlock Text="{loc:Tr Kanban_Task_BlockedBadge, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9.5" />
                           </StackPanel>
-                        </Border>
+                   </Border>
                       </Grid>
 
                       <TextBlock Text="{Binding Description}" Classes="muted" FontSize="12" TextWrapping="Wrap"
@@ -413,7 +412,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
-      </Border>
+  </Border>
     </DataTemplate>
 
     <!-- ===================== Fila de subtarea (dentro del editor de tarea de Gestión de tareas) ===================== -->
@@ -485,7 +484,7 @@
                 <TextBlock Text="{loc:Tr Kanban_Stat_Columns, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
             </Grid>
-          </Border>
+      </Border>
 
           <Border Grid.Column="2" Classes="stat-card">
             <Grid>
@@ -495,7 +494,7 @@
                 <TextBlock Text="{loc:Tr Kanban_Stat_TotalCards, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
             </Grid>
-          </Border>
+      </Border>
 
           <Border Grid.Column="4" Classes="stat-card">
             <Grid>
@@ -505,7 +504,7 @@
                 <TextBlock Text="{loc:Tr Kanban_Stat_HighPriority, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
             </Grid>
-          </Border>
+      </Border>
 
           <Border Grid.Column="6" Classes="stat-card">
             <Grid>
@@ -516,7 +515,6 @@
               </StackPanel>
             </Grid>
           </Border>
-
         </Grid>
       </Border>
 
@@ -566,9 +564,8 @@
           </Button>
         </StackPanel>
       </ScrollViewer>
-
-    </Grid>
-    </Border>
+      </Grid>
+  </Border>
 
     <!-- ===================== "Gestión de tareas" (Polar · Supabase) =====================
          IsVisible lives on this outer wrapper (evaluated against KanbanViewModel) rather than on the
@@ -656,7 +653,7 @@
                 <TextBlock Text="{loc:Tr Kanban_Stat_Lists, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
             </Grid>
-          </Border>
+      </Border>
 
           <Border Grid.Column="2" Classes="stat-card">
             <Grid>
@@ -666,7 +663,7 @@
                 <TextBlock Text="{loc:Tr Kanban_Stat_TotalTasks, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
             </Grid>
-          </Border>
+      </Border>
 
           <Border Grid.Column="4" Classes="stat-card">
             <Grid>
@@ -676,7 +673,7 @@
                 <TextBlock Text="{loc:Tr Kanban_Stat_Pending, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
             </Grid>
-          </Border>
+      </Border>
 
           <Border Grid.Column="6" Classes="stat-card">
             <Grid>
@@ -687,7 +684,6 @@
               </StackPanel>
             </Grid>
           </Border>
-
         </Grid>
       </Border>
 
@@ -712,7 +708,7 @@
             </StackPanel>
           </ScrollViewer>
         </Grid>
-      </Border>
+  </Border>
 
       <!-- Separador arrastrable: cambia el ancho de la ColumnDefinition[0] (con Min/MaxWidth arriba),
            mismo patrón que el panel de carpetas en NotesView. La costura visible es una Border de 1px
@@ -734,7 +730,7 @@
             <TextBlock Text="{Binding SelectedList.Title}" FontWeight="Bold" FontSize="16" LetterSpacing="0.2" />
             <Border Background="{DynamicResource Ink10}" Padding="6,2" IsVisible="{Binding SelectedList.IsDependencyChain}" ToolTip.Tip="{loc:Tr Kanban_List_DependencyChainTooltip}" AutomationProperties.Name="{loc:Tr Kanban_List_DependencyChainTooltip}">
               <TextBlock Text="{loc:Tr Kanban_List_ChainBadge, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9.5" />
-            </Border>
+       </Border>
           </StackPanel>
           <Button Grid.Column="1" Classes="icon-btn icon-btn-danger" Width="26" Height="26" Margin="0,0,8,0"
                   Command="{Binding RequestDeleteListCommand}" CommandParameter="{Binding SelectedList}" ToolTip.Tip="{loc:Tr Kanban_TaskList_DeleteTooltip}" AutomationProperties.Name="{loc:Tr Kanban_TaskList_DeleteTooltip}">
@@ -873,8 +869,8 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>
-      </Border>
+    </Border>
+  </Border>
 
       <!-- ===================== Diálogo: eliminar lista ===================== -->
       <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
@@ -903,8 +899,8 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>
-      </Border>
+    </Border>
+  </Border>
 
       <!-- ===================== Formulario emergente: crear / editar tarea ===================== -->
       <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
@@ -1018,7 +1014,7 @@
                           </Button>
                         </Grid>
                       </StackPanel>
-                    </Border>
+               </Border>
                   </Popup>
                 </StackPanel>
 
@@ -1095,8 +1091,8 @@
               </Button>
             </Grid>
           </Grid>
-        </Border>
-      </Border>
+    </Border>
+  </Border>
 
       <!-- ===================== Diálogo: eliminar tarea ===================== -->
       <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
@@ -1125,8 +1121,8 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>
-      </Border>
+    </Border>
+  </Border>
 
       <!-- ===================== Diálogo: detalle de tarea =====================
            Se abre al hacer clic en cualquier tarea de la lista (§ fila de tarea arriba). Muestra toda
@@ -1153,7 +1149,7 @@
                     <mi:MaterialIcon Kind="LockOutline" Width="10" Height="10" />
                     <TextBlock Text="{loc:Tr Kanban_Task_BlockedBadge, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9.5" />
                   </StackPanel>
-                </Border>
+           </Border>
               </Grid>
 
               <Grid ColumnDefinitions="Auto,*">
@@ -1258,13 +1254,11 @@
                 <TextBlock Text="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
               </Button>
             </Grid>
-
           </Grid>
-        </Border>
-      </Border>
-
-    </Grid>
     </Border>
+  </Border> 
+     </Grid>
+  </Border>
     </Grid>
 
     <!-- ===================== Formulario emergente: crear / editar tarjeta (§7.10) ===================== -->
@@ -1421,7 +1415,7 @@
                                 <mi:MaterialIcon Kind="Plus" Width="12" Height="12" />
                               </Button>
                             </Grid>
-                          </Border>
+                      </Border>
                           <TextBlock Text=":" FontWeight="Bold" VerticalAlignment="Center" />
                           <Border Classes="time-stepper">
                             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -1436,7 +1430,7 @@
                                 <mi:MaterialIcon Kind="Plus" Width="12" Height="12" />
                               </Button>
                             </Grid>
-                          </Border>
+                      </Border>
                         </StackPanel>
                       </StackPanel>
 
@@ -1465,7 +1459,7 @@
                                 <mi:MaterialIcon Kind="Plus" Width="12" Height="12" />
                               </Button>
                             </Grid>
-                          </Border>
+                      </Border>
                           <TextBlock Text="{loc:Tr Kanban_CardEditor_MinutesAbbr}" Classes="faint" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding DurationRangeLabel}" Classes="faint" VerticalAlignment="Center" />
                         </StackPanel>
@@ -1483,7 +1477,7 @@
                       </Grid>
 
                     </StackPanel>
-                  </Border>
+             </Border>
                 </Popup>
               </StackPanel>
 
@@ -1569,7 +1563,7 @@
                       <TextBlock Text="{loc:Tr Kanban_NotePicker_NoResults}" Classes="muted" FontSize="11.5"
                                  IsVisible="{Binding !NotePickerResults.Count}" />
                     </StackPanel>
-                  </Border>
+             </Border>
                 </Popup>
               </StackPanel>
 
@@ -1589,10 +1583,9 @@
               <TextBlock Text="{Binding ConfirmLabel, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
-
         </Grid>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: detalle de tarjeta (solo lectura, salvo subtareas) ===================== -->
     <Border Classes="modal-overlay" IsVisible="{Binding CardDetail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
@@ -1690,10 +1683,9 @@
               <TextBlock Text="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
-
         </Grid>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: eliminar tarjeta (§7.10) ===================== -->
     <Border Classes="modal-overlay" IsVisible="{Binding CardPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
@@ -1724,8 +1716,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
     <!-- ===================== Diálogo: eliminar columna (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que el de tarjeta; el mensaje (con el recuento de tarjetas pluralizado) viene
@@ -1758,8 +1750,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
 
   </Grid>
 </UserControl>

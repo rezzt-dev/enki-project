@@ -15,9 +15,11 @@ namespace enki.ViewModels;
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly SettingsService _settingsService;
+    private readonly CustomThemeService _customThemeService;
     private readonly VaultService _vaultService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly VaultSettingsService _vaultSettingsService;
+    private readonly HabitService _habitService;
     private readonly SessionService _sessionService;
     private readonly KanbanService _kanbanService;
     private readonly NotificationService _notificationService;
@@ -81,6 +83,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public SettingsViewModel? Settings { get; private set; }
     public RemindersViewModel? Reminders { get; private set; }
     public NotificationsViewModel? Notifications { get; private set; }
+    public HabitsViewModel? Habits { get; private set; }
+    public StatisticsViewModel? Statistics { get; private set; }
 
     [ObservableProperty]
     private VaultSetupViewModel? _vaultSetup;
@@ -90,6 +94,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     /// elegido — docs/agent-docs/internacionalizacion-i18n.md §3.1.</summary>
     [ObservableProperty]
     private LanguageSetupViewModel? _languageSetup;
+
+    /// <summary>Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — mirrors
+    /// <see cref="NotesViewModel.IsZenMode"/> (itself mirroring whichever note tab is active) so the
+    /// sidebar's own Border in MainWindow.axaml can bind its visibility to this without a fragile nested
+    /// <c>Notes.ActiveEditor.IsZenMode</c> path. Set via <see cref="OnNotesPropertyChanged"/>, wired once
+    /// per <see cref="Notes"/> instance in <c>InitializeShell</c>.</summary>
+    [ObservableProperty]
+    private bool _isZenMode;
+
+    private void OnNotesPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(NotesViewModel.IsZenMode)) IsZenMode = Notes!.IsZenMode;
+    }
 
     /// <summary>Bell button in the title bar — system event log. See
     /// <see cref="ReminderInbox"/> for the separate, due-date-driven panel behind the inbox button.</summary>
@@ -104,6 +121,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Buscador rápido de notas al estilo Obsidian: Ctrl+P para saltar a una nota.</summary>
     public QuickSwitcherViewModel QuickSwitcher { get; }
+
+    /// <summary>Paleta de comandos unificada (propuesta 25, docs/propuesta-nuevas-funcionalidades.md):
+    /// Ctrl+Shift+K para ejecutar cualquier acción registrada por el shell, no solo navegar. El registro de
+    /// comandos vive en <c>MainWindowViewModel.CommandPalette.cs</c> (<c>BuildCommandPaletteItems</c>).</summary>
+    public CommandPaletteViewModel CommandPalette { get; }
 
     [ObservableProperty]
     private bool _isVaultReady;
@@ -127,6 +149,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _isNotificationsActive;
 
     [ObservableProperty]
+    private bool _isStatisticsActive;
+
+    [ObservableProperty]
     private bool _useCustomTitleBar;
 
     [ObservableProperty]
@@ -134,6 +159,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _remindersPanelEnabled;
+
+    /// <summary>Shows/hides the "Recordatorios" entry in the sidebar's fixed bottom group.</summary>
+    [ObservableProperty]
+    private bool _remindersSidebarEnabled;
+
+    /// <summary>Shows/hides the "Notificaciones" entry in the sidebar's fixed bottom group.</summary>
+    [ObservableProperty]
+    private bool _notificationsSidebarEnabled;
 
     [ObservableProperty]
     private bool _calendarPanelEnabled;
@@ -158,6 +191,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _trashPanelEnabled;
+
+    [ObservableProperty]
+    private bool _habitsPanelEnabled;
+
+    [ObservableProperty]
+    private bool _statisticsPanelEnabled;
 
     /// <summary>Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md) — factor aplicado al
     /// <c>ScaleTransform</c> que envuelve el <c>Grid</c> raíz de <c>MainWindow.axaml</c>. Derivado de
@@ -210,6 +249,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IsSettingsActive = false;
         IsRemindersActive = false;
         IsNotificationsActive = false;
+        IsStatisticsActive = page == AppPage.Statistics;
 
         CurrentPage = page switch
         {
@@ -222,6 +262,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             AppPage.Kanban => Kanban,
             AppPage.Trash => Trash,
             AppPage.Settings => Settings,
+            AppPage.Habits => Habits,
+            AppPage.Statistics => Statistics,
             _ => Dashboard
         };
         AnimatePageReveal();
@@ -231,6 +273,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (page == AppPage.Skills) Skills!.Reload();
         if (page == AppPage.Sessions) Sessions!.Reload();
         if (page == AppPage.Kanban) Kanban!.Reload();
+        if (page == AppPage.Habits) Habits!.Reload();
+        if (page == AppPage.Statistics) Statistics!.Reload();
         if (page == AppPage.Trash)
         {
             Trash!.Reload();
@@ -284,6 +328,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IsSettingsActive = true;
         IsRemindersActive = false;
         IsNotificationsActive = false;
+        IsStatisticsActive = false;
         CurrentPage = Settings;
         AnimatePageReveal();
     }
@@ -295,6 +340,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IsSettingsActive = false;
         IsNotificationsActive = false;
         IsRemindersActive = true;
+        IsStatisticsActive = false;
         CurrentPage = Reminders;
         AnimatePageReveal();
         Reminders?.Reload();
@@ -307,6 +353,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IsSettingsActive = false;
         IsRemindersActive = false;
         IsNotificationsActive = true;
+        IsStatisticsActive = false;
         CurrentPage = Notifications;
         AnimatePageReveal();
         Notifications?.Reload();
@@ -357,4 +404,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand]
     public void OpenQuickSwitcher() => QuickSwitcher.IsOpen = true;
+
+    [RelayCommand]
+    public void OpenCommandPalette() => CommandPalette.IsOpen = true;
 }

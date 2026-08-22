@@ -204,4 +204,23 @@ public static class EditorPreferences
             Changed?.Invoke();
         }
     }
+
+    /// <summary>Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — oculta la
+    /// cabecera, la barra de formato, las tarjetas vinculadas y el panel lateral del editor, además de la
+    /// barra de pestañas y el sidebar del shell (ver <c>NotesViewModel.IsZenMode</c>/
+    /// <c>MainWindowViewModel.IsZenMode</c>, que se resincronizan con este mismo valor). A diferencia de
+    /// <see cref="ToolbarVisible"/>/<see cref="SidePanelVisible"/>, deliberadamente no se persiste en
+    /// <c>AppSettings</c> — siempre arranca en <c>false</c> en cada sesión, coherente con ser un modo
+    /// transitorio de "ahora mismo quiero concentrarme" y no una preferencia duradera.</summary>
+    private static bool _isZenMode;
+    public static bool IsZenMode
+    {
+        get => _isZenMode;
+        set
+        {
+            if (_isZenMode == value) return;
+            _isZenMode = value;
+            Changed?.Invoke();
+        }
+    }
 }

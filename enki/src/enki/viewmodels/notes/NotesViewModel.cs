@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -67,6 +68,13 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     [ObservableProperty]
     private EditorViewModel? _activeEditor;
+
+    /// <summary>Mirrors the active tab's <see cref="EditorViewModel.IsZenMode"/> — the tab strip in
+    /// NotesView.axaml binds its own visibility to this (negated), and <c>MainWindowViewModel</c> mirrors
+    /// it again to also hide the shell sidebar, so entering zen/focus mode from any open note collapses
+    /// the whole chrome around it, not just that tab's own header/toolbar.</summary>
+    [ObservableProperty]
+    private bool _isZenMode;
 
     [ObservableProperty]
     private bool _isEmpty;
@@ -176,9 +184,28 @@ public sealed partial class NotesViewModel : ViewModelBase
     // purely so the tab strip can highlight it — nothing about editing/saving depends on this.
     partial void OnActiveEditorChanged(EditorViewModel? oldValue, EditorViewModel? newValue)
     {
-        if (oldValue is not null) oldValue.IsActive = false;
-        if (newValue is not null) newValue.IsActive = true;
+        if (oldValue is not null)
+        {
+            oldValue.IsActive = false;
+            oldValue.PropertyChanged -= OnActiveEditorPropertyChanged;
+        }
+        if (newValue is not null)
+        {
+            newValue.IsActive = true;
+            newValue.PropertyChanged += OnActiveEditorPropertyChanged;
+        }
+        IsZenMode = newValue?.IsZenMode ?? false;
         PersistOpenTabs();
+    }
+
+    /// <summary>Keeps <see cref="IsZenMode"/> in lockstep with whichever tab is currently active — zen
+    /// mode is a shared, transient flag (<see cref="EditorPreferences.IsZenMode"/>) every open tab mirrors,
+    /// so this only needs to react to the *active* one's own copy changing, not re-derive anything from
+    /// the others.</summary>
+    private void OnActiveEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EditorViewModel.IsZenMode) && sender is EditorViewModel editor)
+            IsZenMode = editor.IsZenMode;
     }
 
     /// <summary>Escribe qué pestañas están abiertas y cuál es la activa en <see cref="AppSettings.OpenNotePaths"/>/
@@ -388,6 +415,65 @@ public sealed partial class NotesViewModel : ViewModelBase
         if (files.Count > 0) Reload();
     }
 
+    // ===================== Exportar (propuesta 6, docs/propuesta-nuevas-funcionalidades.md) =====================
+
+    /// <summary>"Exportar como HTML…" desde el menú contextual de una tarjeta de nota.</summary>
+    [RelayCommand]
+    private async Task ExportNoteAsHtml(NoteCardViewModel card)
+    {
+        if (!TryReadContentForExport(card.Note, out var content)) return;
+        await ExportNoteAsHtmlAsync(card.Note, content);
+    }
+
+    /// <summary>Exportación HTML directa (diálogo de guardar + escribir archivo + aviso), compartida por
+    /// la tarjeta y por el editor (que la invoca con el texto en vivo de su documento).</summary>
+    private async Task ExportNoteAsHtmlAsync(NoteFile note, string content)
+    {
+        var topLevel = App.MainWindowRef is not null
+            ? Avalonia.Controls.TopLevel.GetTopLevel(App.MainWindowRef)
+            : null;
+        await NoteExportService.ExportHtmlAsync(note, content, includeTags: true, topLevel, NotifyCallback);
+    }
+
+    /// <summary><see cref="NotificationService.Push"/> como callback suelto (o null en tests sin servicio)
+    /// — lo recibe <see cref="NoteExportService"/> para anunciar éxito/fallo sin referenciar el servicio
+    /// directamente. La lambda es necesaria: <c>Push</c> devuelve el <see cref="AppNotification"/> creado,
+    /// así que no convierte directamente a un <c>Action</c>.</summary>
+    private Action<string, string, NotificationSeverity>? NotifyCallback =>
+        _notificationService is null
+            ? null
+            : (title, message, severity) => _notificationService.Push(title, message, severity);
+
+    /// <summary>Contenido a exportar: si la nota está abierta en una pestaña, el texto en vivo de su
+    /// documento (incluye cambios aún sin guardar — lo que el usuario ve es lo que se exporta); si no, el
+    /// contenido de disco. Un fallo de lectura se notifica y aborta la exportación en vez de exportar una
+    /// nota vacía (docs/analisis-proyecto/roadmap.md, Fase 1).</summary>
+    private bool TryReadContentForExport(NoteFile note, out string content)
+    {
+        var openEditor = OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, note.FullPath));
+        if (openEditor is not null)
+        {
+            content = openEditor.Document.Text;
+            return true;
+        }
+
+        try
+        {
+            content = _vaultService.ReadContent(note);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Error($"No se pudo leer la nota '{note.FullPath}' para exportarla", ex);
+            _notificationService?.Push(
+                LocalizationService.Instance["Notification_NoteExportFailed_Title"],
+                VaultFailureReasons.Describe(ex),
+                NotificationSeverity.Error);
+            content = string.Empty;
+            return false;
+        }
+    }
+
     /// <summary>Opens a note in its own tab, or — if it's already open — just switches to that existing
     /// tab instead of opening a second one for the same file. Matched by full path since that's what
     /// actually identifies "the same note on disk" (NoteFile instances handed in from different callers —
@@ -408,7 +494,8 @@ public sealed partial class NotesViewModel : ViewModelBase
         // run, so it correctly closes this specific tab rather than whichever one was active at the time.
         EditorViewModel? editor = null;
         editor = new EditorViewModel(_vaultService, note, () => CloseEditor(editor!), Reload,
-            OpenNote, _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService);
+            OpenNote, _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
+            onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content));
         OpenEditors.Add(editor);
         ActiveEditor = editor;
         TouchRecentNote(note);
@@ -419,6 +506,12 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     [RelayCommand]
     private void SelectEditor(EditorViewModel editor) => ActiveEditor = editor;
+
+    /// <summary>Backs the <c>Ctrl+Shift+Enter</c> shortcut in NotesView.axaml — forwarded to the active
+    /// tab's own command instead of duplicating its toggle logic, so it works regardless of exactly which
+    /// control inside the note has keyboard focus.</summary>
+    [RelayCommand]
+    private void ToggleZenMode() => ActiveEditor?.ToggleZenModeCommand.Execute(null);
 
     [RelayCommand]
     private void CloseEditorTab(EditorViewModel editor) => CloseEditor(editor);

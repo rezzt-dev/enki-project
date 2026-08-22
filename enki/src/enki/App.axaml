@@ -1,8 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="clr-namespace:enki.Converters"
-             x:Class="enki.App"
-             RequestedThemeVariant="Dark">
+             x:Class="enki.App">
 
     <Application.Styles>
         <FluentTheme />

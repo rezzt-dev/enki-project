@@ -462,7 +462,19 @@ public sealed partial class KanbanViewModel : ViewModelBase
         targetColumn.Cards.Insert(insertIndex, card);
         targetColumn.Column.Cards.Insert(insertIndex, card.Card);
 
-        if (!sameColumn) ApplySubtaskAutomation(card, targetColumn);
+        if (!sameColumn)
+        {
+            ApplySubtaskAutomation(card, targetColumn);
+
+            // Stamps/clears Models.KanbanCard.CompletedAtUtc — the single chokepoint every card move
+            // (drag&drop and this same method's own callers alike) already goes through, so
+            // StatisticsAggregationService can trust it instead of inferring completion from column
+            // membership alone. Only stamped on the transition into Done, not re-stamped on every
+            // same-column reorder inside it.
+            card.Card.CompletedAtUtc = targetColumn.Column.Role == CoreColumnRole.Done
+                ? card.Card.CompletedAtUtc ?? DateTime.UtcNow
+                : null;
+        }
 
         Persist();
     }

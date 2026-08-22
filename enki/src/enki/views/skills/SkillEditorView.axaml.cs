@@ -37,7 +37,7 @@ public partial class SkillEditorView : UserControl
         textView.LineTransformers.Add(new MarkdownLivePreviewColorizer(_livePreviewState, _style));
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
-        textView.CurrentLineBackground = new SolidColorBrush(Colors.White, 0.035);
+        textView.CurrentLineBackground = ResolveCurrentLineBrush();
         textView.CurrentLineBorder = null;
 
         if (Application.Current is { } currentApp)
@@ -60,6 +60,18 @@ public partial class SkillEditorView : UserControl
 
         Editor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
+    }
+
+    private static IBrush ResolveCurrentLineBrush()
+    {
+        if (Application.Current is { } app
+            && app.TryFindResource("InkBrush", out var ink) && ink is IBrush inkBrush)
+        {
+            return inkBrush is ISolidColorBrush solid
+                ? new SolidColorBrush(solid.Color, 0.035)
+                : inkBrush;
+        }
+        return new SolidColorBrush(Colors.White, 0.035);
     }
 
     private static FontFamily ResolveEditorFontFamily()

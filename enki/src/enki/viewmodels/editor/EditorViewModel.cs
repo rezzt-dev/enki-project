@@ -29,6 +29,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     private readonly Action _onChanged;
     private readonly Action<NoteFile>? _onOpenNote;
     private readonly Action<string>? _onOpenLinkedCard;
+    private readonly Action<NoteFile, string>? _onExportHtml;
     private readonly DispatcherTimer _saveTimer;
     private string _lastSavedContent;
     private string? _pendingText;
@@ -44,6 +45,10 @@ public sealed partial class EditorViewModel : ViewModelBase
     public ObservableCollection<LinkedCardItemViewModel> LinkedCards { get; } = [];
 
     public bool HasLinkedCards => LinkedCards.Count > 0;
+
+    /// <summary>Whether the "linked cards" row should actually render — hidden in zen mode even when
+    /// <see cref="HasLinkedCards"/> is true, same reasoning as <see cref="ShowFormattingToolbar"/>.</summary>
+    public bool ShowLinkedCards => HasLinkedCards && !IsZenMode;
 
     /// <summary>This tab's own AvaloniaEdit document, alive for as long as the tab stays open. The single
     /// shared TextEditor in EditorView swaps which Document it points at when the active tab changes
@@ -110,7 +115,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// Border.Transitions there) — 0 collapses it and lets the editor column's "*" grid width claim the
     /// freed space, instead of the panel merely toggling IsVisible while the layout keeps reserving its
     /// fixed pixel width regardless.</summary>
-    public double SidePanelWidth => IsSidePanelVisible ? 361 : 0;
+    public double SidePanelWidth => IsSidePanelVisible && !IsZenMode ? 361 : 0;
 
     /// <summary>Mirrors MainWindowViewModel.SidebarToggleIcon's chevron-swap convention for the app's
     /// left nav rail, flipped for this panel sitting on the right: pointing toward the edge the panel
@@ -145,6 +150,8 @@ public sealed partial class EditorViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isToolbarVisible = EditorPreferences.ToolbarVisible;
 
+    partial void OnIsToolbarVisibleChanged(bool value) => OnPropertyChanged(nameof(ShowFormattingToolbar));
+
     [RelayCommand]
     private void ToggleToolbar()
     {
@@ -155,6 +162,40 @@ public sealed partial class EditorViewModel : ViewModelBase
             _settingsService.Settings.EditorToolbarVisible = IsToolbarVisible;
             _settingsService.Save();
         }
+    }
+
+    /// <summary>Whether the formatting toolbar row should actually render — combines the user's own
+    /// toggle (<see cref="IsToolbarVisible"/>) with zen mode, which hides it regardless.</summary>
+    public bool ShowFormattingToolbar => IsToolbarVisible && !IsZenMode;
+
+    /// <summary>Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — hides this
+    /// tab's header, formatting toolbar, linked-cards row and side panel, leaving only the centered note
+    /// body. Mirrors <see cref="EditorPreferences.IsZenMode"/> the same way <see cref="IsSidePanelVisible"/>
+    /// mirrors <see cref="EditorPreferences.SidePanelVisible"/> — a shared, transient (never persisted)
+    /// flag so every open tab, the Notes tab strip (<c>NotesViewModel.IsZenMode</c>) and the shell sidebar
+    /// (<c>MainWindowViewModel.IsZenMode</c>) all reflect the same on/off state at once.</summary>
+    [ObservableProperty]
+    private bool _isZenMode = EditorPreferences.IsZenMode;
+
+    /// <summary>Same chevron-swap convention as <see cref="SidePanelToggleIcon"/>: a plain expand glyph
+    /// while off, a "shrink back" glyph once zen mode is active.</summary>
+    public MaterialIconKind ZenModeToggleIcon => IsZenMode ? MaterialIconKind.FullscreenExit : MaterialIconKind.Fullscreen;
+
+    partial void OnIsZenModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SidePanelWidth));
+        OnPropertyChanged(nameof(ShowFormattingToolbar));
+        OnPropertyChanged(nameof(ShowLinkedCards));
+        OnPropertyChanged(nameof(ZenModeToggleIcon));
+    }
+
+    /// <summary>Toggled by the "focus mode" header button, the <c>Ctrl+Shift+Enter</c> shortcut
+    /// (NotesView.axaml) and <c>Escape</c> while active (EditorView's key handler).</summary>
+    [RelayCommand]
+    private void ToggleZenMode()
+    {
+        IsZenMode = !IsZenMode;
+        EditorPreferences.IsZenMode = IsZenMode;
     }
 
     // ===================== Formatting toolbar groups (Fase 4 §"Editor de notas", gap 17) =====================
@@ -227,11 +268,13 @@ public sealed partial class EditorViewModel : ViewModelBase
         IsToolbarListsExpanded = EditorPreferences.ToolbarListsExpanded;
         IsToolbarInsertExpanded = EditorPreferences.ToolbarInsertExpanded;
         IsToolbarCodeExpanded = EditorPreferences.ToolbarCodeExpanded;
+        IsZenMode = EditorPreferences.IsZenMode;
     }
 
     public EditorViewModel(VaultService vaultService, NoteFile note, Action onBack, Action onChanged,
         Action<NoteFile>? onOpenNote = null, KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
-        SettingsService? settingsService = null, NotificationService? notificationService = null)
+        SettingsService? settingsService = null, NotificationService? notificationService = null,
+        Action<NoteFile, string>? onExportHtml = null)
     {
         _vaultService = vaultService;
         _onBack = onBack;
@@ -241,6 +284,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         _onOpenLinkedCard = onOpenLinkedCard;
         _settingsService = settingsService;
         _notificationService = notificationService;
+        _onExportHtml = onExportHtml;
         Note = note;
         _title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _tagsInput = string.Join(", ", note.Tags);
@@ -277,6 +321,7 @@ public sealed partial class EditorViewModel : ViewModelBase
             foreach (var card in cards) LinkedCards.Add(new LinkedCardItemViewModel(card.Id, card.Title));
         }
         OnPropertyChanged(nameof(HasLinkedCards));
+        OnPropertyChanged(nameof(ShowLinkedCards));
     }
 
     [RelayCommand]
@@ -490,6 +535,14 @@ public sealed partial class EditorViewModel : ViewModelBase
 
     [RelayCommand]
     private void Back() => _onBack();
+
+    /// <summary>"Exportar como HTML…" (cabecera del editor, propuesta 6 de
+    /// docs/propuesta-nuevas-funcionalidades.md). Delega en <see cref="NotesViewModel"/> vía el callback
+    /// inyectado — la exportación usa <see cref="Document"/>.Text, el contenido en vivo de la pestaña,
+    /// para que lo que se exporta sea exactamente lo que el usuario está viendo aunque haya cambios sin
+    /// guardar. No-op en tests (sin callback).</summary>
+    [RelayCommand]
+    private void ExportAsHtml() => _onExportHtml?.Invoke(Note, Document.Text);
 
     [RelayCommand]
     private void Delete()

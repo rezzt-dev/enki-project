@@ -12,6 +12,15 @@ public sealed class KanbanCard
     public KanbanPriority Priority { get; set; } = KanbanPriority.Medium;
     public DateTime? DueDateUtc { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>When this card was last moved into the "Hecho" core column (<see cref="CoreColumnRole.Done"/>),
+    /// or <c>null</c> if it isn't there right now — set/cleared by <c>ViewModels.KanbanViewModel.MoveCard</c>,
+    /// the single chokepoint every card move (drag&amp;drop and subtask automation alike) already goes
+    /// through. Feeds "tareas completadas por semana" in <see cref="Services.StatisticsAggregationService"/>;
+    /// before this field existed, completion was only inferable from which column a card currently sits in,
+    /// with no record of *when* it got there.</summary>
+    public DateTime? CompletedAtUtc { get; set; }
+
     public List<KanbanSubtask> Subtasks { get; set; } = [];
 
     /// <summary>Etiquetas de texto libre compartidas con el resto del sistema (Notas, Polar). La

@@ -129,6 +129,15 @@
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="LetterSpacing" Value="1.5" />
   </Style>
+  <Style Selector="Button.nav-item TextBlock.danger">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.nav-item.active TextBlock.danger">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.nav-item:pointerover TextBlock.danger">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
 
   <!-- Collapsed rail: nav items shrink from a stretched, left-aligned row into a centered square
        matching the logo and the icon-only buttons (32x32 — see Button.icon-btn.sidebar-toggle below
@@ -401,6 +410,26 @@
   <Style Selector="Button.pill:pressed">
     <Setter Property="Opacity" Value="0.8" />
   </Style>
+  <!-- FluentTheme's own disabled state paints the template's ContentPresenter with its stock washed-out
+       brushes while the TextBlock/MaterialIcon Foreground overrides above (needed for the hover-invert
+       trick) keep forcing full-contrast color regardless of :disabled — the two fight and the button
+       reads as a broken near-white blob with unreadable label. Re-asserting the resting-state brushes
+       here, plus a uniform opacity dim (same language as :pressed), makes disabled read as "this same
+       button, dimmed" instead of a rendering glitch. -->
+  <Style Selector="Button.pill:disabled">
+    <Setter Property="Opacity" Value="0.35" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.pill:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.pill:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.pill:disabled mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
 
   <!-- Primario sólido. Hover mirrors Button.pill's inversion (border-outline <-> solid fill) instead
        of a generic opacity fade, so it reads as the same "invert on hover" language as the rest of
@@ -467,6 +496,23 @@
   </Style>
   <Style Selector="Button.pill-primary:pressed">
     <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <!-- Same disabled/Foreground clash as Button.pill:disabled above, but starting from the solid ink fill
+       — without this, FluentTheme's disabled ContentPresenter brush replaces the fill with a light wash
+       while the label stays hard-forced to InkOnBrush (white), producing white-on-near-white text. -->
+  <Style Selector="Button.pill-primary:disabled">
+    <Setter Property="Opacity" Value="0.35" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.pill-primary:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.pill-primary:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+  <Style Selector="Button.pill-primary:disabled mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
   </Style>
 
   <!-- Primario destructivo: mismo lenguaje que pill-primary (invierte a outline en hover) pero
@@ -1037,6 +1083,30 @@
     <Setter Property="CornerRadius" Value="0" />
   </Style>
 
+  <!-- ===================== Captura de atajo remapeable (propuesta 29, Ajustes › Atajos) ===================== -->
+  <Style Selector="Border.shortcut-capture">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.shortcut-capture:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+  </Style>
+  <Style Selector="Border.shortcut-capture.active">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink90}" />
+  </Style>
+  <Style Selector="Border.shortcut-capture.customized">
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+  </Style>
+
   <Style Selector="Border.note-card">
     <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
@@ -1065,6 +1135,13 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <!-- VerticalAlignment/VerticalContentAlignment Stretch, igual que el par Horizontal de arriba: sin
+         esto, un Button (a diferencia de un Border) no crece más allá del alto de su contenido cuando
+         comparte fila de rejilla Auto con una tarjeta vecina más alta (p.ej. en el Dashboard, cuando esta
+         clase comparte fila con TAREAS DEL TABLERO) — deja un hueco muerto debajo en vez de que la
+         tarjeta entera quede igualada al alto de la fila. -->
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
     <Setter Property="Transitions">
       <Transitions>
         <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
@@ -1239,6 +1316,13 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <!-- VerticalAlignment/VerticalContentAlignment Stretch, igual que el par Horizontal de arriba: sin
+         esto, un Button (a diferencia de un Border.card) no crece más allá del alto de su contenido cuando
+         comparte fila de rejilla Auto con una tarjeta vecina más alta (p.ej. los Accesos Rápidos del
+         Dashboard compartiendo fila con una sección compacta más alta en la Rejilla Modular) — deja un
+         hueco muerto debajo en vez de que la tarjeta entera quede igualada al alto de la fila. -->
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
     <Setter Property="Transitions">
       <Transitions>
         <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
@@ -1450,7 +1534,7 @@
 
   <!-- ===================== Confirm dialog / modal (§7.10) ===================== -->
   <Style Selector="Border.modal-overlay">
-    <Setter Property="Background" Value="#E6050505" />
+    <Setter Property="Background" Value="{DynamicResource ModalOverlayBrush}" />
   </Style>
   <Style Selector="Border.modal-card">
     <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
@@ -1463,7 +1547,7 @@
 
   <!-- ===================== Grafo de sesiones (§9 — chips flotantes sobre el WebView) ===================== -->
   <Style Selector="Border.graph-chip">
-    <Setter Property="Background" Value="#CC131313" />
+    <Setter Property="Background" Value="{DynamicResource GraphChipBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />

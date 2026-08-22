@@ -271,4 +271,42 @@ public sealed class AppSettings
     /// <summary>Cuándo se creó el último backup automático — null antes del primero. Persistido para que
     /// el intervalo se respete correctamente aunque Enki se cierre y reabra varias veces al día.</summary>
     public DateTime? LastAutoBackupUtc { get; set; }
+
+    // ===================== Atajos de teclado remapeables (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) =====================
+
+    /// <summary>Overrides del usuario para los atajos remapeables — clave: <c>Services.ShortcutIds</c>
+    /// constant; valor: gesto en el mismo formato de texto ("Ctrl+Shift+F") que
+    /// <c>Avalonia.Input.KeyGesture</c> parsea/formatea. Solo contiene entradas que difieren del gesto por
+    /// defecto de <c>Services.ShortcutCatalog</c> — un atajo nunca tocado por el usuario no aparece aquí.
+    /// Ver <c>Services.ShortcutRegistry</c>.</summary>
+    public Dictionary<string, string> ShortcutOverrides { get; set; } = new();
+
+    // ===================== Temas personalizados (importación de temas, Ajustes › Apariencia) =====================
+    // Cada tema importado se valida contra Services.ThemeCatalog antes de aceptarse (solo los valores de
+    // color son modificables — ver Services.ThemeCssParser) y su archivo .css vive en
+    // "%AppData%/Enki/themes/{Id}.css", junto a este settings.json. Este registro solo guarda lo necesario
+    // para listarlos; los colores en sí se releen del archivo cada vez que se activan.
+
+    /// <summary>Temas personalizados importados por el usuario. Ver <see cref="Services.CustomThemeService"/>.</summary>
+    public List<CustomThemeInfo> CustomThemes { get; set; } = [];
+
+    /// <summary>Id (<see cref="CustomThemeInfo.Id"/>) del tema personalizado activo, o <c>null</c> si se usa
+    /// el tema claro/oscuro incorporado (<see cref="Theme"/>) — mutuamente excluyente con
+    /// <see cref="Theme"/>: mientras esto tenga valor, el interruptor claro/oscuro queda deshabilitado en
+    /// Ajustes (ver <c>SettingsViewModel.IsCustomThemeActive</c>).</summary>
+    public string? ActiveCustomThemeId { get; set; }
+
+    // ===================== Hábitos y Estadísticas (propuestas 13/15, docs/propuesta-nuevas-funcionalidades.md) =====================
+
+    /// <summary>Shows/hides the "Hábitos" entry in the main nav.</summary>
+    public bool HabitsPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Estadísticas" entry in the main nav.</summary>
+    public bool StatisticsPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Recordatorios" entry in the sidebar's fixed bottom group.</summary>
+    public bool RemindersSidebarEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the "Notificaciones" entry in the sidebar's fixed bottom group.</summary>
+    public bool NotificationsSidebarEnabled { get; set; } = true;
 }

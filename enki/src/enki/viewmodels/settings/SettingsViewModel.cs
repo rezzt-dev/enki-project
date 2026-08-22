@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
@@ -14,6 +15,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
+using enki.Models;
 using enki.Services;
 using Material.Icons;
 
@@ -29,6 +31,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public static string DefaultFontLabel => LocalizationService.Instance["Settings_Appearance_Font_DefaultLabel"];
 
     private readonly SettingsService _settingsService;
+    private readonly CustomThemeService _customThemeService;
     private readonly VaultSettingsService _vaultSettingsService;
     private readonly VaultService _vaultService;
     private readonly VaultBackupService _vaultBackupService;
@@ -82,6 +85,65 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<SettingsSectionViewModel> Sections { get; }
     public ObservableCollection<string> AvailableFonts { get; }
+
+    /// <summary>Ajustes › Dashboard (propuesta 27): one row per configurable dashboard section, ordered and
+    /// filtered by the per-vault settings.</summary>
+    public ObservableCollection<DashboardSectionConfigViewModel> DashboardSections { get; } = [];
+
+    /// <summary>Default order of dashboard sections, used when <see cref="Models.VaultSettings.DashboardSectionOrder"/>
+    /// is empty or when a reset is requested.</summary>
+    private static readonly string[] DefaultDashboardSectionOrder =
+    [
+        "QuickAccess", "Today", "Vault", "Activity", "Sessions", "BoardTasks", "RecentNotes", "Habits"
+    ];
+
+    /// <summary>Icon shown per dashboard section in the Ajustes › Dashboard list and its live preview —
+    /// the exact same glyph <see cref="Views.DashboardView"/> renders in that section's own header, so
+    /// the two surfaces read as one system rather than two independent icon choices.</summary>
+    private static readonly Dictionary<string, MaterialIconKind> DashboardSectionIcons = new()
+    {
+        ["QuickAccess"] = MaterialIconKind.ViewGridOutline,
+        ["Today"] = MaterialIconKind.CalendarCheckOutline,
+        ["Vault"] = MaterialIconKind.Harddisk,
+        ["Activity"] = MaterialIconKind.BellRingOutline,
+        ["Sessions"] = MaterialIconKind.SitemapOutline,
+        ["BoardTasks"] = MaterialIconKind.ViewColumnOutline,
+        ["RecentNotes"] = MaterialIconKind.NoteTextOutline,
+        ["Habits"] = MaterialIconKind.ClipboardCheckOutline
+    };
+
+    /// <summary>Total number of configurable dashboard sections — the denominator in
+    /// <see cref="DashboardVisibilitySummary"/> ("N of 7 visible").</summary>
+    private static int DashboardSectionCount => DefaultDashboardSectionOrder.Length;
+
+    /// <summary>"N of 7 visible" summary shown above the section list — recomputed by
+    /// <see cref="RefreshDashboardSummary"/> after every build/reorder/toggle instead of a computed
+    /// property, since <see cref="DashboardSections"/> mutating in place doesn't raise property-changed
+    /// for anything reading its aggregate count.</summary>
+    [ObservableProperty]
+    private string _dashboardVisibilitySummary = string.Empty;
+
+    /// <summary>One of <see cref="Services.DashboardLayoutEngine.AllStyles"/> — which named arrangement
+    /// (Clásica, Pirámide invertida, …) the Dashboard and this page's own preview pour the visible
+    /// sections into. See <see cref="SelectDashboardLayoutStyle"/>.</summary>
+    [ObservableProperty]
+    private string _dashboardLayoutStyle = Services.DashboardLayoutEngine.Classic;
+
+    /// <summary>Ajustes › Dashboard › Organización: one selectable card per layout template, rebuilt by
+    /// <see cref="BuildDashboardLayoutOptions"/> — same "just rebuild it, it's cheap" approach as
+    /// <see cref="BuildDashboardSections"/> rather than a separate relabel-only path.</summary>
+    public ObservableCollection<DashboardLayoutOptionViewModel> DashboardLayoutOptions { get; } = [];
+
+    /// <summary>Ajustes › Atajos (propuesta 29, docs/propuesta-nuevas-funcionalidades.md), one card per
+    /// <c>ShortcutDefinition.CategoryKey</c> — built once in the constructor from
+    /// <see cref="Services.ShortcutCatalog.All"/> and only re-labeled (not rebuilt) afterwards, same
+    /// pattern as <see cref="Sections"/>.</summary>
+    public ObservableCollection<ShortcutCategoryViewModel> ShortcutCategories { get; }
+
+    /// <summary>Ajustes › Apariencia › Tema personalizado — un tema importado por fila, rebuilt (not just
+    /// re-labeled, unlike <see cref="ShortcutCategories"/>) by <see cref="RefreshCustomThemes"/> after every
+    /// import/activate/delete so <see cref="CustomThemeRowViewModel.IsActive"/> stays correct.</summary>
+    public ObservableCollection<CustomThemeRowViewModel> CustomThemes { get; }
 
     /// <summary>Idiomas disponibles para la UI. La lista es estática, pero el seleccionado se enlaza a
     /// <see cref="SelectedLanguage"/>. CA1822 sugiere marcar el getter <c>static</c> porque no toca estado
@@ -164,6 +226,20 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isDarkTheme;
+
+    /// <summary>Whether an imported custom theme (Ajustes › Apariencia › Tema personalizado) is currently
+    /// active — mutually exclusive with <see cref="IsDarkTheme"/>: the view disables that toggle while this
+    /// is true, since a custom theme's colors override the built-in Dark/Light palette regardless of which
+    /// one is "requested" underneath.</summary>
+    [ObservableProperty]
+    private bool _isCustomThemeActive;
+
+    [ObservableProperty]
+    private bool _isEditingTheme;
+
+    /// <summary>Current in-app theme editor, or <c>null</c> when the theme list is shown.</summary>
+    [ObservableProperty]
+    private ThemeEditorViewModel? _themeEditor;
 
     [ObservableProperty]
     private double _editorFontSize;
@@ -283,6 +359,18 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _trashPanelEnabled;
+
+    [ObservableProperty]
+    private bool _habitsPanelEnabled;
+
+    [ObservableProperty]
+    private bool _statisticsPanelEnabled;
+
+    [ObservableProperty]
+    private bool _remindersSidebarEnabled;
+
+    [ObservableProperty]
+    private bool _notificationsSidebarEnabled;
 
     [ObservableProperty]
     private bool _polarShowTaskTags;
@@ -409,6 +497,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public SettingsViewModel(
         SettingsService settingsService,
+        CustomThemeService customThemeService,
         VaultSettingsService vaultSettingsService,
         VaultService vaultService,
         VaultBackupService vaultBackupService,
@@ -428,6 +517,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action onLanguageChanged)
     {
         _settingsService = settingsService;
+        _customThemeService = customThemeService;
         _vaultSettingsService = vaultSettingsService;
         _vaultService = vaultService;
         _vaultBackupService = vaultBackupService;
@@ -481,6 +571,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         vaultService.VaultSizeChanged += () => Dispatcher.UIThread.Post(RefreshVaultSizeLabel);
         _startupPage = ParseAppPage(settingsService.Settings.StartupPage);
         _isDarkTheme = settingsService.Settings.Theme != "Light";
+        _isCustomThemeActive = customThemeService.ActiveThemeId is not null;
         _editorFontSize = settingsService.Settings.EditorFontSize;
         _editorColumnWidth = settingsService.Settings.EditorColumnWidth;
         _isColumnLeftAligned = settingsService.Settings.EditorColumnPosition == "Left";
@@ -512,6 +603,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _filesPanelEnabled = settingsService.Settings.FilesPanelEnabled;
         _sessionsPanelEnabled = settingsService.Settings.SessionsPanelEnabled;
         _trashPanelEnabled = settingsService.Settings.TrashPanelEnabled;
+        _habitsPanelEnabled = settingsService.Settings.HabitsPanelEnabled;
+        _statisticsPanelEnabled = settingsService.Settings.StatisticsPanelEnabled;
+        _remindersSidebarEnabled = settingsService.Settings.RemindersSidebarEnabled;
+        _notificationsSidebarEnabled = settingsService.Settings.NotificationsSidebarEnabled;
         _polarShowTaskTags = settingsService.Settings.PolarShowTaskTags;
         _notificationsPanelEnabled = settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = settingsService.Settings.RemindersPanelEnabled;
@@ -558,10 +653,31 @@ public sealed partial class SettingsViewModel : ViewModelBase
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Account"], Icon = MaterialIconKind.AccountCircleOutline, Section = SettingsSection.Account },
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Skills"], Icon = MaterialIconKind.Brain, Section = SettingsSection.Skills },
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Shortcuts"], Icon = MaterialIconKind.KeyboardOutline, Section = SettingsSection.Shortcuts },
+            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Dashboard"], Icon = MaterialIconKind.ViewDashboardOutline, Section = SettingsSection.Dashboard },
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_About"], Icon = MaterialIconKind.InfoOutline, Section = SettingsSection.About }
         ];
 
-        if (Avalonia.Application.Current is not null)
+        ShortcutCategories = new ObservableCollection<ShortcutCategoryViewModel>(
+            ShortcutCatalog.All
+                .GroupBy(d => d.CategoryKey)
+                .Select(group => new ShortcutCategoryViewModel(
+                    group.Key,
+                    group.Select(d => new ShortcutRowViewModel(
+                        d.Id, d.LabelKey, ShortcutRegistry.GetGestureDisplay(d.Id), ShortcutRegistry.IsCustomized(d.Id))).ToList())));
+        // Mantiene las filas al día si otra ventana (o un reset disparado desde aquí mismo) cambia un
+        // atajo — mismo "live mirror" que EditorPreferences.Changed, sin desuscripción porque este
+        // viewmodel vive tanto como la shell (igual que Notes/Kanban, nunca se reconstruye salvo reinicio).
+        ShortcutRegistry.Changed += RefreshAllShortcutRows;
+
+        CustomThemes = new ObservableCollection<CustomThemeRowViewModel>();
+        RefreshCustomThemes();
+
+        BuildDashboardLayoutOptions();
+        BuildDashboardSections();
+
+        // Only request a built-in variant when no custom theme is active. A custom theme overrides the
+        // colors in Application.Resources and must not be clobbered by the dark/light toggle.
+        if (Avalonia.Application.Current is not null && !_isCustomThemeActive)
         {
             Avalonia.Application.Current.RequestedThemeVariant = _isDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
         }
@@ -655,11 +771,17 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         _settingsService.Settings.Theme = value ? "Dark" : "Light";
         _settingsService.Save();
-        if (Avalonia.Application.Current is not null)
+        if (Avalonia.Application.Current is not null && !_isCustomThemeActive)
         {
             Avalonia.Application.Current.RequestedThemeVariant = value ? ThemeVariant.Dark : ThemeVariant.Light;
         }
     }
+
+    /// <summary>Entry point for the "Toggle theme" command-palette action (propuesta 25,
+    /// docs/propuesta-nuevas-funcionalidades.md) — the theme switch in Ajustes flips <see cref="IsDarkTheme"/>
+    /// directly from its own toggle control, so this is the only place that needed a dedicated command.</summary>
+    [RelayCommand]
+    private void ToggleTheme() => IsDarkTheme = !IsDarkTheme;
 
     /// <summary>Only ever changed from <see cref="SetStartupPage"/> below (segmented control, no live
     /// callback needed — a página de inicio solo importa la próxima vez que arranque la app).</summary>
@@ -914,6 +1036,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
         if (s.SkillsPanelEnabled) count++;
         if (s.SessionsPanelEnabled) count++;
         if (s.TrashPanelEnabled) count++;
+        if (s.HabitsPanelEnabled) count++;
+        if (s.RemindersSidebarEnabled) count++;
+        if (s.NotificationsSidebarEnabled) count++;
+        if (s.StatisticsPanelEnabled) count++;
         return count;
     }
 
@@ -996,6 +1122,38 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _settingsService.Settings.TrashPanelEnabled = value;
         _settingsService.Save();
         _onSidebarSectionChanged(AppPage.Trash, value);
+    }
+
+    partial void OnHabitsPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => HabitsPanelEnabled = true)) return;
+        _settingsService.Settings.HabitsPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Habits, value);
+    }
+
+    partial void OnStatisticsPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => StatisticsPanelEnabled = true)) return;
+        _settingsService.Settings.StatisticsPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Statistics, value);
+    }
+
+    partial void OnRemindersSidebarEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => RemindersSidebarEnabled = true)) return;
+        _settingsService.Settings.RemindersSidebarEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Reminders, value);
+    }
+
+    partial void OnNotificationsSidebarEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection(value, () => NotificationsSidebarEnabled = true)) return;
+        _settingsService.Settings.NotificationsSidebarEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.Notifications, value);
     }
 
     partial void OnPolarShowTaskTagsChanged(bool value)
@@ -1122,12 +1280,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         RefreshLastSyncedLabel();
         RebuildSections();
+        BuildDashboardLayoutOptions();
+        BuildDashboardSections();
         RebuildAvailableFonts();
+        RebuildShortcutLabels();
+        ThemeEditor?.RefreshLabels();
+    }
+
+    private void RebuildShortcutLabels()
+    {
+        foreach (var category in ShortcutCategories) category.RefreshLabel();
     }
 
     private void RebuildSections()
     {
-        if (Sections is null || Sections.Count < 9) return;
+        if (Sections is null || Sections.Count < 10) return;
         Sections[0].Label = LocalizationService.Instance["Settings_Nav_General"];
         Sections[1].Label = LocalizationService.Instance["Settings_Nav_Appearance"];
         Sections[2].Label = LocalizationService.Instance["Settings_Nav_Editor"];
@@ -1136,7 +1303,221 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Sections[5].Label = LocalizationService.Instance["Settings_Nav_Account"];
         Sections[6].Label = LocalizationService.Instance["Settings_Nav_Skills"];
         Sections[7].Label = LocalizationService.Instance["Settings_Nav_Shortcuts"];
-        Sections[8].Label = LocalizationService.Instance["Settings_Nav_About"];
+        Sections[8].Label = LocalizationService.Instance["Settings_Nav_Dashboard"];
+        Sections[9].Label = LocalizationService.Instance["Settings_Nav_About"];
+    }
+
+    /// <summary>Builds <see cref="DashboardSections"/> from the per-vault settings. Missing sections are
+    /// appended in their default order and unknown/stale keys are ignored.</summary>
+    private void BuildDashboardSections()
+    {
+        var settings = _vaultSettingsService.Settings;
+        var order = settings.DashboardSectionOrder;
+        var hidden = settings.DashboardHiddenSections ?? [];
+
+        if (order is null || order.Count == 0)
+            order = DefaultDashboardSectionOrder.ToList();
+
+        var result = order
+            .Concat(DefaultDashboardSectionOrder.Except(order))
+            .Where(DefaultDashboardSectionOrder.Contains)
+            .ToList();
+
+        DashboardLayoutStyle = string.IsNullOrEmpty(settings.DashboardLayoutStyle) ? Services.DashboardLayoutEngine.Classic : settings.DashboardLayoutStyle;
+
+        DashboardSections.Clear();
+        foreach (var key in result)
+        {
+            DashboardSections.Add(new DashboardSectionConfigViewModel
+            {
+                Key = key,
+                Title = LocalizationService.Instance[$"DashboardSection_{key}"],
+                Description = LocalizationService.Instance[$"DashboardSection_{key}_Description"],
+                Icon = DashboardSectionIcons.TryGetValue(key, out var icon) ? icon : MaterialIconKind.ViewDashboardOutline,
+                IsVisible = !hidden.Contains(key)
+            });
+        }
+
+        RefreshDashboardSummary();
+    }
+
+    /// <summary>Recomputes <see cref="DashboardVisibilitySummary"/>, every row's <c>Position</c>/
+    /// <c>IsFirst</c>/<c>IsLast</c>, and the preview's grid geometry (<c>GridRow</c>/<c>GridColumn</c>/…,
+    /// via <see cref="Services.DashboardLayoutEngine"/>) — called after every build, reorder, toggle,
+    /// reset and layout-style change so the "N of 7 visible" header, the "01/02/…" index badges, the
+    /// up/down button states and the live preview's arrangement never fall out of sync with
+    /// <see cref="DashboardSections"/>.</summary>
+    private void RefreshDashboardSummary()
+    {
+        for (var i = 0; i < DashboardSections.Count; i++)
+        {
+            DashboardSections[i].Position = i + 1;
+            DashboardSections[i].IsFirst = i == 0;
+            DashboardSections[i].IsLast = i == DashboardSections.Count - 1;
+        }
+
+        var visibleKeys = DashboardSections.Where(s => s.IsVisible).Select(s => s.Key).ToList();
+        var slots = Services.DashboardLayoutEngine.Compute(visibleKeys, DashboardLayoutStyle);
+        foreach (var section in DashboardSections)
+        {
+            if (!slots.TryGetValue(section.Key, out var slot)) continue;
+            section.GridRow = slot.Row;
+            section.GridColumn = slot.Column;
+            section.GridRowSpan = slot.RowSpan;
+            section.GridColumnSpan = slot.ColumnSpan;
+        }
+
+        var visible = visibleKeys.Count;
+        DashboardVisibilitySummary = string.Format(
+            CultureInfo.CurrentCulture,
+            LocalizationService.Instance["Settings_Dashboard_VisibleCount"],
+            visible, DashboardSectionCount);
+    }
+
+    /// <summary>Persists the current dashboard section order and visibility to the vault settings.</summary>
+    private void SaveDashboardLayout()
+    {
+        _vaultSettingsService.Settings.DashboardSectionOrder = DashboardSections.Select(s => s.Key).ToList();
+        _vaultSettingsService.Settings.DashboardHiddenSections = DashboardSections.Where(s => !s.IsVisible).Select(s => s.Key).ToList();
+        _vaultSettingsService.Save();
+        RefreshDashboardSummary();
+    }
+
+    /// <summary>Moves <paramref name="sourceKey"/> to the position of <paramref name="targetKey"/>,
+    /// inserting it before the target. Used by the drag-and-drop reordering in Ajustes › Dashboard.</summary>
+    public void MoveDashboardSection(string sourceKey, string targetKey)
+    {
+        var source = DashboardSections.FirstOrDefault(s => s.Key == sourceKey);
+        var target = DashboardSections.FirstOrDefault(s => s.Key == targetKey);
+        if (source is null || target is null || ReferenceEquals(source, target)) return;
+
+        var oldIndex = DashboardSections.IndexOf(source);
+        var newIndex = DashboardSections.IndexOf(target);
+        DashboardSections.RemoveAt(oldIndex);
+        if (newIndex > oldIndex) newIndex--;
+        DashboardSections.Insert(newIndex, source);
+        SaveDashboardLayout();
+    }
+
+    /// <summary>Swaps a section one slot earlier in the list — the keyboard/mouse-accessible counterpart
+    /// to dragging the row's handle, exposed as its own button per row.</summary>
+    [RelayCommand]
+    private void MoveDashboardSectionUp(string key)
+    {
+        var item = DashboardSections.FirstOrDefault(s => s.Key == key);
+        if (item is null) return;
+
+        var index = DashboardSections.IndexOf(item);
+        if (index <= 0) return;
+
+        DashboardSections.Move(index, index - 1);
+        SaveDashboardLayout();
+    }
+
+    /// <summary>Swaps a section one slot later in the list — see <see cref="MoveDashboardSectionUp"/>.</summary>
+    [RelayCommand]
+    private void MoveDashboardSectionDown(string key)
+    {
+        var item = DashboardSections.FirstOrDefault(s => s.Key == key);
+        if (item is null) return;
+
+        var index = DashboardSections.IndexOf(item);
+        if (index < 0 || index >= DashboardSections.Count - 1) return;
+
+        DashboardSections.Move(index, index + 1);
+        SaveDashboardLayout();
+    }
+
+    /// <summary>Toggles visibility of a dashboard section, preventing the user from hiding the last
+    /// visible one.</summary>
+    [RelayCommand]
+    private void ToggleDashboardSectionVisibility(string key)
+    {
+        var item = DashboardSections.FirstOrDefault(s => s.Key == key);
+        if (item is null) return;
+
+        if (item.IsVisible && DashboardSections.Count(s => s.IsVisible) <= 1)
+        {
+            _notificationService.Push(
+                LocalizationService.Instance["Settings_Dashboard_CannotHideLast_Title"],
+                LocalizationService.Instance["Settings_Dashboard_CannotHideLast_Message"],
+                Models.NotificationSeverity.Warning);
+            return;
+        }
+
+        item.IsVisible = !item.IsVisible;
+        SaveDashboardLayout();
+    }
+
+    /// <summary>Restores the default section order with every section visible — the one-click escape
+    /// hatch once dragging/hiding has left the layout in a state the user no longer wants.</summary>
+    [RelayCommand]
+    private void ResetDashboardLayout()
+    {
+        _vaultSettingsService.Settings.DashboardSectionOrder = DefaultDashboardSectionOrder.ToList();
+        _vaultSettingsService.Settings.DashboardHiddenSections = [];
+        _vaultSettingsService.Save();
+        BuildDashboardSections();
+    }
+
+    /// <summary>Builds <see cref="DashboardLayoutOptions"/> — one card per
+    /// <see cref="Services.DashboardLayoutEngine.AllStyles"/>, each with a thumbnail diagram computed
+    /// against the full default section set so every option shows its true shape even if the vault
+    /// currently has some sections hidden. <see cref="DashboardLayoutOptionViewModel.IsSelected"/> is set
+    /// from the vault's current choice.</summary>
+    private void BuildDashboardLayoutOptions()
+    {
+        var currentStyle = string.IsNullOrEmpty(_vaultSettingsService.Settings.DashboardLayoutStyle)
+            ? Services.DashboardLayoutEngine.Classic
+            : _vaultSettingsService.Settings.DashboardLayoutStyle;
+
+        DashboardLayoutOptions.Clear();
+        foreach (var style in Services.DashboardLayoutEngine.AllStyles)
+        {
+            var slots = Services.DashboardLayoutEngine.Compute(DefaultDashboardSectionOrder, style);
+            var blocks = new ObservableCollection<DashboardLayoutBlockViewModel>(
+                DefaultDashboardSectionOrder
+                    .Where(slots.ContainsKey)
+                    .Select(key =>
+                    {
+                        var slot = slots[key];
+                        return new DashboardLayoutBlockViewModel
+                        {
+                            GridRow = slot.Row,
+                            GridColumn = slot.Column,
+                            GridRowSpan = slot.RowSpan,
+                            GridColumnSpan = slot.ColumnSpan,
+                            IsWide = Services.DashboardLayoutEngine.IsWideSection(key)
+                        };
+                    }));
+
+            DashboardLayoutOptions.Add(new DashboardLayoutOptionViewModel
+            {
+                Key = style,
+                Title = LocalizationService.Instance[$"DashboardLayout_{style}_Title"],
+                Description = LocalizationService.Instance[$"DashboardLayout_{style}_Description"],
+                Blocks = blocks,
+                IsSelected = style == currentStyle
+            });
+        }
+    }
+
+    /// <summary>Switches which named arrangement (Clásica, Pirámide invertida, …) the Dashboard and this
+    /// page's preview pour the visible sections into — the section order/visibility list is untouched, so
+    /// switching layouts never requires reconfiguring which sections are shown.</summary>
+    [RelayCommand]
+    private void SelectDashboardLayoutStyle(string style)
+    {
+        if (style == DashboardLayoutStyle) return;
+
+        DashboardLayoutStyle = style;
+        _vaultSettingsService.Settings.DashboardLayoutStyle = style;
+        _vaultSettingsService.Save();
+
+        foreach (var option in DashboardLayoutOptions)
+            option.IsSelected = option.Key == style;
+
+        RefreshDashboardSummary();
     }
 
     private void RebuildAvailableFonts()
@@ -1440,4 +1821,319 @@ public sealed partial class SettingsViewModel : ViewModelBase
         LastSyncNowWasSkipped = outcome == PolarSyncOutcome.SkippedAlreadyRunning;
         // RefreshLastSyncedLabel ya se dispara desde la suscripción a SyncCompleted del constructor.
     }
+
+    // ===================== Ajustes › Atajos (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) =====================
+    // La captura del gesto en sí (escuchar el próximo KeyDown) vive en SettingsView.axaml.cs, ya que un
+    // RelayCommand no puede recibir un KeyEventArgs de forma natural — esta sección solo valida, persiste
+    // y refresca el estado una vez que el code-behind ya tiene un KeyGesture concreto.
+
+    /// <summary>Marca <paramref name="row"/> como la única fila en modo captura — llamado por
+    /// <c>SettingsView.axaml.cs</c> al hacer clic en el campo de gesto de un atajo.</summary>
+    public void BeginCapture(ShortcutRowViewModel row)
+    {
+        foreach (var category in ShortcutCategories)
+            foreach (var item in category.Items)
+                item.IsCapturing = ReferenceEquals(item, row);
+
+        row.ConflictMessage = null;
+        row.CaptureHintMessage = null;
+        row.PendingGesture = null;
+    }
+
+    /// <summary>Sale del modo captura sin cambiar nada — Escape, perder el foco, o cancelar un conflicto
+    /// pendiente. Instance method (not static) so <c>SettingsView.axaml.cs</c> can call it the same way as
+    /// every other row-scoped method on this viewmodel, even though it only touches the row itself.</summary>
+#pragma warning disable CA1822
+    public void CancelCapture(ShortcutRowViewModel row)
+    {
+        row.IsCapturing = false;
+        row.ConflictMessage = null;
+        row.CaptureHintMessage = null;
+        row.PendingGesture = null;
+    }
+#pragma warning restore CA1822
+
+    /// <summary>A gesture without Ctrl/Alt/Meta (a bare letter, or Shift+letter) is rejected instead of
+    /// applied — see <c>SettingsView.axaml.cs</c>'s capture handler for the one exception (function keys).
+    /// Leaves the row in capture mode so the user can just try another combination.</summary>
+#pragma warning disable CA1822
+    public void RejectCapturedGesture(ShortcutRowViewModel row)
+    {
+        row.CaptureHintMessage = LocalizationService.Instance["Settings_Shortcuts_RequiresModifierWarning"];
+    }
+#pragma warning restore CA1822
+
+    /// <summary>Aplica el gesto recién capturado — si colisiona con otro atajo, se detiene en un estado de
+    /// aviso (propuesta 29 §"Detección de conflictos") en vez de guardar directamente; el usuario decide
+    /// entre <see cref="ConfirmConflictingShortcut"/> y <see cref="CancelConflictingShortcut"/>.</summary>
+    public void ApplyCapturedGesture(ShortcutRowViewModel row, KeyGesture gesture)
+    {
+        row.IsCapturing = false;
+        row.CaptureHintMessage = null;
+
+        var conflictId = ShortcutRegistry.FindConflict(row.Id, gesture);
+        if (conflictId is null)
+        {
+            CommitGesture(row, gesture);
+            return;
+        }
+
+        var conflictLabelKey = ShortcutCatalog.All.First(d => d.Id == conflictId).LabelKey;
+        row.PendingGesture = gesture;
+        row.ConflictMessage = string.Format(
+            CultureInfo.CurrentCulture,
+            LocalizationService.Instance["Settings_Shortcuts_ConflictMessage"],
+            LocalizationService.Instance[conflictLabelKey]);
+    }
+
+    [RelayCommand]
+    private void ConfirmConflictingShortcut(ShortcutRowViewModel row)
+    {
+        if (row.PendingGesture is { } gesture) CommitGesture(row, gesture);
+    }
+
+#pragma warning disable CA1822
+    [RelayCommand]
+    private void CancelConflictingShortcut(ShortcutRowViewModel row)
+    {
+        row.PendingGesture = null;
+        row.ConflictMessage = null;
+    }
+#pragma warning restore CA1822
+
+    [RelayCommand]
+    private void ResetShortcut(ShortcutRowViewModel row)
+    {
+        ShortcutRegistry.ResetToDefault(row.Id);
+        ClearRowValidationState(row);
+        PersistShortcutOverrides();
+    }
+
+    [RelayCommand]
+    private void ResetAllShortcuts()
+    {
+        ShortcutRegistry.ResetAll();
+        foreach (var category in ShortcutCategories)
+            foreach (var row in category.Items)
+                ClearRowValidationState(row);
+        PersistShortcutOverrides();
+    }
+
+    private void CommitGesture(ShortcutRowViewModel row, KeyGesture gesture)
+    {
+        ShortcutRegistry.SetOverride(row.Id, gesture);
+        ClearRowValidationState(row);
+        PersistShortcutOverrides();
+    }
+
+    private static void ClearRowValidationState(ShortcutRowViewModel row)
+    {
+        row.PendingGesture = null;
+        row.ConflictMessage = null;
+        row.CaptureHintMessage = null;
+    }
+
+    /// <summary>Escribe el snapshot de overrides a <see cref="Models.AppSettings.ShortcutOverrides"/> y lo persiste
+    /// de inmediato — a diferencia del resto de Ajustes, remapear un atajo es una acción discreta y poco
+    /// frecuente (no un arrastre de slider), así que no hace falta el debounce de <see cref="DebouncedSave"/>.</summary>
+    private void PersistShortcutOverrides()
+    {
+        _settingsService.Settings.ShortcutOverrides = new Dictionary<string, string>(ShortcutRegistry.ExportOverrides());
+        _settingsService.Save();
+    }
+
+    /// <summary>Refresca <see cref="ShortcutRowViewModel.GestureDisplay"/>/<see cref="ShortcutRowViewModel.IsCustomized"/>
+    /// en todas las filas — suscrito a <see cref="Services.ShortcutRegistry.Changed"/> en el constructor,
+    /// así que también cubre los cambios que ya aplicó este mismo viewmodel, no solo los externos.</summary>
+    private void RefreshAllShortcutRows()
+    {
+        foreach (var category in ShortcutCategories)
+            foreach (var row in category.Items)
+            {
+                row.GestureDisplay = ShortcutRegistry.GetGestureDisplay(row.Id);
+                row.IsCustomized = ShortcutRegistry.IsCustomized(row.Id);
+            }
+    }
+
+    // ===================== Temas personalizados (Ajustes › Apariencia) =====================
+    // Editor visual + import/export CSS: el usuario puede crear, editar, duplicar, activar, eliminar y
+    // exportar temas desde la propia app. El servicio mantiene los colores en archivos .css validados contra
+    // ThemeCatalog; este viewmodel solo orquesta la UI y notifica el resultado.
+
+    [RelayCommand]
+    private void CreateTheme()
+    {
+        var theme = _customThemeService.Create(LocalizationService.Instance["Settings_Appearance_Theme_NewThemeName"]);
+        OpenThemeEditor(theme, isActive: false);
+    }
+
+    [RelayCommand]
+    private void EditTheme(CustomThemeRowViewModel row)
+    {
+        var theme = _customThemeService.Load(row.Id);
+        if (theme is null) return;
+        OpenThemeEditor(theme, isActive: row.IsActive);
+    }
+
+    [RelayCommand]
+    private void DuplicateTheme(CustomThemeRowViewModel row)
+    {
+        var theme = _customThemeService.Load(row.Id);
+        if (theme is null) return;
+
+        var copy = theme.Clone();
+        copy.Name = $"{theme.Name} {LocalizationService.Instance["Settings_Appearance_Theme_DuplicateSuffix"]}".Trim();
+        _customThemeService.Save(copy);
+        OpenThemeEditor(copy, isActive: false);
+    }
+
+    [RelayCommand]
+    private void ActivateCustomTheme(CustomThemeRowViewModel row)
+    {
+        if (!_customThemeService.Activate(row.Id)) return;
+        IsCustomThemeActive = true;
+        RefreshCustomThemes();
+    }
+
+    [RelayCommand]
+    private void DeleteCustomTheme(CustomThemeRowViewModel row)
+    {
+        _customThemeService.Delete(row.Id);
+        IsCustomThemeActive = _customThemeService.ActiveThemeId is not null;
+        RefreshCustomThemes();
+    }
+
+    /// <summary>"Usar tema del sistema" — vuelve al tema claro/oscuro incorporado
+    /// (<see cref="IsDarkTheme"/>), sin borrar ningún tema importado.</summary>
+    [RelayCommand]
+    private void UseSystemTheme()
+    {
+        _customThemeService.Deactivate();
+        IsCustomThemeActive = false;
+        if (Avalonia.Application.Current is not null)
+        {
+            Avalonia.Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
+        RefreshCustomThemes();
+    }
+
+    /// <summary>"Descargar plantilla CSS" — escribe la plantilla por defecto en la ubicación elegida por el
+    /// usuario, lista para editar (solo los colores) y reimportar.</summary>
+    [RelayCommand]
+    private async Task DownloadThemeTemplate()
+    {
+        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
+        if (topLevel?.StorageProvider is null) return;
+
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = LocalizationService.Instance["Settings_Appearance_CustomTheme_TemplateSaveDialog_Title"],
+            SuggestedFileName = "enki-theme-template.css",
+            DefaultExtension = "css",
+            FileTypeChoices = [new FilePickerFileType(LocalizationService.Instance["Settings_Appearance_CustomTheme_CssFileType"]) { Patterns = ["*.css"] }]
+        });
+
+        var destination = file?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(destination)) return;
+
+        try
+        {
+            CustomThemeService.ExportDefaultTemplate(destination);
+            _notificationService.Push(
+                LocalizationService.Instance["Notification_ThemeTemplateExported_Title"],
+                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_ThemeTemplateExported_Message"], destination),
+                Models.NotificationSeverity.Success);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _notificationService.Push(LocalizationService.Instance["Notification_ThemeTemplateExportFailed_Title"],
+                LocalizationService.Instance["Common_Error_AccessDenied"], Models.NotificationSeverity.Error);
+        }
+        catch (IOException)
+        {
+            _notificationService.Push(LocalizationService.Instance["Notification_ThemeTemplateExportFailed_Title"],
+                LocalizationService.Instance["Common_Error_IOFailure"], Models.NotificationSeverity.Error);
+        }
+    }
+
+    /// <summary>"Importar tema…" — valida el archivo elegido (todos los errores encontrados a la vez, no uno
+    /// por intento) y lo añade a la lista sin activarlo automáticamente.</summary>
+    [RelayCommand]
+    private async Task ImportCustomTheme()
+    {
+        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
+        if (topLevel?.StorageProvider is null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = LocalizationService.Instance["Settings_Appearance_CustomTheme_ImportDialog_Title"],
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType(LocalizationService.Instance["Settings_Appearance_CustomTheme_CssFileType"]) { Patterns = ["*.css"] }]
+        });
+
+        var source = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        if (string.IsNullOrWhiteSpace(source)) return;
+
+        var result = _customThemeService.Import(source);
+        if (!result.Success)
+        {
+            _notificationService.Push(
+                LocalizationService.Instance["Notification_ThemeImportFailed_Title"],
+                string.Join("\n", result.Errors),
+                Models.NotificationSeverity.Error);
+            return;
+        }
+
+        RefreshCustomThemes();
+
+        var importedName = _customThemeService.Themes.First(t => t.Id == result.ThemeId).Name;
+        _notificationService.Push(
+            LocalizationService.Instance["Notification_ThemeImported_Title"],
+            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_ThemeImported_Message"], importedName),
+            Models.NotificationSeverity.Success);
+    }
+
+    private void CloseThemeEditor()
+    {
+        ThemeEditor = null;
+        IsEditingTheme = false;
+        RefreshCustomThemes();
+    }
+
+    private void OpenThemeEditor(CustomTheme theme, bool isActive)
+    {
+        ThemeEditor = new ThemeEditorViewModel(
+            theme,
+            _customThemeService,
+            _notificationService,
+            LocalizationService.Instance,
+            isActive,
+            () =>
+            {
+                IsCustomThemeActive = true;
+                CloseThemeEditor();
+            },
+            () =>
+            {
+                IsCustomThemeActive = _customThemeService.ActiveThemeId is not null;
+                CloseThemeEditor();
+            },
+            copy => OpenThemeEditor(copy, isActive: false));
+        IsEditingTheme = true;
+    }
+
+    private void RefreshCustomThemes()
+    {
+        CustomThemes.Clear();
+        var activeId = _customThemeService.ActiveThemeId;
+        foreach (var info in _customThemeService.Themes)
+            CustomThemes.Add(new CustomThemeRowViewModel(info.Id, info.Name, info.Id == activeId));
+        OnPropertyChanged(nameof(HasCustomThemes));
+    }
+
+    /// <summary>Backs the empty-state text in Ajustes › Apariencia › Tema personalizado — manually notified
+    /// from <see cref="RefreshCustomThemes"/> since <see cref="CustomThemes"/> itself is a plain
+    /// <see cref="ObservableCollection{T}"/> (its own <c>CollectionChanged</c> doesn't raise
+    /// <c>PropertyChanged</c> for a derived property like this one).</summary>
+    public bool HasCustomThemes => CustomThemes.Count > 0;
 }

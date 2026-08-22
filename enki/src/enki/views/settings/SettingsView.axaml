@@ -10,6 +10,53 @@
              x:Class="enki.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
+  <UserControl.Styles>
+    <!-- Ajustes › Dashboard, fila de sección reordenable: fondo/borde viven aquí (no inline en el
+         Border) para que :pointerover/.drag-over/.hidden abajo puedan pisarlos — un valor puesto
+         directamente en el elemento siempre gana sobre cualquier trigger de estilo en Avalonia. -->
+    <Style Selector="Border.dashboard-section-row">
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.dashboard-section-row:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    </Style>
+    <Style Selector="Border.dashboard-section-row.drag-over">
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <!-- Sección desactivada: se atenúa en vez de desaparecer de la lista, para que siga siendo
+         arrastrable/reordenable mientras está oculta del Dashboard real. -->
+    <Style Selector="Border.dashboard-section-row.hidden">
+      <Setter Property="Opacity" Value="0.55" />
+    </Style>
+
+    <!-- Ajustes › Dashboard › Organización: la tarjeta de plantilla elegida se distingue con el mismo
+         borde InkBrush que el resto de la app usa para "seleccionado" (folder-row.active,
+         editor-tab.active) — reutiliza Button.card entero (borde/hover/elevación al pasar el ratón) en
+         vez de definir una tarjeta nueva desde cero. -->
+    <Style Selector="Button.card.active /template/ ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    </Style>
+
+    <!-- Bloques del diagrama en miniatura de cada plantilla: los anchos (accesos rápidos, tareas del
+         tablero, notas recientes) se pintan un tono más oscuro que los compactos, para que el propio
+         diagrama distinga a simple vista qué huecos son "grandes" sin necesitar leyenda. -->
+    <Style Selector="Border.layout-block">
+      <Setter Property="Background" Value="{DynamicResource Ink10}" />
+    </Style>
+    <Style Selector="Border.layout-block.wide">
+      <Setter Property="Background" Value="{DynamicResource Ink30}" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid ColumnDefinitions="220,*">
 
     <!-- ===================== Section nav ===================== -->
@@ -41,14 +88,21 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
-    </Border>
+  </Border>
 
     <!-- ===================== Section content ===================== -->
     <!-- Margin en el contenido en vez de Padding en el ScrollViewer (mismo motivo que en
          DashboardView: Avalonia 12 resta el padding del extent scrolleable, dejando los últimos 60px
          de la sección fuera de alcance). -->
     <ScrollViewer Grid.Column="1">
-      <StackPanel Margin="36,30,36,30" Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
+      <!-- Panel en vez de que el StackPanel de abajo envuelva también Ajustes › Dashboard: esa sección
+           necesita más ancho que el resto (lista + vista previa lado a lado, § más abajo) y el
+           MaxWidth="640" de comodidad de lectura del resto del formulario se lo impediría si compartiera
+           el mismo contenedor. Ambos StackPanel son hijos directos de este Panel y se muestran en
+           exclusión mutua vía SelectedSection, así que se superponen sin conflicto: el oculto no mide ni
+           ocupa espacio (mismo principio que QuickAccessColumns en el Dashboard real). -->
+      <Panel Margin="36,30,36,30">
+      <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
 
         <!-- ===================== General ===================== -->
         <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=General}">
@@ -69,7 +123,7 @@
                       BorderThickness="1" Padding="12,10">
                 <TextBlock Text="{Binding VaultPath}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
                            TextTrimming="CharacterEllipsis" />
-              </Border>
+         </Border>
               <Button Classes="pill" Command="{Binding ChangeVaultFolderCommand}" HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="FolderMoveOutline" Width="14" Height="14" />
@@ -77,7 +131,7 @@
                 </StackPanel>
               </Button>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -96,7 +150,7 @@
                 </ComboBox.ItemTemplate>
               </ComboBox>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -127,7 +181,7 @@
                              Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Sessions}" />
               </WrapPanel>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -144,7 +198,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding DashboardShowScrollbar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Label}" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <!-- ===================== Secciones de la barra lateral ===================== -->
           <Border Classes="card" Padding="22">
@@ -156,6 +210,7 @@
               <TextBlock Text="{loc:Tr Settings_General_Sidebar_Description}"
                          Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
 
+              <!-- Primer grupo -->
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
                   <mi:MaterialIcon Kind="ViewDashboardOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
@@ -193,17 +248,17 @@
               </Grid>
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-                  <mi:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                  <TextBlock Text="{loc:Tr Nav_Skills}" FontSize="13" VerticalAlignment="Center" />
-                </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkillsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Skills}" />
-              </Grid>
-              <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
                   <mi:MaterialIcon Kind="SitemapOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
                   <TextBlock Text="{loc:Tr Nav_Sessions}" FontSize="13" VerticalAlignment="Center" />
                 </StackPanel>
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding SessionsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Sessions}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="ClipboardCheckOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Habits}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding HabitsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Habits}" />
               </Grid>
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
@@ -212,8 +267,39 @@
                 </StackPanel>
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding TrashPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Trash}" />
               </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Skills}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkillsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Skills}" />
+              </Grid>
+
+              <!-- Segundo grupo -->
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,8" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="CalendarClockOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_RemindersLabel}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding RemindersSidebarEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_RemindersLabel}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="BellRingOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_NotificationsLabel}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding NotificationsSidebarEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_NotificationsLabel}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="ChartBoxOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Nav_Statistics}" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding StatisticsPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Nav_Statistics}" />
+              </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <!-- ===================== Diagnóstico (Fase 0, docs/analisis-proyecto/analisis-deficiencias-proyecto.md §2) ===================== -->
           <Border Classes="card" Padding="22">
@@ -239,7 +325,7 @@
                 </StackPanel>
               </Button>
             </StackPanel>
-          </Border>
+     </Border>
 
           <!-- ===================== Zona de peligro (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md) ===================== -->
           <Border Classes="card" Padding="22" BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1">
@@ -340,7 +426,7 @@
                 </StackPanel>
               </Button>
             </StackPanel>
-          </Border>
+     </Border>
 
         </StackPanel>
 
@@ -361,11 +447,121 @@
                 <StackPanel Grid.Column="0" Spacing="3">
                   <TextBlock Text="{loc:Tr Settings_Appearance_Theme_DarkLabel}" FontSize="13" />
                   <TextBlock Text="{loc:Tr Settings_Appearance_Theme_Description}" Classes="muted" FontSize="11.5" />
+                  <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ActiveHint}" Classes="muted" FontSize="11" FontStyle="Italic"
+                             TextWrapping="Wrap" IsVisible="{Binding IsCustomThemeActive}" />
                 </StackPanel>
-                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsDarkTheme}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Appearance_Theme_DarkLabel}" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsDarkTheme}" IsEnabled="{Binding !IsCustomThemeActive}"
+                              OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Appearance_Theme_DarkLabel}" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
+
+          <!-- ===== Temas personalizados ===== -->
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="PaletteOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+              <Panel IsVisible="{Binding !IsEditingTheme}">
+                <StackPanel Spacing="14">
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Button Grid.Column="0" Classes="ghost" HorizontalAlignment="Stretch" Command="{Binding CreateThemeCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="Plus" Width="13" Height="13" />
+                        <TextBlock Text="{loc:Tr Settings_Appearance_Theme_NewThemeButton, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" Classes="ghost" HorizontalAlignment="Stretch" Command="{Binding ImportCustomThemeCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="FileImportOutline" Width="13" Height="13" />
+                        <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+
+                  <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_Empty}" Classes="muted" FontSize="12"
+                             TextWrapping="Wrap" IsVisible="{Binding !HasCustomThemes}" />
+
+                  <ItemsControl ItemsSource="{Binding CustomThemes}" IsVisible="{Binding HasCustomThemes}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:CustomThemeRowViewModel">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                          <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+                          <Border Grid.Column="1" Background="{DynamicResource ActivePillBackgroundBrush}" Padding="8,3"
+                                  VerticalAlignment="Center" Margin="6,0" IsVisible="{Binding IsActive}">
+                            <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ActiveLabel, Converter={StaticResource UpperCaseConverter}}"
+                                       FontSize="10" FontWeight="Bold" Foreground="{DynamicResource ActivePillForegroundBrush}" />
+                     </Border>
+                          <Button Grid.Column="1" Classes="ghost" Padding="8,3" VerticalAlignment="Center" Margin="6,0" IsVisible="{Binding !IsActive}"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).ActivateCustomThemeCommand}"
+                                  CommandParameter="{Binding}">
+                            <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ActivateButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
+                          </Button>
+
+                          <Button Grid.Column="2" Classes="icon-btn" Width="26" Height="26"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).DuplicateThemeCommand}"
+                                  CommandParameter="{Binding}"
+                                  ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_DuplicateButton}"
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_DuplicateButton}">
+                            <mi:MaterialIcon Kind="ContentDuplicate" Width="13" Height="13" />
+                          </Button>
+
+                          <Button Grid.Column="3" Classes="icon-btn" Width="26" Height="26"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).EditThemeCommand}"
+                                  CommandParameter="{Binding}"
+                                  ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_EditButton}"
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_EditButton}">
+                            <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
+                          </Button>
+
+                          <Button Grid.Column="4" Classes="icon-btn" Width="26" Height="26"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).DeleteCustomThemeCommand}"
+                                  CommandParameter="{Binding}"
+                                  ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_DeleteButton}"
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_DeleteButton}">
+                            <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
+                          </Button>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <Button Classes="ghost" Padding="0,4" HorizontalAlignment="Left" IsVisible="{Binding IsCustomThemeActive}" Command="{Binding UseSystemThemeCommand}">
+                    <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_UseSystemThemeButton, Converter={StaticResource UpperCaseConverter}}" />
+                  </Button>
+                </StackPanel>
+              </Panel>
+
+              <Panel IsVisible="{Binding IsEditingTheme}">
+                <Grid RowDefinitions="Auto,*">
+                  <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                    <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding ThemeEditor.CancelCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <mi:MaterialIcon Kind="ArrowLeft" Width="13" Height="13" />
+                        <TextBlock Text="{loc:Tr Settings_Appearance_Theme_BackButton, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" Classes="ghost" Command="{Binding ThemeEditor.SaveCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <mi:MaterialIcon Kind="ContentSaveOutline" Width="13" Height="13" />
+                        <TextBlock Text="{loc:Tr Settings_Appearance_Theme_SaveButton, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+                  <ContentControl Grid.Row="1" Content="{Binding ThemeEditor}" />
+                </Grid>
+              </Panel>
+            </StackPanel>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -378,7 +574,7 @@
               <ComboBox ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding InterfaceFontFamily}" AutomationProperties.Name="{loc:Tr Settings_Appearance_InterfaceFont_Title}"
                         HorizontalAlignment="Stretch" MaxDropDownHeight="320" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -427,7 +623,7 @@
                 </Button>
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -444,7 +640,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseCustomTitleBar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Appearance_TitleBar_UseCustomLabel}" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
         </StackPanel>
 
@@ -466,7 +662,7 @@
               <ComboBox ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding EditorFontFamily}" AutomationProperties.Name="{loc:Tr Settings_Editor_Font_Title}"
                         HorizontalAlignment="Stretch" MaxDropDownHeight="320" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -551,7 +747,7 @@
               </Grid>
               <Slider Minimum="2" Maximum="8" Value="{Binding EditorTabSize}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Editor_TabSize_Label}" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="10">
@@ -562,7 +758,7 @@
               <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
                          Text="{loc:Tr Settings_Editor_Autosave_Description}" />
             </StackPanel>
-          </Border>
+     </Border>
         </StackPanel>
 
         <!-- ===================== Notificaciones ===================== -->
@@ -602,7 +798,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowDesktopToasts}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Toast_Label}" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -629,7 +825,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteErrorNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Error_Label}" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -646,7 +842,7 @@
                          Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
               <Slider Minimum="1" Maximum="30" Value="{Binding ReminderSoonWindowDays}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Label}" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -702,7 +898,7 @@
                 </Grid>
               </StackPanel>
             </StackPanel>
-          </Border>
+     </Border>
         </StackPanel>
 
         <!-- ===================== Calendario ===================== -->
@@ -735,7 +931,7 @@
                              Command="{Binding SetCalendarDefaultViewCommand}" CommandParameter="{x:Static vm:CalendarViewMode.Agenda}" />
               </StackPanel>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -761,7 +957,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarShowWeekends}" OnContent="" OffContent="" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -792,7 +988,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarTimeFormat24h}" OnContent="" OffContent="" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -818,7 +1014,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarShowSidebarScrollbar}" OnContent="" OffContent="" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
         </StackPanel>
 
         <!-- ===================== Cuenta ===================== -->
@@ -839,7 +1035,7 @@
               <TextBlock Text="{loc:Tr Settings_Account_SupabaseNotConfigured_Description}"
                          Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <!-- Vinculado -->
           <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
@@ -855,7 +1051,7 @@
                 </StackPanel>
                 <Border Grid.Column="1" Background="{DynamicResource Ink10}" Padding="8,4" VerticalAlignment="Center">
                   <TextBlock Text="{loc:Tr Settings_Account_LinkedBadge}" Classes="faint" FontSize="10" LetterSpacing="1" />
-                </Border>
+           </Border>
               </Grid>
               <TextBlock Text="{loc:Tr Settings_Account_LinkedDescription}"
                          Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
@@ -866,7 +1062,7 @@
                 </StackPanel>
               </Button>
             </StackPanel>
-          </Border>
+     </Border>
 
           <!-- No vinculado (formulario) -->
           <Border Classes="card" Padding="22" IsVisible="{Binding !IsPolarLinked}">
@@ -899,7 +1095,7 @@
                 </StackPanel>
               </Button>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -916,7 +1112,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding PolarShowTaskTags}" OnContent="" OffContent="" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <!-- ===================== Sincronización (docs/ajustes-docs/03-cuenta-y-sincronizacion-polar.md) ===================== -->
           <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
@@ -944,7 +1140,7 @@
                 </StackPanel>
               </Button>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
             <StackPanel Spacing="10">
@@ -955,7 +1151,7 @@
               <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
                          Text="{loc:Tr Settings_Account_Management_Description}" />
             </StackPanel>
-          </Border>
+     </Border>
         </StackPanel>
 
         <!-- ===================== Skills ===================== -->
@@ -981,7 +1177,7 @@
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkillsPanelEnabled}" OnContent="" OffContent="" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Button Classes="card" Padding="18,16" Command="{Binding OpenCommunitySkillsCommand}"
                   ToolTip.Tip="{loc:Tr Settings_Skills_CommunityLink_Tooltip}">
@@ -1001,87 +1197,107 @@
           </Button>
         </StackPanel>
 
-        <!-- ===================== Atajos de teclado (solo lectura, docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §1) ===================== -->
+        <!-- ===================== Atajos de teclado remapeables (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) ===================== -->
         <StackPanel Spacing="20" IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Shortcuts}">
-          <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Settings_Shortcuts_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Tr Settings_Shortcuts_Description}" Classes="muted" FontSize="12.5" />
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="{loc:Tr Settings_Shortcuts_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Text="{loc:Tr Settings_Shortcuts_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="ghost" VerticalAlignment="Center" Command="{Binding ResetAllShortcutsCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="RestoreAlert" Width="13" Height="13" />
+                <TextBlock Text="{loc:Tr Settings_Shortcuts_ResetAllButton, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Un Border.card por categoría (Services.ShortcutCatalog.CategoryKey), cada fila con su
+               propio control de captura — clic o Enter empieza a escuchar la próxima combinación. -->
+          <ItemsControl ItemsSource="{Binding ShortcutCategories}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="20" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:ShortcutCategoryViewModel">
+                <Border Classes="card" Padding="22">
+                  <StackPanel Spacing="14">
+                    <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+
+                    <ItemsControl ItemsSource="{Binding Items}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="10" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:ShortcutRowViewModel">
+                          <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*,180,Auto">
+                              <TextBlock Grid.Column="0" Text="{Binding Label}" Classes="muted" FontSize="12.5"
+                                         VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0" />
+
+                              <Border Grid.Column="1" Classes="shortcut-capture" Classes.active="{Binding IsCapturing}"
+                                      Classes.customized="{Binding IsCustomized}" Focusable="True"
+                                      PointerPressed="ShortcutCapture_PointerPressed"
+                                      KeyDown="ShortcutCapture_KeyDown"
+                                      LostFocus="ShortcutCapture_LostFocus"
+                                      ToolTip.Tip="{loc:Tr Settings_Shortcuts_CaptureHint}">
+                                <TextBlock Text="{Binding GestureDisplay}" FontFamily="{StaticResource MonoFontFamily}"
+                                           FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" />
+                         </Border>
+
+                              <Button Grid.Column="2" Classes="icon-btn" Width="26" Height="26" Margin="6,0,0,0"
+                                      IsVisible="{Binding IsCustomized}"
+                                      Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).ResetShortcutCommand}"
+                                      CommandParameter="{Binding}"
+                                      ToolTip.Tip="{loc:Tr Settings_Shortcuts_ResetRowTooltip}"
+                                      AutomationProperties.Name="{loc:Tr Settings_Shortcuts_ResetRowTooltip}">
+                                <mi:MaterialIcon Kind="Restore" Width="13" Height="13" />
+                              </Button>
+                            </Grid>
+
+                            <!-- Aviso de conflicto (propuesta 29 §"Detección de conflictos") — solo aparece
+                                 mientras hay un gesto capturado pendiente de confirmar, con dos salidas
+                                 explícitas en vez de guardar en silencio. -->
+                            <Grid ColumnDefinitions="*,Auto,Auto"
+                                  IsVisible="{Binding ConflictMessage, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
+                              <TextBlock Grid.Column="0" Text="{Binding ConflictMessage}" Foreground="{DynamicResource DangerBrush}"
+                                         FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" />
+                              <Button Grid.Column="1" Classes="ghost" Padding="8,3" Margin="8,0,0,0"
+                                      Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).CancelConflictingShortcutCommand}"
+                                      CommandParameter="{Binding}">
+                                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
+                              </Button>
+                              <Button Grid.Column="2" Classes="pill" Padding="8,3" Margin="8,0,0,0"
+                                      Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).ConfirmConflictingShortcutCommand}"
+                                      CommandParameter="{Binding}">
+                                <TextBlock Text="{loc:Tr Settings_Shortcuts_ApplyAnywayButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
+                              </Button>
+                            </Grid>
+
+                            <!-- Aviso transitorio ("debe incluir Ctrl/Alt/Cmd") — la fila sigue en captura,
+                                 sin botones, para que el usuario pruebe otra combinación directamente. -->
+                            <TextBlock Text="{Binding CaptureHintMessage}" Foreground="{DynamicResource DangerBrush}"
+                                       FontSize="11" TextWrapping="Wrap"
+                                       IsVisible="{Binding CaptureHintMessage, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+           </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- ===================== Referencia (no remapeable) ===================== -->
+          <StackPanel Spacing="4" Margin="0,6,0,0">
+            <TextBlock Text="{loc:Tr Settings_Shortcuts_ReferenceSectionTitle, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Tr Settings_Shortcuts_ReferenceSectionNote}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
           </StackPanel>
-
-          <Border Classes="card" Padding="22">
-            <StackPanel Spacing="12">
-              <StackPanel Orientation="Horizontal" Spacing="9">
-                <mi:MaterialIcon Kind="CompassOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                <TextBlock Text="{loc:Tr Settings_Navigation_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-              </StackPanel>
-              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="9">
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+1" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToDashboard}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+2" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToNotes}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+3" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToKanban}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+4" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToCalendar}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Ctrl+5" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="4" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToFiles}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="5" Grid.Column="0" Text="Ctrl+6" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="5" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToSessions}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="6" Grid.Column="0" Text="Ctrl+7" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="6" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToTrash}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="7" Grid.Column="0" Text="Ctrl+8" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="7" Grid.Column="1" Text="{loc:Tr Settings_Navigation_ToSkills}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="8" Grid.Column="0" Text="Ctrl+," FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="8" Grid.Column="1" Text="{loc:Tr Settings_Navigation_OpenSettings}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="9" Grid.Column="0" Text="{loc:Tr Settings_Navigation_GlobalSearchKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="9" Grid.Column="1" Text="{loc:Tr Settings_Navigation_GlobalSearch}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="10" Grid.Column="0" Text="{loc:Tr Settings_Navigation_QuickNoteKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="10" Grid.Column="1" Text="{loc:Tr Settings_Navigation_QuickNote}" Classes="muted" FontSize="12" />
-              </Grid>
-            </StackPanel>
-          </Border>
-
-          <Border Classes="card" Padding="22">
-            <StackPanel Spacing="12">
-              <StackPanel Orientation="Horizontal" Spacing="9">
-                <mi:MaterialIcon Kind="MagnifyPlusOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                <TextBlock Text="{loc:Tr Settings_ViewZoom_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-              </StackPanel>
-              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="9">
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl++ / Ctrl+-" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_ViewZoom_IncreaseDecrease}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+0" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_ViewZoom_Reset}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr Settings_ViewZoom_WheelKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_ViewZoom_IncreaseDecrease}" Classes="muted" FontSize="12" />
-              </Grid>
-            </StackPanel>
-          </Border>
-
-          <Border Classes="card" Padding="22">
-            <StackPanel Spacing="12">
-              <StackPanel Orientation="Horizontal" Spacing="9">
-                <mi:MaterialIcon Kind="PencilOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                <TextBlock Text="{loc:Tr Settings_EditDocs_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-              </StackPanel>
-              <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="9">
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+B" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_Bold}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+I" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_Italic}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+K" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_InsertLink}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+F" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_SearchInNote}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Ctrl+W" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="4" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_CloseTab}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="5" Grid.Column="0" Text="{loc:Tr Settings_EditDocs_SwitchTabKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="5" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_NextPrevTab}" Classes="muted" FontSize="12" />
-                <TextBlock Grid.Row="6" Grid.Column="0" Text="{loc:Tr Settings_EditDocs_PageTabKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
-                <TextBlock Grid.Row="6" Grid.Column="1" Text="{loc:Tr Settings_EditDocs_NextPrevTab}" Classes="muted" FontSize="12" />
-              </Grid>
-            </StackPanel>
-          </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="12">
@@ -1100,7 +1316,7 @@
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_CloseDialog}" Classes="muted" FontSize="12" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="12">
@@ -1113,7 +1329,7 @@
                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_PdfViewer_PrevNextPage}" Classes="muted" FontSize="12" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
         </StackPanel>
 
         <!-- ===================== Acerca de ===================== -->
@@ -1129,7 +1345,7 @@
                 <Border Width="40" Height="40" CornerRadius="0" Background="{DynamicResource InkBrush}">
                   <TextBlock Text="E" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource InkOnBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+           </Border>
                 <StackPanel VerticalAlignment="Center" Spacing="2">
                   <TextBlock Text="ENKI" FontSize="16" FontWeight="Bold" LetterSpacing="1" />
                   <TextBlock Text="{Binding AppVersionLabel}" Classes="faint" />
@@ -1139,7 +1355,7 @@
               <TextBlock Text="{loc:Tr Settings_About_Tagline}"
                          Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -1150,7 +1366,7 @@
               <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
                          Text="{loc:Tr Settings_About_WhatIsEnki_Description}" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="12">
@@ -1188,7 +1404,7 @@
                 <TextBlock Grid.Row="8" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Settings_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
               </Grid>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -1199,7 +1415,7 @@
               <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
                          Text="{loc:Tr Settings_About_Technology_Description}" />
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -1213,9 +1429,9 @@
                       BorderThickness="1" Padding="12,10">
                 <TextBlock Text="{Binding VaultPath}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
                            TextTrimming="CharacterEllipsis" />
-              </Border>
+         </Border>
             </StackPanel>
-          </Border>
+     </Border>
 
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
@@ -1226,10 +1442,392 @@
               <TextBlock Classes="muted" FontSize="12.5" TextWrapping="Wrap"
                          Text="{loc:Tr Settings_About_Language_Description}" />
             </StackPanel>
-          </Border>
+     </Border>
         </StackPanel>
 
       </StackPanel>
+
+      <!-- ===================== Dashboard: lista + vista previa en vivo, a todo lo ancho ===================== -->
+      <StackPanel Spacing="20" MaxWidth="1080" HorizontalAlignment="Left"
+                  IsVisible="{Binding SelectedSection, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Dashboard}">
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:Tr Settings_Dashboard_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Text="{loc:Tr Settings_Dashboard_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- ===== Organización: qué plantilla de rejilla reparte las secciones visibles ===== -->
+        <Border Classes="card" Padding="22">
+          <StackPanel Spacing="16">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ViewQuiltOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Dashboard_Layout_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Dashboard_Layout_Subtitle}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding DashboardLayoutOptions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" ItemWidth="204" ItemHeight="150" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:DashboardLayoutOptionViewModel">
+                  <Button Classes="card" Classes.active="{Binding IsSelected}" Padding="14" Margin="0,0,10,10"
+                          Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).SelectDashboardLayoutStyleCommand}"
+                          CommandParameter="{Binding Key}"
+                          AutomationProperties.Name="{Binding Title}">
+                    <StackPanel Spacing="10">
+
+                      <!-- Diagrama en miniatura: la misma geometría (Services.DashboardLayoutEngine)
+                           que aplicará esta plantilla, no una ilustración aparte — si cambian los
+                           tramos del motor de organización, el diagrama cambia solo con ellos. -->
+                      <Border Height="58" Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="4">
+                        <ItemsControl ItemsSource="{Binding Blocks}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <Grid ColumnDefinitions="*,*,*,*,*,*" RowDefinitions="*,*,*,*,*,*,*" ColumnSpacing="2" RowSpacing="2" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemContainerTheme>
+                            <ControlTheme TargetType="ContentPresenter" x:DataType="vm:DashboardLayoutBlockViewModel">
+                              <Setter Property="Grid.Row" Value="{Binding GridRow}" />
+                              <Setter Property="Grid.Column" Value="{Binding GridColumn}" />
+                              <Setter Property="Grid.RowSpan" Value="{Binding GridRowSpan}" />
+                              <Setter Property="Grid.ColumnSpan" Value="{Binding GridColumnSpan}" />
+                              <Setter Property="HorizontalAlignment" Value="Stretch" />
+                              <Setter Property="VerticalAlignment" Value="Stretch" />
+                            </ControlTheme>
+                          </ItemsControl.ItemContainerTheme>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:DashboardLayoutBlockViewModel">
+                              <Border Classes="layout-block" Classes.wide="{Binding IsWide}" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                 </Border>
+
+                      <StackPanel Spacing="3">
+                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Text="{Binding Description}" Classes="muted" FontSize="10.5" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+   </Border>
+
+        <!-- Riel de control angosto (9*) + lienzo de vista previa dominante (16*) — proporción fluida en
+             vez de un ancho fijo en píxeles, para que ambas columnas encojan juntas en vez de desbordar
+             en ventanas cerca del MinWidth de MainWindow (980px) — mismo motivo por el que el resto de
+             columnas de este archivo usan '*' en vez de números fijos. -->
+        <Grid ColumnDefinitions="9*,28,16*">
+
+          <!-- ===== Columna izquierda: lista de secciones ===== -->
+          <Border Grid.Column="0" Classes="card" Padding="22" VerticalAlignment="Top">
+            <StackPanel Spacing="16">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9">
+                  <mi:MaterialIcon Kind="ViewDashboardOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Settings_Dashboard_SectionList_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding DashboardVisibilitySummary}" Classes="faint" VerticalAlignment="Center" Margin="14,0,0,0" />
+                <Button Grid.Column="2" Classes="ghost" Command="{Binding ResetDashboardLayoutCommand}">
+                  <TextBlock Text="{loc:Tr Settings_Dashboard_Reset, Converter={StaticResource UpperCaseConverter}}" />
+                </Button>
+              </Grid>
+
+              <TextBlock Text="{loc:Tr Settings_Dashboard_SectionList_Subtitle}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+
+              <ItemsControl ItemsSource="{Binding DashboardSections}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="8" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:DashboardSectionConfigViewModel">
+                    <Border Classes="dashboard-section-row" Classes.drag-over="{Binding IsDropTarget}" Classes.hidden="{Binding !IsVisible}"
+                            BorderThickness="1"
+                            Padding="12,10"
+                            DragDrop.AllowDrop="True"
+                            DragDrop.DragEnter="DashboardSectionRow_DragEnter"
+                            DragDrop.DragOver="DashboardSectionRow_DragOver"
+                            DragDrop.DragLeave="DashboardSectionRow_DragLeave"
+                            DragDrop.Drop="DashboardSectionRow_Drop">
+                      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+                        <Panel Grid.Column="0" Width="18" Margin="0,0,10,0" VerticalAlignment="Center"
+                               Cursor="SizeAll"
+                               ToolTip.Tip="{loc:Tr Settings_Dashboard_DragHandleTooltip}"
+                               PointerPressed="DashboardSectionHandle_PointerPressed"
+                               PointerMoved="DashboardSectionHandle_PointerMoved">
+                          <mi:MaterialIcon Kind="DragVertical" Width="16" Height="16" Foreground="{DynamicResource Ink40}" />
+                        </Panel>
+
+                        <TextBlock Grid.Column="1" Text="{Binding Position, StringFormat={}{0:00}}" Classes="faint"
+                                   Width="20" VerticalAlignment="Center" Margin="0,0,10,0" />
+
+                        <mi:MaterialIcon Grid.Column="2" Kind="{Binding Icon}" Width="17" Height="17"
+                                          Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
+
+                        <StackPanel Grid.Column="3" Spacing="2" VerticalAlignment="Center" Margin="0,0,10,0">
+                          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" />
+                            <Border Background="{DynamicResource Ink10}" Padding="6,2" IsVisible="{Binding !IsVisible}">
+                              <TextBlock Text="{loc:Tr Settings_Dashboard_Hidden_Label, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9" />
+                       </Border>
+                          </StackPanel>
+                          <TextBlock Text="{Binding Description}" Classes="muted" FontSize="11" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="0,0,10,0">
+                          <Button Classes="icon-btn" Width="24" Height="24"
+                                  IsEnabled="{Binding !IsFirst}"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).MoveDashboardSectionUpCommand}"
+                                  CommandParameter="{Binding Key}"
+                                  ToolTip.Tip="{loc:Tr Settings_Dashboard_MoveUp_Tooltip}"
+                                  AutomationProperties.Name="{loc:Tr Settings_Dashboard_MoveUp_Tooltip}">
+                            <mi:MaterialIcon Kind="ChevronUp" Width="14" Height="14" />
+                          </Button>
+                          <Button Classes="icon-btn" Width="24" Height="24"
+                                  IsEnabled="{Binding !IsLast}"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).MoveDashboardSectionDownCommand}"
+                                  CommandParameter="{Binding Key}"
+                                  ToolTip.Tip="{loc:Tr Settings_Dashboard_MoveDown_Tooltip}"
+                                  AutomationProperties.Name="{loc:Tr Settings_Dashboard_MoveDown_Tooltip}">
+                            <mi:MaterialIcon Kind="ChevronDown" Width="14" Height="14" />
+                          </Button>
+                        </StackPanel>
+
+                        <ToggleSwitch Grid.Column="5"
+                                      IsChecked="{Binding IsVisible, Mode=OneWay}"
+                                      Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).ToggleDashboardSectionVisibilityCommand}"
+                                      CommandParameter="{Binding Key}"
+                                      OnContent="" OffContent=""
+                                      AutomationProperties.Name="{loc:Tr Settings_Dashboard_Visible_Label}" />
+                      </Grid>
+                </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+     </Border>
+
+          <!-- ===== Columna derecha: vista previa en vivo, como una captura del Dashboard real ===== -->
+          <Border Grid.Column="2" Classes="card" Padding="0" VerticalAlignment="Top">
+            <StackPanel Spacing="0">
+              <StackPanel Spacing="4" Margin="22,22,22,16">
+                <StackPanel Orientation="Horizontal" Spacing="9">
+                  <mi:MaterialIcon Kind="EyeOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Settings_Dashboard_Preview_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="{loc:Tr Settings_Dashboard_Preview_Subtitle}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+
+              <!-- Marco de "ventana": una réplica estructural del Dashboard real, a escala reducida —
+                   mismos iconos, mismas etiquetas (Dashboard_QuickAccess_*, Dashboard_Vault_*, los
+                   estados vacíos Dashboard_Today_EmptyState/Dashboard_Activity_EmptyState, los
+                   encabezados de columna de Dashboard_BoardTasks_*), reutilizados tal cual del propio
+                   Dashboard en vez de reinventar copys nuevos. Las barras Ink10/15/20 marcan sólo el
+                   contenido que sí depende de datos reales del vault (tareas, notas) que esta página no
+                   tiene disponibles — todo lo demás es la interfaz real, sólo que en miniatura. -->
+              <Border Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,1,0">
+                <StackPanel Spacing="0">
+
+                  <!-- Barra de título de la "ventana" -->
+                  <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="12,8">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink20}" />
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink20}" />
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink20}" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Title, Converter={StaticResource UpperCaseConverter}}"
+                                 Classes="faint" FontSize="8.5" LetterSpacing="2" HorizontalAlignment="Center" />
+                    </Grid>
+              </Border>
+
+                  <!-- Mismo Grid de 6 columnas + ItemContainerTheme que el Dashboard real (DashboardView.axaml)
+                       en vez del StackPanel apilado que tenía antes — la vista previa ahora reproduce la
+                       organización elegida (Clásica/Pirámide invertida/Lateral/Rejilla modular/Mosaico),
+                       no solo el orden y la visibilidad. IsVisible en el propio contenedor (no solo en el
+                       contenido) para que una sección oculta no reserve celda: las ocultas no tienen una
+                       posición fresca calculada (Compute() sólo recibe las visibles), así que sin esto
+                       podrían quedar ancladas a una Grid.Row/Column obsoleta de un cálculo anterior. -->
+                  <ItemsControl ItemsSource="{Binding DashboardSections}" Margin="14">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <Grid ColumnDefinitions="*,*,*,*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                              ColumnSpacing="8" RowSpacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemContainerTheme>
+                      <ControlTheme TargetType="ContentPresenter" x:DataType="vm:DashboardSectionConfigViewModel">
+                        <Setter Property="Grid.Row" Value="{Binding GridRow}" />
+                        <Setter Property="Grid.Column" Value="{Binding GridColumn}" />
+                        <Setter Property="Grid.RowSpan" Value="{Binding GridRowSpan}" />
+                        <Setter Property="Grid.ColumnSpan" Value="{Binding GridColumnSpan}" />
+                        <Setter Property="IsVisible" Value="{Binding IsVisible}" />
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                        <Setter Property="VerticalAlignment" Value="Stretch" />
+                      </ControlTheme>
+                    </ItemsControl.ItemContainerTheme>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:DashboardSectionConfigViewModel">
+                        <StackPanel Spacing="6" IsVisible="{Binding IsVisible}">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <mi:MaterialIcon Kind="{Binding Icon}" Width="10" Height="10" Foreground="{DynamicResource Ink40}" />
+                            <TextBlock Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="8" LetterSpacing="1" VerticalAlignment="Center" />
+                          </StackPanel>
+
+                          <!-- Accesos rápidos: la misma rejilla de 4 tarjetas, mismos iconos/rótulos -->
+                          <UniformGrid Columns="4" ColumnSpacing="5" IsVisible="{Binding Key, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=QuickAccess}">
+                            <Border Classes="card" Padding="6,7">
+                              <StackPanel Spacing="4">
+                                <mi:MaterialIcon Kind="CalendarBlankOutline" Width="10" Height="10" Foreground="{DynamicResource Ink40}" />
+                                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Calendar_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="7" FontWeight="Bold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                              </StackPanel>
+                       </Border>
+                            <Border Classes="card" Padding="6,7">
+                              <StackPanel Spacing="4">
+                                <mi:MaterialIcon Kind="CalendarClockOutline" Width="10" Height="10" Foreground="{DynamicResource Ink40}" />
+                                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Reminders_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="7" FontWeight="Bold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                              </StackPanel>
+                       </Border>
+                            <Border Classes="card" Padding="6,7">
+                              <StackPanel Spacing="4">
+                                <mi:MaterialIcon Kind="BellRingOutline" Width="10" Height="10" Foreground="{DynamicResource Ink40}" />
+                                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Notifications_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="7" FontWeight="Bold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                              </StackPanel>
+                       </Border>
+                            <Border Classes="card" Padding="6,7">
+                              <StackPanel Spacing="4">
+                                <mi:MaterialIcon Kind="CogOutline" Width="10" Height="10" Foreground="{DynamicResource Ink40}" />
+                                <TextBlock Text="{loc:Tr Dashboard_QuickAccess_Settings_Title, Converter={StaticResource UpperCaseConverter}}" FontSize="7" FontWeight="Bold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                              </StackPanel>
+                       </Border>
+                          </UniformGrid>
+
+                          <!-- Hoy: el mismo estado vacío (icono + copy) que el Dashboard real muestra sin pendientes -->
+                          <Border Classes="card" Padding="14" IsVisible="{Binding Key, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Today}">
+                            <StackPanel Spacing="6" HorizontalAlignment="Center">
+                              <mi:MaterialIcon Kind="CalendarCheckOutline" Width="15" Height="15" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                              <TextBlock Text="{loc:Tr Dashboard_Today_EmptyState}" Classes="muted" FontSize="8" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                            </StackPanel>
+                     </Border>
+
+                          <!-- Almacén: las mismas tres filas icono+etiqueta+valor -->
+                          <Border Classes="card" Padding="10" IsVisible="{Binding Key, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Vault}">
+                            <StackPanel Spacing="7">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <mi:MaterialIcon Grid.Column="0" Kind="NoteTextOutline" Width="9" Height="9" Foreground="{DynamicResource Ink40}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_NotesLabel}" Classes="faint" FontSize="7" VerticalAlignment="Center" />
+                                <Border Grid.Column="2" Height="9" Width="16" Background="{DynamicResource Ink10}" />
+                              </Grid>
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <mi:MaterialIcon Grid.Column="0" Kind="SitemapOutline" Width="9" Height="9" Foreground="{DynamicResource Ink40}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SessionsLabel}" Classes="faint" FontSize="7" VerticalAlignment="Center" />
+                                <Border Grid.Column="2" Height="9" Width="16" Background="{DynamicResource Ink10}" />
+                              </Grid>
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <mi:MaterialIcon Grid.Column="0" Kind="Harddisk" Width="9" Height="9" Foreground="{DynamicResource Ink40}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SizeLabel}" Classes="faint" FontSize="7" VerticalAlignment="Center" />
+                                <Border Grid.Column="2" Height="9" Width="26" Background="{DynamicResource Ink10}" />
+                              </Grid>
+                            </StackPanel>
+                     </Border>
+
+                          <!-- Actividad: mismo estado vacío que el Dashboard real -->
+                          <Border Classes="card" Padding="14" IsVisible="{Binding Key, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Activity}">
+                            <StackPanel Spacing="6" HorizontalAlignment="Center">
+                              <mi:MaterialIcon Kind="BellRingOutline" Width="15" Height="15" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                              <TextBlock Text="{loc:Tr Dashboard_Activity_EmptyState}" Classes="muted" FontSize="8" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                            </StackPanel>
+                     </Border>
+
+                          <!-- Sesiones: mismo icono + subtítulo, con el resumen de conteo como marcador -->
+                          <Border Classes="card" Padding="10" IsVisible="{Binding Key, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Sessions}">
+                            <StackPanel Spacing="6">
+                              <mi:MaterialIcon Kind="SitemapOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                              <Border Height="9" Width="60" HorizontalAlignment="Left" Background="{DynamicResource Ink10}" />
+                              <TextBlock Text="{loc:Tr Dashboard_Sessions_Subtitle}" Classes="muted" FontSize="7.5" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                     </Border>
+
+                          <!-- Tareas del tablero: la misma barra de progreso de tres tramos + las tres
+                               columnas reales (mismos iconos/rótulos), con marcadores donde irían las
+                               tarjetas de tarea reales -->
+                          <StackPanel Spacing="8" IsVisible="{Binding Key, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=BoardTasks}">
+                            <StackPanel Orientation="Horizontal" Spacing="0">
+                              <Border Width="34" Height="4" Background="{DynamicResource Ink20}" />
+                              <Border Width="20" Height="4" Background="{DynamicResource Ink50}" />
+                              <Border Width="14" Height="4" Background="{DynamicResource InkBrush}" />
+                            </StackPanel>
+                            <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1">
+                              <Grid ColumnDefinitions="*,1,*,1,*" Background="{DynamicResource Ink10}">
+                                <Border Grid.Column="0" Background="{DynamicResource PanelBackgroundBrush}" Padding="7">
+                                  <StackPanel Spacing="6">
+                                    <mi:MaterialIcon Kind="TrayFull" Width="9" Height="9" Foreground="{DynamicResource Ink40}" />
+                                    <Border Height="6" Background="{DynamicResource Ink10}" />
+                                    <Border Height="6" Width="18" HorizontalAlignment="Left" Background="{DynamicResource Ink10}" />
+                                  </StackPanel>
+                           </Border>
+                                <Border Grid.Column="2" Background="{DynamicResource PanelBackgroundBrush}" Padding="7">
+                                  <StackPanel Spacing="6">
+                                    <mi:MaterialIcon Kind="ProgressClock" Width="9" Height="9" Foreground="{DynamicResource Ink40}" />
+                                    <Border Height="6" Background="{DynamicResource Ink10}" />
+                                  </StackPanel>
+                           </Border>
+                                <Border Grid.Column="4" Background="{DynamicResource PanelBackgroundBrush}" Padding="7">
+                                  <StackPanel Spacing="6">
+                                    <mi:MaterialIcon Kind="CheckCircleOutline" Width="9" Height="9" Foreground="{DynamicResource Ink40}" />
+                                    <Border Height="6" Background="{DynamicResource Ink10}" />
+                                  </StackPanel>
+                         </Border>
+                              </Grid>
+                            </Border>
+                          </StackPanel>
+
+                          <!-- Notas recientes: la misma tarjeta destacada + lista compacta, con
+                               marcadores donde irían el título/fecha reales de cada nota -->
+                          <Grid ColumnDefinitions="7*,8,5*" IsVisible="{Binding Key, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=RecentNotes}">
+                            <Border Grid.Column="0" Classes="note-card" Padding="10">
+                              <StackPanel Spacing="7">
+                                <Border Height="6" Width="24" HorizontalAlignment="Left" Background="{DynamicResource Ink10}" />
+                                <Border Height="10" Background="{DynamicResource Ink15}" />
+                                <Border Height="6" Width="46" HorizontalAlignment="Left" Background="{DynamicResource Ink10}" />
+                              </StackPanel>
+                       </Border>
+                            <StackPanel Grid.Column="2" Spacing="6">
+                              <Border Classes="card" Padding="7">
+                                <StackPanel Spacing="4">
+                                  <Border Height="6" Background="{DynamicResource Ink10}" />
+                                  <Border Height="5" Width="30" HorizontalAlignment="Left" Background="{DynamicResource Ink10}" />
+                                </StackPanel>
+                         </Border>
+                              <Border Classes="card" Padding="7">
+                                <StackPanel Spacing="4">
+                                  <Border Height="6" Background="{DynamicResource Ink10}" />
+                                  <Border Height="5" Width="30" HorizontalAlignment="Left" Background="{DynamicResource Ink10}" />
+                                </StackPanel>
+                         </Border>
+                            </StackPanel>
+                          </Grid>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+         </Border>
+            </StackPanel>
+     </Border>
+
+        </Grid>
+      </StackPanel>
+      </Panel>
     </ScrollViewer>
 
     <!-- ===================== Diálogo: restablecer ajustes por defecto ===================== -->
@@ -1255,7 +1853,7 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </Border>
   </Grid>
 </UserControl>

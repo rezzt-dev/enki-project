@@ -51,7 +51,7 @@ public partial class EditorView : UserControl
         textView.LineTransformers.Add(_colorizer);
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
-        textView.CurrentLineBackground = new SolidColorBrush(Colors.White, 0.035);
+        textView.CurrentLineBackground = ResolveCurrentLineBrush();
         textView.CurrentLineBorder = null;
 
         // AvaloniaEdit's Fluent theme selection defaults to a rounded, opaque box that doesn't
@@ -102,6 +102,18 @@ public partial class EditorView : UserControl
 
         EditorPreferences.Changed += OnEditorPreferencesChanged;
         DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
+    }
+
+    private static IBrush ResolveCurrentLineBrush()
+    {
+        if (Application.Current is { } app
+            && app.TryFindResource("InkBrush", out var ink) && ink is IBrush inkBrush)
+        {
+            return inkBrush is ISolidColorBrush solid
+                ? new SolidColorBrush(solid.Color, 0.035)
+                : inkBrush;
+        }
+        return new SolidColorBrush(Colors.White, 0.035);
     }
 
     private static FontFamily ResolveEditorFontFamily()
@@ -567,22 +579,38 @@ public partial class EditorView : UserControl
             }
         }
 
-        if (e.KeyModifiers == KeyModifiers.Control)
+        // Escape exits zen/focus mode (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — only
+        // while it's actually active, so a stray Escape elsewhere in the editor keeps its usual no-op
+        // behavior instead of this swallowing every Escape press unconditionally.
+        if (_boundVm?.IsZenMode == true && e.Key == Key.Escape)
         {
-            switch (e.Key)
-            {
-                case Key.B: WrapSelection("**"); e.Handled = true; return;
-                case Key.I: WrapSelection("_"); e.Handled = true; return;
-                case Key.K: InsertAtCaret(LocalizationService.Instance["Editor_LinkInsert_Placeholder"]); e.Handled = true; return;
-                case Key.F:
-                    e.Handled = true;
-                    OpenFindReplace(replaceMode: false);
-                    return;
-                case Key.H:
-                    e.Handled = true;
-                    OpenFindReplace(replaceMode: true);
-                    return;
-            }
+            e.Handled = true;
+            _boundVm.ToggleZenModeCommand.Execute(null);
+            return;
+        }
+
+        // Atajos de formato remapeables (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) — ya no
+        // se comparan literales Key.B/Key.I/... contra KeyModifiers.Control, sino el gesto efectivo que
+        // Ajustes › Atajos haya asignado a cada uno vía ShortcutRegistry.
+        if (ShortcutRegistry.Matches(ShortcutIds.EditorBold, e)) { WrapSelection("**"); e.Handled = true; return; }
+        if (ShortcutRegistry.Matches(ShortcutIds.EditorItalic, e)) { WrapSelection("_"); e.Handled = true; return; }
+        if (ShortcutRegistry.Matches(ShortcutIds.EditorInsertLink, e))
+        {
+            InsertAtCaret(LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
+            e.Handled = true;
+            return;
+        }
+        if (ShortcutRegistry.Matches(ShortcutIds.EditorFind, e))
+        {
+            e.Handled = true;
+            OpenFindReplace(replaceMode: false);
+            return;
+        }
+        if (ShortcutRegistry.Matches(ShortcutIds.EditorFindReplace, e))
+        {
+            e.Handled = true;
+            OpenFindReplace(replaceMode: true);
+            return;
         }
 
         if (e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
