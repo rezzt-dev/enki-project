@@ -19,7 +19,7 @@ Marcar aquí qué fase está en curso o completada según se implemente:
 - [x] Fase 5 — Cobertura de tests en funcionalidad nueva sin probar
 - [x] Fase 6 (opcional) — Paridad de producto Kanban↔Polar
 - [x] Fase 7 (opcional) — Accesibilidad puntual restante
-- [ ] Fase 8 (opcional) — Rendimiento puntual y mejoras menores
+- [x] Fase 8 (opcional) — Rendimiento puntual y mejoras menores
 
 ---
 
@@ -367,24 +367,67 @@ específicamente lo que las funcionalidades nuevas dejaron sin cubrir.
 
 ## Fase 8 (opcional) — Rendimiento puntual y mejoras menores (esfuerzo bajo, impacto bajo salvo vaults/notas grandes)
 
-- [ ] Enrutar `RecomputeFences()` (resaltado de bloques de código en vivo) por el mismo debounce de 600ms
+- [x] Enrutar `RecomputeFences()` (resaltado de bloques de código en vivo) por el mismo debounce de 600ms
       que ya usa el resto del editor (`services/editor/EditorDebounce.cs`), en vez de recalcular en cada
-      pulsación. (análisis §4.2, Media — el más urgente de esta fase para notas largas)
-- [ ] Debounce en `FindReplaceViewModel.RefreshStatus()`/`ReplaceAll`. (análisis §4.2, Baja)
-- [ ] Debounce en la búsqueda del Calendario (`CalendarViewModel.OnSearchTextChanged`). (análisis §4.4,
-      Baja)
-- [ ] Contador de palabras/tiempo de lectura consciente de scripts sin espacios (CJK). (análisis §4.2, Baja)
-- [ ] Formato de fecha localizado en `ReminderEditorViewModel.NotifyDateDisplayLabel` (usa
+      pulsación. (análisis §4.2, Media — el más urgente de esta fase para notas largas) — nuevo
+      `DispatcherTimer` en `EditorView` (mismo patrón restart-on-Tick que `EditorOutlineViewModel`):
+      `OnEditorTextChanged` reinicia el timer en vez de llamar `RecomputeFences()` directamente; al disparar,
+      recalcula las cercas y fuerza un `Redraw()` explícito (necesario porque, a diferencia de un cambio de
+      texto, el propio disparo del timer no invalida las líneas visuales por sí solo). El recálculo síncrono
+      al cambiar de pestaña (`OnDataContextChanged`) queda intacto.
+- [x] Debounce en `FindReplaceViewModel.RefreshStatus()`/`ReplaceAll`. (análisis §4.2, Baja) — mismo patrón
+      `DispatcherTimer`: `SearchText`/`MatchCase` reinician el timer en vez de llamar `RefreshStatus()`
+      directamente; abrir/cerrar el panel (`IsOpen`) sigue siendo inmediato (no es un evento por pulsación) y
+      ahora se dispara también al cerrar, no solo al abrir, para poder limpiar el resaltado de coincidencias
+      (ver más abajo). `ReplaceAll` en sí no se debounció — es una acción explícita de un solo clic, no un
+      evento por pulsación, así que retrasarla solo añadiría latencia sin reducir trabajo.
+- [x] Debounce en la búsqueda del Calendario (`CalendarViewModel.OnSearchTextChanged`). (análisis §4.4,
+      Baja) — mismo patrón `DispatcherTimer` (`_searchDebounceTimer`), reiniciado en cada pulsación en vez de
+      llamar `Rebuild()` directamente; los filtros de prioridad/etiquetas (toggles, no pulsaciones) siguen
+      recalculando de forma inmediata.
+- [x] Contador de palabras/tiempo de lectura consciente de scripts sin espacios (CJK). (análisis §4.2, Baja)
+      — `EditorStatsService.CountWords` ahora cuenta cada carácter Hiragana/Katakana/Han/Hangul como su
+      propia "palabra" en vez de agruparlo con los vecinos por espacios (que en CJK no existen); 2 tests
+      nuevos (texto puramente CJK y texto mixto CJK+latino).
+- [x] Formato de fecha localizado en `ReminderEditorViewModel.NotifyDateDisplayLabel` (usa
       `CultureInfo.CurrentCulture` en vez de `dd/MM/yyyy` fijo, replicando la corrección ya hecha en
-      `CalendarQuickCreateViewModel`). (análisis §4.4, Baja)
-- [ ] "Resaltar todas las coincidencias" en Buscar/Reemplazar del editor, no solo la actual. (análisis
-      §4.2, Baja)
-- [ ] Manejo de colisión visual para ítems con hora solapada en Calendario Semana/Día (posicionamiento
+      `CalendarQuickCreateViewModel`). (análisis §4.4, Baja) — mismo patrón exacto: `date.ToString("d",
+      CultureInfo.CurrentCulture)` en vez del formato fijo europeo.
+- [x] "Resaltar todas las coincidencias" en Buscar/Reemplazar del editor, no solo la actual. (análisis
+      §4.2, Baja) — `LivePreviewState.SearchHighlightText`/`SearchHighlightMatchCase`, actualizados por
+      `EditorView.RefreshFindStatus` (limpiados cuando el panel se cierra); `MarkdownBackgroundRenderer`
+      sombrea con `BackgroundGeometryBuilder` cada aparición visible del término de búsqueda, reutilizando el
+      mismo `HighlightBackground` (amarillo 28% opacidad) que la sintaxis `==marca==`. Solo escanea las
+      líneas de documento actualmente visibles, no el documento completo.
+- [x] Manejo de colisión visual para ítems con hora solapada en Calendario Semana/Día (posicionamiento
       horizontal en vez de superposición total). (análisis §4.4, Media — el de mayor esfuerzo de esta fase)
-- [ ] `NoteExportRenderer`: soportar imágenes con URI `data:` preexistente y rutas absolutas de Windows
-      con letra de unidad, en vez de descartarlas en silencio. (análisis §4.2, Media)
+      — nuevo `CalendarTimedItemLayout.Apply` (algoritmo clásico de "salas de reuniones": agrupa ítems
+      transitivamente solapados en clusters, empaqueta cada cluster en el menor número de subcolumnas
+      posible reutilizando una subcolumna en cuanto su ocupante anterior termina); `CalendarTimedItemViewModel`
+      expone `LeftFraction`/`WidthFraction` (0..1), calculados una vez por columna desde
+      `CalendarWeekColumnViewModel`. Nuevo panel `CalendarTimedItemsPanel` (arrange-only) sustituye al
+      `Panel` plano del `ItemsPanelTemplate` de `TimedItems` en `CalendarView.axaml` para que cada ítem
+      ocupe solo su fracción horizontal en vez de estirarse a todo el ancho de la columna del día. Sin
+      la optimización adicional de "ensanchar un ítem si no choca con nada en las columnas de su derecha"
+      que usa Google Calendar — deliberado, para mantener el arreglo de esfuerzo bajo: cada ítem obtiene un
+      hueco sin solapamiento, no siempre el más ancho que podría permitirse visualmente. 7 tests nuevos
+      (`CalendarTimedItemLayoutTests`) cubren clusters simples, disjuntos, encadenados con reutilización de
+      columna y la lista vacía.
+- [x] `NoteExportRenderer`: soportar imágenes con URI `data:` preexistente y rutas absolutas de Windows
+      con letra de unidad, en vez de descartarlas en silencio. (análisis §4.2, Media) — ambos casos
+      coincidían con el regex de detección de esquema (`C:` parece un esquema de una sola letra; `data:`
+      es un esquema real pero no está en `SafeSchemes`) y por tanto se descartaban a texto alternativo antes
+      de llegar siquiera a `TryEmbedLocalImage`. `LooksLikeRelativePath` (renombrado a `LooksLikeLocalPath`,
+      ya no describe solo rutas relativas) ahora reconoce una ruta absoluta de Windows (`C:\...`, `C:/...`)
+      vía un regex dedicado; nuevo `IsDataImageUri` deja pasar `data:image/...;base64,...` — solo para
+      imágenes, no para enlaces (`AppendLink` conserva la lista blanca estricta: un enlace `data:text/html`
+      abierto en pestaña nueva sí podría ejecutar script). 5 tests nuevos cubren ambos casos en imagen y
+      enlace, más el caso negativo de que un enlace `data:` sigue degradándose a texto plano.
 
 **Dependencias**: ninguna. Cajón de sastre deliberado, igual que la Fase 10 del roadmap anterior.
+
+**Criterio de aceptación**: los 8 puntos anteriores implementados; suite completa en verde (996 tests en
+`enki.Tests`, 20 en `enki.UITests`).
 
 ---
 

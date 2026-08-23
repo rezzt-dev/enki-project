@@ -223,6 +223,50 @@ public class NoteExportRendererTests : IDisposable
     }
 
     [Fact]
+    public void RenderBody_Image_WithPreexistingDataUri_KeepsItAsIs()
+    {
+        // Fase 8: a data: image (pasted straight into the note, or left over from a previous export) used
+        // to be misclassified as an unsafe URL scheme and silently dropped to alt-text-only, even though
+        // it's already a fully self-contained src that needs no further work.
+        var dataUri = $"data:image/png;base64,{Convert.ToBase64String(new byte[] { 1, 2, 3 })}";
+
+        var html = Body($"![local]({dataUri})");
+
+        Assert.Contains($"<img src=\"{dataUri}\" alt=\"local\"/>", html);
+    }
+
+    [Fact]
+    public void RenderBody_Image_WithWindowsAbsolutePath_KeepsOriginalPathInsteadOfDiscardingIt()
+    {
+        // Fase 8: "C:\..." matches the same scheme-detection regex a real URL scheme does (a letter run
+        // followed by ':'), so it used to be misclassified as an unsafe scheme and dropped to alt-text-only
+        // instead of being treated as the local path it is (the file won't exist on this machine either
+        // way, but it must still render as an <img>, not disappear).
+        var html = Body("![local](C:\\Users\\foo\\img.png)");
+
+        Assert.Contains("<img src=\"C:\\Users\\foo\\img.png\" alt=\"local\"/>", html);
+    }
+
+    [Fact]
+    public void RenderBody_Link_WithWindowsAbsolutePath_RendersAnchorInsteadOfDiscardingIt()
+    {
+        var html = Body("[archivo](C:/Users/foo/informe.pdf)");
+
+        Assert.Contains("<a href=\"C:/Users/foo/informe.pdf\" target=\"_blank\" rel=\"noopener noreferrer\">archivo</a>", html);
+    }
+
+    [Fact]
+    public void RenderBody_Link_WithDataUri_StillDegradesToPlainText()
+    {
+        // Unlike images, links keep the stricter allowlist: a data:text/html link opened in a new tab
+        // could execute script, so AppendLink deliberately doesn't get the same data:image/... carve-out.
+        var html = Body("[pulsa](data:text/html,hola)");
+
+        Assert.DoesNotContain("<a ", html);
+        Assert.Contains("pulsa", html);
+    }
+
+    [Fact]
     public void RenderBody_StripsFrontmatter_Always()
     {
         var html = Body("---\ntags: [a, b]\n---\n\nContenido");

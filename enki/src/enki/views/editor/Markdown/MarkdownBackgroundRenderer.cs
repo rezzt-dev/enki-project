@@ -1,5 +1,7 @@
+using System;
 using Avalonia;
 using Avalonia.Media;
+using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 
 namespace enki.Views.Editor.Markdown;
@@ -76,5 +78,39 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
         }
 
         FlushCodeBlockBorder();
+
+        DrawSearchHighlights(textView, drawingContext);
+    }
+
+    /// <summary>Shades every visible occurrence of the Buscar/Reemplazar search term, not just the one the
+    /// native text selection already marks as "current" — convención habitual de la mayoría de editores de
+    /// texto que faltaba aquí (análisis §4.2, Fase 8). Only scans the currently visible document lines
+    /// (same cost class as the fence/blockquote loop above), not the whole document.</summary>
+    private void DrawSearchHighlights(TextView textView, DrawingContext drawingContext)
+    {
+        var searchText = _state.SearchHighlightText;
+        if (string.IsNullOrEmpty(searchText)) return;
+
+        var comparison = _state.SearchHighlightMatchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        var builder = new BackgroundGeometryBuilder { AlignToWholePixels = true, CornerRadius = 2 };
+        var hasMatch = false;
+
+        foreach (var visualLine in textView.VisualLines)
+        {
+            var docLine = visualLine.FirstDocumentLine;
+            var text = textView.Document.GetText(docLine);
+            var index = 0;
+            while ((index = text.IndexOf(searchText, index, comparison)) != -1)
+            {
+                builder.AddSegment(textView, new SimpleSegment(docLine.Offset + index, searchText.Length));
+                hasMatch = true;
+                index += searchText.Length;
+            }
+        }
+
+        if (!hasMatch) return;
+        var geometry = builder.CreateGeometry();
+        if (geometry is not null)
+            drawingContext.DrawGeometry(_style.HighlightBackground, null, geometry);
     }
 }

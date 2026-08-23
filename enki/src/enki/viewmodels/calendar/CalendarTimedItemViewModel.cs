@@ -21,6 +21,15 @@ public sealed class CalendarTimedItemViewModel
     public double TopOffset { get; }
     public double Height { get; }
 
+    /// <summary>Horizontal slot this item occupies, as a 0..1 fraction of the day column's width — set by
+    /// <see cref="CalendarTimedItemLayout.Apply"/> once every item in the column is known (a single item
+    /// can't compute this on its own; it needs to see its siblings' time ranges too). Defaults to a full-
+    /// width, zero-offset slot so an item never rendered through the layout pass still draws sensibly.
+    /// <see cref="enki.Controls.CalendarTimedItemsPanel"/> reads both to arrange each item's horizontal
+    /// slice.</summary>
+    public double LeftFraction { get; private set; }
+    public double WidthFraction { get; private set; } = 1.0;
+
     /// <summary>The effective duration (in minutes) this block is drawn with — real duration when the
     /// item has one (floored), otherwise the shared no-duration convention. Exposed so
     /// CalendarView.axaml.cs's resize gesture has a starting value to adjust from without recomputing this
@@ -38,5 +47,13 @@ public sealed class CalendarTimedItemViewModel
             : minimumVisualHeightMinutes;
         EffectiveDurationMinutes = (int)effectiveMinutes;
         Height = effectiveMinutes / 60.0 * hourRowHeight;
+    }
+
+    /// <summary>Called once per item by <see cref="CalendarTimedItemLayout.Apply"/>; not meant to be
+    /// called from anywhere else.</summary>
+    internal void SetHorizontalLayout(int columnIndex, int columnCount)
+    {
+        WidthFraction = 1.0 / columnCount;
+        LeftFraction = columnIndex * WidthFraction;
     }
 }

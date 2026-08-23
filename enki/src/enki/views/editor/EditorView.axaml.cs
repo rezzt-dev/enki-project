@@ -30,6 +30,12 @@ public partial class EditorView : UserControl
     private readonly MarkdownLivePreviewColorizer _colorizer;
     private bool _suppressTextChanged;
 
+    /// <summary>Debounces <see cref="RecomputeFences"/> against every keystroke — on a long note with
+    /// several code blocks, rescanning the whole document for fence boundaries on each character typed
+    /// showed up as input lag (análisis §4.2, Fase 8). Same delay and restart-on-Tick pattern as
+    /// <see cref="EditorOutlineViewModel"/>'s own debounce timer.</summary>
+    private readonly DispatcherTimer _fencesTimer;
+
     /// <summary>The tab this view is currently bound to, tracked separately from DataContext so
     /// OnDataContextChanged can still reach the *outgoing* tab (to save its caret/scroll state into it)
     /// after DataContext has already moved on to the new one.</summary>
@@ -48,6 +54,13 @@ public partial class EditorView : UserControl
         var textView = textArea.TextView;
 
         _colorizer = new MarkdownLivePreviewColorizer(_livePreviewState, _style);
+        _fencesTimer = new DispatcherTimer { Interval = EditorDebounce.Delay };
+        _fencesTimer.Tick += (_, _) =>
+        {
+            _fencesTimer.Stop();
+            RecomputeFences();
+            textView.Redraw();
+        };
         textView.LineTransformers.Add(_colorizer);
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
@@ -253,8 +266,11 @@ public partial class EditorView : UserControl
     {
         if (_boundVm is null) return;
         _boundVm.FindReplace.IsReplaceMode = replaceMode;
-        _boundVm.FindReplace.IsOpen = true;
+        // SearchText before IsOpen: OnIsOpenChanged does an immediate (non-debounced) status refresh, so
+        // opening with pre-selected text shows its match count/highlight right away instead of waiting on
+        // the SearchText debounce (Fase 8) to catch up.
         _boundVm.FindReplace.SearchText = Editor.SelectedText;
+        _boundVm.FindReplace.IsOpen = true;
         Dispatcher.UIThread.Post(() =>
         {
             FindReplaceSearchTextBox?.Focus();
@@ -374,9 +390,21 @@ public partial class EditorView : UserControl
         Dispatcher.UIThread.Post(() => Editor.TextArea.Caret.BringCaretToView(), DispatcherPriority.Background);
     }
 
+    /// <summary>Keeps <see cref="LivePreviewState.SearchHighlightText"/> in sync with whether the
+    /// find/replace panel is actually open — otherwise closing it would leave the last search term's
+    /// matches shaded even though the panel (and its "current match" selection) is gone.</summary>
+    private void UpdateSearchHighlight(string searchText, bool matchCase)
+    {
+        var isOpen = _boundVm?.FindReplace.IsOpen == true;
+        _livePreviewState.SearchHighlightText = isOpen && !string.IsNullOrEmpty(searchText) ? searchText : null;
+        _livePreviewState.SearchHighlightMatchCase = matchCase;
+        Editor.TextArea.TextView.Redraw();
+    }
+
     private void RefreshFindStatus(string searchText, bool matchCase)
     {
         if (_boundVm is null) return;
+        UpdateSearchHighlight(searchText, matchCase);
         if (string.IsNullOrEmpty(searchText))
         {
             _boundVm.FindReplace.ReportStatus(0, 0);
@@ -544,7 +572,8 @@ public partial class EditorView : UserControl
 
     private void OnEditorTextChanged(object? sender, EventArgs e)
     {
-        RecomputeFences();
+        _fencesTimer.Stop();
+        _fencesTimer.Start();
         if (_suppressTextChanged) return;
         if (DataContext is EditorViewModel vm) vm.OnTextChanged(Editor.Text ?? string.Empty);
         UpdateSlashCommands();

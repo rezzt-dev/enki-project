@@ -75,4 +75,26 @@ public class EditorStatsServiceTests : IDisposable
         Assert.Equal(DateTime.MinValue, stats.CreatedUtc);
         Assert.Equal(DateTime.MinValue, stats.ModifiedUtc);
     }
+
+    [Fact]
+    public void Compute_CjkText_CountsEachCharacterAsAWord()
+    {
+        // Un párrafo en chino/japonés/coreano no usa espacios entre palabras — sin el tratamiento
+        // específico de CJK, todo el párrafo contaría como "1 palabra" (análisis §4.2, Fase 8).
+        var markdown = "これはテストです";
+
+        var stats = EditorStatsService.Compute(markdown, _tempFile);
+
+        Assert.Equal(8, stats.WordCount);
+    }
+
+    [Fact]
+    public void Compute_MixedCjkAndLatinText_CountsBothIndependently()
+    {
+        var markdown = "Hola 世界 mundo";
+
+        var stats = EditorStatsService.Compute(markdown, _tempFile);
+
+        Assert.Equal(4, stats.WordCount);
+    }
 }

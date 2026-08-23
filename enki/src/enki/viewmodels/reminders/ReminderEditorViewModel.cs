@@ -68,8 +68,12 @@ public sealed partial class ReminderEditorViewModel : ObservableObject
     public string DescriptionCounterLabel => $"{Description.Length}/{DescriptionMaxLength}";
     public bool CanSave => !string.IsNullOrWhiteSpace(Title) && NotifyDate is not null;
 
+    // Was a hardcoded "dd/MM/yyyy" pattern — always European day/month order regardless of the active
+    // culture, which reads backwards for en-US users (who expect M/d/yyyy). "d" is .NET's short-date
+    // *pattern*, resolved against CultureInfo.CurrentCulture at call time — same fix already applied to
+    // CalendarQuickCreateViewModel.DateDisplayLabel (análisis §4.4, Fase 8).
     public string NotifyDateDisplayLabel => NotifyDate is { } date
-        ? $"{date:dd/MM/yyyy} {NotifyHour:00}:{NotifyMinute:00}"
+        ? $"{date.ToString("d", CultureInfo.CurrentCulture)} {NotifyHour:00}:{NotifyMinute:00}"
         : LocalizationService.Instance["Reminders_Editor_SelectDatePlaceholder"];
 
     /// <summary>Was <c>SpanishMonths[CalendarMonth.Month - 1]</c> — a hardcoded Spanish month-name array,

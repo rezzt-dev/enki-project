@@ -383,7 +383,7 @@ public static class NoteExportRenderer
     private static void AppendLink(StringBuilder sb, MdSpan span, string text)
     {
         var url = span.LinkTarget ?? string.Empty;
-        if (!IsSafeUrl(url) && !LooksLikeRelativePath(url))
+        if (!IsSafeUrl(url) && !LooksLikeLocalPath(url))
         {
             sb.Append(EscapeText(text));
             return;
@@ -395,7 +395,13 @@ public static class NoteExportRenderer
     private static void AppendImage(StringBuilder sb, MdSpan span, string alt, string? noteDirectory)
     {
         var url = span.LinkTarget ?? string.Empty;
-        if (!IsSafeUrl(url) && !LooksLikeRelativePath(url))
+        // A pre-existing data: image (pasted straight into the note, or from a previous export) doesn't
+        // match SafeSchemes/LooksLikeLocalPath — it's neither an http(s)/mailto URL nor a filesystem path
+        // — so without this check it was silently dropped to alt-text-only even though it's already a
+        // fully self-contained src that needs no further work (análisis §4.2, Fase 8). Scoped to images
+        // only: a data: *link* could carry data:text/html and execute script if opened, which AppendLink's
+        // stricter SafeSchemes allowlist correctly keeps rejecting.
+        if (!IsSafeUrl(url) && !LooksLikeLocalPath(url) && !IsDataImageUri(url))
         {
             sb.Append(EscapeText(alt));
             return;
@@ -457,8 +463,19 @@ public static class NoteExportRenderer
         return schemeMatch.Success && SafeSchemes.Contains(schemeMatch.Value[..^1]);
     }
 
-    private static bool LooksLikeRelativePath(string url) =>
-        url.Length > 0 && !SchemeRegex.IsMatch(url) && !url.StartsWith("//", StringComparison.Ordinal);
+    // A Windows absolute path ("C:\Users\...", "C:/Users/...") matches SchemeRegex too — a single letter
+    // followed by ':' looks exactly like a URL scheme — so without this check LooksLikeLocalPath below
+    // misclassified it as "unsafe scheme" and the image/link got silently dropped down to alt-text-only
+    // (análisis §4.2, Fase 8) instead of being treated as the local file path it actually is.
+    private static readonly Regex WindowsDrivePathRegex = new(@"^[a-zA-Z]:[\\/]", RegexOptions.Compiled);
+
+    private static bool LooksLikeLocalPath(string url) =>
+        url.Length > 0 && !url.StartsWith("//", StringComparison.Ordinal)
+        && (!SchemeRegex.IsMatch(url) || WindowsDrivePathRegex.IsMatch(url));
+
+    private static readonly Regex DataImageUriRegex = new(@"^data:image/[a-zA-Z0-9.+\-]+;base64,", RegexOptions.Compiled);
+
+    private static bool IsDataImageUri(string url) => DataImageUriRegex.IsMatch(url);
 
     /// <summary>Primero resuelve los escapes de barra invertida de Markdown (<c>\*</c> → <c>*</c>) y
     /// después aplica el escape HTML sobre el resultado — al revés fallaría el caso <c>\&gt;</c> escrito

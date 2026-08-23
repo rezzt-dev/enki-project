@@ -15,6 +15,13 @@ public sealed class LivePreviewState
     public List<(int Start, int End)> Selections { get; set; } = Empty;
     public Dictionary<int, FenceInfo> Fences { get; set; } = new();
 
+    /// <summary>Term the editor's Buscar/Reemplazar panel is currently searching for — null/empty means
+    /// no highlight. Set by the view whenever the panel is open and its search text/match-case changes, so
+    /// <see cref="MarkdownBackgroundRenderer"/> can shade every match, not just the one the native text
+    /// selection already marks as "current" (análisis §4.2, Fase 8).</summary>
+    public string? SearchHighlightText { get; set; }
+    public bool SearchHighlightMatchCase { get; set; }
+
     public FenceInfo GetFence(int lineNumber) =>
         Fences.TryGetValue(lineNumber, out var f) ? f : default;
 

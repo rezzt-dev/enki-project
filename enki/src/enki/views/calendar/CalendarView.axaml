@@ -224,7 +224,10 @@
     <!-- Same chip + detail popover as above, but absolutely positioned on the Semana/Día hour grid via
          TopOffset/Height instead of flowing in a stack — see CalendarTimedItemViewModel. Kept as its own
          template (rather than reusing CalendarChipTemplate through an extra wrapper) because its DataType
-         is the CalendarTimedItemViewModel positioning wrapper, not the raw CalendarItemViewModel. -->
+         is the CalendarTimedItemViewModel positioning wrapper, not the raw CalendarItemViewModel. This
+         template only ever handles the vertical axis (Margin/Height, above) — the horizontal slice for
+         items with overlapping time ranges is the hosting controls:CalendarTimedItemsPanel's job, reading
+         LeftFraction/WidthFraction off the same DataContext (análisis §4.4, Fase 8). -->
     <DataTemplate x:Key="CalendarTimedChipTemplate" x:DataType="vm:CalendarTimedItemViewModel">
       <Panel VerticalAlignment="Top" Height="{Binding Height}"
              Margin="{Binding TopOffset, Converter={StaticResource TopOffsetToMarginConverter}}">
@@ -781,7 +784,7 @@
                         <ItemsControl ItemsSource="{Binding TimedItems}" ItemTemplate="{StaticResource CalendarTimedChipTemplate}">
                           <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                              <Panel />
+                              <controls:CalendarTimedItemsPanel />
                             </ItemsPanelTemplate>
                           </ItemsControl.ItemsPanel>
                         </ItemsControl>

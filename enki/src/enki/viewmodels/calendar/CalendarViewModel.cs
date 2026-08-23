@@ -50,6 +50,12 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private readonly Action<CalendarItemViewModel> _openItemEditor;
     private readonly DispatcherTimer _nowTimer;
 
+    /// <summary>Debounces <see cref="Rebuild"/> against every keystroke in the search box — it re-fetches
+    /// and re-filters the whole visible range from <see cref="CalendarAggregationService"/>, which on a
+    /// vault with many items showed up as input lag typing into the search field (análisis §4.4, Fase 8).
+    /// Same delay/restart-on-Tick pattern as the editor's debounce timers (<see cref="EditorDebounce"/>).</summary>
+    private readonly DispatcherTimer _searchDebounceTimer;
+
     /// <summary>42 fixed cells (6 weeks) for the month containing <see cref="ReferenceDate"/> — see
     /// <see cref="RebuildMonth"/>.</summary>
     public ObservableCollection<CalendarMonthDayViewModel> Days { get; } = [];
@@ -294,7 +300,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
 
     // Search/priority/tag filters aren't persisted (doc §1 only requires persisting the layer
     // combination) — session-only, reset each time Enki opens.
-    partial void OnSearchTextChanged(string value) => Rebuild();
+    partial void OnSearchTextChanged(string value)
+    {
+        _searchDebounceTimer.Stop();
+        _searchDebounceTimer.Start();
+    }
     partial void OnPriorityFilterHighChanged(bool value) => Rebuild();
     partial void OnPriorityFilterMediumChanged(bool value) => Rebuild();
     partial void OnPriorityFilterLowChanged(bool value) => Rebuild();
@@ -363,6 +373,13 @@ public sealed partial class CalendarViewModel : ViewModelBase
         _nowTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
         _nowTimer.Tick += (_, _) => RefreshNowIndicator();
         _nowTimer.Start();
+
+        _searchDebounceTimer = new DispatcherTimer { Interval = EditorDebounce.Delay };
+        _searchDebounceTimer.Tick += (_, _) =>
+        {
+            _searchDebounceTimer.Stop();
+            Rebuild();
+        };
 
         Rebuild();
     }
