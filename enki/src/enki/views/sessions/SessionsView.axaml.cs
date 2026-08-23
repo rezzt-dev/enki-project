@@ -42,6 +42,40 @@ public partial class SessionsView : UserControl
 
     private SessionsViewModel? Vm => DataContext as SessionsViewModel;
 
+    private void SessionsView_Loaded(object? sender, RoutedEventArgs e) => Focus();
+
+    // Escape closes whichever of the four session dialogs (delete confirmation, unlock/forgot-password,
+    // recovery codes, create session) is currently on top — same priority-order pattern as
+    // KanbanView_KeyDown, since these dialogs can't stack but a consistent "most specific first" order
+    // keeps this handler correct if that ever changes. Unlike Kanban's handler, this one only ever acts on
+    // Escape, so it doesn't need to guard against hijacking other keys typed into a focused TextBox.
+    private void SessionsView_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { } vm) return;
+        if (e.Key != Key.Escape) return;
+
+        if (vm.SessionPendingDelete is not null)
+        {
+            vm.CancelDeleteSessionCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.SessionPendingUnlock is not null)
+        {
+            vm.CancelUnlockCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.IsRecoveryCodesDialogOpen)
+        {
+            vm.CloseRecoveryCodesDialogCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.IsCreateDialogOpen)
+        {
+            vm.CancelCreateSessionCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         Unsubscribe();

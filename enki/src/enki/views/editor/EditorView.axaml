@@ -119,13 +119,16 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarTextStyleExpanded}">
-          <Button Classes="icon-btn" Click="OnBoldClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Bold_Tooltip}">
+          <Button Classes="icon-btn" Click="OnBoldClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Bold_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Bold_Tooltip}">
             <mi:MaterialIcon Kind="FormatBold" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnItalicClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Italic_Tooltip}">
+          <Button Classes="icon-btn" Click="OnItalicClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Italic_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Italic_Tooltip}">
             <mi:MaterialIcon Kind="FormatItalic" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnStrikethroughClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}">
+          <Button Classes="icon-btn" Click="OnStrikethroughClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}">
             <mi:MaterialIcon Kind="FormatStrikethrough" Width="16" Height="16" />
           </Button>
         </StackPanel>
@@ -142,16 +145,20 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarHeadingsExpanded}">
-          <Button Classes="icon-btn" Click="OnH1Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H1_Tooltip}">
+          <Button Classes="icon-btn" Click="OnH1Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H1_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_H1_Tooltip}">
             <mi:MaterialIcon Kind="FormatHeader1" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnH2Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H2_Tooltip}">
+          <Button Classes="icon-btn" Click="OnH2Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H2_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_H2_Tooltip}">
             <mi:MaterialIcon Kind="FormatHeader2" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnH3Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H3_Tooltip}">
+          <Button Classes="icon-btn" Click="OnH3Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H3_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_H3_Tooltip}">
             <mi:MaterialIcon Kind="FormatHeader3" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnQuoteClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Quote_Tooltip}">
+          <Button Classes="icon-btn" Click="OnQuoteClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Quote_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Quote_Tooltip}">
             <mi:MaterialIcon Kind="FormatQuoteClose" Width="16" Height="16" />
           </Button>
         </StackPanel>
@@ -168,13 +175,16 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarListsExpanded}">
-          <Button Classes="icon-btn" Click="OnBulletClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_BulletList_Tooltip}">
+          <Button Classes="icon-btn" Click="OnBulletClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_BulletList_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_BulletList_Tooltip}">
             <mi:MaterialIcon Kind="FormatListBulleted" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnOrderedClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_OrderedList_Tooltip}">
+          <Button Classes="icon-btn" Click="OnOrderedClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_OrderedList_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_OrderedList_Tooltip}">
             <mi:MaterialIcon Kind="FormatListNumbered" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnTaskListClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_TaskList_Tooltip}">
+          <Button Classes="icon-btn" Click="OnTaskListClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_TaskList_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_TaskList_Tooltip}">
             <mi:MaterialIcon Kind="FormatListChecks" Width="16" Height="16" />
           </Button>
         </StackPanel>
@@ -191,10 +201,12 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarInsertExpanded}">
-          <Button Classes="icon-btn" Click="OnLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Link_Tooltip}">
+          <Button Classes="icon-btn" Click="OnLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Link_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Link_Tooltip}">
             <mi:MaterialIcon Kind="LinkVariant" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}">
+          <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Image_Tooltip}">
             <mi:MaterialIcon Kind="ImageOutline" Width="16" Height="16" />
           </Button>
         </StackPanel>
@@ -211,13 +223,16 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarCodeExpanded}">
-          <Button Classes="icon-btn" Click="OnCodeClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_InlineCode_Tooltip}">
+          <Button Classes="icon-btn" Click="OnCodeClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_InlineCode_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_InlineCode_Tooltip}">
             <mi:MaterialIcon Kind="CodeTags" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnCodeBlockClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}">
+          <Button Classes="icon-btn" Click="OnCodeBlockClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}">
             <mi:MaterialIcon Kind="CodeBraces" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnHorizontalRuleClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_HorizontalRule_Tooltip}">
+          <Button Classes="icon-btn" Click="OnHorizontalRuleClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_HorizontalRule_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_HorizontalRule_Tooltip}">
             <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />
           </Button>
         </StackPanel>
@@ -277,21 +292,26 @@
                 <ToggleButton Classes="tag-chip"
                               IsChecked="{Binding FindReplace.MatchCase}"
                               Content="Aa" />
-                <Button Classes="icon-btn" Command="{Binding FindReplace.FindPreviousCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_PreviousTooltip}">
+                <Button Classes="icon-btn" Command="{Binding FindReplace.FindPreviousCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_PreviousTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_PreviousTooltip}">
                   <mi:MaterialIcon Kind="ChevronUp" Width="16" Height="16" />
                 </Button>
-                <Button Classes="icon-btn" Command="{Binding FindReplace.FindNextCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_NextTooltip}">
+                <Button Classes="icon-btn" Command="{Binding FindReplace.FindNextCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_NextTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_NextTooltip}">
                   <mi:MaterialIcon Kind="ChevronDown" Width="16" Height="16" />
                 </Button>
                 <Button Classes="icon-btn" Command="{Binding FindReplace.ReplaceCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_ReplaceTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_ReplaceTooltip}"
                         IsVisible="{Binding FindReplace.IsReplaceMode}">
                   <mi:MaterialIcon Kind="PencilOutline" Width="16" Height="16" />
                 </Button>
                 <Button Classes="icon-btn" Command="{Binding FindReplace.ReplaceAllCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_ReplaceAllTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_ReplaceAllTooltip}"
                         IsVisible="{Binding FindReplace.IsReplaceMode}">
                   <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" />
                 </Button>
-                <Button Classes="icon-btn" Command="{Binding FindReplace.CloseCommand}" ToolTip.Tip="{loc:Tr Common_Close}">
+                <Button Classes="icon-btn" Command="{Binding FindReplace.CloseCommand}" ToolTip.Tip="{loc:Tr Common_Close}"
+                        AutomationProperties.Name="{loc:Tr Common_Close}">
                   <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
                 </Button>
               </StackPanel>

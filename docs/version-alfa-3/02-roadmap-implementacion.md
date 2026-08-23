@@ -18,7 +18,7 @@ Marcar aquí qué fase está en curso o completada según se implemente:
 - [x] Fase 4 — Deuda técnica y duplicación
 - [x] Fase 5 — Cobertura de tests en funcionalidad nueva sin probar
 - [x] Fase 6 (opcional) — Paridad de producto Kanban↔Polar
-- [ ] Fase 7 (opcional) — Accesibilidad puntual restante
+- [x] Fase 7 (opcional) — Accesibilidad puntual restante
 - [ ] Fase 8 (opcional) — Rendimiento puntual y mejoras menores
 
 ---
@@ -336,12 +336,30 @@ empezar cualquiera de los puntos — ya tomadas (ver arriba).
 La pasada de accesibilidad general ya se hizo (Fase 7 del roadmap anterior, cerrada) — esto es
 específicamente lo que las funcionalidades nuevas dejaron sin cubrir.
 
-- [ ] `AutomationProperties.Name` en las 15 herramientas de la barra de formato del editor y los 5 botones
-      de Buscar/Reemplazar. (análisis §4.2, Media-Alta)
-- [ ] `AutomationProperties.Name` en los 6 campos de contraseña/recuperación de Sesiones (si no se hizo ya
-      en la Fase 1). (análisis §4.1, Baja)
-- [ ] Cierre con `Escape` en los cuatro diálogos nuevos de Sesiones, siguiendo el mismo criterio que el
-      resto de diálogos modales de la app. (análisis §4.1, Baja)
+- [x] `AutomationProperties.Name` en las 15 herramientas de la barra de formato del editor y los 5 botones
+      de Buscar/Reemplazar. (análisis §4.2, Media-Alta) — añadido en `EditorView.axaml` reutilizando la
+      misma clave de recurso que ya tenía cada botón en `ToolTip.Tip` (mismo patrón que ya usaban los
+      botones de la cabecera del editor: Atrás, Alternar barra, Alternar panel lateral, Modo zen, Exportar
+      HTML, Borrar). No se tocaron los 5 botones "chevron" de plegado de grupo de la barra de formato ni el
+      toggle "Aa" de mayúsculas/minúsculas de Buscar/Reemplazar — quedan fuera del alcance explícito de esta
+      tarea (los 15+5 elementos enumerados) y, en el caso de los chevron, un nombre accesible útil requeriría
+      una clave de recurso nueva por grupo en vez de reutilizar la genérica compartida "Editor_Toolbar_ToggleGroup_Tooltip".
+- [x] `AutomationProperties.Name` en los 6 campos de contraseña/recuperación de Sesiones (si no se hizo ya
+      en la Fase 1). (análisis §4.1, Baja) — confirmado: ya se había hecho en la Fase 1
+      (`SessionsView.axaml`, los 6 campos de crear sesión/desbloquear/olvidé mi contraseña). Sin cambios.
+- [x] Cierre con `Escape` en los cuatro diálogos nuevos de Sesiones, siguiendo el mismo criterio que el
+      resto de diálogos modales de la app. (análisis §4.1, Baja) — mismo patrón ya usado en
+      `KanbanView.axaml`/`.axaml.cs` (`Focusable="True"` + `Loaded`/`KeyDown` en el `UserControl` raíz +
+      `switch` sobre el estado del ViewModel que cierra el diálogo "más externo" primero): `SessionsView`
+      gana foco al cargar y un nuevo `SessionsView_KeyDown` cierra, por prioridad, el diálogo de borrar
+      sesión (`CancelDeleteSessionCommand`), el de desbloquear/olvidé mi contraseña
+      (`CancelUnlockCommand`), el de códigos de recuperación (`CloseRecoveryCodesDialogCommand`) o el de
+      crear sesión (`CancelCreateSessionCommand`), el que esté abierto. A diferencia del handler de Kanban,
+      este solo actúa sobre `Key.Escape`, así que no necesita el guardarraíl de "no interceptar teclas
+      normales dentro de un `TextBox` enfocado". El `KeyDown` puntual ya existente en `NewSessionNameBox`
+      (Enter para confirmar, Escape para cancelar) queda intacto y sigue funcionando igual cuando el foco
+      está en ese campo concreto; el nuevo handler global cubre además los otros tres diálogos y los campos
+      de contraseña del propio diálogo de creación, donde antes Escape no hacía nada.
 
 **Dependencias**: ninguna.
 

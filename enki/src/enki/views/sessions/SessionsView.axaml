@@ -9,7 +9,8 @@
              xmlns:controls="clr-namespace:enki.Controls"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.SessionsView"
-             x:DataType="vm:SessionsViewModel">
+             x:DataType="vm:SessionsViewModel"
+             Focusable="True" Loaded="SessionsView_Loaded" KeyDown="SessionsView_KeyDown">
 
   <Grid>
 
