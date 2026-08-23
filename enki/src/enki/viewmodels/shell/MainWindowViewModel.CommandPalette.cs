@@ -60,6 +60,14 @@ public sealed partial class MainWindowViewModel
         if (Settings is not null)
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ToggleTheme"], MaterialIconKind.ThemeLightDark, () => Settings.ToggleThemeCommand.Execute(null)));
+
+            // Solo se ofrece con un tema personalizado activo — es la vía de escape "solo con teclado"
+            // para un tema guardado ilegible (análisis alfa-3 §4.5, Alta): antes de esto, ni esta acción
+            // existía ni "Alternar tema" tenía ningún efecto visible mientras un tema personalizado
+            // mandaba sobre la paleta claro/oscuro.
+            if (Settings.IsCustomThemeActive)
+                items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_DisableCustomTheme"], MaterialIconKind.ThemeLightDark, () => Settings.UseSystemThemeCommand.Execute(null)));
+
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenVaultFolder"], MaterialIconKind.FolderOpenOutline, () => Settings.OpenVaultFolderCommand.Execute(null)));
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenCommunitySkills"], MaterialIconKind.OpenInNew, () => Settings.OpenCommunitySkillsCommand.Execute(null)));
 

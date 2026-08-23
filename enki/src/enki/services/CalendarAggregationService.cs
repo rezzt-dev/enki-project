@@ -140,22 +140,28 @@ public sealed class CalendarAggregationService(
 
         foreach (var reminder in reminderService.ActiveReminders)
         {
-            if (reminder.NotifyAtUtc < rangeStartUtc || reminder.NotifyAtUtc >= rangeEndUtc) continue;
-
-            items.Add(new CalendarItemViewModel
+            if (reminder.NotifyAtUtc >= rangeStartUtc && reminder.NotifyAtUtc < rangeEndUtc)
             {
-                SourceId = reminder.Id,
-                SourceType = CalendarItemSourceType.Reminder,
-                Title = reminder.Title,
-                Description = reminder.Description,
-                MomentUtc = reminder.NotifyAtUtc,
-                IsAllDay = IsAllDay(reminder.NotifyAtUtc),
-                IsCompleted = reminder.IsCompleted,
-                DurationMinutes = IsAllDay(reminder.NotifyAtUtc) ? null : reminder.DurationMinutes,
-                LayerColorHex = CalendarItemViewModel.ReminderLayerColorHex,
-                LayerKey = ReminderLayerKey,
-                IconKind = Enum.TryParse<MaterialIconKind>(reminder.Icon, out var kind) ? kind : MaterialIconKind.BellRingOutline
-            });
+                items.Add(new CalendarItemViewModel
+                {
+                    SourceId = reminder.Id,
+                    SourceType = CalendarItemSourceType.Reminder,
+                    Title = reminder.Title,
+                    Description = reminder.Description,
+                    MomentUtc = reminder.NotifyAtUtc,
+                    IsAllDay = IsAllDay(reminder.NotifyAtUtc),
+                    IsCompleted = reminder.IsCompleted,
+                    DurationMinutes = IsAllDay(reminder.NotifyAtUtc) ? null : reminder.DurationMinutes,
+                    LayerColorHex = CalendarItemViewModel.ReminderLayerColorHex,
+                    LayerKey = ReminderLayerKey,
+                    IconKind = Enum.TryParse<MaterialIconKind>(reminder.Icon, out var kind) ? kind : MaterialIconKind.BellRingOutline
+                });
+            }
+
+            // Same parity gap this preview closes for Polar tasks above: previewed regardless of whether
+            // the reminder's *real* NotifyAtUtc itself falls in this range (análisis alfa-3 §4.4, Media).
+            if (includeGhostOccurrences)
+                items.AddRange(BuildGhostOccurrences(reminder, rangeStartUtc, rangeEndUtc));
         }
 
         return items
@@ -267,6 +273,45 @@ public sealed class CalendarAggregationService(
                 Tags = task.Tags,
                 IconKind = MaterialIconKind.CheckboxMarkedOutline,
                 ParentContextLabel = list?.Title ?? string.Empty
+            });
+        }
+
+        return results;
+    }
+
+    /// <summary>Same idea as the <see cref="PolarTask"/> overload above, for recurring reminders (análisis
+    /// alfa-3 §4.4, Media — the ghost-occurrence preview only ever covered Polar tasks, leaving the other
+    /// recurring item type the app natively supports without this parity). Reminders reuse
+    /// <see cref="PolarRecurrence"/> and <see cref="PolarTaskService.CalculateNextDueDate"/> directly (see
+    /// <see cref="Reminder.Recurrence"/>), so the chaining logic is identical.</summary>
+    public static List<CalendarItemViewModel> BuildGhostOccurrences(
+        Reminder reminder, DateTime rangeStartUtc, DateTime rangeEndUtc)
+    {
+        var results = new List<CalendarItemViewModel>();
+        if (reminder.IsDeleted || reminder.Recurrence == PolarRecurrence.None) return results;
+
+        var current = reminder.NotifyAtUtc;
+        for (var i = 0; i < MaxGhostOccurrenceIterations; i++)
+        {
+            current = PolarTaskService.CalculateNextDueDate(current, reminder.Recurrence);
+            if (current >= rangeEndUtc) break;
+            if (current < rangeStartUtc) continue;
+
+            var isAllDay = IsAllDay(current);
+            results.Add(new CalendarItemViewModel
+            {
+                SourceId = reminder.Id,
+                SourceType = CalendarItemSourceType.Reminder,
+                Title = reminder.Title,
+                Description = reminder.Description,
+                MomentUtc = current,
+                IsAllDay = isAllDay,
+                IsCompleted = false,
+                IsGhostOccurrence = true,
+                DurationMinutes = isAllDay ? null : reminder.DurationMinutes,
+                LayerColorHex = CalendarItemViewModel.ReminderLayerColorHex,
+                LayerKey = ReminderLayerKey,
+                IconKind = Enum.TryParse<MaterialIconKind>(reminder.Icon, out var kind) ? kind : MaterialIconKind.BellRingOutline
             });
         }
 

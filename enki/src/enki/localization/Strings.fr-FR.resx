@@ -804,6 +804,9 @@
   <data name="Files_RenameAction" xml:space="preserve">
     <value>Renommer</value>
   </data>
+  <data name="Files_RevealInSystemMenuItem" xml:space="preserve">
+    <value>Afficher dans l'explorateur de fichiers</value>
+  </data>
   <data name="Files_SearchPlaceholder" xml:space="preserve">
     <value>Rechercher des fichiers…</value>
   </data>
@@ -2496,6 +2499,9 @@
   <data name="Settings_General_Sidebar_Description" xml:space="preserve">
     <value>Choisissez les sections affichées dans la barre latérale. Au moins une doit rester visible.</value>
   </data>
+  <data name="Settings_General_Sidebar_SearchNote" xml:space="preserve">
+    <value>Masquer une section ne fait que la retirer de la barre latérale : elle reste accessible depuis la Recherche globale et la Palette de commandes.</value>
+  </data>
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Sections de la barre latérale</value>
   </data>
@@ -3381,6 +3387,9 @@ Bonne rédaction.</value>
   <data name="Settings_Appearance_Theme_ResetButton" xml:space="preserve">
     <value>Reset</value>
   </data>
+  <data name="Settings_Appearance_Theme_LowContrastWarning" xml:space="preserve">
+    <value>Le contraste entre le texte et l'arrière-plan est très faible : ce thème pourrait être difficile à lire.</value>
+  </data>
   <data name="Settings_Appearance_Theme_ExportButton" xml:space="preserve">
     <value>Export</value>
   </data>
@@ -3494,6 +3503,9 @@ Bonne rédaction.</value>
   </data>
   <data name="CommandPalette_Action_ToggleTheme" xml:space="preserve">
     <value>Toggle light/dark theme</value>
+  </data>
+  <data name="CommandPalette_Action_DisableCustomTheme" xml:space="preserve">
+    <value>Désactiver le thème personnalisé</value>
   </data>
   <data name="CommandPalette_Action_ToggleZenMode" xml:space="preserve">
     <value>Toggle focus mode</value>

@@ -804,6 +804,9 @@
   <data name="Files_RenameAction" xml:space="preserve">
     <value>Rename</value>
   </data>
+  <data name="Files_RevealInSystemMenuItem" xml:space="preserve">
+    <value>Show in file manager</value>
+  </data>
   <data name="Files_SearchPlaceholder" xml:space="preserve">
     <value>Search files…</value>
   </data>
@@ -2496,6 +2499,9 @@
   <data name="Settings_General_Sidebar_Description" xml:space="preserve">
     <value>Choose which sections appear in the sidebar. At least one must stay visible.</value>
   </data>
+  <data name="Settings_General_Sidebar_SearchNote" xml:space="preserve">
+    <value>Hiding a section only removes it from the sidebar — it stays reachable from Global Search and the Command Palette.</value>
+  </data>
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Sidebar sections</value>
   </data>
@@ -3381,6 +3387,9 @@ Happy writing.</value>
   <data name="Settings_Appearance_Theme_ResetButton" xml:space="preserve">
     <value>Reset</value>
   </data>
+  <data name="Settings_Appearance_Theme_LowContrastWarning" xml:space="preserve">
+    <value>The contrast between text and background is very low — this theme may be hard to read.</value>
+  </data>
   <data name="Settings_Appearance_Theme_ExportButton" xml:space="preserve">
     <value>Export</value>
   </data>
@@ -3494,6 +3503,9 @@ Happy writing.</value>
   </data>
   <data name="CommandPalette_Action_ToggleTheme" xml:space="preserve">
     <value>Toggle light/dark theme</value>
+  </data>
+  <data name="CommandPalette_Action_DisableCustomTheme" xml:space="preserve">
+    <value>Disable custom theme</value>
   </data>
   <data name="CommandPalette_Action_ToggleZenMode" xml:space="preserve">
     <value>Toggle focus mode</value>

@@ -37,6 +37,33 @@ public sealed partial class ThemeEditorViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<ThemeColorGroupViewModel> _groups = [];
 
+    /// <summary>True when any of <see cref="ContrastPairs"/> falls under <see cref="MinContrastRatio"/> —
+    /// drives the low-contrast warning banner (análisis alfa-3 §4.5, Alta). Advisory only: unlike hex
+    /// validation, saving is never blocked on it, since a deliberately low-contrast theme is a legitimate
+    /// (if unusual) choice, and <see cref="ResetToDefaultsCommand"/>/<see cref="CancelCommand"/> stay the
+    /// real escape hatches.</summary>
+    [ObservableProperty]
+    private bool _hasLowContrastWarning;
+
+    /// <summary>Foreground/background pairs checked for <see cref="HasLowContrastWarning"/> — the
+    /// combinations a user actually reads text against, not every possible pair in <see cref="ThemeCatalog.All"/>.
+    /// Keyed by <see cref="ThemeColorDefinition.ResourceKey"/> (the Avalonia resource name, e.g.
+    /// <c>"TextPrimaryColor"</c>) since that's what both <see cref="ThemeColorSlotViewModel.ResourceKey"/>
+    /// and <c>_theme.Colors</c> use — not <see cref="ThemeColorDefinition.CssVariable"/>'s kebab-case form.</summary>
+    private static readonly (string ForegroundKey, string BackgroundKey)[] ContrastPairs =
+    [
+        ("TextPrimaryColor", "AppBackgroundColor"),
+        ("TextPrimaryColor", "SurfaceColor"),
+        ("TextPrimaryColor", "PanelBackgroundColor"),
+        ("TextSecondaryColor", "AppBackgroundColor"),
+    ];
+
+    /// <summary>WCAG "large text"/UI-component threshold (3:1) rather than the stricter 4.5:1 for body text —
+    /// this is a heads-up across several pairs at once, not a strict accessibility gate, so it should flag
+    /// only palettes bad enough to plausibly be the "text color = background color" mistake the analysis
+    /// scenario describes, not every merely-low-contrast theme.</summary>
+    private const double MinContrastRatio = 3.0;
+
     public ThemeEditorViewModel(
         CustomTheme theme,
         CustomThemeService customThemeService,
@@ -71,7 +98,10 @@ public sealed partial class ThemeEditorViewModel : ObservableObject
             slot.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(ThemeColorSlotViewModel.Hex))
+                {
                     _theme.Colors[slot.ResourceKey] = slot.Hex;
+                    UpdateContrastWarning();
+                }
                 else if (e.PropertyName == nameof(ThemeColorSlotViewModel.Color))
                     Preview();
             };
@@ -80,6 +110,20 @@ public sealed partial class ThemeEditorViewModel : ObservableObject
             slots
                 .GroupBy(s => s.Category)
                 .Select(g => new ThemeColorGroupViewModel(g.Key, [.. g])));
+
+        UpdateContrastWarning();
+    }
+
+    private void UpdateContrastWarning()
+    {
+        HasLowContrastWarning = ContrastPairs.Any(pair =>
+            HexColorUtility.TryGetContrastRatio(ResolveHex(pair.ForegroundKey), ResolveHex(pair.BackgroundKey), out var ratio)
+            && ratio < MinContrastRatio);
+
+        string ResolveHex(string resourceKey) =>
+            _theme.Colors.TryGetValue(resourceKey, out var hex)
+                ? hex
+                : ThemeCatalog.All.First(d => d.ResourceKey == resourceKey).DefaultHex;
     }
 
     /// <summary>Rebuilds every slot label when the UI language changes, so the editor does not stay

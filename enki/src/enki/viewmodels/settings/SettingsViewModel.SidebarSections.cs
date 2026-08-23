@@ -60,6 +60,14 @@ public sealed partial class SettingsViewModel
     /// <c>OnXPanelEnabledChanged</c> below refuses to turn off the last one still on.</summary>
     private const int MinEnabledSidebarSections = 1;
 
+    /// <summary>Only counts the 9 flags that actually populate <c>NavItems</c> — the same set as
+    /// <c>MainWindowViewModel.SidebarSectionDefinitions</c> — because that scrollable list is the only place
+    /// where "every entry hidden" leaves a primary section of the app with no way back in. Recordatorios,
+    /// Notificaciones y Estadísticas render as their own fixed buttons in <c>MainWindow.axaml</c> outside
+    /// <c>NavItems</c> (see <c>OnRemindersSidebarEnabledChanged</c> et al. below, which deliberately don't call
+    /// <see cref="BlockIfLastEnabledSidebarSection"/>): hiding all three still leaves the full <c>NavItems</c>
+    /// list and Ajustes reachable, so they don't need — and previously incorrectly counted towards — this
+    /// guard.</summary>
     private int CountEnabledSidebarSections()
     {
         var s = _settingsService.Settings;
@@ -73,9 +81,6 @@ public sealed partial class SettingsViewModel
         if (s.SessionsPanelEnabled) count++;
         if (s.TrashPanelEnabled) count++;
         if (s.HabitsPanelEnabled) count++;
-        if (s.RemindersSidebarEnabled) count++;
-        if (s.NotificationsSidebarEnabled) count++;
-        if (s.StatisticsPanelEnabled) count++;
         return count;
     }
 
@@ -170,7 +175,6 @@ public sealed partial class SettingsViewModel
 
     partial void OnStatisticsPanelEnabledChanged(bool value)
     {
-        if (BlockIfLastEnabledSidebarSection(value, () => StatisticsPanelEnabled = true)) return;
         _settingsService.Settings.StatisticsPanelEnabled = value;
         _settingsService.Save();
         _onSidebarSectionChanged(AppPage.Statistics, value);
@@ -178,7 +182,6 @@ public sealed partial class SettingsViewModel
 
     partial void OnRemindersSidebarEnabledChanged(bool value)
     {
-        if (BlockIfLastEnabledSidebarSection(value, () => RemindersSidebarEnabled = true)) return;
         _settingsService.Settings.RemindersSidebarEnabled = value;
         _settingsService.Save();
         _onSidebarSectionChanged(AppPage.Reminders, value);
@@ -186,7 +189,6 @@ public sealed partial class SettingsViewModel
 
     partial void OnNotificationsSidebarEnabledChanged(bool value)
     {
-        if (BlockIfLastEnabledSidebarSection(value, () => NotificationsSidebarEnabled = true)) return;
         _settingsService.Settings.NotificationsSidebarEnabled = value;
         _settingsService.Save();
         _onSidebarSectionChanged(AppPage.Notifications, value);

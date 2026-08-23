@@ -313,6 +313,9 @@
   <data name="CommandPalette_Action_ToggleTheme" xml:space="preserve">
     <value>Alternar tema claro/oscuro</value>
   </data>
+  <data name="CommandPalette_Action_DisableCustomTheme" xml:space="preserve">
+    <value>Desactivar tema personalizado</value>
+  </data>
   <data name="CommandPalette_Action_ToggleZenMode" xml:space="preserve">
     <value>Alternar modo enfoque</value>
   </data>
@@ -869,6 +872,9 @@
   </data>
   <data name="Files_RenameAction" xml:space="preserve">
     <value>Renombrar</value>
+  </data>
+  <data name="Files_RevealInSystemMenuItem" xml:space="preserve">
+    <value>Mostrar en el explorador de archivos</value>
   </data>
   <data name="Files_SearchPlaceholder" xml:space="preserve">
     <value>Buscar archivos…</value>
@@ -2313,6 +2319,9 @@
   <data name="Settings_Appearance_Theme_ResetButton" xml:space="preserve">
     <value>Restablecer</value>
   </data>
+  <data name="Settings_Appearance_Theme_LowContrastWarning" xml:space="preserve">
+    <value>El contraste entre el texto y el fondo es muy bajo: este tema puede resultar difícil de leer.</value>
+  </data>
   <data name="Settings_Appearance_Theme_ExportButton" xml:space="preserve">
     <value>Exportar</value>
   </data>
@@ -2723,6 +2732,9 @@
   </data>
   <data name="Settings_General_Sidebar_Description" xml:space="preserve">
     <value>Elige qué secciones aparecen en la barra lateral. Al menos una debe permanecer visible.</value>
+  </data>
+  <data name="Settings_General_Sidebar_SearchNote" xml:space="preserve">
+    <value>Ocultar una sección solo la quita de la barra lateral: sigue siendo localizable desde la Búsqueda global y la Paleta de comandos.</value>
   </data>
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Secciones de la barra lateral</value>

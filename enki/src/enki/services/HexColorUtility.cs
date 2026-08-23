@@ -60,4 +60,34 @@ public static class HexColorUtility
         }
         return new string(expanded);
     }
+
+    /// <summary>WCAG 2.x contrast ratio (1:1 to 21:1) between two HEX colors, for the editor de temas
+    /// personalizados' low-contrast warning (análisis alfa-3 §4.5, Alta — un tema sin ninguna validación de
+    /// contraste puede dejar la interfaz completamente ilegible). Returns <c>false</c> without setting
+    /// <paramref name="ratio"/> if either input fails <see cref="NormalizeHex"/>.</summary>
+    public static bool TryGetContrastRatio(string? hexA, string? hexB, out double ratio)
+    {
+        ratio = 0;
+        var normalizedA = NormalizeHex(hexA);
+        var normalizedB = NormalizeHex(hexB);
+        if (normalizedA is null || normalizedB is null) return false;
+
+        var luminanceA = RelativeLuminance(Color.Parse(normalizedA));
+        var luminanceB = RelativeLuminance(Color.Parse(normalizedB));
+        var lighter = Math.Max(luminanceA, luminanceB);
+        var darker = Math.Min(luminanceA, luminanceB);
+        ratio = (lighter + 0.05) / (darker + 0.05);
+        return true;
+    }
+
+    private static double RelativeLuminance(Color color)
+    {
+        return 0.2126 * Linearize(color.R) + 0.7152 * Linearize(color.G) + 0.0722 * Linearize(color.B);
+
+        static double Linearize(byte channel)
+        {
+            var c = channel / 255.0;
+            return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+        }
+    }
 }

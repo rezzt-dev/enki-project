@@ -17,7 +17,7 @@ Marcar aquí qué fase está en curso o completada según se implemente:
 - [x] Fase 3 — Corrección de estados "vencido"/"completado" en Calendario, Dashboard y Recordatorios
 - [x] Fase 4 — Deuda técnica y duplicación
 - [x] Fase 5 — Cobertura de tests en funcionalidad nueva sin probar
-- [ ] Fase 6 (opcional) — Paridad de producto Kanban↔Polar
+- [x] Fase 6 (opcional) — Paridad de producto Kanban↔Polar
 - [ ] Fase 7 (opcional) — Accesibilidad puntual restante
 - [ ] Fase 8 (opcional) — Rendimiento puntual y mejoras menores
 
@@ -274,33 +274,60 @@ cambiar.
 
 Ninguno de estos hallazgos es un bug de datos; son decisiones de producto sobre si Polar debe seguir
 sintiéndose como "el mismo tablero en la nube" o si su superficie más reducida es una limitación aceptada.
-Requiere una decisión explícita antes de implementar, no solo una corrección mecánica.
+Requiere una decisión explícita antes de implementar, no solo una corrección mecánica. Decisiones tomadas
+por el propietario del proyecto al abordar esta fase — ver el detalle de cada una junto a su punto.
 
-- [ ] Evaluar y, si se decide que sí, implementar drag&drop para reordenar listas/tareas Polar, igual que
-      Kanban. (análisis §4.3, Alta — el de mayor esfuerzo)
-- [ ] Evaluar y, si se decide que sí, dar a la prioridad de una tarea Polar el mismo ciclo de un clic que
-      ya tiene Kanban. (análisis §4.3, Media)
-- [ ] Añadir atajos de teclado a la vista de "Gestión de tareas" Polar, espejando los de Kanban. (análisis
-      §4.3, Baja)
-- [ ] Añadir "Mostrar en el sistema" a Archivos (`FileCardViewModel`), espejando lo ya hecho para Notas —
-      trivial dado que `FolderOpener.RevealFile` ya existe. (análisis §4.5, Media)
-- [ ] Decidir y documentar (o implementar) si "Ocultar sección X de la barra lateral" también debería
+- [x] Evaluar y, si se decide que sí, implementar drag&drop para reordenar listas/tareas Polar, igual que
+      Kanban. (análisis §4.3, Alta — el de mayor esfuerzo) — **decisión: no implementar**, se documenta como
+      limitación aceptada. Polar mantiene el orden de creación (`OrderIndex` fijado una sola vez); reordenar
+      libremente un tablero requiere Kanban.
+- [x] Evaluar y, si se decide que sí, dar a la prioridad de una tarea Polar el mismo ciclo de un clic que
+      ya tiene Kanban. (análisis §4.3, Media) — **decisión: no implementar**, se documenta como limitación
+      aceptada junto con el punto anterior. Cambiar la prioridad de una tarea Polar sigue exigiendo abrir su
+      editor completo.
+- [x] Añadir atajos de teclado a la vista de "Gestión de tareas" Polar, espejando los de Kanban. (análisis
+      §4.3, Baja) — **decisión: no implementar**, misma limitación aceptada que los dos puntos anteriores.
+- [x] Añadir "Mostrar en el sistema" a Archivos (`FileCardViewModel`), espejando lo ya hecho para Notas —
+      trivial dado que `FolderOpener.RevealFile` ya existe. (análisis §4.5, Media) — añadido
+      `FileCardViewModel.RevealInSystemCommand` (mismo patrón que `NoteCardViewModel`) y su entrada de menú
+      contextual en `FilesView.axaml`, con `Files_RevealInSystemMenuItem` en los 7 `.resx`.
+- [x] Decidir y documentar (o implementar) si "Ocultar sección X de la barra lateral" también debería
       esconder los resultados de esa sección en Búsqueda global/Paleta de comandos, o si el comportamiento
       actual ("ocultar es solo declutter, no sandbox") es la decisión de producto correcta. (análisis §4.5,
-      Media)
-- [ ] Corregir el guardarraíl de "al menos una sección visible" para que cuente sobre las mismas 9
-      secciones que realmente pueblan `NavItems`, no sobre las 12 flags totales. (análisis §4.5, Media)
-- [ ] Añadir una advertencia de contraste (o un botón siempre alcanzable de "restablecer apariencia") al
+      Media) — **decisión: mantener el comportamiento actual** (ocultar es solo declutter de la barra
+      lateral, nunca sandbox de contenido) y documentarlo explícitamente: nota nueva bajo la descripción de
+      "Secciones de la barra lateral" en Ajustes (`Settings_General_Sidebar_SearchNote`, los 7 `.resx`).
+- [x] Corregir el guardarraíl de "al menos una sección visible" para que cuente sobre las mismas 9
+      secciones que realmente pueblan `NavItems`, no sobre las 12 flags totales. (análisis §4.5, Media) —
+      `SettingsViewModel.CountEnabledSidebarSections` ya no cuenta Recordatorios/Notificaciones/Estadísticas
+      (los 3 flags que no pueblan `NavItems`, sino sus propios botones fijos en `MainWindow.axaml`); sus tres
+      `OnXSidebarEnabledChanged` dejaron de invocar el guardarraíl en consecuencia, ya que ocultar los tres a
+      la vez no vacía `NavItems`.
+- [x] Añadir una advertencia de contraste (o un botón siempre alcanzable de "restablecer apariencia") al
       editor de temas personalizados, para que un tema ilegible nunca deje al usuario sin salida. (análisis
-      §4.5, Alta)
-- [ ] Añadir previsualización de ocurrencias fantasma para Recordatorios recurrentes en el Calendario,
-      igual que ya existe para tareas Polar recurrentes. (análisis §4.4, Media)
-- [ ] Implementar de verdad la exportación a PDF / vista de impresión de notas que la documentación y los
+      §4.5, Alta) — banner de bajo contraste (ratio WCAG < 3:1 sobre los pares texto/fondo reales, nuevo
+      `HexColorUtility.TryGetContrastRatio`) en `ThemeEditorViewModel.HasLowContrastWarning`; de paso se
+      corrigió que "Alternar tema" (`SettingsViewModel.ToggleTheme`) fuera un no-op silencioso con un tema
+      personalizado activo (ahora lo desactiva primero) y se añadió "Desactivar tema personalizado" a la
+      Paleta de comandos cuando hay uno activo — dos vías de escape alcanzables solo con teclado que antes no
+      existían, sin depender de poder leer un editor ya ilegible. El botón "Restablecer" del propio editor ya
+      existía (`ResetToDefaultsCommand`).
+- [x] Añadir previsualización de ocurrencias fantasma para Recordatorios recurrentes en el Calendario,
+      igual que ya existe para tareas Polar recurrentes. (análisis §4.4, Media) — nueva sobrecarga
+      `CalendarAggregationService.BuildGhostOccurrences(Reminder, ...)`, misma cadena de
+      `PolarTaskService.CalculateNextDueDate` que ya usa `Reminder.Recurrence`; `BuildItems` la invoca igual
+      que para tareas Polar, y toda la UI de ocurrencia fantasma (`IsGhostOccurrence`) ya era genérica por
+      tipo de origen, así que no necesitó cambios propios.
+- [x] Implementar de verdad la exportación a PDF / vista de impresión de notas que la documentación y los
       comentarios de código ya describen, o retirar esas menciones si se decide no construirla a corto
-      plazo. (análisis §4.2, Media)
+      plazo. (análisis §4.2, Media) — **decisión: no implementar por ahora**. Los comentarios de
+      `NoteExportRenderer.cs`/`NoteExportService.cs`/`Program.cs` ya se habían corregido en la Fase 4 para
+      no prometer PDF/impresión propias; revisados de nuevo en esta fase, ya reflejan con precisión que solo
+      existe exportación a HTML (con `@page`/`@media print` para que el navegador del usuario imprima o
+      "guarde como PDF" ese HTML) y no necesitaron más cambios.
 
-**Dependencias**: ninguna técnica; depende de decisiones de producto del propietario del proyecto antes de
-empezar cualquiera de los puntos.
+**Dependencias**: ninguna técnica; dependía de decisiones de producto del propietario del proyecto antes de
+empezar cualquiera de los puntos — ya tomadas (ver arriba).
 
 ---
 

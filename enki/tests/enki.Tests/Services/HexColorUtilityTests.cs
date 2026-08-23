@@ -46,4 +46,34 @@ public class HexColorUtilityTests
     {
         Assert.Equal("#123456", HexColorUtility.ColorToHex(Color.FromArgb(0x80, 0x12, 0x34, 0x56)));
     }
+
+    [Fact]
+    public void TryGetContrastRatio_BlackOnWhite_ReturnsMaxRatio()
+    {
+        Assert.True(HexColorUtility.TryGetContrastRatio("#000000", "#FFFFFF", out var ratio));
+        Assert.Equal(21.0, ratio, precision: 2);
+    }
+
+    [Fact]
+    public void TryGetContrastRatio_SameColorTwice_ReturnsOne()
+    {
+        Assert.True(HexColorUtility.TryGetContrastRatio("#F5F5F5", "#F5F5F5", out var ratio));
+        Assert.Equal(1.0, ratio, precision: 6);
+    }
+
+    [Fact]
+    public void TryGetContrastRatio_IsOrderIndependent()
+    {
+        HexColorUtility.TryGetContrastRatio("#121212", "#F5F5F5", out var ratioA);
+        HexColorUtility.TryGetContrastRatio("#F5F5F5", "#121212", out var ratioB);
+        Assert.Equal(ratioA, ratioB, precision: 6);
+    }
+
+    [Theory]
+    [InlineData(null, "#FFFFFF")]
+    [InlineData("#FFFFFF", "not-a-color")]
+    public void TryGetContrastRatio_InvalidInput_ReturnsFalse(string? hexA, string? hexB)
+    {
+        Assert.False(HexColorUtility.TryGetContrastRatio(hexA, hexB, out _));
+    }
 }

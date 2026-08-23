@@ -804,6 +804,9 @@
   <data name="Files_RenameAction" xml:space="preserve">
     <value>Umbenennen</value>
   </data>
+  <data name="Files_RevealInSystemMenuItem" xml:space="preserve">
+    <value>Im Datei-Explorer anzeigen</value>
+  </data>
   <data name="Files_SearchPlaceholder" xml:space="preserve">
     <value>Dateien durchsuchen…</value>
   </data>
@@ -2496,6 +2499,9 @@
   <data name="Settings_General_Sidebar_Description" xml:space="preserve">
     <value>Wähle aus, welche Abschnitte in der Seitenleiste angezeigt werden. Mindestens einer muss sichtbar bleiben.</value>
   </data>
+  <data name="Settings_General_Sidebar_SearchNote" xml:space="preserve">
+    <value>Das Ausblenden einer Sektion entfernt sie nur aus der Seitenleiste — sie bleibt über die globale Suche und die Befehlspalette weiterhin erreichbar.</value>
+  </data>
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Seitenleisten-Abschnitte</value>
   </data>
@@ -3381,6 +3387,9 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Appearance_Theme_ResetButton" xml:space="preserve">
     <value>Reset</value>
   </data>
+  <data name="Settings_Appearance_Theme_LowContrastWarning" xml:space="preserve">
+    <value>Der Kontrast zwischen Text und Hintergrund ist sehr niedrig — dieses Thema könnte schwer lesbar sein.</value>
+  </data>
   <data name="Settings_Appearance_Theme_ExportButton" xml:space="preserve">
     <value>Export</value>
   </data>
@@ -3494,6 +3503,9 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="CommandPalette_Action_ToggleTheme" xml:space="preserve">
     <value>Toggle light/dark theme</value>
+  </data>
+  <data name="CommandPalette_Action_DisableCustomTheme" xml:space="preserve">
+    <value>Benutzerdefiniertes Thema deaktivieren</value>
   </data>
   <data name="CommandPalette_Action_ToggleZenMode" xml:space="preserve">
     <value>Toggle focus mode</value>

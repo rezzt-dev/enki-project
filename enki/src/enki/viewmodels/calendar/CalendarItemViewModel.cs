@@ -106,10 +106,10 @@ public sealed record CalendarItemViewModel
     /// 03-glosario-y-modelo-de-datos.md §2.2: subtasks don't carry their own tags).</summary>
     public IReadOnlyList<string> Tags { get; init; } = [];
 
-    /// <summary>True only for a calculated future occurrence of a recurring <c>PolarTask</c> (docs/
-    /// calendar-feature/03-glosario-y-modelo-de-datos.md §4) — never persisted, never draggable/
-    /// completable/deletable (see <see cref="CanToggleComplete"/>/<see cref="CanDelete"/>), built by
-    /// <see cref="Services.CalendarAggregationService.BuildGhostOccurrences"/>.</summary>
+    /// <summary>True only for a calculated future occurrence of a recurring <c>PolarTask</c> or
+    /// <c>Reminder</c> (docs/calendar-feature/03-glosario-y-modelo-de-datos.md §4) — never persisted, never
+    /// draggable/completable/deletable (see <see cref="CanToggleComplete"/>/<see cref="CanDelete"/>), built
+    /// by the two <see cref="Services.CalendarAggregationService.BuildGhostOccurrences"/> overloads.</summary>
     public bool IsGhostOccurrence { get; init; }
 
     /// <summary>True only while an active search (docs/calendar-feature/07-filtros-busqueda-y-capas.md §2)

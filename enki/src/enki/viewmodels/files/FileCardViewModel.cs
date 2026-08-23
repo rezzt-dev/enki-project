@@ -144,4 +144,7 @@ public sealed partial class FileCardViewModel : ObservableObject
 
     [RelayCommand]
     private void CancelRename() => IsRenaming = false;
+
+    [RelayCommand]
+    private void RevealInSystem() => FolderOpener.RevealFile(File.FullPath);
 }

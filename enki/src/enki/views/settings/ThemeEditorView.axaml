@@ -9,7 +9,7 @@
              x:Class="enki.Views.ThemeEditorView"
              x:DataType="vm:ThemeEditorViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*">
 
     <!-- Header -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
@@ -39,8 +39,18 @@
       </StackPanel>
     </Grid>
 
+    <!-- Aviso de bajo contraste -->
+    <Border Grid.Row="1" Classes="card" Padding="12,10" Margin="0,0,0,14"
+            BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1"
+            IsVisible="{Binding HasLowContrastWarning}">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+        <TextBlock Text="{loc:Tr Settings_Appearance_Theme_LowContrastWarning}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
+
     <!-- Color grid -->
-    <ScrollViewer Grid.Row="1">
+    <ScrollViewer Grid.Row="2">
       <ItemsControl ItemsSource="{Binding Groups}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>

@@ -161,6 +161,69 @@ public class CalendarAggregationServiceTests
         Assert.NotEmpty(result);
     }
 
+    // ===================== Fase 6: paridad de ocurrencias fantasma para Recordatorios (análisis §4.4, Media) =====================
+
+    private static Reminder MakeReminder(DateTime notifyAtUtc, PolarRecurrence recurrence, bool isDeleted = false, int? durationMinutes = null) => new()
+    {
+        Id = "reminder-1",
+        Title = "Regar las plantas",
+        NotifyAtUtc = notifyAtUtc,
+        Recurrence = recurrence,
+        IsDeleted = isDeleted,
+        DurationMinutes = durationMinutes
+    };
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_NoRecurrence_ReturnsEmpty()
+    {
+        var reminder = MakeReminder(new DateTime(2026, 3, 1), PolarRecurrence.None);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, new DateTime(2026, 3, 1), new DateTime(2026, 4, 1));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_Deleted_ReturnsEmpty()
+    {
+        var reminder = MakeReminder(new DateTime(2026, 3, 1), PolarRecurrence.Weekly, isDeleted: true);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, new DateTime(2026, 3, 1), new DateTime(2026, 4, 1));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_Weekly_ProjectsEachFutureOccurrenceWithinRange()
+    {
+        var realNotifyAt = new DateTime(2026, 3, 1);
+        var reminder = MakeReminder(realNotifyAt, PolarRecurrence.Weekly);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, rangeStartUtc: realNotifyAt, rangeEndUtc: realNotifyAt.AddDays(28));
+
+        Assert.Equal(3, result.Count);
+        Assert.Equal([realNotifyAt.AddDays(7), realNotifyAt.AddDays(14), realNotifyAt.AddDays(21)], result.Select(r => r.MomentUtc));
+        Assert.All(result, r => Assert.True(r.IsGhostOccurrence));
+        Assert.All(result, r => Assert.False(r.IsCompleted));
+        Assert.All(result, r => Assert.Equal(CalendarItemSourceType.Reminder, r.SourceType));
+    }
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_CarriesDurationMinutes_ForTimedOccurrences()
+    {
+        var realNotifyAt = new DateTime(2026, 3, 1, 9, 0, 0);
+        var reminder = MakeReminder(realNotifyAt, PolarRecurrence.Daily, durationMinutes: 30);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, realNotifyAt, realNotifyAt.AddDays(2));
+
+        var occurrence = Assert.Single(result);
+        Assert.Equal(30, occurrence.DurationMinutes);
+    }
+
     // ===================== Fase 3: duración en Polar y Recordatorios =====================
 
     private static (CalendarAggregationService Service, PolarTaskService Tasks, ReminderService Reminders)
@@ -207,6 +270,24 @@ public class CalendarAggregationServiceTests
         var item = Assert.Single(items);
 
         Assert.Equal(30, item.DurationMinutes);
+    }
+
+    [Fact]
+    public void BuildItems_ProjectsReminderGhostOccurrences_WhenIncluded()
+    {
+        using var _ = new TempDirScope(out var storageDirectory);
+        var (service, _, reminderService) = CreateServiceWithStores(out storageDirectory);
+
+        var due = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
+        reminderService.Create("Recordatorio semanal", "", due, "BellRingOutline", recurrence: PolarRecurrence.Weekly);
+
+        var itemsWithGhosts = service.BuildItems(due.AddDays(6), due.AddDays(8), includeGhostOccurrences: true);
+        var itemsWithoutGhosts = service.BuildItems(due.AddDays(6), due.AddDays(8), includeGhostOccurrences: false);
+
+        var ghost = Assert.Single(itemsWithGhosts);
+        Assert.True(ghost.IsGhostOccurrence);
+        Assert.Equal(due.AddDays(7), ghost.MomentUtc);
+        Assert.Empty(itemsWithoutGhosts);
     }
 
     [Fact]

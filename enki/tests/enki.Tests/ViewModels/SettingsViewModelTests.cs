@@ -95,6 +95,54 @@ public class SettingsViewModelTests : IDisposable
         Assert.Equal("Light", reloaded.Settings.Theme);
     }
 
+    /// <summary>Regression for análisis alfa-3 §4.5 (Media): the "at least one sidebar section visible"
+    /// guard used to count 12 flags while only 9 of them actually populate <c>MainWindowViewModel.NavItems</c>
+    /// (Recordatorios/Notificaciones/Estadísticas render as their own fixed buttons instead). That let the
+    /// last of the 9 real <c>NavItems</c> entries be turned off as long as any of those other three stayed
+    /// on, leaving the primary nav list completely empty. Turning off every <c>NavItems</c>-backed section
+    /// down to the last one, with Reminders/Notifications/Statistics still enabled, must now still block.</summary>
+    [Fact]
+    public void BlockIfLastEnabledSidebarSection_IgnoresReminderNotificationStatisticsFlags()
+    {
+        var (vm, _, _, _) = CreateViewModel();
+
+        // Skills starts disabled by default; turn off every other NavItems-backed section but Dashboard.
+        vm.CalendarPanelEnabled = false;
+        vm.KanbanPanelEnabled = false;
+        vm.NotesPanelEnabled = false;
+        vm.FilesPanelEnabled = false;
+        vm.SessionsPanelEnabled = false;
+        vm.TrashPanelEnabled = false;
+        vm.HabitsPanelEnabled = false;
+
+        // Reminders/Notifications/Statistics stay on — under the old (buggy) 12-flag count this alone would
+        // have been enough to let Dashboard, the last real NavItems entry, be turned off too.
+        Assert.True(vm.RemindersSidebarEnabled);
+        Assert.True(vm.NotificationsSidebarEnabled);
+        Assert.True(vm.StatisticsPanelEnabled);
+
+        vm.DashboardPanelEnabled = false;
+
+        Assert.True(vm.DashboardPanelEnabled);
+    }
+
+    /// <summary>Complement of the test above: Reminders/Notifications/Statistics don't populate
+    /// <c>NavItems</c> at all, so hiding all three down to zero must never be blocked by the sidebar guard —
+    /// unlike before this fix, where their flags fed the same shared counter as the 9 real sections.</summary>
+    [Fact]
+    public void RemindersNotificationsStatistics_CanAllBeDisabled_WithoutTriggeringGuard()
+    {
+        var (vm, _, _, _) = CreateViewModel();
+
+        vm.RemindersSidebarEnabled = false;
+        vm.NotificationsSidebarEnabled = false;
+        vm.StatisticsPanelEnabled = false;
+
+        Assert.False(vm.RemindersSidebarEnabled);
+        Assert.False(vm.NotificationsSidebarEnabled);
+        Assert.False(vm.StatisticsPanelEnabled);
+    }
+
     [Fact]
     public void OnNotificationsPanelEnabledChanged_InvokesCallback_WithNewValue()
     {

@@ -88,9 +88,18 @@ public sealed partial class SettingsViewModel
 
     /// <summary>Entry point for the "Toggle theme" command-palette action (propuesta 25,
     /// docs/propuesta-nuevas-funcionalidades.md) — the theme switch in Ajustes flips <see cref="IsDarkTheme"/>
-    /// directly from its own toggle control, so this is the only place that needed a dedicated command.</summary>
+    /// directly from its own toggle control, so this is the only place that needed a dedicated command.
+    /// Also deactivates an active custom theme first (análisis alfa-3 §4.5, Alta): before this, toggling
+    /// while a custom theme was active silently flipped <see cref="IsDarkTheme"/> underneath it with no
+    /// visible effect, since <see cref="OnIsDarkThemeChanged"/> only applies the built-in palette when no
+    /// custom theme overrides it — leaving this, a keyboard-reachable action, as one of the few real escape
+    /// hatches from an illegible custom theme.</summary>
     [RelayCommand]
-    private void ToggleTheme() => IsDarkTheme = !IsDarkTheme;
+    private void ToggleTheme()
+    {
+        if (IsCustomThemeActive) UseSystemTheme();
+        IsDarkTheme = !IsDarkTheme;
+    }
 
     partial void OnInterfaceFontFamilyChanged(string value)
     {

@@ -210,6 +210,8 @@
               </StackPanel>
               <TextBlock Text="{loc:Tr Settings_General_Sidebar_Description}"
                          Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr Settings_General_Sidebar_SearchNote}"
+                         Classes="muted" FontSize="11.5" FontStyle="Italic" TextWrapping="Wrap" />
 
               <!-- Primer grupo -->
               <Grid ColumnDefinitions="*,Auto">
