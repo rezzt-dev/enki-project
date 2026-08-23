@@ -24,6 +24,29 @@
                 DragDrop.DragOver="FolderRow_DragOver"
                 DragDrop.DragLeave="FolderRow_DragLeave"
                 DragDrop.Drop="FolderRow_Drop">
+          <Border.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateSubfolderCommand}"
+                        CommandParameter="{Binding}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Common_Delete}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).DeleteFolderCommand}"
+                        CommandParameter="{Binding}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+            </ContextMenu>
+          </Border.ContextMenu>
           <Grid ColumnDefinitions="20,Auto,*,Auto,Auto" Height="34">
             <Button Grid.Column="0" Classes="icon-btn" Width="20" Height="20"
                     IsVisible="{Binding Children.Count, Converter={StaticResource CountToBoolConverter}}"
@@ -62,6 +85,19 @@
           </ItemsControl.ItemsPanel>
         </ItemsControl>
       </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="vm:FileFolderCardViewModel">
+      <Button Classes="file-card" Margin="0,0,16,16" Width="180" Height="180"
+              Command="{Binding $parent[ItemsControl].((vm:FilesViewModel)DataContext).OpenFolderCardCommand}"
+              CommandParameter="{Binding}">
+        <Grid RowDefinitions="*,Auto">
+          <mi:MaterialIcon Grid.Row="0" Kind="FolderOutline" Width="48" Height="48"
+                            Foreground="{DynamicResource Ink40}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="1" Text="{Binding Name}" FontWeight="Bold" FontSize="13" LetterSpacing="0.2"
+                     TextTrimming="CharacterEllipsis" MaxLines="1" HorizontalAlignment="Center" Margin="0,10,0,0" />
+        </Grid>
+      </Button>
     </DataTemplate>
   </UserControl.DataTemplates>
 
@@ -180,6 +216,20 @@
                 DragDrop.DragOver="FilesGrid_DragOver"
                 DragDrop.DragLeave="FilesGrid_DragLeave"
                 DragDrop.Drop="FilesGrid_Drop">
+          <Border.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="{loc:Tr Files_ImportButton}" Command="{Binding ImportCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Files_NewFolderButton}" Command="{Binding NewFolderCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+            </ContextMenu>
+          </Border.ContextMenu>
           <Grid RowDefinitions="Auto,*">
 
             <TextBlock Grid.Row="0" Text="{Binding CurrentFolderLabel}"
@@ -187,7 +237,7 @@
 
             <Grid Grid.Row="1">
               <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding Files}" Margin="24">
+                <ItemsControl ItemsSource="{Binding BrowserItems}" Margin="24">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                       <WrapPanel Orientation="Horizontal" />

@@ -762,6 +762,9 @@
   <data name="Files_ImportFilesDialog_Title" xml:space="preserve">
     <value>Importer des fichiers</value>
   </data>
+  <data name="Files_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Créer un sous-dossier</value>
+  </data>
   <data name="Files_NewFolderButton" xml:space="preserve">
     <value>Nouveau dossier</value>
   </data>
@@ -1340,6 +1343,9 @@
   </data>
   <data name="Notes_LockedSession_Message" xml:space="preserve">
     <value>Cette session est protégée et verrouillée. Déverrouillez-la depuis Sessions pour voir ses notes.</value>
+  </data>
+  <data name="Notes_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Créer un sous-dossier</value>
   </data>
   <data name="Notes_NewFolderButton" xml:space="preserve">
     <value>Nouveau dossier</value>
@@ -3078,6 +3084,12 @@
   <data name="Trash_EmptyFilesModal_Title" xml:space="preserve">
     <value>Vider les fichiers ?</value>
   </data>
+  <data name="Trash_EmptyPolarTasksModal_Message" xml:space="preserve">
+    <value>Toutes les listes et tâches Polar de la corbeille seront définitivement supprimées. Cette action ne peut pas être annulée.</value>
+  </data>
+  <data name="Trash_EmptyPolarTasksModal_Title" xml:space="preserve">
+    <value>Vider les tâches Polar ?</value>
+  </data>
   <data name="Trash_EmptyRemindersModal_Message" xml:space="preserve">
     <value>Tous les rappels de la corbeille seront définitivement supprimés. Cette action ne peut pas être annulée.</value>
   </data>
@@ -3112,7 +3124,7 @@
     <value>Tâches Polar</value>
   </data>
   <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
-    <value>Pas encore de suppression définitive ici, ni individuelle ni groupée — elles doivent d'abord terminer leur synchronisation avant de pouvoir être supprimées localement en toute sécurité.</value>
+    <value>Si elles ne se sont pas encore synchronisées, le serveur ne recevra pas la suppression et elles pourraient réapparaître après la prochaine synchronisation.</value>
   </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' reste dans la corbeille car le tableau n'a aucune colonne où la replacer.</value>
@@ -3152,6 +3164,12 @@
   </data>
   <data name="Trash_Notify_RemindersCount_other" xml:space="preserve">
     <value>{0} rappels</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_one" xml:space="preserve">
+    <value>{0} élément Polar</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_other" xml:space="preserve">
+    <value>{0} éléments Polar</value>
   </data>
   <data name="Trash_Notify_SessionRestored_Message" xml:space="preserve">
     <value>Session '{0}' restaurée.</value>

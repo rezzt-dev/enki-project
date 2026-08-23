@@ -762,6 +762,9 @@
   <data name="Files_ImportFilesDialog_Title" xml:space="preserve">
     <value>Import files</value>
   </data>
+  <data name="Files_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Create subfolder</value>
+  </data>
   <data name="Files_NewFolderButton" xml:space="preserve">
     <value>New folder</value>
   </data>
@@ -1340,6 +1343,9 @@
   </data>
   <data name="Notes_LockedSession_Message" xml:space="preserve">
     <value>This session is protected and locked. Unlock it from Sessions to see its notes.</value>
+  </data>
+  <data name="Notes_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Create subfolder</value>
   </data>
   <data name="Notes_NewFolderButton" xml:space="preserve">
     <value>New Folder</value>
@@ -3078,6 +3084,12 @@
   <data name="Trash_EmptyFilesModal_Title" xml:space="preserve">
     <value>Empty files?</value>
   </data>
+  <data name="Trash_EmptyPolarTasksModal_Message" xml:space="preserve">
+    <value>All Polar lists and tasks in the trash will be permanently deleted. This action cannot be undone.</value>
+  </data>
+  <data name="Trash_EmptyPolarTasksModal_Title" xml:space="preserve">
+    <value>Empty Polar tasks?</value>
+  </data>
   <data name="Trash_EmptyRemindersModal_Message" xml:space="preserve">
     <value>All reminders in the trash will be permanently deleted. This action cannot be undone.</value>
   </data>
@@ -3112,7 +3124,7 @@
     <value>Polar tasks</value>
   </data>
   <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
-    <value>No permanent delete here yet, individually or in bulk — these still need to finish syncing before it's safe to purge them locally.</value>
+    <value>If they haven't synced yet, the server won't receive the deletion and they may reappear after the next sync.</value>
   </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' stays in the trash because the board has no column to move it back to.</value>
@@ -3152,6 +3164,12 @@
   </data>
   <data name="Trash_Notify_RemindersCount_other" xml:space="preserve">
     <value>{0} reminders</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_one" xml:space="preserve">
+    <value>{0} Polar item</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_other" xml:space="preserve">
+    <value>{0} Polar items</value>
   </data>
   <data name="Trash_Notify_SessionRestored_Message" xml:space="preserve">
     <value>Session '{0}' restored.</value>

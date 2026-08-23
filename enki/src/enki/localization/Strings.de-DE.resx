@@ -762,6 +762,9 @@
   <data name="Files_ImportFilesDialog_Title" xml:space="preserve">
     <value>Dateien importieren</value>
   </data>
+  <data name="Files_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Unterordner erstellen</value>
+  </data>
   <data name="Files_NewFolderButton" xml:space="preserve">
     <value>Neuer Ordner</value>
   </data>
@@ -1340,6 +1343,9 @@
   </data>
   <data name="Notes_LockedSession_Message" xml:space="preserve">
     <value>Diese Sitzung ist geschützt und gesperrt. Entsperre sie unter „Sitzungen“, um ihre Notizen zu sehen.</value>
+  </data>
+  <data name="Notes_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Unterordner erstellen</value>
   </data>
   <data name="Notes_NewFolderButton" xml:space="preserve">
     <value>Neuer Ordner</value>
@@ -3078,6 +3084,12 @@
   <data name="Trash_EmptyFilesModal_Title" xml:space="preserve">
     <value>Dateien löschen?</value>
   </data>
+  <data name="Trash_EmptyPolarTasksModal_Message" xml:space="preserve">
+    <value>Alle Polar-Listen und -Aufgaben im Papierkorb werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</value>
+  </data>
+  <data name="Trash_EmptyPolarTasksModal_Title" xml:space="preserve">
+    <value>Polar-Aufgaben löschen?</value>
+  </data>
   <data name="Trash_EmptyRemindersModal_Message" xml:space="preserve">
     <value>Alle Erinnerungen im Papierkorb werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</value>
   </data>
@@ -3112,7 +3124,7 @@
     <value>Polar-Aufgaben</value>
   </data>
   <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
-    <value>Hier noch kein endgültiges Löschen, weder einzeln noch gesammelt — sie müssen erst fertig synchronisiert sein, bevor ein lokales Löschen sicher ist.</value>
+    <value>Wenn sie noch nicht synchronisiert wurden, erhält der Server die Löschung nicht und sie können nach der nächsten Synchronisation wieder erscheinen.</value>
   </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' bleibt im Papierkorb, weil das Board keine Spalte hat, in die sie zurückgelegt werden könnte.</value>
@@ -3152,6 +3164,12 @@
   </data>
   <data name="Trash_Notify_RemindersCount_other" xml:space="preserve">
     <value>{0} Erinnerungen</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_one" xml:space="preserve">
+    <value>{0} Polar-Element</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_other" xml:space="preserve">
+    <value>{0} Polar-Elemente</value>
   </data>
   <data name="Trash_Notify_SessionRestored_Message" xml:space="preserve">
     <value>Sitzung '{0}' wiederhergestellt.</value>

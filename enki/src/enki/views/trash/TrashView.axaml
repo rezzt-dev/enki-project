@@ -222,11 +222,18 @@
           </StackPanel>
         </StackPanel>
 
-        <!-- ===================== Tareas Polar (análisis alfa-3 §4.3) =====================
-             Solo restaurar — sin borrado individual ni "vaciar categoría", ver el comentario en
-             TrashViewModel.PolarLists sobre por qué (fila aún Dirty, tombstone sin llegar a Supabase). -->
+        <!-- ===================== Tareas Polar (análisis alfa-3 §4.3) ===================== -->
         <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Trash_PolarTasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="{loc:Tr Trash_PolarTasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="pill" Padding="10,5" IsEnabled="{Binding !IsPolarTasksEmpty}"
+                    Command="{Binding RequestEmptyPolarTasksCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
+                <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10" />
+              </StackPanel>
+            </Button>
+          </Grid>
 
           <ItemsControl ItemsSource="{Binding PolarLists}">
             <ItemsControl.ItemsPanel>
@@ -251,6 +258,12 @@
                               CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
                               AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
                         <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+                      </Button>
+                      <Button Classes="icon-btn icon-btn-danger"
+                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeletePolarListForeverCommand}"
+                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
                       </Button>
                     </StackPanel>
                   </Grid>
@@ -282,6 +295,12 @@
                               CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
                               AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
                         <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+                      </Button>
+                      <Button Classes="icon-btn icon-btn-danger"
+                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeletePolarTaskForeverCommand}"
+                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
                       </Button>
                     </StackPanel>
                   </Grid>

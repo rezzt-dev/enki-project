@@ -31,6 +31,12 @@ public sealed partial class FilesViewModel : ViewModelBase
     private readonly DispatcherTimer _searchDebounceTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
 
     public ObservableCollection<FileCardViewModel> Files { get; } = [];
+
+    /// <summary>Elementos mostrados en la rejilla principal de Archivos: carpetas navegables y, tras ellas,
+    /// los archivos del folder actual. Se mantiene <see cref="Files"/> como fuente de datos de las tarjetas
+    /// para no romper tests y consumidores existentes; esta colección es la vista proyectada para la UI.</summary>
+    public ObservableCollection<object> BrowserItems { get; } = [];
+
     public ObservableCollection<FileFolderViewModel> RootFolders { get; } = [];
     public ObservableCollection<SessionOptionViewModel> SessionOptions { get; } = [];
 
@@ -163,6 +169,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         if (IsSelectedSessionLocked)
         {
             Files.Clear();
+            BrowserItems.Clear();
             IsEmpty = true;
             return;
         }
@@ -174,7 +181,25 @@ public sealed partial class FilesViewModel : ViewModelBase
 
         Files.Clear();
         foreach (var file in filtered) Files.Add(new FileCardViewModel(_vaultService, file));
-        IsEmpty = Files.Count == 0;
+
+        BrowserItems.Clear();
+        var hasSearch = !string.IsNullOrWhiteSpace(SearchText);
+        if (!hasSearch)
+        {
+            if (CurrentFolder is not null)
+            {
+                var parentPath = Path.GetDirectoryName(CurrentFolder.FullPath);
+                if (!string.IsNullOrEmpty(parentPath))
+                    BrowserItems.Add(new FileFolderCardViewModel("..", parentPath, isParent: true));
+            }
+
+            foreach (var folder in _vaultService.GetFolderTree(CurrentFolderPath))
+                BrowserItems.Add(new FileFolderCardViewModel(folder.Name, folder.FullPath));
+        }
+
+        foreach (var file in Files) BrowserItems.Add(file);
+
+        IsEmpty = BrowserItems.Count == 0;
     }
 
     public void ReloadFolders()
@@ -311,6 +336,32 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     [RelayCommand]
     private void SelectFolder(FileFolderViewModel? folder) => CurrentFolder = folder;
+
+    [RelayCommand]
+    private void OpenFolderCard(FileFolderCardViewModel card)
+    {
+        if (card.IsParent)
+        {
+            CurrentFolder = string.IsNullOrEmpty(card.FullPath)
+                ? null
+                : FindFolder(RootFolders, card.FullPath);
+            return;
+        }
+
+        CurrentFolder = FindFolder(RootFolders, card.FullPath);
+    }
+
+    [RelayCommand]
+    private void CreateSubfolder(FileFolderViewModel folder)
+    {
+        var created = VaultService.CreateFolder(folder.FullPath);
+        ReloadFolders();
+
+        var vm = FindFolder(RootFolders, created.FullPath);
+        if (vm is null) return;
+        vm.EditingName = vm.Name;
+        vm.IsRenaming = true;
+    }
 
     [RelayCommand]
     private void NewFolder()

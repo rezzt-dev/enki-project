@@ -309,7 +309,102 @@ public class TrashViewModelTests : IDisposable
     }
 
     [Fact]
-    public void PolarTasksCategory_NeverAffectsIsFullyEmpty()
+    public void RequestDeletePolarTaskForever_OpensDialog_WithoutDeleting()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteTask(task);
+        trash.Reload();
+        var trashedTask = trash.PolarTasks.Single();
+
+        trash.RequestDeletePolarTaskForeverCommand.Execute(trashedTask);
+
+        Assert.Same(trashedTask, trash.PendingPermanentDelete);
+        Assert.Single(polar.Store.Tasks, t => t.IsDeleted);
+    }
+
+    [Fact]
+    public void ConfirmPermanentDelete_ForPolarTask_RemovesItPermanently()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteTask(task);
+        trash.Reload();
+        var trashedTask = trash.PolarTasks.Single();
+
+        trash.RequestDeletePolarTaskForeverCommand.Execute(trashedTask);
+        trash.ConfirmPermanentDeleteCommand.Execute(null);
+
+        Assert.Null(trash.PendingPermanentDelete);
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.DoesNotContain(polar.Store.Tasks, t => t.Id == task.Id);
+    }
+
+    [Fact]
+    public void ConfirmPermanentDelete_ForPolarList_RemovesListAndItsTasksPermanently()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteList(list);
+        trash.Reload();
+        var trashedList = trash.PolarLists.Single();
+
+        trash.RequestDeletePolarListForeverCommand.Execute(trashedList);
+        trash.ConfirmPermanentDeleteCommand.Execute(null);
+
+        Assert.Null(trash.PendingPermanentDelete);
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.DoesNotContain(polar.Store.Lists, l => l.Id == list.Id);
+        Assert.Empty(polar.Store.Tasks);
+    }
+
+    [Fact]
+    public void ConfirmEmpty_WithPolarTasksTarget_PurgesOnlyPolarTasks()
+    {
+        var (trash, vault, kanban, polar, _, _) = CreateViewModel();
+        File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
+        vault.DeleteNote(vault.GetNotes().Single());
+        var column = kanban.Board.Columns[0];
+        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        {
+            Card = new KanbanCard { Id = "t1", Title = "T" },
+            ColumnId = column.Id,
+            ColumnTitle = column.Title
+        });
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.DeleteList(list);
+        trash.Reload();
+
+        trash.RequestEmptyPolarTasksCommand.Execute(null);
+        trash.ConfirmEmptyCommand.Execute(null);
+
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.DoesNotContain(polar.Store.Lists, l => l.Id == list.Id);
+        Assert.Single(vault.GetTrashedNotes());
+        Assert.Single(kanban.Board.TrashedCards);
+        Assert.False(trash.IsFullyEmpty);
+    }
+
+    [Fact]
+    public void ConfirmEmpty_WithAllTarget_PurgesPolarTasksToo()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.DeleteList(list);
+        trash.Reload();
+
+        trash.RequestEmptyTrashCommand.Execute(null);
+        trash.ConfirmEmptyCommand.Execute(null);
+
+        Assert.True(trash.IsFullyEmpty);
+        Assert.DoesNotContain(polar.Store.Lists, l => l.Id == list.Id);
+    }
+
+    [Fact]
+    public void PolarTasksCategory_AffectsIsFullyEmpty()
     {
         var (trash, _, _, polar, _, _) = CreateViewModel();
         var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
@@ -318,7 +413,7 @@ public class TrashViewModelTests : IDisposable
         trash.Reload();
 
         Assert.False(trash.IsPolarTasksEmpty);
-        Assert.True(trash.IsFullyEmpty);
+        Assert.False(trash.IsFullyEmpty);
     }
 
     [Fact]

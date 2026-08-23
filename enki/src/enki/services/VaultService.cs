@@ -435,7 +435,8 @@ public sealed class VaultService
     /// <see cref="FileInfo.LastWriteTimeUtc"/> for free, which <see cref="_noteCache"/> needs to validate a
     /// cached entry without an extra per-file stat call.</summary>
     private static IEnumerable<FileInfo> EnumerateMarkdownFiles(string root, SearchOption option) =>
-        new DirectoryInfo(root).EnumerateFiles("*.md", option);
+        new DirectoryInfo(root).EnumerateFiles("*.md", option)
+            .Where(info => !info.Name.StartsWith('.'));
 
     private (NoteFile Note, string Content) ReadNoteAndContent(FileInfo info)
     {
@@ -1068,6 +1069,7 @@ public sealed class VaultService
 
         return Directory.EnumerateFiles(folderPath, "*", SearchOption.TopDirectoryOnly)
             .Where(path => !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            .Where(path => !Path.GetFileName(path).StartsWith('.'))
             .Select(ReadFileMetadata)
             .OrderByDescending(f => f.ModifiedUtc)
             .ToList();

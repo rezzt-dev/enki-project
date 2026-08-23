@@ -831,6 +831,9 @@
   <data name="Files_ImportFilesDialog_Title" xml:space="preserve">
     <value>Importar archivos</value>
   </data>
+  <data name="Files_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Crear subcarpeta</value>
+  </data>
   <data name="Files_NewFolderButton" xml:space="preserve">
     <value>Nueva carpeta</value>
   </data>
@@ -1412,6 +1415,9 @@
   </data>
   <data name="Notes_LockedSession_Message" xml:space="preserve">
     <value>Esta sesión está protegida y bloqueada. Desbloquéala desde Sesiones para ver sus notas.</value>
+  </data>
+  <data name="Notes_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Crear subcarpeta</value>
   </data>
   <data name="Notes_NewFolderButton" xml:space="preserve">
     <value>Nueva carpeta</value>
@@ -3372,6 +3378,12 @@
   <data name="Trash_EmptyFilesModal_Title" xml:space="preserve">
     <value>¿Vaciar los archivos?</value>
   </data>
+  <data name="Trash_EmptyPolarTasksModal_Message" xml:space="preserve">
+    <value>Se eliminarán de forma permanente todas las listas y tareas de Polar de la papelera. Esta acción no se puede deshacer.</value>
+  </data>
+  <data name="Trash_EmptyPolarTasksModal_Title" xml:space="preserve">
+    <value>¿Vaciar las tareas de Polar?</value>
+  </data>
   <data name="Trash_EmptyRemindersModal_Message" xml:space="preserve">
     <value>Se eliminarán de forma permanente todos los recordatorios de la papelera. Esta acción no se puede deshacer.</value>
   </data>
@@ -3406,7 +3418,7 @@
     <value>Tareas de Polar</value>
   </data>
   <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
-    <value>Aún no hay borrado permanente aquí, ni individual ni en bloque — primero necesitan terminar de sincronizarse para poder eliminarlas en local con seguridad.</value>
+    <value>Si aún no se sincronizaron, el servidor no recibirá el borrado y podrían reaparecer tras la próxima sincronización.</value>
   </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' permanece en la papelera porque el tablero no tiene ninguna columna donde devolverla.</value>
@@ -3446,6 +3458,12 @@
   </data>
   <data name="Trash_Notify_RemindersCount_other" xml:space="preserve">
     <value>{0} recordatorios</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_one" xml:space="preserve">
+    <value>{0} elemento de Polar</value>
+  </data>
+  <data name="Trash_Notify_PolarTasksCount_other" xml:space="preserve">
+    <value>{0} elementos de Polar</value>
   </data>
   <data name="Trash_Notify_SessionRestored_Message" xml:space="preserve">
     <value>Sesión '{0}' restaurada.</value>

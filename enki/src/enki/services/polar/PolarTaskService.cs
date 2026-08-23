@@ -62,12 +62,50 @@ public sealed class PolarTaskService
         Save();
     }
 
+    // ===================== Borrado permanente desde la Papelera =====================
+
+    /// <summary>Physically removes a soft-deleted list and every task/subtask that belongs to it — the
+    /// Papelera's permanent-delete path for Polar lists. Dirty tombstones are dropped locally just like in
+    /// <see cref="PurgeAllDeleted"/>; the user already confirmed the action in the UI.</summary>
+    public void PurgeList(PolarTaskList list)
+    {
+        var removedTaskIds = Store.Tasks.Where(t => t.ListId == list.Id).Select(t => t.Id).ToHashSet();
+        Store.Subtasks.RemoveAll(s => s.TaskId is { } taskId && removedTaskIds.Contains(taskId));
+        Store.Tasks.RemoveAll(t => t.ListId == list.Id);
+        Store.Lists.RemoveAll(l => l.Id == list.Id);
+        Save();
+    }
+
+    /// <summary>Physically removes a soft-deleted task and its subtareas — the Papelera's permanent-delete
+    /// path for Polar tasks.</summary>
+    public void PurgeTask(PolarTask task)
+    {
+        Store.Subtasks.RemoveAll(s => s.TaskId == task.Id);
+        Store.Tasks.RemoveAll(t => t.Id == task.Id);
+        Save();
+    }
+
+    /// <summary>Physically removes every soft-deleted list/task/subtask from the local store — used by the
+    /// Papelera's section-specific "VACIAR" action for the Polar category. Because the row is dropped locally,
+    /// any tombstone that has not yet been pushed to Polar will not be synchronized; the action is therefore
+    /// only triggered after an explicit user confirmation, same trade-off already accepted by
+    /// <see cref="ReminderService.PurgeAllDeleted"/>.</summary>
+    public void PurgeAllDeleted()
+    {
+        var deletedTaskIds = Store.Tasks.Where(t => t.IsDeleted).Select(t => t.Id).ToHashSet();
+        Store.Subtasks.RemoveAll(s => s.IsDeleted || (s.TaskId is { } taskId && deletedTaskIds.Contains(taskId)));
+        Store.Tasks.RemoveAll(t => t.IsDeleted);
+        Store.Lists.RemoveAll(l => l.IsDeleted);
+        Save();
+    }
+
     /// <summary>Mirrors <see cref="ReminderService"/>'s and <see cref="KanbanService"/>'s own tombstone
     /// purge: physically drops lists/tasks/subtasks soft-deleted more than 30 days ago and already
     /// confirmed synced (<c>!Dirty</c>) — never purges a tombstone that hasn't been pushed yet, so an
     /// offline delete always gets at least one chance to reach Supabase before disappearing for good (see
-    /// docs/analisis-proyecto/roadmap.md, Fase 4, and the Papelera's "Tareas Polar" category, which
-    /// deliberately has no manual "borrar para siempre" for the same reason).</summary>
+    /// docs/analisis-proyecto/roadmap.md, Fase 4). Users can also force an immediate purge from the
+    /// Papelera via <see cref="PurgeList"/>, <see cref="PurgeTask"/> or <see cref="PurgeAllDeleted"/>, with
+    /// the same explicit-confirmation trade-off as <see cref="ReminderService.PurgeAllDeleted"/>.</summary>
     private void PurgeOldTombstones()
     {
         var cutoff = DateTime.UtcNow.AddDays(-30);

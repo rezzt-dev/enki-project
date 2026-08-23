@@ -19,6 +19,7 @@ public enum TrashEmptyTarget
     Documents,
     Tasks,
     Files,
+    PolarTasks,
     Reminders,
     Sessions,
     All
@@ -39,13 +40,10 @@ public sealed partial class TrashViewModel : ViewModelBase
     public ObservableCollection<FileCardViewModel> Files { get; } = [];
 
     /// <summary>Categoría "Tareas Polar" (análisis alfa-3 §4.3, Alta: antes no existía ningún camino de
-    /// recuperación para una lista/tarea Polar borrada). A diferencia del resto de categorías, esta solo
-    /// ofrece restaurar — ni borrado permanente individual ni "vaciar categoría" — porque una fila Polar
-    /// recién borrada suele seguir <c>Dirty</c> (su tombstone aún no llegó a Supabase); purgarla en local
-    /// antes de ese push dejaría al servidor sin enterarse nunca del borrado y la fila "resucitaría" en el
-    /// siguiente pull. Mismo motivo, mismo criterio ya aplicado a Recordatorios (ver
-    /// <see cref="RestoreReminder"/>). El purgado real (por antigüedad, una vez ya sincronizado) es trabajo
-    /// de Fase 4 de docs/version-alfa-3/02-roadmap-implementacion.md, no de esta pantalla.</summary>
+    /// recuperación). Ofrece restaurar y borrar permanentemente (individual y por categoría), con la misma
+    /// advertencia que Recordatorios: si el tombstone aún no llegó a Supabase, purgarlo en local hará que el
+    /// servidor no se entere del borrado, así que la acción solo se ejecuta tras confirmación explícita del
+    /// usuario.</summary>
     public ObservableCollection<TrashedPolarListCardViewModel> PolarLists { get; } = [];
     public ObservableCollection<TrashedPolarTaskCardViewModel> PolarTasks { get; } = [];
     public ObservableCollection<TrashedReminderCardViewModel> Reminders { get; } = [];
@@ -60,10 +58,7 @@ public sealed partial class TrashViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isFilesEmpty;
 
-    /// <summary>Whether both <see cref="PolarLists"/> and <see cref="PolarTasks"/> are empty — kept out of
-    /// <see cref="IsFullyEmpty"/> on purpose: nothing purges this category yet (see the remarks on
-    /// <see cref="PolarLists"/>), so a leftover deleted Polar task/list must never disable/hide the regular
-    /// "vaciar papelera" affordances, which purge every other section just fine.</summary>
+    /// <summary>Whether both <see cref="PolarLists"/> and <see cref="PolarTasks"/> are empty.</summary>
     [ObservableProperty]
     private bool _isPolarTasksEmpty;
 
@@ -73,9 +68,9 @@ public sealed partial class TrashViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSessionsEmpty;
 
-    /// <summary>Drives the "VACIAR PAPELERA" button, which purges documentos, tareas, archivos,
-    /// recordatorios y sesiones.</summary>
-    public bool IsFullyEmpty => IsEmpty && IsTasksEmpty && IsFilesEmpty && IsRemindersEmpty && IsSessionsEmpty;
+    /// <summary>Drives the "VACIAR PAPELERA" button, which purges documentos, tareas, archivos, tareas de
+    /// Polar, recordatorios y sesiones.</summary>
+    public bool IsFullyEmpty => IsEmpty && IsTasksEmpty && IsFilesEmpty && IsPolarTasksEmpty && IsRemindersEmpty && IsSessionsEmpty;
 
     /// <summary>Combined item count across every section — drives the "Papelera" nav badge so the user
     /// can tell there's something to review without opening the page.</summary>
@@ -88,8 +83,8 @@ public sealed partial class TrashViewModel : ViewModelBase
     [ObservableProperty]
     private TrashEmptyTarget? _pendingEmptyTarget;
 
-    /// <summary>Elemento individual pendiente de borrado permanente (una nota, tarea, archivo o sesión de
-    /// la papelera) mientras su diálogo de confirmación está abierto — Fase 3 de
+    /// <summary>Elemento individual pendiente de borrado permanente (una nota, tarea, lista/tarea Polar,
+    /// archivo o sesión de la papelera) mientras su diálogo de confirmación está abierto — Fase 3 de
     /// docs/analisis-proyecto/roadmap.md: antes estos borrados se disparaban al primer clic, mientras que
     /// "vaciar papelera" sí pasaba por un modal. Mismo patrón request/cancel/confirm que
     /// <see cref="_pendingEmptyTarget"/>, pero para un solo elemento.</summary>
@@ -108,6 +103,8 @@ public sealed partial class TrashViewModel : ViewModelBase
         NoteCardViewModel note => note.Title,
         FileCardViewModel file => file.FileName,
         TrashedTaskCardViewModel task => task.Title,
+        TrashedPolarListCardViewModel polarList => polarList.Title,
+        TrashedPolarTaskCardViewModel polarTask => polarTask.Title,
         TrashedSessionCardViewModel session => session.Name,
         _ => string.Empty
     };
@@ -120,6 +117,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         TrashEmptyTarget.Documents => LocalizationService.Instance["Trash_EmptyDocumentsModal_Title"],
         TrashEmptyTarget.Tasks => LocalizationService.Instance["Trash_EmptyTasksModal_Title"],
         TrashEmptyTarget.Files => LocalizationService.Instance["Trash_EmptyFilesModal_Title"],
+        TrashEmptyTarget.PolarTasks => LocalizationService.Instance["Trash_EmptyPolarTasksModal_Title"],
         TrashEmptyTarget.Reminders => LocalizationService.Instance["Trash_EmptyRemindersModal_Title"],
         TrashEmptyTarget.Sessions => LocalizationService.Instance["Trash_EmptySessionsModal_Title"],
         TrashEmptyTarget.All => LocalizationService.Instance["Trash_EmptyAllModal_Title"],
@@ -131,6 +129,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         TrashEmptyTarget.Documents => LocalizationService.Instance["Trash_EmptyDocumentsModal_Message"],
         TrashEmptyTarget.Tasks => LocalizationService.Instance["Trash_EmptyTasksModal_Message"],
         TrashEmptyTarget.Files => LocalizationService.Instance["Trash_EmptyFilesModal_Message"],
+        TrashEmptyTarget.PolarTasks => LocalizationService.Instance["Trash_EmptyPolarTasksModal_Message"],
         TrashEmptyTarget.Reminders => LocalizationService.Instance["Trash_EmptyRemindersModal_Message"],
         TrashEmptyTarget.Sessions => LocalizationService.Instance["Trash_EmptySessionsModal_Message"],
         TrashEmptyTarget.All => LocalizationService.Instance["Trash_EmptyAllModal_Message"],
@@ -176,8 +175,7 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     partial void OnIsRemindersEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
 
-    // Deliberadamente sin OnIsPolarTasksEmptyChanged: ver el comentario en _isPolarTasksEmpty — esta
-    // categoría no participa en IsFullyEmpty.
+    partial void OnIsPolarTasksEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
 
     partial void OnIsSessionsEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
 
@@ -241,6 +239,12 @@ public sealed partial class TrashViewModel : ViewModelBase
     private void RequestDeleteTaskForever(TrashedTaskCardViewModel task) => PendingPermanentDelete = task;
 
     [RelayCommand]
+    private void RequestDeletePolarListForever(TrashedPolarListCardViewModel list) => PendingPermanentDelete = list;
+
+    [RelayCommand]
+    private void RequestDeletePolarTaskForever(TrashedPolarTaskCardViewModel task) => PendingPermanentDelete = task;
+
+    [RelayCommand]
     private void RequestDeleteSessionForever(TrashedSessionCardViewModel session) => PendingPermanentDelete = session;
 
     [RelayCommand]
@@ -259,6 +263,12 @@ public sealed partial class TrashViewModel : ViewModelBase
                 break;
             case TrashedTaskCardViewModel task:
                 _kanbanService.PermanentlyDeleteTrashedCard(task.TrashedCard);
+                break;
+            case TrashedPolarListCardViewModel polarList:
+                _polarTaskService.PurgeList(polarList.List);
+                break;
+            case TrashedPolarTaskCardViewModel polarTask:
+                _polarTaskService.PurgeTask(polarTask.Task);
                 break;
             case TrashedSessionCardViewModel session:
                 SessionService.PermanentlyDeleteTrashedSession(session.Session);
@@ -376,6 +386,9 @@ public sealed partial class TrashViewModel : ViewModelBase
     private void RequestEmptyFiles() => PendingEmptyTarget = TrashEmptyTarget.Files;
 
     [RelayCommand]
+    private void RequestEmptyPolarTasks() => PendingEmptyTarget = TrashEmptyTarget.PolarTasks;
+
+    [RelayCommand]
     private void RequestEmptyReminders() => PendingEmptyTarget = TrashEmptyTarget.Reminders;
 
     [RelayCommand]
@@ -400,6 +413,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         var notesDeleted = 0;
         var tasksDeleted = 0;
         var filesDeleted = 0;
+        var polarTasksDeleted = 0;
         var remindersDeleted = 0;
         var sessionsDeleted = 0;
 
@@ -422,6 +436,13 @@ public sealed partial class TrashViewModel : ViewModelBase
             foreach (var file in trashedFiles) _vaultService.PermanentlyDelete(file);
         }
 
+        if (PendingEmptyTarget is TrashEmptyTarget.PolarTasks or TrashEmptyTarget.All)
+        {
+            polarTasksDeleted = _polarTaskService.Store.Lists.Count(l => l.IsDeleted)
+                              + _polarTaskService.Store.Tasks.Count(t => t.IsDeleted);
+            _polarTaskService.PurgeAllDeleted();
+        }
+
         if (PendingEmptyTarget is TrashEmptyTarget.Reminders or TrashEmptyTarget.All)
         {
             remindersDeleted = _reminderService.DeletedReminders.Count();
@@ -435,10 +456,10 @@ public sealed partial class TrashViewModel : ViewModelBase
             foreach (var session in trashedSessions) SessionService.PermanentlyDeleteTrashedSession(session);
         }
 
-        if (notesDeleted + tasksDeleted + filesDeleted + remindersDeleted + sessionsDeleted > 0)
+        if (notesDeleted + tasksDeleted + filesDeleted + polarTasksDeleted + remindersDeleted + sessionsDeleted > 0)
             _notificationService.Push(
                 LocalizationService.Instance["Trash_Notify_TrashEmptied_Title"],
-                BuildEmptyPushMessage(notesDeleted, tasksDeleted, filesDeleted, remindersDeleted, sessionsDeleted),
+                BuildEmptyPushMessage(notesDeleted, tasksDeleted, filesDeleted, polarTasksDeleted, remindersDeleted, sessionsDeleted),
                 NotificationSeverity.Warning);
 
         PendingEmptyTarget = null;
@@ -451,12 +472,13 @@ public sealed partial class TrashViewModel : ViewModelBase
     /// the correct singular/plural form per locale instead of the old hand-rolled "s" suffix, and the
     /// per-category fragments are joined into the final sentence via a resource-keyed template (see
     /// docs/agent-docs/internacionalizacion-i18n.md §1.3/§1.4) instead of a fixed-word-order concatenation.</summary>
-    private static string BuildEmptyPushMessage(int notesDeleted, int tasksDeleted, int filesDeleted, int remindersDeleted, int sessionsDeleted)
+    private static string BuildEmptyPushMessage(int notesDeleted, int tasksDeleted, int filesDeleted, int polarTasksDeleted, int remindersDeleted, int sessionsDeleted)
     {
         var parts = new List<string>();
         if (notesDeleted > 0) parts.Add(Plural.Get("Trash_Notify_DocumentsCount", notesDeleted, notesDeleted));
         if (tasksDeleted > 0) parts.Add(Plural.Get("Trash_Notify_TasksCount", tasksDeleted, tasksDeleted));
         if (filesDeleted > 0) parts.Add(Plural.Get("Trash_Notify_FilesCount", filesDeleted, filesDeleted));
+        if (polarTasksDeleted > 0) parts.Add(Plural.Get("Trash_Notify_PolarTasksCount", polarTasksDeleted, polarTasksDeleted));
         if (remindersDeleted > 0) parts.Add(Plural.Get("Trash_Notify_RemindersCount", remindersDeleted, remindersDeleted));
         if (sessionsDeleted > 0) parts.Add(Plural.Get("Trash_Notify_SessionsCount", sessionsDeleted, sessionsDeleted));
 

@@ -42,6 +42,11 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public ObservableCollection<NoteCardViewModel> Notes { get; } = [];
 
+    /// <summary>Elementos mostrados en la rejilla principal de Notas: carpetas navegables y, tras ellas,
+    /// las notas del folder actual. Se mantiene <see cref="Notes"/> como fuente de datos de las tarjetas
+    /// para no romper tests y consumidores existentes; esta colección es la vista proyectada para la UI.</summary>
+    public ObservableCollection<object> BrowserItems { get; } = [];
+
     /// <summary>"{0} notes" chip shown next to the note grid — recomputed whenever <see cref="Notes"/>'
     /// membership changes (see the <c>CollectionChanged</c> subscription in the constructor).</summary>
     public string NotesCountLabel => Plural.Get("Notes_CountLabel", Notes.Count, Notes.Count);
@@ -54,9 +59,6 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// below rather than derived, since "which tab is selected" genuinely is separate state from "which
     /// tabs exist" (closing a background tab shouldn't change the active one, for instance).</summary>
     public ObservableCollection<EditorViewModel> OpenEditors { get; } = [];
-
-    /// <summary>Últimas notas abiertas o editadas, más reciente primero. Se limita a 10 entradas.</summary>
-    public ObservableCollection<NoteCardViewModel> RecentNotes { get; } = [];
 
     /// <summary>The vault root, or — when a session is selected — that session's own isolated root.
     /// Every folder/note operation below resolves against this instead of the vault path directly, so
@@ -132,7 +134,6 @@ public sealed partial class NotesViewModel : ViewModelBase
         TagFilter.Changed += Reload;
 
         ReloadSessions();
-        RefreshRecentNotes();
     }
 
     /// <summary>Refresca las etiquetas localizadas cuando <see cref="MainWindowViewModel"/> coordina
@@ -149,39 +150,6 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// (no <see cref="CultureInfo.CurrentCulture"/>): es un nombre de fichero técnico, no texto de UI —
     /// debe mantenerse estable con independencia del idioma activo.</summary>
     private static string DailyNoteTitle => DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
-    private void RefreshRecentNotes()
-    {
-        RecentNotes.Clear();
-        if (_settingsService is null) return;
-
-        var paths = _settingsService.Settings.RecentNotePaths;
-        foreach (var path in paths)
-        {
-            // A recent note can belong to any session, including one that's locked in this process (every
-            // encrypted session starts locked on launch) — reading its content to build the card would
-            // throw SessionLockedException, so it's skipped here the same tolerant way a deleted/moved
-            // path already is, rather than crashing the whole recent-notes refresh.
-            if (_vaultService.IsPathInLockedSession(path)) continue;
-
-            var note = _vaultService.GetNote(path);
-            if (note is not null) RecentNotes.Add(new NoteCardViewModel(note));
-            if (RecentNotes.Count >= 10) break;
-        }
-    }
-
-    private void TouchRecentNote(NoteFile note)
-    {
-        if (_settingsService is null) return;
-
-        var paths = _settingsService.Settings.RecentNotePaths;
-        paths.RemoveAll(p => VaultService.PathsEqual(p, note.FullPath));
-        paths.Insert(0, note.FullPath);
-        while (paths.Count > 10) paths.RemoveAt(paths.Count - 1);
-        _settingsService.Save();
-
-        RefreshRecentNotes();
-    }
 
     partial void OnSearchTextChanged(string value)
     {
@@ -310,9 +278,9 @@ public sealed partial class NotesViewModel : ViewModelBase
         if (IsSelectedSessionLocked)
         {
             Notes.Clear();
+            BrowserItems.Clear();
             IsEmpty = true;
             TagFilter.Reload([]);
-            RefreshRecentNotes();
             return;
         }
 
@@ -331,10 +299,27 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         Notes.Clear();
         foreach (var note in filtered) Notes.Add(new NoteCardViewModel(note));
-        IsEmpty = Notes.Count == 0;
+
+        BrowserItems.Clear();
+        var hasSearch = !string.IsNullOrWhiteSpace(SearchText);
+        if (!hasSearch)
+        {
+            if (CurrentFolder is not null)
+            {
+                var parentPath = Path.GetDirectoryName(CurrentFolder.FullPath);
+                if (!string.IsNullOrEmpty(parentPath))
+                    BrowserItems.Add(new NoteFolderCardViewModel("..", parentPath, isParent: true));
+            }
+
+            foreach (var folder in _vaultService.GetFolderTree(CurrentFolderPath))
+                BrowserItems.Add(new NoteFolderCardViewModel(folder.Name, folder.FullPath));
+        }
+
+        foreach (var note in Notes) BrowserItems.Add(note);
+
+        IsEmpty = BrowserItems.Count == 0;
 
         TagFilter.Reload(all.SelectMany(n => n.Tags).Distinct(StringComparer.OrdinalIgnoreCase));
-        RefreshRecentNotes();
     }
 
     public void ReloadFolders()
@@ -526,7 +511,6 @@ public sealed partial class NotesViewModel : ViewModelBase
         if (existing is not null)
         {
             ActiveEditor = existing;
-            TouchRecentNote(note);
             return;
         }
 
@@ -539,7 +523,6 @@ public sealed partial class NotesViewModel : ViewModelBase
             onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content));
         OpenEditors.Add(editor);
         ActiveEditor = editor;
-        TouchRecentNote(note);
     }
 
     [RelayCommand]
@@ -672,6 +655,32 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     [RelayCommand]
     private void SelectFolder(NoteFolderViewModel? folder) => CurrentFolder = folder;
+
+    [RelayCommand]
+    private void OpenFolderCard(NoteFolderCardViewModel card)
+    {
+        if (card.IsParent)
+        {
+            CurrentFolder = string.IsNullOrEmpty(card.FullPath)
+                ? null
+                : FindFolder(RootFolders, card.FullPath);
+            return;
+        }
+
+        CurrentFolder = FindFolder(RootFolders, card.FullPath);
+    }
+
+    [RelayCommand]
+    private void CreateSubfolder(NoteFolderViewModel folder)
+    {
+        var created = VaultService.CreateFolder(folder.FullPath);
+        ReloadFolders();
+
+        var vm = FindFolder(RootFolders, created.FullPath);
+        if (vm is null) return;
+        vm.EditingName = vm.Name;
+        vm.IsRenaming = true;
+    }
 
     [RelayCommand]
     private void NewFolder()
