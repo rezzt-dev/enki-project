@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -1831,9 +1832,7 @@
     </ScrollViewer>
 
     <!-- ===================== Diálogo: restablecer ajustes por defecto ===================== -->
-    <Border Grid.ColumnSpan="2" Classes="modal-overlay"
-            IsVisible="{Binding PendingResetSettings}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding PendingResetSettings}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -1854,6 +1853,6 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
   </Grid>
 </UserControl>

@@ -7,6 +7,7 @@
              xmlns:models="clr-namespace:enki.Models"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:controls="clr-namespace:enki.Controls"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.EditorView"
              x:DataType="vm:EditorViewModel">
@@ -95,7 +96,7 @@
           <mi:MaterialIcon Kind="FileExportOutline" Width="17" Height="17" />
         </Button>
 
-        <Button Classes="icon-btn icon-btn-danger" Command="{Binding DeleteCommand}"
+        <Button Classes="icon-btn icon-btn-danger" Command="{Binding RequestDeleteCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_Delete_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_Delete_Tooltip}">
           <mi:MaterialIcon Kind="TrashCanOutline" Width="17" Height="17" />
@@ -545,6 +546,32 @@
         </Grid>
       </Border>
     </Popup>
+
+    <!-- ===================== Diálogo: eliminar nota (barra de herramientas del editor, análisis alfa-3 §4.5) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsPendingDelete}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Notes_DeleteNote_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Notes_DeleteNote_Message}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Title}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelDeleteCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmDeleteCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

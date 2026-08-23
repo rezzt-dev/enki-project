@@ -256,6 +256,47 @@ public class SessionServiceTests : IDisposable
         Assert.Equal(sessionB.Id, edge.ToSessionId);
     }
 
+    /// <summary>Covers the ambiguity-aware branch of <c>ComputeGlobalWikiLinkEdges</c> that couldn't be
+    /// exercised before the global graph existed — two notes in different sessions can now share the same
+    /// title (every fresh note starts as "# Nueva nota"), and a title held by more than one note vault-wide
+    /// must resolve to nothing rather than an arbitrary guess (docs/version-alfa-3/01-analisis-detallado.md
+    /// §4.1, Media).</summary>
+    [Fact]
+    public void LoadGlobalGraph_DoesNotResolveWikiLink_WhenTargetTitleIsAmbiguousAcrossSessions()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        var sessionC = service.Create("C");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Nota1.md"), "# Destino");
+        File.WriteAllText(Path.Combine(sessionC.RootPath, "Nota2.md"), "# Destino");
+
+        var graph = service.LoadGlobalGraph();
+
+        Assert.Equal(3, graph.Nodes.Count);
+        Assert.Empty(graph.Edges);
+    }
+
+    /// <summary>Same ambiguity guard as above, but for the filename fallback — a filename held by more than
+    /// one note vault-wide (not just within one session) must also resolve to nothing.</summary>
+    [Fact]
+    public void LoadGlobalGraph_DoesNotResolveWikiLink_WhenTargetFileNameIsAmbiguousAcrossSessions()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        var sessionC = service.Create("C");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Destino.md"), "# Título distinto B");
+        File.WriteAllText(Path.Combine(sessionC.RootPath, "Destino.md"), "# Título distinto C");
+
+        var graph = service.LoadGlobalGraph();
+
+        Assert.Equal(3, graph.Nodes.Count);
+        Assert.Empty(graph.Edges);
+    }
+
     [Fact]
     public void SaveRootPositions_UpdatesStoredCoordinates_ForVaultRootNotes()
     {

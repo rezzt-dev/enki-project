@@ -308,8 +308,14 @@ public sealed class VaultService
         if (encryptedRoot is null) return fullPath;
 
         var plaintext = _encryptionService.Decrypt(encryptedRoot, File.ReadAllBytes(fullPath));
-        var tempPath = Path.Combine(Path.GetTempPath(), $"enki-dec-{Guid.NewGuid():N}{Path.GetExtension(fullPath)}");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"{DecryptedTempFilePrefix}{Guid.NewGuid():N}{Path.GetExtension(fullPath)}");
         File.WriteAllBytes(tempPath, plaintext);
+        // A decrypted copy sitting in the OS-shared temp directory with default permissions is readable by
+        // any other local account on the umask this process inherited on Linux/macOS — restrict it to the
+        // owner right after writing (docs/version-alfa-3/01-analisis-detallado.md §4.1, Media). Windows has
+        // no POSIX mode bits; SetUnixFileMode throws PlatformNotSupportedException there.
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(tempPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         return tempPath;
     }
 
@@ -327,6 +333,35 @@ public sealed class VaultService
         {
             LogService.Warning($"No se pudo borrar el temporal descifrado '{path}'", ex);
         }
+    }
+
+    /// <summary>Prefix every decrypted temp file from <see cref="ResolveReadablePath"/> is named with —
+    /// shared with <see cref="CleanupStaleDecryptedTempFiles"/> below so the sweep only ever touches files
+    /// this app itself created.</summary>
+    private const string DecryptedTempFilePrefix = "enki-dec-";
+
+    /// <summary>Best-effort sweep of every leftover decrypted temp file in the OS temp directory — called
+    /// both at startup and at shutdown (see <c>Program.Main</c>/<c>MainWindowViewModel.Shutdown</c>).
+    /// <see cref="TryCleanupDecryptedTempFile"/> alone only ever cleans up the one file its own caller made;
+    /// nothing previously swept the whole directory, so a crash (or, before this fix, simply closing the
+    /// app — <see cref="SessionEncryptionService.LockAll"/> was never actually called either) could leave
+    /// plaintext copies of protected-session content in the world-shared temp directory indefinitely
+    /// (docs/version-alfa-3/01-analisis-detallado.md §4.1, Alta). Runs at startup too in case the previous
+    /// shutdown was itself a crash that skipped the shutdown sweep.</summary>
+    public static void CleanupStaleDecryptedTempFiles()
+    {
+        string[] files;
+        try
+        {
+            files = Directory.GetFiles(Path.GetTempPath(), $"{DecryptedTempFilePrefix}*");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning("No se pudo listar el directorio temporal para limpiar descifrados", ex);
+            return;
+        }
+
+        foreach (var file in files) TryCleanupDecryptedTempFile(file);
     }
 
     private (long Size, bool Incomplete) ComputeVaultSizeBytes()
@@ -706,13 +741,6 @@ public sealed class VaultService
     {
         if (!IsVaultConfigured) throw new VaultUnavailableException(VaultPath);
     }
-
-    /// <summary>Shared atomic-write primitive for plain (non-JSON) vault content — a temp file next to
-    /// <paramref name="path"/>, then an atomic <see cref="File.Move(string, string, bool)"/> onto it.
-    /// Logs and rethrows on <see cref="IOException"/>/<see cref="UnauthorizedAccessException"/> (which also
-    /// covers <see cref="DirectoryNotFoundException"/>) instead of swallowing it, so a disk-full, permission,
-    /// or missing-path failure leaves a trace in <see cref="LogService"/> and still reaches the caller.</summary>
-    internal void WriteTextFile(string path, string content) => WriteFileAtomic(path, content);
 
     /// <summary>Shared atomic-write primitive for plain (non-JSON) vault content — a temp file next to
     /// <paramref name="path"/>, then an atomic <see cref="File.Move(string, string, bool)"/> onto it.

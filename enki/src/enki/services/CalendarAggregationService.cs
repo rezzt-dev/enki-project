@@ -56,7 +56,7 @@ public sealed class CalendarAggregationService(
                 Description = card.Description,
                 MomentUtc = due,
                 IsAllDay = isAllDay,
-                IsCompleted = false,
+                IsCompleted = card.CompletedAtUtc is not null,
                 // A duration only ever means something alongside a real time of day (doc §5) — an all-day
                 // card ignores whatever DurationMinutes happens to be stored.
                 DurationMinutes = isAllDay ? null : card.DurationMinutes,
@@ -185,7 +185,8 @@ public sealed class CalendarAggregationService(
                 LayerKey = KanbanLayerKey,
                 Priority = MapPriority(card.Priority),
                 IconKind = MaterialIconKind.ViewColumnOutline,
-                ParentContextLabel = column.Title
+                ParentContextLabel = column.Title,
+                IsCompleted = card.CompletedAtUtc is not null
             });
         }
 

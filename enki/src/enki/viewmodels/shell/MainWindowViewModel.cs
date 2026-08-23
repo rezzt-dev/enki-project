@@ -407,4 +407,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand]
     public void OpenCommandPalette() => CommandPalette.IsOpen = true;
+
+    /// <summary>Called from <c>MainWindow.axaml.cs</c>'s <c>Closing</c> handler, alongside the editor/settings
+    /// flush calls already there. Before this, <see cref="SessionEncryptionService.LockAll"/> was never
+    /// actually invoked from anywhere despite its own doc comment claiming otherwise, and no decrypted temp
+    /// file was ever swept on shutdown — both meant a password-protected session's key and any decrypted
+    /// PDF/attachment copy could outlive the process indefinitely (docs/version-alfa-3/01-analisis-detallado.md
+    /// §4.1, Alta).</summary>
+    public void Shutdown()
+    {
+        _vaultService.EncryptionService.LockAll();
+        VaultService.CleanupStaleDecryptedTempFiles();
+    }
 }

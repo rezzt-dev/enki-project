@@ -81,6 +81,12 @@ public sealed partial class EditorViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isActive;
 
+    /// <summary>Backs the "delete this note" confirmation dialog opened from the editor's own toolbar —
+    /// the same <see cref="AppSettings.ConfirmBeforeDelete"/> guard as <c>NotesViewModel.DeleteNote</c>
+    /// (análisis alfa-3 §4.5), just reached from a second entry point (see <see cref="RequestDelete"/>).</summary>
+    [ObservableProperty]
+    private bool _isPendingDelete;
+
     /// <summary>Whether a dragged tab is currently hovering over this one — drives the same
     /// editor-tab.drag-over highlight the folder tree uses for its own drop targets (NotesView.axaml.cs,
     /// EditorTab_Drag*), set while reordering tabs by drag-and-drop.</summary>
@@ -565,6 +571,22 @@ public sealed partial class EditorViewModel : ViewModelBase
     private void ExportAsHtml() => _onExportHtml?.Invoke(Note, Document.Text);
 
     [RelayCommand]
+    private void RequestDelete()
+    {
+        if (_settingsService?.Settings.ConfirmBeforeDelete ?? true) IsPendingDelete = true;
+        else Delete();
+    }
+
+    [RelayCommand]
+    private void CancelDelete() => IsPendingDelete = false;
+
+    [RelayCommand]
+    private void ConfirmDelete()
+    {
+        IsPendingDelete = false;
+        Delete();
+    }
+
     private void Delete()
     {
         EditorBacklinksService.WarnIfDeletingLeavesBrokenLinks(_vaultService, _notificationService, Note);

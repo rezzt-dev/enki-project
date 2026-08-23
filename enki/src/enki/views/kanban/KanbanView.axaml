@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -810,9 +811,7 @@
       </Grid>
 
       <!-- ===================== Formulario emergente: crear / editar lista ===================== -->
-      <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
-              IsVisible="{Binding ListEditor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <controls:ModalOverlayHost IsOpen="{Binding ListEditor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
                 MaxWidth="420" DataContext="{Binding ListEditor}" x:DataType="vm:PolarListEditorViewModel">
           <StackPanel Spacing="18" MinWidth="380">
@@ -870,12 +869,10 @@
             </Grid>
           </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
       <!-- ===================== Diálogo: eliminar lista ===================== -->
-      <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
-              IsVisible="{Binding ListPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <controls:ModalOverlayHost IsOpen="{Binding ListPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
                 DataContext="{Binding ListPendingDelete}" x:DataType="vm:PolarTaskListItemViewModel">
           <StackPanel Spacing="18">
@@ -900,12 +897,10 @@
             </Grid>
           </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
       <!-- ===================== Formulario emergente: crear / editar tarea ===================== -->
-      <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
-              IsVisible="{Binding TaskEditor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <controls:ModalOverlayHost IsOpen="{Binding TaskEditor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
                 MaxWidth="580" MaxHeight="720" DataContext="{Binding TaskEditor}" x:DataType="vm:PolarTaskEditorViewModel">
           <Grid RowDefinitions="Auto,*,Auto" MinWidth="480">
@@ -999,10 +994,36 @@
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding HasDueTime}" OnContent="" OffContent=""
                                           AutomationProperties.Name="{loc:Tr Kanban_Calendar_AddTimeLabel}" />
                           </Grid>
-                          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasDueTime}">
-                            <NumericUpDown Value="{Binding DueHour}" Minimum="0" Maximum="23" Increment="1" FormatString="00" Width="92" ShowButtonSpinner="True" />
+                          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasDueTime}">
+                            <Border Classes="time-stepper">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Button Grid.Column="0" Classes="icon-btn time-stepper-btn"
+                                        Command="{Binding DecrementDueHourCommand}" ToolTip.Tip="{loc:Tr Kanban_TimeStepper_SubtractHourTooltip}" AutomationProperties.Name="{loc:Tr Kanban_TimeStepper_SubtractHourTooltip}">
+                                  <mi:MaterialIcon Kind="Minus" Width="12" Height="12" />
+                                </Button>
+                                <TextBlock Grid.Column="1" Text="{Binding DueHour, StringFormat={}{0:00}}"
+                                           Classes="time-stepper-value" />
+                                <Button Grid.Column="2" Classes="icon-btn time-stepper-btn"
+                                        Command="{Binding IncrementDueHourCommand}" ToolTip.Tip="{loc:Tr Kanban_TimeStepper_AddHourTooltip}" AutomationProperties.Name="{loc:Tr Kanban_TimeStepper_AddHourTooltip}">
+                                  <mi:MaterialIcon Kind="Plus" Width="12" Height="12" />
+                                </Button>
+                              </Grid>
+                            </Border>
                             <TextBlock Text=":" FontWeight="Bold" VerticalAlignment="Center" />
-                            <NumericUpDown Value="{Binding DueMinute}" Minimum="0" Maximum="59" Increment="5" FormatString="00" Width="92" ShowButtonSpinner="True" />
+                            <Border Classes="time-stepper">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Button Grid.Column="0" Classes="icon-btn time-stepper-btn"
+                                        Command="{Binding DecrementDueMinuteCommand}" ToolTip.Tip="{loc:Tr Kanban_TimeStepper_SubtractMinuteTooltip}" AutomationProperties.Name="{loc:Tr Kanban_TimeStepper_SubtractMinuteTooltip}">
+                                  <mi:MaterialIcon Kind="Minus" Width="12" Height="12" />
+                                </Button>
+                                <TextBlock Grid.Column="1" Text="{Binding DueMinute, StringFormat={}{0:00}}"
+                                           Classes="time-stepper-value" />
+                                <Button Grid.Column="2" Classes="icon-btn time-stepper-btn"
+                                        Command="{Binding IncrementDueMinuteCommand}" ToolTip.Tip="{loc:Tr Kanban_TimeStepper_AddMinuteTooltip}" AutomationProperties.Name="{loc:Tr Kanban_TimeStepper_AddMinuteTooltip}">
+                                  <mi:MaterialIcon Kind="Plus" Width="12" Height="12" />
+                                </Button>
+                              </Grid>
+                            </Border>
                           </StackPanel>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto,Auto">
@@ -1092,12 +1113,10 @@
             </Grid>
           </Grid>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
       <!-- ===================== Diálogo: eliminar tarea ===================== -->
-      <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
-              IsVisible="{Binding TaskPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <controls:ModalOverlayHost IsOpen="{Binding TaskPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
                 DataContext="{Binding TaskPendingDelete}" x:DataType="vm:PolarTaskRowViewModel">
           <StackPanel Spacing="18">
@@ -1122,16 +1141,14 @@
             </Grid>
           </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
       <!-- ===================== Diálogo: detalle de tarea =====================
            Se abre al hacer clic en cualquier tarea de la lista (§ fila de tarea arriba). Muestra toda
            la información — prioridad, fecha límite, recurrencia, estimación, etiquetas, lista de origen,
            bloqueo por cadena y subtareas — organizada en el mismo lenguaje visual que el resto de la app,
            con accesos directos para completar, editar o eliminar sin tener que volver a la lista. -->
-      <Border Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Grid.ColumnSpan="3" Classes="modal-overlay"
-              IsVisible="{Binding TaskDetail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <controls:ModalOverlayHost IsOpen="{Binding TaskDetail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
                 MaxWidth="500" MaxHeight="680" DataContext="{Binding TaskDetail}" x:DataType="vm:PolarTaskDetailViewModel">
           <Grid RowDefinitions="Auto,*,Auto" MinWidth="420">
@@ -1256,14 +1273,13 @@
             </Grid>
           </Grid>
     </Border>
-  </Border> 
+  </controls:ModalOverlayHost> 
      </Grid>
   </Border>
     </Grid>
 
     <!-- ===================== Formulario emergente: crear / editar tarjeta (§7.10) ===================== -->
-    <Border Classes="modal-overlay" IsVisible="{Binding CardEditor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding CardEditor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               MaxWidth="480" MaxHeight="680" DataContext="{Binding CardEditor}" x:DataType="vm:KanbanCardEditorViewModel">
         <Grid RowDefinitions="Auto,*,Auto" MinWidth="420">
@@ -1585,11 +1601,10 @@
           </Grid>
         </Grid>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: detalle de tarjeta (solo lectura, salvo subtareas) ===================== -->
-    <Border Classes="modal-overlay" IsVisible="{Binding CardDetail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding CardDetail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               MaxWidth="480" MaxHeight="640" DataContext="{Binding CardDetail}" x:DataType="vm:KanbanCardDetailViewModel">
         <Grid RowDefinitions="Auto,*,Auto" MinWidth="420">
@@ -1685,11 +1700,10 @@
           </Grid>
         </Grid>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: eliminar tarjeta (§7.10) ===================== -->
-    <Border Classes="modal-overlay" IsVisible="{Binding CardPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding CardPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               DataContext="{Binding CardPendingDelete}" x:DataType="vm:KanbanCardViewModel">
         <StackPanel Spacing="18">
@@ -1717,13 +1731,12 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: eliminar columna (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que el de tarjeta; el mensaje (con el recuento de tarjetas pluralizado) viene
          calculado del viewmodel porque el orden de palabras no es fijo entre idiomas. -->
-    <Border Classes="modal-overlay" IsVisible="{Binding ColumnPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding ColumnPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               DataContext="{Binding ColumnPendingDelete}" x:DataType="vm:KanbanColumnViewModel">
         <StackPanel Spacing="18">
@@ -1751,7 +1764,7 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

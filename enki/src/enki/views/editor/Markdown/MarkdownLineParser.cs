@@ -256,11 +256,21 @@ public static class MarkdownLineParser
                 if (i + 2 < to && text[i + 1] == c && text[i + 2] == c) markerLen = 3;
                 else if (i + 1 < to && text[i + 1] == c) markerLen = 2;
 
-                if (i + markerLen < to && !char.IsWhiteSpace(text[i + markerLen]))
+                // Underscore emphasis never opens between two word characters (CommonMark's intraword
+                // rule) so identifiers like snake_case_name stay plain text instead of turning
+                // "case" italic — asterisks keep opening intraword since *that* markup has no such
+                // legitimate literal use to protect.
+                var opensIntraword = c == '_' && i > 0 && char.IsLetterOrDigit(text[i - 1]);
+
+                if (!opensIntraword && i + markerLen < to && !char.IsWhiteSpace(text[i + markerLen]))
                 {
                     var marker = new string(c, markerLen);
                     var searchFrom = i + markerLen;
                     var close = FindClosingMarker(text, searchFrom, to, marker);
+                    // Same intraword rule on the closing side: an underscore run immediately followed by
+                    // another word character can't close emphasis either.
+                    if (close != -1 && c == '_' && close + markerLen < to && char.IsLetterOrDigit(text[close + markerLen]))
+                        close = -1;
                     if (close != -1)
                     {
                         var kind = markerLen == 3 ? MdSpanKind.BoldItalic : markerLen == 2 ? MdSpanKind.Bold : MdSpanKind.Italic;

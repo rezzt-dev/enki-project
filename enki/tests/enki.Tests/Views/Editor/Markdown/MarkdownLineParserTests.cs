@@ -177,4 +177,98 @@ public class MarkdownLineParserTests
         Assert.Equal(markerEnd, model.MarkerEnd);
         Assert.Equal(contentStart, model.ContentStart);
     }
+
+    // ===================== Énfasis: negrita, cursiva, negrita+cursiva =====================
+
+    [Theory]
+    [InlineData("*cursiva*", MdSpanKind.Italic, "cursiva")]
+    [InlineData("_cursiva_", MdSpanKind.Italic, "cursiva")]
+    [InlineData("**negrita**", MdSpanKind.Bold, "negrita")]
+    [InlineData("__negrita__", MdSpanKind.Bold, "negrita")]
+    [InlineData("***negrita cursiva***", MdSpanKind.BoldItalic, "negrita cursiva")]
+    [InlineData("___negrita cursiva___", MdSpanKind.BoldItalic, "negrita cursiva")]
+    public void Parse_Emphasis_IsParsedWithCorrectKindAndContent(string text, MdSpanKind expectedKind, string expectedContent)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(expectedKind, span.Kind);
+        Assert.Equal(expectedContent, text[span.ContentStart..span.ContentEnd]);
+        Assert.Equal(text, text[span.Start..span.End]);
+    }
+
+    [Fact]
+    public void Parse_BoldAndItalic_TogetherOnOneLine_ProducesTwoSeparateSpans()
+    {
+        var text = "Esto es **negrita** y esto *cursiva*.";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(2, model.Spans.Count);
+        Assert.Equal(MdSpanKind.Bold, model.Spans[0].Kind);
+        Assert.Equal("negrita", text[model.Spans[0].ContentStart..model.Spans[0].ContentEnd]);
+        Assert.Equal(MdSpanKind.Italic, model.Spans[1].Kind);
+        Assert.Equal("cursiva", text[model.Spans[1].ContentStart..model.Spans[1].ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_UnclosedEmphasisMarker_ProducesNoSpan()
+    {
+        var text = "esto tiene un *asterisco suelto sin cerrar";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.DoesNotContain(model.Spans, s => s.Kind is MdSpanKind.Italic or MdSpanKind.Bold or MdSpanKind.BoldItalic);
+    }
+
+    [Fact]
+    public void Parse_EmphasisMarkerImmediatelyFollowedByWhitespace_DoesNotOpen()
+    {
+        // "* " with a trailing space right after the marker is not emphasis (it would also collide with
+        // "* " as a bullet-list marker at the start of a line, but this asserts the inline case).
+        var text = "esto no es * cursiva *";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.DoesNotContain(model.Spans, s => s.Kind == MdSpanKind.Italic);
+    }
+
+    // ===================== snake_case: el guion bajo intra-palabra no debe abrir énfasis =====================
+    // análisis §4.2 — antes de esta corrección, "mi_variable_de_ejemplo" se parseaba como texto en
+    // cursiva empezando en el primer "_" (siguiendo la misma regla que abrir/cerrar con un solo
+    // asterisco), dejando "variable" en itálica y el resto literal. La regla de CommonMark para "_"
+    // (no puede abrir ni cerrar entre dos caracteres alfanuméricos) evita justamente ese caso sin tocar
+    // el comportamiento de "*", que sí soporta énfasis intra-palabra.
+
+    [Theory]
+    [InlineData("mi_variable_de_ejemplo")]
+    [InlineData("snake_case_identifier")]
+    [InlineData("un_solo_guion_no_deberia_marcar_nada")]
+    public void Parse_SnakeCaseIdentifier_IsNotParsedAsEmphasis(string text)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.DoesNotContain(model.Spans, s => s.Kind is MdSpanKind.Italic or MdSpanKind.Bold or MdSpanKind.BoldItalic);
+    }
+
+    [Fact]
+    public void Parse_UnderscoreEmphasis_StillWorksWhenSurroundedByWhitespaceOrPunctuation()
+    {
+        var text = "esto es _cursiva_ de verdad.";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Italic, span.Kind);
+        Assert.Equal("cursiva", text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_AsteriskEmphasis_StillWorksIntraword()
+    {
+        // Only "_" gets the intraword restriction — "*" keeps CommonMark's more permissive behavior,
+        // matching this parser's pre-existing support for e.g. "un*fitt*ing".
+        var text = "un*fitt*ing";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Italic, span.Kind);
+        Assert.Equal("fitt", text[span.ContentStart..span.ContentEnd]);
+    }
 }

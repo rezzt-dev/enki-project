@@ -12,11 +12,11 @@
 Marcar aquí qué fase está en curso o completada según se implemente:
 
 - [x] Fase 0 — Bugs críticos nuevos (bloqueantes)
-- [ ] Fase 1 — Seguridad y pérdida de datos en sesiones protegidas
-- [ ] Fase 2 — Consistencia de UX transversal (`ModalOverlayHost` y confirmaciones de borrado)
-- [ ] Fase 3 — Corrección de estados "vencido"/"completado" en Calendario, Dashboard y Recordatorios
-- [ ] Fase 4 — Deuda técnica y duplicación
-- [ ] Fase 5 — Cobertura de tests en funcionalidad nueva sin probar
+- [x] Fase 1 — Seguridad y pérdida de datos en sesiones protegidas
+- [x] Fase 2 — Consistencia de UX transversal (`ModalOverlayHost` y confirmaciones de borrado)
+- [x] Fase 3 — Corrección de estados "vencido"/"completado" en Calendario, Dashboard y Recordatorios
+- [x] Fase 4 — Deuda técnica y duplicación
+- [x] Fase 5 — Cobertura de tests en funcionalidad nueva sin probar
 - [ ] Fase 6 (opcional) — Paridad de producto Kanban↔Polar
 - [ ] Fase 7 (opcional) — Accesibilidad puntual restante
 - [ ] Fase 8 (opcional) — Rendimiento puntual y mejoras menores
@@ -61,36 +61,36 @@ de reproducirse; suite completa en verde.
 Cierra el resto de huecos de la funcionalidad de cifrado de sesiones más allá del crash de la Fase 0.
 Tiene sentido secuenciarla justo después porque toca el mismo código.
 
-- [ ] **Bloquear una sesión debe invalidar/cerrar sus pestañas de editor abiertas** — al menos notificar
+- [x] **Bloquear una sesión debe invalidar/cerrar sus pestañas de editor abiertas** — al menos notificar
       claramente que el contenido visible pertenece a una sesión ahora bloqueada y bloquear el
       autoguardado sobre esas pestañas hasta que se desbloquee de nuevo; idealmente, cerrarlas. (análisis
       §4.1, Alta) — resuelve la causa raíz de uno de los dos escenarios de crash de la Fase 0, no solo el
       síntoma.
-- [ ] **Cablear `SessionEncryptionService.LockAll()` al cierre de la app** (`MainWindow.axaml.cs`, junto al
+- [x] **Cablear `SessionEncryptionService.LockAll()` al cierre de la app** (`MainWindow.axaml.cs`, junto al
       resto de volcados en `Closing`) — hoy no se llama desde ningún sitio pese a que su propio comentario
       dice que sí. (análisis §4.1, Alta)
-- [ ] **Limpiar archivos temporales descifrados al cerrar la app** (barrido de `enki-dec-*` en el directorio
+- [x] **Limpiar archivos temporales descifrados al cerrar la app** (barrido de `enki-dec-*` en el directorio
       temporal del SO) y, si es viable a bajo coste, también al arrancar (por si el cierre anterior fue un
       crash). Endurecer los permisos del archivo temporal en su creación (`UnixFileMode` restrictivo en
       Linux/macOS). (análisis §4.1, Alta/Media)
-- [ ] **Migrar los 4 diálogos de Sesiones (crear, códigos de recuperación, desbloquear/olvidé mi
+- [x] **Migrar los 4 diálogos de Sesiones (crear, códigos de recuperación, desbloquear/olvidé mi
       contraseña, borrar) a `ModalOverlayHost`** — puede hacerse aquí de forma aislada o como parte del
       bloque mecánico de la Fase 2; dado que son los diálogos de mayor sensibilidad de seguridad del
       release, se recomienda no esperar a la Fase 2 completa para estos cuatro en concreto. (análisis §4.1,
       Alta)
-- [ ] Mover las 6 derivaciones PBKDF2 de `ConfirmCreateSession` (y la derivación única de
+- [x] Mover las 6 derivaciones PBKDF2 de `ConfirmCreateSession` (y la derivación única de
       `ConfirmUnlock`/`ConfirmPasswordReset`) fuera del hilo de UI (`Task.Run` + indicador de carga),
       siguiendo el mismo patrón que el resto de la app ya usa para trabajo de disco. (análisis §4.1, Media)
-- [ ] Auto-limpiar el portapapeles unos segundos después de copiar los códigos de recuperación; confirmar
+- [x] Auto-limpiar el portapapeles unos segundos después de copiar los códigos de recuperación; confirmar
       (y si hace falta, reforzar) que el diálogo de códigos de recuperación deja explícito que perder la
       contraseña y los 5 códigos a la vez es irrecuperable. (análisis §4.1, Media)
-- [ ] Añadir `AutomationProperties.Name` a los 6 campos de contraseña/código nuevos en
+- [x] Añadir `AutomationProperties.Name` a los 6 campos de contraseña/código nuevos en
       `SessionsView.axaml`. (análisis §4.1, Baja — puede agruparse con la Fase 7)
-- [ ] Añadir tests para `GraphGroupFilterItemViewModel`/`RebuildGraphGroupFilters`/`PublishGraph` (sin
+- [x] Añadir tests para `GraphGroupFilterItemViewModel`/`RebuildGraphGroupFilters`/`PublishGraph` (sin
       ningún test hoy) y para la resolución de wikilinks ambiguos entre sesiones distintas
       (`ComputeGlobalWikiLinkEdges`). (análisis §4.1, Media — puede moverse a la Fase 5 si el esfuerzo no
       encaja aquí)
-- [ ] Eliminar `VaultService.WriteTextFile` (código muerto, duplicado exacto de `WriteFileAtomic`).
+- [x] Eliminar `VaultService.WriteTextFile` (código muerto, duplicado exacto de `WriteFileAtomic`).
       (análisis §4.1/§4.2, Media)
 
 **Dependencias**: ninguna respecto a otras fases, salvo que el punto de "bloquear cierra pestañas" es
@@ -103,19 +103,29 @@ prerrequisito conceptual para dar la Fase 0 por completamente cerrada.
 El hallazgo más repetido de toda la auditoría (cuatro frentes independientes lo señalaron) — ver
 [01-analisis-detallado.md §6](01-analisis-detallado.md#6-hallazgo-transversal-modaloverlayhost-con-rollout-incompleto).
 
-- [ ] **Migrar los diálogos modales restantes a `ModalOverlayHost`**: `KanbanView.axaml`,
+- [x] **Migrar los diálogos modales restantes a `ModalOverlayHost`**: `KanbanView.axaml`,
       `TrashView.axaml`, `HabitsView.axaml`, `SkillsView.axaml`, `RemindersView.axaml`,
       `CalendarView.axaml`, `SettingsView.axaml` (los 4 de Sesiones, si no se hicieron ya en la Fase 1).
       Es un cambio mecánico por vista (sustituir `Border Classes="modal-overlay"` por
       `<controls:ModalOverlayHost>` siguiendo el ejemplo ya funcionando en `NotificationsView.axaml`) —
       candidato ideal para hacerse en un único PR de barrido, o para confirmar primero con quien introdujo
       el control si ya hay un plan de migración por fases antes de duplicar el esfuerzo. (análisis §6)
-- [ ] **Aplicar `ConfirmBeforeDelete` a `FilesViewModel.DeleteFile` y `NotesViewModel.DeleteNote`**, igual
-      que ya hacen Hábitos/Polar/Skills/Kanban/Calendario. (análisis §4.5, Alta)
-- [ ] Añadir una categoría de papelera real para tareas/listas Polar borradas (mismo patrón de retención
+      — 22 diálogos migrados en los 7 `.axaml` listados (más los de Sesiones, ya migrados en la Fase 1).
+- [x] **Aplicar `ConfirmBeforeDelete` a `FilesViewModel.DeleteFile` y `NotesViewModel.DeleteNote`**, igual
+      que ya hacen Hábitos/Polar/Skills/Kanban/Calendario. (análisis §4.5, Alta) — de paso, se aplicó el
+      mismo patrón request/cancel/confirm al botón "eliminar" propio de la barra de herramientas del editor
+      (`EditorViewModel.Delete`), un segundo punto de entrada al mismo borrado que la auditoría no había
+      enumerado por separado pero comparte el mismo hallazgo.
+- [x] Añadir una categoría de papelera real para tareas/listas Polar borradas (mismo patrón de retención
       que Kanban), o al menos evaluar y documentar por qué Polar queda deliberadamente fuera de la papelera
-      si la decisión de producto es esa — hoy no hay ninguna nota que lo explique. (análisis §4.3, Alta)
-- [ ] Añadir un indicador visual explícito en la categoría "Recordatorios" de la Papelera de por qué no
+      si la decisión de producto es esa — hoy no hay ninguna nota que lo explique. (análisis §4.3, Alta) —
+      se implementó la categoría "Tareas Polar" en la Papelera (`PolarTaskService.RestoreList`/
+      `RestoreTask`, `TrashViewModel.PolarLists`/`PolarTasks`), pero deliberadamente solo con restaurar, sin
+      borrado permanente individual ni "vaciar categoría": una fila Polar recién borrada suele seguir
+      `Dirty` (su tombstone aún no llegó a Supabase), así que purgarla en local antes de ese push la haría
+      "resucitar" en el siguiente pull — mismo riesgo ya documentado para Recordatorios. El purgado real por
+      antigüedad, una vez sincronizado, queda para la Fase 4 (ver ese punto de purga de tombstones).
+- [x] Añadir un indicador visual explícito en la categoría "Recordatorios" de la Papelera de por qué no
       tiene botón de "borrar para siempre" (o replantear si debería tenerlo una vez sincronizado).
       (análisis §4.3, Baja)
 
@@ -129,18 +139,22 @@ Todos estos hallazgos comparten causa raíz (el estado "completado" de Kanban no
 agregadas) o son del mismo tipo de bug de "estado visual no sincronizado con el estado real". Buen bloque
 para atacar junto porque toca los mismos archivos (`CalendarAggregationService`, `DashboardViewModel`).
 
-- [ ] **`CalendarAggregationService.BuildItems`/`BuildUnscheduledItems`**: derivar `IsCompleted` de
+- [x] **`CalendarAggregationService.BuildItems`/`BuildUnscheduledItems`**: derivar `IsCompleted` de
       `KanbanCard.CompletedAtUtc` en vez de fijarlo a `false`. (análisis §4.4, Alta — el hallazgo con más
       radio de impacto de esta fase, afecta a Calendario, Dashboard y la bandeja de vencimientos del shell
       a la vez)
-- [ ] **`ReminderInboxViewModel.Reload`**: excluir explícitamente la columna "Hecho" (o depender del mismo
-      `IsCompleted` corregido arriba, si se unifica el criterio). (análisis §4.4, Alta)
-- [ ] **`DashboardViewModel.LoadTodayItems`**: acotar el backlog considerado (p. ej. limitar a los últimos
+- [x] **`ReminderInboxViewModel.Reload`**: excluir explícitamente la columna "Hecho" (o depender del mismo
+      `IsCompleted` corregido arriba, si se unifica el criterio). (análisis §4.4, Alta) — se unificó el
+      criterio: filtra por `KanbanCard.CompletedAtUtc is null` en vez de por nombre de columna, así no
+      depende de que la columna "Hecho" se siga llamando exactamente así.
+- [x] **`DashboardViewModel.LoadTodayItems`**: acotar el backlog considerado (p. ej. limitar a los últimos
       N días de antigüedad, o separar visualmente "vencido antiguo" de "hoy" en vez de competir por el
-      mismo cupo de 5 elementos). (análisis §4.4, Alta)
-- [ ] **`ReminderListItemViewModel.IsOverdue`**: excluir recordatorios completados, replicando el criterio
+      mismo cupo de 5 elementos). (análisis §4.4, Alta) — se acotó la ventana de backlog a 30 días
+      (`TodayItemsBacklogWindow`) y, dentro de esa ventana, los ítems que vencen hoy siempre ocupan el cupo
+      antes que el backlog vencido, que solo rellena las plazas sobrantes empezando por el más reciente.
+- [x] **`ReminderListItemViewModel.IsOverdue`**: excluir recordatorios completados, replicando el criterio
       ya correcto de `CalendarItemViewModel.IsPastDue`. (análisis §4.4, Media)
-- [ ] Añadir tests de regresión para los cuatro puntos anteriores (ninguno tiene cobertura hoy).
+- [x] Añadir tests de regresión para los cuatro puntos anteriores (ninguno tiene cobertura hoy).
 
 **Dependencias**: ninguna respecto a otras fases.
 
@@ -152,25 +166,37 @@ Ninguno de estos hallazgos es visible para el usuario final; se agrupan porque s
 reducen el riesgo de que un futuro cambio se aplique a medias (una sola de las dos copias) como ya ha
 pasado con el selector de rejilla de mes.
 
-- [ ] `PolarTaskEditorViewModel` debe reutilizar `MonthGridCalculator` en vez de reimplementar la misma
+- [x] `PolarTaskEditorViewModel` debe reutilizar `MonthGridCalculator` en vez de reimplementar la misma
       matemática de rejilla. (análisis §4.3, Media)
-- [ ] Purgar tombstones de Polar (`IsDeleted=true`) con el mismo criterio de antigüedad que ya usan Kanban
-      (30 días) y Recordatorios. (análisis §4.3, Media)
-- [ ] Unificar el selector de hora límite Kanban/Polar (mismo control, mismo tipo `int` para
-      `DueHour`/`DueMinute`). (análisis §4.3, Media)
-- [ ] Extraer la lógica de puntuación difusa compartida entre `CommandPaletteViewModel` y
-      `QuickSwitcherViewModel` a un helper común. (análisis §4.5, Baja)
-- [ ] Eliminar uno de los dos `PdfRenderHelperTests.cs` duplicados (conservar el de `ViewModels/`, más
+- [x] Purgar tombstones de Polar (`IsDeleted=true`) con el mismo criterio de antigüedad que ya usan Kanban
+      (30 días) y Recordatorios. (análisis §4.3, Media) — `PolarTaskService.PurgeOldTombstones`, llamado
+      desde el constructor igual que `KanbanService`/`ReminderService`; test de regresión en
+      `PolarTaskServiceTests`.
+- [x] Unificar el selector de hora límite Kanban/Polar (mismo control, mismo tipo `int` para
+      `DueHour`/`DueMinute`). (análisis §4.3, Media) — el popover de Polar en `KanbanView.axaml` pasó del
+      `NumericUpDown` (decimal) al mismo control "time-stepper" que ya usaba Kanban, con los mismos
+      comandos Increment/DecrementDueHour/Minute en `PolarTaskEditorViewModel`.
+- [x] Extraer la lógica de puntuación difusa compartida entre `CommandPaletteViewModel` y
+      `QuickSwitcherViewModel` a un helper común. (análisis §4.5, Baja) — `TitleFuzzyScorer.ScoreTitle` en
+      `viewmodels/common/`.
+- [x] Eliminar uno de los dos `PdfRenderHelperTests.cs` duplicados (conservar el de `ViewModels/`, más
       completo, o fusionar el caso distinto del de `Services/` antes de borrar el segundo). (análisis §4.5,
-      Baja)
-- [ ] Dividir `SettingsViewModel.cs` en archivos parciales por sección, siguiendo el mismo patrón ya
+      Baja) — se fusionó el caso del PDF de dos páginas generado con SkiaSharp como test adicional en
+      `ViewModels/PdfRenderHelperTests.cs` y se borró `Services/PdfRenderHelperTests.cs`.
+- [x] Dividir `SettingsViewModel.cs` en archivos parciales por sección, siguiendo el mismo patrón ya
       aplicado a `MainWindowViewModel` (`.Callbacks.cs`/`.Composition.cs`/`.CommandPalette.cs`). (análisis
-      §4.5, Baja-Media — el de mayor esfuerzo de esta fase, tratar como tarea de fondo sin urgencia)
-- [ ] Corregir el comentario de clase de `HexColorUtility` para que no afirme soporte de `#ARGB`/
+      §4.5, Baja-Media — el de mayor esfuerzo de esta fase, tratar como tarea de fondo sin urgencia) —
+      dividido en 9 archivos parciales por sección de Ajustes (`.SidebarSections.cs`, `.Appearance.cs`,
+      `.Editor.cs`, `.Notifications.cs`, `.Calendar.cs`, `.Account.cs`, `.Shortcuts.cs`, `.Dashboard.cs`,
+      `.DangerZone.cs`); el archivo principal conserva el constructor, los campos compartidos y las
+      secciones General/Acerca de. Sin cambios de comportamiento — build y los 915 tests en verde.
+- [x] Corregir el comentario de clase de `HexColorUtility` para que no afirme soporte de `#ARGB`/
       `#AARRGGBB` que el código no implementa. (análisis §4.5, Media — trivial)
-- [ ] Corregir/eliminar el comentario desfasado sobre exportación a PDF/impresión de notas en
+- [x] Corregir/eliminar el comentario desfasado sobre exportación a PDF/impresión de notas en
       `NoteExportRenderer.cs`/`Program.cs`, o implementar la funcionalidad que describen (ver Fase 6).
-      (análisis §4.2, Media)
+      (análisis §4.2, Media) — corregidos los tres comentarios (`NoteExportRenderer`, `NoteExportService`,
+      `Program.cs`) para dejar claro que hoy solo existe exportación a HTML, sin vista de impresión ni
+      WebView/PDF propios; implementarlo de verdad queda en la Fase 6.
 
 **Dependencias**: ninguna. Cajón de sastre deliberado, cada punto es independiente.
 
@@ -182,27 +208,61 @@ Todas las funcionalidades de producto añadidas desde la última auditoría que 
 tests propios. Priorizar por lo que ya tiene un bug conocido de la Fase 0 (para bloquear que regrese) y por
 tamaño de superficie sin probar.
 
-- [ ] Tests para `PolarTaskManagementViewModel` (528 líneas, ~30 comandos, hoy solo 2 tests) — como mínimo
+- [x] Tests para `PolarTaskManagementViewModel` (528 líneas, ~30 comandos, hoy solo 2 tests) — como mínimo
       crear/editar/borrar lista y tarea, completar tarea, cambio de lista seleccionada, filtro de tags.
-      (análisis §4.3, Media)
-- [ ] Tests para `SlashCommandsViewModel`/`SlashCommandItemViewModel` — el que habría atrapado el bug de
+      (análisis §4.3, Media) — 16 tests nuevos cubriendo crear/renombrar/borrar lista (con y sin
+      `ConfirmBeforeDelete`), crear/editar/borrar/completar tarea, cambio de lista seleccionada y filtro de
+      etiquetas (con y sin selección).
+- [x] Tests para `SlashCommandsViewModel`/`SlashCommandItemViewModel` — el que habría atrapado el bug de
       `/tabla` de la Fase 0 antes de que llegara a producción. (análisis §4.2, Baja — pero alto valor de
-      prevención)
-- [ ] Tests para `GraphGroupFilterItemViewModel` y el resto de la lógica de filtro de grupos del grafo de
-      sesiones. (análisis §4.1, Media)
-- [ ] Tests para `CombinedDueDate`/`MaxDurationMinutes`/`OnHasDueTimeChanged` en
-      `KanbanCardEditorViewModel`. (análisis §4.3, Baja)
-- [ ] Tests de énfasis/negrita/cursiva en `MarkdownLineParserTests.cs` (hoy solo cubre wikilinks/tablas/
+      prevención) — la cobertura de la Fase 0 (resolución de `InsertText`/`CursorOffset` contra
+      `Strings.resx`) ya existía; se añadió cobertura del propio ViewModel (filtro por clave/etiqueta,
+      apertura/reset, navegación circular con `MoveUp`/`MoveDown`, `ConfirmSelected`/`Select` disparando
+      `CommandSelected` y cerrando el popover).
+- [x] Tests para `GraphGroupFilterItemViewModel` y el resto de la lógica de filtro de grupos del grafo de
+      sesiones. (análisis §4.1, Media) — la cobertura principal ya se había añadido en la Fase 1
+      (`SessionsViewModelGraphFilterTests`); se añadieron 2 casos más (reactivar un filtro restaura sus
+      nodos y limpia `IsGraphFiltered`; un vault sin sesiones, solo notas sueltas, genera una única fila de
+      filtro para el grupo raíz).
+- [x] Tests para `CombinedDueDate`/`MaxDurationMinutes`/`OnHasDueTimeChanged` en
+      `KanbanCardEditorViewModel`. (análisis §4.3, Baja) — ambos son privados; se ejercitan vía `BuildCard`
+      (combinación fecha+hora) y vía el clamp de `DurationMinutes` al acercar `DueHour`/`DueMinute` a
+      medianoche.
+- [x] Tests de énfasis/negrita/cursiva en `MarkdownLineParserTests.cs` (hoy solo cubre wikilinks/tablas/
       encabezados/listas) — de paso, decidir y fijar el comportamiento correcto para `snake_case` (hallazgo
       §4.2, Media) antes o después de escribir el test, según se decida corregir el parser en esta fase o
-      solo documentar el comportamiento actual.
-- [ ] Test para `StatisticsViewModel.HasEnoughData` que cubra el caso "solo hábitos, sin notas/tareas".
-      (análisis §4.4, Media)
-- [ ] Test de regresión para el límite de 366 iteraciones de ocurrencias fantasma con una tarea recurrente
-      diaria muy antigua. (análisis §4.4, Media)
-- [ ] Ampliar `enki.UITests` (hoy 10 casos headless para 20 vistas) — al menos una pasada de humo por vista
+      solo documentar el comportamiento actual. — se corrigió `MarkdownLineParser` para que `_` (a
+      diferencia de `*`) no abra ni cierre énfasis entre dos caracteres alfanuméricos (regla de CommonMark),
+      así un identificador `snake_case` ya no se parsea parcialmente en cursiva; 13 tests nuevos cubren
+      negrita/cursiva/negrita+cursiva con `*` y `_`, marcador sin cerrar, y el propio caso `snake_case`.
+- [x] Test para `StatisticsViewModel.HasEnoughData` que cubra el caso "solo hábitos, sin notas/tareas".
+      (análisis §4.4, Media) — el test expuso el bug ya documentado en el análisis (`HasEnoughData` ignoraba
+      `HabitCompletionPercent`); se corrigió para que un usuario que solo usa Hábitos también salga del
+      estado vacío de Estadísticas.
+- [x] Test de regresión para el límite de 366 iteraciones de ocurrencias fantasma con una tarea recurrente
+      diaria muy antigua. (análisis §4.4, Media) — documenta el comportamiento actual (conocido, no
+      corregido en esta fase): una tarea diaria sin marcar desde hace más de 366 días desaparece en
+      silencio del Calendario; un segundo test fija el límite justo por debajo del tope para que un cambio
+      futuro al algoritmo de avance lo note explícitamente.
+- [x] Ampliar `enki.UITests` (hoy 10 casos headless para 20 vistas) — al menos una pasada de humo por vista
       que abra cada diálogo modal nuevo (los de Sesiones en particular) para detectar regresiones visuales
-      básicas sin depender de una pasada manual.
+      básicas sin depender de una pasada manual. — se añadieron 10 tests nuevos (Archivos: renderizado +
+      diálogo de borrado; Recordatorios: formulario de creación + "vaciar todo"; Papelera: renderizado +
+      diálogo de vaciar categoría), subiendo la suite headless de 10 a 20 casos. **Sesiones queda fuera**:
+      se intentó (los 4 diálogos, con los mismos comandos que `SessionsViewModelEncryptionTests` ya cubre a
+      nivel de ViewModel) pero construir un `SessionsViewModel` real bajo `Avalonia.Headless` cuelga el
+      proceso de test de forma reproducible — el método de test en sí termina casi al instante (confirmado
+      con logging a disco), pero el proceso `dotnet test` nunca vuelve a imprimir salida ni sale, incluso
+      esperando más de 150s, y el cuelgue persiste igual construyendo el ViewModel fuera del hilo con
+      `HeadlessApp.EnsureInitialized()` ya llamado (se descartó por tanto que sea el `SynchronizationContext`
+      de Avalonia). No reproducible con ningún otro ViewModel de la suite (todos síncronos en su
+      constructor); `SessionsViewModel` es el único cuyo constructor dispara `Reload()` con E/S asíncrona
+      real (`Task.Run` encadenado). Merece una investigación aparte con herramientas de diagnóstico reales
+      (dump de hilos) en vez de más intentos a ciegas — la cobertura de los 4 diálogos de Sesiones a nivel
+      de ViewModel (`SessionsViewModelEncryptionTests`) ya existía y sigue siendo válida mientras tanto.
+      De paso, se corrigió `enki.UITests.csproj` (le faltaba `<RollForward>LatestMajor</RollForward>`,
+      presente en `enki.Tests.csproj`/`enki.csproj`) — sin él, la suite no podía ni arrancar en un entorno
+      sin el runtime exacto de .NET 8.0.0 instalado.
 
 **Dependencias**: ninguna estricta; tiene sentido secuenciar los tests de `/tabla` y del filtro de grupos
 justo después de que la Fase 0/1 los toque, para no escribir el test contra un comportamiento que va a

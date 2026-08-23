@@ -88,6 +88,27 @@ public class ReminderInboxViewModelTests : IDisposable
         Assert.False(vm.HasLastDismissed);
     }
 
+    // ===================== Fase 3: excluir tarjetas completadas (análisis §4.4, Alta) =====================
+
+    [Fact]
+    public void Reload_ExcludesCards_WithCompletedAtUtcSet()
+    {
+        var completed = new KanbanCard
+        {
+            Id = Guid.NewGuid().ToString("N"), Title = "Ya hecha",
+            DueDateUtc = DateTime.UtcNow.AddHours(-1), CompletedAtUtc = DateTime.UtcNow.AddMinutes(-30)
+        };
+        _kanbanService.Board.Columns[0].Cards.Add(completed);
+        _kanbanService.Save();
+        var pending = AddDueCard("Pendiente");
+
+        var vm = CreateViewModel();
+
+        Assert.DoesNotContain(vm.Items, i => i.CardId == completed.Id);
+        Assert.Contains(vm.Items, i => i.CardId == pending.Id);
+        Assert.Equal(1, vm.OverdueCount);
+    }
+
     [Fact]
     public void Dismiss_ASecondCard_ReplacesTheUndoTarget_WithoutUndismissingTheFirst()
     {

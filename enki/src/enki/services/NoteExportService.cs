@@ -10,12 +10,12 @@ using enki.Models;
 namespace enki.Services;
 
 /// <summary>Exportación de notas a HTML autónomo (propuesta 6 de
-/// docs/propuesta-nuevas-funcionalidades.md): elige destino con el diálogo de guardado del sistema,
-/// renderiza con <see cref="NoteExportRenderer"/> y escribe el archivo. Sin estado propio — el render es
-/// puro y el picker es efímero — así que toda la clase es estática; los avisos de éxito/fallo llegan al
-/// centro de notificaciones a través del callback <c>notify</c> que le pasa el llamador (típicamente
-/// <see cref="NotificationService.Push"/> del viewmodel de turno, o el de la ventana de vista de
-/// impresión).</summary>
+/// docs/propuesta-nuevas-funcionalidades.md — solo la mitad de HTML de esa propuesta está implementada
+/// hoy, no hay vista de impresión ni exportación a PDF propias): elige destino con el diálogo de guardado
+/// del sistema, renderiza con <see cref="NoteExportRenderer"/> y escribe el archivo. Sin estado propio —
+/// el render es puro y el picker es efímero — así que toda la clase es estática; los avisos de éxito/fallo
+/// llegan al centro de notificaciones a través del callback <c>notify</c> que le pasa el llamador
+/// (<see cref="ViewModels.NotesViewModel"/>, típicamente con <see cref="NotificationService.Push"/>).</summary>
 public static class NoteExportService
 {
     /// <summary>Flujo completo de "Exportar como HTML…". No-op silencioso si no hay

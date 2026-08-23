@@ -50,7 +50,7 @@ public class EditorViewModelWikiLinkTests : IDisposable
         var editor = new EditorViewModel(vault, target, onBack: () => { }, onChanged: () => { },
             notificationService: notifications);
 
-        editor.DeleteCommand.Execute(null);
+        editor.ConfirmDeleteCommand.Execute(null);
 
         Assert.False(File.Exists(target.FullPath));
         Assert.Single(notifications.Notifications);
@@ -66,7 +66,7 @@ public class EditorViewModelWikiLinkTests : IDisposable
         var editor = new EditorViewModel(vault, target, onBack: () => { }, onChanged: () => { },
             notificationService: notifications);
 
-        editor.DeleteCommand.Execute(null);
+        editor.ConfirmDeleteCommand.Execute(null);
 
         Assert.Empty(notifications.Notifications);
     }

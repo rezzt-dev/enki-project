@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using enki.Models;
 using enki.Services;
 using enki.ViewModels;
@@ -31,14 +32,15 @@ public class SessionsViewModelEncryptionTests : IDisposable
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
-    private (SessionsViewModel Vm, SessionService Sessions) CreateViewModel()
+    private (SessionsViewModel Vm, SessionService Sessions) CreateViewModel(Action<Session>? onSessionLocked = null)
     {
         var settings = new SettingsService(_storageDirectory);
         var vault = new VaultService(settings);
         vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
         var sessions = new SessionService(vault);
         var notifications = new NotificationService(settings, _storageDirectory);
-        var vm = new SessionsViewModel(vault, sessions, notifications, (_, _) => { }, () => { });
+        var vm = new SessionsViewModel(vault, sessions, notifications, (_, _) => { }, () => { },
+            onSessionLocked: onSessionLocked);
         return (vm, sessions);
     }
 
@@ -62,7 +64,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
-    public void ConfirmCreateSession_Protected_OpensRecoveryCodesDialogWith5Codes()
+    public async Task ConfirmCreateSession_Protected_OpensRecoveryCodesDialogWith5Codes()
     {
         var (vm, sessions) = CreateViewModel();
         vm.NewSessionName = "Diario privado";
@@ -70,7 +72,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
         vm.NewSessionPassword = "una-contraseña-larga";
         vm.NewSessionPasswordConfirm = "una-contraseña-larga";
 
-        vm.ConfirmCreateSessionCommand.Execute(null);
+        await vm.ConfirmCreateSessionCommand.ExecuteAsync(null);
 
         Assert.True(vm.IsRecoveryCodesDialogOpen);
         Assert.Equal(5, vm.PendingRecoveryCodes.Count);
@@ -82,26 +84,26 @@ public class SessionsViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
-    public void ConfirmCreateSession_NotProtected_NeverOpensRecoveryCodesDialog()
+    public async Task ConfirmCreateSession_NotProtected_NeverOpensRecoveryCodesDialog()
     {
         var (vm, _) = CreateViewModel();
         vm.NewSessionName = "Sesión normal";
 
-        vm.ConfirmCreateSessionCommand.Execute(null);
+        await vm.ConfirmCreateSessionCommand.ExecuteAsync(null);
 
         Assert.False(vm.IsRecoveryCodesDialogOpen);
         Assert.Empty(vm.PendingRecoveryCodes);
     }
 
     [Fact]
-    public void CloseRecoveryCodesDialog_ClearsCodesFromMemory()
+    public async Task CloseRecoveryCodesDialog_ClearsCodesFromMemory()
     {
         var (vm, _) = CreateViewModel();
         vm.NewSessionName = "Diario privado";
         vm.NewSessionIsProtected = true;
         vm.NewSessionPassword = "una-contraseña-larga";
         vm.NewSessionPasswordConfirm = "una-contraseña-larga";
-        vm.ConfirmCreateSessionCommand.Execute(null);
+        await vm.ConfirmCreateSessionCommand.ExecuteAsync(null);
 
         vm.CloseRecoveryCodesDialogCommand.Execute(null);
 
@@ -110,7 +112,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
-    public void ConfirmUnlock_WrongPassword_SetsError_DoesNotNavigate()
+    public async Task ConfirmUnlock_WrongPassword_SetsError_DoesNotNavigate()
     {
         var (vm, sessions) = CreateViewModel();
         var (session, _) = sessions.CreateEncrypted("Diario privado", "correcta-123");
@@ -119,7 +121,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
 
         vm.RequestUnlockSessionCommand.Execute(item);
         vm.UnlockPasswordInput = "incorrecta";
-        vm.ConfirmUnlockCommand.Execute(null);
+        await vm.ConfirmUnlockCommand.ExecuteAsync(null);
 
         Assert.NotNull(vm.SessionPendingUnlock);
         Assert.NotNull(vm.UnlockError);
@@ -127,7 +129,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
-    public void ConfirmUnlock_CorrectPassword_ClosesDialog_MarksItemUnlocked()
+    public async Task ConfirmUnlock_CorrectPassword_ClosesDialog_MarksItemUnlocked()
     {
         var (vm, sessions) = CreateViewModel();
         var (session, _) = sessions.CreateEncrypted("Diario privado", "correcta-123");
@@ -136,7 +138,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
 
         vm.RequestUnlockSessionCommand.Execute(item);
         vm.UnlockPasswordInput = "correcta-123";
-        vm.ConfirmUnlockCommand.Execute(null);
+        await vm.ConfirmUnlockCommand.ExecuteAsync(null);
 
         Assert.Null(vm.SessionPendingUnlock);
         Assert.True(item.IsUnlocked);
@@ -144,7 +146,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
-    public void ConfirmPasswordReset_ValidCode_UnlocksWithNewPassword()
+    public async Task ConfirmPasswordReset_ValidCode_UnlocksWithNewPassword()
     {
         var (vm, sessions) = CreateViewModel();
         var (session, codes) = sessions.CreateEncrypted("Diario privado", "vieja-123");
@@ -156,7 +158,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
         vm.RecoveryCodeInput = codes[1];
         vm.NewPasswordInput = "nueva-contraseña-larga";
         vm.NewPasswordConfirmInput = "nueva-contraseña-larga";
-        vm.ConfirmPasswordResetCommand.Execute(null);
+        await vm.ConfirmPasswordResetCommand.ExecuteAsync(null);
 
         Assert.Null(vm.SessionPendingUnlock);
         Assert.True(item.IsUnlocked);
@@ -167,7 +169,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
-    public void ConfirmPasswordReset_InvalidCode_SetsError_StaysLocked()
+    public async Task ConfirmPasswordReset_InvalidCode_SetsError_StaysLocked()
     {
         var (vm, sessions) = CreateViewModel();
         var (session, _) = sessions.CreateEncrypted("Diario privado", "vieja-123");
@@ -179,7 +181,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
         vm.RecoveryCodeInput = "CODIGOQUENOEXISTEXXXX";
         vm.NewPasswordInput = "nueva-contraseña-larga";
         vm.NewPasswordConfirmInput = "nueva-contraseña-larga";
-        vm.ConfirmPasswordResetCommand.Execute(null);
+        await vm.ConfirmPasswordResetCommand.ExecuteAsync(null);
 
         Assert.NotNull(vm.UnlockError);
         Assert.False(item.IsUnlocked);
@@ -197,5 +199,31 @@ public class SessionsViewModelEncryptionTests : IDisposable
 
         Assert.False(item.IsUnlocked);
         Assert.False(sessions.IsUnlocked(session));
+    }
+
+    /// <summary>Covers Fase 1 (docs/version-alfa-3/02-roadmap-implementacion.md): the onSessionLocked
+    /// callback (wired to <c>NotesViewModel.CloseEditorsForLockedSession</c> in the real shell) must fire
+    /// while the session's DEK is still unlocked, not after — otherwise it couldn't flush a dirty open tab's
+    /// pending save, which needs to encrypt+write before the key disappears.</summary>
+    [Fact]
+    public void LockSession_InvokesOnSessionLockedCallback_WhileStillUnlocked()
+    {
+        Session? notifiedSession = null;
+        var wasUnlockedDuringCallback = false;
+        SessionService? sessionsRef = null;
+        var (vm, sessions) = CreateViewModel(onSessionLocked: s =>
+        {
+            notifiedSession = s;
+            wasUnlockedDuringCallback = sessionsRef!.IsUnlocked(s);
+        });
+        sessionsRef = sessions;
+        var (session, _) = sessions.CreateEncrypted("Diario privado", "correcta-123");
+        var item = new SessionListItemViewModel(session) { IsUnlocked = true };
+
+        vm.LockSessionCommand.Execute(item);
+
+        Assert.Same(session, notifiedSession);
+        Assert.True(wasUnlockedDuringCallback);
+        Assert.False(sessions.IsUnlocked(session)); // locked for real once the callback returns
     }
 }

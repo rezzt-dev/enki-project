@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -150,9 +151,7 @@
    </Grid>
 
     <!-- ===================== Formulario emergente: nuevo recordatorio ===================== -->
-    <Border Classes="modal-overlay"
-            IsVisible="{Binding Editor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding Editor, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               MaxWidth="460" MaxHeight="680" DataContext="{Binding Editor}" x:DataType="vm:ReminderEditorViewModel">
         <Grid RowDefinitions="Auto,*,Auto" MinWidth="400">
@@ -339,12 +338,10 @@
           </Grid>
         </Grid>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: detalle de recordatorio ===================== -->
-    <Border Classes="modal-overlay"
-            IsVisible="{Binding Detail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding Detail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               MaxWidth="440" DataContext="{Binding Detail}" x:DataType="vm:ReminderListItemViewModel">
         <StackPanel Spacing="18" MinWidth="380">
@@ -398,12 +395,10 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: limpiar recordatorios ===================== -->
-    <Border Classes="modal-overlay"
-            IsVisible="{Binding PendingClearAll}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding PendingClearAll}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -424,7 +419,7 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

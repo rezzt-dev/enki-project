@@ -340,7 +340,7 @@ public sealed partial class MainWindowViewModel
         // después de construir Notes pero antes de que la ventana quede lista, para que las pestañas ya
         // estén abiertas la primera vez que el usuario navega a Documentos.
         Notes.RestoreOpenTabs();
-        Files = new FilesViewModel(_vaultService, _sessionService, _notificationService);
+        Files = new FilesViewModel(_vaultService, _sessionService, _notificationService, _settingsService);
         Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService);
         var taskManagement = new PolarTaskManagementViewModel(_polarTaskService, _polarSyncService, _settingsService)
         {
@@ -358,8 +358,8 @@ public sealed partial class MainWindowViewModel
             () => Navigate(AppPage.Habits),
             _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService);
         Sessions = new SessionsViewModel(_vaultService, _sessionService, _notificationService, OpenSessionInNotes, OnSessionsChanged,
-            _kanbanService, OpenKanbanCard);
-        Trash = new TrashViewModel(_vaultService, _kanbanService, _reminderService, _notificationService, _sessionService, OnSessionsChanged);
+            _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession);
+        Trash = new TrashViewModel(_vaultService, _kanbanService, _polarTaskService, _reminderService, _notificationService, _sessionService, OnSessionsChanged);
         Trash.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(TrashViewModel.TotalCount)) UpdateTrashBadge();

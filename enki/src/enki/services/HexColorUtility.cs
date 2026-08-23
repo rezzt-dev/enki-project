@@ -3,10 +3,11 @@ using Avalonia.Media;
 
 namespace enki.Services;
 
-/// <summary>Normaliza códigos de color HEX para el sistema de temas: acepta los formatos CSS más
-/// comunes (#RGB, #RRGGBB, #ARGB, #AARRGGBB, con o sin '#', mayúsculas/minúsculas) y los convierte
-/// a mayúsculas de 6 dígitos. Si el formato no es válido devuelve <c>null</c> en vez de forzar un
-/// color por defecto, para que el llamador decida cómo presentar el error.</summary>
+/// <summary>Normaliza códigos de color HEX para el sistema de temas: acepta los formatos #RGB y #RRGGBB
+/// (con o sin '#', mayúsculas/minúsculas) y los convierte a mayúsculas de 6 dígitos. No acepta formatos
+/// con canal alpha (#ARGB/#AARRGGBB) — ver <see cref="NormalizeHex"/>. Si el formato no es válido
+/// devuelve <c>null</c> en vez de forzar un color por defecto, para que el llamador decida cómo
+/// presentar el error.</summary>
 public static class HexColorUtility
 {
     /// <summary>Intenta normalizar <paramref name="hex"/> a un HEX de 6 dígitos mayúsculas con '#'.

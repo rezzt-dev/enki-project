@@ -6,6 +6,7 @@
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:controls="clr-namespace:enki.Controls"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.SessionsView"
              x:DataType="vm:SessionsViewModel">
@@ -239,8 +240,7 @@
     </Grid>
 
     <!-- ===================== Diálogo: nueva sesión (§7.10) ===================== -->
-    <Border Classes="modal-overlay" IsVisible="{Binding IsCreateDialogOpen}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding IsCreateDialogOpen}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Spacing="6">
@@ -260,9 +260,11 @@
 
           <StackPanel Spacing="10" IsVisible="{Binding NewSessionIsProtected}">
             <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_CreateDialog_PasswordPlaceholder}"
-                      Text="{Binding NewSessionPassword}" PasswordChar="●" />
+                      Text="{Binding NewSessionPassword}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_CreateDialog_PasswordPlaceholder}" />
             <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_CreateDialog_PasswordConfirmPlaceholder}"
-                      Text="{Binding NewSessionPasswordConfirm}" PasswordChar="●" />
+                      Text="{Binding NewSessionPasswordConfirm}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_CreateDialog_PasswordConfirmPlaceholder}" />
             <TextBlock Text="{loc:Tr Sessions_CreateDialog_ProtectHint}" Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
 
@@ -275,13 +277,19 @@
               <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
+
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                      IsVisible="{Binding IsProcessingSessionAction}">
+            <mi:MaterialIcon Classes="spin" Kind="Loading" Width="14" Height="14"
+                              Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Text="{loc:Tr Sessions_ProcessingIndicator}" Classes="muted" FontSize="12" />
+          </StackPanel>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: códigos de recuperación ===================== -->
-    <Border Classes="modal-overlay" IsVisible="{Binding IsRecoveryCodesDialogOpen}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding IsRecoveryCodesDialogOpen}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18" MaxWidth="360">
           <StackPanel Spacing="6">
@@ -326,11 +334,10 @@
           </Button>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: desbloquear sesión / olvidé mi contraseña ===================== -->
-    <Border Classes="modal-overlay" IsVisible="{Binding SessionPendingUnlock, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding SessionPendingUnlock, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18" MaxWidth="340">
 
@@ -342,7 +349,8 @@
             </StackPanel>
 
             <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_PasswordPlaceholder}"
-                      Text="{Binding UnlockPasswordInput}" PasswordChar="●" Name="UnlockPasswordBox" />
+                      Text="{Binding UnlockPasswordInput}" PasswordChar="●" Name="UnlockPasswordBox"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_PasswordPlaceholder}" />
 
             <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
                         TextWrapping="Wrap" IsVisible="{Binding UnlockError, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
@@ -355,7 +363,8 @@
               <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelUnlockCommand}" Margin="0,0,18,0">
                 <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
               </Button>
-              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmUnlockCommand}">
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmUnlockCommand}"
+                      IsEnabled="{Binding !IsProcessingSessionAction}">
                 <TextBlock Text="{loc:Tr Sessions_Unlock_ConfirmButton, Converter={StaticResource UpperCaseConverter}}" />
               </Button>
             </Grid>
@@ -369,11 +378,14 @@
             </StackPanel>
 
             <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_RecoveryCodePlaceholder}"
-                      Text="{Binding RecoveryCodeInput}" FontFamily="{StaticResource MonoFontFamily}" />
+                      Text="{Binding RecoveryCodeInput}" FontFamily="{StaticResource MonoFontFamily}"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_RecoveryCodePlaceholder}" />
             <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_NewPasswordPlaceholder}"
-                      Text="{Binding NewPasswordInput}" PasswordChar="●" />
+                      Text="{Binding NewPasswordInput}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_NewPasswordPlaceholder}" />
             <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_NewPasswordConfirmPlaceholder}"
-                      Text="{Binding NewPasswordConfirmInput}" PasswordChar="●" />
+                      Text="{Binding NewPasswordConfirmInput}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_NewPasswordConfirmPlaceholder}" />
 
             <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
                         TextWrapping="Wrap" IsVisible="{Binding UnlockError, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
@@ -382,22 +394,29 @@
               <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelUnlockCommand}" Margin="0,0,18,0">
                 <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
               </Button>
-              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmPasswordResetCommand}">
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmPasswordResetCommand}"
+                      IsEnabled="{Binding !IsProcessingSessionAction}">
                 <TextBlock Text="{loc:Tr Sessions_Unlock_ResetButton, Converter={StaticResource UpperCaseConverter}}" />
               </Button>
             </Grid>
           </StackPanel>
 
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                      IsVisible="{Binding IsProcessingSessionAction}">
+            <mi:MaterialIcon Classes="spin" Kind="Loading" Width="14" Height="14"
+                              Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Text="{loc:Tr Sessions_ProcessingIndicator}" Classes="muted" FontSize="12" />
+          </StackPanel>
+
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: eliminar sesión (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que los diálogos de confirmación de Kanban/Papelera; el mensaje (nombre de la
          sesión + recuento de notas pluralizado) viene calculado del viewmodel porque el orden de palabras
          no es fijo entre idiomas. -->
-    <Border Classes="modal-overlay" IsVisible="{Binding SessionPendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding SessionPendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -417,7 +436,7 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

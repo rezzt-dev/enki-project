@@ -27,7 +27,7 @@ public sealed class ReminderListItemViewModel(Reminder reminder)
     public MaterialIconKind IconKind =>
         Enum.TryParse<MaterialIconKind>(Reminder.Icon, out var kind) ? kind : MaterialIconKind.BellRingOutline;
 
-    public bool IsOverdue => KanbanCard.IsPastDue(Reminder.NotifyAtUtc);
+    public bool IsOverdue => !IsCompleted && KanbanCard.IsPastDue(Reminder.NotifyAtUtc);
 
     public string StatusLabel => IsOverdue
         ? LocalizationService.Instance["Reminders_Status_Overdue"]

@@ -738,6 +738,12 @@
   <data name="Files_DeleteFolderTooltip" xml:space="preserve">
     <value>Ordner löschen</value>
   </data>
+  <data name="Files_DeleteFile_Message" xml:space="preserve">
+    <value>Diese Datei löschen? Diese Aktion kann nicht rückgängig gemacht werden.</value>
+  </data>
+  <data name="Files_DeleteFile_Title" xml:space="preserve">
+    <value>DATEI LÖSCHEN</value>
+  </data>
   <data name="Files_EmptyHint" xml:space="preserve">
     <value>Importiere eine Datei oder ziehe eine hinein, um loszulegen.</value>
   </data>
@@ -1302,6 +1308,12 @@
   <data name="Notes_DeleteFolderTooltip" xml:space="preserve">
     <value>Ordner löschen</value>
   </data>
+  <data name="Notes_DeleteNote_Message" xml:space="preserve">
+    <value>Diese Notiz löschen? Diese Aktion kann nicht rückgängig gemacht werden.</value>
+  </data>
+  <data name="Notes_DeleteNote_Title" xml:space="preserve">
+    <value>NOTIZ LÖSCHEN</value>
+  </data>
   <data name="Notes_EmptyNotePreview" xml:space="preserve">
     <value>Keine Vorschau</value>
   </data>
@@ -1421,6 +1433,12 @@
   </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Sitzungsfehler</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Message" xml:space="preserve">
+    <value>„{0}“ wurde gesperrt — die geöffneten Notizen wurden automatisch geschlossen, damit ihr Inhalt nicht mehr sichtbar ist.</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Title" xml:space="preserve">
+    <value>Sitzung gesperrt</value>
   </data>
   <data name="Notification_Severity_Error" xml:space="preserve">
     <value>Fehler</value>
@@ -1892,6 +1910,9 @@
   </data>
   <data name="Sessions_PageTitle" xml:space="preserve">
     <value>Sitzungen</value>
+  </data>
+  <data name="Sessions_ProcessingIndicator" xml:space="preserve">
+    <value>Wird bearbeitet…</value>
   </data>
   <data name="Sessions_RefreshGraphTooltip" xml:space="preserve">
     <value>Graph aktualisieren</value>
@@ -3078,6 +3099,15 @@
   <data name="Trash_Files_Eyebrow" xml:space="preserve">
     <value>DATEIEN</value>
   </data>
+  <data name="Trash_PolarTasks_Empty" xml:space="preserve">
+    <value>Keine Polar-Aufgaben im Papierkorb</value>
+  </data>
+  <data name="Trash_PolarTasks_Eyebrow" xml:space="preserve">
+    <value>Polar-Aufgaben</value>
+  </data>
+  <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
+    <value>Hier noch kein endgültiges Löschen, weder einzeln noch gesammelt — sie müssen erst fertig synchronisiert sein, bevor ein lokales Löschen sicher ist.</value>
+  </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' bleibt im Papierkorb, weil das Board keine Spalte hat, in die sie zurückgelegt werden könnte.</value>
   </data>
@@ -3152,6 +3182,9 @@
   </data>
   <data name="Trash_Reminders_Eyebrow" xml:space="preserve">
     <value>ERINNERUNGEN</value>
+  </data>
+  <data name="Trash_Reminders_NoDeleteForeverHint" xml:space="preserve">
+    <value>Hier noch keine Schaltfläche zum endgültigen Löschen — ein gerade gelöschter Termin wird noch synchronisiert. Nutze oben „Leeren“, um alle auf einmal zu entfernen.</value>
   </data>
   <data name="Trash_RestoreTooltip" xml:space="preserve">
     <value>Wiederherstellen</value>

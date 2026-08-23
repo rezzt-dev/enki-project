@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -842,9 +843,7 @@
     </Grid>
 
     <!-- ===================== Popover: creación rápida (doc 06 §1) ===================== -->
-    <Border Grid.Row="0" Grid.RowSpan="2" Classes="modal-overlay"
-            IsVisible="{Binding QuickCreate, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding QuickCreate, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               MaxWidth="420" MaxHeight="620" DataContext="{Binding QuickCreate}" x:DataType="vm:CalendarQuickCreateViewModel">
         <Grid RowDefinitions="Auto,*,Auto" MinWidth="380">
@@ -1031,12 +1030,10 @@
           </Grid>
         </Grid>
       </Border>
-    </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: eliminar item (doc 05 §6) ===================== -->
-    <Border Grid.Row="0" Grid.RowSpan="2" Classes="modal-overlay"
-            IsVisible="{Binding ItemPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding ItemPendingDelete, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
               DataContext="{Binding ItemPendingDelete}" x:DataType="vm:CalendarItemViewModel">
         <StackPanel Spacing="18">
@@ -1063,7 +1060,7 @@
           </Grid>
         </StackPanel>
       </Border>
-    </Border>
+    </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

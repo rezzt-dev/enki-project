@@ -71,6 +71,9 @@ public partial class MainWindow : Window
             // same 600ms as Notes/Ajustes but was never flushed here, so closing the app right after
             // editing a skill silently dropped the last pending change.
             viewModel.Skills?.ActiveEditor?.FlushPendingSave();
+            // Fase 1 (docs/version-alfa-3/02-roadmap-implementacion.md): locks every unlocked session's DEK
+            // and sweeps decrypted temp files, so nothing decrypted survives the process past this point.
+            viewModel.Shutdown();
         };
     }
 

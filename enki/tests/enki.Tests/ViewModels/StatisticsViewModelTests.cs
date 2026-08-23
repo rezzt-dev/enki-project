@@ -81,6 +81,24 @@ public class StatisticsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void Reload_OnlyHabitsCompleted_NoNotesOrTasks_HasEnoughDataIsTrue()
+    {
+        // análisis §4.4, Media: un usuario que solo usa Hábitos (sin notas ni tareas) debe seguir viendo
+        // su gráfico de consistencia en vez del estado vacío "vuelve cuando tengas más actividad".
+        var h = CreateViewModel();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var habit = h.Habits.AddHabit("Meditar", HabitFrequency.SpecificDays, [today.DayOfWeek]);
+        h.Habits.ToggleCompletion(habit, today);
+
+        h.Vm.Reload();
+
+        Assert.True(h.Vm.HasHabitData);
+        Assert.NotNull(h.Vm.HabitCompletionPercent);
+        Assert.True(h.Vm.HasEnoughData);
+        Assert.Equal(0, h.Vm.TasksCompletedThisWeek);
+    }
+
+    [Fact]
     public void SelectRange_ChangesRangeAndReloads()
     {
         var h = CreateViewModel();

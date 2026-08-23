@@ -804,6 +804,12 @@
   <data name="Files_DeleteFolderTooltip" xml:space="preserve">
     <value>Eliminar carpeta</value>
   </data>
+  <data name="Files_DeleteFile_Message" xml:space="preserve">
+    <value>¿Eliminar este archivo? Esta acción no se puede deshacer.</value>
+  </data>
+  <data name="Files_DeleteFile_Title" xml:space="preserve">
+    <value>ELIMINAR ARCHIVO</value>
+  </data>
   <data name="Files_EmptyHint" xml:space="preserve">
     <value>Importad un archivo o arrastrad uno para empezar.</value>
   </data>
@@ -1368,6 +1374,12 @@
   <data name="Notes_DeleteFolderTooltip" xml:space="preserve">
     <value>Eliminar carpeta</value>
   </data>
+  <data name="Notes_DeleteNote_Message" xml:space="preserve">
+    <value>¿Eliminar esta nota? Esta acción no se puede deshacer.</value>
+  </data>
+  <data name="Notes_DeleteNote_Title" xml:space="preserve">
+    <value>ELIMINAR NOTA</value>
+  </data>
   <data name="Notes_EmptyNotePreview" xml:space="preserve">
     <value>Sin vista previa</value>
   </data>
@@ -1505,6 +1517,12 @@
   </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Error de sesión</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Message" xml:space="preserve">
+    <value>Se ha bloqueado '{0}' — sus notas abiertas se han cerrado automáticamente para dejar de mostrar su contenido.</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Title" xml:space="preserve">
+    <value>Sesión bloqueada</value>
   </data>
   <data name="Notification_Severity_Error" xml:space="preserve">
     <value>Error</value>
@@ -1976,6 +1994,9 @@
   </data>
   <data name="Sessions_PageTitle" xml:space="preserve">
     <value>Sesiones</value>
+  </data>
+  <data name="Sessions_ProcessingIndicator" xml:space="preserve">
+    <value>Procesando…</value>
   </data>
   <data name="Sessions_RefreshGraphTooltip" xml:space="preserve">
     <value>Actualizar grafo</value>
@@ -3366,6 +3387,15 @@
   <data name="Trash_Files_Eyebrow" xml:space="preserve">
     <value>Archivos</value>
   </data>
+  <data name="Trash_PolarTasks_Empty" xml:space="preserve">
+    <value>Sin tareas de Polar en la papelera</value>
+  </data>
+  <data name="Trash_PolarTasks_Eyebrow" xml:space="preserve">
+    <value>Tareas de Polar</value>
+  </data>
+  <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
+    <value>Aún no hay borrado permanente aquí, ni individual ni en bloque — primero necesitan terminar de sincronizarse para poder eliminarlas en local con seguridad.</value>
+  </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' permanece en la papelera porque el tablero no tiene ninguna columna donde devolverla.</value>
   </data>
@@ -3440,6 +3470,9 @@
   </data>
   <data name="Trash_Reminders_Eyebrow" xml:space="preserve">
     <value>Recordatorios</value>
+  </data>
+  <data name="Trash_Reminders_NoDeleteForeverHint" xml:space="preserve">
+    <value>Todavía no hay botón de borrado individual — un recordatorio recién borrado sigue sincronizándose. Usa “Vaciar” arriba para eliminarlos todos a la vez.</value>
   </data>
   <data name="Trash_RestoreTooltip" xml:space="preserve">
     <value>Restaurar</value>

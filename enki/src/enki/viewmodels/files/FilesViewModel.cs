@@ -26,6 +26,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     private readonly VaultService _vaultService;
     private readonly SessionService _sessionService;
     private readonly NotificationService _notificationService;
+    private readonly SettingsService? _settingsService;
 
     private readonly DispatcherTimer _searchDebounceTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
 
@@ -70,6 +71,9 @@ public sealed partial class FilesViewModel : ViewModelBase
     [ObservableProperty]
     private SessionOptionViewModel? _selectedSessionOption;
 
+    [ObservableProperty]
+    private FileCardViewModel? _filePendingDelete;
+
     public string CurrentFolderLabel => CurrentFolder?.Name ?? LocalizationService.Instance["Files_AllFolder"];
 
     /// <summary>Composed here (rather than a XAML <c>StringFormat</c>) so the word order around the count
@@ -79,11 +83,13 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     private string CurrentFolderPath => CurrentFolder?.FullPath ?? EffectiveRootPath;
 
-    public FilesViewModel(VaultService vaultService, SessionService sessionService, NotificationService notificationService)
+    public FilesViewModel(VaultService vaultService, SessionService sessionService, NotificationService notificationService,
+        SettingsService? settingsService = null)
     {
         _vaultService = vaultService;
         _sessionService = sessionService;
         _notificationService = notificationService;
+        _settingsService = settingsService;
         _searchDebounceTimer.Tick += (_, _) =>
         {
             _searchDebounceTimer.Stop();
@@ -365,7 +371,28 @@ public sealed partial class FilesViewModel : ViewModelBase
         Reload();
     }
 
+    // ===================== Delete confirmation dialog =====================
+    // análisis alfa-3 §4.5 — "preguntar antes de borrar" se saltaba en silencio para Archivos, a
+    // diferencia de Hábitos/Polar/Skills/Kanban/Calendario, que sí lo respetan.
+
     [RelayCommand]
+    private void RequestDeleteFile(FileCardViewModel card)
+    {
+        if (_settingsService?.Settings.ConfirmBeforeDelete ?? true) FilePendingDelete = card;
+        else DeleteFile(card);
+    }
+
+    [RelayCommand]
+    private void CancelDeleteFile() => FilePendingDelete = null;
+
+    [RelayCommand]
+    private void ConfirmDeleteFile()
+    {
+        if (FilePendingDelete is not { } card) return;
+        DeleteFile(card);
+        FilePendingDelete = null;
+    }
+
     private void DeleteFile(FileCardViewModel card)
     {
         if (ActivePreview == card) ActivePreview = null;

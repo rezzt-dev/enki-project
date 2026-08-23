@@ -738,6 +738,12 @@
   <data name="Files_DeleteFolderTooltip" xml:space="preserve">
     <value>Supprimer le dossier</value>
   </data>
+  <data name="Files_DeleteFile_Message" xml:space="preserve">
+    <value>Supprimer ce fichier ? Cette action ne peut pas être annulée.</value>
+  </data>
+  <data name="Files_DeleteFile_Title" xml:space="preserve">
+    <value>SUPPRIMER LE FICHIER</value>
+  </data>
   <data name="Files_EmptyHint" xml:space="preserve">
     <value>Importez un fichier ou faites-en glisser un pour commencer.</value>
   </data>
@@ -1302,6 +1308,12 @@
   <data name="Notes_DeleteFolderTooltip" xml:space="preserve">
     <value>Supprimer le dossier</value>
   </data>
+  <data name="Notes_DeleteNote_Message" xml:space="preserve">
+    <value>Supprimer cette note ? Cette action ne peut pas être annulée.</value>
+  </data>
+  <data name="Notes_DeleteNote_Title" xml:space="preserve">
+    <value>SUPPRIMER LA NOTE</value>
+  </data>
   <data name="Notes_EmptyNotePreview" xml:space="preserve">
     <value>Aucun aperçu</value>
   </data>
@@ -1421,6 +1433,12 @@
   </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Erreur de session</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Message" xml:space="preserve">
+    <value>« {0} » a été verrouillée — ses notes ouvertes ont été fermées automatiquement pour ne plus afficher leur contenu.</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Title" xml:space="preserve">
+    <value>Session verrouillée</value>
   </data>
   <data name="Notification_Severity_Error" xml:space="preserve">
     <value>Erreur</value>
@@ -1892,6 +1910,9 @@
   </data>
   <data name="Sessions_PageTitle" xml:space="preserve">
     <value>Sessions</value>
+  </data>
+  <data name="Sessions_ProcessingIndicator" xml:space="preserve">
+    <value>Traitement en cours…</value>
   </data>
   <data name="Sessions_RefreshGraphTooltip" xml:space="preserve">
     <value>Actualiser le graphe</value>
@@ -3078,6 +3099,15 @@
   <data name="Trash_Files_Eyebrow" xml:space="preserve">
     <value>Fichiers</value>
   </data>
+  <data name="Trash_PolarTasks_Empty" xml:space="preserve">
+    <value>Aucune tâche Polar dans la corbeille</value>
+  </data>
+  <data name="Trash_PolarTasks_Eyebrow" xml:space="preserve">
+    <value>Tâches Polar</value>
+  </data>
+  <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
+    <value>Pas encore de suppression définitive ici, ni individuelle ni groupée — elles doivent d'abord terminer leur synchronisation avant de pouvoir être supprimées localement en toute sécurité.</value>
+  </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' reste dans la corbeille car le tableau n'a aucune colonne où la replacer.</value>
   </data>
@@ -3152,6 +3182,9 @@
   </data>
   <data name="Trash_Reminders_Eyebrow" xml:space="preserve">
     <value>Rappels</value>
+  </data>
+  <data name="Trash_Reminders_NoDeleteForeverHint" xml:space="preserve">
+    <value>Pas encore de suppression définitive individuelle ici — un rappel qui vient d'être supprimé est encore en synchronisation. Utilisez « Vider » ci-dessus pour tout supprimer d'un coup.</value>
   </data>
   <data name="Trash_RestoreTooltip" xml:space="preserve">
     <value>Restaurer</value>

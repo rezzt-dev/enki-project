@@ -150,4 +150,69 @@ public class VaultServiceEncryptionTests : IDisposable
         var trashedAfterUnlock = Assert.Single(vault.GetTrashedNotes());
         Assert.Equal("# Nota a bloquear\n\ncontenido", vault.ReadContent(trashedAfterUnlock));
     }
+
+    [Fact]
+    public void ResolveReadablePath_ForEncryptedFile_WritesDecryptedTempCopy_RestrictedToOwnerOnUnix()
+    {
+        var (vault, sessions) = CreateServices();
+        var (session, _) = sessions.CreateEncrypted("Adjuntos temp", "pw-temp");
+
+        var sourcePath = Path.Combine(_storageDirectory, "source.bin");
+        var originalBytes = new byte[] { 1, 2, 3, 4, 5 };
+        File.WriteAllBytes(sourcePath, originalBytes);
+        var imported = vault.ImportFile(sourcePath, session.RootPath);
+
+        var tempPath = vault.ResolveReadablePath(imported.FullPath);
+        try
+        {
+            Assert.NotEqual(imported.FullPath, tempPath);
+            Assert.StartsWith("enki-dec-", Path.GetFileName(tempPath));
+            Assert.Equal(originalBytes, File.ReadAllBytes(tempPath));
+
+            if (!OperatingSystem.IsWindows())
+            {
+                var mode = File.GetUnixFileMode(tempPath);
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, mode);
+            }
+        }
+        finally
+        {
+            VaultService.TryCleanupDecryptedTempFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public void ResolveReadablePath_ForPlainTextFile_ReturnsOriginalPath_WithoutWritingATempCopy()
+    {
+        var (vault, _) = CreateServices();
+        var sourcePath = Path.Combine(_storageDirectory, "source.bin");
+        File.WriteAllBytes(sourcePath, [1, 2, 3]);
+        var imported = vault.ImportFile(sourcePath, vault.VaultPath);
+
+        var resolved = vault.ResolveReadablePath(imported.FullPath);
+
+        Assert.Equal(imported.FullPath, resolved);
+    }
+
+    [Fact]
+    public void CleanupStaleDecryptedTempFiles_DeletesOnlyEnkiDecPrefixedFiles()
+    {
+        var tempDir = Path.GetTempPath();
+        var stale = Path.Combine(tempDir, $"enki-dec-{Guid.NewGuid():N}.bin");
+        var unrelated = Path.Combine(tempDir, $"not-enki-{Guid.NewGuid():N}.bin");
+        File.WriteAllBytes(stale, [1]);
+        File.WriteAllBytes(unrelated, [1]);
+
+        try
+        {
+            VaultService.CleanupStaleDecryptedTempFiles();
+
+            Assert.False(File.Exists(stale));
+            Assert.True(File.Exists(unrelated));
+        }
+        finally
+        {
+            if (File.Exists(unrelated)) File.Delete(unrelated);
+        }
+    }
 }

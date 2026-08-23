@@ -28,6 +28,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private readonly Action _onSessionsChanged;
     private readonly KanbanService? _kanbanService;
     private readonly Action<string>? _onOpenLinkedCard;
+    /// <summary>Notifies Notas so it can close/flush any tab open on one of the just-locked session's notes
+    /// (análisis §4.1) — invoked from <see cref="LockSession"/> while the DEK is still unlocked. Optional so
+    /// existing tests/call sites that don't care about this coupling keep compiling unchanged.</summary>
+    private readonly Action<Session>? _onSessionLocked;
 
     public ObservableCollection<SessionListItemViewModel> Sessions { get; } = [];
 
@@ -66,6 +70,14 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isEmpty;
+
+    /// <summary>True while a PBKDF2-210k derivation (create/unlock/reset a protected session) is running on
+    /// a background thread — binds to a spinner and disables the confirm button in each of the three
+    /// dialogs, so the UI thread never blocks for however long those ~200ms-per-derivation operations take
+    /// and the user gets visible feedback instead of a dialog that looks unresponsive
+    /// (docs/version-alfa-3/01-analisis-detallado.md §4.1, Media).</summary>
+    [ObservableProperty]
+    private bool _isProcessingSessionAction;
 
     [ObservableProperty]
     private bool _isCreateDialogOpen;
@@ -156,6 +168,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private int _edgeCount;
 
     public bool CanConfirmCreate =>
+        !IsProcessingSessionAction &&
         !string.IsNullOrWhiteSpace(NewSessionName) &&
         (!NewSessionIsProtected || (NewSessionPassword.Length >= MinPasswordLength && NewSessionPassword == NewSessionPasswordConfirm));
 
@@ -209,7 +222,8 @@ public sealed partial class SessionsViewModel : ViewModelBase
         Action<Session?, Models.NoteFile?> onOpenInNotes,
         Action onSessionsChanged,
         KanbanService? kanbanService = null,
-        Action<string>? onOpenLinkedCard = null)
+        Action<string>? onOpenLinkedCard = null,
+        Action<Session>? onSessionLocked = null)
     {
         _vaultService = vaultService;
         _sessionService = sessionService;
@@ -218,6 +232,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
         _onSessionsChanged = onSessionsChanged;
         _kanbanService = kanbanService;
         _onOpenLinkedCard = onOpenLinkedCard;
+        _onSessionLocked = onSessionLocked;
         Sessions.CollectionChanged += (_, _) => OnPropertyChanged(nameof(SessionsCountLabel));
 
         Reload();
@@ -240,6 +255,8 @@ public sealed partial class SessionsViewModel : ViewModelBase
     partial void OnNewSessionPasswordChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
 
     partial void OnNewSessionPasswordConfirmChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
+
+    partial void OnIsProcessingSessionActionChanged(bool value) => OnPropertyChanged(nameof(CanConfirmCreate));
 
     partial void OnNodeCountChanged(int value) => OnPropertyChanged(nameof(GraphSummaryLabel));
 
@@ -427,11 +444,26 @@ public sealed partial class SessionsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ConfirmUnlock()
+    private async Task ConfirmUnlock()
     {
-        if (SessionPendingUnlock is not { } item) return;
+        if (SessionPendingUnlock is not { } item || IsProcessingSessionAction) return;
 
-        if (_sessionService.Unlock(item.Session, UnlockPasswordInput))
+        var password = UnlockPasswordInput;
+        bool unlocked;
+        IsProcessingSessionAction = true;
+        try
+        {
+            // The PBKDF2-210k derivation this hides behind is the whole point of the cost factor — moving
+            // it off the UI thread keeps the dialog responsive without weakening it (docs/version-alfa-3/
+            // 01-analisis-detallado.md §4.1, Media).
+            unlocked = await Task.Run(() => _sessionService.Unlock(item.Session, password));
+        }
+        finally
+        {
+            IsProcessingSessionAction = false;
+        }
+
+        if (unlocked)
         {
             item.IsUnlocked = true;
             SessionPendingUnlock = null;
@@ -452,9 +484,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ConfirmPasswordReset()
+    private async Task ConfirmPasswordReset()
     {
-        if (SessionPendingUnlock is not { } item) return;
+        if (SessionPendingUnlock is not { } item || IsProcessingSessionAction) return;
 
         if (NewPasswordInput.Length < MinPasswordLength || NewPasswordInput != NewPasswordConfirmInput)
         {
@@ -462,7 +494,22 @@ public sealed partial class SessionsViewModel : ViewModelBase
             return;
         }
 
-        if (_sessionService.ResetPasswordWithRecoveryCode(item.Session, RecoveryCodeInput.Trim(), NewPasswordInput))
+        var recoveryCode = RecoveryCodeInput.Trim();
+        var newPassword = NewPasswordInput;
+        bool succeeded;
+        IsProcessingSessionAction = true;
+        try
+        {
+            // Same reasoning as ConfirmUnlock: this recovers the DEK under the recovery-code slot and
+            // rewraps it under the new password, each its own PBKDF2-210k derivation.
+            succeeded = await Task.Run(() => _sessionService.ResetPasswordWithRecoveryCode(item.Session, recoveryCode, newPassword));
+        }
+        finally
+        {
+            IsProcessingSessionAction = false;
+        }
+
+        if (succeeded)
         {
             item.IsUnlocked = true;
             SessionPendingUnlock = null;
@@ -489,6 +536,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
     [RelayCommand]
     private void LockSession(SessionListItemViewModel item)
     {
+        // Must run before the DEK is actually dropped below — CloseEditorsForLockedSession flushes any
+        // dirty open tab on this session's notes, which needs to still be able to encrypt+write
+        // (análisis §4.1: locking used to leave those tabs open, editable, and silently failing to save).
+        _onSessionLocked?.Invoke(item.Session);
         _sessionService.Lock(item.Session);
         item.IsUnlocked = false;
         if (SelectedSession == item) LoadGraph();
@@ -508,24 +559,45 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private void CancelCreateSession() => IsCreateDialogOpen = false;
 
     [RelayCommand]
-    private void ConfirmCreateSession()
+    private async Task ConfirmCreateSession()
     {
-        if (!CanConfirmCreate) return;
+        if (!CanConfirmCreate || IsProcessingSessionAction) return;
+
+        var name = NewSessionName.Trim();
+        var isProtected = NewSessionIsProtected;
+        var password = NewSessionPassword;
 
         Session created;
-        if (NewSessionIsProtected)
+        IReadOnlyList<string>? recoveryCodes = null;
+        IsProcessingSessionAction = true;
+        try
         {
-            var (session, codes) = _sessionService.CreateEncrypted(NewSessionName.Trim(), NewSessionPassword);
-            created = session;
+            // A protected session pays 6 PBKDF2-210k derivations up front (password + 5 recovery codes,
+            // see SessionEncryptionService.CreateEncryptionInfo) — noticeably heavier than the single
+            // derivation ConfirmUnlock/ConfirmPasswordReset pay, and the reason this command needed the
+            // same off-UI-thread treatment most (docs/version-alfa-3/01-analisis-detallado.md §4.1, Media).
+            if (isProtected)
+            {
+                var (session, codes) = await Task.Run(() => _sessionService.CreateEncrypted(name, password));
+                created = session;
+                recoveryCodes = codes;
+            }
+            else
+            {
+                created = await Task.Run(() => _sessionService.Create(name));
+            }
+        }
+        finally
+        {
+            IsProcessingSessionAction = false;
+        }
 
+        if (recoveryCodes is not null)
+        {
             _pendingRecoveryCodesSessionName = created.Name;
             PendingRecoveryCodes.Clear();
-            foreach (var code in codes) PendingRecoveryCodes.Add(code);
+            foreach (var code in recoveryCodes) PendingRecoveryCodes.Add(code);
             IsRecoveryCodesDialogOpen = true;
-        }
-        else
-        {
-            created = _sessionService.Create(NewSessionName.Trim());
         }
 
         IsCreateDialogOpen = false;
@@ -576,6 +648,12 @@ public sealed partial class SessionsViewModel : ViewModelBase
         }
     }
 
+    /// <summary>How long a copied recovery code stays on the clipboard before it's auto-cleared — long
+    /// enough to paste it once into a password manager or a downloaded file, short enough that it doesn't
+    /// sit there indefinitely for any other app with clipboard access to read
+    /// (docs/version-alfa-3/01-analisis-detallado.md §4.1, Media).</summary>
+    private static readonly TimeSpan RecoveryCodesClipboardClearDelay = TimeSpan.FromSeconds(30);
+
     [RelayCommand]
     private async Task CopyRecoveryCodesToClipboard()
     {
@@ -583,11 +661,35 @@ public sealed partial class SessionsViewModel : ViewModelBase
         var clipboard = topLevel?.Clipboard;
         if (clipboard is null) return;
 
-        await clipboard.SetTextAsync(string.Join(Environment.NewLine, PendingRecoveryCodes));
+        var text = string.Join(Environment.NewLine, PendingRecoveryCodes);
+        await clipboard.SetTextAsync(text);
         _notificationService.Push(
             LocalizationService.Instance["Sessions_RecoveryCodes_CopiedNotification_Title"],
             LocalizationService.Instance["Sessions_RecoveryCodes_CopiedNotification_Message"],
             NotificationSeverity.Success);
+
+        // Fire-and-forget: the command itself is done the moment the copy succeeds, the clear just
+        // happens later in the background.
+        _ = ClearClipboardAfterDelay(clipboard, text);
+    }
+
+    /// <summary>Clears the clipboard <see cref="RecoveryCodesClipboardClearDelay"/> after a recovery-code
+    /// copy — but only if it still holds exactly <paramref name="expectedText"/>, so a later, unrelated
+    /// copy the user made in the meantime isn't wiped out from under them. Best-effort: some platforms
+    /// restrict clipboard reads to a focused window, and headless tests have no clipboard at all — either
+    /// failing here just means the auto-clear silently doesn't happen, not an app-visible error.</summary>
+    private static async Task ClearClipboardAfterDelay(IClipboard clipboard, string expectedText)
+    {
+        await Task.Delay(RecoveryCodesClipboardClearDelay);
+        try
+        {
+            var current = await clipboard.TryGetTextAsync();
+            if (current == expectedText) await clipboard.ClearAsync();
+        }
+        catch (Exception ex)
+        {
+            LogService.Warning("No se pudo limpiar el portapapeles tras copiar códigos de recuperación", ex);
+        }
     }
 
     [RelayCommand]

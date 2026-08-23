@@ -49,7 +49,8 @@ public class NotesViewModelWikiLinkTests : IDisposable
         notes.Reload();
         var card = notes.Notes.Single(c => c.Title == "Objetivo");
 
-        notes.DeleteNoteCommand.Execute(card);
+        notes.RequestDeleteNoteCommand.Execute(card);
+        notes.ConfirmDeleteNoteCommand.Execute(null);
 
         Assert.False(File.Exists(target.FullPath));
         Assert.Single(notifications.Notifications);

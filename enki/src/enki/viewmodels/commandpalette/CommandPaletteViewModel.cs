@@ -125,12 +125,5 @@ public sealed partial class CommandPaletteViewModel : ObservableObject
             .Select(x => x.Item);
     }
 
-    private static int Score(CommandPaletteItem item, string query)
-    {
-        var title = item.Title;
-        if (title.Equals(query, StringComparison.OrdinalIgnoreCase)) return 1000;
-        if (title.StartsWith(query, StringComparison.OrdinalIgnoreCase)) return 500;
-        if (title.Contains(query, StringComparison.OrdinalIgnoreCase)) return 250;
-        return 0;
-    }
+    private static int Score(CommandPaletteItem item, string query) => TitleFuzzyScorer.ScoreTitle(item.Title, query);
 }

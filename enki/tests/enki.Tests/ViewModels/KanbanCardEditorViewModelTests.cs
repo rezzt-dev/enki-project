@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using enki.Models;
 using enki.ViewModels;
@@ -73,5 +74,105 @@ public class KanbanCardEditorViewModelTests
         var existing = new KanbanCard { Id = "id", Title = "Card" };
         editor.ApplyTo(existing);
         Assert.Equal("/vault/Nota.md", existing.LinkedNotePath);
+    }
+
+    // ===================== CombinedDueDate (privado, ejercitado vía BuildCard) =====================
+
+    [Fact]
+    public void BuildCard_WithoutDueDate_LeavesDueDateUtcNull()
+    {
+        var editor = CreateEditor(string.Empty);
+
+        var built = editor.BuildCard("new-id");
+
+        Assert.Null(built.DueDateUtc);
+    }
+
+    [Fact]
+    public void BuildCard_WithDueDateButNoDueTime_UsesLocalMidnight()
+    {
+        var editor = CreateEditor(string.Empty);
+        editor.DueDate = new DateTime(2026, 3, 15);
+        editor.HasDueTime = false;
+
+        var built = editor.BuildCard("new-id");
+
+        Assert.NotNull(built.DueDateUtc);
+        var local = built.DueDateUtc!.Value.ToLocalTime();
+        Assert.Equal(new DateTime(2026, 3, 15), local.Date);
+        Assert.Equal(TimeSpan.Zero, local.TimeOfDay);
+    }
+
+    [Fact]
+    public void BuildCard_WithDueTime_CombinesDateAndTimeOfDay()
+    {
+        var editor = CreateEditor(string.Empty);
+        editor.DueDate = new DateTime(2026, 3, 15);
+        editor.HasDueTime = true;
+        editor.DueHour = 14;
+        editor.DueMinute = 30;
+
+        var built = editor.BuildCard("new-id");
+
+        var local = built.DueDateUtc!.Value.ToLocalTime();
+        Assert.Equal(new DateTime(2026, 3, 15, 14, 30, 0), local);
+    }
+
+    // ===================== OnHasDueTimeChanged =====================
+
+    [Fact]
+    public void TurningOffHasDueTime_ClearsHasDuration()
+    {
+        var editor = CreateEditor(string.Empty);
+        editor.DueDate = DateTime.Today;
+        editor.HasDueTime = true;
+        editor.HasDuration = true;
+
+        editor.HasDueTime = false;
+
+        Assert.False(editor.HasDuration);
+    }
+
+    [Fact]
+    public void TurningOnHasDueTime_DoesNotForceHasDurationOn()
+    {
+        var editor = CreateEditor(string.Empty);
+        editor.DueDate = DateTime.Today;
+
+        editor.HasDueTime = true;
+
+        Assert.False(editor.HasDuration);
+    }
+
+    // ===================== MaxDurationMinutes (privado, ejercitado vía el clamp de DurationMinutes) =====================
+
+    [Fact]
+    public void SettingDueHourNearMidnight_ClampsDurationMinutesToWhatFitsBeforeMidnight()
+    {
+        var editor = CreateEditor(string.Empty);
+        editor.DueDate = DateTime.Today;
+        editor.HasDueTime = true;
+        editor.HasDuration = true;
+        editor.DurationMinutes = 60;
+
+        editor.DueHour = 23;
+        editor.DueMinute = 55;
+
+        Assert.Equal(5, editor.DurationMinutes);
+    }
+
+    [Fact]
+    public void SettingDueHourEarlyInTheDay_LeavesDurationMinutesUnclamped()
+    {
+        var editor = CreateEditor(string.Empty);
+        editor.DueDate = DateTime.Today;
+        editor.HasDueTime = true;
+        editor.HasDuration = true;
+        editor.DurationMinutes = 60;
+
+        editor.DueHour = 9;
+        editor.DueMinute = 0;
+
+        Assert.Equal(60, editor.DurationMinutes);
     }
 }

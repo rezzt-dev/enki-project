@@ -738,6 +738,12 @@
   <data name="Files_DeleteFolderTooltip" xml:space="preserve">
     <value>Delete folder</value>
   </data>
+  <data name="Files_DeleteFile_Message" xml:space="preserve">
+    <value>Delete this file? This action cannot be undone.</value>
+  </data>
+  <data name="Files_DeleteFile_Title" xml:space="preserve">
+    <value>DELETE FILE</value>
+  </data>
   <data name="Files_EmptyHint" xml:space="preserve">
     <value>Import a file or drag one in to get started.</value>
   </data>
@@ -1302,6 +1308,12 @@
   <data name="Notes_DeleteFolderTooltip" xml:space="preserve">
     <value>Delete folder</value>
   </data>
+  <data name="Notes_DeleteNote_Message" xml:space="preserve">
+    <value>Delete this note? This action cannot be undone.</value>
+  </data>
+  <data name="Notes_DeleteNote_Title" xml:space="preserve">
+    <value>DELETE NOTE</value>
+  </data>
   <data name="Notes_EmptyNotePreview" xml:space="preserve">
     <value>No preview</value>
   </data>
@@ -1421,6 +1433,12 @@
   </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Session error</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Message" xml:space="preserve">
+    <value>Locked '{0}' — its open notes were closed automatically to keep their content out of view.</value>
+  </data>
+  <data name="Notification_SessionLockedTabsClosed_Title" xml:space="preserve">
+    <value>Session locked</value>
   </data>
   <data name="Notification_Severity_Error" xml:space="preserve">
     <value>Error</value>
@@ -1892,6 +1910,9 @@
   </data>
   <data name="Sessions_PageTitle" xml:space="preserve">
     <value>Sessions</value>
+  </data>
+  <data name="Sessions_ProcessingIndicator" xml:space="preserve">
+    <value>Working…</value>
   </data>
   <data name="Sessions_RefreshGraphTooltip" xml:space="preserve">
     <value>Refresh graph</value>
@@ -3078,6 +3099,15 @@
   <data name="Trash_Files_Eyebrow" xml:space="preserve">
     <value>Files</value>
   </data>
+  <data name="Trash_PolarTasks_Empty" xml:space="preserve">
+    <value>No Polar tasks in trash</value>
+  </data>
+  <data name="Trash_PolarTasks_Eyebrow" xml:space="preserve">
+    <value>Polar tasks</value>
+  </data>
+  <data name="Trash_PolarTasks_NoPurgeHint" xml:space="preserve">
+    <value>No permanent delete here yet, individually or in bulk — these still need to finish syncing before it's safe to purge them locally.</value>
+  </data>
   <data name="Trash_Notify_CardRestoreFailed_Message" xml:space="preserve">
     <value>'{0}' stays in the trash because the board has no column to move it back to.</value>
   </data>
@@ -3152,6 +3182,9 @@
   </data>
   <data name="Trash_Reminders_Eyebrow" xml:space="preserve">
     <value>Reminders</value>
+  </data>
+  <data name="Trash_Reminders_NoDeleteForeverHint" xml:space="preserve">
+    <value>No permanent-delete button here yet — a just-deleted reminder is still syncing. Use “Empty” above to clear them all at once.</value>
   </data>
   <data name="Trash_RestoreTooltip" xml:space="preserve">
     <value>Restore</value>

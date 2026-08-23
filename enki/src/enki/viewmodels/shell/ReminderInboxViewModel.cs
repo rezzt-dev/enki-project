@@ -85,6 +85,7 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
         var soonLimit = DateTime.UtcNow + TimeSpan.FromDays(soonWindowDays);
         var reminders = _kanbanService.Board.Columns
             .SelectMany(column => column.Cards.Select(card => new { column.Title, Card = card }))
+            .Where(x => x.Card.CompletedAtUtc is null)
             .Where(x => x.Card.DueDateUtc is { } due && due <= soonLimit)
             .Where(x => !_dismissedReminderService.IsDismissed(x.Card.Id, x.Card.DueDateUtc!.Value))
             .Select(x => new ReminderItemViewModel(x.Card, x.Title))

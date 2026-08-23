@@ -127,10 +127,8 @@ public sealed partial class QuickSwitcherViewModel : ObservableObject
 
     private static int Score(NoteFile note, string query)
     {
-        var title = note.Title;
-        if (title.Equals(query, StringComparison.OrdinalIgnoreCase)) return 1000;
-        if (title.StartsWith(query, StringComparison.OrdinalIgnoreCase)) return 500;
-        if (title.Contains(query, StringComparison.OrdinalIgnoreCase)) return 250;
+        var titleScore = TitleFuzzyScorer.ScoreTitle(note.Title, query);
+        if (titleScore > 0) return titleScore;
         if (note.Preview.Contains(query, StringComparison.OrdinalIgnoreCase)) return 100;
         if (note.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase))) return 50;
         return 0;

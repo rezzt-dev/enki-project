@@ -39,6 +39,7 @@ public sealed class PolarTaskService
         _path = Path.Combine(configDir, "polar-tasks.json");
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);
         Store = Load();
+        PurgeOldTombstones();
     }
 
     private PolarTaskStore Load() =>
@@ -59,6 +60,25 @@ public sealed class PolarTaskService
     {
         Store = new PolarTaskStore();
         Save();
+    }
+
+    /// <summary>Mirrors <see cref="ReminderService"/>'s and <see cref="KanbanService"/>'s own tombstone
+    /// purge: physically drops lists/tasks/subtasks soft-deleted more than 30 days ago and already
+    /// confirmed synced (<c>!Dirty</c>) — never purges a tombstone that hasn't been pushed yet, so an
+    /// offline delete always gets at least one chance to reach Supabase before disappearing for good (see
+    /// docs/analisis-proyecto/roadmap.md, Fase 4, and the Papelera's "Tareas Polar" category, which
+    /// deliberately has no manual "borrar para siempre" for the same reason).</summary>
+    private void PurgeOldTombstones()
+    {
+        var cutoff = DateTime.UtcNow.AddDays(-30);
+        bool IsPurgeable(bool isDeleted, bool dirty, DateTime? deletedAt) =>
+            isDeleted && !dirty && deletedAt is { } deleted && deleted < cutoff;
+
+        var removedLists = Store.Lists.RemoveAll(l => IsPurgeable(l.IsDeleted, l.Dirty, l.DeletedAtUtc));
+        var removedTasks = Store.Tasks.RemoveAll(t => IsPurgeable(t.IsDeleted, t.Dirty, t.DeletedAtUtc));
+        var removedSubtasks = Store.Subtasks.RemoveAll(s => IsPurgeable(s.IsDeleted, s.Dirty, s.DeletedAtUtc));
+
+        if (removedLists + removedTasks + removedSubtasks > 0) Save();
     }
 
     // ===================== Listas =====================
@@ -104,6 +124,19 @@ public sealed class PolarTaskService
             SoftDeleteTaskCore(task, list.UpdatedAtUtc);
         }
 
+        Save();
+    }
+
+    /// <summary>Undoes <see cref="DeleteList"/> — the Papelera restore path (análisis alfa-3 §4.3: antes de
+    /// esto no existía ningún camino de recuperación para una lista Polar borrada). Deliberately doesn't
+    /// cascade to the list's tasks the way the delete did: those stay in their own trashed-tasks listing
+    /// and are restored independently, since some of them may have been deleted on their own before the
+    /// list itself was, and there's no stored signal here to tell the two cases apart.</summary>
+    public void RestoreList(PolarTaskList list)
+    {
+        list.IsDeleted = false;
+        list.DeletedAtUtc = null;
+        Touch(list);
         Save();
     }
 
@@ -199,6 +232,28 @@ public sealed class PolarTaskService
             subtask.IsDeleted = true;
             subtask.DeletedAtUtc = whenUtc;
         }
+    }
+
+    /// <summary>Undoes <see cref="DeleteTask"/> — the Papelera restore path (análisis alfa-3 §4.3). Unlike
+    /// <see cref="RestoreList"/>, this one DOES cascade to the task's subtasks: subtasks have no listing of
+    /// their own anywhere in the Papelera, so restoring the parent task is the only way they ever become
+    /// visible/editable again. If the task's own list is still soft-deleted, the task simply won't show up
+    /// in the list-scoped "Gestión de tareas" view until that list is restored too — it's already live
+    /// again everywhere else that reads tasks directly (Dashboard, Calendario, búsqueda global).</summary>
+    public void RestoreTask(PolarTask task)
+    {
+        Touch(task);
+        task.IsDeleted = false;
+        task.DeletedAtUtc = null;
+
+        foreach (var subtask in Store.Subtasks.Where(s => s.TaskId == task.Id && s.IsDeleted))
+        {
+            Touch(subtask);
+            subtask.IsDeleted = false;
+            subtask.DeletedAtUtc = null;
+        }
+
+        Save();
     }
 
     // ===================== Subtareas =====================

@@ -28,6 +28,7 @@ public sealed partial class TrashViewModel : ViewModelBase
 {
     private readonly VaultService _vaultService;
     private readonly KanbanService _kanbanService;
+    private readonly PolarTaskService _polarTaskService;
     private readonly ReminderService _reminderService;
     private readonly NotificationService _notificationService;
     private readonly SessionService _sessionService;
@@ -36,6 +37,17 @@ public sealed partial class TrashViewModel : ViewModelBase
     public ObservableCollection<NoteCardViewModel> Notes { get; } = [];
     public ObservableCollection<TrashedTaskCardViewModel> Tasks { get; } = [];
     public ObservableCollection<FileCardViewModel> Files { get; } = [];
+
+    /// <summary>Categoría "Tareas Polar" (análisis alfa-3 §4.3, Alta: antes no existía ningún camino de
+    /// recuperación para una lista/tarea Polar borrada). A diferencia del resto de categorías, esta solo
+    /// ofrece restaurar — ni borrado permanente individual ni "vaciar categoría" — porque una fila Polar
+    /// recién borrada suele seguir <c>Dirty</c> (su tombstone aún no llegó a Supabase); purgarla en local
+    /// antes de ese push dejaría al servidor sin enterarse nunca del borrado y la fila "resucitaría" en el
+    /// siguiente pull. Mismo motivo, mismo criterio ya aplicado a Recordatorios (ver
+    /// <see cref="RestoreReminder"/>). El purgado real (por antigüedad, una vez ya sincronizado) es trabajo
+    /// de Fase 4 de docs/version-alfa-3/02-roadmap-implementacion.md, no de esta pantalla.</summary>
+    public ObservableCollection<TrashedPolarListCardViewModel> PolarLists { get; } = [];
+    public ObservableCollection<TrashedPolarTaskCardViewModel> PolarTasks { get; } = [];
     public ObservableCollection<TrashedReminderCardViewModel> Reminders { get; } = [];
     public ObservableCollection<TrashedSessionCardViewModel> Sessions { get; } = [];
 
@@ -47,6 +59,13 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isFilesEmpty;
+
+    /// <summary>Whether both <see cref="PolarLists"/> and <see cref="PolarTasks"/> are empty — kept out of
+    /// <see cref="IsFullyEmpty"/> on purpose: nothing purges this category yet (see the remarks on
+    /// <see cref="PolarLists"/>), so a leftover deleted Polar task/list must never disable/hide the regular
+    /// "vaciar papelera" affordances, which purge every other section just fine.</summary>
+    [ObservableProperty]
+    private bool _isPolarTasksEmpty;
 
     [ObservableProperty]
     private bool _isRemindersEmpty;
@@ -118,11 +137,13 @@ public sealed partial class TrashViewModel : ViewModelBase
         _ => string.Empty
     };
 
-    public TrashViewModel(VaultService vaultService, KanbanService kanbanService, ReminderService reminderService,
-        NotificationService notificationService, SessionService sessionService, Action? onSessionsChanged = null)
+    public TrashViewModel(VaultService vaultService, KanbanService kanbanService, PolarTaskService polarTaskService,
+        ReminderService reminderService, NotificationService notificationService, SessionService sessionService,
+        Action? onSessionsChanged = null)
     {
         _vaultService = vaultService;
         _kanbanService = kanbanService;
+        _polarTaskService = polarTaskService;
         _reminderService = reminderService;
         _notificationService = notificationService;
         _sessionService = sessionService;
@@ -155,6 +176,9 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     partial void OnIsRemindersEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
 
+    // Deliberadamente sin OnIsPolarTasksEmptyChanged: ver el comentario en _isPolarTasksEmpty — esta
+    // categoría no participa en IsFullyEmpty.
+
     partial void OnIsSessionsEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
 
     public void Reload()
@@ -171,6 +195,12 @@ public sealed partial class TrashViewModel : ViewModelBase
         foreach (var file in _vaultService.GetTrashedFiles()) Files.Add(new FileCardViewModel(_vaultService, file));
         IsFilesEmpty = Files.Count == 0;
 
+        PolarLists.Clear();
+        foreach (var list in _polarTaskService.Store.Lists.Where(l => l.IsDeleted)) PolarLists.Add(new TrashedPolarListCardViewModel(list));
+        PolarTasks.Clear();
+        foreach (var task in _polarTaskService.Store.Tasks.Where(t => t.IsDeleted)) PolarTasks.Add(new TrashedPolarTaskCardViewModel(task));
+        IsPolarTasksEmpty = PolarLists.Count == 0 && PolarTasks.Count == 0;
+
         Reminders.Clear();
         foreach (var reminder in _reminderService.DeletedReminders) Reminders.Add(new TrashedReminderCardViewModel(reminder));
         IsRemindersEmpty = Reminders.Count == 0;
@@ -179,7 +209,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         foreach (var session in _sessionService.ListTrashedSessions()) Sessions.Add(new TrashedSessionCardViewModel(session));
         IsSessionsEmpty = Sessions.Count == 0;
 
-        TotalCount = Notes.Count + Tasks.Count + Files.Count + Reminders.Count + Sessions.Count;
+        TotalCount = Notes.Count + Tasks.Count + Files.Count + PolarLists.Count + PolarTasks.Count + Reminders.Count + Sessions.Count;
     }
 
     [RelayCommand]
@@ -301,6 +331,20 @@ public sealed partial class TrashViewModel : ViewModelBase
             string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_SessionRestored_Message"], card.Name),
             NotificationSeverity.Success);
         _onSessionsChanged?.Invoke();
+        Reload();
+    }
+
+    [RelayCommand]
+    private void RestorePolarList(TrashedPolarListCardViewModel card)
+    {
+        _polarTaskService.RestoreList(card.List);
+        Reload();
+    }
+
+    [RelayCommand]
+    private void RestorePolarTask(TrashedPolarTaskCardViewModel card)
+    {
+        _polarTaskService.RestoreTask(card.Task);
         Reload();
     }
 

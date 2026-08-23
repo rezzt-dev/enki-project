@@ -16,8 +16,9 @@ class Program
     {
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        // El motor WebView embebido (vista de impresión de notas, grafo de sesiones — ambos vía
-        // NativeWebView/WebViewHost) usa WPEWebKit en Linux. Su renderer DMA-BUF por defecto produce una
+        // El motor WebView embebido (grafo de sesiones, vía NativeWebView/WebViewHost — las notas solo se
+        // exportan a HTML hoy, sin vista de impresión ni WebView propios, ver NoteExportService) usa
+        // WPEWebKit en Linux. Su renderer DMA-BUF por defecto produce una
         // superficie en negro/blanco con ciertas combinaciones de driver gráfico y compositor Wayland
         // aunque el motor se reporte "instalado" y la navegación termine con éxito — variable de entorno
         // estándar para forzar el camino de compatibilidad. Debe fijarse antes de que Avalonia inicialice
@@ -47,6 +48,12 @@ class Program
             // ha quedado registrada, que es todo lo que Fase 0 pide aquí.
             e.SetObserved();
         };
+
+        // Sweeps any decrypted temp file (enki-dec-*) left behind by a previous run that crashed instead of
+        // going through MainWindow's normal Closing handler — that handler sweeps the same directory again
+        // at shutdown, so between the two, a leftover plaintext copy of protected-session content never
+        // survives more than one launch (docs/version-alfa-3/01-analisis-detallado.md §4.1, Alta).
+        VaultService.CleanupStaleDecryptedTempFiles();
 
         try
         {

@@ -46,6 +46,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// <see cref="DoneBarWidth"/>.</summary>
     private const double BoardBarTotalWidth = 220;
 
+    /// <summary>Cap on how far back <see cref="LoadTodayItems"/> looks for overdue backlog — without it, a
+    /// vault with months of unaddressed overdue items would fill the whole 5-item "HOY" cupo with ancient
+    /// backlog and never show what's actually due today (análisis §4.4, Alta).</summary>
+    private static readonly TimeSpan TodayItemsBacklogWindow = TimeSpan.FromDays(30);
+
+    /// <summary>Max entries shown in the "HOY" card.</summary>
+    private const int MaxTodayItems = 5;
+
     /// <summary>Most recently modified note — the large featured tile in "NOTAS RECIENTES". Its own
     /// property rather than an <c>ObservableCollection</c> indexer binding (e.g. "RecentNotes[0]"), since
     /// Avalonia doesn't refresh an indexer binding when the backing collection is cleared and repopulated
@@ -535,9 +543,17 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
         var today = DateTime.Today;
         var rangeEndUtc = today.AddDays(1).ToUniversalTime();
-        var items = _calendarAggregationService.BuildItems(DateTime.MinValue, rangeEndUtc, includeGhostOccurrences: false);
+        var rangeStartUtc = (today - TodayItemsBacklogWindow).ToUniversalTime();
+        var items = _calendarAggregationService.BuildItems(rangeStartUtc, rangeEndUtc, includeGhostOccurrences: false)
+            .Where(i => !i.IsCompleted && (i.IsPastDue || i.MomentLocal.Date == today))
+            .ToList();
 
-        foreach (var item in items.Where(i => !i.IsCompleted && (i.IsPastDue || i.MomentLocal.Date == today)).Take(5))
+        // "Vence hoy" always wins the cupo over older backlog (análisis §4.4, Alta) — only the remaining
+        // slots, if any, are filled with overdue items, most recent first.
+        var dueToday = items.Where(i => i.MomentLocal.Date == today);
+        var overdueBacklog = items.Where(i => i.MomentLocal.Date != today).OrderByDescending(i => i.MomentLocal);
+
+        foreach (var item in dueToday.Concat(overdueBacklog).Take(MaxTodayItems))
             TodayItems.Add(item);
 
         OnPropertyChanged(nameof(HasTodayItems));

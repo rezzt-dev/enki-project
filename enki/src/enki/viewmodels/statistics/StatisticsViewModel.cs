@@ -81,7 +81,11 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         HabitCompletionPercent = lastWeek?.HabitCompletionPercent;
         OnPropertyChanged(nameof(HasHabitData));
 
-        HasEnoughData = series.Any(w => w.NotesCreated > 0 || w.NotesEdited > 0 || w.TasksCompleted > 0);
+        // Includes HabitCompletionPercent so a user who only tracks Hábitos (no notes/tasks yet) still
+        // sees their consistency chart instead of the "vuelve cuando tengas más actividad" empty state
+        // (análisis §4.4, Media).
+        HasEnoughData = series.Any(w => w.NotesCreated > 0 || w.NotesEdited > 0 || w.TasksCompleted > 0)
+            || HabitCompletionPercent is not null;
     }
 
     partial void OnRangeChanged(StatisticsRange value) => Reload();

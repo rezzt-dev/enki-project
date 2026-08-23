@@ -101,6 +101,9 @@ public sealed partial class NotesViewModel : ViewModelBase
     [ObservableProperty]
     private SessionOptionViewModel? _selectedSessionOption;
 
+    [ObservableProperty]
+    private NoteCardViewModel? _notePendingDelete;
+
     /// <summary>Filtro de etiquetas compartido para el módulo de Notas. Se recarga con las etiquetas
     /// de todas las notas visibles del folder/workspace actual y conserva la selección del usuario al
     /// navegar entre carpetas o sesiones.</summary>
@@ -580,6 +583,42 @@ public sealed partial class NotesViewModel : ViewModelBase
         foreach (var editor in OpenEditors) editor.FlushPendingSave();
     }
 
+    /// <summary>Called from <see cref="SessionsViewModel.LockSession"/>, while <paramref name="session"/>'s
+    /// DEK is still unlocked, right before it actually drops it — closes every open tab on one of that
+    /// session's notes instead of leaving its decrypted content sitting on screen and its autosave quietly
+    /// failing on every tick once the DEK is gone (docs/version-alfa-3/01-analisis-detallado.md §4.1: the
+    /// padlock in Sesiones looked closed while an already-open tab kept showing and letting the user edit
+    /// plain-text content underneath it). Flushing first, while still unlocked, means nothing typed in an
+    /// affected tab is lost by being closed out from under the user.</summary>
+    public void CloseEditorsForLockedSession(Session session)
+    {
+        var affected = OpenEditors.Where(e => IsUnderSessionRoot(e.Note.FullPath, session.RootPath)).ToList();
+        if (affected.Count == 0) return;
+
+        foreach (var editor in affected)
+        {
+            editor.FlushPendingSave();
+            OpenEditors.Remove(editor);
+        }
+
+        if (ActiveEditor is not null && affected.Contains(ActiveEditor))
+            ActiveEditor = OpenEditors.FirstOrDefault();
+
+        PersistOpenTabs();
+        Reload();
+
+        _notificationService?.Push(
+            LocalizationService.Instance["Notification_SessionLockedTabsClosed_Title"],
+            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_SessionLockedTabsClosed_Message"], session.Name),
+            NotificationSeverity.Info);
+    }
+
+    private static bool IsUnderSessionRoot(string fullPath, string sessionRootPath)
+    {
+        var relative = Path.GetRelativePath(sessionRootPath, fullPath);
+        return !relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative);
+    }
+
     [RelayCommand]
     private void SelectNextEditor() => CycleActiveEditor(1);
 
@@ -727,7 +766,28 @@ public sealed partial class NotesViewModel : ViewModelBase
             NotificationSeverity.Info);
     }
 
+    // ===================== Delete confirmation dialog =====================
+    // análisis alfa-3 §4.5 — "preguntar antes de borrar" se saltaba en silencio para Notas, a
+    // diferencia de Hábitos/Polar/Skills/Kanban/Calendario, que sí lo respetan.
+
     [RelayCommand]
+    private void RequestDeleteNote(NoteCardViewModel card)
+    {
+        if (_settingsService?.Settings.ConfirmBeforeDelete ?? true) NotePendingDelete = card;
+        else DeleteNote(card);
+    }
+
+    [RelayCommand]
+    private void CancelDeleteNote() => NotePendingDelete = null;
+
+    [RelayCommand]
+    private void ConfirmDeleteNote()
+    {
+        if (NotePendingDelete is not { } card) return;
+        DeleteNote(card);
+        NotePendingDelete = null;
+    }
+
     private void DeleteNote(NoteCardViewModel card)
     {
         EditorBacklinksService.WarnIfDeletingLeavesBrokenLinks(_vaultService, _notificationService, card.Note);

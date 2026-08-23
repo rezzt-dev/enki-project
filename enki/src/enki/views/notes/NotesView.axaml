@@ -7,6 +7,7 @@
              xmlns:views="clr-namespace:enki.Views"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:controls="clr-namespace:enki.Controls"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.NotesView"
              x:Name="Root"
@@ -273,7 +274,7 @@
                               </MenuItem.Icon>
                             </MenuItem>
                             <MenuItem Header="{loc:Tr Common_Delete}"
-                                      Command="{Binding #Root.((vm:NotesViewModel)DataContext).DeleteNoteCommand}"
+                                      Command="{Binding #Root.((vm:NotesViewModel)DataContext).RequestDeleteNoteCommand}"
                                       CommandParameter="{Binding}">
                               <MenuItem.Icon>
                                 <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
@@ -421,6 +422,36 @@
 
       <views:EditorView Grid.Row="1" DataContext="{Binding ActiveEditor}" />
     </Grid>
+
+    <!-- ===================== Diálogo: eliminar nota (análisis alfa-3 §4.5) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding NotePendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding NotePendingDelete}" x:DataType="vm:NoteCardViewModel">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Notes_DeleteNote_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Notes_DeleteNote_Message}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Title}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel"
+                    Command="{Binding #Root.((vm:NotesViewModel)DataContext).CancelDeleteNoteCommand}"
+                    Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger"
+                    Command="{Binding #Root.((vm:NotesViewModel)DataContext).ConfirmDeleteNoteCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

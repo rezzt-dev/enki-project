@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -408,8 +409,7 @@
       </Grid>
 
       <!-- ===================== Modal: confirmar eliminación ===================== -->
-      <Border Grid.Row="0" Grid.RowSpan="5" Classes="modal-overlay"
-              IsVisible="{Binding PendingDeleteSkill, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <controls:ModalOverlayHost IsOpen="{Binding PendingDeleteSkill, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
                 DataContext="{Binding PendingDeleteSkill}" x:DataType="vm:SkillViewModel">
           <StackPanel Spacing="18">
@@ -432,11 +432,10 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>    </Border>
+        </Border>    </controls:ModalOverlayHost>
 
       <!-- ===================== Modal: pedir nombre (duplicar / copiar default) ===================== -->
-      <Border Grid.Row="0" Grid.RowSpan="5" Classes="modal-overlay"
-              IsVisible="{Binding NamePrompt, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <controls:ModalOverlayHost IsOpen="{Binding NamePrompt, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
                 DataContext="{Binding NamePrompt}" x:DataType="vm:SkillNamePromptViewModel">
           <StackPanel Spacing="16">
@@ -458,10 +457,10 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>    </Border>
+        </Border>    </controls:ModalOverlayHost>
 
       <!-- ===================== Modal: colisión de importación ===================== -->
-      <Border Grid.Row="0" Grid.RowSpan="5" Classes="modal-overlay" IsVisible="{Binding HasImportConflicts}">
+      <controls:ModalOverlayHost IsOpen="{Binding HasImportConflicts}">
         <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="10">
@@ -490,7 +489,7 @@
               </Button>
             </Grid>
           </StackPanel>
-        </Border>    </Border>
+        </Border>    </controls:ModalOverlayHost>
 
     </Grid>
 

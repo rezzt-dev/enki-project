@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -221,6 +222,86 @@
           </StackPanel>
         </StackPanel>
 
+        <!-- ===================== Tareas Polar (análisis alfa-3 §4.3) =====================
+             Solo restaurar — sin borrado individual ni "vaciar categoría", ver el comentario en
+             TrashViewModel.PolarLists sobre por qué (fila aún Dirty, tombstone sin llegar a Supabase). -->
+        <StackPanel Spacing="14">
+          <TextBlock Text="{loc:Tr Trash_PolarTasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+
+          <ItemsControl ItemsSource="{Binding PolarLists}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:TrashedPolarListCardViewModel">
+                <Border Classes="card" Margin="0,0,16,16" Width="224" Height="100" Padding="16">
+                  <Grid RowDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="FormatListBulletedSquare" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                      <TextBlock Text="{Binding DeletedLabel}" Classes="faint" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Text="{Binding Title}"
+                               FontWeight="Bold" FontSize="14" LetterSpacing="0.3" Margin="0,10,0,0"
+                               TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                      <Button Classes="icon-btn"
+                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestorePolarListCommand}"
+                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+            </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <ItemsControl ItemsSource="{Binding PolarTasks}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:TrashedPolarTaskCardViewModel">
+                <Border Classes="card" Margin="0,0,16,16" Width="224" Height="100" Padding="16">
+                  <Grid RowDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="CheckboxMarkedOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                      <TextBlock Text="{Binding DeletedLabel}" Classes="faint" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Text="{Binding Title}"
+                               FontWeight="Bold" FontSize="14" LetterSpacing="0.3" Margin="0,10,0,0"
+                               TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                      <Button Classes="icon-btn"
+                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestorePolarTaskCommand}"
+                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+            </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <StackPanel IsVisible="{Binding IsPolarTasksEmpty}" Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Text="{loc:Tr Trash_PolarTasks_Empty}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <StackPanel IsVisible="{Binding !IsPolarTasksEmpty}" Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="InformationOutline" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Text="{loc:Tr Trash_PolarTasks_NoPurgeHint}" Classes="faint" FontSize="11.5"
+                       TextWrapping="Wrap" MaxWidth="460" />
+          </StackPanel>
+        </StackPanel>
+
         <!-- ===================== Recordatorios ===================== -->
         <StackPanel Spacing="14">
           <Grid ColumnDefinitions="*,Auto">
@@ -268,6 +349,15 @@
           <StackPanel IsVisible="{Binding IsRemindersEmpty}" Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="BellRingOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{loc:Tr Trash_Reminders_Empty}" Classes="muted" FontSize="12.5" />
+          </StackPanel>
+
+          <!-- análisis alfa-3 §4.3, Baja: sin esta pista, la ausencia del botón "borrar para siempre" que
+               sí tienen el resto de categorías se puede leer como un bug en vez de una decisión deliberada
+               (ver el comentario en TrashViewModel.RestoreReminder). -->
+          <StackPanel IsVisible="{Binding !IsRemindersEmpty}" Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="InformationOutline" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Text="{loc:Tr Trash_Reminders_NoDeleteForeverHint}" Classes="faint" FontSize="11.5"
+                       TextWrapping="Wrap" MaxWidth="460" />
           </StackPanel>
         </StackPanel>
 
@@ -331,9 +421,7 @@
     </ScrollViewer>
 
     <!-- ===================== Diálogo: vaciar documentos/tareas/papelera ===================== -->
-    <Border Grid.Row="0" Grid.RowSpan="2" Classes="modal-overlay"
-            IsVisible="{Binding PendingEmptyTarget, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding PendingEmptyTarget, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -353,14 +441,12 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: borrado permanente individual (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que el de vaciado; el mensaje (con el título del elemento interpolado) viene
          calculado del viewmodel porque el orden de palabras no es fijo entre idiomas. -->
-    <Border Grid.Row="0" Grid.RowSpan="2" Classes="modal-overlay"
-            IsVisible="{Binding PendingPermanentDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding PendingPermanentDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -380,6 +466,6 @@
           </Grid>
         </StackPanel>
     </Border>
-  </Border>
+  </controls:ModalOverlayHost>
   </Grid>
 </UserControl>

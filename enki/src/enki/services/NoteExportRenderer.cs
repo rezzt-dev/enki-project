@@ -12,13 +12,14 @@ using enki.Views.Editor.Markdown;
 namespace enki.Services;
 
 /// <summary>Convierte una nota Markdown en un documento HTML autónomo, listo para compartir fuera de
-/// Enki, imprimir o guardar como PDF (propuesta 6 de docs/propuesta-nuevas-funcionalidades.md —
-/// "Exportar notas a PDF/HTML y vista de impresión"). El render de bloques e inline reutiliza
-/// <see cref="MarkdownLineParser"/>, el mismo parser ligero que alimenta el live preview del editor,
-/// aplicado aquí a un documento estático — lo que la nota muestra mientras se edita es lo que sale en la
-/// exportación. La plantilla es monocroma (blanco/negro/grises, Space Grotesk + JetBrains Mono con
-/// fallbacks de sistema) y trae reglas <c>@page</c>/<c>@media print</c> para que el mismo HTML sirva
-/// tanto para el archivo <c>.html</c> como para la impresión y el PDF vía WebView.</summary>
+/// Enki (propuesta 6 de docs/propuesta-nuevas-funcionalidades.md — "Exportar notas a PDF/HTML y vista de
+/// impresión"; por ahora solo la mitad de HTML está implementada, ver <see cref="NoteExportService"/>).
+/// El render de bloques e inline reutiliza <see cref="MarkdownLineParser"/>, el mismo parser ligero que
+/// alimenta el live preview del editor, aplicado aquí a un documento estático — lo que la nota muestra
+/// mientras se edita es lo que sale en la exportación. La plantilla es monocroma (blanco/negro/grises,
+/// Space Grotesk + JetBrains Mono con fallbacks de sistema) y trae reglas <c>@page</c>/<c>@media print</c>
+/// para que el propio navegador del usuario pueda imprimir el <c>.html</c> exportado o guardarlo como PDF
+/// desde su diálogo de impresión — Enki no abre ningún visor ni WebView propio para eso.</summary>
 public static class NoteExportRenderer
 {
     /// <summary>Tope de tamaño para incrustar una imagen local como data URI — una foto de 20 MB

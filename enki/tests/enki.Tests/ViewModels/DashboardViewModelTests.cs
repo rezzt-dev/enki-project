@@ -256,6 +256,58 @@ public class DashboardViewModelTests : IDisposable
         Assert.Contains("RecentNotes", keys);
     }
 
+    // ===================== Fase 3: TodayItems no lo eclipsa el backlog vencido antiguo (análisis §4.4, Alta) =====================
+
+    [Fact]
+    public void Reload_TodayItems_AlwaysIncludesItemsDueToday_EvenWithOldOverdueBacklog()
+    {
+        var h = CreateViewModel();
+        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        for (var i = 0; i < 6; i++)
+        {
+            backlogColumn.Cards.Add(new KanbanCard
+            {
+                Id = $"old-{i}", Title = $"Vieja {i}", DueDateUtc = DateTime.UtcNow.AddDays(-100 - i)
+            });
+        }
+        var dueTodayCard = new KanbanCard { Id = "today-1", Title = "Vence hoy", DueDateUtc = DateTime.UtcNow };
+        backlogColumn.Cards.Add(dueTodayCard);
+
+        h.Dashboard.Reload();
+
+        Assert.Contains(h.Dashboard.TodayItems, i => i.SourceId == dueTodayCard.Id);
+    }
+
+    [Fact]
+    public void Reload_TodayItems_ExcludesOverdueBacklog_OlderThanBacklogWindow()
+    {
+        var h = CreateViewModel();
+        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var ancientCard = new KanbanCard { Id = "ancient-1", Title = "Muy vieja", DueDateUtc = DateTime.UtcNow.AddDays(-400) };
+        backlogColumn.Cards.Add(ancientCard);
+
+        h.Dashboard.Reload();
+
+        Assert.DoesNotContain(h.Dashboard.TodayItems, i => i.SourceId == ancientCard.Id);
+    }
+
+    [Fact]
+    public void Reload_TodayItems_ExcludesCompletedKanbanCards()
+    {
+        var h = CreateViewModel();
+        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var completedCard = new KanbanCard
+        {
+            Id = "completed-1", Title = "Terminada", DueDateUtc = DateTime.UtcNow.AddDays(-1),
+            CompletedAtUtc = DateTime.UtcNow.AddHours(-1)
+        };
+        backlogColumn.Cards.Add(completedCard);
+
+        h.Dashboard.Reload();
+
+        Assert.DoesNotContain(h.Dashboard.TodayItems, i => i.SourceId == completedCard.Id);
+    }
+
     [Fact]
     public void Reload_Sections_AppendsMissingKeysAtEnd()
     {
