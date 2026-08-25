@@ -312,6 +312,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ShortcutRegistry.Changed += RefreshAllShortcutRows;
 
         CustomThemes = new ObservableCollection<CustomThemeRowViewModel>();
+        BuiltInDarkThemes = new ObservableCollection<CustomThemeRowViewModel>();
+        BuiltInLightThemes = new ObservableCollection<CustomThemeRowViewModel>();
         RefreshCustomThemes();
 
         BuildDashboardLayoutOptions();

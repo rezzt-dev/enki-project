@@ -29,6 +29,30 @@ public sealed partial class SettingsViewModel
     /// import/activate/delete so <see cref="CustomThemeRowViewModel.IsActive"/> stays correct.</summary>
     public ObservableCollection<CustomThemeRowViewModel> CustomThemes { get; }
 
+    /// <summary>Ajustes › Apariencia › Temas predefinidos, sección "Oscuros" — compiled-in themes from
+    /// <see cref="Services.BuiltInThemeCatalog"/>, rebuilt alongside <see cref="CustomThemes"/> by
+    /// <see cref="RefreshCustomThemes"/> so their "Activo" pill stays correct too.</summary>
+    public ObservableCollection<CustomThemeRowViewModel> BuiltInDarkThemes { get; }
+
+    /// <summary>Ajustes › Apariencia › Temas predefinidos, sección "Claros" — see <see cref="BuiltInDarkThemes"/>.</summary>
+    public ObservableCollection<CustomThemeRowViewModel> BuiltInLightThemes { get; }
+
+    /// <summary>Whether the "Oscuros" built-in theme list is collapsed to reduce on-screen clutter — purely
+    /// a view-state toggle, not persisted, so it resets to expanded (the previous, only) behavior on every
+    /// app restart.</summary>
+    [ObservableProperty]
+    private bool _isBuiltInDarkThemesCollapsed;
+
+    /// <summary>See <see cref="IsBuiltInDarkThemesCollapsed"/>, same behavior for "Claros".</summary>
+    [ObservableProperty]
+    private bool _isBuiltInLightThemesCollapsed;
+
+    [RelayCommand]
+    private void ToggleBuiltInDarkThemesCollapsed() => IsBuiltInDarkThemesCollapsed = !IsBuiltInDarkThemesCollapsed;
+
+    [RelayCommand]
+    private void ToggleBuiltInLightThemesCollapsed() => IsBuiltInLightThemesCollapsed = !IsBuiltInLightThemesCollapsed;
+
     [ObservableProperty]
     private bool _isDarkTheme;
 
@@ -154,6 +178,7 @@ public sealed partial class SettingsViewModel
     [RelayCommand]
     private void EditTheme(CustomThemeRowViewModel row)
     {
+        if (row.IsBuiltIn) return; // defensa en profundidad: la vista ya oculta este botón para built-in
         var theme = _customThemeService.Load(row.Id);
         if (theme is null) return;
         OpenThemeEditor(theme, isActive: row.IsActive);
@@ -182,6 +207,7 @@ public sealed partial class SettingsViewModel
     [RelayCommand]
     private void DeleteCustomTheme(CustomThemeRowViewModel row)
     {
+        if (row.IsBuiltIn) return; // defensa en profundidad: la vista ya oculta este botón para built-in
         _customThemeService.Delete(row.Id);
         IsCustomThemeActive = _customThemeService.ActiveThemeId is not null;
         RefreshCustomThemes();
@@ -308,11 +334,23 @@ public sealed partial class SettingsViewModel
 
     private void RefreshCustomThemes()
     {
-        CustomThemes.Clear();
         var activeId = _customThemeService.ActiveThemeId;
+
+        CustomThemes.Clear();
         foreach (var info in _customThemeService.Themes)
             CustomThemes.Add(new CustomThemeRowViewModel(info.Id, info.Name, info.Id == activeId));
         OnPropertyChanged(nameof(HasCustomThemes));
+
+        BuiltInDarkThemes.Clear();
+        BuiltInLightThemes.Clear();
+        foreach (var theme in BuiltInThemeCatalog.All)
+        {
+            var row = new CustomThemeRowViewModel(
+                theme.Id, theme.Name, theme.Id == activeId, isBuiltIn: true,
+                previewBackgroundHex: theme.Colors["AppBackgroundColor"],
+                previewAccentHex: theme.Colors["AccentColor"]);
+            (theme.Appearance == ThemeAppearance.Dark ? BuiltInDarkThemes : BuiltInLightThemes).Add(row);
+        }
     }
 
     /// <summary>Backs the empty-state text in Ajustes › Apariencia › Tema personalizado — manually notified

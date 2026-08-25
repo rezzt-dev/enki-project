@@ -553,6 +553,58 @@
               <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
 
               <Panel IsVisible="{Binding !IsEditingTheme}">
+                <Panel.Resources>
+                  <!-- Fila compartida por los tres listados de abajo (predefinidos oscuros/claros y temas
+                       propios): swatch + nombre + activar/activo + duplicar + editar/eliminar. Editar y
+                       Eliminar se colapsan (columnas Auto a 0) cuando IsBuiltIn, en vez de duplicar este
+                       DataTemplate tres veces. -->
+                  <DataTemplate x:Key="ThemeRowTemplate" DataType="vm:CustomThemeRowViewModel">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                      <Panel Grid.Column="0" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center" IsVisible="{Binding HasPreview}">
+                        <Ellipse Width="18" Height="18" Fill="{Binding PreviewBackgroundBrush}" />
+                        <Ellipse Width="9" Height="9" Fill="{Binding PreviewAccentBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                      </Panel>
+
+                      <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+                      <Border Grid.Column="2" Background="{DynamicResource ActivePillBackgroundBrush}" Padding="8,3"
+                              VerticalAlignment="Center" Margin="6,0" IsVisible="{Binding IsActive}">
+                        <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ActiveLabel, Converter={StaticResource UpperCaseConverter}}"
+                                   FontSize="10" FontWeight="Bold" Foreground="{DynamicResource ActivePillForegroundBrush}" />
+                      </Border>
+                      <Button Grid.Column="2" Classes="ghost" Padding="8,3" VerticalAlignment="Center" Margin="6,0" IsVisible="{Binding !IsActive}"
+                              Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).ActivateCustomThemeCommand}"
+                              CommandParameter="{Binding}">
+                        <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ActivateButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
+                      </Button>
+
+                      <Button Grid.Column="3" Classes="icon-btn" Width="26" Height="26"
+                              Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).DuplicateThemeCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_DuplicateButton}"
+                              AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_DuplicateButton}">
+                        <mi:MaterialIcon Kind="ContentDuplicate" Width="13" Height="13" />
+                      </Button>
+
+                      <Button Grid.Column="4" Classes="icon-btn" Width="26" Height="26" IsVisible="{Binding !IsBuiltIn}"
+                              Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).EditThemeCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_EditButton}"
+                              AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_EditButton}">
+                        <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
+                      </Button>
+
+                      <Button Grid.Column="5" Classes="icon-btn" Width="26" Height="26" IsVisible="{Binding !IsBuiltIn}"
+                              Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).DeleteCustomThemeCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_DeleteButton}"
+                              AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_DeleteButton}">
+                        <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
+                      </Button>
+                    </Grid>
+                  </DataTemplate>
+                </Panel.Resources>
+
                 <StackPanel Spacing="14">
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                     <Button Grid.Column="0" Classes="ghost" HorizontalAlignment="Stretch" Command="{Binding CreateThemeCommand}">
@@ -569,58 +621,80 @@
                     </Button>
                   </Grid>
 
-                  <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_Empty}" Classes="muted" FontSize="12"
-                             TextWrapping="Wrap" IsVisible="{Binding !HasCustomThemes}" />
+                  <!-- ===== Predefinidos: oscuros ===== -->
+                  <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Appearance_CustomTheme_BuiltInDarkTitle, Converter={StaticResource UpperCaseConverter}}"
+                                 Classes="muted" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22" VerticalAlignment="Center"
+                              Command="{Binding ToggleBuiltInDarkThemesCollapsedCommand}"
+                              IsVisible="{Binding !IsBuiltInDarkThemesCollapsed}"
+                              ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_CollapseSection}"
+                              AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_CollapseSection}">
+                        <mi:MaterialIcon Kind="ChevronUp" Width="14" Height="14" />
+                      </Button>
+                      <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22" VerticalAlignment="Center"
+                              Command="{Binding ToggleBuiltInDarkThemesCollapsedCommand}"
+                              IsVisible="{Binding IsBuiltInDarkThemesCollapsed}"
+                              ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_ExpandSection}"
+                              AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_ExpandSection}">
+                        <mi:MaterialIcon Kind="ChevronDown" Width="14" Height="14" />
+                      </Button>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding BuiltInDarkThemes}" ItemTemplate="{StaticResource ThemeRowTemplate}"
+                                  IsVisible="{Binding !IsBuiltInDarkThemesCollapsed}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                  </StackPanel>
 
-                  <ItemsControl ItemsSource="{Binding CustomThemes}" IsVisible="{Binding HasCustomThemes}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <StackPanel Spacing="8" />
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate DataType="vm:CustomThemeRowViewModel">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
-                          <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <!-- ===== Predefinidos: claros ===== -->
+                  <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Appearance_CustomTheme_BuiltInLightTitle, Converter={StaticResource UpperCaseConverter}}"
+                                 Classes="muted" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22" VerticalAlignment="Center"
+                              Command="{Binding ToggleBuiltInLightThemesCollapsedCommand}"
+                              IsVisible="{Binding !IsBuiltInLightThemesCollapsed}"
+                              ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_CollapseSection}"
+                              AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_CollapseSection}">
+                        <mi:MaterialIcon Kind="ChevronUp" Width="14" Height="14" />
+                      </Button>
+                      <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22" VerticalAlignment="Center"
+                              Command="{Binding ToggleBuiltInLightThemesCollapsedCommand}"
+                              IsVisible="{Binding IsBuiltInLightThemesCollapsed}"
+                              ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_ExpandSection}"
+                              AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_ExpandSection}">
+                        <mi:MaterialIcon Kind="ChevronDown" Width="14" Height="14" />
+                      </Button>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding BuiltInLightThemes}" ItemTemplate="{StaticResource ThemeRowTemplate}"
+                                  IsVisible="{Binding !IsBuiltInLightThemesCollapsed}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                  </StackPanel>
 
-                          <Border Grid.Column="1" Background="{DynamicResource ActivePillBackgroundBrush}" Padding="8,3"
-                                  VerticalAlignment="Center" Margin="6,0" IsVisible="{Binding IsActive}">
-                            <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ActiveLabel, Converter={StaticResource UpperCaseConverter}}"
-                                       FontSize="10" FontWeight="Bold" Foreground="{DynamicResource ActivePillForegroundBrush}" />
-                     </Border>
-                          <Button Grid.Column="1" Classes="ghost" Padding="8,3" VerticalAlignment="Center" Margin="6,0" IsVisible="{Binding !IsActive}"
-                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).ActivateCustomThemeCommand}"
-                                  CommandParameter="{Binding}">
-                            <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_ActivateButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
-                          </Button>
-
-                          <Button Grid.Column="2" Classes="icon-btn" Width="26" Height="26"
-                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).DuplicateThemeCommand}"
-                                  CommandParameter="{Binding}"
-                                  ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_DuplicateButton}"
-                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_DuplicateButton}">
-                            <mi:MaterialIcon Kind="ContentDuplicate" Width="13" Height="13" />
-                          </Button>
-
-                          <Button Grid.Column="3" Classes="icon-btn" Width="26" Height="26"
-                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).EditThemeCommand}"
-                                  CommandParameter="{Binding}"
-                                  ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_EditButton}"
-                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_EditButton}">
-                            <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
-                          </Button>
-
-                          <Button Grid.Column="4" Classes="icon-btn" Width="26" Height="26"
-                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).DeleteCustomThemeCommand}"
-                                  CommandParameter="{Binding}"
-                                  ToolTip.Tip="{loc:Tr Settings_Appearance_CustomTheme_DeleteButton}"
-                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_CustomTheme_DeleteButton}">
-                            <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
-                          </Button>
-                        </Grid>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
+                  <!-- ===== Tus temas ===== -->
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_YourThemesTitle, Converter={StaticResource UpperCaseConverter}}"
+                               Classes="muted" FontSize="10.5" FontWeight="Bold" />
+                    <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_Empty}" Classes="muted" FontSize="12"
+                               TextWrapping="Wrap" IsVisible="{Binding !HasCustomThemes}" />
+                    <ItemsControl ItemsSource="{Binding CustomThemes}" ItemTemplate="{StaticResource ThemeRowTemplate}" IsVisible="{Binding HasCustomThemes}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                  </StackPanel>
 
                   <Button Classes="ghost" Padding="0,4" HorizontalAlignment="Left" IsVisible="{Binding IsCustomThemeActive}" Command="{Binding UseSystemThemeCommand}">
                     <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_UseSystemThemeButton, Converter={StaticResource UpperCaseConverter}}" />

@@ -3780,6 +3780,21 @@ Disfrutad escribiendo.</value>
   <data name="Settings_Appearance_CustomTheme_EditButton" xml:space="preserve">
     <value>Editar</value>
   </data>
+  <data name="Settings_Appearance_CustomTheme_BuiltInDarkTitle" xml:space="preserve">
+    <value>Oscuros</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_BuiltInLightTitle" xml:space="preserve">
+    <value>Claros</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_CollapseSection" xml:space="preserve">
+    <value>Contraer</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_ExpandSection" xml:space="preserve">
+    <value>Expandir</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_YourThemesTitle" xml:space="preserve">
+    <value>Tus temas</value>
+  </data>
   <data name="Settings_Nav_Dashboard" xml:space="preserve">
     <value>Panel</value>
   </data>

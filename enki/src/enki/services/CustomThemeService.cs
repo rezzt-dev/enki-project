@@ -50,10 +50,22 @@ public sealed class CustomThemeService
         return theme;
     }
 
-    /// <summary>Loads the full color dictionary for a persisted theme. Returns <c>null</c> if the theme
-    /// is unknown or its CSS file cannot be read/parsed.</summary>
+    /// <summary>Loads the full color dictionary for a persisted theme. Checks <see cref="BuiltInThemeCatalog"/>
+    /// first — those resolve from memory, no disk access — before falling back to a user theme's <c>.css</c>
+    /// file. Returns <c>null</c> if the theme is unknown or its CSS file cannot be read/parsed.</summary>
     public CustomTheme? Load(string themeId)
     {
+        if (BuiltInThemeCatalog.TryGet(themeId, out var builtIn))
+        {
+            return new CustomTheme
+            {
+                Id = builtIn.Id,
+                Name = builtIn.Name,
+                IsBuiltIn = true,
+                Colors = new Dictionary<string, string>(builtIn.Colors, StringComparer.Ordinal)
+            };
+        }
+
         var info = _settingsService.Settings.CustomThemes.FirstOrDefault(t => t.Id == themeId);
         if (info is null) return null;
 
@@ -80,12 +92,30 @@ public sealed class CustomThemeService
     }
 
     /// <summary>Persists a theme's metadata and its CSS file. Renames are reflected in
-    /// <see cref="AppSettings.CustomThemes"/>. Does not activate the theme automatically.</summary>
+    /// <see cref="AppSettings.CustomThemes"/>. Does not activate the theme automatically. No-ops for a
+    /// <see cref="BuiltInThemeCatalog"/> id — those are compiled in and never editable; the UI already hides
+    /// the actions that would reach this, this is just the last line of defense.</summary>
     public void Save(CustomTheme theme)
     {
+        if (BuiltInThemeCatalog.TryGet(theme.Id, out _)) return;
+
         Directory.CreateDirectory(_themesDirectory);
         var path = Path.Combine(_themesDirectory, $"{theme.Id}.css");
+        var tempPath = $"{path}.tmp-{Guid.NewGuid():N}";
+        File.WriteAllText(tempPath, BuildCss(theme));
+        File.Move(tempPath, path, overwrite: true);
 
+        var info = _settingsService.Settings.CustomThemes.FirstOrDefault(t => t.Id == theme.Id);
+        if (info is not null) info.Name = theme.Name;
+        _settingsService.Save();
+    }
+
+    /// <summary>Serializes a theme's colors to the same validated <c>.css</c> format
+    /// <see cref="ThemeCssParser"/> reads back, one <c>:root</c> block grouped by
+    /// <see cref="ThemeColorDefinition.CategoryKey"/>. Shared by <see cref="Save"/> and by
+    /// <see cref="Export"/> for a built-in theme, which has no file on disk to copy from.</summary>
+    private static string BuildCss(CustomTheme theme)
+    {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("/* ============================================================");
         sb.AppendLine("   Enki — tema personalizado");
@@ -106,19 +136,14 @@ public sealed class CustomThemeService
             }
         }
         sb.AppendLine("}");
-
-        var tempPath = $"{path}.tmp-{Guid.NewGuid():N}";
-        File.WriteAllText(tempPath, sb.ToString());
-        File.Move(tempPath, path, overwrite: true);
-
-        var info = _settingsService.Settings.CustomThemes.FirstOrDefault(t => t.Id == theme.Id);
-        if (info is not null) info.Name = theme.Name;
-        _settingsService.Save();
+        return sb.ToString();
     }
 
-    /// <summary>Removes a theme's file and registration, deactivating it first when necessary.</summary>
+    /// <summary>Removes a theme's file and registration, deactivating it first when necessary. No-ops for
+    /// a <see cref="BuiltInThemeCatalog"/> id — see <see cref="Save"/>.</summary>
     public void Delete(string themeId)
     {
+        if (BuiltInThemeCatalog.TryGet(themeId, out _)) return;
         if (_settingsService.Settings.ActiveCustomThemeId == themeId) Deactivate();
 
         var info = _settingsService.Settings.CustomThemes.FirstOrDefault(t => t.Id == themeId);
@@ -139,7 +164,8 @@ public sealed class CustomThemeService
         _settingsService.Save();
     }
 
-    /// <summary>Renames an existing theme.</summary>
+    /// <summary>Renames an existing theme. No-ops for a <see cref="BuiltInThemeCatalog"/> id — those are
+    /// never in <see cref="AppSettings.CustomThemes"/> to begin with, so the lookup below already misses.</summary>
     public void Rename(string themeId, string newName)
     {
         var info = _settingsService.Settings.CustomThemes.FirstOrDefault(t => t.Id == themeId);
@@ -215,11 +241,19 @@ public sealed class CustomThemeService
         }
     }
 
-    /// <summary>Writes a theme's current colors to a user-chosen <c>.css</c> file.</summary>
+    /// <summary>Writes a theme's current colors to a user-chosen <c>.css</c> file. A built-in theme has no
+    /// file on disk to copy — its CSS is serialized on the spot instead.</summary>
     public void Export(string themeId, string destinationPath)
     {
         var theme = Load(themeId);
         if (theme is null) throw new InvalidOperationException("Theme not found.");
+
+        if (theme.IsBuiltIn)
+        {
+            File.WriteAllText(destinationPath, BuildCss(theme));
+            return;
+        }
+
         Save(theme); // ensure the CSS file on disk is up to date
         var sourcePath = Path.Combine(_themesDirectory, $"{themeId}.css");
         File.Copy(sourcePath, destinationPath, overwrite: true);

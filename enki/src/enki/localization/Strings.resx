@@ -2451,6 +2451,21 @@
   <data name="Settings_Appearance_CustomTheme_EditButton" xml:space="preserve">
     <value>Edit</value>
   </data>
+  <data name="Settings_Appearance_CustomTheme_BuiltInDarkTitle" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_BuiltInLightTitle" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_CollapseSection" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_ExpandSection" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_YourThemesTitle" xml:space="preserve">
+    <value>Your themes</value>
+  </data>
   <data name="Settings_Appearance_Title" xml:space="preserve">
     <value>APPEARANCE</value>
   </data>
