@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using enki.Localization;
 using enki.Models;
@@ -13,6 +14,23 @@ public sealed partial class SessionListItemViewModel : ObservableObject
     public string NoteCountLabel => Plural.Get("Sessions_NoteCount", NoteCount, NoteCount);
     public bool IsDefault => Session.IsDefault;
     public bool IsEncrypted => Session.IsEncrypted;
+
+    /// <summary>A small swatch in the session's color — shown as a colored dot next to the session name
+    /// so the user can visually map the sidebar list to the colored node clusters and card accent bars
+    /// in the graph. Uses the same <c>Views.Sessions.NodeBrightness.ColorFor</c> logic that the renderer
+    /// uses, so the dot always matches the graph exactly.</summary>
+    public ISolidColorBrush SessionColorBrush
+    {
+        get
+        {
+            var rgba = global::enki.Views.Sessions.SessionGraphRenderer.NodeBrightness.ColorFor(Session.Id, Session.Color);
+            var parts = rgba.Replace("rgba(", "").Replace(")", "").Split(',');
+            var r = byte.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture);
+            var g = byte.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+            var b = byte.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture);
+            return new SolidColorBrush(Color.FromRgb(r, g, b));
+        }
+    }
 
     [ObservableProperty]
     private bool _isSelected;

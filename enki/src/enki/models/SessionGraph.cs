@@ -27,6 +27,12 @@ public sealed class SessionGraphNode
     public required string SessionName { get; set; }
     public required string RelativePath { get; set; }
     public required string Title { get; set; }
+    /// <summary>The session's display color (either custom from <see cref="SessionManifest.Color"/> or
+    /// auto-derived by <see cref="Views.Sessions.NodeBrightness.ColorFor"/>). Null means the node's owning
+    /// session has no explicit color. Stored per-node so the renderer's JSON payload carries it without
+    /// needing a separate session-color lookup.</summary>
+    public string? SessionColor { get; set; }
+
     public double X { get; set; }
     public double Y { get; set; }
     public double Z { get; set; }

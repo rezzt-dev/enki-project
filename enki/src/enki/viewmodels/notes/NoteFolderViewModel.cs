@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,7 +17,7 @@ public sealed partial class NoteFolderViewModel : ObservableObject
     public ObservableCollection<NoteFolderViewModel> Children { get; } = [];
 
     [ObservableProperty]
-    private bool _isExpanded = true;
+    private bool _isExpanded;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -30,6 +31,10 @@ public sealed partial class NoteFolderViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDropTarget;
 
+    /// <summary>Callback fired whenever <see cref="IsExpanded"/> changes so the parent ViewModel can
+    /// persist the expanded-folder state to <see cref="Models.AppSettings"/>.</summary>
+    internal Action? OnExpandedChanged { get; set; }
+
     public NoteFolderViewModel(NoteFolder folder, int depth = 0)
     {
         Folder = folder;
@@ -38,6 +43,8 @@ public sealed partial class NoteFolderViewModel : ObservableObject
     }
 
     public void UpdateFolder(NoteFolder folder) => Folder = folder;
+
+    partial void OnIsExpandedChanged(bool value) => OnExpandedChanged?.Invoke();
 
     [RelayCommand]
     private void ToggleExpand() => IsExpanded = !IsExpanded;

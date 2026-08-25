@@ -155,6 +155,13 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
     partial void OnIsCalendarEnabledChanged(bool value) => OnPropertyChanged(nameof(QuickAccessColumns));
 
+    /// <summary>Columnas de la rejilla en la que se vierten las secciones del Dashboard — enlazada al
+    /// <see cref="Controls.DashboardGridPanel"/> de <c>DashboardView.axaml</c>. La fija
+    /// <see cref="RebuildSections"/>: 6 para Classic y las plantillas (su geometría está dibujada sobre
+    /// esa rejilla), y el número que el usuario haya configurado en el modo Personalizado.</summary>
+    [ObservableProperty]
+    private int _gridColumns = Services.DashboardLayoutEngine.DefaultColumns;
+
     /// <summary>Ajustes › General "Mostrar barra de desplazamiento" (Panel principal) — alimenta
     /// <see cref="ScrollBarVisibility"/>, que solo se enlaza al ScrollViewer raíz de DashboardView.
     /// Se mantiene vivo desde <see cref="MainWindowViewModel"/> (mismo patrón de callback explícito que
@@ -497,7 +504,18 @@ public sealed partial class DashboardViewModel : ViewModelBase
             .ToList();
 
         var layoutStyle = settings?.DashboardLayoutStyle ?? DashboardLayoutEngine.Classic;
-        var slots = DashboardLayoutEngine.Compute(result, layoutStyle);
+        var customLayout = settings?.DashboardCustomLayout;
+
+        // Personalizado sin posiciones guardadas ya no cae a Classic: DashboardLayoutEngine.NormalizeCustom
+        // auto-coloca las secciones que no traen posición, así que estrenar el modo personalizado da una
+        // rejilla compacta lista para reorganizar en vez de una pila de filas a todo lo ancho.
+        var gridRows = DashboardLayoutEngine.ClampDimension(settings?.DashboardGridRows ?? DashboardLayoutEngine.DefaultRows);
+        var gridColumns = DashboardLayoutEngine.ClampDimension(settings?.DashboardGridColumns ?? DashboardLayoutEngine.DefaultColumns);
+        var slots = DashboardLayoutEngine.Compute(result, layoutStyle, customLayout, gridRows, gridColumns);
+
+        // Las plantillas y Classic están dibujadas sobre una rejilla de 6 columnas; solo el modo
+        // personalizado usa el número de columnas del vault. El panel de la vista se enlaza a esto.
+        GridColumns = layoutStyle == DashboardLayoutEngine.Custom ? gridColumns : DashboardLayoutEngine.DefaultColumns;
 
         Sections.Clear();
         foreach (var key in result)

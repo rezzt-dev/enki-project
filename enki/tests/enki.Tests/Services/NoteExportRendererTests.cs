@@ -147,17 +147,6 @@ public class NoteExportRendererTests : IDisposable
     }
 
     [Fact]
-    public void RenderBody_Table_WithSeparator_RendersHeaderAndBody()
-    {
-        var html = Body("| Nombre | Valor |\n| --- | --- |\n| **a** | `b` |");
-
-        Assert.Contains("<table>", html);
-        Assert.Contains("<thead><tr><th>Nombre</th><th>Valor</th></tr></thead>", html);
-        Assert.Contains("<td><strong>a</strong></td><td><code>b</code></td>", html);
-        Assert.DoesNotContain("---", html);
-    }
-
-    [Fact]
     public void RenderBody_Link_RendersAnchor_WithSafeUrl()
     {
         var html = Body("[Enki](https://example.com)");

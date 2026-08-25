@@ -204,60 +204,43 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Grupo fijo del sidebar: Recordatorios, Notificaciones, Estadísticas, Ajustes -->
+            <!-- Grupo fijo del sidebar: hasta 3 secciones "extra" (Ajustes › General › Secciones de la
+                 barra lateral), en el orden/visibilidad que el usuario decida arrastrando, más Ajustes
+                 siempre al final — mismo ItemTemplate que el ItemsControl de NavItems de arriba, solo que
+                 en una lista aparte para que este grupo quede fijo en vez de desplazarse con la principal. -->
             <StackPanel Grid.Row="4" Spacing="4">
-              <!-- Recordatorios -->
-              <Button Classes="nav-item"
-                      Classes.active="{Binding IsRemindersActive}"
-                      Classes.collapsed="{Binding !IsSidebarExpanded}"
-                      Command="{Binding OpenRemindersCommand}" ToolTip.Tip="{loc:Tr Nav_RemindersTooltip}"
-                      ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}"
-                      IsVisible="{Binding RemindersSidebarEnabled}">
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <Panel Width="20" Height="20">
-                    <mi:MaterialIcon Kind="CalendarClockOutline" Width="20" Height="20" HorizontalAlignment="Center" />
-                    <Border Classes="titlebar-badge" IsVisible="{Binding Reminders.UnreadCount, Converter={StaticResource CountToBoolConverter}}">
-                      <TextBlock Classes="titlebar-badge-text" Text="{Binding Reminders.UnreadCount}" />
-                    </Border>
-                  </Panel>
-                  <TextBlock Text="{loc:Tr Nav_RemindersLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center"
-                             IsVisible="{Binding IsSidebarExpanded}" />
-                </StackPanel>
-              </Button>
-
-              <!-- Notificaciones -->
-              <Button Classes="nav-item"
-                      Classes.active="{Binding IsNotificationsActive}"
-                      Classes.collapsed="{Binding !IsSidebarExpanded}"
-                      Command="{Binding OpenNotificationsCommand}" ToolTip.Tip="{loc:Tr Nav_NotificationsTooltip}"
-                      ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}"
-                      IsVisible="{Binding NotificationsSidebarEnabled}">
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <Panel Width="20" Height="20">
-                    <mi:MaterialIcon Kind="BellRingOutline" Width="20" Height="20" HorizontalAlignment="Center" />
-                    <Border Classes="titlebar-badge" IsVisible="{Binding Notifications.UnreadCount, Converter={StaticResource CountToBoolConverter}}">
-                      <TextBlock Classes="titlebar-badge-text" Text="{Binding Notifications.UnreadCount}" />
-                    </Border>
-                  </Panel>
-                  <TextBlock Text="{loc:Tr Nav_NotificationsLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center"
-                             IsVisible="{Binding IsSidebarExpanded}" />
-                </StackPanel>
-              </Button>
-
-              <!-- Estadísticas -->
-              <Button Classes="nav-item"
-                      Classes.active="{Binding IsStatisticsActive}"
-                      Classes.collapsed="{Binding !IsSidebarExpanded}"
-                      Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Statistics}"
-                      ToolTip.Tip="{loc:Tr Nav_Statistics}"
-                      ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}"
-                      IsVisible="{Binding StatisticsPanelEnabled}">
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <mi:MaterialIcon Kind="ChartBoxOutline" Width="20" Height="20" HorizontalAlignment="Center" />
-                  <TextBlock Text="{loc:Tr Nav_Statistics, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center"
-                             IsVisible="{Binding IsSidebarExpanded}" />
-                </StackPanel>
-              </Button>
+              <ItemsControl ItemsSource="{Binding BottomNavItems}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="4" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:NavItemViewModel">
+                    <Button Classes="nav-item"
+                            Classes.active="{Binding IsActive}"
+                            Classes.collapsed="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}"
+                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NavigateCommand}"
+                            CommandParameter="{Binding Page}"
+                            ToolTip.Tip="{Binding Label}"
+                            ToolTip.ServiceEnabled="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}">
+                      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Panel Width="20" Height="20">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Center"
+                                           Classes.danger="{Binding IsDanger}" />
+                          <Border Classes="titlebar-badge" IsVisible="{Binding HasCount}">
+                            <TextBlock Classes="titlebar-badge-text" Text="{Binding Count}" />
+                          </Border>
+                        </Panel>
+                        <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}"
+                                   Classes.danger="{Binding IsDanger}"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
 
               <!-- Ajustes -->
               <Button Classes="nav-item"

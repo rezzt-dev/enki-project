@@ -324,13 +324,19 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public void ReloadFolders()
     {
-        var expandedPaths = CollectExpandedPaths(RootFolders).ToHashSet();
+        // On the very first call RootFolders is empty, so there is no in-memory expand state to
+        // preserve — fall back to whatever the user had last time (persisted in settings). On
+        // every subsequent call the in-memory state (kept up-to-date by the OnExpandedChanged
+        // callback) is authoritative.
+        var expandedPaths = RootFolders.Count > 0
+            ? CollectExpandedPaths(RootFolders).ToHashSet()
+            : new HashSet<string>(_settingsService?.Settings.NotesExpandedFolderPaths ?? []);
         var selectedPath = CurrentFolder?.FullPath;
 
         RootFolders.Clear();
         foreach (var folder in _vaultService.GetFolderTree(EffectiveRootPath))
         {
-            var vm = new NoteFolderViewModel(folder);
+            var vm = new NoteFolderViewModel(folder) { OnExpandedChanged = PersistExpandedFolders };
             ApplyExpandedState(vm, expandedPaths);
             RootFolders.Add(vm);
         }
@@ -349,8 +355,18 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     private static void ApplyExpandedState(NoteFolderViewModel folder, HashSet<string> expandedPaths)
     {
-        folder.IsExpanded = expandedPaths.Count == 0 || expandedPaths.Contains(folder.FullPath);
+        folder.IsExpanded = expandedPaths.Count > 0 && expandedPaths.Contains(folder.FullPath);
         foreach (var child in folder.Children) ApplyExpandedState(child, expandedPaths);
+    }
+
+    /// <summary>Writes the currently expanded folder paths to <see cref="AppSettings"/> so they
+    /// survive an app restart — called from <see cref="NoteFolderViewModel.OnExpandedChanged"/>
+    /// whenever the user toggles any folder in the sidebar.</summary>
+    private void PersistExpandedFolders()
+    {
+        if (_settingsService is null) return;
+        _settingsService.Settings.NotesExpandedFolderPaths = CollectExpandedPaths(RootFolders).ToList();
+        _settingsService.Save();
     }
 
     private static NoteFolderViewModel? FindFolder(IEnumerable<NoteFolderViewModel> folders, string path)

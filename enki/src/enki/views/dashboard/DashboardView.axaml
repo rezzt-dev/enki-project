@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="960"
              x:Class="enki.Views.DashboardView"
@@ -575,16 +576,20 @@
       </Grid>
 
       <!-- Sections configurables por el usuario: orden, visibilidad y organización (Grid.Row/Column/
-           RowSpan/ColumnSpan, calculados por Services.DashboardLayoutEngine) persistidos por vault. Un
-           Grid de 6 columnas en vez de un StackPanel apilado — ItemContainerTheme asigna la posición de
-           cada contenedor generado por el ItemsControl (el ContentPresenter real que cuelga del Grid),
-           no del contenido de la plantilla de cada sección, que sigue intacto más abajo en
-           UserControl.DataTemplates. -->
+           RowSpan/ColumnSpan, calculados por Services.DashboardLayoutEngine) persistidos por vault. El
+           ItemContainerTheme asigna la posición de cada contenedor generado por el ItemsControl (el
+           ContentPresenter real que cuelga del panel), no del contenido de la plantilla de cada sección,
+           que sigue intacto más abajo en UserControl.DataTemplates.
+
+           El panel es controls:DashboardGridPanel y no un Grid con ColumnDefinitions escritas a mano
+           porque el número de columnas ya no es fijo: en el modo Personalizado lo elige el usuario
+           (GridColumns, de 1 a 12) y las filas salen de dónde haya colocado cada ficha. Ver el propio
+           DashboardGridPanel para el resto de motivos (filas medidas por contenido, RowSpan que no
+           estira a las vecinas). -->
       <ItemsControl ItemsSource="{Binding Sections}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <Grid ColumnDefinitions="*,*,*,*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                  ColumnSpacing="24" RowSpacing="28" />
+            <controls:DashboardGridPanel Columns="{Binding GridColumns}" ColumnSpacing="24" RowSpacing="28" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemContainerTheme>

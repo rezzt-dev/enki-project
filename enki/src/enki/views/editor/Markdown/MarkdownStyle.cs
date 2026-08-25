@@ -23,6 +23,7 @@ public sealed class MarkdownStyle
     public required IBrush HighlightBackground { get; init; }
     public required IBrush QuoteBar { get; init; }
     public required IBrush RuleLine { get; init; }
+
     public required FontFamily BodyFontFamily { get; set; }
     public required FontFamily MonoFontFamily { get; init; }
     public double BaseFontSize { get; set; } = 14.5;

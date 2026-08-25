@@ -1,0 +1,350 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="720" d:DesignHeight="560"
+             x:Class="enki.Views.DashboardGridEditor"
+             x:DataType="vm:SettingsViewModel">
+
+  <!-- Editor de la organización "Personalizada" del Dashboard (Ajustes › Dashboard). Tres capas
+       superpuestas sobre el mismo lienzo, todas con la misma geometría porque las tres las coloca un
+       controls:DashboardGridPanel con idénticas columnas, espaciado y RowHeight fijo:
+
+         1. las celdas vacías, que dibujan la rejilla y no capturan el puntero;
+         2. las fichas, una por sección visible, que se arrastran y se estiran;
+         3. la silueta del destino mientras se arrastra, que la posiciona el code-behind con
+            DashboardGridPanel.GetCellBounds — el mismo cálculo con el que se colocará la ficha, así que
+            no puede prometer un sitio y acabar en otro.
+
+       Toda la lógica de "¿cabe aquí?" vive en SettingsViewModel (ver SettingsViewModel.DashboardGrid.cs);
+       aquí solo se traduce el puntero a celdas. -->
+
+  <UserControl.Styles>
+    <Style Selector="Border.grid-cell">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <Style Selector="Border.grid-tile">
+      <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Cursor" Value="SizeAll" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.grid-tile:pointerover">
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+    </Style>
+    <!-- Seleccionada: el mismo InkBrush que marca "activo" en el resto de la app (folder-row.active,
+         editor-tab.active, la tarjeta de plantilla elegida). -->
+    <Style Selector="Border.grid-tile.selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <!-- En vuelo: se atenúa para que la silueta del destino sea lo que se lee, no la ficha de origen. -->
+    <Style Selector="Border.grid-tile.dragging">
+      <Setter Property="Opacity" Value="0.35" />
+    </Style>
+
+    <Style Selector="Border.grid-ghost">
+      <Setter Property="Background" Value="{DynamicResource Ink10}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Border.grid-ghost.invalid">
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    </Style>
+
+    <!-- Tirador de tamaño, abajo a la derecha de cada ficha. -->
+    <Style Selector="Border.grid-tile-resize">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Cursor" Value="BottomRightCorner" />
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="14">
+
+    <!-- ===== Barra: tamaño de la rejilla + auto-organizar ===== -->
+    <Grid ColumnDefinitions="Auto,Auto,20,Auto,Auto,*,Auto" RowDefinitions="Auto">
+      <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Dashboard_GridConfig_ColsLabel}"
+                 Classes="muted" VerticalAlignment="Center" Margin="0,0,10,0" />
+      <NumericUpDown Grid.Column="1" Value="{Binding DashboardGridColumns}"
+                     Minimum="1" Maximum="12" Increment="1" Width="110" ShowButtonSpinner="True"
+                     AutomationProperties.Name="{loc:Tr Settings_Dashboard_GridConfig_ColsLabel}" />
+
+      <TextBlock Grid.Column="3" Text="{loc:Tr Settings_Dashboard_GridConfig_RowsLabel}"
+                 Classes="muted" VerticalAlignment="Center" Margin="0,0,10,0" />
+      <NumericUpDown Grid.Column="4" Value="{Binding DashboardGridRows}"
+                     Minimum="1" Maximum="12" Increment="1" Width="110" ShowButtonSpinner="True"
+                     AutomationProperties.Name="{loc:Tr Settings_Dashboard_GridConfig_RowsLabel}" />
+
+      <Button Grid.Column="6" Classes="ghost" Command="{Binding AutoArrangeDashboardGridCommand}"
+              AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_AutoArrange}">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <mi:MaterialIcon Kind="AutoFix" Width="14" Height="14" />
+          <TextBlock Text="{loc:Tr Settings_Dashboard_Grid_AutoArrange, Converter={StaticResource UpperCaseConverter}}" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <TextBlock Text="{loc:Tr Settings_Dashboard_Grid_Hint}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+
+    <!-- ===== Lienzo ===== -->
+    <Border Background="{DynamicResource PanelBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
+            BorderThickness="1" Padding="14">
+      <Panel Name="CanvasRoot" PointerPressed="Canvas_PointerPressed" MinHeight="120">
+
+        <!-- Capa 1: celdas. Sin hit-test para que el puntero llegue siempre al lienzo o a una ficha,
+             nunca a una celda intermedia. -->
+        <ItemsControl Name="CellLayer" ItemsSource="{Binding DashboardGridCells}" IsHitTestVisible="False">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <controls:DashboardGridPanel Columns="{Binding DashboardGridColumns}" Rows="{Binding DashboardGridRows}"
+                                           ColumnSpacing="8" RowSpacing="8" RowHeight="74" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemContainerTheme>
+            <ControlTheme TargetType="ContentPresenter" x:DataType="vm:DashboardGridCellViewModel">
+              <Setter Property="Grid.Row" Value="{Binding Row}" />
+              <Setter Property="Grid.Column" Value="{Binding Column}" />
+              <Setter Property="HorizontalAlignment" Value="Stretch" />
+              <Setter Property="VerticalAlignment" Value="Stretch" />
+            </ControlTheme>
+          </ItemsControl.ItemContainerTheme>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:DashboardGridCellViewModel">
+              <Border Classes="grid-cell" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Capa 2: fichas. Una por sección; las ocultas se colapsan (IsVisible en el contenedor), y el
+             panel se salta los hijos invisibles al medir, así que no reservan celda. -->
+        <ItemsControl Name="TileLayer" ItemsSource="{Binding DashboardSections}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <controls:DashboardGridPanel Columns="{Binding DashboardGridColumns}" Rows="{Binding DashboardGridRows}"
+                                           ColumnSpacing="8" RowSpacing="8" RowHeight="74" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemContainerTheme>
+            <ControlTheme TargetType="ContentPresenter" x:DataType="vm:DashboardSectionConfigViewModel">
+              <Setter Property="Grid.Row" Value="{Binding GridRow}" />
+              <Setter Property="Grid.Column" Value="{Binding GridColumn}" />
+              <Setter Property="Grid.RowSpan" Value="{Binding GridRowSpan}" />
+              <Setter Property="Grid.ColumnSpan" Value="{Binding GridColumnSpan}" />
+              <Setter Property="IsVisible" Value="{Binding IsVisible}" />
+              <Setter Property="HorizontalAlignment" Value="Stretch" />
+              <Setter Property="VerticalAlignment" Value="Stretch" />
+            </ControlTheme>
+          </ItemsControl.ItemContainerTheme>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:DashboardSectionConfigViewModel">
+              <Border Classes="grid-tile" Classes.selected="{Binding IsSelected}" Classes.dragging="{Binding IsDragging}"
+                      ClipToBounds="True" Focusable="True"
+                      PointerPressed="Tile_PointerPressed"
+                      PointerMoved="Tile_PointerMoved"
+                      PointerReleased="Tile_PointerReleased"
+                      PointerCaptureLost="Tile_PointerCaptureLost"
+                      KeyDown="Tile_KeyDown"
+                      AutomationProperties.Name="{Binding Title}"
+                      AutomationProperties.HelpText="{Binding SizeLabel}">
+                <!-- Sin ToolTip.Tip en el cuerpo de la ficha: es la superficie que se arrastra, y un
+                     tooltip que aparece bajo el puntero justo donde se está soltando estorba más de lo
+                     que enseña — la línea de ayuda de arriba ya cuenta el gesto. El tirador de tamaño sí
+                     lo lleva, porque ahí el gesto no es evidente por su forma. -->
+                <Panel>
+                  <!-- Realce de selección como capa propia y no como Background de la ficha: los tonos
+                       Ink llevan alfa, así que pintarlo en el Background dejaba ver a través las líneas
+                       de las celdas vacías de la capa de debajo. -->
+                  <Border Background="{DynamicResource Ink05}" IsVisible="{Binding IsSelected}" />
+                  <StackPanel Spacing="5" Margin="10,8" VerticalAlignment="Top">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                      <TextBlock Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}"
+                                 Classes="faint" FontSize="8.5" LetterSpacing="1" VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding SizeLabel}" Classes="muted" FontSize="9" />
+                  </StackPanel>
+
+                  <!-- Tirador de tamaño: dos rayas diagonales, el gesto que todo el mundo ya conoce de
+                       una esquina redimensionable. -->
+                  <Border Classes="grid-tile-resize"
+                          PointerPressed="ResizeHandle_PointerPressed"
+                          PointerMoved="Tile_PointerMoved"
+                          PointerReleased="Tile_PointerReleased"
+                          ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_ResizeTooltip}">
+                    <Panel Margin="4">
+                      <Path Data="M 10,0 L 10,10 L 0,10" Stroke="{DynamicResource Ink30}" StrokeThickness="1.5"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                    </Panel>
+                  </Border>
+                </Panel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Capa 3: silueta del destino. En un Canvas para poder posicionarla en píxeles exactos desde
+             el code-behind; sin hit-test, va siempre por delante del puntero. -->
+        <Canvas Name="GhostLayer" IsHitTestVisible="False">
+          <Border Name="Ghost" Classes="grid-ghost" IsVisible="False" />
+        </Canvas>
+      </Panel>
+    </Border>
+
+    <!-- ===== Ficha seleccionada: mover/redimensionar sin ratón ===== -->
+    <Border Classes="card" Padding="14,12">
+      <Panel>
+        <TextBlock Text="{loc:Tr Settings_Dashboard_Grid_NoSelection}" Classes="muted" FontSize="11.5"
+                   TextWrapping="Wrap" VerticalAlignment="Center"
+                   IsVisible="{Binding SelectedDashboardTile, Converter={x:Static ObjectConverters.IsNull}}" />
+
+        <!-- La ficha seleccionada entra como Content y no como DataContext de un Grid con x:DataType:
+             puestos en el mismo elemento, el compilador de XAML resolvería también su IsVisible contra
+             DashboardSectionConfigViewModel, donde SelectedDashboardTile no existe. -->
+        <ContentControl Content="{Binding SelectedDashboardTile}"
+                        IsVisible="{Binding SelectedDashboardTile, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate DataType="vm:DashboardSectionConfigViewModel">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="{Binding Icon}" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding SizeLabel}" Classes="faint" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Mover -->
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).MoveDashboardTileLeftCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_MoveLeft}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_MoveLeft}">
+              <mi:MaterialIcon Kind="ArrowLeft" Width="14" Height="14" />
+            </Button>
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).MoveDashboardTileUpCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_MoveUp}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_MoveUp}">
+              <mi:MaterialIcon Kind="ArrowUp" Width="14" Height="14" />
+            </Button>
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).MoveDashboardTileDownCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_MoveDown}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_MoveDown}">
+              <mi:MaterialIcon Kind="ArrowDown" Width="14" Height="14" />
+            </Button>
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).MoveDashboardTileRightCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_MoveRight}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_MoveRight}">
+              <mi:MaterialIcon Kind="ArrowRight" Width="14" Height="14" />
+            </Button>
+          </StackPanel>
+
+          <!-- Redimensionar -->
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" Margin="8,0,0,0">
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ShrinkDashboardTileWidthCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_ShrinkWidth}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_ShrinkWidth}">
+              <mi:MaterialIcon Kind="ArrowCollapseHorizontal" Width="14" Height="14" />
+            </Button>
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).GrowDashboardTileWidthCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_GrowWidth}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_GrowWidth}">
+              <mi:MaterialIcon Kind="ArrowExpandHorizontal" Width="14" Height="14" />
+            </Button>
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ShrinkDashboardTileHeightCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_ShrinkHeight}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_ShrinkHeight}">
+              <mi:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" />
+            </Button>
+            <Button Classes="icon-btn" Width="28" Height="28"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).GrowDashboardTileHeightCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_GrowHeight}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_GrowHeight}">
+              <mi:MaterialIcon Kind="ArrowExpandVertical" Width="14" Height="14" />
+            </Button>
+          </StackPanel>
+
+          <Button Grid.Column="4" Classes="icon-btn" Width="28" Height="28" Margin="8,0,0,0"
+                  Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).RemoveDashboardSectionFromGridCommand}"
+                  CommandParameter="{Binding Key}"
+                  AutomationProperties.Name="{loc:Tr Settings_Dashboard_Grid_Remove}"
+                  ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_Remove}">
+            <mi:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" />
+          </Button>
+        </Grid>
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
+      </Panel>
+    </Border>
+
+    <!-- ===== Bandeja: secciones fuera de la rejilla ===== -->
+    <StackPanel Spacing="9">
+      <StackPanel Orientation="Horizontal" Spacing="9">
+        <mi:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+        <TextBlock Text="{loc:Tr Settings_Dashboard_Grid_Tray_Title, Converter={StaticResource UpperCaseConverter}}"
+                   Classes="section-title" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <TextBlock Text="{loc:Tr Settings_Dashboard_Grid_Tray_Empty}" Classes="muted" FontSize="11.5"
+                 IsVisible="{Binding HasHiddenDashboardSections, Converter={StaticResource BoolNotConverter}}" />
+
+      <ItemsControl ItemsSource="{Binding DashboardSections}"
+                    IsVisible="{Binding HasHiddenDashboardSections}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel ItemSpacing="8" LineSpacing="8" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:DashboardSectionConfigViewModel">
+            <Button Classes="ghost-card" Padding="12,9" IsVisible="{Binding !IsVisible}"
+                    Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).ShowDashboardSectionCommand}"
+                    CommandParameter="{Binding Key}"
+                    AutomationProperties.Name="{Binding Title}"
+                    ToolTip.Tip="{loc:Tr Settings_Dashboard_Grid_Add}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{Binding Title}" FontSize="11.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
+  </StackPanel>
+</UserControl>

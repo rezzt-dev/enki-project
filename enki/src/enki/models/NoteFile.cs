@@ -19,6 +19,8 @@ public sealed class NoteFile
 
     public string FileName => System.IO.Path.GetFileName(FullPath);
 
+    public string FileNameWithoutExtension => System.IO.Path.GetFileNameWithoutExtension(FullPath);
+
     public string ModifiedLabel => RelativeTimeFormatter.Format(ModifiedUtc);
 
     /// <summary>A shallow copy with its own <see cref="Tags"/> list — <see cref="Services.VaultNoteCache"/>

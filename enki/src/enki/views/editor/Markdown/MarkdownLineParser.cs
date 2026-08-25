@@ -128,19 +128,6 @@ public static class MarkdownLineParser
             return model;
         }
 
-        // Table row: starts and ends with '|' outside fences.
-        var trimmedSpan = text.AsSpan().Trim();
-        if (trimmedSpan.Length >= 2 && trimmedSpan[0] == '|' && trimmedSpan[^1] == '|')
-        {
-            model.Kind = MdBlockKind.Table;
-            model.IsTableSeparator = IsTableSeparator(text);
-            model.MarkerStart = lineOffset;
-            model.MarkerEnd = lineOffset + n;
-            model.ContentStart = lineOffset;
-            ScanInline(model, text, 0, n, lineOffset);
-            return model;
-        }
-
         // Blockquote.
         if (indent <= 3 && indent < n && text[indent] == '>')
         {
@@ -401,36 +388,4 @@ public static class MarkdownLineParser
         return -1;
     }
 
-    private static bool IsTableSeparator(string text)
-    {
-        var trimmed = text.Trim();
-        if (trimmed.Length < 2 || trimmed[0] != '|' || trimmed[^1] != '|') return false;
-
-        var cells = trimmed[1..^1].Split('|');
-        var hasNonEmpty = false;
-        foreach (var cell in cells)
-        {
-            var c = cell.Trim();
-            if (string.IsNullOrEmpty(c)) continue;
-
-            // Celda de separador válida: opcional ':' al inicio y/o final,
-            // longitud mínima 3 y todos los caracteres intermedios son guiones
-            // (p. ej. ---, :--, --:, :-:).
-            if (c.Length < 3) return false;
-            var start = 0;
-            var end = c.Length - 1;
-            if (c[start] == ':') start++;
-            if (c[end] == ':') end--;
-            if (start > end) return false;
-
-            for (var i = start; i <= end; i++)
-            {
-                if (c[i] != '-') return false;
-            }
-
-            hasNonEmpty = true;
-        }
-
-        return hasNonEmpty;
-    }
 }

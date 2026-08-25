@@ -19,6 +19,7 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
         _style = style;
     }
 
+
     public KnownLayer Layer => KnownLayer.Background;
 
     public void Draw(TextView textView, DrawingContext drawingContext)
@@ -59,21 +60,16 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
                     codeBlockTop ??= top;
                     codeBlockBottom = top + visualLine.Height;
                     break;
-                case MdBlockKind.Blockquote:
-                    drawingContext.FillRectangle(_style.QuoteBar, new Rect(2, top + 2, 3, visualLine.Height - 4), 2f);
-                    break;
+                // The blockquote rail is drawn by QuoteRailMargin instead, in its own left-gutter
+                // column - see that class's doc comment for why it can't live here as inline
+                // background painting the way the code-fence/rule decorations above do.
                 case MdBlockKind.HorizontalRule when !_state.Intersects(docLine.Offset, docLine.EndOffset):
                 {
                     var y = top + visualLine.Height / 2;
                     drawingContext.DrawLine(rulePen, new Point(0, y), new Point(width, y));
                     break;
                 }
-                case MdBlockKind.Table when model.IsTableSeparator && !_state.Intersects(docLine.Offset, docLine.EndOffset):
-                {
-                    var y = top + visualLine.Height / 2;
-                    drawingContext.DrawLine(rulePen, new Point(0, y), new Point(width, y));
-                    break;
-                }
+
             }
         }
 

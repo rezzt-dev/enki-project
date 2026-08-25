@@ -169,10 +169,6 @@ public static class NoteExportRenderer
                     i = EmitList(lines, lineOffsets, ParseLine, IsCodeLine, i, parsed, sb, noteDirectory);
                     break;
 
-                case MdBlockKind.Table:
-                    i = EmitTable(lines, ParseLine, IsCodeLine, i, parsed, sb, noteDirectory);
-                    break;
-
                 default:
                     // Línea en blanco: separador de bloques, no genera HTML por sí misma.
                     if (IsBlank(lines[i])) { i++; break; }
@@ -252,63 +248,6 @@ public static class NoteExportRenderer
 
         sb.Append(kind == MdBlockKind.OrderedList ? "</ol>\n" : "</ul>\n");
         return i;
-    }
-
-    /// <summary>Tabla: filas consecutivas <c>| … |</c>. Si la segunda fila es el separador
-    /// (<c>|---|---|</c>), la primera se emite como cabecera <c>&lt;th&gt;</c> y el separador se omite;
-    /// sin separador, todas las filas son cuerpo (mismo criterio tolerante del live preview, que pinta
-    /// cualquier línea de tuberías como tabla). Devuelve el índice de la primera línea no consumida.</summary>
-    private static int EmitTable(string[] lines, Func<int, MdLine> parseLine, Func<int, bool> isCodeLine,
-        int startIndex, MdLine firstParsed, StringBuilder sb, string? noteDirectory)
-    {
-        var rows = new List<(string Raw, bool IsSeparator)> { (lines[startIndex], firstParsed.IsTableSeparator) };
-        var i = startIndex + 1;
-        while (i < lines.Length && !isCodeLine(i))
-        {
-            var line = parseLine(i);
-            if (line.Kind != MdBlockKind.Table) break;
-            rows.Add((lines[i], line.IsTableSeparator));
-            i++;
-        }
-
-        var hasHeader = rows.Count >= 2 && rows[1].IsSeparator;
-        sb.Append("<table>\n");
-        if (hasHeader)
-        {
-            sb.Append("<thead><tr>");
-            foreach (var cell in SplitCells(rows[0].Raw))
-                sb.Append("<th>").Append(RenderCellInline(cell, noteDirectory)).Append("</th>");
-            sb.Append("</tr></thead>\n");
-        }
-        sb.Append("<tbody>\n");
-        foreach (var row in rows.Skip(hasHeader ? 2 : 0))
-        {
-            // Un separador "huérfano" a mitad de tabla no es una fila de datos.
-            if (row.IsSeparator) continue;
-            sb.Append("<tr>");
-            foreach (var cell in SplitCells(row.Raw))
-                sb.Append("<td>").Append(RenderCellInline(cell, noteDirectory)).Append("</td>");
-            sb.Append("</tr>\n");
-        }
-        sb.Append("</tbody>\n</table>\n");
-        return i;
-    }
-
-    private static IEnumerable<string> SplitCells(string row)
-    {
-        var trimmed = row.Trim();
-        if (trimmed.StartsWith('|')) trimmed = trimmed[1..];
-        if (trimmed.EndsWith('|')) trimmed = trimmed[..^1];
-        return trimmed.Split('|').Select(c => c.Trim());
-    }
-
-    /// <summary>Inline de una celda de tabla: re-parsea el texto de la celda como si fuera una línea
-    /// suelta (los spans del <see cref="MdLine"/> de la fila completa abarcan los separadores <c>|</c>,
-    /// así que no se pueden reutilizar directamente por celda).</summary>
-    private static string RenderCellInline(string cell, string? noteDirectory)
-    {
-        var parsed = MarkdownLineParser.Parse(cell, 0, default);
-        return RenderInline(cell, 0, 0, parsed.Spans, noteDirectory);
     }
 
     /// <summary>Renderiza el rango [<paramref name="contentStart"/>, fin de línea) aplicando los spans

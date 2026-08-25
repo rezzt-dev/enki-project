@@ -17,6 +17,12 @@ public sealed class SessionManifest
     public List<SessionManifestNode> Nodes { get; set; } = [];
     public List<SessionManifestEdge> ManualLinks { get; set; } = [];
 
+    /// <summary>Optional per-session color, stored as a hex string (e.g. "#FF5733"). When set, the session
+    /// graph's nodes and its card label accent bar use this color instead of the auto-derived hue from
+    /// <see cref="Services.NodeBrightness"/>. Null means "use the default hue" — every session gets a stable
+    /// auto-generated color whether or not one is explicitly assigned.</summary>
+    public string? Color { get; set; }
+
     /// <summary>Null for a plain-text session (the default, and every session created before this field
     /// existed — old manifests deserialize with this null, so nothing migrates). Present only for a
     /// password-protected session. Always readable without unlocking (the sidebar needs the session's

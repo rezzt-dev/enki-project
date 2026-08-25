@@ -63,43 +63,6 @@ public class MarkdownLineParserTests
         Assert.DoesNotContain(model.Spans, s => s.Kind == MdSpanKind.WikiLink);
     }
 
-    [Theory]
-    [InlineData("| --- | --- |", true)]
-    [InlineData("| :-: | ---: | :--- |", true)]
-    [InlineData("| -- | -- |", false)]
-    [InlineData("| a | b |", false)]
-    [InlineData("| - | - |", false)]
-    [InlineData("| --- | texto |", false)]
-    public void Parse_TableSeparatorDetection(string text, bool expected)
-    {
-        var model = MarkdownLineParser.Parse(text, 0, NoFence);
-
-        Assert.Equal(MdBlockKind.Table, model.Kind);
-        Assert.Equal(expected, model.IsTableSeparator);
-    }
-
-    [Fact]
-    public void Parse_TableDataRow_IsDetectedAsTable()
-    {
-        var text = "| Celda 1 | Celda 2 |";
-        var model = MarkdownLineParser.Parse(text, 0, NoFence);
-
-        Assert.Equal(MdBlockKind.Table, model.Kind);
-        Assert.False(model.IsTableSeparator);
-    }
-
-    [Fact]
-    public void Parse_TableRow_InlineSpansStillParsed()
-    {
-        var text = "| **bold** | `code` |";
-        var model = MarkdownLineParser.Parse(text, 0, NoFence);
-
-        Assert.Equal(MdBlockKind.Table, model.Kind);
-        Assert.Equal(2, model.Spans.Count);
-        Assert.Contains(model.Spans, s => s.Kind == MdSpanKind.Bold);
-        Assert.Contains(model.Spans, s => s.Kind == MdSpanKind.InlineCode);
-    }
-
     [Fact]
     public void Parse_Strikethrough_IsParsed()
     {

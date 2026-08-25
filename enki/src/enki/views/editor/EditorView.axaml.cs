@@ -64,6 +64,7 @@ public partial class EditorView : UserControl
         textView.LineTransformers.Add(_colorizer);
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
+
         textView.CurrentLineBackground = ResolveCurrentLineBrush();
         textView.CurrentLineBorder = null;
 
@@ -86,6 +87,10 @@ public partial class EditorView : UserControl
         ApplyTabSize();
         ApplyLineNumbers();
         ApplyWordWrap();
+
+        // Added after ApplyLineNumbers() so it lands to the right of AvaloniaEdit's own line-number
+        // margin (when shown) in TextArea.LeftMargins, i.e. closest to the text.
+        textArea.LeftMargins.Add(new QuoteRailMargin(_livePreviewState, _style));
 
         // Ctrl+F / Ctrl+H abren el buscador/reemplazo propio del editor en lugar del integrado de
         // AvaloniaEdit, para unificar estilo y añadir contador de coincidencias.
@@ -213,7 +218,8 @@ public partial class EditorView : UserControl
 
     private void RecomputeFences()
     {
-        _livePreviewState.Fences = MarkdownLineParser.ComputeFences(Editor.Text ?? string.Empty);
+        var text = Editor.Text ?? string.Empty;
+        _livePreviewState.Fences = MarkdownLineParser.ComputeFences(text);
     }
 
     /// <summary>Fires whenever the tab strip switches which note is active (NotesViewModel.ActiveEditor).

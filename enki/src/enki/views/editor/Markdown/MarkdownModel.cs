@@ -11,8 +11,7 @@ public enum MdBlockKind
     OrderedList,
     TaskList,
     HorizontalRule,
-    CodeFence,
-    Table
+    CodeFence
 }
 
 public enum MdSpanKind
@@ -65,7 +64,6 @@ public sealed class MdLine
     public int CheckboxCharOffset { get; set; } = -1;
 
     public string? FenceLanguage { get; set; }
-    public bool IsTableSeparator { get; set; }
 
     public List<MdSpan> Spans { get; } = new();
 }

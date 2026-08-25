@@ -330,11 +330,15 @@
                ae:TextEditor directly, since TextEditor is a templated control. The 8px margin keeps the
                text off the card's edges even when the column is left-aligned or its width fills the card. -->
           <Border Grid.Row="1" x:Name="EditorColumnHost" Margin="8">
+            <!-- Left padding is reduced by QuoteRailMargin's own width (see EditorView.axaml.cs) so the
+                 margin's reserved gutter exactly replaces that much padding instead of adding to it -
+                 heading/list/paragraph text ends up at the same X it always was, with the quote rail
+                 occupying what used to be blank padding instead of pushing everything else rightward. -->
             <ae:TextEditor x:Name="Editor"
                            Background="Transparent"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            FontSize="14.5"
-                           Padding="20"
+                           Padding="4,20,20,20"
                            LineNumbersForeground="{DynamicResource TextMutedBrush}" />
           </Border>
         </Grid>

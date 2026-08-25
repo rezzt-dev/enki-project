@@ -296,6 +296,15 @@ public sealed class AppSettings
     /// Ajustes (ver <c>SettingsViewModel.IsCustomThemeActive</c>).</summary>
     public string? ActiveCustomThemeId { get; set; }
 
+    // ===================== Estado de carpetas contraídas/expandidas =====================
+    // Rutas de las carpetas que el usuario tiene expandidas en el panel lateral de cada sección.
+    // Se persiste para que al reabrir Enki (o cambiar de sección) el árbol de carpetas aparezca
+    // en el mismo estado en que el usuario lo dejó. Carpetas no listadas aquí arrancan contraídas.
+    // La lista de Notas y la de Archivos son independientes entre sí.
+
+    public List<string> NotesExpandedFolderPaths { get; set; } = [];
+    public List<string> FilesExpandedFolderPaths { get; set; } = [];
+
     // ===================== Hábitos y Estadísticas (propuestas 13/15, docs/propuesta-nuevas-funcionalidades.md) =====================
 
     /// <summary>Shows/hides the "Hábitos" entry in the main nav.</summary>
@@ -309,4 +318,17 @@ public sealed class AppSettings
 
     /// <summary>Shows/hides the "Notificaciones" entry in the sidebar's fixed bottom group.</summary>
     public bool NotificationsSidebarEnabled { get; set; } = true;
+
+    // ===================== Orden de las secciones de la barra lateral (Ajustes › General) =====================
+    // Qué sección va en el grupo principal desplazable frente al grupo fijo inferior (máx. 3, junto a
+    // Ajustes) y en qué orden — arrastrable en Ajustes › General › Secciones de la barra lateral. Guarda
+    // nombres de ViewModels.AppPage como texto; vacío significa "usar el orden por defecto" (ver
+    // ViewModels.SidebarSectionCatalog), y una clave nueva que no esté en ninguna de las dos listas
+    // (una sección añadida en una versión posterior de Enki) se añade sola a su grupo por defecto.
+
+    /// <summary>Orden de las secciones en la lista principal desplazable del sidebar.</summary>
+    public List<string> SidebarMainSectionOrder { get; set; } = [];
+
+    /// <summary>Orden de las hasta 3 secciones fijadas en el grupo inferior del sidebar, junto a Ajustes.</summary>
+    public List<string> SidebarBottomSectionOrder { get; set; } = [];
 }

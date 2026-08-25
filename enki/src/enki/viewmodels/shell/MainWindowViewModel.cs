@@ -72,6 +72,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<NavItemViewModel> NavItems { get; } = [];
 
+    /// <summary>The fixed bottom group of the sidebar (max <see cref="SidebarSectionCatalog.MaxBottomSections"/>,
+    /// rendered above Ajustes) — same <see cref="NavItemViewModel"/> shape and same <see cref="NavigateCommand"/>
+    /// wiring as <see cref="NavItems"/>, just a separate list so <c>MainWindow.axaml</c> can render it as its
+    /// own fixed-position group instead of letting it scroll with the main list. Which section lands in
+    /// which list is entirely data-driven (Ajustes › General › Secciones de la barra lateral) — see
+    /// <see cref="RebuildNavItems"/>.</summary>
+    public ObservableCollection<NavItemViewModel> BottomNavItems { get; } = [];
+
     public DashboardViewModel? Dashboard { get; private set; }
     public CalendarViewModel? Calendar { get; private set; }
     public NotesViewModel? Notes { get; private set; }
@@ -139,17 +147,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private double _sidebarWidth;
 
+    /// <summary>True only while Ajustes is the open page — the one entry that never lives in
+    /// <see cref="NavItems"/>/<see cref="BottomNavItems"/> (see <see cref="OpenSettings"/>), so unlike every
+    /// other nav button its "active" state can't be read off a row's own <c>IsActive</c>.</summary>
     [ObservableProperty]
     private bool _isSettingsActive;
-
-    [ObservableProperty]
-    private bool _isRemindersActive;
-
-    [ObservableProperty]
-    private bool _isNotificationsActive;
-
-    [ObservableProperty]
-    private bool _isStatisticsActive;
 
     [ObservableProperty]
     private bool _useCustomTitleBar;
@@ -246,10 +248,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private void Navigate(AppPage page)
     {
         foreach (var item in NavItems) item.IsActive = item.Page == page;
+        foreach (var item in BottomNavItems) item.IsActive = item.Page == page;
         IsSettingsActive = false;
-        IsRemindersActive = false;
-        IsNotificationsActive = false;
-        IsStatisticsActive = page == AppPage.Statistics;
 
         CurrentPage = page switch
         {
@@ -264,6 +264,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             AppPage.Settings => Settings,
             AppPage.Habits => Habits,
             AppPage.Statistics => Statistics,
+            AppPage.Reminders => Reminders,
+            AppPage.Notifications => Notifications,
             _ => Dashboard
         };
         AnimatePageReveal();
@@ -275,6 +277,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (page == AppPage.Kanban) Kanban!.Reload();
         if (page == AppPage.Habits) Habits!.Reload();
         if (page == AppPage.Statistics) Statistics!.Reload();
+        if (page == AppPage.Reminders) Reminders!.Reload();
+        if (page == AppPage.Notifications) Notifications!.Reload();
         if (page == AppPage.Trash)
         {
             Trash!.Reload();
@@ -325,39 +329,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private void OpenSettings()
     {
         foreach (var item in NavItems) item.IsActive = false;
+        foreach (var item in BottomNavItems) item.IsActive = false;
         IsSettingsActive = true;
-        IsRemindersActive = false;
-        IsNotificationsActive = false;
-        IsStatisticsActive = false;
         CurrentPage = Settings;
         AnimatePageReveal();
     }
 
+    /// <summary>Kept as its own command (rather than inlining <c>Navigate(AppPage.Reminders)</c> at every
+    /// call site) since callers outside the sidebar — the command palette, the Dashboard's own "ver
+    /// recordatorios" action — reach it as a plain parameterless delegate.</summary>
     [RelayCommand]
-    private void OpenReminders()
-    {
-        foreach (var item in NavItems) item.IsActive = false;
-        IsSettingsActive = false;
-        IsNotificationsActive = false;
-        IsRemindersActive = true;
-        IsStatisticsActive = false;
-        CurrentPage = Reminders;
-        AnimatePageReveal();
-        Reminders?.Reload();
-    }
+    private void OpenReminders() => Navigate(AppPage.Reminders);
 
+    /// <summary>See <see cref="OpenReminders"/>.</summary>
     [RelayCommand]
-    private void OpenNotifications()
-    {
-        foreach (var item in NavItems) item.IsActive = false;
-        IsSettingsActive = false;
-        IsRemindersActive = false;
-        IsNotificationsActive = true;
-        IsStatisticsActive = false;
-        CurrentPage = Notifications;
-        AnimatePageReveal();
-        Notifications?.Reload();
-    }
+    private void OpenNotifications() => Navigate(AppPage.Notifications);
 
     /// <summary>Pushes the trash's combined item count (documents + tasks + files + reminders) into the
     /// "Papelera" nav entry's badge (Fase 2 §9) — called after every explicit <see cref="TrashViewModel.Reload"/>
@@ -377,6 +363,24 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         var item = NavItems.FirstOrDefault(n => n.Page == AppPage.Calendar);
         if (item is not null) item.Count = ReminderInbox.OverdueCount;
+    }
+
+    /// <summary>Pushes <see cref="Reminders"/>'s unread count into whichever list (main or bottom group)
+    /// currently holds the "Recordatorios" nav entry — live via the <see cref="PropertyChanged"/>
+    /// subscription wired in <c>InitializeShell</c>, same "push on change" approach as
+    /// <see cref="UpdateCalendarBadge"/> rather than a binding straight to <c>Reminders.UnreadCount</c>
+    /// (that only worked before because the entry was a hand-written XAML button, not a data-bound row).</summary>
+    private void UpdateRemindersBadge()
+    {
+        var item = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == AppPage.Reminders);
+        if (item is not null && Reminders is not null) item.Count = Reminders.UnreadCount;
+    }
+
+    /// <summary>See <see cref="UpdateRemindersBadge"/>.</summary>
+    private void UpdateNotificationsBadge()
+    {
+        var item = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == AppPage.Notifications);
+        if (item is not null && Notifications is not null) item.Count = Notifications.UnreadCount;
     }
 
     /// <summary>Ctrl+Shift+N — jumps to Notas

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using AvaloniaEdit.Document;
@@ -16,7 +15,7 @@ namespace enki.Views.Editor.Markdown;
 /// </summary>
 public sealed class MarkdownElementGenerator : VisualLineElementGenerator
 {
-    private enum ZoneKind { Hide, Bullet, Checkbox, QuoteMarker, TablePipe, TableSeparator }
+    private enum ZoneKind { Hide, Bullet, Checkbox }
 
     private readonly record struct Zone(int Start, int End, ZoneKind Kind, MdLine Line);
 
@@ -58,12 +57,11 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                     zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model));
                 break;
             case MdBlockKind.Blockquote:
-                // Unlike the other Hide zones below, the '>' marker can't just collapse to zero width:
-                // MarkdownBackgroundRenderer always paints the quote rail at a fixed x, so blank text
-                // here would leave nothing reserving that space and the rail would cut straight through
-                // the first letters of the quoted text.
+                // No reserved-width concern here: the quote rail lives in QuoteRailMargin's own
+                // gutter column now, not inline before the text, so the '>' marker can collapse to
+                // zero width exactly like the other Hide zones below.
                 if (model.MarkerStart < model.MarkerEnd)
-                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.QuoteMarker, model));
+                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model));
                 break;
             case MdBlockKind.BulletList:
                 if (model.MarkerStart < model.MarkerEnd)
@@ -72,24 +70,6 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             case MdBlockKind.TaskList:
                 if (model.MarkerStart < model.MarkerEnd)
                     zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Checkbox, model));
-                break;
-            case MdBlockKind.Table when !lineActive:
-                if (model.IsTableSeparator)
-                {
-                    // Oculta toda la fila separadora; el fondo pintará la línea horizontal.
-                    zones.Add(new Zone(line.Offset, line.Offset + line.Length, ZoneKind.TableSeparator, model));
-                }
-                else
-                {
-                    for (var i = 0; i < text.Length; i++)
-                    {
-                        if (text[i] != '|') continue;
-                        var pipeOffset = line.Offset + i;
-                        // No ocultamos los '|' que forman parte de sintaxis inline (código, wikilinks, etc.)
-                        if (model.Spans.Any(s => pipeOffset >= s.Start && pipeOffset < s.End)) continue;
-                        zones.Add(new Zone(pipeOffset, pipeOffset + 1, ZoneKind.TablePipe, model));
-                    }
-                }
                 break;
         }
 
@@ -128,11 +108,8 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // Trailing spaces after the glyph give the bullet room to breathe instead of
                 // butting straight into the list text (the hidden marker span it replaces already
                 // covered that width, so this doesn't shift anything else on the line).
-                ZoneKind.Bullet => new FormattedTextElement("•  ", length),
+                ZoneKind.Bullet => new WhitespaceFormattedElement("•  ", length),
                 ZoneKind.Checkbox => new InlineObjectElement(length, BuildCheckbox(zone.Line)),
-                ZoneKind.QuoteMarker => new FormattedTextElement("   ", length),
-                ZoneKind.TablePipe => new FormattedTextElement("\u2502", length),
-                ZoneKind.TableSeparator => new FormattedTextElement(string.Empty, length),
                 _ => new FormattedTextElement(string.Empty, length)
             };
         }

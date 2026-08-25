@@ -27,7 +27,9 @@ public sealed class VaultSettingsService
     private VaultSettings Load()
     {
         if (!_vaultService.IsVaultConfigured) return new VaultSettings();
-        return JsonFileStore.TryLoad<VaultSettings>(SettingsPath, out var loaded) ? loaded! : new VaultSettings();
+        var loaded = JsonFileStore.TryLoad<VaultSettings>(SettingsPath, out var result) && result is not null ? result : new VaultSettings();
+        loaded.Normalize();
+        return loaded;
     }
 
     /// <summary>Re-reads settings for whichever vault <see cref="VaultService"/> now points at — called

@@ -367,10 +367,18 @@ public sealed partial class MainWindowViewModel
         Settings = new SettingsViewModel(_settingsService, _customThemeService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
-            OnSidebarSectionChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
+            OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
+        Reminders.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(RemindersViewModel.UnreadCount)) UpdateRemindersBadge();
+        };
+        Notifications.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(NotificationsViewModel.UnreadCount)) UpdateNotificationsBadge();
+        };
 
         RebuildNavItems();
 
@@ -385,11 +393,14 @@ public sealed partial class MainWindowViewModel
             _ => Dashboard
         };
         foreach (var item in NavItems) item.IsActive = item.Page == startupPage;
+        foreach (var item in BottomNavItems) item.IsActive = item.Page == startupPage;
         VaultSetup = null;
         IsVaultReady = true;
 
         UpdateTrashBadge();
         UpdateCalendarBadge();
+        UpdateRemindersBadge();
+        UpdateNotificationsBadge();
     }
 
     /// <summary>Reads <c>AppSettings.StartupPage</c> (Ajustes › General) and falls back to
@@ -416,5 +427,6 @@ public sealed partial class MainWindowViewModel
     /// <see cref="RebuildNavItems"/> right before this runs), and only to Dashboard itself if the whole nav
     /// somehow ended up empty.</summary>
     private AppPage FallbackStartupPage() =>
-        DashboardPanelEnabled ? AppPage.Dashboard : NavItems.FirstOrDefault()?.Page ?? AppPage.Dashboard;
+        DashboardPanelEnabled ? AppPage.Dashboard
+        : NavItems.FirstOrDefault()?.Page ?? BottomNavItems.FirstOrDefault()?.Page ?? AppPage.Dashboard;
 }

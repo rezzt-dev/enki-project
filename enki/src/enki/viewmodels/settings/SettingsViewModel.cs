@@ -52,6 +52,13 @@ public sealed partial class SettingsViewModel : ViewModelBase
     /// <see cref="AppPage"/> to apply whatever page-specific side effect that section needs.</summary>
     private readonly Action<AppPage, bool> _onSidebarSectionChanged;
 
+    /// <summary>Fired after every drag/pin reorder in <see cref="MainSidebarSections"/>/
+    /// <see cref="BottomSidebarSections"/> that changes membership or order but not any single section's
+    /// visibility (so <see cref="_onSidebarSectionChanged"/>'s own rebuild wouldn't otherwise fire) —
+    /// <see cref="MainWindowViewModel"/> wires this straight to its own <c>RebuildNavItems</c> so the real
+    /// sidebar picks up the new order immediately.</summary>
+    private readonly Action _onSidebarSectionOrderChanged;
+
     private readonly Action<bool> _onPolarShowTaskTagsChanged;
     private readonly Action<int> _onUiZoomChanged;
     private readonly Action _onLanguageChanged;
@@ -143,6 +150,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action<bool> onRemindersPanelChanged,
         Action<bool> onCalendarShowSidebarScrollbarChanged,
         Action<AppPage, bool> onSidebarSectionChanged,
+        Action onSidebarSectionOrderChanged,
         Action onCalendarSettingsChanged,
         Action<bool> onDashboardShowScrollbarChanged,
         Action<bool> onPolarShowTaskTagsChanged,
@@ -163,6 +171,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _onRemindersPanelChanged = onRemindersPanelChanged;
         _onCalendarShowSidebarScrollbarChanged = onCalendarShowSidebarScrollbarChanged;
         _onSidebarSectionChanged = onSidebarSectionChanged;
+        _onSidebarSectionOrderChanged = onSidebarSectionOrderChanged;
         _onCalendarSettingsChanged = onCalendarSettingsChanged;
         _onDashboardShowScrollbarChanged = onDashboardShowScrollbarChanged;
         _onPolarShowTaskTagsChanged = onPolarShowTaskTagsChanged;
@@ -307,6 +316,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         BuildDashboardLayoutOptions();
         BuildDashboardSections();
+        BuildSidebarSections();
 
         // Only request a built-in variant when no custom theme is active. A custom theme overrides the
         // colors in Application.Resources and must not be clobbered by the dark/light toggle.
@@ -468,6 +478,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         RebuildSections();
         BuildDashboardLayoutOptions();
         BuildDashboardSections();
+        BuildSidebarSections();
         RebuildAvailableFonts();
         RebuildShortcutLabels();
         ThemeEditor?.RefreshLabels();

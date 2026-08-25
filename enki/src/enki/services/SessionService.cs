@@ -402,7 +402,8 @@ public sealed class SessionService
                     X = stored.X,
                     Y = stored.Y,
                     Z = stored.Z,
-                    HasStoredPosition = true
+                    HasStoredPosition = true,
+                    SessionColor = null
                 });
             }
             else
@@ -416,7 +417,8 @@ public sealed class SessionService
                     Title = note.Title,
                     X = x,
                     Y = y,
-                    Z = z
+                    Z = z,
+                    SessionColor = null
                 });
                 changed = true;
             }
@@ -509,7 +511,8 @@ public sealed class SessionService
                     X = stored.X,
                     Y = stored.Y,
                     Z = stored.Z,
-                    HasStoredPosition = true
+                    HasStoredPosition = true,
+                    SessionColor = session.Color
                 });
             }
             else
@@ -523,7 +526,8 @@ public sealed class SessionService
                     Title = note.Title,
                     X = x,
                     Y = y,
-                    Z = z
+                    Z = z,
+                    SessionColor = session.Color
                 });
                 changed = true;
             }
@@ -763,7 +767,8 @@ public sealed class SessionService
             ? Directory.EnumerateFiles(path, "*.md", SearchOption.AllDirectories).Count()
             : 0,
         IsDefault = manifest.IsDefault,
-        IsEncrypted = manifest.Encryption is not null
+        IsEncrypted = manifest.Encryption is not null,
+        Color = manifest.Color
     };
 
     /// <summary>Same as <see cref="ToSession"/> but skips the recursive directory walk behind
@@ -779,7 +784,8 @@ public sealed class SessionService
         ModifiedUtc = manifest.CreatedUtc,
         NoteCount = 0,
         IsDefault = manifest.IsDefault,
-        IsEncrypted = manifest.Encryption is not null
+        IsEncrypted = manifest.Encryption is not null,
+        Color = manifest.Color
     };
 
     /// <summary>Reconstructs a manifest shell from a <see cref="Session"/> already in hand, for the rare

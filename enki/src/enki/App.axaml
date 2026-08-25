@@ -22,10 +22,12 @@
             <conv:DepthIndentConverter x:Key="DepthIndentConverter" />
             <conv:ExpandChevronConverter x:Key="ExpandChevronConverter" />
             <conv:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <conv:BoolNotConverter x:Key="BoolNotConverter" />
             <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
             <conv:OutlineIndentConverter x:Key="OutlineIndentConverter" />
             <conv:SessionIconConverter x:Key="SessionIconConverter" />
             <conv:HexColorToBrushConverter x:Key="HexColorToBrushConverter" />
+            <conv:HeatmapStateConverter x:Key="HeatmapStateConverter" />
             <conv:TopOffsetToMarginConverter x:Key="TopOffsetToMarginConverter" />
             <conv:DoubleToTranslateYConverter x:Key="DoubleToTranslateYConverter" />
         </ResourceDictionary>

@@ -22,4 +22,9 @@ public sealed class Session
     /// password-protected. Doesn't say whether it's currently unlocked; see
     /// <see cref="Services.SessionEncryptionService.IsUnlocked"/> for that.</summary>
     public bool IsEncrypted { get; set; }
+
+    /// <summary>Per-session color, null if the auto-derived hue should be used — propagated from
+    /// <see cref="SessionManifest.Color"/> so the sidebar row and the graph card labels can show it
+    /// without reading the manifest directly.</summary>
+    public string? Color { get; set; }
 }

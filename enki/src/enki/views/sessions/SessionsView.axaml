@@ -77,8 +77,11 @@
                             Padding="14,9" PointerPressed="SessionRow_PointerPressed">
                       <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                         <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis"
-                                     IsVisible="{Binding !IsRenaming}" />
+                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !IsRenaming}">
+                            <Ellipse Width="8" Height="8" Fill="{Binding SessionColorBrush}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
                           <TextBox Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
                                     FontSize="12" Padding="4,2"
                                     KeyDown="SessionNameEdit_KeyDown" LostFocus="SessionNameEdit_LostFocus"

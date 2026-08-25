@@ -10,67 +10,139 @@
              x:DataType="vm:StatisticsViewModel">
 
   <ScrollViewer>
-    <StackPanel Margin="36,30,36,30" Spacing="26" MaxWidth="1180" HorizontalAlignment="Stretch">
+    <StackPanel Margin="36,30,36,40" Spacing="28" MaxWidth="1180" HorizontalAlignment="Stretch">
 
-      <!-- Header -->
+      <!-- ═══════════ Header + range selector ═══════════ -->
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Grid.Column="0" Spacing="6">
           <TextBlock Text="{loc:Tr Statistics_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
           <TextBlock Text="{loc:Tr Statistics_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
           <TextBlock Text="{loc:Tr Statistics_Subtitle}" Classes="page-subtitle" />
         </StackPanel>
-
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-          <RadioButton Classes="segment" GroupName="StatisticsRange" Content="{loc:Tr Statistics_Range_Week, Converter={StaticResource UpperCaseConverter}}"
+          <RadioButton Classes="segment" GroupName="StatisticsRange"
+                       Content="{loc:Tr Statistics_Range_Week, Converter={StaticResource UpperCaseConverter}}"
                        IsChecked="{Binding Range, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Week, Mode=OneWay}"
                        Command="{Binding SelectRangeCommand}" CommandParameter="Week" />
-          <RadioButton Classes="segment" GroupName="StatisticsRange" Content="{loc:Tr Statistics_Range_Month, Converter={StaticResource UpperCaseConverter}}"
+          <RadioButton Classes="segment" GroupName="StatisticsRange"
+                       Content="{loc:Tr Statistics_Range_Month, Converter={StaticResource UpperCaseConverter}}"
                        IsChecked="{Binding Range, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Month, Mode=OneWay}"
                        Command="{Binding SelectRangeCommand}" CommandParameter="Month" />
-          <RadioButton Classes="segment" GroupName="StatisticsRange" Content="{loc:Tr Statistics_Range_AllTime, Converter={StaticResource UpperCaseConverter}}"
+          <RadioButton Classes="segment" GroupName="StatisticsRange"
+                       Content="{loc:Tr Statistics_Range_AllTime, Converter={StaticResource UpperCaseConverter}}"
                        IsChecked="{Binding Range, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=AllTime, Mode=OneWay}"
                        Command="{Binding SelectRangeCommand}" CommandParameter="AllTime" />
         </StackPanel>
       </Grid>
 
-      <!-- Estado vacío: vault demasiado nuevo/silencioso para que un gráfico diga algo útil todavía. -->
+      <!-- ═══════════ Empty state ═══════════ -->
       <StackPanel IsVisible="{Binding !HasEnoughData}" Spacing="14" Margin="0,60,0,0" HorizontalAlignment="Center">
-        <mi:MaterialIcon Kind="ChartBoxOutline" Width="28" Height="28" Foreground="{DynamicResource TextMutedBrush}"
-                          HorizontalAlignment="Center" />
+        <mi:MaterialIcon Kind="ChartBoxOutline" Width="28" Height="28" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
         <TextBlock Text="{loc:Tr Statistics_EmptyState}" Classes="muted" FontSize="12.5" HorizontalAlignment="Center"
                    TextWrapping="Wrap" MaxWidth="340" TextAlignment="Center" />
       </StackPanel>
 
-      <StackPanel Spacing="26" IsVisible="{Binding HasEnoughData}">
+      <StackPanel Spacing="28" IsVisible="{Binding HasEnoughData}">
 
-        <!-- Tiles resumen: última semana de la serie actual. -->
-        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1">
-          <Grid ColumnDefinitions="*,1,*,1,*" Background="{DynamicResource Ink10}">
+        <!-- ═══════════ Hero grid: 2×3 stat cards ═══════════ -->
+        <Grid RowDefinitions="*,1,*" Background="{DynamicResource Ink10}">
+          <Grid Grid.Row="0" ColumnDefinitions="*,1,*,1,*" Background="{DynamicResource Ink10}">
             <Border Grid.Column="0" Classes="stat-card">
-              <StackPanel Spacing="8">
-                <TextBlock Text="{loc:Tr Statistics_Tile_Notes, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-                <TextBlock Text="{Binding NotesThisWeek}" FontSize="26" FontWeight="Bold" />
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="TextBoxOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Tile_Notes, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding NotesThisWeek}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
               </StackPanel>
             </Border>
             <Border Grid.Column="2" Classes="stat-card">
-              <StackPanel Spacing="8">
-                <TextBlock Text="{loc:Tr Statistics_Tile_TasksCompleted, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-                <TextBlock Text="{Binding TasksCompletedThisWeek}" FontSize="26" FontWeight="Bold" />
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Tile_TasksCompleted, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding TasksCompletedThisWeek}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
               </StackPanel>
             </Border>
             <Border Grid.Column="4" Classes="stat-card">
-              <StackPanel Spacing="8">
-                <TextBlock Text="{loc:Tr Statistics_Tile_HabitConsistency, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-                <TextBlock Text="{loc:Tr Statistics_Tile_NoHabits}" Classes="muted" FontSize="13" IsVisible="{Binding !HasHabitData}" />
-                <TextBlock Text="{Binding HabitCompletionPercent, StringFormat={}{0:0}%}" FontSize="26" FontWeight="Bold" IsVisible="{Binding HasHabitData}" />
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="PercentOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Tile_HabitConsistency, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{loc:Tr Statistics_Tile_NoHabits}" Classes="muted" FontSize="13" IsVisible="{Binding !HasHabitData}" />
+                  <TextBlock Text="{Binding HabitCompletionPercent, StringFormat={}{0:0}%}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" IsVisible="{Binding HasHabitData}" />
+                </StackPanel>
               </StackPanel>
             </Border>
           </Grid>
-        </Border>
+          <Grid Grid.Row="2" ColumnDefinitions="*,1,*,1,*" Background="{DynamicResource Ink10}">
+            <Border Grid.Column="0" Classes="stat-card">
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="NoteTextOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Tile_TotalNotes, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding VaultTotalNotes}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="stat-card">
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="FolderOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Tile_TotalSessions, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding VaultTotalSessions}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="4" Classes="stat-card">
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="DatabaseOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Tile_VaultSize, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding VaultSizeLabel}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </Grid>
+        </Grid>
 
-        <!-- Notas y tareas por semana: barras nativas (Border con Height calculada en el ViewModel), sin
-             ninguna librería de gráficos — mismo enfoque que la barra apilada de "TAREAS DEL TABLERO" en
-             el Dashboard. -->
+        <!-- ═══════════ Kanban flow: three side-by-side stat tiles ═══════════ -->
+        <StackPanel Spacing="12">
+          <TextBlock Text="{loc:Tr Statistics_Flow_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+          <Grid ColumnDefinitions="*,1,*,1,*" Background="{DynamicResource Ink10}" IsVisible="{Binding HasKanbanCards}">
+            <Border Grid.Column="0" Classes="stat-card">
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="InboxOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Flow_Pending, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding KanbanPending}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="stat-card">
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="TimerOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Flow_InProgress, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding KanbanInProgress}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="4" Classes="stat-card">
+              <StackPanel Spacing="10">
+                <mi:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Tr Statistics_Flow_Done, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                  <TextBlock Text="{Binding KanbanDone}" FontSize="32" FontWeight="Bold" LetterSpacing="-0.5" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </Grid>
+          <TextBlock Text="{loc:Tr Statistics_Flow_Empty}" Classes="muted" FontSize="12.5" IsVisible="{Binding !HasKanbanCards}" />
+        </StackPanel>
+
+        <!-- ═══════════ Weekly activity chart ═══════════ -->
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Tr Statistics_Chart_ActivityTitle, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
           <Border Classes="card" Padding="22">
@@ -85,67 +157,88 @@
                   <TextBlock Text="{loc:Tr Statistics_Chart_TasksLegend}" Classes="faint" />
                 </StackPanel>
               </StackPanel>
+              <Border Padding="0,0,0,20" ClipToBounds="False">
+                <Grid Height="120" Background="{DynamicResource Ink05}">
+                  <ItemsControl ItemsSource="{Binding Weeks}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Bottom" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:WeekBarViewModel">
+                        <StackPanel Spacing="8" Width="34" VerticalAlignment="Bottom">
+                          <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Bottom" Height="120">
+                            <Border Width="14" Height="{Binding NotesBarHeight}" Background="{DynamicResource InkBrush}" VerticalAlignment="Bottom" ToolTip.Tip="{Binding NotesTotal}" />
+                            <Border Width="14" Height="{Binding TasksBarHeight}" Background="{DynamicResource Ink30}" VerticalAlignment="Bottom" ToolTip.Tip="{Binding TasksCompleted}" />
+                          </StackPanel>
+                          <TextBlock Text="{Binding WeekLabel}" Classes="faint" FontSize="9" HorizontalAlignment="Center" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Border>
+        </StackPanel>
 
-              <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding Weeks}">
+        <!-- ═══════════ Habit consistency heatmap ═══════════ -->
+        <StackPanel Spacing="12" IsVisible="{Binding HasHeatmapData}">
+          <TextBlock Text="{loc:Tr Statistics_Heatmap_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+          <Border Classes="card" Padding="16,22">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*">
+              <Border Grid.Row="0" Grid.Column="0" Width="28" />
+              <ItemsControl Grid.Row="0" Grid.Column="1" ItemsSource="{Binding DayOfWeekHeaders}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="2" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="x:String">
+                    <TextBlock Text="{Binding}" Classes="faint" FontSize="8.5" Width="14" TextAlignment="Center" LetterSpacing="0.5" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+                <ItemsControl ItemsSource="{Binding HabitHeatmapWeeks}">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" Spacing="14" />
+                      <StackPanel Spacing="2" />
                     </ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:WeekBarViewModel">
-                      <StackPanel Spacing="8" Width="34" VerticalAlignment="Bottom">
-                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Bottom" Height="120">
-                          <Border Width="14" Height="{Binding NotesBarHeight}" Background="{DynamicResource InkBrush}" VerticalAlignment="Bottom"
-                                  ToolTip.Tip="{Binding NotesTotal}" />
-                          <Border Width="14" Height="{Binding TasksBarHeight}" Background="{DynamicResource Ink30}" VerticalAlignment="Bottom"
-                                  ToolTip.Tip="{Binding TasksCompleted}" />
-                        </StackPanel>
-                        <TextBlock Text="{Binding WeekLabel}" Classes="faint" FontSize="9" HorizontalAlignment="Center" />
+                    <DataTemplate DataType="x:Object">
+                      <StackPanel Orientation="Horizontal" Spacing="2">
+                        <ItemsControl ItemsSource="{Binding}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Orientation="Horizontal" Spacing="2" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:HeatmapCellViewModel">
+                              <Border Width="14" Height="14" CornerRadius="0"
+                                      Background="{Binding State, Converter={StaticResource HeatmapStateConverter}}"
+                                      ToolTip.Tip="{Binding Label}" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                       </StackPanel>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
               </ScrollViewer>
-            </StackPanel>
+            </Grid>
           </Border>
         </StackPanel>
 
-        <!-- Constancia de hábitos por semana — mismo lenguaje monocromo, oculto por completo si no hay
-             hábitos activos (ninguna semana trae HabitCompletionPercent). -->
-        <StackPanel Spacing="16" IsVisible="{Binding HasHabitData}">
-          <TextBlock Text="{loc:Tr Statistics_Chart_HabitsTitle, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-          <Border Classes="card" Padding="22">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-              <ItemsControl ItemsSource="{Binding Weeks}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal" Spacing="14" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="vm:WeekBarViewModel">
-                    <StackPanel Spacing="8" Width="34" VerticalAlignment="Bottom">
-                      <Border Height="120" Width="20" Background="{DynamicResource Ink05}" VerticalAlignment="Bottom" HorizontalAlignment="Center">
-                        <Border Height="{Binding HabitBarHeight}" Background="{DynamicResource InkBrush}" VerticalAlignment="Bottom" />
-                      </Border>
-                      <TextBlock Text="{Binding WeekLabel}" Classes="faint" FontSize="9" HorizontalAlignment="Center" />
-                    </StackPanel>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-          </Border>
-        </StackPanel>
+        <TextBlock Text="{loc:Tr Statistics_Heatmap_Empty}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" IsVisible="{Binding !HasHeatmapData}" />
 
-        <!-- Aviso Polar: solo se explica por qué las tareas de Polar no cuentan cuando el usuario no ha
-             vinculado cuenta — cero fricción para quien no lo usa, mismo principio que el Dashboard. -->
-        <TextBlock Text="{loc:Tr Statistics_PolarNotLinkedNotice}" Classes="faint" TextWrapping="Wrap"
-                   IsVisible="{Binding !IsPolarLinked}" />
+        <TextBlock Text="{loc:Tr Statistics_PolarNotLinkedNotice}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding !IsPolarLinked}" />
 
       </StackPanel>
-
     </StackPanel>
   </ScrollViewer>
 </UserControl>

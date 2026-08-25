@@ -67,6 +67,17 @@ public static class SessionGraphRenderer
             .Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
         var themeJson = JsonSerializer.Serialize(theme, DataJsonOptions)
             .Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
+        // Embed the app's own display font as a base64 data URI so the WebView's canvas uses the same
+        // typeface the Avalonia UI does — without this @font-face declaration, the WebView falls back to
+        // whatever system font WPE/GTK provides, which has poor legibility for certain glyphs (e.g. the
+        // uppercase "I" and other thin-stemmed letters like A/L/T/H/N that the user reported as broken).
+        // Only Space Grotesk is embedded: it's the title font (69 KB — well under any data-URI limit an
+        // embedded WebKit build might impose), and the JetBrains Mono "Nerd Font" bundle the app carries
+        // is 2.5 MB, whose base64 form (~3.4 MB) would bloat every render and risks silently dropping the
+        // whole @font-face rule on constrained WebViews. The mono eyebrow/counter glyphs are basic Latin
+        // (SESIÓN / 34 NOTAS), which the system monospace fallback renders perfectly legibly. The URI is
+        // quoted and declared as font/ttf — the MIME WebKitGTK accepts most reliably.
+        var spaceGroteskUri = EmbeddedFonts.DataUri("SpaceGrotesk-Bold.ttf");
 
         return $$"""
                 <!doctype html>
@@ -74,6 +85,7 @@ public static class SessionGraphRenderer
                 <head>
                 <meta charset="utf-8" />
                 <style>
+                  @font-face { font-family: 'Space Grotesk'; src: url("{{spaceGroteskUri}}") format('truetype'); font-weight: 700; font-style: normal; }
                   html, body { margin: 0; padding: 0; overflow: hidden; background: {{theme.Background}}; }
                   #graph { position: relative; width: 100vw; height: 100vh; }
                   #graph canvas, #graph > div { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -104,6 +116,17 @@ public static class SessionGraphRenderer
                 (function () {
                   const DATA = {{dataJson}};
                   const THEME = {{themeJson}};
+                  // Kick the embedded Space Grotesk @font-face into loading before the first frame is
+                  // drawn. WebKit canvas text only switches to a webfont once it has actually been fetched
+                  // and registered (via document.fonts), so without this the first however-many frames —
+                  // and on slow embedded WebViews potentially the whole session — would paint the card
+                  // titles with the system fallback that renders thin-stemmed glyphs (I, A, L, T, H, N)
+                  // poorly. The render loop redraws every frame anyway, so even a late load self-heals;
+                  // this just makes it immediate. document.fonts is missing only on ancient engines, in
+                  // which case the @font-face still applies once the stylesheet is processed.
+                  if (document.fonts && document.fonts.load) {
+                    document.fonts.load("700 16px 'Space Grotesk'");
+                  }
                   // Which note (if any) is the first pick of a pending link pair — purely a visual cue
                   // (the pulse ring drawn in drawOverlays below). The host decides whether a click opens a
                   // note or picks/completes a link (see SessionsViewModel.HandleNodeClicked); this page just
@@ -124,15 +147,30 @@ public static class SessionGraphRenderer
                   const HIT_AREA_MULTIPLIER = 3.5;
                   const CLICK_RADIUS = NODE_REL_SIZE * HIT_AREA_MULTIPLIER;
 
-                  // Session-name labels only appear over a session once it has at least this many notes
-                  // linked to each other — an isolated note (or a session with no links yet) isn't a
-                  // cluster worth naming. Font size (and every other overlay measurement below) is expressed
-                  // in world units and multiplied by SCREEN_SCALE() at draw time — deliberately, so it grows
-                  // and shrinks with the canvas zoom exactly like the nodes do, instead of staying a fixed
-                  // screen size.
-                  const LABEL_MIN_LINKED_NODES = 2;
-                  const LABEL_BASE_SIZE = 13;
-                  const LABEL_MAX_SIZE = 24;
+                  // Session-name cards: every session graph (LABEL_MIN_NOTES+ notes, linked or not) gets a
+                  // proper card above its cluster, styled after the app's own UI language
+                  // (docs/agent-docs/sistema-diseno-web.md): elevated panel surface, a 3px white accent bar
+                  // (the app's active/selected signal — sidebar, stat cards, admin rows), a 1px white/20
+                  // border, and the design system's signature typographic hierarchy — a tiny mono tracked
+                  // "SESIÓN" eyebrow above the big bold uppercase name, a 1px white/10 hairline rule, and a
+                  // mono "N NOTAS" counter below (see drawSessionLabels). Font size (and every other
+                  // overlay measurement below) is expressed in world units and multiplied by SCREEN_SCALE()
+                  // at draw time — deliberately, so it grows and shrinks with the canvas zoom exactly like
+                  // the nodes do — but floored at LABEL_MIN_PX so the name stays legible when the camera
+                  // zooms out to frame the whole session ring.
+                  const LABEL_MIN_NOTES = 2;
+                  const LABEL_BASE_SIZE = 18;
+                  const LABEL_MAX_SIZE = 30;
+                  // Floor on the name's *screen* size (px) — the ring layout parks sessions far apart, so
+                  // fitting the whole scene zooms out well past where world-scaled text would stay readable.
+                  const LABEL_MIN_PX = 16;
+                  // Card colors come from the app's own theme (THEME.labelBackground/Muted/Rule, plus
+                  // THEME.tooltipForeground for the title and THEME.ink for the accent bar), so the cards
+                  // adapt to the active theme instead of hard-coding dark-theme values.
+                  const LABEL_PAD_X = 0.62; // card horizontal padding, × title size
+                  const LABEL_PAD_Y = 0.34; // card vertical padding, × title size
+                  const LABEL_GAP = 1.1;    // empty space between the cluster's topmost note and the card, × title size
+                  const LABEL_ACCENT_W = 3; // left accent bar width, screen px (like the app's selection bars)
 
                   // Slow, constant orbit of the whole graph around its own center of mass — a full turn
                   // every 10 minutes is intentionally well past "notice it moving," more of an ambient sense
@@ -144,6 +182,10 @@ public static class SessionGraphRenderer
                   const ROTATION_SPEED = (Math.PI * 2) / ROTATION_PERIOD_MS; // radians / ms
                   let isDraggingNode = false;
                   let lastRotationTs = null;
+                  // Whether the next simulation 'end' should re-fit the camera to the whole scene (see the
+                  // simulation's 'end' handler) — true at load and after every graph-data update, cleared
+                  // after the first settle so a drag-release 'end' doesn't yank the view mid-interaction.
+                  let refitOnSettle = true;
 
                   // Avalonia.Controls.WebView injects window.invokeCSharpAction on every adapter (WebView2,
                   // WKWebView, GTK/WPE) as the one cross-platform way to reach WebMessageReceived.Body on
@@ -159,7 +201,7 @@ public static class SessionGraphRenderer
 
                   // ===================== DOM layers =====================
                   // sigma only draws nodes/edges/labels into its own renderer container. Everything this page
-                  // draws *underneath* those (the session-affinity spokes, item 9 below) or *on top* of them
+                  // draws *underneath* those (the session-affinity mesh, item 9 below) or *on top* of them
                   // (particles, pulse rings, session-name labels) lives on two extra canvases stacked via
                   // plain CSS z-order (see #graph canvas, #graph > div in the style block above) — cheaper
                   // and far simpler than hooking into sigma's own per-node/edge draw calls, and it means
@@ -195,7 +237,7 @@ public static class SessionGraphRenderer
                   sizeOverlayCanvases();
                   window.addEventListener('resize', sizeOverlayCanvases);
 
-                  // ===================== Custom node/edge renderers (glow) =====================
+                  // ===================== Custom node/edge renderers (glow + sphere shading) =====================
                   // A soft bloom drawn straight into the canvas 2D context via ctx.shadowColor/shadowBlur,
                   // set once per shape right before it's painted — the fix confirmed by an A/B comparison
                   // against the production bug this migration exists to fix: a CSS `filter: drop-shadow(...)` applied to
@@ -208,12 +250,29 @@ public static class SessionGraphRenderer
                   // (sigma.canvas.nodes.<type> / sigma.canvas.edges.<type>, selected via defaultNodeType /
                   // defaultEdgeType below) are the supported way to add this without forking the bundle.
                   //
+                  // Nodes are drawn as *spheres*, not flat discs: on top of the bloom each sprite bakes a
+                  // radial-gradient shading pass whose focal point sits offset toward the upper-left (the
+                  // scene's "light source"), so every note reads as a lit, glossy sphere — bright specular
+                  // spot, its own body color/alpha, then a falloff into a darker rim on the far side. It's
+                  // purely Canvas 2D (a radial gradient), deliberately not WebGL/three.js: this app's Linux
+                  // WebView backend (WPE) only implements software (Shm) compositing, and GPU rendering
+                  // modes throw NotImplementedException — the same reason the WebGL-based 3d-force-graph
+                  // was replaced in the first place (see the file-scoped doc comment).
+                  //
                   // Glow is node-only, deliberately: edges stay crisp, unblurred lines (see the edge
                   // renderer below) so the graph doesn't read as a hazy blob once dozens of links overlap —
                   // the bloom is reserved for drawing the eye to notes (spheres), not the connections
                   // between them.
                   const GLOW_COLOR = 'rgba(255,255,255,0.4)';
                   const GLOW_BLUR = 12;
+                  // Sphere shading constants. Highlight offset/radius are fractions of the node radius so
+                  // the shading scales exactly with zoom, same as the node itself.
+                  const SPHERE_HIGHLIGHT_OFFSET = 0.38; // focal point shift toward upper-left, × radius
+                  const SPHERE_HIGHLIGHT_RADIUS = 0.15; // size of the specular spot, × radius
+                  const SPHERE_HIGHLIGHT_BOOST = 0.3;   // alpha added to the specular spot over the body
+                  const SPHERE_BODY_STOP = 0.35;        // gradient position where the node's own color takes over
+                  const SPHERE_RIM_RGB = '110,110,125'; // darker neutral-gray rim (the unlit side)
+                  const SPHERE_RIM_ALPHA = 0.85;        // rim alpha, × the node's own alpha
 
                   // context.shadowBlur is by far the single most expensive thing this page draws: every
                   // browser's Canvas2D backend has to run an actual blur convolution over the shape's
@@ -225,31 +284,43 @@ public static class SessionGraphRenderer
                   // with node count directly through that convolution — the first thing to fall over as a
                   // vault's note count grows.
                   //
-                  // Every node's glow is *identical* except for its screen radius (which only changes on
-                  // zoom/pending-state) and fill alpha (one of a small, fixed set of per-session values from
-                  // NodeBrightness) — GLOW_COLOR/GLOW_BLUR themselves never vary. That means the actual
-                  // *blurred* pixels only ever take a handful of distinct shapes at once, so the expensive
-                  // part — running shadowBlur once to produce that shape — can be done a single time per
-                  // shape and reused: rendered once into a small offscreen canvas (a "sprite"), cached by
-                  // (rounded radius, fill color), and every subsequent frame just blits the already-blurred
-                  // bitmap via drawImage — one of the cheapest calls a Canvas2D context has, since there's no
+                  // Every node's sprite (glow *and* sphere shading) is *identical* except for its screen
+                  // radius (which only changes on zoom/pending-state) and fill alpha (one of a small, fixed
+                  // set of per-session values from NodeBrightness) — GLOW_COLOR/GLOW_BLUR and the sphere
+                  // shading constants themselves never vary. That means the actual *blurred* pixels only
+                  // ever take a handful of distinct shapes at once, so the expensive part — running
+                  // shadowBlur once to produce that shape — can be done a single time per shape and reused:
+                  // rendered once into a small offscreen canvas (a "sprite"), cached by (rounded radius,
+                  // fill color), and every subsequent frame just blits the already-blurred bitmap via
+                  // drawImage — one of the cheapest calls a Canvas2D context has, since there's no
                   // convolution left to run, just a pixel copy. Visually identical output, far less work.
-                  const glowSprites = new Map();
+                  const sphereSprites = new Map();
                   // Screen radius changes continuously while the camera is zooming (mouse wheel, pinch, the
                   // zoomToFit tween), so new (radius, color) keys keep appearing and old ones stop being
                   // reused — capped here so a long session of zooming in and out doesn't grow this into an
                   // unbounded pile of small canvases. Clearing the whole cache is fine, not just cheap: the
                   // handful of sizes/colors actually on screen at any moment get re-cached again within a
                   // frame or two, same as a cold start.
-                  const GLOW_SPRITE_CACHE_LIMIT = 300;
+                  const SPHERE_SPRITE_CACHE_LIMIT = 300;
 
-                  function getGlowSprite(radius, fillStyle) {
+                  // Pulls the alpha out of the rgba() strings this page builds (NodeBrightness's
+                  // per-session whites, THEME.nodeActive's pure white) so the sphere shading can derive its
+                  // highlight/rim alphas from the node's own.
+                  function rgbaAlpha(cssColor) {
+                    const match = /rgba?\(([^)]+)\)/.exec(cssColor);
+                    if (!match) return 1;
+                    const parts = match[1].split(',');
+                    const alpha = parseFloat(parts[parts.length - 1].trim());
+                    return isNaN(alpha) ? 1 : alpha;
+                  }
+
+                  function getSphereSprite(radius, fillStyle) {
                     const r = Math.max(1, Math.round(radius));
                     const key = r + '|' + fillStyle;
-                    const cached = glowSprites.get(key);
+                    const cached = sphereSprites.get(key);
                     if (cached) return cached;
 
-                    if (glowSprites.size >= GLOW_SPRITE_CACHE_LIMIT) glowSprites.clear();
+                    if (sphereSprites.size >= SPHERE_SPRITE_CACHE_LIMIT) sphereSprites.clear();
 
                     // Padding gives the blur room to fall off before it hits the sprite canvas's own edge —
                     // too little and the glow reads as a hard-clipped square halo instead of a soft falloff.
@@ -259,22 +330,42 @@ public static class SessionGraphRenderer
                     spriteCanvas.width = size;
                     spriteCanvas.height = size;
                     const spriteCtx = spriteCanvas.getContext('2d');
+                    const cx = size / 2, cy = size / 2;
+
+                    // First the bloom: one blurred fill in the node's own color, exactly as before.
                     spriteCtx.shadowColor = GLOW_COLOR;
                     spriteCtx.shadowBlur = GLOW_BLUR;
                     spriteCtx.fillStyle = fillStyle;
                     spriteCtx.beginPath();
-                    spriteCtx.arc(size / 2, size / 2, r, 0, Math.PI * 2, true);
+                    spriteCtx.arc(cx, cy, r, 0, Math.PI * 2, true);
+                    spriteCtx.closePath();
+                    spriteCtx.fill();
+                    spriteCtx.shadowBlur = 0;
+
+                    // Then the sphere itself on top: a radial gradient from the offset specular spot
+                    // (upper-left "light"), through the node's own color, out to the darkened rim. The
+                    // sprite's outer glow is untouched because the sphere only covers the circle itself.
+                    const alpha = rgbaAlpha(fillStyle);
+                    const grad = spriteCtx.createRadialGradient(
+                      cx - r * SPHERE_HIGHLIGHT_OFFSET, cy - r * SPHERE_HIGHLIGHT_OFFSET, r * SPHERE_HIGHLIGHT_RADIUS,
+                      cx, cy, r);
+                    grad.addColorStop(0, 'rgba(255,255,255,' + Math.min(1, alpha + SPHERE_HIGHLIGHT_BOOST).toFixed(3) + ')');
+                    grad.addColorStop(SPHERE_BODY_STOP, fillStyle);
+                    grad.addColorStop(1, 'rgba(' + SPHERE_RIM_RGB + ',' + (alpha * SPHERE_RIM_ALPHA).toFixed(3) + ')');
+                    spriteCtx.fillStyle = grad;
+                    spriteCtx.beginPath();
+                    spriteCtx.arc(cx, cy, r, 0, Math.PI * 2, true);
                     spriteCtx.closePath();
                     spriteCtx.fill();
 
                     const sprite = { canvas: spriteCanvas, half: size / 2 };
-                    glowSprites.set(key, sprite);
+                    sphereSprites.set(key, sprite);
                     return sprite;
                   }
 
-                  sigma.canvas.nodes.enkiGlow = function (node, context, settings) {
+                  sigma.canvas.nodes.enkiSphere = function (node, context, settings) {
                     const prefix = settings('prefix') || '';
-                    const sprite = getGlowSprite(node[prefix + 'size'], node.color || settings('defaultNodeColor'));
+                    const sprite = getSphereSprite(node[prefix + 'size'], node.color || settings('defaultNodeColor'));
                     context.drawImage(sprite.canvas, node[prefix + 'x'] - sprite.half, node[prefix + 'y'] - sprite.half);
                   };
 
@@ -342,7 +433,7 @@ public static class SessionGraphRenderer
                       maxNodeSize: 0,
                       minEdgeSize: 0,
                       maxEdgeSize: 0,
-                      defaultNodeType: 'enkiGlow',
+                      defaultNodeType: 'enkiSphere',
                       defaultEdgeType: 'enkiGlow',
                       defaultNodeColor: THEME.link,
                       defaultEdgeColor: THEME.link,
@@ -458,7 +549,22 @@ public static class SessionGraphRenderer
                     .force('link', d3.forceLink(forceLinks).id(function (n) { return n.id; }))
                     .force('center', d3.forceCenter(0, 0))
                     .force('sessionCluster', sessionClusterForce)
-                    .on('end', reportPositions);
+                    // Once the layout settles (alpha decayed to rest), re-wire the session mesh and anchor
+                    // ring from the final positions — the first build ran on whatever positions the very
+                    // first tick saw, which for never-laid-out notes can be a degenerate pile at the origin.
+                    // invalidateGroupings is cheap (a few nulls); the next frame's ensureGroupings rebuilds
+                    // from settled positions. The camera is re-fit to the settled scene too, but only the
+                    // first time (refitOnSettle, set again by __enkiSetGraphData) — a drag release also
+                    // fires 'end', and yanking the view to re-fit the whole scene every time would fight the
+                    // user mid-interaction.
+                    .on('end', function () {
+                      invalidateGroupings();
+                      if (refitOnSettle) {
+                        refitOnSettle = false;
+                        setTimeout(function () { zoomToFit(600, 90); }, 250);
+                      }
+                      reportPositions();
+                    });
 
                   // ===================== Click & drag (manual pointer resolution) =====================
                   // Both are resolved here from raw pointer events instead of sigma's own click/drag paths
@@ -491,7 +597,9 @@ public static class SessionGraphRenderer
                   // whatever hover/click quirks this embedded WPE WebView has.
                   let lastClickNodeId = null;
                   let lastClickAt = 0;
-                  const DOUBLE_CLICK_MS = 380;
+                  // Slightly generous vs. the platform default so a human double click still lands as one
+                  // even under this app's software-rendered WebView backend, where event delivery can lag.
+                  const DOUBLE_CLICK_MS = 450;
 
                   function screenPoint(e) {
                     const rect = el.getBoundingClientRect();
@@ -512,7 +620,7 @@ public static class SessionGraphRenderer
                   }
 
                   // Forward direction of the same transform, for drawing overlays (particles, pulse rings,
-                  // spokes, labels) in sync with wherever sigma is currently drawing the real nodes/edges.
+                  // mesh lines, labels) in sync with wherever sigma is currently drawing the real nodes/edges.
                   function worldToScreen(x, y) {
                     const cam = s.camera;
                     const w = sigmaHost.clientWidth || 1;
@@ -686,132 +794,376 @@ public static class SessionGraphRenderer
                   }
 
                   // ===================== Session groupings (cached) =====================
-                  // Two different groupings of "notes in the same session," built together in one pass since
-                  // they share the same source loop, and cached — recomputing either from scratch every
+                  // The groupings of "notes in the same session" are built together in one pass since they
+                  // share the same source loop, and cached — recomputing any of them from scratch every
                   // frame (a fresh Set + Map churn, 60 times a second forever thanks to the animation loop
                   // never stopping) was pure waste. Rebuilt on demand only when the graph's node/link *set*
                   // changes (see invalidateGroupings, called from __enkiSetGraphData below). Member
                   // *positions* still move every frame (force layout, rotation), so those are re-aggregated
                   // on every draw call — only membership itself is cached:
-                  //  - linkedSessionClusters: sessions with LABEL_MIN_LINKED_NODES+ notes already linked to
-                  //    one another — real relationships, used for the floating session-name label.
-                  //  - allSessionGroups: every note in a session with 2+ notes, linked or not — this is the
-                  //    weaker "these just happen to live in the same session" affinity, used for the faint
-                  //    scaffold in drawSessionAffinity and the gentle clustering force below. Keeping it
-                  //    separate from real links means it never touches the actual link data the "X ENLACES"
-                  //    chip and manual-link toggling depend on — it's purely a rendering/layout aid.
-                  let linkedSessionClusters = null;
+                  //  - allSessionGroups: every note in a session with LABEL_MIN_NOTES+ notes, linked or not
+                  //    — this is the weaker "these just happen to live in the same session" affinity, used
+                  //    for the faint mesh scaffold in drawSessionAffinity, the session-name chips in
+                  //    drawSessionLabels and the gentle clustering force below. Keeping it separate from
+                  //    real links means it never touches the actual link data the "X ENLACES" chip and
+                  //    manual-link toggling depend on — it's purely a rendering/layout aid.
+                  //  - allSessionMembers: like allSessionGroups but including single-note sessions, so the
+                  //    ring snap below also parks isolated notes on their own slot instead of letting them
+                  //    drift into a neighboring cluster.
+                  //  - sessionAnchors: a fixed ring of slots (one per session, evenly spaced around the
+                  //    origin — see SESSION_CENTER_SPACING) that snapSessionsToRing eases each session's
+                  //    center of mass toward in the render loop (see snapSessionsToRing for why it lives
+                  //    there rather than in the d3 simulation). That pull is the mechanism that guarantees
+                  //    the different session graphs stay well apart instead of stacking on top of one
+                  //    another. The slots are derived from the session *count* alone, never from live
+                  //    positions, so they stay put while the layout settles instead of chasing the clusters
+                  //    around.
+                  //  - sessionMeshPairs: the edges of the mesh scaffold, wired as a planar mesh — each
+                  //    session's notes are Delaunay-triangulated (see triangulateSession), so the "these
+                  //    live together" cue reads as a clean wireframe web of triangles instead of a star of
+                  //    spokes to one central point. Delaunay is what keeps it clean: the result is planar,
+                  //    so no two scaffold lines ever cross, which a naive nearest-neighbor web does
+                  //    constantly and turns a dense session into a tangled hairball. Topology is cached,
+                  //    not recomputed every frame, so the lines don't flicker while the force layout is
+                  //    settling; the ambient rotation is rigid (it preserves every distance), so the cached
+                  //    wiring stays visually valid long after it was computed — and the simulation's 'end'
+                  //    event invalidates it once the layout settles, so the mesh is re-wired from the final
+                  //    positions instead of being frozen at whatever the first tick saw.
                   let allSessionGroups = null;
-                  function invalidateGroupings() { linkedSessionClusters = null; allSessionGroups = null; }
+                  let allSessionMembers = null;
+                  let sessionAnchors = null;
+                  let sessionMeshPairs = null;
+                  function invalidateGroupings() {
+                    allSessionGroups = null; allSessionMembers = null; sessionAnchors = null; sessionMeshPairs = null;
+                  }
                   function ensureGroupings() {
-                    if (linkedSessionClusters && allSessionGroups) return;
-
-                    const linkedIds = new Set();
-                    sigmaEdges.forEach(function (l) {
-                      linkedIds.add(l.source);
-                      linkedIds.add(l.target);
-                    });
+                    if (allSessionGroups && allSessionMembers && sessionAnchors && sessionMeshPairs) return;
 
                     const bySession = new Map();
-                    const byLinkedSession = new Map();
                     nodes.forEach(function (n) {
                       if (!bySession.has(n.session)) bySession.set(n.session, []);
                       bySession.get(n.session).push(n);
-
-                      if (!linkedIds.has(n.id)) return;
-                      if (!byLinkedSession.has(n.session)) byLinkedSession.set(n.session, []);
-                      byLinkedSession.get(n.session).push(n);
-                    });
-
-                    linkedSessionClusters = new Map();
-                    byLinkedSession.forEach(function (members, session) {
-                      if (members.length >= LABEL_MIN_LINKED_NODES) linkedSessionClusters.set(session, members);
                     });
 
                     allSessionGroups = new Map();
+                    allSessionMembers = new Map();
                     bySession.forEach(function (members, session) {
-                      if (members.length >= 2) allSessionGroups.set(session, members);
+                      allSessionMembers.set(session, members);
+                      if (members.length >= LABEL_MIN_NOTES) allSessionGroups.set(session, members);
+                    });
+
+                    // Fixed ring of session slots — see the sessionAnchors comment above. The ring's center
+                    // is the *weighted* center of mass of the parked clusters, not the raw origin: d3's
+                    // forceCenter pulls the scene's live weighted COM toward (0,0), and since each session's
+                    // cluster ends up parked at its slot, that COM is Σ(wᵢ·slotᵢ)/Σwᵢ — which is not zero
+                    // when sessions have different note counts (64 notes on one side of the ring outweigh
+                    // 3 on the other). Centering the ring there makes the forceCenter correction vanish at
+                    // equilibrium, so the ring snap and the physics pull in the same direction instead of
+                    // fighting forever (verified empirically: without it, forceCenter shifted the whole
+                    // ring off its slots by exactly the weighted-COM offset).
+                    sessionAnchors = new Map();
+                    const sessions = Array.from(allSessionMembers.keys());
+                    const count = sessions.length;
+                    const ringRadius = count <= 1 ? 0 : (count * SESSION_CENTER_SPACING) / (2 * Math.PI);
+                    const ringCenter = { x: 0, y: 0 };
+                    {
+                      let wx = 0, wy = 0, w = 0;
+                      sessions.forEach(function (session, i) {
+                        const members = allSessionMembers.get(session);
+                        const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+                        const sx = Math.cos(angle) * ringRadius, sy = Math.sin(angle) * ringRadius;
+                        wx += members.length * sx; wy += members.length * sy; w += members.length;
+                      });
+                      ringCenter.x = -wx / w; ringCenter.y = -wy / w;
+                    }
+                    sessions.forEach(function (session, i) {
+                      const angle = (i / count) * Math.PI * 2 - Math.PI / 2; // first slot at the top, then clockwise
+                      // The session's color — all nodes in a session share the same one (derived from
+                      // the session id by NodeBrightness, or an explicit hex override), so reading it from
+                      // the first node is cheap and deterministic.
+                      const members = allSessionMembers.get(session);
+                      const sessionColor = members && members.length > 0 ? members[0].color : THEME.ink;
+                      sessionAnchors.set(session, {
+                        x: Math.cos(angle) * ringRadius + ringCenter.x,
+                        y: Math.sin(angle) * ringRadius + ringCenter.y,
+                        color: sessionColor
+                      });
+                    });
+
+                    // Mesh wiring, computed from positions as they are right now (see the sessionMeshPairs
+                    // comment above for why it's cached rather than re-derived per frame).
+                    sessionMeshPairs = [];
+                    allSessionGroups.forEach(function (members) {
+                      triangulateSession(members).forEach(function (pair) { sessionMeshPairs.push(pair); });
                     });
                   }
 
-                  // Labels the cluster of notes belonging to each session, once that session has at least
-                  // LABEL_MIN_LINKED_NODES notes linked to one another — centered above the cluster's
-                  // current center of mass, so it drifts along with the force simulation instead of pinning
-                  // to a stale spot. Grows with the cluster (sqrt, not linear, and capped) so a session with
-                  // a handful of notes doesn't dwarf one with dozens. Drawn on the overlay canvas, on top of
-                  // sigma's own nodes/edges.
-                  function drawSessionLabels() {
-                    const clusters = linkedSessionClusters;
-                    if (clusters.size === 0) return;
+                  // Bowyer–Watson incremental Delaunay triangulation over a session's notes, returning the
+                  // undirected edge list (pairs of node objects). Delaunay is the canonical "mesh" wiring:
+                  // it connects every note to its natural spatial neighbors so the whole group forms one
+                  // planar web of triangles — and because the result is planar, no two edges ever cross,
+                  // which is the property that keeps a 64-note session looking like a wireframe mesh
+                  // instead of a hairball. Degenerate cases are handled defensively: fewer than 3 notes get
+                  // a trivial result (a single edge for 2, nothing for 1), and coincident points (e.g.
+                  // brand-new notes that were never laid out, all sitting at the origin) collapse to one
+                  // participant each so the circumcircle math never divides by ~zero.
+                  function triangulateSession(members) {
+                    if (members.length < 2) return [];
+                    if (members.length === 2) return [[members[0], members[1]]];
 
-                    const scale = screenScale();
+                    // Collapse coincident points (within 0.01 world units); excluded nodes ride along with
+                    // their twin — they occupy the same spot, so the twin's edges already emanate from it.
+                    const pts = [];
+                    const used = new Set();
+                    members.forEach(function (n) {
+                      const key = n.x.toFixed(2) + ',' + n.y.toFixed(2);
+                      if (used.has(key)) return;
+                      used.add(key);
+                      pts.push(n);
+                    });
+                    if (pts.length < 2) return [];
+                    if (pts.length === 2) return [[pts[0], pts[1]]];
+
+                    // Super-triangle enclosing every point, so the incremental insertion always has a
+                    // starting triangulation to chew on; its vertices are removed from the result at the end.
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    pts.forEach(function (p) {
+                      if (p.x < minX) minX = p.x;
+                      if (p.x > maxX) maxX = p.x;
+                      if (p.y < minY) minY = p.y;
+                      if (p.y > maxY) maxY = p.y;
+                    });
+                    const dmax = Math.max(maxX - minX, maxY - minY);
+                    const midx = (minX + maxX) / 2, midy = (minY + maxY) / 2;
+                    const sup = [
+                      { x: midx - 20 * dmax, y: midy - dmax },
+                      { x: midx, y: midy + 20 * dmax },
+                      { x: midx + 20 * dmax, y: midy - dmax }
+                    ];
+                    let tris = [[sup[0], sup[1], sup[2]]];
+
+                    function circumcircle(t) {
+                      const a = t[0], b = t[1], c = t[2];
+                      const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+                      if (Math.abs(d) < 1e-12) return null; // degenerate/collinear — leave the triangle alone
+                      const a2 = a.x * a.x + a.y * a.y, b2 = b.x * b.x + b.y * b.y, c2 = c.x * c.x + c.y * c.y;
+                      const ux = (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / d;
+                      const uy = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d;
+                      return { x: ux, y: uy, r: Math.hypot(ux - a.x, uy - a.y) };
+                    }
+
+                    pts.forEach(function (p) {
+                      const bad = [];
+                      for (let i = tris.length - 1; i >= 0; i--) {
+                        const c = circumcircle(tris[i]);
+                        if (c && Math.hypot(p.x - c.x, p.y - c.y) <= c.r) bad.push(tris.splice(i, 1)[0]);
+                      }
+                      // The boundary of the removed region — edges shared by exactly one removed triangle —
+                      // becomes the new triangles' outer edges.
+                      const boundary = new Map();
+                      function addBoundary(u, v) {
+                        const key = u.x < v.x || (u.x === v.x && u.y < v.y)
+                          ? u.x + ',' + u.y + '|' + v.x + ',' + v.y
+                          : v.x + ',' + v.y + '|' + u.x + ',' + u.y;
+                        if (boundary.has(key)) boundary.delete(key); else boundary.set(key, [u, v]);
+                      }
+                      bad.forEach(function (t) { addBoundary(t[0], t[1]); addBoundary(t[1], t[2]); addBoundary(t[2], t[0]); });
+                      boundary.forEach(function (e) { tris.push([e[0], e[1], p]); });
+                    });
+
+                    const isSuper = function (p) { return p === sup[0] || p === sup[1] || p === sup[2]; };
+                    const seen = new Set();
+                    const edges = [];
+                    tris.forEach(function (t) {
+                      if (t.some(isSuper)) return;
+                      [[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]].forEach(function (pair) {
+                        const u = pair[0], v = pair[1];
+                        const key = u.x < v.x || (u.x === v.x && u.y < v.y)
+                          ? u.x + ',' + u.y + '|' + v.x + ',' + v.y
+                          : v.x + ',' + v.y + '|' + u.x + ',' + u.y;
+                        if (!seen.has(key)) { seen.add(key); edges.push(pair); }
+                      });
+                    });
+                    return edges;
+                  }
+
+                  // The session-name card: every session graph (LABEL_MIN_NOTES+ notes, linked or not) gets
+                  // a card floating above the cluster's topmost note, built from the app's own design tokens
+                  // (see the LABEL_* constants and docs/agent-docs/sistema-diseno-web.md §2.2/§3.3/§7.6): an
+                  // elevated panel surface, a 3px white left accent bar, a 1px white/20 border, sharp corners,
+                  // and the design system's signature typographic hierarchy: a tiny mono "SESIÓN" eyebrow,
+                  // the big bold uppercase name, a 1px white/10 hairline, then the mono "N NOTAS" counter.
+                  // Centered on the cluster's center of mass, so it drifts along with the force simulation.
+                  // Drawn on the overlay canvas, on top of sigma's own nodes/edges.
+                  //
+                  // Title text is drawn word-by-word with an explicit gap between words. The WPE
+                  // software renderer mis-handles the Space Grotesk font's kerning tables at large sizes,
+                  // causing a single fillText("SIN SESIÓN") to produce overlapping/stacked glyphs (the
+                  // user sees "S N SES ÓN" with letters piled on top of each other). Splitting into
+                  // words and placing each one with a measured advance avoids the renderer bug entirely
+                  // — each word is short enough that its internal kerning fits within the renderer's
+                  // precision, and the explicit gap between words prevents the space character from
+                  // collapsing to zero width.
+                  function drawSessionLabels() {
+                    const groups = allSessionGroups;
+                    if (!groups || groups.size === 0) return;
+
                     overlayCtx.save();
                     overlayCtx.textAlign = 'center';
-                    overlayCtx.textBaseline = 'bottom';
-                    overlayCtx.fillStyle = THEME.ink70;
-                    clusters.forEach(function (members, session) {
+                    overlayCtx.textBaseline = 'top';
+                    groups.forEach(function (members, session) {
                       let sx = 0, minY = Infinity;
                       members.forEach(function (n) { sx += n.x; if (n.y < minY) minY = n.y; });
                       const cx = sx / members.length;
-                      const worldSize = Math.min(LABEL_MAX_SIZE, LABEL_BASE_SIZE + Math.sqrt(members.length - LABEL_MIN_LINKED_NODES) * 3);
-                      const size = worldSize * scale;
+                      const worldSize = Math.min(LABEL_MAX_SIZE, LABEL_BASE_SIZE + Math.sqrt(members.length - LABEL_MIN_NOTES) * 2.5);
+                      const scale = screenScale();
+                      const size = Math.max(worldSize * scale, LABEL_MIN_PX);
 
                       const top = worldToScreen(cx, minY);
-                      overlayCtx.font = size + "px 'JetBrains Mono', ui-monospace, monospace";
-                      overlayCtx.fillText(session.toUpperCase(), top.x, top.y - size * 0.9);
+                      const name = session.toUpperCase();
+                      const count = members.length + (members.length === 1 ? ' NOTA' : ' NOTAS');
+
+                      // Font sizes and vertical metrics — all in screen px.
+                      const eyebrowSize = Math.max(7, size * 0.38);
+                      const countSize = Math.max(8, size * 0.42);
+                      const padX = size * LABEL_PAD_X, padY = size * LABEL_PAD_Y;
+                      const gap = size * 0.22;
+
+                      // Measure full strings in one shot.
+                      const eyebrowFont = "700 " + eyebrowSize + "px 'JetBrains Mono', ui-monospace, monospace";
+                      overlayCtx.font = eyebrowFont;
+                      const ew = overlayCtx.measureText('SESIÓN').width;
+
+                      const titleFont = "700 " + size + "px 'Space Grotesk', 'DejaVu Sans', system-ui, -apple-system, sans-serif";
+                      overlayCtx.font = titleFont;
+                      // Split name into words for word-by-word drawing — the WPE renderer
+                      // mangles a single fillText of the full multi-word string at large sizes.
+                      const titleWords = name.split(' ');
+                      const titleWordGap = size * 0.18; // explicit space ≈ 18% of font size
+                      const titleWordWidths = titleWords.map(function (w) { return overlayCtx.measureText(w).width; });
+                      const tw = titleWordWidths.reduce(function (a, b) { return a + b; }, 0) + titleWordGap * (titleWords.length - 1);
+
+                      const countFont = "700 " + countSize + "px 'JetBrains Mono', ui-monospace, monospace";
+                      overlayCtx.font = countFont;
+                      const cw = overlayCtx.measureText(count).width;
+
+                      const maxW = Math.max(ew, tw, cw);
+                      const accentW = LABEL_ACCENT_W;
+                      const bw = maxW + padX * 2 + accentW;
+                      const bh = padY * 2 + eyebrowSize + gap + size + gap + 1 + gap + countSize;
+                      const bx = top.x - bw / 2;
+                      const by = top.y - size * LABEL_GAP - bh;
+
+                      // Card body: elevated surface, 3px accent bar in the session's color (or ink white
+                      // for sessions that have no nodes loaded yet fallback), 1px white/20 border.
+                      const accentColor = (sessionAnchors && sessionAnchors.get(session) && sessionAnchors.get(session).color) || THEME.ink;
+                      overlayCtx.fillStyle = THEME.labelBackground;
+                      overlayCtx.fillRect(bx, by, bw, bh);
+                      overlayCtx.fillStyle = accentColor;
+                      overlayCtx.fillRect(bx, by, accentW, bh);
+                      overlayCtx.strokeStyle = THEME.tooltipBorder;
+                      overlayCtx.lineWidth = 1;
+                      overlayCtx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+
+                      // Text positioned right of the accent bar.
+                      const textCx = bx + accentW + (bw - accentW) / 2;
+                      const ey = by + padY;
+                      const ty = by + padY + eyebrowSize + gap;
+                      const ruleY = by + padY + eyebrowSize + gap + size + gap + 0.5;
+                      const cy = by + padY + eyebrowSize + gap + size + gap + 1 + gap;
+
+                      overlayCtx.font = eyebrowFont;
+                      overlayCtx.fillStyle = THEME.labelMuted;
+                      overlayCtx.fillText('SESIÓN', textCx, ey);
+
+                      // Draw each word separately with an explicit gap to avoid the WPE
+                      // glyph-overlap bug. Left-align within the card; each word is drawn
+                      // on its own to keep internal kerning manageable for the renderer.
+                      overlayCtx.font = titleFont;
+                      overlayCtx.fillStyle = THEME.tooltipForeground;
+                      overlayCtx.textAlign = 'left';
+                      let wordCx = textCx - tw / 2;
+                      for (var wi = 0; wi < titleWords.length; wi++) {
+                        var ww = titleWordWidths[wi];
+                        overlayCtx.fillText(titleWords[wi], wordCx, ty);
+                        wordCx += ww + titleWordGap;
+                      }
+                      overlayCtx.textAlign = 'center'; // restore for eyebrow + count
+
+                      // Hairline rule.
+                      overlayCtx.fillStyle = THEME.labelRule;
+                      overlayCtx.fillRect(textCx - maxW / 2 + padX * 0.5, ruleY, maxW - padX, 1);
+
+                      overlayCtx.font = countFont;
+                      overlayCtx.fillStyle = THEME.labelMuted;
+                      overlayCtx.fillText(count, textCx, cy);
                     });
                     overlayCtx.restore();
                   }
 
-                  // A "these live in the same session" scaffold — every note in a session with 2+ notes gets
-                  // a solid white spoke to the session's own center of mass, whether or not it has any real
-                  // (wikilink/manual) edge to anything. It's answering "which session is this note in," not
-                  // "what does it reference," so it stays visually distinct from a real link even at high
-                  // opacity — pure white, uncolored by session, vs. THEME.link/THEME.linkManual's tinted
-                  // rgba. Drawn on the affinity canvas, a separate layer stacked *behind* sigma's own
-                  // renderer (see the DOM layers section above) so the real nodes/links always paint over
-                  // these spokes without needing any pre-render hook into sigma itself.
-                  const AFFINITY_ALPHA = 0.8;
+                  // A "these live in the same session" scaffold — every note in a session with 2+ notes is
+                  // wired into the session's Delaunay mesh (see triangulateSession), whether or not it has
+                  // any real (wikilink/manual) edge to anything. It used to draw a spoke from every note to
+                  // the session's own center of mass — a "star" where the whole session met at one hub —
+                  // but an interconnected web reads better than a hub-and-spoke diagram, and answers the
+                  // same grouping question ("which session is this note in," not "what does it reference").
+                  // Deliberately faint (AFFINITY_ALPHA sits well below the real auto-link alpha of ~0.3, so
+                  // the scaffold never outshines actual relationships): pure white, uncolored by session,
+                  // vs. THEME.link/THEME.linkManual's tinted rgba. Drawn on the affinity canvas, a separate
+                  // layer stacked *behind* sigma's own renderer (see the DOM layers section above) so the
+                  // real nodes/links always paint over these mesh lines without needing any pre-render hook
+                  // into sigma itself.
+                  const AFFINITY_ALPHA = 0.2;
 
                   function drawSessionAffinity() {
-                    if (allSessionGroups.size === 0) return;
+                    if (sessionMeshPairs.length === 0) return;
 
                     const scale = screenScale();
                     affinityCtx.save();
                     affinityCtx.strokeStyle = THEME.ink80;
                     affinityCtx.globalAlpha = AFFINITY_ALPHA;
-                    affinityCtx.lineWidth = 0.6 * scale;
-                    allSessionGroups.forEach(function (members) {
-                      let cx = 0, cy = 0;
-                      members.forEach(function (n) { cx += n.x; cy += n.y; });
-                      cx /= members.length; cy /= members.length;
-                      const center = worldToScreen(cx, cy);
-
-                      affinityCtx.beginPath();
-                      members.forEach(function (n) {
-                        const p = worldToScreen(n.x, n.y);
-                        affinityCtx.moveTo(center.x, center.y);
-                        affinityCtx.lineTo(p.x, p.y);
-                      });
-                      affinityCtx.stroke();
+                    affinityCtx.lineWidth = 0.45 * scale;
+                    affinityCtx.beginPath();
+                    sessionMeshPairs.forEach(function (pair) {
+                      const a = worldToScreen(pair[0].x, pair[0].y);
+                      const b = worldToScreen(pair[1].x, pair[1].y);
+                      affinityCtx.moveTo(a.x, a.y);
+                      affinityCtx.lineTo(b.x, b.y);
                     });
+                    affinityCtx.stroke();
                     affinityCtx.restore();
                   }
 
                   // Gently pulls notes toward their own session's center of mass every simulation tick, on
                   // top of whatever the real link force and node-repulsion (charge) forces already do —
                   // otherwise two same-session notes with no real link between them have nothing pulling
-                  // them toward each other at all, and the affinity spokes above would be drawn crossing the
+                  // them toward each other at all, and the affinity mesh above would be drawn crossing the
                   // whole canvas at random rather than reading as a loose, local cluster. Deliberately weak
                   // (a nudge, not a clamp) so real links — and the charge force keeping everything from
                   // collapsing into a single point — still dominate the final layout. Registered directly as
                   // a d3-force force function (not via d3's .initialize() protocol) since it closes over
                   // `nodes` directly, same pattern the force-graph version of this file already used.
-                  const SESSION_CLUSTER_STRENGTH = 0.025;
+                  const SESSION_CLUSTER_STRENGTH = 0.08;
+                  // Center-to-center arc spacing between adjacent session slots on the ring — deliberately
+                  // very generous (several× the radius a dense session reaches under the charge force, see
+                  // sessionClusterForce) so neighboring session graphs keep a wide band of empty space
+                  // between them instead of drifting together — the whole point of the ring (see the
+                  // sessionAnchors comment above). The ring radius grows with the session count
+                  // (radius = count × spacing / 2π), so this stays the gap between neighbors no matter how
+                  // many sessions exist.
+                  const SESSION_CENTER_SPACING = 800;
+                  // How much of the remaining gap between a session's center of mass and its ring slot is
+                  // closed per millisecond (see snapSessionsToRing) — ≈0.027/frame at 60fps, so a cluster
+                  // far from its slot glides home over a couple of seconds.
+                  const SESSION_SNAP_RATE = 0.0016; // per ms
 
                   function sessionClusterForce(alpha) {
                     ensureGroupings();
-                    allSessionGroups.forEach(function (members) {
+                    // Cohesion only, exactly as before: compact each session's notes around their own
+                    // center of mass (a nudge, not a clamp, so real links and the charge force still shape
+                    // the layout). Where each cluster sits on screen is decided by snapSessionsToRing in
+                    // the render loop, deliberately not here — see that function's comment for why.
+                    allSessionMembers.forEach(function (members) {
                       let cx = 0, cy = 0;
                       members.forEach(function (n) { cx += n.x; cy += n.y; });
                       cx /= members.length; cy /= members.length;
@@ -820,6 +1172,34 @@ public static class SessionGraphRenderer
                         n.vx = (n.vx || 0) + (cx - n.x) * SESSION_CLUSTER_STRENGTH * alpha;
                         n.vy = (n.vy || 0) + (cy - n.y) * SESSION_CLUSTER_STRENGTH * alpha;
                       });
+                    });
+                  }
+
+                  // Parks every session graph on its own ring slot — see the sessionAnchors comment above.
+                  // Applied here in the render loop (like the ambient rotation), deliberately NOT as a d3
+                  // force: a physics pull has to fight d3's forceCenter and its alpha-decay timeline, and
+                  // the simulation freezes with clusters stranded mid-flight (verified empirically with the
+                  // exact app configuration — velocity-based pulls overshoot the ring, alpha-scaled ones
+                  // fade before arrival, and forceCenter shifts the whole graph so the offset never
+                  // corrects). A per-frame position snap has no momentum, so it can't overshoot, and it
+                  // runs for as long as frames render, so it always converges. Each frame closes
+                  // SESSION_SNAP_RATE × dt of the gap between the session's center of mass and its slot —
+                  // the same delta for every member, so the cluster moves as a unit without distorting its
+                  // internal layout. Paused while a node is being dragged (same as the rotation) so it
+                  // never fights the user's hand.
+                  function snapSessionsToRing(dt) {
+                    if (dt <= 0) return;
+                    ensureGroupings();
+                    const k = SESSION_SNAP_RATE * dt;
+                    allSessionMembers.forEach(function (members, session) {
+                      let cx = 0, cy = 0;
+                      members.forEach(function (n) { cx += n.x; cy += n.y; });
+                      cx /= members.length; cy /= members.length;
+                      const anchor = sessionAnchors.get(session);
+                      if (!anchor) return;
+                      const tx = (anchor.x - cx) * k;
+                      const ty = (anchor.y - cy) * k;
+                      members.forEach(function (n) { n.x += tx; n.y += ty; });
                     });
                   }
 
@@ -948,6 +1328,9 @@ public static class SessionGraphRenderer
                     // Re-heat the simulation so newly-added or newly-linked notes actually move toward their
                     // settled position instead of sitting wherever they were dropped.
                     simulation.alpha(0.6).restart();
+                    // The new node set may change the session ring and the settled extent — re-fit the camera
+                    // at the next simulation 'end' (see the 'end' handler and refitOnSettle).
+                    refitOnSettle = true;
 
                     // A new link can turn several loose notes into one bigger cluster (a "brain") — pull
                     // the camera back to fit it instead of leaving the view cropped at the old extent. The
@@ -1017,13 +1400,23 @@ public static class SessionGraphRenderer
                     lastRotationTs = ts;
 
                     rotateGraph(dt);
+                    if (!isDraggingNode) snapSessionsToRing(dt);
                     s.refresh();
 
                     ensureGroupings();
-                    const w = affinityCanvas.width, h = affinityCanvas.height;
-                    const dpr = window.devicePixelRatio || 1;
-                    affinityCtx.clearRect(0, 0, w / dpr, h / dpr);
-                    overlayCtx.clearRect(0, 0, w / dpr, h / dpr);
+                    // Clear each overlay canvas in its own physical-pixel coordinate space
+                    // (reset transform → clear → restore) so the clearRect always covers the
+                    // full backing store regardless of any stale DPR or size mismatch. Using
+                    // the affinity canvas's dimensions for the overlay canvas (as this code
+                    // previously did) silently fails if the canvases ever diverge.
+                    overlayCtx.save();
+                    overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
+                    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                    overlayCtx.restore();
+                    affinityCtx.save();
+                    affinityCtx.setTransform(1, 0, 0, 1, 0, 0);
+                    affinityCtx.clearRect(0, 0, affinityCanvas.width, affinityCanvas.height);
+                    affinityCtx.restore();
                     drawSessionAffinity();
                     drawSessionLabels();
                     drawParticles(dt);
@@ -1081,7 +1474,7 @@ public static class SessionGraphRenderer
         nodes = graph.Nodes.Select(n => new
         {
             id = n.GlobalId, name = n.Title, session = n.SessionName,
-            color = NodeBrightness.ColorFor(n.SessionId), x = n.X, y = n.Y
+            color = NodeBrightness.ColorFor(n.SessionId, n.SessionColor), x = n.X, y = n.Y
         }),
         links = graph.Edges.Select(e => new { source = e.FromGlobalId, target = e.ToGlobalId, manual = e.IsManual })
     };
@@ -1100,6 +1493,9 @@ public static class SessionGraphRenderer
         public required string TooltipBackground;
         public required string TooltipForeground;
         public required string TooltipBorder;
+        public required string LabelBackground;
+        public required string LabelMuted;
+        public required string LabelRule;
 
         public static GraphTheme FromApp() => new()
         {
@@ -1124,6 +1520,14 @@ public static class SessionGraphRenderer
             TooltipBackground = FindColor("PanelBackgroundBrush", "#1B1B1B"),
             TooltipForeground = FindColor("TextPrimaryBrush", "#F5F5F5"),
             TooltipBorder = FindColor("Ink20", "rgba(255,255,255,0.2)"),
+            // The session-name cards (drawSessionLabels) use the app's own surface/ink tokens so they
+            // read as part of the UI rather than browser defaults: CardBackgroundHoverBrush is the
+            // elevated panel surface (lighter than PanelBackgroundBrush, which is nearly invisible
+            // against the graph's own background), Ink40 for the dim mono micro-labels and Ink10 for
+            // the hairline rule separating title from count.
+            LabelBackground = FindColor("CardBackgroundHoverBrush", "#1F1F1F"),
+            LabelMuted = FindColor("Ink40", "rgba(255,255,255,0.4)"),
+            LabelRule = FindColor("Ink10", "rgba(255,255,255,0.1)"),
         };
 
         /// <summary>Layers a faint dot-grid texture and a soft top-of-frame bloom over the app's own
@@ -1172,18 +1576,87 @@ public static class SessionGraphRenderer
         }
     }
 
-    /// <summary>Deterministic per-group node brightness. Nodes used to carry a rainbow per-session hue so
-    /// the global graph (every session's notes plus every vault-root note in one scene, see
-    /// <c>SessionService.LoadGlobalGraph</c>) stayed visually grouped — but a premium, three.js-style graph
-    /// reads as one coherent material, not a pile of hues, so every node is pure white now and groups are
-    /// instead told apart by a stable, subtle opacity variance. Alpha is baked into the rgba() string since
-    /// sigma's default node renderer has no separate node-opacity setter.</summary>
-    private static class NodeBrightness
+    /// <summary>Reads a font file from app resources and returns a base64 data URI, cached across
+    /// renders, so the same font the Avalonia UI uses is available to the WebView's canvas renderer via
+    /// an <c>@font-face</c> rule. Without this, the WebView falls back to whatever system font WPE/GTK
+    /// provides, which has poor legibility for certain glyphs (e.g. uppercase "I") — the whole point of
+    /// bundling Space Grotesk and JetBrains Mono in the first place.</summary>
+    private static class EmbeddedFonts
     {
-        public static string ColorFor(string sessionId)
+        private static readonly Dictionary<string, string> Cache = new();
+
+        public static string DataUri(string fileName)
         {
-            var alpha = 0.6 + (StableHash(sessionId) & 0x7FFFFFFF) % 41 / 100.0; // 0.60–1.00
-            return $"rgba(255,255,255,{alpha.ToString(CultureInfo.InvariantCulture)})";
+            if (Cache.TryGetValue(fileName, out var cached)) return cached;
+
+            using var source = AssetLoader.Open(new Uri($"avares://enki/assets/fonts/{fileName}"));
+            using var ms = new MemoryStream();
+            source.CopyTo(ms);
+            var uri = "data:font/truetype;base64," + Convert.ToBase64String(ms.ToArray());
+            Cache[fileName] = uri;
+            return uri;
+        }
+    }
+
+    /// <summary>Deterministic per-group node color. Every session gets a stable, distinguishable hue
+    /// derived from a hash of its id — visually distinct enough to tell apart at a glance in the
+    /// global graph, while keeping the same "one material" feel (saturation and lightness are fixed,
+    /// only hue varies). When a session has an explicit <see cref="SessionManifest.Color"/> value, that
+    /// overrides the auto-derived hue. Color is baked into the rgba() string since sigma's default node
+    /// renderer has no separate node-color setter.</summary>
+    public static class NodeBrightness
+    {
+        private const double Saturation = 0.55;
+        private const double Lightness = 0.70;
+
+        /// <summary>Returns an rgba() string (opaque) for the given session id. If
+        /// <paramref name="explicitColor"/> is non-null and a valid hex string, it's used directly;
+        /// otherwise a stable hue is derived from <paramref name="sessionId"/>.</summary>
+        public static string ColorFor(string sessionId, string? explicitColor = null)
+        {
+            if (explicitColor is { Length: > 0 } hex && TryParseHex(hex, out var r, out var g, out var b))
+                return $"rgba({r},{g},{b},1.00)";
+
+            var hue = (StableHash(sessionId) & 0x7FFFFFFF) % 360;
+            return HslToRgba(hue, Saturation, Lightness);
+        }
+
+        private static bool TryParseHex(string hex, out int r, out int g, out int b)
+        {
+            r = g = b = 0;
+            var h = hex.TrimStart('#');
+            if (h.Length != 6) return false;
+            try
+            {
+                r = Convert.ToInt32(h[..2], 16);
+                g = Convert.ToInt32(h[2..4], 16);
+                b = Convert.ToInt32(h[4..6], 16);
+                return true;
+            }
+            catch { return false; }
+        }
+
+        private static string HslToRgba(double h, double s, double l)
+        {
+            h /= 360.0;
+            var q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
+            var p = 2.0 * l - q;
+            var r = HueToRgb(p, q, h + 1.0 / 3.0);
+            var g = HueToRgb(p, q, h);
+            var b = HueToRgb(p, q, h - 1.0 / 3.0);
+            return $"rgba({r},{g},{b},1.00)";
+        }
+
+        private static int HueToRgb(double p, double q, double t)
+        {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            double val;
+            if (t < 1.0 / 6.0) val = p + (q - p) * 6.0 * t;
+            else if (t < 0.5) val = q;
+            else if (t < 2.0 / 3.0) val = p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+            else val = p;
+            return (int)(val * 255);
         }
 
         private static int StableHash(string value)

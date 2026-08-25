@@ -34,7 +34,7 @@ public abstract partial class DashboardSectionViewModel : ObservableObject
     private int _gridRowSpan = 1;
 
     [ObservableProperty]
-    private int _gridColumnSpan = Services.DashboardLayoutEngine.ColumnCount;
+    private int _gridColumnSpan = Services.DashboardLayoutEngine.DefaultColumns;
 }
 
 public sealed partial class QuickAccessSectionViewModel : DashboardSectionViewModel;

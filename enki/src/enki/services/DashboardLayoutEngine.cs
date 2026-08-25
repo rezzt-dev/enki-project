@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -36,11 +37,37 @@ public static class DashboardLayoutEngine
     public const string Lateral = "Lateral";
     public const string ModularGrid = "ModularGrid";
     public const string Mosaic = "Mosaic";
+    public const string Custom = "Custom";
 
     /// <summary>Every known style key, in the order offered to the user in Ajustes › Dashboard.</summary>
-    public static readonly string[] AllStyles = [Classic, InvertedPyramid, Lateral, ModularGrid, Mosaic];
+    public static readonly string[] AllStyles = [Classic, InvertedPyramid, Lateral, ModularGrid, Mosaic, Custom];
 
-    public const int ColumnCount = 6;
+    public const int DefaultRows = 4;
+    public const int DefaultColumns = 6;
+
+    /// <summary>Largest either grid dimension can be. El tope era 6 mientras el Dashboard vertía las
+    /// secciones en un <c>Grid</c> de columnas estrella escrito a mano en XAML (Avalonia puede quedarse
+    /// midiendo en bucle una rejilla estrella grande dentro de un ScrollViewer). Desde el editor de
+    /// rejilla lo pinta <see cref="Controls.DashboardGridPanel"/>, que mide en una sola pasada y reparte
+    /// anchos él mismo, así que la restricción real pasa a ser de legibilidad: por debajo de ~1/12 del
+    /// ancho una tarjeta ya no muestra nada útil.</summary>
+    public const int MaxGridDimension = 12;
+
+    /// <summary>Tamaño por defecto (en columnas) de una ficha recién colocada en la rejilla
+    /// personalizada: media rejilla para las secciones <see cref="DashboardSectionSize.Wide"/> (tienen su
+    /// propio layout multi-columna dentro) y un tercio para las <see cref="DashboardSectionSize.Compact"/>,
+    /// siempre al menos 1 columna. Se usa tanto al auto-colocar una sección sin posición guardada como al
+    /// devolver una sección oculta a la rejilla desde la bandeja de Ajustes.</summary>
+    public static int DefaultSpanFor(string key, int columns)
+    {
+        var cols = Math.Max(1, Math.Min(columns, MaxGridDimension));
+        var span = IsWideSection(key) ? (int)Math.Ceiling(cols / 2.0) : (int)Math.Ceiling(cols / 3.0);
+        return Math.Clamp(span, 1, cols);
+    }
+
+    /// <summary>Backwards-compatible alias for <see cref="DefaultColumns"/> — the Classic layout and
+    /// the template engine's leftover row still pour sections into a 6-column grid.</summary>
+    public const int ColumnCount = DefaultColumns;
 
     /// <summary>Whether <paramref name="key"/> is a <see cref="DashboardSectionSize.Wide"/> section —
     /// exposed so callers building a layout's thumbnail diagram (Ajustes › Dashboard › Organización) can
@@ -132,9 +159,26 @@ public static class DashboardLayoutEngine
     /// already be filtered to visible sections, in the priority order Ajustes › Dashboard's section list
     /// gives them — that order decides which wide section gets the most prominent wide slot, and
     /// likewise among compact sections, independently of each other.</summary>
-    public static Dictionary<string, DashboardGridSlot> Compute(IReadOnlyList<string> orderedKeys, string style)
+    /// <param name="customLayout">Optional per-section [Row, Column, RowSpan, ColumnSpan] positions —
+    /// used only when <paramref name="style"/> is <see cref="Custom"/>.</param>
+    /// <param name="gridRows">Number of rows when <paramref name="style"/> is <see cref="Custom"/>.</param>
+    /// <param name="gridColumns">Number of columns when <paramref name="style"/> is <see cref="Custom"/>.</param>
+    public static Dictionary<string, DashboardGridSlot> Compute(
+        IReadOnlyList<string> orderedKeys,
+        string style,
+        IReadOnlyDictionary<string, int[]>? customLayout = null,
+        int gridRows = DefaultRows,
+        int gridColumns = DefaultColumns)
     {
         var result = new Dictionary<string, DashboardGridSlot>();
+        var rows = ClampDimension(gridRows);
+        var cols = ClampDimension(gridColumns);
+
+        // Personalizado: la geometría no sale de una tabla de tramos sino de lo que el usuario colocó a
+        // mano en Ajustes › Dashboard, así que hay que sanearla (recortes, solapes, secciones sin
+        // posición guardada) antes de dársela a la vista — ver NormalizeCustom.
+        if (style == Custom)
+            return NormalizeCustom(orderedKeys, customLayout, rows, cols);
 
         if (style != Classic && Templates.TryGetValue(style, out var slots))
         {
@@ -164,7 +208,223 @@ public static class DashboardLayoutEngine
         // Classic (and the fallback for any unrecognized style key): one full-width row per section, in
         // order — the Dashboard's original behaviour before Organización existed.
         for (var i = 0; i < orderedKeys.Count; i++)
-            result[orderedKeys[i]] = new DashboardGridSlot(i, 0, 1, ColumnCount);
+            result[orderedKeys[i]] = new DashboardGridSlot(i, 0, 1, cols);
+
+        return result;
+    }
+
+    /// <summary>Recorta cualquier dimensión de rejilla al rango que el resto del sistema da por válido
+    /// (1..<see cref="MaxGridDimension"/>). Un único sitio para la regla, en vez de repetir el mismo
+    /// <c>Math.Clamp</c> en el motor, el ViewModel de Ajustes y el del Dashboard.</summary>
+    public static int ClampDimension(int value) => Math.Clamp(value, 1, MaxGridDimension);
+
+    /// <summary>Convierte la geometría guardada por el usuario
+    /// (<see cref="Models.VaultSettings.DashboardCustomLayout"/>) en una colocación garantizada sin
+    /// solapes y dentro de la rejilla, que es lo único que la vista sabe pintar bien.
+    ///
+    /// Hace falta porque esa geometría es la única del sistema que no la genera el propio motor: la
+    /// escribe el editor de Ajustes, sobrevive a cambios de tamaño de la rejilla (reducir columnas deja
+    /// fichas fuera de rango), a secciones añadidas en versiones nuevas (Habits no existía cuando se
+    /// guardó el layout) y a un <c>settings.json</c> editado a mano. Las reglas, en orden:
+    ///
+    /// 1. Cada ficha con posición guardada se recorta a la rejilla y se queda donde está <i>si el hueco
+    ///    sigue libre</i>. El orden de <paramref name="orderedKeys"/> (el de la lista de Ajustes) decide
+    ///    quién gana un hueco disputado, igual que ya decide qué sección coge el tramo más prominente en
+    ///    las plantillas.
+    /// 2. Las que pierden el hueco, y las que nunca tuvieron posición, se recolocan por primer ajuste
+    ///    conservando su tamaño (o el tamaño por defecto de su clase, <see cref="DefaultSpanFor"/>).
+    /// 3. Si no cabe ninguna en las filas configuradas, se añaden filas por debajo — nunca se descarta ni
+    ///    se solapa una sección: el Dashboard deriva su número de filas del contenido, así que una fila
+    ///    extra se ve como tal y no como un layout roto.</summary>
+    public static Dictionary<string, DashboardGridSlot> NormalizeCustom(
+        IReadOnlyList<string> orderedKeys,
+        IReadOnlyDictionary<string, int[]>? customLayout,
+        int gridRows = DefaultRows,
+        int gridColumns = DefaultColumns)
+    {
+        var rows = ClampDimension(gridRows);
+        var cols = ClampDimension(gridColumns);
+        var result = new Dictionary<string, DashboardGridSlot>();
+
+        // Alto de trabajo con margen para el desbordamiento de la regla 3: en el peor caso cada sección
+        // se lleva una fila propia por debajo de la rejilla configurada.
+        var maxRows = rows + orderedKeys.Count;
+        var occupied = new bool[maxRows, cols];
+        var pending = new List<(string Key, int RowSpan, int ColumnSpan)>();
+
+        foreach (var key in orderedKeys)
+        {
+            if (customLayout is not null && customLayout.TryGetValue(key, out var pos) && pos is { Length: >= 4 })
+            {
+                var r = Math.Clamp(pos[0], 0, rows - 1);
+                var c = Math.Clamp(pos[1], 0, cols - 1);
+                var rs = Math.Clamp(pos[2], 1, rows - r);
+                var cs = Math.Clamp(pos[3], 1, cols - c);
+
+                if (IsAreaFree(occupied, r, c, rs, cs))
+                {
+                    Occupy(occupied, r, c, rs, cs);
+                    result[key] = new DashboardGridSlot(r, c, rs, cs);
+                }
+                else
+                    pending.Add((key, rs, cs));
+            }
+            else
+                pending.Add((key, 1, DefaultSpanFor(key, cols)));
+        }
+
+        foreach (var (key, rowSpan, colSpan) in pending)
+        {
+            var cs = Math.Clamp(colSpan, 1, cols);
+            var rs = Math.Clamp(rowSpan, 1, rows);
+            var slot = FirstFit(occupied, maxRows, cols, rs, cs);
+            Occupy(occupied, slot.Row, slot.Column, slot.RowSpan, slot.ColumnSpan);
+            result[key] = slot;
+        }
+
+        return result;
+    }
+
+    /// <summary>Primer hueco libre (arriba-izquierda, por filas) donde cabe un rectángulo de
+    /// <paramref name="rowSpan"/>×<paramref name="colSpan"/>. El barrido llega hasta
+    /// <paramref name="maxRows"/>, dimensionado por el llamante para que siempre haya filas vacías de
+    /// sobra, así que siempre encuentra sitio.</summary>
+    private static DashboardGridSlot FirstFit(bool[,] occupied, int maxRows, int cols, int rowSpan, int colSpan)
+    {
+        var rs = Math.Min(rowSpan, maxRows);
+        var cs = Math.Min(colSpan, cols);
+
+        for (var r = 0; r + rs <= maxRows; r++)
+        {
+            for (var c = 0; c + cs <= cols; c++)
+            {
+                if (IsAreaFree(occupied, r, c, rs, cs))
+                    return new DashboardGridSlot(r, c, rs, cs);
+            }
+        }
+
+        // Inalcanzable con un maxRows dimensionado como arriba; una fila propia al final antes que
+        // devolver un solape si algún llamante futuro lo aprieta más.
+        return new DashboardGridSlot(Math.Max(0, maxRows - rs), 0, rs, cs);
+    }
+
+    private static bool IsAreaFree(bool[,] occupied, int row, int column, int rowSpan, int columnSpan)
+    {
+        for (var r = row; r < row + rowSpan; r++)
+        {
+            for (var c = column; c < column + columnSpan; c++)
+            {
+                if (r < 0 || c < 0 || r >= occupied.GetLength(0) || c >= occupied.GetLength(1)) return false;
+                if (occupied[r, c]) return false;
+            }
+        }
+        return true;
+    }
+
+    private static void Occupy(bool[,] occupied, int row, int column, int rowSpan, int columnSpan)
+    {
+        for (var r = row; r < row + rowSpan; r++)
+            for (var c = column; c < column + columnSpan; c++)
+                if (r >= 0 && c >= 0 && r < occupied.GetLength(0) && c < occupied.GetLength(1))
+                    occupied[r, c] = true;
+    }
+
+    /// <summary>Si dos colocaciones comparten alguna celda. Lo usa el editor de Ajustes para decidir en
+    /// vivo (mientras se arrastra) si el hueco bajo el puntero es válido, con la misma definición de
+    /// "solape" que aplica <see cref="NormalizeCustom"/> al guardar.</summary>
+    public static bool Overlaps(DashboardGridSlot a, DashboardGridSlot b)
+        => a.Column < b.Column + b.ColumnSpan && b.Column < a.Column + a.ColumnSpan
+        && a.Row < b.Row + b.RowSpan && b.Row < a.Row + a.RowSpan;
+
+    /// <summary>Si <paramref name="candidate"/> cabe en la rejilla y no pisa a ninguna otra ficha
+    /// (ignorando la que se está moviendo, <paramref name="ignoreKey"/>).</summary>
+    public static bool CanPlace(
+        IReadOnlyDictionary<string, DashboardGridSlot> placed,
+        string? ignoreKey,
+        DashboardGridSlot candidate,
+        int gridRows,
+        int gridColumns)
+    {
+        var rows = ClampDimension(gridRows);
+        var cols = ClampDimension(gridColumns);
+
+        if (candidate.Row < 0 || candidate.Column < 0 || candidate.RowSpan < 1 || candidate.ColumnSpan < 1) return false;
+        if (candidate.Row + candidate.RowSpan > rows || candidate.Column + candidate.ColumnSpan > cols) return false;
+
+        foreach (var (key, slot) in placed)
+        {
+            if (key == ignoreKey) continue;
+            if (Overlaps(candidate, slot)) return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Tamaño natural (filas × columnas) de una plantilla — lo que ocupa su propia tabla de
+    /// tramos. Al pasar de una plantilla a Personalizado, la rejilla del editor adopta este tamaño para
+    /// que la conversión sea idéntica en pantalla en vez de recortar la plantilla a la rejilla que
+    /// hubiera configurada antes.</summary>
+    public static (int Rows, int Columns) NaturalSizeOf(string style)
+        => Templates.TryGetValue(style, out var slots)
+            ? (ClampDimension(slots.Max(s => s.Row + s.RowSpan)), DefaultColumns)
+            : (ClampDimension(DefaultRows), DefaultColumns);
+
+    /// <summary>Semilla de <see cref="Models.VaultSettings.DashboardCustomLayout"/> a partir de otra
+    /// organización: convierte la geometría que <paramref name="fromStyle"/> daría a estas secciones en
+    /// posiciones editables una a una. Es lo que hace que "personalizar" no empiece nunca de un lienzo en
+    /// blanco — el usuario elige la plantilla que más se le parece y a partir de ahí mueve fichas.</summary>
+    public static Dictionary<string, int[]> BuildCustomLayoutFrom(
+        IReadOnlyList<string> orderedKeys,
+        string fromStyle,
+        int gridRows,
+        int gridColumns)
+    {
+        var rows = ClampDimension(gridRows);
+        var cols = ClampDimension(gridColumns);
+
+        // Classic vertido en una rejilla de N columnas sería una única columna de filas a todo lo ancho:
+        // correcto, pero deja al usuario sin nada que reorganizar. Se siembra igualmente tal cual — es
+        // exactamente lo que la plantilla dice — y el botón "auto-organizar" del editor ofrece la
+        // alternativa compacta.
+        var slots = Compute(orderedKeys, fromStyle, null, rows, cols);
+        var normalized = NormalizeCustom(
+            orderedKeys,
+            slots.ToDictionary(kv => kv.Key, kv => new[] { kv.Value.Row, kv.Value.Column, kv.Value.RowSpan, kv.Value.ColumnSpan }),
+            rows,
+            cols);
+
+        return normalized.ToDictionary(kv => kv.Key, kv => new[] { kv.Value.Row, kv.Value.Column, kv.Value.RowSpan, kv.Value.ColumnSpan });
+    }
+
+    /// <summary>Recoloca todas las secciones visibles por primer ajuste conservando su tamaño actual —
+    /// el "auto-organizar" del editor, que compacta la rejilla hacia arriba-izquierda después de un rato
+    /// moviendo fichas a mano.</summary>
+    public static Dictionary<string, int[]> AutoArrange(
+        IReadOnlyList<string> orderedKeys,
+        IReadOnlyDictionary<string, int[]>? currentLayout,
+        int gridRows,
+        int gridColumns)
+    {
+        var rows = ClampDimension(gridRows);
+        var cols = ClampDimension(gridColumns);
+        var maxRows = rows + orderedKeys.Count;
+        var occupied = new bool[maxRows, cols];
+        var result = new Dictionary<string, int[]>();
+
+        foreach (var key in orderedKeys)
+        {
+            var rs = 1;
+            var cs = DefaultSpanFor(key, cols);
+            if (currentLayout is not null && currentLayout.TryGetValue(key, out var pos) && pos is { Length: >= 4 })
+            {
+                rs = Math.Clamp(pos[2], 1, rows);
+                cs = Math.Clamp(pos[3], 1, cols);
+            }
+
+            var slot = FirstFit(occupied, maxRows, cols, rs, cs);
+            Occupy(occupied, slot.Row, slot.Column, slot.RowSpan, slot.ColumnSpan);
+            result[key] = [slot.Row, slot.Column, slot.RowSpan, slot.ColumnSpan];
+        }
 
         return result;
     }

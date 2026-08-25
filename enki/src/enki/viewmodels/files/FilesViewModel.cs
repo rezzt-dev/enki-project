@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
+using enki.Models;
 using enki.Services;
 
 namespace enki.ViewModels;
@@ -80,6 +81,17 @@ public sealed partial class FilesViewModel : ViewModelBase
     [ObservableProperty]
     private FileCardViewModel? _filePendingDelete;
 
+    [ObservableProperty]
+    private FileKindFilterOption? _selectedFilterOption;
+
+    /// <summary>Opciones del desplegable de filtro por tipo de archivo — "Todos los archivos"
+    /// más una entrada por cada <see cref="VaultFileKind"/> con archivos visibles.</summary>
+    public ObservableCollection<FileKindFilterOption> FilterOptions { get; } = [];
+
+    /// <summary>El <see cref="VaultFileKind"/> actualmente filtrado, o null si "Todos".
+    /// Derivado de <see cref="SelectedFilterOption"/>.</summary>
+    private VaultFileKind? FilterKind => SelectedFilterOption?.Kind;
+
     public string CurrentFolderLabel => CurrentFolder?.Name ?? LocalizationService.Instance["Files_AllFolder"];
 
     /// <summary>Composed here (rather than a XAML <c>StringFormat</c>) so the word order around the count
@@ -113,6 +125,13 @@ public sealed partial class FilesViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentFolderLabel));
         OnPropertyChanged(nameof(FilesCountLabel));
         Reload();
+    }
+
+    private bool _rebuildingFilter;
+
+    partial void OnSelectedFilterOptionChanged(FileKindFilterOption? value)
+    {
+        if (!_rebuildingFilter) Reload();
     }
 
     partial void OnSearchTextChanged(string value)
@@ -175,9 +194,15 @@ public sealed partial class FilesViewModel : ViewModelBase
         }
 
         var all = _vaultService.GetFiles(CurrentFolderPath);
-        var filtered = string.IsNullOrWhiteSpace(SearchText)
+
+        // Filtro por tipo de archivo (extensión)
+        var kindFiltered = FilterKind is null
             ? all
-            : all.Where(f => f.FileName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            : all.Where(f => f.Kind == FilterKind.Value);
+
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? kindFiltered
+            : kindFiltered.Where(f => f.FileName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         Files.Clear();
         foreach (var file in filtered) Files.Add(new FileCardViewModel(_vaultService, file));
@@ -200,6 +225,45 @@ public sealed partial class FilesViewModel : ViewModelBase
         foreach (var file in Files) BrowserItems.Add(file);
 
         IsEmpty = BrowserItems.Count == 0;
+        RebuildFilterOptions(all);
+    }
+
+    /// <summary>Reconstruye las opciones del filtro por tipo cada vez que cambia la carpeta actual,
+    /// mostrando solo los <see cref="VaultFileKind"/> que realmente tienen archivos en esta vista.</summary>
+    private void RebuildFilterOptions(List<VaultFile> allFiles)
+    {
+        _rebuildingFilter = true;
+        try
+        {
+            var currentFilter = FilterKind;
+            FilterOptions.Clear();
+            FilterOptions.Add(new FileKindFilterOption(null, LocalizationService.Instance["Files_FilterAll"]));
+
+            foreach (VaultFileKind kind in Enum.GetValues<VaultFileKind>())
+            {
+                if (!allFiles.Any(f => f.Kind == kind)) continue;
+                var label = kind switch
+                {
+                    VaultFileKind.Image => LocalizationService.Instance["Files_FilterImages"],
+                    VaultFileKind.Pdf => LocalizationService.Instance["Files_FilterPdfs"],
+                    VaultFileKind.Audio => LocalizationService.Instance["Files_FilterAudio"],
+                    VaultFileKind.Video => LocalizationService.Instance["Files_FilterVideo"],
+                    VaultFileKind.Code => LocalizationService.Instance["Files_FilterCode"],
+                    VaultFileKind.Other => LocalizationService.Instance["Files_FilterOther"],
+                    _ => kind.ToString()
+                };
+                FilterOptions.Add(new FileKindFilterOption(kind, label));
+            }
+
+            // Mantener el filtro actual si aún es válido; si no, volver a "Todos"
+            SelectedFilterOption = currentFilter is not null && FilterOptions.Any(o => o.Kind == currentFilter)
+                ? FilterOptions.First(o => o.Kind == currentFilter)
+                : FilterOptions.FirstOrDefault();
+        }
+        finally
+        {
+            _rebuildingFilter = false;
+        }
     }
 
     public void ReloadFolders()
@@ -211,13 +275,19 @@ public sealed partial class FilesViewModel : ViewModelBase
             return;
         }
 
-        var expandedPaths = CollectExpandedPaths(RootFolders).ToHashSet();
+        // On the very first call RootFolders is empty, so there is no in-memory expand state to
+        // preserve — fall back to whatever the user had last time (persisted in settings). On
+        // every subsequent call the in-memory state (kept up-to-date by the OnExpandedChanged
+        // callback) is authoritative.
+        var expandedPaths = RootFolders.Count > 0
+            ? CollectExpandedPaths(RootFolders).ToHashSet()
+            : new HashSet<string>(_settingsService?.Settings.FilesExpandedFolderPaths ?? []);
         var selectedPath = CurrentFolder?.FullPath;
 
         RootFolders.Clear();
         foreach (var folder in _vaultService.GetFolderTree(EffectiveRootPath))
         {
-            var vm = new FileFolderViewModel(folder);
+            var vm = new FileFolderViewModel(folder) { OnExpandedChanged = PersistExpandedFolders };
             ApplyExpandedState(vm, expandedPaths);
             RootFolders.Add(vm);
         }
@@ -236,8 +306,18 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     private static void ApplyExpandedState(FileFolderViewModel folder, HashSet<string> expandedPaths)
     {
-        folder.IsExpanded = expandedPaths.Count == 0 || expandedPaths.Contains(folder.FullPath);
+        folder.IsExpanded = expandedPaths.Count > 0 && expandedPaths.Contains(folder.FullPath);
         foreach (var child in folder.Children) ApplyExpandedState(child, expandedPaths);
+    }
+
+    /// <summary>Writes the currently expanded folder paths to <see cref="AppSettings"/> so they
+    /// survive an app restart — called from <see cref="FileFolderViewModel.OnExpandedChanged"/>
+    /// whenever the user toggles any folder in the sidebar.</summary>
+    private void PersistExpandedFolders()
+    {
+        if (_settingsService is null) return;
+        _settingsService.Settings.FilesExpandedFolderPaths = CollectExpandedPaths(RootFolders).ToList();
+        _settingsService.Save();
     }
 
     private static FileFolderViewModel? FindFolder(IEnumerable<FileFolderViewModel> folders, string path)
@@ -288,6 +368,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     {
         card.EnsureThumbnailLoaded();
         card.EnsurePdfDocumentLoaded();
+        card.EnsureCodeContentLoaded();
         ActivePreview = card;
     }
 

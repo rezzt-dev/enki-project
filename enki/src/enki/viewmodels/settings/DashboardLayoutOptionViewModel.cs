@@ -22,6 +22,10 @@ public sealed partial class DashboardLayoutOptionViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isSelected;
+
+    /// <summary>True when this layout option has a thumbnail diagram to render (i.e. it's not the
+    /// Custom option, which has no pre-defined geometry and instead shows a grid-icon placeholder).</summary>
+    public bool HasBlocks => Blocks.Count > 0;
 }
 
 /// <summary>One rectangle in a <see cref="DashboardLayoutOptionViewModel"/>'s thumbnail diagram.</summary>

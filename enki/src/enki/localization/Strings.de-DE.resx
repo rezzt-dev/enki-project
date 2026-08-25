@@ -819,6 +819,39 @@
   <data name="Files_ZoomOutTooltip" xml:space="preserve">
     <value>Verkleinern</value>
   </data>
+  <data name="Files_FilterAll" xml:space="preserve">
+    <value>Alle Dateien</value>
+  </data>
+  <data name="Files_FilterImages" xml:space="preserve">
+    <value>Bilder</value>
+  </data>
+  <data name="Files_FilterPdfs" xml:space="preserve">
+    <value>PDFs</value>
+  </data>
+  <data name="Files_FilterAudio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="Files_FilterVideo" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="Files_FilterCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Files_FilterOther" xml:space="preserve">
+    <value>Andere</value>
+  </data>
+  <data name="Files_AudioPreviewHint" xml:space="preserve">
+    <value>Audio-Vorschau ist in der App nicht verfügbar. Verwenden Sie die Schaltfläche unten, um diese Datei mit Ihrem System-Player abzuspielen.</value>
+  </data>
+  <data name="Files_VideoPreviewHint" xml:space="preserve">
+    <value>Video-Vorschau ist in der App nicht verfügbar. Verwenden Sie die Schaltfläche unten, um diese Datei mit Ihrem System-Player abzuspielen.</value>
+  </data>
+  <data name="Files_PlayWithSystemButton" xml:space="preserve">
+    <value>Mit System-Player abspielen</value>
+  </data>
+  <data name="A11y_Files_FilterSelector" xml:space="preserve">
+    <value>Dateityp-Filter</value>
+  </data>
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>Neue Spalte</value>
   </data>
@@ -2511,6 +2544,39 @@
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Seitenleisten-Abschnitte</value>
   </data>
+  <data name="Settings_General_Sidebar_MainGroup_Title" xml:space="preserve">
+    <value>Hauptliste</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroup_Title" xml:space="preserve">
+    <value>Unten angeheftet (max. 3)</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroup_Subtitle" xml:space="preserve">
+    <value>Diese Abschnitte werden als feste Schaltflächen über Einstellungen am unteren Rand der Seitenleiste angezeigt.</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroupFull_Title" xml:space="preserve">
+    <value>Unterer Bereich ist voll</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroupFull_Message" xml:space="preserve">
+    <value>Es können nur 3 Abschnitte unten angeheftet werden. Löse zuerst einen.</value>
+  </data>
+  <data name="Settings_General_Sidebar_Hidden_Label" xml:space="preserve">
+    <value>Ausgeblendet</value>
+  </data>
+  <data name="Settings_General_Sidebar_DragHandleTooltip" xml:space="preserve">
+    <value>Ziehen zum Neuanordnen</value>
+  </data>
+  <data name="Settings_General_Sidebar_MoveUp_Tooltip" xml:space="preserve">
+    <value>Nach oben</value>
+  </data>
+  <data name="Settings_General_Sidebar_MoveDown_Tooltip" xml:space="preserve">
+    <value>Nach unten</value>
+  </data>
+  <data name="Settings_General_Sidebar_PinToBottom_Tooltip" xml:space="preserve">
+    <value>Unten anheften</value>
+  </data>
+  <data name="Settings_General_Sidebar_UnpinFromBottom_Tooltip" xml:space="preserve">
+    <value>In die Hauptliste verschieben</value>
+  </data>
   <data name="Settings_General_Startup_Calendar" xml:space="preserve">
     <value>KALENDER</value>
   </data>
@@ -3810,6 +3876,27 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Dashboard_Layout_Subtitle" xml:space="preserve">
     <value>Wähle, wie die sichtbaren Bereiche auf der Seite angeordnet werden.</value>
   </data>
+  <data name="Settings_Dashboard_GridConfig_Title" xml:space="preserve">
+    <value>Benutzerdefiniertes Raster</value>
+  </data>
+  <data name="Settings_Dashboard_GridConfig_Subtitle" xml:space="preserve">
+    <value>Wähle, wie viele Zeilen und Spalten das benutzerdefinierte Raster hat, und ziehe dann jede Bereichskachel an die gewünschte Stelle.</value>
+  </data>
+  <data name="Settings_Dashboard_GridConfig_RowsLabel" xml:space="preserve">
+    <value>Zeilen</value>
+  </data>
+  <data name="Settings_Dashboard_GridConfig_ColsLabel" xml:space="preserve">
+    <value>Spalten</value>
+  </data>
+  <data name="Settings_Dashboard_GridEditor_Hint" xml:space="preserve">
+    <value>Ziehe eine Kachel an ihrem Griff, um sie zu verschieben; ziehe die Ecke, um sie zu vergrößern oder zu verkleinern. Das Raster fließt beim Anordnen live um.</value>
+  </data>
+  <data name="Settings_Dashboard_GridEditor_DragTileTooltip" xml:space="preserve">
+    <value>Ziehen, um diesen Bereich im Raster zu verschieben</value>
+  </data>
+  <data name="Settings_Dashboard_GridEditor_ResizeTileTooltip" xml:space="preserve">
+    <value>Ziehen, um diesen Bereich zu vergrößern/verkleinern</value>
+  </data>
   <data name="DashboardLayout_Classic_Title" xml:space="preserve">
     <value>Klassisch</value>
   </data>
@@ -3839,6 +3926,12 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="DashboardLayout_Mosaic_Description" xml:space="preserve">
     <value>Ein herausragender Bereich neben einer asymmetrischen Mischung kleinerer Bereiche.</value>
+  </data>
+  <data name="DashboardLayout_Custom_Title" xml:space="preserve">
+    <value>Benutzerdefiniert</value>
+  </data>
+  <data name="DashboardLayout_Custom_Description" xml:space="preserve">
+    <value>Platziere jeden Bereich genau dort, wo du ihn haben willst — Zeile, Spalte und Größe.</value>
   </data>
   <data name="Nav_Habits" xml:space="preserve">
     <value>Gewohnheiten</value>
@@ -3965,5 +4058,95 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="Statistics_PolarNotLinkedNotice" xml:space="preserve">
     <value>Verknüpfe dein Polar-Konto in den Einstellungen, um dessen Aufgaben hier einzubeziehen.</value>
+  </data>
+  <data name="Statistics_Tile_TotalNotes" xml:space="preserve">
+    <value>Notizen insgesamt</value>
+  </data>
+  <data name="Statistics_Tile_TotalSessions" xml:space="preserve">
+    <value>Sitzungen</value>
+  </data>
+  <data name="Statistics_Tile_VaultSize" xml:space="preserve">
+    <value>Tresorgröße</value>
+  </data>
+  <data name="Statistics_Flow_Title" xml:space="preserve">
+    <value>Kanban-Fluss</value>
+  </data>
+  <data name="Statistics_Flow_Pending" xml:space="preserve">
+    <value>Ausstehend</value>
+  </data>
+  <data name="Statistics_Flow_InProgress" xml:space="preserve">
+    <value>In Bearbeitung</value>
+  </data>
+  <data name="Statistics_Flow_Done" xml:space="preserve">
+    <value>Erledigt</value>
+  </data>
+  <data name="Statistics_Flow_Empty" xml:space="preserve">
+    <value>Noch keine Karten</value>
+  </data>
+  <data name="Statistics_Heatmap_Title" xml:space="preserve">
+    <value>Gewohnheits-Konsistenz</value>
+  </data>
+  <data name="Statistics_Heatmap_Empty" xml:space="preserve">
+    <value>Keine Gewohnheiten verfolgt — füge eine in Gewohnheiten hinzu, um deine Konsistenz zu sehen.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Hint" xml:space="preserve">
+    <value>Ziehe eine Kachel, um sie zu verschieben, oder ziehe an ihrer rechten unteren Ecke, um ihre Größe zu ändern. Bei ausgewählter Kachel: Pfeiltasten verschieben sie, Umschalt + Pfeile ändern ihre Größe, Entf nimmt sie aus dem Raster.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_AutoArrange" xml:space="preserve">
+    <value>Automatisch anordnen</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_AutoArranged_Title" xml:space="preserve">
+    <value>Raster neu angeordnet</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_AutoArranged_Message" xml:space="preserve">
+    <value>Alle Bereiche wurden unter Beibehaltung ihrer Größe nach oben links gepackt.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_NoSelection" xml:space="preserve">
+    <value>Wähle eine Kachel im Raster aus, um sie zu verschieben oder ihre Größe zu ändern.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveUp" xml:space="preserve">
+    <value>Nach oben verschieben</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveDown" xml:space="preserve">
+    <value>Nach unten verschieben</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveLeft" xml:space="preserve">
+    <value>Nach links verschieben</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveRight" xml:space="preserve">
+    <value>Nach rechts verschieben</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_GrowWidth" xml:space="preserve">
+    <value>Breiter</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_ShrinkWidth" xml:space="preserve">
+    <value>Schmaler</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_GrowHeight" xml:space="preserve">
+    <value>Höher</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_ShrinkHeight" xml:space="preserve">
+    <value>Niedriger</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Remove" xml:space="preserve">
+    <value>Aus dem Raster nehmen</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Add" xml:space="preserve">
+    <value>Zurück ins Raster</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Tray_Title" xml:space="preserve">
+    <value>Außerhalb des Rasters</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Tray_Empty" xml:space="preserve">
+    <value>Alle Bereiche sind im Raster.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_TileTooltip" xml:space="preserve">
+    <value>Zum Verschieben ziehen</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_ResizeTooltip" xml:space="preserve">
+    <value>Zum Ändern der Größe ziehen</value>
+  </data>
+  <data name="Settings_Dashboard_Customize" xml:space="preserve">
+    <value>Diese Anordnung anpassen</value>
   </data>
 </root>

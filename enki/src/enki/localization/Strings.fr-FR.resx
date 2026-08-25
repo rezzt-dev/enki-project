@@ -819,6 +819,39 @@
   <data name="Files_ZoomOutTooltip" xml:space="preserve">
     <value>Zoom arrière</value>
   </data>
+  <data name="Files_FilterAll" xml:space="preserve">
+    <value>Tous les fichiers</value>
+  </data>
+  <data name="Files_FilterImages" xml:space="preserve">
+    <value>Images</value>
+  </data>
+  <data name="Files_FilterPdfs" xml:space="preserve">
+    <value>PDFs</value>
+  </data>
+  <data name="Files_FilterAudio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="Files_FilterVideo" xml:space="preserve">
+    <value>Vidéo</value>
+  </data>
+  <data name="Files_FilterCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Files_FilterOther" xml:space="preserve">
+    <value>Autres</value>
+  </data>
+  <data name="Files_AudioPreviewHint" xml:space="preserve">
+    <value>La prévisualisation audio n'est pas disponible dans l'application. Utilisez le bouton ci-dessous pour lire ce fichier avec votre lecteur système.</value>
+  </data>
+  <data name="Files_VideoPreviewHint" xml:space="preserve">
+    <value>La prévisualisation vidéo n'est pas disponible dans l'application. Utilisez le bouton ci-dessous pour lire ce fichier avec votre lecteur système.</value>
+  </data>
+  <data name="Files_PlayWithSystemButton" xml:space="preserve">
+    <value>Lire avec le lecteur système</value>
+  </data>
+  <data name="A11y_Files_FilterSelector" xml:space="preserve">
+    <value>Filtre par type de fichier</value>
+  </data>
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>Nouvelle colonne</value>
   </data>
@@ -2511,6 +2544,39 @@
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Sections de la barre latérale</value>
   </data>
+  <data name="Settings_General_Sidebar_MainGroup_Title" xml:space="preserve">
+    <value>Liste principale</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroup_Title" xml:space="preserve">
+    <value>Épinglées en bas (max. 3)</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroup_Subtitle" xml:space="preserve">
+    <value>Ces sections apparaissent comme des boutons fixes au-dessus de Paramètres, en bas de la barre latérale.</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroupFull_Title" xml:space="preserve">
+    <value>Le groupe du bas est plein</value>
+  </data>
+  <data name="Settings_General_Sidebar_BottomGroupFull_Message" xml:space="preserve">
+    <value>Seules 3 sections peuvent être épinglées en bas. Détachez-en une d'abord.</value>
+  </data>
+  <data name="Settings_General_Sidebar_Hidden_Label" xml:space="preserve">
+    <value>Masquée</value>
+  </data>
+  <data name="Settings_General_Sidebar_DragHandleTooltip" xml:space="preserve">
+    <value>Glisser pour réorganiser</value>
+  </data>
+  <data name="Settings_General_Sidebar_MoveUp_Tooltip" xml:space="preserve">
+    <value>Monter</value>
+  </data>
+  <data name="Settings_General_Sidebar_MoveDown_Tooltip" xml:space="preserve">
+    <value>Descendre</value>
+  </data>
+  <data name="Settings_General_Sidebar_PinToBottom_Tooltip" xml:space="preserve">
+    <value>Épingler au groupe inférieur</value>
+  </data>
+  <data name="Settings_General_Sidebar_UnpinFromBottom_Tooltip" xml:space="preserve">
+    <value>Déplacer vers la liste principale</value>
+  </data>
   <data name="Settings_General_Startup_Calendar" xml:space="preserve">
     <value>CALENDRIER</value>
   </data>
@@ -3810,6 +3876,27 @@ Bonne rédaction.</value>
   <data name="Settings_Dashboard_Layout_Subtitle" xml:space="preserve">
     <value>Choisissez comment les sections visibles sont organisées sur la page.</value>
   </data>
+  <data name="Settings_Dashboard_GridConfig_Title" xml:space="preserve">
+    <value>Grille personnalisée</value>
+  </data>
+  <data name="Settings_Dashboard_GridConfig_Subtitle" xml:space="preserve">
+    <value>Choisissez le nombre de lignes et de colonnes de la grille personnalisée, puis faites glisser chaque tuile de section à l'endroit souhaité.</value>
+  </data>
+  <data name="Settings_Dashboard_GridConfig_RowsLabel" xml:space="preserve">
+    <value>Lignes</value>
+  </data>
+  <data name="Settings_Dashboard_GridConfig_ColsLabel" xml:space="preserve">
+    <value>Colonnes</value>
+  </data>
+  <data name="Settings_Dashboard_GridEditor_Hint" xml:space="preserve">
+    <value>Faites glisser une tuile par sa poignée pour la déplacer ; faites glisser le coin pour la redimensionner. La grille se réorganise en direct pendant l'agencement.</value>
+  </data>
+  <data name="Settings_Dashboard_GridEditor_DragTileTooltip" xml:space="preserve">
+    <value>Faites glisser pour déplacer cette section sur la grille</value>
+  </data>
+  <data name="Settings_Dashboard_GridEditor_ResizeTileTooltip" xml:space="preserve">
+    <value>Faites glisser pour redimensionner cette section</value>
+  </data>
   <data name="DashboardLayout_Classic_Title" xml:space="preserve">
     <value>Classique</value>
   </data>
@@ -3839,6 +3926,12 @@ Bonne rédaction.</value>
   </data>
   <data name="DashboardLayout_Mosaic_Description" xml:space="preserve">
     <value>Une section vedette à côté d'un assemblage asymétrique de sections plus petites.</value>
+  </data>
+  <data name="DashboardLayout_Custom_Title" xml:space="preserve">
+    <value>Personnalisé</value>
+  </data>
+  <data name="DashboardLayout_Custom_Description" xml:space="preserve">
+    <value>Placez chaque section exactement où vous le souhaitez — ligne, colonne et étendue.</value>
   </data>
   <data name="Nav_Habits" xml:space="preserve">
     <value>Habitudes</value>
@@ -3965,5 +4058,95 @@ Bonne rédaction.</value>
   </data>
   <data name="Statistics_PolarNotLinkedNotice" xml:space="preserve">
     <value>Associez votre compte Polar dans les Paramètres pour inclure ses tâches ici.</value>
+  </data>
+  <data name="Statistics_Tile_TotalNotes" xml:space="preserve">
+    <value>Notes totales</value>
+  </data>
+  <data name="Statistics_Tile_TotalSessions" xml:space="preserve">
+    <value>Sessions</value>
+  </data>
+  <data name="Statistics_Tile_VaultSize" xml:space="preserve">
+    <value>Taille du coffre</value>
+  </data>
+  <data name="Statistics_Flow_Title" xml:space="preserve">
+    <value>Flux Kanban</value>
+  </data>
+  <data name="Statistics_Flow_Pending" xml:space="preserve">
+    <value>En attente</value>
+  </data>
+  <data name="Statistics_Flow_InProgress" xml:space="preserve">
+    <value>En cours</value>
+  </data>
+  <data name="Statistics_Flow_Done" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Statistics_Flow_Empty" xml:space="preserve">
+    <value>Aucune carte pour l'instant</value>
+  </data>
+  <data name="Statistics_Heatmap_Title" xml:space="preserve">
+    <value>Régularité des habitudes</value>
+  </data>
+  <data name="Statistics_Heatmap_Empty" xml:space="preserve">
+    <value>Aucune habitude suivie — ajoutez-en une dans Habitudes pour commencer à voir votre régularité.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Hint" xml:space="preserve">
+    <value>Faites glisser une tuile pour la déplacer, ou tirez son coin inférieur droit pour la redimensionner. Avec une tuile sélectionnée : les flèches la déplacent, Maj + flèches la redimensionnent et Suppr la retire de la grille.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_AutoArrange" xml:space="preserve">
+    <value>Organiser automatiquement</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_AutoArranged_Title" xml:space="preserve">
+    <value>Grille réorganisée</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_AutoArranged_Message" xml:space="preserve">
+    <value>Chaque section a été tassée vers le coin supérieur gauche en conservant sa taille.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_NoSelection" xml:space="preserve">
+    <value>Sélectionnez une tuile de la grille pour la déplacer ou la redimensionner.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveUp" xml:space="preserve">
+    <value>Déplacer vers le haut</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveDown" xml:space="preserve">
+    <value>Déplacer vers le bas</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveLeft" xml:space="preserve">
+    <value>Déplacer vers la gauche</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_MoveRight" xml:space="preserve">
+    <value>Déplacer vers la droite</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_GrowWidth" xml:space="preserve">
+    <value>Plus large</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_ShrinkWidth" xml:space="preserve">
+    <value>Plus étroite</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_GrowHeight" xml:space="preserve">
+    <value>Plus haute</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_ShrinkHeight" xml:space="preserve">
+    <value>Moins haute</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Remove" xml:space="preserve">
+    <value>Retirer de la grille</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Add" xml:space="preserve">
+    <value>Remettre dans la grille</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Tray_Title" xml:space="preserve">
+    <value>Hors de la grille</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_Tray_Empty" xml:space="preserve">
+    <value>Toutes les sections sont dans la grille.</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_TileTooltip" xml:space="preserve">
+    <value>Glisser pour déplacer</value>
+  </data>
+  <data name="Settings_Dashboard_Grid_ResizeTooltip" xml:space="preserve">
+    <value>Glisser pour redimensionner</value>
+  </data>
+  <data name="Settings_Dashboard_Customize" xml:space="preserve">
+    <value>Personnaliser cette organisation</value>
   </data>
 </root>

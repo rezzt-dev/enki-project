@@ -7,6 +7,38 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Dashboard 100% personalizable**: la organización "Personalizada" pasa de repartir las secciones en un
+`UniformGrid` de N columnas (auto-relleno por orden de lista, sin control real) a un editor de rejilla en
+Ajustes › Dashboard donde cada sección tiene su celda y su tamaño:
+
+- Rejilla configurable de 1 a 12 filas y columnas (antes el tope eran 6, y solo columnas). Cada ficha se
+  arrastra a la celda que se quiera y se estira desde su esquina inferior derecha; mientras se arrastra,
+  una silueta muestra el destino y se marca en rojo si ahí no cabe. Un movimiento inválido se rechaza en
+  vez de empujar a las vecinas.
+- Todo se puede hacer sin ratón: con una ficha seleccionada, las flechas la mueven, `Mayús`+flechas la
+  redimensionan y `Supr` la saca de la rejilla; la barra bajo el lienzo repite esas acciones como botones
+  con nombre accesible. Las secciones fuera de la rejilla quedan en una bandeja y vuelven de un clic, a su
+  posición anterior si sigue libre.
+- Pasar de una plantilla (Clásica, Pirámide invertida, Patrón lateral, Rejilla modular, Mosaico) a
+  Personalizado parte de la geometría de esa plantilla en vez de un lienzo en blanco — botón
+  "personalizar esta organización" junto a la vista previa. "Auto-organizar" compacta la rejilla
+  conservando el tamaño de cada ficha.
+- La geometría guardada se sanea siempre antes de pintarse: una sección nueva que no existía cuando se
+  guardó el layout (p. ej. Hábitos), una rejilla que ha encogido o un `settings.json` editado a mano ya no
+  pueden dejar dos secciones una encima de otra ni hacer desaparecer ninguna.
+- El Dashboard y la vista previa de Ajustes dejan de verter las secciones en un `Grid` de 6 columnas
+  escrito a mano y usan un panel propio (`Controls.DashboardGridPanel`) que mide las filas por su
+  contenido y reparte columnas según el ajuste del vault.
+
+Correcciones relacionadas en Ajustes › Dashboard:
+
+- Al abrir Ajustes con una organización ya guardada, la vista previa dibujaba siempre la disposición
+  Clásica aunque la tarjeta marcada fuera otra: la plantilla activa no se leía del vault hasta que se
+  pulsaba una tarjeta.
+- "Restablecer" devolvía el vault a la organización Clásica pero dejaba la página mostrando la anterior.
+- En modo Personalizado la lista de secciones ocupa el ancho completo, en vez de dejar media página vacía
+  donde iba la vista previa de plantilla.
+
 Sistema de **temas personalizados** rediseñado para comportarse como un producto publicable:
 
 - El editor de temas incluye selector de color (`ColorPicker`) junto al campo HEX, botón de duplicar en

@@ -1,8 +1,8 @@
+using System;
 using System.Globalization;
 using System.Linq;
 using enki.Localization;
 using enki.Models;
-using Material.Icons;
 
 namespace enki.ViewModels;
 
@@ -42,24 +42,9 @@ public sealed partial class MainWindowViewModel
         RebuildNavItems();
     }
 
-    /// <summary>Icon/label-key for every toggleable sidebar section in the first (scrollable) group
-    /// (Ajustes › General › Secciones de la barra lateral), in the fixed order they always appear in
-    /// <see cref="NavItems"/> — the single source of truth <see cref="RebuildNavItems"/> and
-    /// <see cref="IsSidebarSectionEnabled"/> both read from. Recordatorios, Notificaciones, Estadísticas y
-    /// Ajustes forman un segundo grupo fijo en <see cref="MainWindow.axaml"/>; Ajustes nunca se oculta.</summary>
-    private static readonly (AppPage Page, MaterialIconKind Icon, string LabelKey)[] SidebarSectionDefinitions =
-    [
-        (AppPage.Dashboard, MaterialIconKind.ViewDashboardOutline, "Nav_Dashboard"),
-        (AppPage.Calendar, MaterialIconKind.CalendarBlankOutline, "Nav_Calendar"),
-        (AppPage.Kanban, MaterialIconKind.ViewColumnOutline, "Nav_Kanban"),
-        (AppPage.Notes, MaterialIconKind.NoteTextOutline, "Nav_Documents"),
-        (AppPage.Files, MaterialIconKind.FileImageOutline, "Nav_Files"),
-        (AppPage.Sessions, MaterialIconKind.SitemapOutline, "Nav_Sessions"),
-        (AppPage.Habits, MaterialIconKind.ClipboardCheckOutline, "Nav_Habits"),
-        (AppPage.Trash, MaterialIconKind.TrashCanOutline, "Nav_Trash"),
-        (AppPage.Skills, MaterialIconKind.Brain, "Nav_Skills")
-    ];
-
+    /// <summary>Whether the sidebar section for <paramref name="page"/> is currently shown — one flag per
+    /// key in <see cref="SidebarSectionCatalog.AllKeys"/>, read by <see cref="RebuildNavItems"/> regardless
+    /// of which group (main or bottom) the section currently lives in.</summary>
     private bool IsSidebarSectionEnabled(AppPage page) => page switch
     {
         AppPage.Dashboard => DashboardPanelEnabled,
@@ -71,27 +56,50 @@ public sealed partial class MainWindowViewModel
         AppPage.Sessions => SessionsPanelEnabled,
         AppPage.Trash => TrashPanelEnabled,
         AppPage.Habits => HabitsPanelEnabled,
+        AppPage.Reminders => RemindersSidebarEnabled,
+        AppPage.Notifications => NotificationsSidebarEnabled,
+        AppPage.Statistics => StatisticsPanelEnabled,
         _ => true
     };
 
-    /// <summary>Rebuilds <see cref="NavItems"/> from scratch off the current *PanelEnabled flags, in the
-    /// fixed order of <see cref="SidebarSectionDefinitions"/> — used both at startup
-    /// (<see cref="InitializeShell"/>) and every time a toggle changes (<see cref="OnSidebarSectionChanged"/>)
-    /// or the UI language changes (<see cref="RefreshAllLocalizedLabels"/>), instead of the old approach of
-    /// inserting/removing one item at a specific index per toggle, which didn't scale past the original two
-    /// (Calendario/Skills).</summary>
+    /// <summary>Rebuilds <see cref="NavItems"/>/<see cref="BottomNavItems"/> from scratch off
+    /// <see cref="Models.AppSettings.SidebarMainSectionOrder"/>/<see cref="Models.AppSettings.SidebarBottomSectionOrder"/>
+    /// (resolved via <see cref="SidebarSectionCatalog.Resolve"/>, so a missing/stale order list still falls
+    /// back to sane defaults) and the current *PanelEnabled/*SidebarEnabled flags — used at startup
+    /// (<see cref="InitializeShell"/>), every time a visibility toggle changes
+    /// (<see cref="OnSidebarSectionChanged"/>), every drag/pin reorder in Ajustes › General › Secciones de
+    /// la barra lateral (<see cref="SettingsViewModel"/>'s own <c>_onSidebarSectionOrderChanged</c>
+    /// callback), and the UI language changes (<see cref="RefreshAllLocalizedLabels"/>).</summary>
     private void RebuildNavItems()
     {
-        var activePages = NavItems.Where(n => n.IsActive).Select(n => n.Page).ToHashSet();
+        var (mainOrder, bottomOrder) = SidebarSectionCatalog.Resolve(
+            _settingsService.Settings.SidebarMainSectionOrder, _settingsService.Settings.SidebarBottomSectionOrder);
+        var activePages = NavItems.Concat(BottomNavItems).Where(n => n.IsActive).Select(n => n.Page).ToHashSet();
+
         NavItems.Clear();
-        foreach (var def in SidebarSectionDefinitions)
+        foreach (var key in mainOrder)
         {
-            if (!IsSidebarSectionEnabled(def.Page)) continue;
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[def.LabelKey], Icon = def.Icon, Page = def.Page });
+            var page = Enum.Parse<AppPage>(key);
+            if (!IsSidebarSectionEnabled(page)) continue;
+            var meta = SidebarSectionCatalog.Meta[key];
+            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
         }
+
+        BottomNavItems.Clear();
+        foreach (var key in bottomOrder)
+        {
+            var page = Enum.Parse<AppPage>(key);
+            if (!IsSidebarSectionEnabled(page)) continue;
+            var meta = SidebarSectionCatalog.Meta[key];
+            BottomNavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
+        }
+
         foreach (var item in NavItems) item.IsActive = activePages.Contains(item.Page);
+        foreach (var item in BottomNavItems) item.IsActive = activePages.Contains(item.Page);
         UpdateCalendarBadge();
         UpdateTrashBadge();
+        UpdateRemindersBadge();
+        UpdateNotificationsBadge();
     }
 
     private void OpenNoteFromDashboard(NoteFile note)
@@ -132,11 +140,11 @@ public sealed partial class MainWindowViewModel
     /// <summary>Single callback for every sidebar-section visibility toggle (Ajustes › General › Secciones
     /// de la barra lateral) — applies the page-specific side effect a couple of sections need (Calendario
     /// tells Dashboard's own calendar widget to hide too; Skills seeds the vault's default skills the first
-    /// time it's turned on), then rebuilds <see cref="NavItems"/> and, if the section that just got hidden
-    /// was the one on screen, redirects to whichever section is now first in the nav (or does nothing if the
-    /// user somehow got down to zero — <see cref="SettingsViewModel"/> already blocks disabling the last
-    /// one, so that's only a defensive fallback here). Recordatorios, Notificaciones y Estadísticas se
-    /// manejan fuera de <see cref="NavItems"/> como parte del grupo fijo del sidebar.</summary>
+    /// time it's turned on), then rebuilds <see cref="NavItems"/>/<see cref="BottomNavItems"/> and, if the
+    /// section that just got hidden was the one on screen, redirects to whichever section is now first
+    /// (main group, then bottom group) — or does nothing if the user somehow got down to zero
+    /// (<see cref="SettingsViewModel"/> already blocks disabling the last one in the main group, so that's
+    /// only a defensive fallback here).</summary>
     private void OnSidebarSectionChanged(AppPage page, bool value)
     {
         switch (page)
@@ -161,19 +169,20 @@ public sealed partial class MainWindowViewModel
             case AppPage.Statistics: StatisticsPanelEnabled = value; break;
         }
 
-        var wasActive = page switch
-        {
-            AppPage.Reminders => IsRemindersActive,
-            AppPage.Notifications => IsNotificationsActive,
-            AppPage.Statistics => CurrentPage == Statistics,
-            _ => NavItems.FirstOrDefault(n => n.Page == page)?.IsActive ?? false
-        };
+        var wasActive = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == page)?.IsActive ?? false;
 
         RebuildNavItems();
 
-        if (!value && wasActive && NavItems.FirstOrDefault()?.Page is { } fallback)
+        if (!value && wasActive && (NavItems.FirstOrDefault() ?? BottomNavItems.FirstOrDefault())?.Page is { } fallback)
             Navigate(fallback);
     }
+
+    /// <summary>A drag/pin reorder in Ajustes › General › Secciones de la barra lateral changed which
+    /// section lives in which group, or their order within it, without touching any single section's own
+    /// visibility flag — so <see cref="OnSidebarSectionChanged"/>'s rebuild wouldn't otherwise fire. Simply
+    /// rebuilds <see cref="NavItems"/>/<see cref="BottomNavItems"/> off the freshly-saved order; no active-page
+    /// redirect needed since a pure reorder never hides the page currently on screen.</summary>
+    private void OnSidebarSectionOrderChanged() => RebuildNavItems();
 
     /// <summary>Pushes every other live-reactive Calendario setting (docs/calendar-feature/
     /// 09-configuracion-y-ajustes.md §1) into the already-open <see cref="CalendarViewModel"/> — each

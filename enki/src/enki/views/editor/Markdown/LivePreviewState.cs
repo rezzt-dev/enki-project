@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace enki.Views.Editor.Markdown;
 
 /// <summary>
 /// Shared state consumed by the colorizer, element generator and background renderer.
 /// Updated by the view whenever the caret moves, the selection changes, or the document
-/// text changes (which also recomputes fenced-code-block ranges).
+/// text changes (which also recomputes fenced-code-block ranges and table detection).
 /// </summary>
 public sealed class LivePreviewState
 {
@@ -35,4 +36,5 @@ public sealed class LivePreviewState
         }
         return false;
     }
+
 }

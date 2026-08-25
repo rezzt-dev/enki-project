@@ -37,6 +37,7 @@ public partial class SkillEditorView : UserControl
         textView.LineTransformers.Add(new MarkdownLivePreviewColorizer(_livePreviewState, _style));
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
+
         textView.CurrentLineBackground = ResolveCurrentLineBrush();
         textView.CurrentLineBorder = null;
 
@@ -52,6 +53,7 @@ public partial class SkillEditorView : UserControl
 
         Editor.FontFamily = _style.BodyFontFamily;
         Editor.FontSize = EditorPreferences.FontSize;
+        Editor.Options.InheritWordWrapIndentation = true;
 
         SearchPanel.Install(Editor);
 

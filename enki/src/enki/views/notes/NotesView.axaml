@@ -328,7 +328,8 @@
                             <TextBlock Text="{Binding Preview}" Classes="muted" FontSize="12"
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="3" />
                           </StackPanel>
-                          <TextBlock Grid.Row="2" Text="{Binding WordCountLabel}" Classes="faint" />
+                          <TextBlock Grid.Row="2" Text="{Binding FileNameLabel}" Classes="faint"
+                                     TextTrimming="CharacterEllipsis" MaxLines="1" />
                           <TextBlock Grid.Row="3" Text="{Binding TagsLabel}" Classes="faint"
                                      TextTrimming="CharacterEllipsis" MaxLines="1"
                                      IsVisible="{Binding HasTags}" Margin="0,4,0,0" />
