@@ -11,7 +11,7 @@
         mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="820"
         x:Class="enki.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Width="1320" Height="820" MinWidth="980" MinHeight="620"
+        MinWidth="980" MinHeight="620"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppBackgroundBrush}"
         Title="{loc:Tr Shell_WindowTitle}">

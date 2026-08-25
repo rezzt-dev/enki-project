@@ -20,6 +20,14 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Tamaño inicial vía ClientSize en vez de Width/Height en el XAML: Avalonia deja Width/Height
+        // como un valor de layout persistente que en X11 compite con los ConfigureNotify nativos del
+        // redimensionado por arrastre (grips propios, BeginResizeDrag más abajo), así que el marco de la
+        // ventana crece pero el contenido se queda arreglado al tamaño fijo, dejando franjas negras sin
+        // pintar alrededor (bug conocido de Avalonia en X11 — AvaloniaUI/Avalonia#2329). ClientSize solo
+        // fija el tamaño de arranque sin dejar esa restricción colgada.
+        ClientSize = new Size(1320, 820);
+
         // Iconos adaptativos al tema: fondo oscuro con E clara en tema claro, fondo
         // claro con E oscura en tema oscuro, para mantener contraste en la barra de
         // título/taskbar del SO y en el brand del sidebar (docs/project-icons/).
