@@ -1093,6 +1093,24 @@
     <Setter Property="CornerRadius" Value="0" />
   </Style>
 
+  <!-- Variante para tarjetas de la Papelera: la tarjeta en sí no navega a ningún sitio (solo los
+       botones de restaurar/borrar que contiene lo son), así que sigue el mismo patrón que
+       Border.stat-card — el fondo se ilumina al pasar el cursor, sin el translateY/cursor:hand
+       que Button.note-card/Button.card reservan para tarjetas clicables — en vez de dejarla
+       completamente inerte como el resto de usos de Border.card (paneles estáticos de Ajustes). -->
+  <Style Selector="Border.card.trash-card">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.card.trash-card:pointerover">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+  </Style>
+
   <!-- ===================== Captura de atajo remapeable (propuesta 29, Ajustes › Atajos) ===================== -->
   <Style Selector="Border.shortcut-capture">
     <Setter Property="Background" Value="{DynamicResource Ink05}" />

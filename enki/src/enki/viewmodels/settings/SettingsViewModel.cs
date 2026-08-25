@@ -44,6 +44,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly Action<bool> _onRemindersPanelChanged;
     private readonly Action<bool> _onCalendarShowSidebarScrollbarChanged;
     private readonly Action<bool> _onDashboardShowScrollbarChanged;
+    private readonly Action<string> _onKanbanBoardOrientationChanged;
 
     /// <summary>Single callback covering every sidebar-section visibility toggle (Ajustes › General ›
     /// Secciones de la barra lateral) — replaces what used to be one <c>Action&lt;bool&gt;</c> per section
@@ -153,6 +154,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action onSidebarSectionOrderChanged,
         Action onCalendarSettingsChanged,
         Action<bool> onDashboardShowScrollbarChanged,
+        Action<string> onKanbanBoardOrientationChanged,
         Action<bool> onPolarShowTaskTagsChanged,
         Action<int> onUiZoomChanged,
         Action onLanguageChanged)
@@ -174,6 +176,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _onSidebarSectionOrderChanged = onSidebarSectionOrderChanged;
         _onCalendarSettingsChanged = onCalendarSettingsChanged;
         _onDashboardShowScrollbarChanged = onDashboardShowScrollbarChanged;
+        _onKanbanBoardOrientationChanged = onKanbanBoardOrientationChanged;
         _onPolarShowTaskTagsChanged = onPolarShowTaskTagsChanged;
         _onUiZoomChanged = onUiZoomChanged;
         _onLanguageChanged = onLanguageChanged;
@@ -224,6 +227,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
+        _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";
+        _isBuiltInDarkThemesCollapsed = settingsService.Settings.BuiltInDarkThemesCollapsed;
+        _isBuiltInLightThemesCollapsed = settingsService.Settings.BuiltInLightThemesCollapsed;
         _confirmBeforeDelete = settingsService.Settings.ConfirmBeforeDelete;
         _debugLoggingEnabled = settingsService.Settings.DebugLoggingEnabled;
         _autoBackupEnabled = settingsService.Settings.AutoBackupEnabled;

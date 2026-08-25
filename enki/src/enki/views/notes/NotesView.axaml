@@ -428,10 +428,11 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
 
-              <!-- Nueva pestaña: reutiliza NewNoteCommand (crea "Nueva nota" y la abre), el mismo
-                   comando que el botón "NUEVA NOTA" del modo de exploración. -->
+              <!-- Nueva pestaña: vuelve al modo de exploración (ActiveEditor = null) sin tocar
+                   OpenEditors, así las pestañas ya abiertas siguen ahí y el usuario puede elegir
+                   una nota existente del grid en vez de crear una nueva cada vez. -->
               <Button Classes="tab-add" VerticalAlignment="Center"
-                      Command="{Binding NewNoteCommand}" ToolTip.Tip="{loc:Tr Notes_NewTabTooltip}"
+                      Command="{Binding ShowBrowsingModeCommand}" ToolTip.Tip="{loc:Tr Notes_NewTabTooltip}"
                       AutomationProperties.Name="{loc:Tr Notes_NewTabTooltip}">
                 <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
               </Button>

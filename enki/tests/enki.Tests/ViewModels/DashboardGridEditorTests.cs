@@ -45,6 +45,7 @@ public class DashboardGridEditorTests : IDisposable
             onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
+            onKanbanBoardOrientationChanged: _ => { },
             onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { },
             onLanguageChanged: () => { });
 

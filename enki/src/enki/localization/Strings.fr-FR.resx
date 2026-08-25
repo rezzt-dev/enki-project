@@ -1387,7 +1387,7 @@
     <value>Nouvelle note</value>
   </data>
   <data name="Notes_NewTabTooltip" xml:space="preserve">
-    <value>Nouvelle note</value>
+    <value>Nouvel onglet</value>
   </data>
   <data name="Notes_PageSubtitle" xml:space="preserve">
     <value>Organisez vos notes et idées</value>
@@ -2201,6 +2201,21 @@
   </data>
   <data name="Settings_Appearance_Title" xml:space="preserve">
     <value>APPARENCE</value>
+  </data>
+  <data name="Settings_Appearance_KanbanOrientation_Description" xml:space="preserve">
+    <value>Choisissez si les colonnes du tableau sont côte à côte ou empilées en rangées horizontales.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanOrientation_Horizontal" xml:space="preserve">
+    <value>Horizontal</value>
+  </data>
+  <data name="Settings_Appearance_KanbanOrientation_Label" xml:space="preserve">
+    <value>Disposition des colonnes</value>
+  </data>
+  <data name="Settings_Appearance_KanbanOrientation_Title" xml:space="preserve">
+    <value>Tableau Kanban</value>
+  </data>
+  <data name="Settings_Appearance_KanbanOrientation_Vertical" xml:space="preserve">
+    <value>Vertical</value>
   </data>
   <data name="Settings_Appearance_TitleBar_Description" xml:space="preserve">
     <value>Utiliser la barre de titre propre à Enki plutôt que celle du système d'exploitation.</value>

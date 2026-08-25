@@ -141,8 +141,11 @@ public static class MarkdownLineParser
             return model;
         }
 
-        // Bullet / task list.
-        if (indent <= 3 && indent < n && (text[indent] == '-' || text[indent] == '*' || text[indent] == '+') &&
+        // Bullet / task list. No indent cap (unlike headings/rules/blockquotes above, which keep the
+        // CommonMark-ish 3-space limit): nested list items are routinely indented 4+ spaces per level,
+        // and this parser has no indented-code-block construct to conflict with, so any indentation
+        // still counts as a list marker.
+        if (indent < n && (text[indent] == '-' || text[indent] == '*' || text[indent] == '+') &&
             indent + 1 < n && (text[indent + 1] == ' ' || text[indent + 1] == '\t'))
         {
             var spacesEnd = indent + 1;
@@ -178,25 +181,22 @@ public static class MarkdownLineParser
             return model;
         }
 
-        // Ordered list.
-        if (indent <= 3)
+        // Ordered list. Same no-cap reasoning as the bullet/task branch above.
+        var jOrdered = indent;
+        while (jOrdered < n && char.IsDigit(text[jOrdered])) jOrdered++;
+        if (jOrdered > indent && jOrdered - indent <= 9 && jOrdered < n && (text[jOrdered] == '.' || text[jOrdered] == ')') &&
+            jOrdered + 1 < n && (text[jOrdered + 1] == ' ' || text[jOrdered + 1] == '\t'))
         {
-            var j = indent;
-            while (j < n && char.IsDigit(text[j])) j++;
-            if (j > indent && j - indent <= 9 && j < n && (text[j] == '.' || text[j] == ')') &&
-                j + 1 < n && (text[j + 1] == ' ' || text[j + 1] == '\t'))
-            {
-                // Marcador = número + puntuación + el primer espacio obligatorio.
-                var markerEnd = j + 2;
-                var contentStart = markerEnd;
-                while (contentStart < n && (text[contentStart] == ' ' || text[contentStart] == '\t')) contentStart++;
-                model.Kind = MdBlockKind.OrderedList;
-                model.MarkerStart = lineOffset + indent;
-                model.MarkerEnd = lineOffset + markerEnd;
-                model.ContentStart = lineOffset + contentStart;
-                ScanInline(model, text, contentStart, n, lineOffset);
-                return model;
-            }
+            // Marcador = número + puntuación + el primer espacio obligatorio.
+            var markerEnd = jOrdered + 2;
+            var contentStart = markerEnd;
+            while (contentStart < n && (text[contentStart] == ' ' || text[contentStart] == '\t')) contentStart++;
+            model.Kind = MdBlockKind.OrderedList;
+            model.MarkerStart = lineOffset + indent;
+            model.MarkerEnd = lineOffset + markerEnd;
+            model.ContentStart = lineOffset + contentStart;
+            ScanInline(model, text, contentStart, n, lineOffset);
+            return model;
         }
 
         model.Kind = MdBlockKind.Paragraph;

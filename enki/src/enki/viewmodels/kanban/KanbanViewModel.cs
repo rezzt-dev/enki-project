@@ -30,6 +30,15 @@ public enum KanbanCardSortMode
     Created
 }
 
+/// <summary>Disposición visual del tablero local — Ajustes › Apariencia. <see cref="Vertical"/> apila las
+/// tarjetas dentro de columnas lado a lado (la disposición clásica); <see cref="Horizontal"/> gira cada
+/// columna 90° en una franja de ancho completo con las tarjetas desplazándose de lado a lado.</summary>
+public enum KanbanBoardOrientation
+{
+    Vertical,
+    Horizontal
+}
+
 public sealed partial class KanbanViewModel : ViewModelBase
 {
     private readonly KanbanService _kanbanService;
@@ -119,6 +128,12 @@ public sealed partial class KanbanViewModel : ViewModelBase
     [ObservableProperty]
     private KanbanCardSortMode _sortMode = KanbanCardSortMode.Manual;
 
+    /// <summary>Ajustes › Apariencia › Tablero Kanban. Se inicializa desde <see cref="SettingsService"/> en
+    /// el constructor y <see cref="MainWindowViewModel"/> la mantiene sincronizada en vivo si se cambia
+    /// desde Ajustes mientras el tablero está abierto (mismo cableado que <c>DashboardShowScrollbar</c>).</summary>
+    [ObservableProperty]
+    private KanbanBoardOrientation _boardOrientation = KanbanBoardOrientation.Vertical;
+
     public KanbanViewModel(KanbanService kanbanService, PolarAuthService polarAuthService, PolarTaskManagementViewModel taskManagement,
         VaultService? vaultService = null, SessionService? sessionService = null, Action<string>? onOpenLinkedNote = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null)
@@ -131,6 +146,10 @@ public sealed partial class KanbanViewModel : ViewModelBase
         _settingsService = settingsService;
         _notificationService = notificationService;
         TaskManagement = taskManagement;
+
+        if (settingsService is not null &&
+            Enum.TryParse<KanbanBoardOrientation>(settingsService.Settings.KanbanBoardOrientation, out var storedOrientation))
+            _boardOrientation = storedOrientation;
 
         _isTaskManagementUnlocked = polarAuthService.IsLinked;
         polarAuthService.LinkStateChanged += () =>

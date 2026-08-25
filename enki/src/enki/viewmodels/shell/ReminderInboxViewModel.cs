@@ -9,16 +9,21 @@ using enki.Services;
 
 namespace enki.ViewModels;
 
-/// <summary>Backs the inbox button's dropdown — every kanban card with a due date, bucketed into
-/// vencidas/hoy/próximas. Purely derived from <see cref="KanbanService.Board"/> (no independent
-/// persistence besides which reminders were dismissed, see <see cref="DismissedReminderService"/>), and
-/// kept live via <see cref="KanbanService.BoardChanged"/> — see <see cref="Reload"/>.</summary>
+/// <summary>Backs the inbox button's dropdown — every kanban card with a due date *and* every standalone
+/// <see cref="Models.Reminder"/> from the Recordatorios page, merged and bucketed into vencidas/hoy/próximas
+/// (docs/agent-docs/notificaciones-y-recordatorios.md: the title-bar icon is literally labeled
+/// "Recordatorios", so it needs to actually reflect the user's own reminders, not just Kanban due dates).
+/// No independent persistence of its own besides which items were dismissed, see
+/// <see cref="DismissedReminderService"/>. Kept live via <see cref="KanbanService.BoardChanged"/> and
+/// <see cref="ReminderService.RemindersChanged"/> — see <see cref="Reload"/>.</summary>
 public sealed partial class ReminderInboxViewModel : ViewModelBase
 {
     private readonly KanbanService _kanbanService;
+    private readonly ReminderService _reminderService;
     private readonly SettingsService _settingsService;
     private readonly DismissedReminderService _dismissedReminderService;
     private readonly Action<string> _onOpenCard;
+    private readonly Action<string> _onOpenReminder;
 
     public ObservableCollection<ReminderItemViewModel> Items { get; } = [];
 
@@ -50,18 +55,24 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
 
     public ReminderInboxViewModel(
         KanbanService kanbanService,
+        ReminderService reminderService,
         SettingsService settingsService,
         DismissedReminderService dismissedReminderService,
-        Action<string> onOpenCard)
+        Action<string> onOpenCard,
+        Action<string> onOpenReminder)
     {
         _kanbanService = kanbanService;
+        _reminderService = reminderService;
         _settingsService = settingsService;
         _dismissedReminderService = dismissedReminderService;
         _onOpenCard = onOpenCard;
+        _onOpenReminder = onOpenReminder;
 
-        // Live refresh: a due date edited from the Kanban page while this panel is open now shows up
-        // without waiting for the next Toggle (see docs/notificaciones-y-recordatorios.md).
+        // Live refresh: a due date edited from the Kanban page, or a reminder created/fired/completed from
+        // the Recordatorios page (or the calendar), while this panel is open now shows up without waiting
+        // for the next Toggle (see docs/notificaciones-y-recordatorios.md).
         _kanbanService.BoardChanged += Reload;
+        _reminderService.RemindersChanged += Reload;
 
         _undoTimer = new DispatcherTimer { Interval = UndoWindow };
         _undoTimer.Tick += (_, _) =>
@@ -83,15 +94,22 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
 
         var soonWindowDays = Math.Clamp(_settingsService.Settings.ReminderSoonWindowDays, 1, 90);
         var soonLimit = DateTime.UtcNow + TimeSpan.FromDays(soonWindowDays);
-        var reminders = _kanbanService.Board.Columns
+
+        var kanbanItems = _kanbanService.Board.Columns
             .SelectMany(column => column.Cards.Select(card => new { column.Title, Card = card }))
             .Where(x => x.Card.CompletedAtUtc is null)
             .Where(x => x.Card.DueDateUtc is { } due && due <= soonLimit)
             .Where(x => !_dismissedReminderService.IsDismissed(x.Card.Id, x.Card.DueDateUtc!.Value))
-            .Select(x => new ReminderItemViewModel(x.Card, x.Title))
-            .OrderBy(r => r.DueDateUtc);
+            .Select(x => new ReminderItemViewModel(x.Card, x.Title));
 
-        foreach (var reminder in reminders) Items.Add(reminder);
+        var standaloneItems = _reminderService.ActiveReminders
+            .Where(r => !r.IsCompleted)
+            .Where(r => r.NotifyAtUtc <= soonLimit)
+            .Where(r => !_dismissedReminderService.IsDismissed(r.Id, r.NotifyAtUtc))
+            .Select(r => new ReminderItemViewModel(r));
+
+        var merged = kanbanItems.Concat(standaloneItems).OrderBy(r => r.DueDateUtc);
+        foreach (var reminder in merged) Items.Add(reminder);
 
         OverdueCount = Items.Count(r => r.Bucket == ReminderBucket.Overdue);
         OnPropertyChanged(nameof(HasItems));
@@ -114,7 +132,8 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
     private void OpenCard(ReminderItemViewModel item)
     {
         IsOpen = false;
-        _onOpenCard(item.CardId);
+        if (item.SourceKind == ReminderItemSourceKind.Reminder) _onOpenReminder(item.SourceId);
+        else _onOpenCard(item.SourceId);
     }
 
     /// <summary>"Ya lo vi, no me lo muestres hasta mañana" (see docs/notificaciones-y-recordatorios.md).
@@ -125,7 +144,7 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
     [RelayCommand]
     private void Dismiss(ReminderItemViewModel item)
     {
-        _dismissedReminderService.Dismiss(item.CardId, item.DueDateUtc);
+        _dismissedReminderService.Dismiss(item.SourceId, item.DueDateUtc);
         Items.Remove(item);
         OverdueCount = Items.Count(r => r.Bucket == ReminderBucket.Overdue);
         OnPropertyChanged(nameof(HasItems));
@@ -146,7 +165,7 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
 
         _undoTimer.Stop();
         LastDismissed = null;
-        _dismissedReminderService.RemoveForCard(item.CardId);
+        _dismissedReminderService.RemoveForCard(item.SourceId);
         Reload();
     }
 }

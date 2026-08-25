@@ -803,6 +803,28 @@
             </StackPanel>
      </Border>
 
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ViewColumnOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <RadioButton Classes="segment" GroupName="KanbanBoardOrientation" Content="{loc:Tr Settings_Appearance_KanbanOrientation_Vertical, Converter={StaticResource UpperCaseConverter}}"
+                               IsChecked="{Binding KanbanBoardVertical}" />
+                  <RadioButton Classes="segment" GroupName="KanbanBoardOrientation" Content="{loc:Tr Settings_Appearance_KanbanOrientation_Horizontal, Converter={StaticResource UpperCaseConverter}}"
+                               IsChecked="{Binding !KanbanBoardVertical}" />
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+     </Border>
+
         </StackPanel>
 
         <!-- ===================== Editor ===================== -->

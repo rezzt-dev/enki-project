@@ -55,6 +55,7 @@ public class SettingsViewModelTests : IDisposable
             onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
+            onKanbanBoardOrientationChanged: _ => { },
             onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { },
             onLanguageChanged: () => { });
 
@@ -76,7 +77,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, () => { });
+            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         Assert.Equal(16, vm.EditorFontSize);
         Assert.True(vm.IsDarkTheme);
@@ -156,7 +157,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, () => { });
+            () => { }, _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         vm.NotificationsPanelEnabled = false;
 
@@ -263,7 +264,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, v => notified = v, () => { });
+            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, v => notified = v, () => { });
 
         vm.UiZoomPercent = 150;
 

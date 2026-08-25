@@ -11,11 +11,21 @@ modelo, servicio, viewmodel y panel propios para cada una:
 
 | | 🔔 Campana — **Notificaciones** | 📥 Bandeja — **Recordatorios** |
 |---|---|---|
-| Qué es | Log de eventos de la propia app | Vista derivada de tareas con fecha límite |
+| Qué es | Log de eventos de la propia app | Vista derivada de "qué vence pronto" |
 | Dirección | *Push*: algo pasó (vault cambiado, error de sync…) | *Pull*: algo vence pronto |
-| Origen del dato | `AppNotification`, persistido en `notifications.json` | `KanbanCard.DueDateUtc`, ya vive en `kanban.json` |
+| Origen del dato | `AppNotification`, persistido en `notifications.json` | `KanbanCard.DueDateUtc` (`kanban.json`) **+** `Reminder.NotifyAtUtc` (`reminders.json`) |
 | Se "lee" | Sí, por ítem (`IsRead`) | No hay estado propio de lectura — sí hay descarte, ver abajo |
-| Acción al hacer click | Marca como leída | Navega a Kanban y abre el detalle de la tarjeta |
+| Acción al hacer click | Marca como leída | Navega a Kanban (tarjeta) o a Recordatorios (recordatorio propio) y abre el detalle |
+
+**Actualización:** la bandeja 📥 originalmente solo proyectaba tarjetas de Kanban (ver sección siguiente,
+que describe ese diseño inicial). Como el icono está literalmente rotulado "Recordatorios"
+(`Reminder_InboxTooltip`/`Reminder_InboxTitle`) y desde entonces se añadió una página "Recordatorios" con
+recordatorios propios de verdad (`models/Reminder.cs`, independientes de Kanban), la bandeja ahora también
+incluye esos recordatorios — ver `ReminderItemViewModel.SourceKind` y
+`ReminderInboxViewModel.Reload`, que mezcla ambas fuentes por fecha antes de bucketizar. Un recordatorio
+que se dispara sigue empujando además un aviso a la campana (comportamiento sin cambios, es el "ding"
+puntual de que algo acaba de pasar), pero mientras siga activo y no completado también aparece listado en
+la bandeja 📥 hasta que se completa o se descarta, igual que una tarjeta de Kanban vencida.
 
 ## Modelo y persistencia
 
@@ -27,10 +37,12 @@ modelo, servicio, viewmodel y panel propios para cada una:
   polling. `MarkAsRead` / `MarkAllAsRead`. También consulta `SettingsService` para silenciar por
   severidad (ver "Preferencias en Ajustes" más abajo) — una notificación silenciada no se persiste ni
   se emite el evento, así que no deja rastro en la campana.
-- Los **recordatorios no tienen modelo propio** — son una proyección de solo lectura sobre
-  `KanbanService.Board` (`ReminderItemViewModel`, ver abajo). Es la decisión correcta mientras la única
-  fuente de "cosas pendientes" sea Kanban: evita un segundo almacén que se puede desincronizar del real.
-  Lo único persistido aparte del propio kanban es **qué recordatorios se descartaron** —
+- Los **ítems de la bandeja no tienen modelo propio** — cada uno es una proyección de solo lectura
+  (`ReminderItemViewModel`, ver abajo) sobre una de dos fuentes reales: `KanbanService.Board`
+  (`KanbanCard.DueDateUtc`) o `ReminderService.ActiveReminders` (`Reminder.NotifyAtUtc`, el modelo propio
+  de la página Recordatorios, `models/Reminder.cs`). Evita un tercer almacén que se pueda desincronizar de
+  cualquiera de los dos reales. Lo único persistido aparte de kanban/reminders es **qué ítems se
+  descartaron** —
   `models/DismissedReminder.cs` + `services/DismissedReminderService.cs`
   (`%AppData%/Enki/dismissed-reminders.json`), keyed por `{ cardId, dueDateUtcSnapshot }` así una tarjeta
   reprogramada vuelve a aparecer en vez de quedar oculta para siempre.
@@ -41,14 +53,18 @@ modelo, servicio, viewmodel y panel propios para cada una:
   comandos `Toggle`, `Close`, `MarkAllRead`, `SelectItem` (marca leída al click). Al recibir
   `NotificationAdded` también dispara un toast del sistema vía `ToastService` si
   `AppSettings.ShowDesktopToasts` está activo.
-- **`ReminderItemViewModel`** (con `enum ReminderBucket { Overdue, Today, Soon }`) /
-  **`ReminderInboxViewModel`** — recorre `_kanbanService.Board.Columns.SelectMany(...).Cards`, se queda
-  con las que vencen dentro de `AppSettings.ReminderSoonWindowDays` (configurable en Ajustes, 7 días por
-  defecto), descarta las que están en `DismissedReminderService`, las bucketiza y expone `OverdueCount`
-  (solo vencidas — mismo criterio que `KanbanViewModel.OverdueCount`) como el número que se muestra en
-  la insignia. Se recalcula al abrir el panel **y** en vivo, suscrito a `KanbanService.BoardChanged`
-  (ver más abajo) — editar la fecha de una tarjeta desde Kanban con el panel abierto ya se refleja sin
-  esperar al próximo `Toggle`. Comando `Dismiss` descarta un recordatorio individual sin tocar la
+- **`ReminderItemViewModel`** (con `enum ReminderBucket { Overdue, Today, Soon }` y
+  `enum ReminderItemSourceKind { KanbanCard, Reminder }`) / **`ReminderInboxViewModel`** — recorre
+  `_kanbanService.Board.Columns.SelectMany(...).Cards` **y** `_reminderService.ActiveReminders`, se queda
+  con lo que vence dentro de `AppSettings.ReminderSoonWindowDays` (configurable en Ajustes, 7 días por
+  defecto), descarta lo que está en `DismissedReminderService` (keyed por `SourceId`, común a ambas
+  fuentes), mezcla y bucketiza ambas listas por fecha, y expone `OverdueCount` (solo vencidas — mismo
+  criterio que `KanbanViewModel.OverdueCount`) como el número que se muestra en la insignia. `OpenCard`
+  despacha por `SourceKind`: una tarjeta abre Kanban, un recordatorio propio abre la página Recordatorios
+  (`RemindersViewModel.OpenReminderById`). Se recalcula al abrir el panel **y** en vivo, suscrito a
+  `KanbanService.BoardChanged` y `ReminderService.RemindersChanged` (ver más abajo) — editar la fecha de
+  una tarjeta desde Kanban, o crear/completar/borrar un recordatorio desde su página, con el panel abierto
+  ya se refleja sin esperar al próximo `Toggle`. Comando `Dismiss` descarta un ítem individual sin tocar la
   tarjeta real.
 - El bucketing distingue una fecha límite "de todo el día" (calendario solo, medianoche local) de una
   con hora específica: con hora, "vencida" se calcula contra el instante actual; sin hora, contra el
@@ -56,9 +72,11 @@ modelo, servicio, viewmodel y panel propios para cada una:
   `KanbanCardViewModel.IsOverdue`/`DueDateLabel` para que tablero y bandeja usen siempre el mismo criterio.
 - **`MainWindowViewModel`** instancia `NotificationCenter`/`ReminderInbox` siempre (no detrás de
   `IsVaultReady`, porque tanto el tablero kanban como el log de notificaciones son independientes de qué
-  vault esté abierto) y cablea `OpenCardFromReminder` → `Navigate(AppPage.Kanban)` +
-  `KanbanViewModel.OpenCardById`. También expone `NotificationsPanelEnabled`/`RemindersPanelEnabled`
-  (ver Ajustes) para ocultar cada botón por separado sin afectar al otro.
+  vault esté abierto) y le pasa dos callbacks de navegación: `OpenKanbanCard` → `Navigate(AppPage.Kanban)` +
+  `KanbanViewModel.OpenCardById` para ítems de tipo `KanbanCard`, y `OpenReminder` →
+  `Navigate(AppPage.Reminders)` + `RemindersViewModel.OpenReminderById` para ítems de tipo `Reminder`.
+  También expone `NotificationsPanelEnabled`/`RemindersPanelEnabled` (ver Ajustes) para ocultar cada botón
+  por separado sin afectar al otro.
 - Disparadores de notificación conectados: cambio de vault (`MainWindowViewModel.OnVaultChanged`), vault
   guardado que ya no existe al iniciar (`MainWindowViewModel`, ctor), papelera vaciada y tarjeta
   restaurada (`TrashViewModel.ConfirmEmpty`/`RestoreTask`), sesión nueva creada

@@ -135,6 +135,11 @@ public sealed partial class MainWindowViewModel
 
     private void OnDashboardShowScrollbarModeChanged(bool value) => Dashboard!.ShowScrollbar = value;
 
+    private void OnKanbanBoardOrientationChanged(string value)
+    {
+        if (Enum.TryParse<KanbanBoardOrientation>(value, out var parsed)) Kanban!.BoardOrientation = parsed;
+    }
+
     private void OnPolarShowTaskTagsChanged(bool value) => Kanban!.TaskManagement.ShowTagFilter = value;
 
     /// <summary>Single callback for every sidebar-section visibility toggle (Ajustes › General › Secciones
@@ -208,6 +213,16 @@ public sealed partial class MainWindowViewModel
     {
         Navigate(AppPage.Kanban);
         Kanban?.OpenCardById(cardId);
+    }
+
+    /// <summary>Lands on the Recordatorios page with a standalone reminder's own detail dialog already
+    /// open — the inbox's ("<see cref="ReminderInbox"/>") equivalent of <see cref="OpenKanbanCard"/> for the
+    /// items it now also surfaces that come from <see cref="RemindersViewModel"/> instead of the Kanban
+    /// board (docs/agent-docs/notificaciones-y-recordatorios.md).</summary>
+    private void OpenReminder(string reminderId)
+    {
+        Navigate(AppPage.Reminders);
+        Reminders?.OpenReminderById(reminderId);
     }
 
     /// <summary>"Ver nota vinculada" from the Kanban card editor/detail — opens the linked note on the

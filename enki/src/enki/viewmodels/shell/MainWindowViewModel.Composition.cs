@@ -116,7 +116,7 @@ public sealed partial class MainWindowViewModel
         // both independent of the vault folder, and the two title-bar buttons stay visible even on the
         // vault-setup screen.
         NotificationCenter = new NotificationCenterViewModel(_notificationService, _settingsService);
-        ReminderInbox = new ReminderInboxViewModel(_kanbanService, _settingsService, _dismissedReminderService, OpenKanbanCard);
+        ReminderInbox = new ReminderInboxViewModel(_kanbanService, _reminderService, _settingsService, _dismissedReminderService, OpenKanbanCard, OpenReminder);
         ReminderInbox.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ReminderInboxViewModel.OverdueCount)) UpdateCalendarBadge();
@@ -368,6 +368,7 @@ public sealed partial class MainWindowViewModel
             _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
+            OnKanbanBoardOrientationChanged,
             OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);

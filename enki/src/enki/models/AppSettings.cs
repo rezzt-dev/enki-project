@@ -37,11 +37,25 @@ public sealed class AppSettings
     /// raíl y el pulgar, el scroll con rueda/teclado sigue funcionando igual.</summary>
     public bool DashboardShowScrollbar { get; set; } = true;
 
+    /// <summary>"Vertical" o "Horizontal" — Ajustes › Apariencia. Vertical apila las tarjetas dentro de
+    /// columnas lado a lado (la disposición clásica de un tablero Kanban); Horizontal gira cada columna
+    /// 90° en una franja de ancho completo con sus tarjetas desplazándose de lado a lado. Stored as a
+    /// plain string for the same reason as <see cref="Theme"/>/<see cref="EditorColumnPosition"/>.</summary>
+    public string KanbanBoardOrientation { get; set; } = "Vertical";
+
     /// <summary>System font family name for the app UI. Null/empty means the bundled Space Grotesk.</summary>
     public string? InterfaceFontFamily { get; set; }
 
     /// <summary>System font family name for the markdown editor (edit + preview), independent of <see cref="InterfaceFontFamily"/>. Null/empty means the bundled Space Grotesk.</summary>
     public string? EditorFontFamily { get; set; }
+
+    /// <summary>Ajustes › Apariencia › Tema personalizado — whether the "Oscuros" built-in theme list is
+    /// collapsed.</summary>
+    public bool BuiltInDarkThemesCollapsed { get; set; }
+
+    /// <summary>Ajustes › Apariencia › Tema personalizado — whether the "Claros" built-in theme list is
+    /// collapsed.</summary>
+    public bool BuiltInLightThemesCollapsed { get; set; }
 
     // ===================== Notificaciones y recordatorios (Ajustes › Notificaciones) =====================
 

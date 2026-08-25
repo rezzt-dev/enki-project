@@ -120,7 +120,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     /// <see cref="ReminderInbox"/> for the separate, due-date-driven panel behind the inbox button.</summary>
     public NotificationCenterViewModel NotificationCenter { get; }
 
-    /// <summary>Inbox button in the title bar — kanban cards with an approaching or past due date.</summary>
+    /// <summary>Inbox button in the title bar — kanban cards with an approaching or past due date, merged
+    /// with the user's own standalone reminders from the Recordatorios page.</summary>
     public ReminderInboxViewModel ReminderInbox { get; }
 
     /// <summary>Global search box in the title bar — searches notes, kanban cards, Polar tasks

@@ -328,9 +328,11 @@
          drawing the title bar. Each is independently hideable from Ajustes › Notificaciones
          (MainWindowViewModel.NotificationsPanelEnabled/RemindersPanelEnabled) instead. They are NOT the
          same feature: the bell is a push-driven system event log (NotificationCenterViewModel — vault
-         switched, sync errors…); the inbox is a pull-driven view over kanban due dates
-         (ReminderInboxViewModel — "what's due soon"). See docs/notificaciones-y-recordatorios.md for the
-         fuller design. -->
+         switched, sync errors…); the inbox is a pull-driven view over kanban due dates AND the user's own
+         standalone reminders from the Recordatorios page (ReminderInboxViewModel — "what's due soon"). A
+         fired reminder still also lands in the bell as a one-off toast/log entry ("this just happened"),
+         but the inbox is what stays labeled "Recordatorios" and lists it until it's completed/dismissed.
+         See docs/agent-docs/notificaciones-y-recordatorios.md for the fuller design. -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0">
 
       <!-- Global search: abre un popup con consulta en paralelo a notas, tarjetas, tareas y recordatorios. -->

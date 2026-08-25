@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Media;
@@ -14,6 +15,15 @@ namespace enki.Views.Editor.Markdown;
 /// <see cref="VisualLineElement.VisualLength"/> of 1 regardless of its replacement string, which
 /// isn't enough room for a multi-character glyph like "•  ".
 ///
+/// <see cref="CreateTextRun"/> can be asked to (re)start partway through this element's reserved
+/// span — not just once at its own <see cref="VisualLineElement.VisualColumn"/> — e.g. when
+/// <c>GetIndentationVisualColumn</c>'s wrap-indent measurement probes each remaining visual column
+/// individually. Ignoring <c>startVisualColumn</c> and always handing back the full glyph string
+/// used to redraw "•  " once per reserved column instead of once per element — a 3-column-wide
+/// bullet rendered as three overlapping "•  " glyphs side by side ("•  •  •  "). Slicing the string
+/// to what's left from <c>startVisualColumn</c> keeps every probe correctly sized without
+/// re-emitting the glyph itself past its first column.
+///
 /// Note: this reserved width only ever affects the FIRST visual row of a wrapped line. AvaloniaEdit
 /// computes an adaptive per-paragraph wrap indent (<c>TextEditorOptions.InheritWordWrapIndentation</c>)
 /// meant to keep continuation rows aligned under it, but Avalonia's own text formatter never reads
@@ -26,7 +36,7 @@ namespace enki.Views.Editor.Markdown;
 internal sealed class WhitespaceFormattedElement : VisualLineElement
 {
     private readonly string _text;
-    private FormattedText? _formatted;
+    private readonly Dictionary<int, FormattedText> _formattedByOffset = new();
 
     public WhitespaceFormattedElement(string text, int documentLength)
         : base(text.Length, documentLength)
@@ -38,16 +48,19 @@ internal sealed class WhitespaceFormattedElement : VisualLineElement
 
     public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
     {
-        if (_formatted is null)
+        var relativeOffset = Math.Clamp(startVisualColumn - VisualColumn, 0, _text.Length);
+        var remaining = _text[relativeOffset..];
+
+        if (!_formattedByOffset.TryGetValue(relativeOffset, out var formatted))
         {
             var rp = TextRunProperties;
-            var typeface = rp.Typeface;
-            _formatted = new FormattedText(
-                _text, CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight, typeface,
+            formatted = new FormattedText(
+                remaining, CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight, rp.Typeface,
                 rp.FontRenderingEmSize, rp.ForegroundBrush);
+            _formattedByOffset[relativeOffset] = formatted;
         }
-        return new SpacerTextRun(_text, _formatted, TextRunProperties);
+        return new SpacerTextRun(remaining, formatted, TextRunProperties);
     }
 
     public override bool CanSplit => false;

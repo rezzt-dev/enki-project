@@ -50,7 +50,7 @@ public class DashboardGridEditorUiTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, () => { });
+            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         // Igual que el usuario: primero una plantilla, y desde ella a personalizado.
         vm.SelectDashboardLayoutStyleCommand.Execute(layoutStyle);

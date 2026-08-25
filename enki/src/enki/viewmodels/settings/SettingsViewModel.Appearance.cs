@@ -37,9 +37,9 @@ public sealed partial class SettingsViewModel
     /// <summary>Ajustes › Apariencia › Temas predefinidos, sección "Claros" — see <see cref="BuiltInDarkThemes"/>.</summary>
     public ObservableCollection<CustomThemeRowViewModel> BuiltInLightThemes { get; }
 
-    /// <summary>Whether the "Oscuros" built-in theme list is collapsed to reduce on-screen clutter — purely
-    /// a view-state toggle, not persisted, so it resets to expanded (the previous, only) behavior on every
-    /// app restart.</summary>
+    /// <summary>Whether the "Oscuros" built-in theme list is collapsed to reduce on-screen clutter —
+    /// persisted to <see cref="Models.AppSettings.BuiltInDarkThemesCollapsed"/> so it survives an app
+    /// restart.</summary>
     [ObservableProperty]
     private bool _isBuiltInDarkThemesCollapsed;
 
@@ -52,6 +52,18 @@ public sealed partial class SettingsViewModel
 
     [RelayCommand]
     private void ToggleBuiltInLightThemesCollapsed() => IsBuiltInLightThemesCollapsed = !IsBuiltInLightThemesCollapsed;
+
+    partial void OnIsBuiltInDarkThemesCollapsedChanged(bool value)
+    {
+        _settingsService.Settings.BuiltInDarkThemesCollapsed = value;
+        _settingsService.Save();
+    }
+
+    partial void OnIsBuiltInLightThemesCollapsedChanged(bool value)
+    {
+        _settingsService.Settings.BuiltInLightThemesCollapsed = value;
+        _settingsService.Save();
+    }
 
     [ObservableProperty]
     private bool _isDarkTheme;
@@ -75,6 +87,13 @@ public sealed partial class SettingsViewModel
 
     [ObservableProperty]
     private bool _useCustomTitleBar;
+
+    /// <summary>Ajustes › Apariencia › Tablero Kanban — <c>true</c> apila las tarjetas en columnas lado a
+    /// lado (disposición por defecto), <c>false</c> gira cada columna 90° en una franja horizontal. Bool en
+    /// vez del enum <c>KanbanBoardOrientation</c> de <c>KanbanViewModel</c> porque el control es un segmento
+    /// de dos botones, mismo patrón que <see cref="IsColumnLeftAligned"/>.</summary>
+    [ObservableProperty]
+    private bool _kanbanBoardVertical;
 
     /// <summary>Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md), 50–200 en pasos de 10, 100 por
     /// defecto — persistido por vault, no globalmente (a diferencia de todo lo demás en esta clase),
@@ -138,6 +157,14 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.UseCustomTitleBar = value;
         _settingsService.Save();
         _onTitleBarModeChanged(value);
+    }
+
+    partial void OnKanbanBoardVerticalChanged(bool value)
+    {
+        var orientation = value ? "Vertical" : "Horizontal";
+        _settingsService.Settings.KanbanBoardOrientation = orientation;
+        _settingsService.Save();
+        _onKanbanBoardOrientationChanged(orientation);
     }
 
     /// <summary>Slider "Zoom de interfaz" en Ajustes › Apariencia, además del punto de entrada

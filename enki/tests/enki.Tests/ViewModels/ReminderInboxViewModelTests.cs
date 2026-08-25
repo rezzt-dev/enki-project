@@ -19,13 +19,16 @@ public class ReminderInboxViewModelTests : IDisposable
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
 
     private readonly KanbanService _kanbanService;
+    private readonly ReminderService _reminderService;
     private readonly SettingsService _settingsService;
     private readonly DismissedReminderService _dismissedReminderService;
     private string? _openedCardId;
+    private string? _openedReminderId;
 
     public ReminderInboxViewModelTests()
     {
         _kanbanService = new KanbanService(_storageDirectory);
+        _reminderService = new ReminderService(_storageDirectory);
         _settingsService = new SettingsService(_storageDirectory);
         _dismissedReminderService = new DismissedReminderService(_storageDirectory);
     }
@@ -36,7 +39,8 @@ public class ReminderInboxViewModelTests : IDisposable
     }
 
     private ReminderInboxViewModel CreateViewModel() =>
-        new(_kanbanService, _settingsService, _dismissedReminderService, id => _openedCardId = id);
+        new(_kanbanService, _reminderService, _settingsService, _dismissedReminderService,
+            id => _openedCardId = id, id => _openedReminderId = id);
 
     private KanbanCard AddDueCard(string title = "Tarjeta")
     {
@@ -51,15 +55,15 @@ public class ReminderInboxViewModelTests : IDisposable
     {
         var card = AddDueCard();
         var vm = CreateViewModel();
-        var item = vm.Items.Single(i => i.CardId == card.Id);
+        var item = vm.Items.Single(i => i.SourceId == card.Id);
 
         vm.DismissCommand.Execute(item);
 
-        Assert.DoesNotContain(vm.Items, i => i.CardId == card.Id);
+        Assert.DoesNotContain(vm.Items, i => i.SourceId == card.Id);
         Assert.True(_dismissedReminderService.IsDismissed(card.Id, card.DueDateUtc!.Value));
         Assert.True(vm.HasLastDismissed);
         Assert.NotNull(vm.LastDismissed);
-        Assert.Equal(card.Id, vm.LastDismissed!.CardId);
+        Assert.Equal(card.Id, vm.LastDismissed!.SourceId);
     }
 
     [Fact]
@@ -67,7 +71,7 @@ public class ReminderInboxViewModelTests : IDisposable
     {
         var card = AddDueCard();
         var vm = CreateViewModel();
-        var item = vm.Items.Single(i => i.CardId == card.Id);
+        var item = vm.Items.Single(i => i.SourceId == card.Id);
         vm.DismissCommand.Execute(item);
 
         vm.UndoDismissCommand.Execute(null);
@@ -75,7 +79,7 @@ public class ReminderInboxViewModelTests : IDisposable
         Assert.False(vm.HasLastDismissed);
         Assert.Null(vm.LastDismissed);
         Assert.False(_dismissedReminderService.IsDismissed(card.Id, card.DueDateUtc!.Value));
-        Assert.Contains(vm.Items, i => i.CardId == card.Id);
+        Assert.Contains(vm.Items, i => i.SourceId == card.Id);
     }
 
     [Fact]
@@ -104,8 +108,8 @@ public class ReminderInboxViewModelTests : IDisposable
 
         var vm = CreateViewModel();
 
-        Assert.DoesNotContain(vm.Items, i => i.CardId == completed.Id);
-        Assert.Contains(vm.Items, i => i.CardId == pending.Id);
+        Assert.DoesNotContain(vm.Items, i => i.SourceId == completed.Id);
+        Assert.Contains(vm.Items, i => i.SourceId == pending.Id);
         Assert.Equal(1, vm.OverdueCount);
     }
 
@@ -116,15 +120,69 @@ public class ReminderInboxViewModelTests : IDisposable
         var second = AddDueCard("Segunda");
         var vm = CreateViewModel();
 
-        vm.DismissCommand.Execute(vm.Items.Single(i => i.CardId == first.Id));
-        vm.DismissCommand.Execute(vm.Items.Single(i => i.CardId == second.Id));
+        vm.DismissCommand.Execute(vm.Items.Single(i => i.SourceId == first.Id));
+        vm.DismissCommand.Execute(vm.Items.Single(i => i.SourceId == second.Id));
 
-        Assert.Equal(second.Id, vm.LastDismissed!.CardId);
+        Assert.Equal(second.Id, vm.LastDismissed!.SourceId);
 
         vm.UndoDismissCommand.Execute(null);
 
         // Solo la segunda (la que estaba en LastDismissed) vuelve — la primera sigue descartada.
-        Assert.Contains(vm.Items, i => i.CardId == second.Id);
-        Assert.DoesNotContain(vm.Items, i => i.CardId == first.Id);
+        Assert.Contains(vm.Items, i => i.SourceId == second.Id);
+        Assert.DoesNotContain(vm.Items, i => i.SourceId == first.Id);
+    }
+
+    // ===================== Bandeja unificada: recordatorios propios (docs/agent-docs/
+    // notificaciones-y-recordatorios.md) — el icono está rotulado "Recordatorios", así que también debe
+    // reflejar los recordatorios creados en esa página, no solo las tarjetas de Kanban. =====================
+
+    [Fact]
+    public void Reload_IncludesStandaloneReminders_AlongsideKanbanCards()
+    {
+        var card = AddDueCard();
+        var reminder = _reminderService.Create("Llamar al dentista", "", DateTime.UtcNow.AddHours(-1), "BellRingOutline");
+
+        var vm = CreateViewModel();
+
+        Assert.Contains(vm.Items, i => i.SourceId == card.Id && i.SourceKind == ReminderItemSourceKind.KanbanCard);
+        Assert.Contains(vm.Items, i => i.SourceId == reminder.Id && i.SourceKind == ReminderItemSourceKind.Reminder);
+        Assert.Equal(2, vm.OverdueCount);
+    }
+
+    [Fact]
+    public void Reload_ExcludesCompletedStandaloneReminders()
+    {
+        var reminder = _reminderService.Create("Ya hecho", "", DateTime.UtcNow.AddHours(-1), "BellRingOutline");
+        _reminderService.ToggleCompleted(reminder.Id);
+
+        var vm = CreateViewModel();
+
+        Assert.DoesNotContain(vm.Items, i => i.SourceId == reminder.Id);
+    }
+
+    [Fact]
+    public void OpenCard_OnStandaloneReminder_InvokesTheReminderCallback_NotTheCardCallback()
+    {
+        var reminder = _reminderService.Create("Llamar al dentista", "", DateTime.UtcNow.AddHours(-1), "BellRingOutline");
+        var vm = CreateViewModel();
+        var item = vm.Items.Single(i => i.SourceId == reminder.Id);
+
+        vm.OpenCardCommand.Execute(item);
+
+        Assert.Equal(reminder.Id, _openedReminderId);
+        Assert.Null(_openedCardId);
+    }
+
+    [Fact]
+    public void Dismiss_OnStandaloneReminder_RemovesItFromInbox()
+    {
+        var reminder = _reminderService.Create("Llamar al dentista", "", DateTime.UtcNow.AddHours(-1), "BellRingOutline");
+        var vm = CreateViewModel();
+        var item = vm.Items.Single(i => i.SourceId == reminder.Id);
+
+        vm.DismissCommand.Execute(item);
+
+        Assert.DoesNotContain(vm.Items, i => i.SourceId == reminder.Id);
+        Assert.True(_dismissedReminderService.IsDismissed(reminder.Id, reminder.NotifyAtUtc));
     }
 }

@@ -547,6 +547,12 @@ public sealed partial class NotesViewModel : ViewModelBase
     [RelayCommand]
     private void SelectEditor(EditorViewModel editor) => ActiveEditor = editor;
 
+    /// <summary>Backs the "+" button on the tab strip — switches to browsing mode (the note/folder grid)
+    /// without touching <see cref="OpenEditors"/>, so existing tabs stay open and the user can pick one of
+    /// them, an existing note from the grid, or <see cref="NewNoteCommand"/> to actually create a new one.</summary>
+    [RelayCommand]
+    private void ShowBrowsingMode() => ActiveEditor = null;
+
     /// <summary>Backs the <c>Ctrl+Shift+Enter</c> shortcut in NotesView.axaml — forwarded to the active
     /// tab's own command instead of duplicating its toggle logic, so it works regardless of exactly which
     /// control inside the note has keyboard focus.</summary>
