@@ -113,8 +113,8 @@ public class SimpleNotesViewUiTests : IDisposable
         var (view, viewModel, window) = CreateView(simplified: true);
 
         var folder = VaultService.CreateFolder(_vaultDir, "Proyectos");
-        File.WriteAllText(Path.Combine(folder.FullPath, "dentro.md"), "# Dentro\n");
-        File.WriteAllText(Path.Combine(_vaultDir, "suelta.md"), "# Suelta\n");
+        File.WriteAllText(Path.Combine(folder.FullPath, "dentro.md"), "# Un titulo distinto\n");
+        File.WriteAllText(Path.Combine(_vaultDir, "suelta.md"), "# Otro titulo distinto\n");
         File.WriteAllText(Path.Combine(_vaultDir, "no-es-nota.txt"), "no markdown");
 
         viewModel.Reload();
@@ -124,9 +124,11 @@ public class SimpleNotesViewUiTests : IDisposable
         Assert.Equal(2, roots.Count);
         Assert.True(roots[0].IsFolder);
         Assert.Equal("Proyectos", roots[0].Name);
-        Assert.Equal("Dentro", Assert.Single(roots[0].Children).Name);
+        // El árbol muestra el nombre de fichero, no el título extraído del encabezado markdown —
+        // al estilo Obsidian, distinto de la rejilla de la vista completa (NoteCardViewModel).
+        Assert.Equal("dentro", Assert.Single(roots[0].Children).Name);
         Assert.True(roots[1].IsNote);
-        Assert.Equal("Suelta", roots[1].Name);
+        Assert.Equal("suelta", roots[1].Name);
 
         Assert.True(viewModel.HasSimpleTreeItems);
         Assert.NotEmpty(view.GetVisualDescendants().OfType<ItemsControl>());

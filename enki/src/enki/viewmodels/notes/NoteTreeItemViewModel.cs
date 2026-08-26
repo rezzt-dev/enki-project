@@ -69,7 +69,7 @@ public sealed partial class NoteTreeItemViewModel : ObservableObject
         new(depth) { Folder = folder, Name = folder.Name };
 
     public static NoteTreeItemViewModel ForNote(NoteFile note, int depth) =>
-        new(depth) { Note = note, Name = note.Title };
+        new(depth) { Note = note, Name = note.FileNameWithoutExtension };
 
     public void UpdateFolder(NoteFolder folder)
     {
@@ -81,7 +81,7 @@ public sealed partial class NoteTreeItemViewModel : ObservableObject
     public void UpdateNote(NoteFile note)
     {
         Note = note;
-        Name = note.Title;
+        Name = note.FileNameWithoutExtension;
         OnPropertyChanged(nameof(FullPath));
     }
 

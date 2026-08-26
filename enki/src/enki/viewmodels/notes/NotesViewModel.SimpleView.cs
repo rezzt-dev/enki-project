@@ -175,7 +175,7 @@ public sealed partial class NotesViewModel
             level.Add(node);
         }
 
-        foreach (var note in _vaultService.GetNotes(folderPath).OrderBy(n => n.Title, StringComparer.CurrentCultureIgnoreCase))
+        foreach (var note in _vaultService.GetNotes(folderPath).OrderBy(n => n.FileNameWithoutExtension, StringComparer.CurrentCultureIgnoreCase))
             level.Add(NoteTreeItemViewModel.ForNote(note, depth));
 
         return level;
