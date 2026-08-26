@@ -93,16 +93,21 @@ public static class WikiLinkParser
     /// failing that, a title match only counts if it's unambiguous among <paramref name="notes"/> — two
     /// notes sharing a title (e.g. two untitled "Nueva nota" files) has no plausible-but-wrong guess to
     /// make, so it resolves to <see cref="WikiLinkResolution.Ambiguous"/> rather than jumping to a
-    /// possibly-unrelated note. This is the single resolution strategy every consumer shares —
-    /// <see cref="EditorBacklinksService.FindBacklinks"/>, the editor's Ctrl+click
-    /// (<c>ViewModels.EditorViewModel.OpenWikiLink</c>) and its live-preview styling
+    /// possibly-unrelated note. Same treatment for a filename shared by more than one note: guaranteed
+    /// unique within a single folder (<see cref="VaultService.CreateNote"/> de-duplicates there), but not
+    /// vault-wide — two different sessions can each hold a "Nueva nota.md" the same way they can each hold
+    /// a note titled "Nueva nota", now that <paramref name="notes"/> may span the whole vault
+    /// (<see cref="VaultService.GetAllNotesAcrossVault"/>) instead of just one session. This is the single
+    /// resolution strategy every consumer shares — <see cref="EditorBacklinksService.FindBacklinks"/>, the
+    /// editor's Ctrl+click (<c>ViewModels.EditorViewModel.OpenWikiLink</c>) and its live-preview styling
     /// (<c>Views.Editor.Markdown.MarkdownLivePreviewColorizer</c>) — so the backlinks panel and a click on
     /// the same link can never disagree about what it points to.</summary>
     public static (WikiLinkResolution Status, NoteFile? Note) ResolveTargetWithStatus(IReadOnlyList<NoteFile> notes, string target)
     {
-        var byFileName = notes.FirstOrDefault(n =>
-            string.Equals(Path.GetFileNameWithoutExtension(n.FullPath), target, StringComparison.OrdinalIgnoreCase));
-        if (byFileName is not null) return (WikiLinkResolution.Resolved, byFileName);
+        var fileNameMatches = notes.Where(n =>
+            string.Equals(Path.GetFileNameWithoutExtension(n.FullPath), target, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (fileNameMatches.Count == 1) return (WikiLinkResolution.Resolved, fileNameMatches[0]);
+        if (fileNameMatches.Count > 1) return (WikiLinkResolution.Ambiguous, null);
 
         var titleMatches = notes.Where(n => string.Equals(n.Title, target, StringComparison.OrdinalIgnoreCase)).ToList();
         if (titleMatches.Count == 1) return (WikiLinkResolution.Resolved, titleMatches[0]);

@@ -82,3 +82,16 @@ public sealed class SessionManifestEdge
     public string FromRelativePath { get; set; } = string.Empty;
     public string ToRelativePath { get; set; } = string.Empty;
 }
+
+/// <summary>One manually-drawn edge between two notes that live in different scopes — two different
+/// sessions, or a session and the vault root. Doesn't belong inside either endpoint's own
+/// <see cref="SessionManifest.ManualLinks"/> (a plain <see cref="SessionManifestEdge"/> only carries paths
+/// relative to *one* session root), so it's stored vault-wide instead, alongside the vault root's own note
+/// layout — see the vault-level graph manifest in <see cref="Services.SessionService"/>.</summary>
+public sealed class SessionManifestGlobalEdge
+{
+    public string FromSessionId { get; set; } = string.Empty;
+    public string FromRelativePath { get; set; } = string.Empty;
+    public string ToSessionId { get; set; } = string.Empty;
+    public string ToRelativePath { get; set; } = string.Empty;
+}

@@ -832,34 +832,51 @@ public sealed partial class SessionsViewModel : ViewModelBase
         _onOpenInNotes(session, note);
     }
 
+    /// <summary>A manual-link click pair from the graph — notes can now link within the same session, across
+    /// two different sessions, or with a vault-root note, so the only cases left that count as a genuine
+    /// failure (worth flashing both nodes via <see cref="LinkRejected"/>, instead of failing silently) are a
+    /// GlobalId the WebView sent that doesn't parse, or a same-session pair naming a session that's since
+    /// been deleted/renamed out from under this click.</summary>
     public void HandleLinkToggled(string fromGlobalId, string toGlobalId)
     {
-        if (!TryParseGlobalId(fromGlobalId, out var fromSessionId, out var fromRelativePath)) return;
-        if (!TryParseGlobalId(toGlobalId, out var toSessionId, out var toRelativePath)) return;
-
-        // Notes only ever link within their own session's tree — a manual link can't span two sessions,
-        // nor touch a vault-root note (root notes have no session manifest to store a manual link in).
-        // This used to fail silently, which read as the whole link feature being broken (the click that
-        // triggered it produced no visible reaction at all); now the WebView flashes both nodes instead.
-        if (fromSessionId != toSessionId || fromSessionId == Models.SessionGraph.RootGroupId)
+        if (!TryParseGlobalId(fromGlobalId, out var fromSessionId, out var fromRelativePath) ||
+            !TryParseGlobalId(toGlobalId, out var toSessionId, out var toRelativePath))
         {
             LinkRejected?.Invoke(fromGlobalId, toGlobalId);
             return;
         }
-        if (FindSession(fromSessionId) is not { } session) return;
 
-        _ = HandleLinkToggledAsync(session, fromRelativePath, toRelativePath);
+        Action toggle;
+        if (fromSessionId == toSessionId && fromSessionId != Models.SessionGraph.RootGroupId)
+        {
+            if (FindSession(fromSessionId) is not { } session)
+            {
+                LinkRejected?.Invoke(fromGlobalId, toGlobalId);
+                return;
+            }
+            toggle = () => _sessionService.ToggleManualLink(session, fromRelativePath, toRelativePath);
+        }
+        else
+        {
+            // Two different sessions, a session paired with a vault-root note, or two vault-root notes —
+            // none of these share a single session manifest to store a plain ManualLinks entry in, so they
+            // go through the vault-level cross-scope store instead (SessionService.ToggleGlobalManualLink).
+            toggle = () => _sessionService.ToggleGlobalManualLink(fromSessionId, fromRelativePath, toSessionId, toRelativePath);
+        }
+
+        _ = ApplyLinkToggleAsync(toggle);
     }
 
-    private async Task HandleLinkToggledAsync(Session session, string fromRelativePath, string toRelativePath)
+    private async Task ApplyLinkToggleAsync(Action toggle)
     {
         var generation = ++_loadGeneration;
         // The manifest write and the full global-graph rescan that follows it are both synchronous disk I/O
-        // (see SessionService.ToggleManualLink/LoadGlobalGraph) — running them on a background thread keeps
-        // a single link click from freezing the UI for however long the vault-wide rescan takes.
+        // (see SessionService.ToggleManualLink/ToggleGlobalManualLink/LoadGlobalGraph) — running them on a
+        // background thread keeps a single link click from freezing the UI for however long the vault-wide
+        // rescan takes.
         var graph = await Task.Run(() =>
         {
-            _sessionService.ToggleManualLink(session, fromRelativePath, toRelativePath);
+            toggle();
             return _sessionService.LoadGlobalGraph();
         });
         if (generation != _loadGeneration) return;

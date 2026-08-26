@@ -598,6 +598,9 @@
   <data name="Editor_SlashCommand_Link_Label" xml:space="preserve">
     <value>Link</value>
   </data>
+  <data name="Editor_SlashCommand_NoteLink_Label" xml:space="preserve">
+    <value>Notiz verlinken</value>
+  </data>
   <data name="Editor_SlashCommand_Quote_Label" xml:space="preserve">
     <value>Zitat</value>
   </data>
@@ -701,6 +704,9 @@
   </data>
   <data name="Editor_Toolbar_Link_Tooltip" xml:space="preserve">
     <value>Link</value>
+  </data>
+  <data name="Editor_Toolbar_NoteLink_Tooltip" xml:space="preserve">
+    <value>Mit einer anderen Notiz verknüpfen</value>
   </data>
   <data name="Editor_Toolbar_OrderedList_Tooltip" xml:space="preserve">
     <value>Nummerierte Liste</value>
@@ -1876,7 +1882,7 @@
     <value>Link-Modus</value>
   </data>
   <data name="Sessions_LinkModeInstructions" xml:space="preserve">
-    <value>Wähle zwei Notizen aus derselben Sitzung aus, um einen Link zu erstellen.</value>
+    <value>Wähle zwei Notizen aus, um sie zu verknüpfen — auch über verschiedene Sitzungen hinweg.</value>
   </data>
   <data name="Sessions_LinkedCardsTitle" xml:space="preserve">
     <value>Verknüpfte Karten</value>

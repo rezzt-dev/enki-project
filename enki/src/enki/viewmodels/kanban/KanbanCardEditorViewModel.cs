@@ -410,21 +410,25 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
             NotePickerResults.Add(new NotePickerItemViewModel(note, workspace));
     }
 
-    /// <summary>Toda nota del vault, con la etiqueta de a qué workspace pertenece — la raíz del vault más
-    /// cada sesión por separado, ya que <see cref="Services.VaultService.GetAllNotesRecursive"/> excluye
-    /// las carpetas ocultas (<c>.sessions/...</c>) al recorrer la raíz (mismo motivo por el que la
-    /// búsqueda global tampoco alcanza las notas de una sesión).</summary>
+    /// <summary>Toda nota del vault, con la etiqueta de a qué workspace pertenece — delega en
+    /// <see cref="Services.SessionService.ListAllNotesByWorkspace"/> (raíz del vault más cada sesión
+    /// desbloqueada; una sesión bloqueada se salta en vez de intentar leerla, evitando el
+    /// <see cref="Services.SessionLockedException"/> que antes reventaba este picker si había alguna
+    /// bloqueada en el vault). Sin <see cref="_sessionService"/> (headless/tests), cae a solo las notas de
+    /// la raíz.</summary>
     private IEnumerable<(NoteFile Note, string Workspace)> CollectAllNotes()
     {
         if (_vaultService is not { } vaultService) yield break;
 
-        foreach (var note in vaultService.GetAllNotesRecursive(vaultService.VaultPath))
-            yield return (note, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"]);
+        if (_sessionService is not { } sessionService)
+        {
+            foreach (var note in vaultService.GetAllNotesRecursive(vaultService.VaultPath))
+                yield return (note, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"]);
+            yield break;
+        }
 
-        if (_sessionService is null) yield break;
-        foreach (var session in _sessionService.List())
-            foreach (var note in vaultService.GetAllNotesRecursive(session.RootPath))
-                yield return (note, session.Name);
+        foreach (var (note, workspace) in sessionService.ListAllNotesByWorkspace())
+            yield return (note, workspace);
     }
 
     [RelayCommand]

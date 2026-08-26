@@ -36,7 +36,13 @@ public class SlashCommandsViewModelTests
             }
 
             var resolved = command.InsertText;
-            Assert.DoesNotContain("[[", resolved);
+            // LocalizationService's own missing-key fallback is shaped exactly "[[Key]]" (see its doc
+            // comment) — only a real risk for a command whose InsertText comes from a resource key at all.
+            // "/nota" legitimately inserts the literal "[[" (opens a wikilink for the note-link picker to
+            // fill in — see EditorView.OnSlashCommandSelected/UpdateNoteLinkPicker), which isn't that shape
+            // and never touches LocalizationService, so it can't be an unresolved-key fallback by
+            // construction.
+            if (command.InsertTextKey is not null) Assert.DoesNotContain("[[", resolved);
             Assert.NotEqual(command.InsertTextKey, resolved);
         }
     }

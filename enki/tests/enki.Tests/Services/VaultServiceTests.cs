@@ -256,24 +256,49 @@ public class VaultServiceTests : IDisposable
     }
 
     [Fact]
-    public void ResolveWikiLinkScopeRoot_ForNoteOutsideSessions_ReturnsVaultPath()
+    public void RenameNote_AlsoRewritesWikilinksFromNotesInsideASessionFolder()
     {
         var vault = CreateVault();
-        var note = vault.CreateNote("Suelta");
+        var target = vault.CreateNote("Objetivo");
+        var sessionFolder = Path.Combine(_vaultPath, ".sessions", "mi-sesion");
+        Directory.CreateDirectory(sessionFolder);
+        File.WriteAllText(Path.Combine(sessionFolder, "Enlazadora.md"), "Ver [[Objetivo]] para más info.");
 
-        Assert.Equal(_vaultPath, vault.ResolveWikiLinkScopeRoot(note.FullPath));
+        vault.RenameNote(target, "Objetivo Renombrado");
+
+        var linkerContent = File.ReadAllText(Path.Combine(sessionFolder, "Enlazadora.md"));
+        Assert.Contains("[[Objetivo Renombrado]]", linkerContent, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ResolveWikiLinkScopeRoot_ForNoteInsideSession_ReturnsSessionFolder()
+    public void GetAllNotesAcrossVault_WithNoSessions_OnlyReturnsRootNotes()
     {
         var vault = CreateVault();
+        vault.CreateNote("Suelta");
+
+        var notes = vault.GetAllNotesAcrossVault();
+
+        Assert.Single(notes);
+        Assert.Equal("Suelta", notes[0].Title);
+    }
+
+    /// <summary>No wiring needed for this: <c>.sessions/&lt;folder&gt;</c> is the session-root convention on
+    /// disk (the same one <see cref="SessionService"/> itself uses), so a session shows up here purely by
+    /// existing under the vault, regardless of who constructed this <see cref="VaultService"/>.</summary>
+    [Fact]
+    public void GetAllNotesAcrossVault_AlsoReturnsNotesFromEverySessionFolder_Automatically()
+    {
+        var vault = CreateVault();
+        vault.CreateNote("Suelta");
         var sessionFolder = Path.Combine(_vaultPath, ".sessions", "mi-sesion");
         Directory.CreateDirectory(sessionFolder);
-        var notePath = Path.Combine(sessionFolder, "Nota.md");
-        File.WriteAllText(notePath, "# Nota");
+        File.WriteAllText(Path.Combine(sessionFolder, "Nota.md"), "# De sesión");
 
-        Assert.Equal(sessionFolder, vault.ResolveWikiLinkScopeRoot(notePath));
+        var notes = vault.GetAllNotesAcrossVault();
+
+        Assert.Equal(2, notes.Count);
+        Assert.Contains(notes, n => n.Title == "Suelta");
+        Assert.Contains(notes, n => n.Title == "De sesión");
     }
 
     [Fact]

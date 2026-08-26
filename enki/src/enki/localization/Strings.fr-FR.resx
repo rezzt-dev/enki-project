@@ -598,6 +598,9 @@
   <data name="Editor_SlashCommand_Link_Label" xml:space="preserve">
     <value>Lien</value>
   </data>
+  <data name="Editor_SlashCommand_NoteLink_Label" xml:space="preserve">
+    <value>Lier une note</value>
+  </data>
   <data name="Editor_SlashCommand_Quote_Label" xml:space="preserve">
     <value>Citation</value>
   </data>
@@ -701,6 +704,9 @@
   </data>
   <data name="Editor_Toolbar_Link_Tooltip" xml:space="preserve">
     <value>Lien</value>
+  </data>
+  <data name="Editor_Toolbar_NoteLink_Tooltip" xml:space="preserve">
+    <value>Lier à une autre note</value>
   </data>
   <data name="Editor_Toolbar_OrderedList_Tooltip" xml:space="preserve">
     <value>Liste numérotée</value>
@@ -1876,7 +1882,7 @@
     <value>Mode liaison</value>
   </data>
   <data name="Sessions_LinkModeInstructions" xml:space="preserve">
-    <value>Sélectionnez deux notes de la même session pour créer un lien.</value>
+    <value>Sélectionnez deux notes pour les lier, même dans des sessions différentes.</value>
   </data>
   <data name="Sessions_LinkedCardsTitle" xml:space="preserve">
     <value>Cartes liées</value>

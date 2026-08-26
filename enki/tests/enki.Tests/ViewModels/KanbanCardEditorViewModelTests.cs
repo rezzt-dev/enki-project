@@ -1,13 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using enki.Models;
+using enki.Services;
 using enki.ViewModels;
 using Xunit;
 
 namespace enki.Tests.ViewModels;
 
-public class KanbanCardEditorViewModelTests
+public class KanbanCardEditorViewModelTests : IDisposable
 {
+    private readonly string _storageDirectory =
+        Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
+    }
+
     private static KanbanCardEditorViewModel CreateEditor(string tagsInput)
     {
         var column = new KanbanColumn { Id = "c1", Title = "Column" };
@@ -17,6 +27,37 @@ public class KanbanCardEditorViewModelTests
         var editor = KanbanCardEditorViewModel.ForEdit(columnVm, cardVm, [columnVm]);
         editor.TagsInput = tagsInput;
         return editor;
+    }
+
+    /// <summary>Regression test for a real crash found while building the editor's equivalent note-link
+    /// picker: <c>CollectAllNotes</c> used to call <c>VaultService.GetAllNotesRecursive</c> on every
+    /// session's root regardless of lock state, and reading a locked session's content throws
+    /// <see cref="SessionLockedException"/> — opening this picker with any locked session in the vault took
+    /// the whole app down with it. It now delegates to <see cref="SessionService.ListAllNotesByWorkspace"/>,
+    /// which skips a locked session instead.</summary>
+    [Fact]
+    public void ToggleNotePickerCommand_WithALockedSessionInTheVault_DoesNotThrow_AndStillListsReachableNotes()
+    {
+        var vaultPath = Path.Combine(_storageDirectory, "vault");
+        var settings = new SettingsService(_storageDirectory);
+        var vault = new VaultService(settings);
+        vault.InitializeVault(vaultPath, seedWelcomeNote: false);
+        var sessions = new SessionService(vault);
+        var (locked, _) = sessions.CreateEncrypted("Privada", "super-secreta-123");
+        vault.CreateNote("Nota secreta", locked.RootPath);
+        sessions.Lock(locked);
+        vault.CreateNote("Nota accesible");
+
+        var column = new KanbanColumn { Id = "c1", Title = "Column" };
+        var columnVm = new KanbanColumnViewModel(column);
+        var editor = KanbanCardEditorViewModel.ForCreate(columnVm, [columnVm], vault, sessions);
+
+        var exception = Record.Exception(() => editor.ToggleNotePickerCommand.Execute(null));
+
+        Assert.Null(exception);
+        Assert.True(editor.IsNotePickerOpen);
+        Assert.Contains(editor.NotePickerResults, r => r.Title == "Nota accesible");
+        Assert.DoesNotContain(editor.NotePickerResults, r => r.Title == "Nota secreta");
     }
 
     [Fact]

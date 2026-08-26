@@ -53,8 +53,7 @@ public static class EditorBacklinksService
     {
         if (notificationService is null) return;
 
-        var scopeRoot = vaultService.ResolveWikiLinkScopeRoot(note.FullPath);
-        var allNotesWithContent = vaultService.GetAllNotesRecursiveWithContent(scopeRoot);
+        var allNotesWithContent = vaultService.GetAllNotesAcrossVaultWithContent();
         var backlinks = FindBacklinks(allNotesWithContent, note);
         if (backlinks.Count == 0) return;
 

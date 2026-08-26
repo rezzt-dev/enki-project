@@ -23,6 +23,7 @@ public sealed partial class EditorViewModel : ViewModelBase
 
     private readonly VaultService _vaultService;
     private readonly KanbanService? _kanbanService;
+    private readonly SessionService? _sessionService;
     private readonly SettingsService? _settingsService;
     private readonly NotificationService? _notificationService;
     private readonly Action _onBack;
@@ -102,6 +103,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     public EditorBacklinksViewModel Backlinks { get; }
     public EditorStatsViewModel Stats { get; }
     public SlashCommandsViewModel SlashCommands { get; } = new SlashCommandsViewModel();
+    public NoteLinkPickerViewModel NoteLinkPicker { get; } = new NoteLinkPickerViewModel();
     public FindReplaceViewModel FindReplace { get; } = new FindReplaceViewModel();
 
     [ObservableProperty]
@@ -280,13 +282,14 @@ public sealed partial class EditorViewModel : ViewModelBase
     public EditorViewModel(VaultService vaultService, NoteFile note, Action onBack, Action onChanged,
         Action<NoteFile>? onOpenNote = null, KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null,
-        Action<NoteFile, string>? onExportHtml = null)
+        Action<NoteFile, string>? onExportHtml = null, SessionService? sessionService = null)
     {
         _vaultService = vaultService;
         _onBack = onBack;
         _onChanged = onChanged;
         _onOpenNote = onOpenNote;
         _kanbanService = kanbanService;
+        _sessionService = sessionService;
         _onOpenLinkedCard = onOpenLinkedCard;
         _settingsService = settingsService;
         _notificationService = notificationService;
@@ -334,11 +337,12 @@ public sealed partial class EditorViewModel : ViewModelBase
     private void OpenLinkedCard(string cardId) => _onOpenLinkedCard?.Invoke(cardId);
 
     /// <summary>Ctrl+click en un wikilink (<see cref="Views.Editor.Markdown.MdSpanKind.WikiLink"/>) —
-    /// resuelve <paramref name="target"/> contra
-    /// las notas del mismo workspace que esta nota (la raíz del vault, o la sesión que la contiene) y abre
-    /// la que calce, igual que un enlace normal abre una URL. Un target que no resuelve a ninguna nota
-    /// (typo, nota borrada) simplemente no hace nada — mismo comportamiento silencioso-pero-inofensivo que
-    /// ya tenía un wikilink sin resolver en el grafo de sesiones.</summary>
+    /// resuelve <paramref name="target"/> contra todas las notas del vault (raíz más cada sesión
+    /// desbloqueada, <see cref="WikiLinkScopeNotes"/>) y abre la que calce, igual que un enlace normal abre
+    /// una URL — sin importar si esa nota vive en otra sesión distinta de la actual, ya que el grafo de
+    /// wikilinks es del vault entero, no por sesión. Un target que no resuelve a ninguna nota (typo, nota
+    /// borrada) simplemente no hace nada — mismo comportamiento silencioso-pero-inofensivo que ya tenía un
+    /// wikilink sin resolver en el grafo de sesiones.</summary>
     public void OpenWikiLink(string target)
     {
         if (_onOpenNote is null) return;
@@ -347,23 +351,31 @@ public sealed partial class EditorViewModel : ViewModelBase
         if (match is not null) _onOpenNote(match);
     }
 
-    /// <summary>Every note in this note's wikilink scope (<see cref="VaultService.ResolveWikiLinkScopeRoot"/>
-    /// — the session it lives under, or the vault root) — what <see cref="OpenWikiLink"/> resolves a
-    /// Ctrl+click against, and what the live-preview colorizer
-    /// (<c>Views.Editor.Markdown.MarkdownLivePreviewColorizer</c>) uses to tell a resolved wikilink apart
-    /// from a broken or ambiguous one. Cached rather than rescanned per keystroke — unlike
-    /// <see cref="Backlinks"/> (which needs fresh content from every other note on every change), this only
-    /// needs to know which notes *exist*, which only this tab's own rename/delete actions change while it's
-    /// open — so it's refreshed there, not in <see cref="OnTextChanged"/>. A note created or renamed from a
-    /// different tab isn't picked up until this one reopens, same "reload to see" tolerance the rest of the
-    /// app already has for cross-tab state (docs/analisis-proyecto/roadmap.md, Fase 5).</summary>
+    /// <summary>Every note in the vault (<see cref="VaultService.GetAllNotesAcrossVault"/> — root plus every
+    /// unlocked session, not just this note's own) — what <see cref="OpenWikiLink"/> resolves a Ctrl+click
+    /// against, and what the live-preview colorizer (<c>Views.Editor.Markdown.MarkdownLivePreviewColorizer</c>)
+    /// uses to tell a resolved wikilink apart from a broken or ambiguous one. Cached rather than rescanned
+    /// per keystroke — unlike <see cref="Backlinks"/> (which needs fresh content from every other note on
+    /// every change), this only needs to know which notes *exist*, which only this tab's own rename/delete
+    /// actions change while it's open — so it's refreshed there, not in <see cref="OnTextChanged"/>. A note
+    /// created or renamed from a different tab isn't picked up until this one reopens, same "reload to see"
+    /// tolerance the rest of the app already has for cross-tab state (docs/analisis-proyecto/roadmap.md,
+    /// Fase 5).</summary>
     public IReadOnlyList<NoteFile> WikiLinkScopeNotes { get; private set; } = [];
 
     private void RefreshWikiLinkScopeNotes()
     {
-        var root = _vaultService.ResolveWikiLinkScopeRoot(Note.FullPath);
-        WikiLinkScopeNotes = _vaultService.GetAllNotesRecursive(root);
+        WikiLinkScopeNotes = _vaultService.GetAllNotesAcrossVault();
     }
+
+    /// <summary>Every note in the vault, labeled by which workspace it lives in — feeds
+    /// <see cref="NoteLinkPicker"/> each time it opens. Falls back to just the vault root's own notes when
+    /// this tab was built without a <see cref="SessionService"/> (tests, headless composition), same
+    /// nullable-service tolerance as <see cref="_kanbanService"/> elsewhere in this class.</summary>
+    internal IEnumerable<NotePickerItemViewModel> CollectLinkableNotes() =>
+        _sessionService?.ListAllNotesByWorkspace().Select(t => new NotePickerItemViewModel(t.Note, t.WorkspaceLabel))
+        ?? _vaultService.GetAllNotesRecursive(_vaultService.VaultPath)
+            .Select(n => new NotePickerItemViewModel(n, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"]));
 
     public void OnTextChanged(string currentText)
     {

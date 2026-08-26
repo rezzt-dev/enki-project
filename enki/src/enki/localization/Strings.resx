@@ -664,6 +664,9 @@
   <data name="Editor_SlashCommand_Link_Label" xml:space="preserve">
     <value>Link</value>
   </data>
+  <data name="Editor_SlashCommand_NoteLink_Label" xml:space="preserve">
+    <value>Link note</value>
+  </data>
   <data name="Editor_SlashCommand_Quote_Label" xml:space="preserve">
     <value>Quote</value>
   </data>
@@ -767,6 +770,9 @@
   </data>
   <data name="Editor_Toolbar_Link_Tooltip" xml:space="preserve">
     <value>Link</value>
+  </data>
+  <data name="Editor_Toolbar_NoteLink_Tooltip" xml:space="preserve">
+    <value>Link to another note</value>
   </data>
   <data name="Editor_Toolbar_OrderedList_Tooltip" xml:space="preserve">
     <value>Numbered list</value>
@@ -1963,7 +1969,7 @@
     <value>Link mode</value>
   </data>
   <data name="Sessions_LinkModeInstructions" xml:space="preserve">
-    <value>Select two notes in the same session to create a link.</value>
+    <value>Select two notes to link them — even across different sessions.</value>
   </data>
   <data name="Sessions_LinkedCardsTitle" xml:space="preserve">
     <value>Linked cards</value>

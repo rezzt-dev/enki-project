@@ -118,4 +118,50 @@ public class EditorViewModelWikiLinkTests : IDisposable
 
         Assert.False(invoked);
     }
+
+    /// <summary>Wikilink resolution stopped being scoped to "this note's own session" (see
+    /// VaultService.GetAllNotesAcrossVault) so that a link inserted from the editor's new note-link picker
+    /// resolves the same way regardless of which session the target note lives in — this is what makes
+    /// Ctrl+click on a cross-session wikilink actually open the right note instead of silently doing
+    /// nothing.</summary>
+    [Fact]
+    public void OpenWikiLink_ResolvesAgainstANoteInADifferentSession_AndInvokesCallback()
+    {
+        var vault = CreateVault();
+        var current = vault.CreateNote("Actual");
+        var sessionFolder = Path.Combine(_vaultDir, ".sessions", "otra-sesion");
+        Directory.CreateDirectory(sessionFolder);
+        var targetPath = Path.Combine(sessionFolder, "Destino.md");
+        File.WriteAllText(targetPath, "# Destino");
+        NoteFile? opened = null;
+        var editor = new EditorViewModel(vault, current, onBack: () => { }, onChanged: () => { },
+            onOpenNote: n => opened = n);
+
+        editor.OpenWikiLink("Destino");
+
+        Assert.NotNull(opened);
+        Assert.Equal(targetPath, opened!.FullPath);
+    }
+
+    /// <summary>Regression test for a real bug found while widening wikilink resolution: the backlinks panel
+    /// (EditorBacklinksViewModel.Refresh) used to scan VaultService.GetAllNotesRecursiveWithContent(VaultPath)
+    /// directly, and VaultService.IsUnderHiddenDirectory excludes any path segment starting with "." relative
+    /// to that root — so ".sessions" was excluded entirely and a note living inside *any* session always
+    /// showed zero backlinks, even from another note in that exact same session.</summary>
+    [Fact]
+    public void Backlinks_ForANoteInsideASession_FindsALinkFromAnotherNoteInThatSameSession()
+    {
+        var vault = CreateVault();
+        var sessionFolder = Path.Combine(_vaultDir, ".sessions", "mi-sesion");
+        Directory.CreateDirectory(sessionFolder);
+        var targetPath = Path.Combine(sessionFolder, "Objetivo.md");
+        File.WriteAllText(targetPath, "# Objetivo");
+        File.WriteAllText(Path.Combine(sessionFolder, "Enlazadora.md"), "Ver [[Objetivo]].");
+        var target = vault.GetNote(targetPath)!;
+
+        var editor = new EditorViewModel(vault, target, onBack: () => { }, onChanged: () => { });
+
+        Assert.False(editor.Backlinks.IsEmpty);
+        Assert.Single(editor.Backlinks.Items);
+    }
 }

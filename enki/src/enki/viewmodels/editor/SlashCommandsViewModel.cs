@@ -29,6 +29,10 @@ public sealed partial class SlashCommandsViewModel : ObservableObject
         new SlashCommand { Key = "tarea", Label = LocalizationService.Instance["Editor_SlashCommand_TaskList_Label"], Icon = "CheckboxBlankOutline", InsertTextLiteral = "- [ ] ", CursorOffset = 6 },
         new SlashCommand { Key = "cita", Label = LocalizationService.Instance["Editor_SlashCommand_Quote_Label"], Icon = "FormatQuoteClose", InsertTextLiteral = "> ", CursorOffset = 2 },
         new SlashCommand { Key = "enlace", Label = LocalizationService.Instance["Editor_SlashCommand_Link_Label"], Icon = "LinkVariant", InsertTextKey = "Editor_LinkInsert_Placeholder", CursorOffset = 1 },
+        // Inserta un "[[" abierto y nada más — EditorView.OnSlashCommandSelected llama a
+        // UpdateNoteLinkPicker() justo después de insertar el texto de cualquier comando, que es lo que
+        // realmente abre el picker de notas al ver ese "[[" recién insertado sin cerrar.
+        new SlashCommand { Key = "nota", Label = LocalizationService.Instance["Editor_SlashCommand_NoteLink_Label"], Icon = "FileLinkOutline", InsertTextLiteral = "[[", CursorOffset = 2 },
         new SlashCommand { Key = "codigo", Label = LocalizationService.Instance["Editor_SlashCommand_InlineCode_Label"], Icon = "CodeTags", InsertTextLiteral = "``", CursorOffset = 1 },
         new SlashCommand { Key = "bloque", Label = LocalizationService.Instance["Editor_SlashCommand_CodeBlock_Label"], Icon = "CodeTags", InsertTextLiteral = "```\n\n```", CursorOffset = 4 },
         // CursorOffset lands right after the opening "| " of the header row rather than inside the data

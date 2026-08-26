@@ -292,18 +292,22 @@ public sealed class SessionService
     /// where it previously couldn't resolve at all because each session's wikilinks were only ever matched
     /// against its own note set. Same-scope edges (within one session, or between two vault-root notes)
     /// are still contributed by each scope's own resolution pass — the global pass only adds edges that
-    /// cross a scope boundary, so nothing is computed twice.</summary>
+    /// cross a scope boundary, so nothing is computed twice. Manually-drawn cross-scope edges
+    /// (<see cref="ToggleGlobalManualLink"/>) are folded in the same way, before the wikilink pass, so a
+    /// manual link and a wikilink between the same two notes collapse into one <c>IsManual</c> edge instead
+    /// of two.</summary>
     public SessionGraph LoadGlobalGraph()
     {
         var combined = new SessionGraph();
 
         // Every note currently known anywhere in the vault, keyed by its GlobalId — the universe the
-        // cross-scope wikilink pass resolves against below. Seeded with vault-root notes first since they
-        // have no session loop of their own to fold them in from.
+        // cross-scope wikilink pass (and the cross-scope manual links below) resolve against. Seeded with
+        // vault-root notes first since they have no session loop of their own to fold them in from.
         var byGlobalId = new Dictionary<string, NoteFile>(StringComparer.OrdinalIgnoreCase);
         var contentByGlobalId = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        var (rootNodes, rootEdges) = LoadRootGroup(byGlobalId, contentByGlobalId);
+        var rootManifest = ReadRootManifest();
+        var (rootNodes, rootEdges, rootNodesChanged) = LoadRootGroup(rootManifest, byGlobalId, contentByGlobalId);
         combined.Nodes.AddRange(rootNodes);
         combined.Edges.AddRange(rootEdges);
 
@@ -332,7 +336,30 @@ public sealed class SessionService
             }
         }
 
+        // Manually-drawn cross-scope links — pruned against the now-complete byGlobalId (a note deleted from
+        // either end since the link was drawn drops the entry, same reconciliation ManualLinks gets within
+        // one session in LoadGraph).
+        var crossLinksChanged = rootManifest.CrossLinks.RemoveAll(e =>
+            !byGlobalId.ContainsKey($"{e.FromSessionId}::{e.FromRelativePath}") ||
+            !byGlobalId.ContainsKey($"{e.ToSessionId}::{e.ToRelativePath}")) > 0;
+
         var crossEdgeKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var manual in rootManifest.CrossLinks)
+        {
+            var fromGlobalId = $"{manual.FromSessionId}::{manual.FromRelativePath}";
+            var toGlobalId = $"{manual.ToSessionId}::{manual.ToRelativePath}";
+            if (!crossEdgeKeys.Add(EdgeKey(fromGlobalId, toGlobalId))) continue;
+
+            combined.Edges.Add(new SessionGraphEdge
+            {
+                FromSessionId = manual.FromSessionId,
+                ToSessionId = manual.ToSessionId,
+                FromRelativePath = manual.FromRelativePath,
+                ToRelativePath = manual.ToRelativePath,
+                IsManual = true
+            });
+        }
+
         foreach (var (fromGlobalId, toGlobalId) in ComputeGlobalWikiLinkEdges(byGlobalId, contentByGlobalId))
         {
             var (fromGroupId, fromRelativePath) = SplitGlobalId(fromGlobalId);
@@ -349,6 +376,8 @@ public sealed class SessionService
             });
         }
 
+        if (rootNodesChanged || crossLinksChanged) WriteRootManifest(rootManifest);
+
         return combined;
     }
 
@@ -360,15 +389,18 @@ public sealed class SessionService
     /// <summary>Builds the vault-root pseudo-group's own nodes and within-group wikilink edges — the notes
     /// living directly under the vault path, outside every session folder (<see cref="VaultService.GetAllNotesRecursiveWithContent"/>
     /// already excludes any path under a dot-prefixed directory, so this naturally excludes <c>.sessions</c>
-    /// and <c>.trash</c>). Mirrors <see cref="LoadGraph"/>'s self-healing/position-persistence behavior for
-    /// a real session, but against a vault-level <c>.graph.json</c> (see <see cref="ReadRootManifest"/>)
-    /// since root notes have no session folder to keep a manifest in. Also feeds every root note's GlobalId
-    /// and content into <paramref name="byGlobalId"/>/<paramref name="contentByGlobalId"/> so the caller's
-    /// cross-scope wikilink pass can resolve links into/out of this group too.</summary>
-    private (List<SessionGraphNode> Nodes, List<SessionGraphEdge> Edges) LoadRootGroup(
-        Dictionary<string, NoteFile> byGlobalId, Dictionary<string, string> contentByGlobalId)
+    /// and <c>.trash</c>). Mirrors <see cref="LoadGraph"/>'s self-healing behavior for a real session, but
+    /// against <paramref name="manifest"/> — the vault-level <c>.graph.json</c> — since root notes have no
+    /// session folder to keep a manifest in. Doesn't write the manifest itself even when node reconciliation
+    /// changes it (returns <c>Changed</c> instead): the caller (<see cref="LoadGlobalGraph"/>) still needs to
+    /// reconcile <see cref="RootGraphManifest.CrossLinks"/> against the *complete* vault-wide note set, which
+    /// isn't assembled until after every session has run too — writing here and again there would mean two
+    /// disk writes on most loads instead of one. Also feeds every root note's GlobalId and content into
+    /// <paramref name="byGlobalId"/>/<paramref name="contentByGlobalId"/> so the caller's cross-scope
+    /// wikilink pass can resolve links into/out of this group too.</summary>
+    private (List<SessionGraphNode> Nodes, List<SessionGraphEdge> Edges, bool Changed) LoadRootGroup(
+        RootGraphManifest manifest, Dictionary<string, NoteFile> byGlobalId, Dictionary<string, string> contentByGlobalId)
     {
-        var manifest = ReadRootManifest();
         var notesWithContent = _vaultService.GetAllNotesRecursiveWithContent(_vaultService.VaultPath);
 
         var byPath = new Dictionary<string, NoteFile>(StringComparer.OrdinalIgnoreCase);
@@ -441,12 +473,9 @@ public sealed class SessionService
         }
 
         if (changed)
-        {
             manifest.Nodes = nodes.Select(n => new SessionManifestNode { RelativePath = n.RelativePath, X = n.X, Y = n.Y, Z = n.Z }).ToList();
-            WriteRootManifest(manifest);
-        }
 
-        return (nodes, edges);
+        return (nodes, edges, changed);
     }
 
     /// <summary>Batch-persists final node coordinates for vault-root notes — the vault-level counterpart of
@@ -611,6 +640,63 @@ public sealed class SessionService
 
         WriteManifest(session.RootPath, manifest);
         return nowLinked;
+    }
+
+    /// <summary>Cross-scope counterpart of <see cref="ToggleManualLink"/> — for a pair of notes that don't
+    /// share a single session root (two different sessions, or a session and the vault root), so a plain
+    /// <see cref="SessionManifestEdge"/> (paths relative to one session) can't represent the edge. Stored
+    /// vault-wide in <c>.graph.json</c>'s <see cref="RootGraphManifest.CrossLinks"/> instead — order-independent,
+    /// same <see cref="EdgeKey"/> convention as every other edge in this file. Returns whether the edge
+    /// exists after the call.</summary>
+    public bool ToggleGlobalManualLink(string fromSessionId, string fromRelativePath, string toSessionId, string toRelativePath)
+    {
+        var manifest = ReadRootManifest();
+        var fromGlobalId = $"{fromSessionId}::{fromRelativePath}";
+        var toGlobalId = $"{toSessionId}::{toRelativePath}";
+        var key = EdgeKey(fromGlobalId, toGlobalId);
+        var existing = manifest.CrossLinks.FirstOrDefault(e =>
+            EdgeKey($"{e.FromSessionId}::{e.FromRelativePath}", $"{e.ToSessionId}::{e.ToRelativePath}") == key);
+
+        bool nowLinked;
+        if (existing is not null)
+        {
+            manifest.CrossLinks.Remove(existing);
+            nowLinked = false;
+        }
+        else
+        {
+            manifest.CrossLinks.Add(new SessionManifestGlobalEdge
+            {
+                FromSessionId = fromSessionId,
+                FromRelativePath = fromRelativePath,
+                ToSessionId = toSessionId,
+                ToRelativePath = toRelativePath
+            });
+            nowLinked = true;
+        }
+
+        WriteRootManifest(manifest);
+        return nowLinked;
+    }
+
+    /// <summary>Every note in the vault, paired with a human label for which workspace it lives in — the
+    /// vault root, or a session's own name — skipping any session that's currently locked (its notes can't
+    /// be decrypted to even read a title, and reading one would throw <see cref="SessionLockedException"/>).
+    /// Single source of truth for "pick any note in the vault" pickers: the editor's wikilink picker
+    /// (<c>ViewModels.NoteLinkPickerViewModel</c>) and Kanban's "vincular nota" picker
+    /// (<c>ViewModels.KanbanCardEditorViewModel</c>) both use this instead of each walking
+    /// <see cref="List"/> and the vault root themselves.</summary>
+    public IEnumerable<(NoteFile Note, string WorkspaceLabel)> ListAllNotesByWorkspace()
+    {
+        foreach (var note in _vaultService.GetAllNotesRecursive(_vaultService.VaultPath))
+            yield return (note, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"]);
+
+        foreach (var session in List())
+        {
+            if (!IsUnlocked(session)) continue;
+            foreach (var note in _vaultService.GetAllNotesRecursive(session.RootPath))
+                yield return (note, session.Name);
+        }
     }
 
     private static IEnumerable<(string From, string To)> ComputeWikiLinkEdges(
@@ -841,12 +927,16 @@ public sealed class SessionService
     private const string RootGraphManifestFileName = ".graph.json";
 
     /// <summary>On-disk shape of the vault-root graph's own "fichero de localización" (<c>&lt;vault&gt;/.graph.json</c>)
-    /// — just the cached layout of vault-root notes, the vault-level counterpart of <see cref="SessionManifest.Nodes"/>.
-    /// Vault-root notes have no manual links or encryption of their own (both are session concepts), so
-    /// this carries none of the rest of <see cref="SessionManifest"/>'s shape.</summary>
+    /// — the cached layout of vault-root notes (the vault-level counterpart of <see cref="SessionManifest.Nodes"/>),
+    /// plus every manually-drawn edge that crosses a scope boundary (<see cref="CrossLinks"/>: two different
+    /// sessions, or a session and the vault root). A within-session manual link still lives in that session's
+    /// own <see cref="SessionManifest.ManualLinks"/> — this only holds the ones that don't belong to just one
+    /// side. Vault-root notes have no encryption of their own (a session concept), so this carries none of
+    /// the rest of <see cref="SessionManifest"/>'s shape.</summary>
     private sealed class RootGraphManifest
     {
         public List<SessionManifestNode> Nodes { get; set; } = [];
+        public List<SessionManifestGlobalEdge> CrossLinks { get; set; } = [];
     }
 
     private RootGraphManifest ReadRootManifest()

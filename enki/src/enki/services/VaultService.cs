@@ -430,6 +430,47 @@ public sealed class VaultService
             .ToList();
     }
 
+    /// <summary>Every note in the vault, with content — the vault root (<see cref="GetAllNotesRecursiveWithContent"/>
+    /// excludes <c>.sessions/</c> as a hidden directory on its own) plus every session folder directly under
+    /// it, walked here rather than through <see cref="SessionService"/> (which depends on this class, so a
+    /// reference back would be circular) — <c>.sessions/&lt;folder&gt;</c> is the session-root convention
+    /// <see cref="SessionService"/> itself uses, so no wiring from composition is needed for this to see
+    /// every session by construction. A session that's currently locked throws
+    /// <see cref="SessionLockedException"/> on its very first note (its content can't be decrypted to even
+    /// read a title) — caught per session so one locked session excludes only itself, exactly like every
+    /// other place a locked session is silently skipped (<c>SessionService.LoadGraph</c>/<c>LoadGlobalGraph</c>).
+    /// The single enumeration every wikilink-aware feature resolves against — Ctrl+click
+    /// (<c>EditorViewModel.OpenWikiLink</c>), live-preview coloring, the backlinks panel
+    /// (<see cref="EditorBacklinksService"/>) and the rename cascade (<see cref="RenameNote"/>) — so a
+    /// <c>[[wikilink]]</c> that crosses a session boundary resolves the same way everywhere instead of only
+    /// in the session graph's own view of the vault (<c>SessionService.LoadGlobalGraph</c>).</summary>
+    public List<(NoteFile Note, string Content)> GetAllNotesAcrossVaultWithContent()
+    {
+        var result = GetAllNotesRecursiveWithContent(VaultPath);
+
+        var sessionsRoot = Path.Combine(VaultPath, ".sessions");
+        if (!Directory.Exists(sessionsRoot)) return result;
+
+        foreach (var sessionDir in Directory.EnumerateDirectories(sessionsRoot))
+        {
+            try
+            {
+                result.AddRange(GetAllNotesRecursiveWithContent(sessionDir));
+            }
+            catch (SessionLockedException)
+            {
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Same note set as <see cref="GetAllNotesAcrossVaultWithContent"/>, without the content —
+    /// what Ctrl+click and live-preview coloring need (just <see cref="NoteFile"/> to resolve a target
+    /// against), without paying to read every file's body for callers that never look at it.</summary>
+    public List<NoteFile> GetAllNotesAcrossVault() =>
+        GetAllNotesAcrossVaultWithContent().Select(t => t.Note).ToList();
+
     /// <summary>Enumerates <c>.md</c> files as <see cref="FileInfo"/> rather than plain path strings — the
     /// OS enumeration API already has to stat each entry to report it, so this carries
     /// <see cref="FileInfo.LastWriteTimeUtc"/> for free, which <see cref="_noteCache"/> needs to validate a
@@ -922,10 +963,10 @@ public sealed class VaultService
     }
 
     /// <summary>Renames <paramref name="note"/>'s file and, unlike before Fase 5, keeps the rest of the
-    /// vault's wikilink graph pointing at it: every other note in its scope
-    /// (<see cref="ResolveWikiLinkScopeRoot"/>) whose <c>[[...]]</c> references resolved to the old file —
-    /// by filename or by unambiguous title, same rule <see cref="WikiLinkParser.ResolveTarget"/> uses
-    /// everywhere else — gets rewritten to reference the new filename instead
+    /// vault's wikilink graph pointing at it: every other note in the vault (<see cref="GetAllNotesAcrossVaultWithContent"/>
+    /// — every session too, not just the renamed note's own) whose <c>[[...]]</c> references resolved to the
+    /// old file — by filename or by unambiguous title, same rule <see cref="WikiLinkParser.ResolveTarget"/>
+    /// uses everywhere else — gets rewritten to reference the new filename instead
     /// (docs/analisis-proyecto/roadmap.md, Fase 5, análisis §3 "Integridad de la red de enlaces"). A
     /// destination name that already exists gets a numeric suffix (same policy as
     /// <see cref="CreateNote"/>/<see cref="RenameFolder"/>/<see cref="RenameFile"/>) instead of silently
@@ -943,8 +984,7 @@ public sealed class VaultService
         if (File.Exists(newPath)) newPath = ResolveCollision(currentDir, safeName, ".md");
 
         var oldPath = note.FullPath;
-        var scopeRoot = ResolveWikiLinkScopeRoot(oldPath);
-        var notesBeforeRename = GetAllNotesRecursiveWithContent(scopeRoot);
+        var notesBeforeRename = GetAllNotesAcrossVaultWithContent();
 
         try
         {
@@ -968,23 +1008,6 @@ public sealed class VaultService
         InvalidateVaultSizeCache();
 
         return note;
-    }
-
-    /// <summary>The narrowest note tree containing <paramref name="notePath"/>: the session it lives under
-    /// (<c>&lt;vault&gt;/.sessions/&lt;name&gt;/...</c>), or the vault root for a note outside every
-    /// session. Single source of truth for wikilink scope — <see cref="RenameNote"/>'s cascading rewrite,
-    /// the editor's Ctrl+click (<c>ViewModels.EditorViewModel.OpenWikiLink</c>) and the delete-time backlink
-    /// warning (<see cref="EditorBacklinksService.WarnIfDeletingLeavesBrokenLinks"/>) all resolve against
-    /// this same root, so none of them can reach (or miss) a note the others wouldn't
-    /// (docs/analisis-proyecto/roadmap.md, Fase 5).</summary>
-    public string ResolveWikiLinkScopeRoot(string notePath)
-    {
-        var sessionsRoot = Path.Combine(VaultPath, ".sessions") + Path.DirectorySeparatorChar;
-        if (!notePath.StartsWith(sessionsRoot, StringComparison.OrdinalIgnoreCase)) return VaultPath;
-
-        var relative = Path.GetRelativePath(sessionsRoot, notePath);
-        var sessionFolder = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
-        return Path.Combine(sessionsRoot, sessionFolder);
     }
 
     /// <summary>Rewrites, in every note captured by <paramref name="notesBeforeRename"/>, each wikilink

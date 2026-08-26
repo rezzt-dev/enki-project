@@ -536,7 +536,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         EditorViewModel? editor = null;
         editor = new EditorViewModel(_vaultService, note, () => CloseEditor(editor!), Reload,
             OpenNote, _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
-            onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content));
+            onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService);
         OpenEditors.Add(editor);
         ActiveEditor = editor;
     }

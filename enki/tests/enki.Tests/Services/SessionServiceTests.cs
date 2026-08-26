@@ -179,6 +179,109 @@ public class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public void ToggleGlobalManualLink_BetweenTwoDifferentSessions_AddsThenRemovesTheSameEdge()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "# Origen");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Destino.md"), "# Destino");
+
+        var nowLinked = service.ToggleGlobalManualLink(sessionA.Id, "Origen.md", sessionB.Id, "Destino.md");
+        Assert.True(nowLinked);
+        var edge = Assert.Single(service.LoadGlobalGraph().Edges);
+        Assert.True(edge.IsManual);
+        Assert.Equal(sessionA.Id, edge.FromSessionId);
+        Assert.Equal(sessionB.Id, edge.ToSessionId);
+
+        var nowUnlinked = service.ToggleGlobalManualLink(sessionA.Id, "Origen.md", sessionB.Id, "Destino.md");
+        Assert.False(nowUnlinked);
+        Assert.Empty(service.LoadGlobalGraph().Edges);
+    }
+
+    [Fact]
+    public void ToggleGlobalManualLink_BetweenASessionNoteAndAVaultRootNote_Persists()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "Origen.md"), "# Origen");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+
+        service.ToggleGlobalManualLink(session.Id, "Origen.md", SessionGraph.RootGroupId, "Suelta.md");
+
+        var edge = Assert.Single(service.LoadGlobalGraph().Edges);
+        Assert.True(edge.IsManual);
+        Assert.Equal(SessionGraph.RootGroupId, edge.ToSessionId);
+    }
+
+    [Fact]
+    public void ToggleGlobalManualLink_BetweenTwoVaultRootNotes_Persists()
+    {
+        var service = CreateService();
+        File.WriteAllText(Path.Combine(_vaultPath, "Uno.md"), "# Uno");
+        File.WriteAllText(Path.Combine(_vaultPath, "Dos.md"), "# Dos");
+
+        service.ToggleGlobalManualLink(SessionGraph.RootGroupId, "Uno.md", SessionGraph.RootGroupId, "Dos.md");
+
+        var edge = Assert.Single(service.LoadGlobalGraph().Edges);
+        Assert.True(edge.IsManual);
+        Assert.Equal(SessionGraph.RootGroupId, edge.FromSessionId);
+        Assert.Equal(SessionGraph.RootGroupId, edge.ToSessionId);
+    }
+
+    /// <summary>A cross-scope manual link whose target note has since been deleted must not survive forever
+    /// in <c>.graph.json</c> — same reconciliation a within-session <c>ManualLinks</c> entry already gets in
+    /// <see cref="ToggleManualLink_AddsThenRemoves_TheSameEdge"/>'s session-scoped counterpart.</summary>
+    [Fact]
+    public void LoadGlobalGraph_PrunesCrossScopeManualLink_WhenTargetNoteIsDeleted()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        var destinoPath = Path.Combine(sessionB.RootPath, "Destino.md");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "# Origen");
+        File.WriteAllText(destinoPath, "# Destino");
+        service.ToggleGlobalManualLink(sessionA.Id, "Origen.md", sessionB.Id, "Destino.md");
+        Assert.Single(service.LoadGlobalGraph().Edges);
+
+        File.Delete(destinoPath);
+
+        Assert.Empty(service.LoadGlobalGraph().Edges);
+    }
+
+    [Fact]
+    public void ListAllNotesByWorkspace_IncludesRootAndEverySessionNote_LabeledByWorkspace()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "En sesión.md"), "# En sesión");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+
+        var results = service.ListAllNotesByWorkspace().ToList();
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains(results, r => r.Note.Title == "En sesión" && r.WorkspaceLabel == "Sesión");
+        Assert.Contains(results, r => r.Note.Title == "Suelta");
+    }
+
+    /// <summary>Companion regression test to <c>KanbanCardEditorViewModelTests</c>'s at the ViewModel layer —
+    /// this asserts the same fix at the source: a locked encrypted session must be skipped, not enumerated
+    /// (which would throw <see cref="SessionLockedException"/> partway through reading its notes).</summary>
+    [Fact]
+    public void ListAllNotesByWorkspace_SkipsALockedSession_WithoutThrowing()
+    {
+        var service = CreateService();
+        var (locked, _) = service.CreateEncrypted("Privada", "super-secreta-123");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+        service.Lock(locked);
+
+        var results = service.ListAllNotesByWorkspace().ToList();
+
+        Assert.Single(results);
+        Assert.Equal("Suelta", results[0].Note.Title);
+    }
+
+    [Fact]
     public void SavePositions_UpdatesStoredCoordinates()
     {
         var service = CreateService();

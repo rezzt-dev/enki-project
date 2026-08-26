@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -274,6 +275,7 @@ public partial class EditorView : UserControl
         {
             _boundVm.Outline.NavigationRequested -= OnOutlineNavigationRequested;
             _boundVm.SlashCommands.CommandSelected -= OnSlashCommandSelected;
+            _boundVm.NoteLinkPicker.NoteSelected -= OnNoteLinkSelected;
             _boundVm.FindReplace.OperationRequested -= OnFindReplaceOperationRequested;
         }
         CaptureEditorState(_boundVm);
@@ -294,6 +296,7 @@ public partial class EditorView : UserControl
 
         vm.Outline.NavigationRequested += OnOutlineNavigationRequested;
         vm.SlashCommands.CommandSelected += OnSlashCommandSelected;
+        vm.NoteLinkPicker.NoteSelected += OnNoteLinkSelected;
         vm.FindReplace.OperationRequested += OnFindReplaceOperationRequested;
 
         // Deferred: the caret's on-screen position depends on visual lines that don't exist yet for a
@@ -491,6 +494,11 @@ public partial class EditorView : UserControl
 
         Editor.Document.Replace(context.Value.StartOffset, context.Value.Length, insertText);
         Editor.CaretOffset = context.Value.StartOffset + cursorOffset;
+        // "/nota" inserta un "[[" abierto (ver su InsertTextLiteral en SlashCommandsViewModel) — esta
+        // llamada es lo que realmente abre el picker de notas justo tras insertarlo, sin depender de si
+        // TextChanged ya se disparó (y con qué CaretOffset) antes de que la línea de arriba lo reposicionara.
+        // Para cualquier otro comando es un no-op inofensivo: su texto insertado no deja un "[[" abierto.
+        UpdateNoteLinkPicker();
         Editor.Focus();
     }
 
@@ -509,22 +517,7 @@ public partial class EditorView : UserControl
         PositionSlashCommandsPopup();
     }
 
-    private void PositionSlashCommandsPopup()
-    {
-        if (SlashCommandsPopup is null) return;
-        try
-        {
-            var rect = Editor.TextArea.Caret.CalculateCaretRectangle();
-            var point = Editor.TextArea.TextView.TranslatePoint(rect.BottomLeft, EditorBorder);
-            if (point is null) return;
-            SlashCommandsPopup.HorizontalOffset = Math.Max(8, point.Value.X);
-            SlashCommandsPopup.VerticalOffset = Math.Max(8, point.Value.Y + 4);
-        }
-        catch
-        {
-            // Si no se puede calcular la posición, el popup usa su offset por defecto.
-        }
-    }
+    private void PositionSlashCommandsPopup() => PositionPopup(SlashCommandsPopup);
 
     private (int StartOffset, int Length, string Filter)? GetSlashCommandContext()
     {
@@ -544,6 +537,90 @@ public partial class EditorView : UserControl
 
         var filter = lineText.Substring(1, prefixLength - 1);
         return (line.Offset, prefixLength, filter);
+    }
+
+    /// <summary>Opens/filters/closes <see cref="EditorViewModel.NoteLinkPicker"/> based on whether the caret
+    /// currently sits right after an unclosed <c>[[</c> on the current line (see
+    /// <see cref="GetNoteLinkPickerContext"/>) — the single mechanism behind all three ways to start a
+    /// wikilink: typing <c>[[</c> directly (called from <see cref="OnEditorTextChanged"/>), the toolbar's
+    /// "enlazar nota" button, and the <c>/nota</c> slash command (both call this explicitly right after
+    /// inserting the <c>[[</c>, rather than relying on the text-changed event that insertion also fires,
+    /// since whether that fires before or after the caret is repositioned isn't something to depend on).</summary>
+    private void UpdateNoteLinkPicker()
+    {
+        if (_boundVm is null) return;
+        var context = GetNoteLinkPickerContext();
+        if (context is null)
+        {
+            _boundVm.NoteLinkPicker.IsOpen = false;
+            return;
+        }
+
+        if (!_boundVm.NoteLinkPicker.IsOpen) _boundVm.NoteLinkPicker.Open(_boundVm.CollectLinkableNotes());
+        _boundVm.NoteLinkPicker.Filter = context.Value.Filter;
+        PositionNoteLinkPickerPopup();
+    }
+
+    /// <summary>Unlike <see cref="PositionSlashCommandsPopup"/> (anchored right under the caret), the
+    /// note-link picker centers on the app window — closer to a quick-switcher dialog than an inline
+    /// autocomplete, deliberate given it can hold many results and the caret is often too close to an edge
+    /// for a caret-anchored popup to fit comfortably. Retargets <see cref="NoteLinkPickerPopup"/> at the
+    /// window's <see cref="TopLevel"/> (not <c>EditorBorder</c>, which only covers the editor pane — the
+    /// sidebar/title bar would throw the centering off) every time, since a plain <c>Popup</c> has no
+    /// "center on target" placement mode to do this for us.</summary>
+    private void PositionNoteLinkPickerPopup()
+    {
+        if (NoteLinkPickerPopup is null) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+
+        NoteLinkPickerPopup.PlacementTarget = topLevel;
+        NoteLinkPickerPopup.HorizontalOffset = Math.Max(0, (topLevel.Bounds.Width - NoteLinkPickerPopup.Width) / 2);
+        // MaxHeight, not the popup's actual (content-dependent) height: the real height isn't known until
+        // after it's shown/measured, and centering against the worst case reads as "centered enough" even
+        // with few results, without needing a second reposition pass once the content settles.
+        NoteLinkPickerPopup.VerticalOffset = Math.Max(0, (topLevel.Bounds.Height - NoteLinkPickerPopup.MaxHeight) / 2);
+    }
+
+    private void PositionPopup(Popup? popup)
+    {
+        if (popup is null) return;
+        try
+        {
+            var rect = Editor.TextArea.Caret.CalculateCaretRectangle();
+            var point = Editor.TextArea.TextView.TranslatePoint(rect.BottomLeft, EditorBorder);
+            if (point is null) return;
+            popup.HorizontalOffset = Math.Max(8, point.Value.X);
+            popup.VerticalOffset = Math.Max(8, point.Value.Y + 4);
+        }
+        catch
+        {
+            // Si no se puede calcular la posición, el popup usa su offset por defecto.
+        }
+    }
+
+    /// <summary>Finds the last <c>[[</c> before the caret on the current line and reports the span from
+    /// right after it to the caret — what the user has typed so far as the wikilink's target — as long as
+    /// nothing has closed or restarted it since (a <c>]</c> already closing the link, or another <c>[</c>
+    /// opening a new one). No match at all (no <c>[[</c> on the line, or it's already closed) means the
+    /// picker should be closed.</summary>
+    private (int StartOffset, int Length, string Filter)? GetNoteLinkPickerContext()
+    {
+        var caretOffset = Editor.CaretOffset;
+        var line = Editor.Document.GetLineByOffset(caretOffset);
+        if (caretOffset > line.EndOffset) return null;
+
+        var lineText = Editor.Document.GetText(line);
+        var prefixLength = caretOffset - line.Offset;
+        var textBeforeCaret = lineText[..prefixLength];
+
+        var openIndex = textBeforeCaret.LastIndexOf("[[", StringComparison.Ordinal);
+        if (openIndex == -1) return null;
+
+        var between = textBeforeCaret[(openIndex + 2)..];
+        if (between.Contains(']') || between.Contains('[')) return null;
+
+        return (line.Offset + openIndex + 2, between.Length, between);
     }
 
     private void CaptureEditorState(EditorViewModel? vm)
@@ -624,6 +701,7 @@ public partial class EditorView : UserControl
         if (_suppressTextChanged) return;
         if (DataContext is EditorViewModel vm) vm.OnTextChanged(Editor.Text ?? string.Empty);
         UpdateSlashCommands();
+        UpdateNoteLinkPicker();
     }
 
     /// <summary>Continues lists/quotes on Enter and exits an empty list item instead of adding another marker,
@@ -651,6 +729,29 @@ public partial class EditorView : UserControl
                 case Key.Escape:
                     e.Handled = true;
                     _boundVm.SlashCommands.IsOpen = false;
+                    return;
+            }
+        }
+
+        if (_boundVm?.NoteLinkPicker.IsOpen == true)
+        {
+            switch (e.Key)
+            {
+                case Key.Down:
+                    e.Handled = true;
+                    _boundVm.NoteLinkPicker.MoveDownCommand.Execute(null);
+                    return;
+                case Key.Up:
+                    e.Handled = true;
+                    _boundVm.NoteLinkPicker.MoveUpCommand.Execute(null);
+                    return;
+                case Key.Enter:
+                    e.Handled = true;
+                    _boundVm.NoteLinkPicker.ConfirmSelectedCommand.Execute(null);
+                    return;
+                case Key.Escape:
+                    e.Handled = true;
+                    _boundVm.NoteLinkPicker.IsOpen = false;
                     return;
             }
         }
@@ -856,4 +957,30 @@ public partial class EditorView : UserControl
     private void OnLinkClick(object? sender, RoutedEventArgs e) => InsertAtCaret(LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
     private void OnImageClick(object? sender, RoutedEventArgs e) => InsertAtCaret("!" + LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
     private void OnHorizontalRuleClick(object? sender, RoutedEventArgs e) => InsertAtCaret("\n---\n");
+
+    /// <summary>Toolbar entry point for the note-link picker — inserts an open <c>[[</c> at the caret and
+    /// opens the picker right there, same end state <c>/nota</c> and typing <c>[[</c> by hand converge on.</summary>
+    private void OnNoteLinkClick(object? sender, RoutedEventArgs e)
+    {
+        var offset = Editor.CaretOffset;
+        Editor.Document.Insert(offset, "[[");
+        Editor.CaretOffset = offset + 2;
+        UpdateNoteLinkPicker();
+        Editor.Focus();
+    }
+
+    /// <summary>A note was confirmed in the picker (click, or Enter on the highlighted row) — closes the
+    /// open <c>[[filter</c> into a complete <c>[[FileName]]</c> wikilink and lands the caret right after it,
+    /// ready to keep typing. Uses the file name rather than the title as the link target since that's what
+    /// <see cref="WikiLinkParser.ResolveTargetWithStatus"/> tries first.</summary>
+    private void OnNoteLinkSelected(NotePickerItemViewModel item)
+    {
+        var context = GetNoteLinkPickerContext();
+        if (context is null) return;
+
+        var linkText = System.IO.Path.GetFileNameWithoutExtension(item.Note.FullPath) + "]]";
+        Editor.Document.Replace(context.Value.StartOffset, context.Value.Length, linkText);
+        Editor.CaretOffset = context.Value.StartOffset + linkText.Length;
+        Editor.Focus();
+    }
 }

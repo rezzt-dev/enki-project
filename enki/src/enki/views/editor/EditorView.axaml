@@ -205,6 +205,10 @@
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_Link_Tooltip}">
             <mi:MaterialIcon Kind="LinkVariant" Width="16" Height="16" />
           </Button>
+          <Button Classes="icon-btn" Click="OnNoteLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_NoteLink_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_NoteLink_Tooltip}">
+            <mi:MaterialIcon Kind="FileLinkOutline" Width="16" Height="16" />
+          </Button>
           <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}"
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_Image_Tooltip}">
             <mi:MaterialIcon Kind="ImageOutline" Width="16" Height="16" />
@@ -572,6 +576,60 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
+        </Grid>
+      </Border>
+    </Popup>
+
+    <!-- Note-link picker popup — abierto al escribir "[[", desde el botón "enlazar nota" de la barra de
+         herramientas, o desde el comando slash "/nota" (EditorView.axaml.cs, GetNoteLinkPickerContext /
+         UpdateNoteLinkPicker). A diferencia del popup de slash commands de arriba (anclado al cursor), este
+         se centra en la ventana de la app — PlacementTarget se reapunta al TopLevel y HorizontalOffset/
+         VerticalOffset se recalculan en PositionNoteLinkPickerPopup cada vez que se abre o se filtra; los
+         valores de aquí son solo el estado inicial antes de la primera reposición. -->
+    <Popup x:Name="NoteLinkPickerPopup"
+           PlacementTarget="{Binding #EditorBorder}"
+           Placement="AnchorAndGravity"
+           PlacementAnchor="TopLeft"
+           PlacementGravity="BottomRight"
+           IsLightDismissEnabled="False"
+           IsOpen="{Binding NoteLinkPicker.IsOpen, Mode=TwoWay}"
+           Width="360" MaxHeight="340">
+      <Border Classes="dropdown-popover" Width="360" MaxHeight="340">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <!-- Refleja en vivo lo que se ha escrito tras "[[" en el documento (ver GetNoteLinkPickerContext/
+               UpdateNoteLinkPicker) — mismo patrón exacto que SlashCommandFilter arriba: el usuario escribe
+               en el documento, no aquí dentro, pero antes esto era un TextBlock fijo con el placeholder que
+               nunca cambiaba, sin dar ninguna confirmación visual de qué se estaba filtrando. -->
+          <TextBox Grid.Row="0" x:Name="NoteLinkFilter"
+                   Classes="search"
+                   Text="{Binding NoteLinkPicker.Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                   PlaceholderText="{loc:Tr Kanban_NotePicker_SearchPlaceholder}"
+                   Margin="12,12,12,0" />
+          <ScrollViewer Grid.Row="1" Margin="0,8,0,0">
+            <ItemsControl ItemsSource="{Binding NoteLinkPicker.FilteredResults}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="2" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:NotePickerItemViewModel">
+                  <Button Classes="dropdown-item"
+                          Classes.active="{Binding IsSelected}"
+                          Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).NoteLinkPicker.SelectCommand}"
+                          CommandParameter="{Binding .}"
+                          ToolTip.Tip="{Binding Title}">
+                    <StackPanel Spacing="1">
+                      <TextBlock Text="{Binding Title}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding WorkspaceLabel}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <TextBlock Grid.Row="2" Text="{loc:Tr Kanban_NotePicker_NoResults}" Classes="muted" FontSize="11.5"
+                     Margin="12,8,12,12" IsVisible="{Binding !NoteLinkPicker.FilteredResults.Count}" />
         </Grid>
       </Border>
     </Popup>
