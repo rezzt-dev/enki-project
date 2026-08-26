@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using AvaloniaEdit.Document;
 using enki.Localization;
 using enki.Models;
@@ -65,6 +66,11 @@ public partial class EditorView : UserControl
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
 
+        // Let the fenced code block's box bleed past the text column - see UpdateCodeBlockBleed().
+        textView.SizeChanged += (_, _) => UpdateCodeBlockBleed(textArea, textView);
+        textView.AttachedToVisualTree += (_, _) => UpdateCodeBlockBleed(textArea, textView);
+        UpdateCodeBlockBleed(textArea, textView);
+
         textView.CurrentLineBackground = ResolveCurrentLineBrush();
         textView.CurrentLineBorder = null;
 
@@ -120,6 +126,41 @@ public partial class EditorView : UserControl
 
         EditorPreferences.Changed += OnEditorPreferencesChanged;
         DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
+    }
+
+    /// <summary>Lets <see cref="MarkdownBackgroundRenderer"/> paint the fenced code block's box
+    /// <see cref="MarkdownStyle.CodeBlockHorizontalPadding"/> past the text column on each side, which is
+    /// what puts every glyph of a code block - including the continuation rows of a wrapped line, which
+    /// always start flush left and always run to the full wrap width - safely inside the box.
+    ///
+    /// Two things are in the way. First, <c>TextView</c> overrides <c>ClipToBounds</c>'s default to true,
+    /// so anything drawn outside its bounds is cut; swapping that for an explicit <see cref="Visual.Clip"/>
+    /// widened by exactly that padding keeps the vertical crop (without it, a half-scrolled line would
+    /// spill over the editor's chrome) while opening up the horizontal bleed. Second, the presenter
+    /// TextArea hosts the TextView in stops at the text column's edge, so it is unclipped too - the walk
+    /// is bounded at the TextArea itself so nothing above the editor is ever touched.
+    ///
+    /// The room the box bleeds into is real, reserved space on both sides, not other content:
+    /// <see cref="Markdown.QuoteRailMargin"/>'s 16px gutter on the left, and the 20px right padding
+    /// EditorView.axaml puts on the &lt;ae:TextEditor&gt; on the right.</summary>
+    private static void UpdateCodeBlockBleed(AvaloniaEdit.Editing.TextArea textArea, AvaloniaEdit.Rendering.TextView textView)
+    {
+        var pad = MarkdownStyle.CodeBlockHorizontalPadding;
+        var bounds = textView.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+
+        textView.ClipToBounds = false;
+        textView.Clip = new RectangleGeometry(new Rect(-pad, 0, bounds.Width + pad * 2, bounds.Height));
+
+        // Bounded walk: PART_CP (TextArea's content presenter) is the only host between the two, but a
+        // depth cap keeps a future template change from unclipping the whole editor by accident.
+        var parent = textView.GetVisualParent();
+        for (var depth = 0; parent is not null && depth < 4; depth++)
+        {
+            if (parent is Control control) control.ClipToBounds = false;
+            if (ReferenceEquals(parent, textArea)) break;
+            parent = parent.GetVisualParent();
+        }
     }
 
     private static IBrush ResolveCurrentLineBrush()

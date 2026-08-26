@@ -4179,4 +4179,199 @@ Bonne rédaction.</value>
   <data name="Settings_Dashboard_Customize" xml:space="preserve">
     <value>Personnaliser cette organisation</value>
   </data>
+  <data name="Statistics_Section_Pulse" xml:space="preserve">
+    <value>Pouls</value>
+  </data>
+  <data name="Statistics_Section_Rhythm" xml:space="preserve">
+    <value>Rythme</value>
+  </data>
+  <data name="Statistics_Section_Tasks" xml:space="preserve">
+    <value>Tâches</value>
+  </data>
+  <data name="Statistics_Section_Knowledge" xml:space="preserve">
+    <value>Connaissance</value>
+  </data>
+  <data name="Statistics_Section_Habits" xml:space="preserve">
+    <value>Habitudes</value>
+  </data>
+  <data name="Statistics_Section_Storage" xml:space="preserve">
+    <value>Stockage</value>
+  </data>
+  <data name="Statistics_RangeLabel" xml:space="preserve">
+    <value>{0} derniers jours</value>
+  </data>
+  <data name="Statistics_Chart_DailyActivity" xml:space="preserve">
+    <value>Activité quotidienne</value>
+  </data>
+  <data name="Statistics_Chart_WeekdayActivity" xml:space="preserve">
+    <value>Par jour de la semaine</value>
+  </data>
+  <data name="Statistics_Chart_PunchCard" xml:space="preserve">
+    <value>Rythme horaire</value>
+  </data>
+  <data name="Statistics_Chart_YearHeatmap" xml:space="preserve">
+    <value>Une année d'activité</value>
+  </data>
+  <data name="Statistics_Chart_Growth" xml:space="preserve">
+    <value>Croissance du coffre</value>
+  </data>
+  <data name="Statistics_Chart_Priorities" xml:space="preserve">
+    <value>Priorité des tâches</value>
+  </data>
+  <data name="Statistics_Chart_Columns" xml:space="preserve">
+    <value>Cartes par colonne</value>
+  </data>
+  <data name="Statistics_Chart_TopTags" xml:space="preserve">
+    <value>Étiquettes les plus utilisées</value>
+  </data>
+  <data name="Statistics_Chart_TopFolders" xml:space="preserve">
+    <value>Dossiers avec le plus de notes</value>
+  </data>
+  <data name="Statistics_Chart_LongestNotes" xml:space="preserve">
+    <value>Notes les plus longues</value>
+  </data>
+  <data name="Statistics_Chart_NoteLengths" xml:space="preserve">
+    <value>Longueur des notes</value>
+  </data>
+  <data name="Statistics_Chart_FileTypes" xml:space="preserve">
+    <value>Fichiers par type</value>
+  </data>
+  <data name="Statistics_Chart_Sessions" xml:space="preserve">
+    <value>Notes par session</value>
+  </data>
+  <data name="Statistics_Chart_HabitConsistency" xml:space="preserve">
+    <value>Régularité par habitude</value>
+  </data>
+  <data name="Statistics_Chart_HabitHeatmap" xml:space="preserve">
+    <value>Une année d'habitudes</value>
+  </data>
+  <data name="Statistics_Chart_Reminders" xml:space="preserve">
+    <value>Rappels</value>
+  </data>
+  <data name="Statistics_Caption_DailyActivity" xml:space="preserve">
+    <value>Notes touchées et tâches terminées, jour après jour</value>
+  </data>
+  <data name="Statistics_Caption_PunchCard" xml:space="preserve">
+    <value>Quand tu travailles vraiment, par jour et par heure</value>
+  </data>
+  <data name="Statistics_Caption_YearHeatmap" xml:space="preserve">
+    <value>Chaque jour des douze derniers mois</value>
+  </data>
+  <data name="Statistics_Caption_Growth" xml:space="preserve">
+    <value>Nombre total de notes du coffre au fil du temps</value>
+  </data>
+  <data name="Statistics_Caption_NoteLengths" xml:space="preserve">
+    <value>Combien de notes tombent dans chaque tranche de mots</value>
+  </data>
+  <data name="Statistics_Caption_HabitHeatmap" xml:space="preserve">
+    <value>Part des habitudes applicables accomplies chaque jour</value>
+  </data>
+  <data name="Statistics_Tile_NotesCreated" xml:space="preserve">
+    <value>Notes créées</value>
+  </data>
+  <data name="Statistics_Tile_NotesEdited" xml:space="preserve">
+    <value>Notes modifiées</value>
+  </data>
+  <data name="Statistics_Tile_WordsWritten" xml:space="preserve">
+    <value>Mots écrits</value>
+  </data>
+  <data name="Statistics_Tile_ActiveDays" xml:space="preserve">
+    <value>Jours actifs</value>
+  </data>
+  <data name="Statistics_Tile_Streak" xml:space="preserve">
+    <value>Série en cours</value>
+  </data>
+  <data name="Statistics_Tile_BestStreak" xml:space="preserve">
+    <value>Meilleure série</value>
+  </data>
+  <data name="Statistics_Tile_TotalWords" xml:space="preserve">
+    <value>Mots au total</value>
+  </data>
+  <data name="Statistics_Tile_AverageWords" xml:space="preserve">
+    <value>Moyenne par note</value>
+  </data>
+  <data name="Statistics_Tile_Folders" xml:space="preserve">
+    <value>Dossiers</value>
+  </data>
+  <data name="Statistics_Tile_Files" xml:space="preserve">
+    <value>Fichiers</value>
+  </data>
+  <data name="Statistics_Tile_Tags" xml:space="preserve">
+    <value>Étiquettes</value>
+  </data>
+  <data name="Statistics_Tile_Overdue" xml:space="preserve">
+    <value>En retard</value>
+  </data>
+  <data name="Statistics_Tile_DueToday" xml:space="preserve">
+    <value>Échéance aujourd'hui</value>
+  </data>
+  <data name="Statistics_Tile_DueWeek" xml:space="preserve">
+    <value>7 prochains jours</value>
+  </data>
+  <data name="Statistics_Tile_NoDueDate" xml:space="preserve">
+    <value>Sans échéance</value>
+  </data>
+  <data name="Statistics_Tile_Subtasks" xml:space="preserve">
+    <value>Sous-tâches faites</value>
+  </data>
+  <data name="Statistics_Tile_HabitStreak" xml:space="preserve">
+    <value>Série d'habitudes</value>
+  </data>
+  <data name="Statistics_Tile_LongestNote" xml:space="preserve">
+    <value>Note la plus longue</value>
+  </data>
+  <data name="Statistics_Tile_BoardProgress" xml:space="preserve">
+    <value>Avancement du tableau</value>
+  </data>
+  <data name="Statistics_Tile_NotesSize" xml:space="preserve">
+    <value>Notes sur le disque</value>
+  </data>
+  <data name="Statistics_Tile_FilesSize" xml:space="preserve">
+    <value>Pièces jointes</value>
+  </data>
+  <data name="Statistics_Tile_RemindersActive" xml:space="preserve">
+    <value>Rappels actifs</value>
+  </data>
+  <data name="Statistics_Tile_RemindersRecurring" xml:space="preserve">
+    <value>Récurrents</value>
+  </data>
+  <data name="Statistics_Tile_PerActiveDay" xml:space="preserve">
+    <value>Par jour actif</value>
+  </data>
+  <data name="Statistics_Unit_Days" xml:space="preserve">
+    <value>jours</value>
+  </data>
+  <data name="Statistics_Unit_Words" xml:space="preserve">
+    <value>mots</value>
+  </data>
+  <data name="Statistics_Unit_Notes" xml:space="preserve">
+    <value>notes</value>
+  </data>
+  <data name="Statistics_Unit_Cards" xml:space="preserve">
+    <value>cartes</value>
+  </data>
+  <data name="Statistics_Empty_Generic" xml:space="preserve">
+    <value>Rien à afficher ici pour l'instant</value>
+  </data>
+  <data name="Statistics_Empty_Tags" xml:space="preserve">
+    <value>Étiquette tes notes pour voir sur quels sujets tu t'appuies le plus.</value>
+  </data>
+  <data name="Statistics_Empty_Files" xml:space="preserve">
+    <value>Ajoute des fichiers au coffre pour voir la répartition de ton stockage.</value>
+  </data>
+  <data name="Statistics_Empty_PunchCard" xml:space="preserve">
+    <value>Pas encore assez d'horodatages pour dessiner ton rythme.</value>
+  </data>
+  <data name="Statistics_Footnote" xml:space="preserve">
+    <value>L'activité provient des dates de création et de modification des notes, du moment où chaque tâche a été terminée et des marques d'habitudes — le coffre ne conserve pas d'historique d'édition séparé.</value>
+  </data>
+  <data name="Statistics_Section_Collapse" xml:space="preserve">
+    <value>Replier la section</value>
+  </data>
+  <data name="Statistics_Section_Expand" xml:space="preserve">
+    <value>Déplier la section</value>
+  </data>
+  <data name="Statistics_Empty_Tasks" xml:space="preserve">
+    <value>Aucune carte sur le tableau pour l'instant.</value>
+  </data>
 </root>

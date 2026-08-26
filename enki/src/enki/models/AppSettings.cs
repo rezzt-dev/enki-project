@@ -57,6 +57,13 @@ public sealed class AppSettings
     /// collapsed.</summary>
     public bool BuiltInLightThemesCollapsed { get; set; }
 
+    /// <summary>Claves de las secciones de Estadísticas que el usuario ha plegado ("pulse", "rhythm",
+    /// "tasks", "knowledge", "habits", "storage"). Se guarda la lista de plegadas y no un booleano por
+    /// sección — mismo criterio que <see cref="CalendarHiddenLayerKeys"/>: el estado por defecto (todo
+    /// desplegado) no ocupa nada, y añadir o quitar una sección en el futuro no obliga a migrar el JSON
+    /// de ajustes de todo el mundo.</summary>
+    public List<string> StatisticsCollapsedSections { get; set; } = [];
+
     // ===================== Notificaciones y recordatorios (Ajustes › Notificaciones) =====================
 
     /// <summary>Shows/hides the bell (system event log) button in the title bar entirely.</summary>

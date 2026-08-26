@@ -348,8 +348,8 @@ public sealed partial class MainWindowViewModel
         };
         Kanban = new KanbanViewModel(_kanbanService, _polarAuthService, taskManagement, _vaultService, _sessionService, OpenLinkedNoteFromKanban, _settingsService, _notificationService);
         Habits = new HabitsViewModel(_habitService, _settingsService);
-        var statisticsAggregationService = new StatisticsAggregationService(_vaultService, _kanbanService, _polarTaskService, _polarAuthService, _habitService);
-        Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService);
+        var statisticsAggregationService = new StatisticsAggregationService(_vaultService, _kanbanService, _polarTaskService, _polarAuthService, _habitService, _reminderService, _sessionService);
+        Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService, _settingsService);
         Dashboard = new DashboardViewModel(_vaultService, _sessionService, _kanbanService, _polarTaskService,
             _polarAuthService, _notificationService, calendarAggregationService, _habitService, OpenNoteFromDashboard,
             () => Notes.NewNoteCommand.Execute(null), () => Navigate(AppPage.Kanban), () => Navigate(AppPage.Sessions),

@@ -4179,4 +4179,199 @@ Happy writing.</value>
   <data name="Settings_Dashboard_Customize" xml:space="preserve">
     <value>Customise this arrangement</value>
   </data>
+  <data name="Statistics_Section_Pulse" xml:space="preserve">
+    <value>Pulse</value>
+  </data>
+  <data name="Statistics_Section_Rhythm" xml:space="preserve">
+    <value>Rhythm</value>
+  </data>
+  <data name="Statistics_Section_Tasks" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="Statistics_Section_Knowledge" xml:space="preserve">
+    <value>Knowledge</value>
+  </data>
+  <data name="Statistics_Section_Habits" xml:space="preserve">
+    <value>Habits</value>
+  </data>
+  <data name="Statistics_Section_Storage" xml:space="preserve">
+    <value>Storage</value>
+  </data>
+  <data name="Statistics_RangeLabel" xml:space="preserve">
+    <value>Last {0} days</value>
+  </data>
+  <data name="Statistics_Chart_DailyActivity" xml:space="preserve">
+    <value>Daily activity</value>
+  </data>
+  <data name="Statistics_Chart_WeekdayActivity" xml:space="preserve">
+    <value>By day of the week</value>
+  </data>
+  <data name="Statistics_Chart_PunchCard" xml:space="preserve">
+    <value>Hourly rhythm</value>
+  </data>
+  <data name="Statistics_Chart_YearHeatmap" xml:space="preserve">
+    <value>A year of activity</value>
+  </data>
+  <data name="Statistics_Chart_Growth" xml:space="preserve">
+    <value>Vault growth</value>
+  </data>
+  <data name="Statistics_Chart_Priorities" xml:space="preserve">
+    <value>Task priority</value>
+  </data>
+  <data name="Statistics_Chart_Columns" xml:space="preserve">
+    <value>Cards per column</value>
+  </data>
+  <data name="Statistics_Chart_TopTags" xml:space="preserve">
+    <value>Most used tags</value>
+  </data>
+  <data name="Statistics_Chart_TopFolders" xml:space="preserve">
+    <value>Folders with the most notes</value>
+  </data>
+  <data name="Statistics_Chart_LongestNotes" xml:space="preserve">
+    <value>Longest notes</value>
+  </data>
+  <data name="Statistics_Chart_NoteLengths" xml:space="preserve">
+    <value>Note length</value>
+  </data>
+  <data name="Statistics_Chart_FileTypes" xml:space="preserve">
+    <value>Files by type</value>
+  </data>
+  <data name="Statistics_Chart_Sessions" xml:space="preserve">
+    <value>Notes per session</value>
+  </data>
+  <data name="Statistics_Chart_HabitConsistency" xml:space="preserve">
+    <value>Consistency by habit</value>
+  </data>
+  <data name="Statistics_Chart_HabitHeatmap" xml:space="preserve">
+    <value>A year of habits</value>
+  </data>
+  <data name="Statistics_Chart_Reminders" xml:space="preserve">
+    <value>Reminders</value>
+  </data>
+  <data name="Statistics_Caption_DailyActivity" xml:space="preserve">
+    <value>Notes touched and tasks completed, day by day</value>
+  </data>
+  <data name="Statistics_Caption_PunchCard" xml:space="preserve">
+    <value>When you actually work, by weekday and hour</value>
+  </data>
+  <data name="Statistics_Caption_YearHeatmap" xml:space="preserve">
+    <value>Every day of the last twelve months</value>
+  </data>
+  <data name="Statistics_Caption_Growth" xml:space="preserve">
+    <value>Total notes in the vault over time</value>
+  </data>
+  <data name="Statistics_Caption_NoteLengths" xml:space="preserve">
+    <value>How many notes fall in each word-count band</value>
+  </data>
+  <data name="Statistics_Caption_HabitHeatmap" xml:space="preserve">
+    <value>Share of applicable habits completed each day</value>
+  </data>
+  <data name="Statistics_Tile_NotesCreated" xml:space="preserve">
+    <value>Notes created</value>
+  </data>
+  <data name="Statistics_Tile_NotesEdited" xml:space="preserve">
+    <value>Notes edited</value>
+  </data>
+  <data name="Statistics_Tile_WordsWritten" xml:space="preserve">
+    <value>Words written</value>
+  </data>
+  <data name="Statistics_Tile_ActiveDays" xml:space="preserve">
+    <value>Active days</value>
+  </data>
+  <data name="Statistics_Tile_Streak" xml:space="preserve">
+    <value>Current streak</value>
+  </data>
+  <data name="Statistics_Tile_BestStreak" xml:space="preserve">
+    <value>Best streak</value>
+  </data>
+  <data name="Statistics_Tile_TotalWords" xml:space="preserve">
+    <value>Total words</value>
+  </data>
+  <data name="Statistics_Tile_AverageWords" xml:space="preserve">
+    <value>Average per note</value>
+  </data>
+  <data name="Statistics_Tile_Folders" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="Statistics_Tile_Files" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="Statistics_Tile_Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Statistics_Tile_Overdue" xml:space="preserve">
+    <value>Overdue</value>
+  </data>
+  <data name="Statistics_Tile_DueToday" xml:space="preserve">
+    <value>Due today</value>
+  </data>
+  <data name="Statistics_Tile_DueWeek" xml:space="preserve">
+    <value>Next 7 days</value>
+  </data>
+  <data name="Statistics_Tile_NoDueDate" xml:space="preserve">
+    <value>No due date</value>
+  </data>
+  <data name="Statistics_Tile_Subtasks" xml:space="preserve">
+    <value>Subtasks done</value>
+  </data>
+  <data name="Statistics_Tile_HabitStreak" xml:space="preserve">
+    <value>Habit streak</value>
+  </data>
+  <data name="Statistics_Tile_LongestNote" xml:space="preserve">
+    <value>Longest note</value>
+  </data>
+  <data name="Statistics_Tile_BoardProgress" xml:space="preserve">
+    <value>Board progress</value>
+  </data>
+  <data name="Statistics_Tile_NotesSize" xml:space="preserve">
+    <value>Notes on disk</value>
+  </data>
+  <data name="Statistics_Tile_FilesSize" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
+  <data name="Statistics_Tile_RemindersActive" xml:space="preserve">
+    <value>Active reminders</value>
+  </data>
+  <data name="Statistics_Tile_RemindersRecurring" xml:space="preserve">
+    <value>Recurring</value>
+  </data>
+  <data name="Statistics_Tile_PerActiveDay" xml:space="preserve">
+    <value>Per active day</value>
+  </data>
+  <data name="Statistics_Unit_Days" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="Statistics_Unit_Words" xml:space="preserve">
+    <value>words</value>
+  </data>
+  <data name="Statistics_Unit_Notes" xml:space="preserve">
+    <value>notes</value>
+  </data>
+  <data name="Statistics_Unit_Cards" xml:space="preserve">
+    <value>cards</value>
+  </data>
+  <data name="Statistics_Empty_Generic" xml:space="preserve">
+    <value>Nothing to show here yet</value>
+  </data>
+  <data name="Statistics_Empty_Tags" xml:space="preserve">
+    <value>Tag your notes to see which topics you lean on most.</value>
+  </data>
+  <data name="Statistics_Empty_Files" xml:space="preserve">
+    <value>Add files to the vault to see how your storage breaks down.</value>
+  </data>
+  <data name="Statistics_Empty_PunchCard" xml:space="preserve">
+    <value>Not enough timestamps yet to draw your rhythm.</value>
+  </data>
+  <data name="Statistics_Footnote" xml:space="preserve">
+    <value>Activity comes from note creation and modification times, task completion times and habit marks — the vault stores no separate edit history.</value>
+  </data>
+  <data name="Statistics_Section_Collapse" xml:space="preserve">
+    <value>Collapse section</value>
+  </data>
+  <data name="Statistics_Section_Expand" xml:space="preserve">
+    <value>Expand section</value>
+  </data>
+  <data name="Statistics_Empty_Tasks" xml:space="preserve">
+    <value>No cards on the board yet.</value>
+  </data>
 </root>

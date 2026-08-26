@@ -22,7 +22,9 @@ public class StatisticsViewModelTests : IDisposable
 
     private sealed record Harness(StatisticsViewModel Vm, KanbanService Kanban, HabitService Habits, SettingsService Settings);
 
-    private Harness CreateViewModel()
+    private Harness CreateViewModel() => CreateViewModel(withSettings: false);
+
+    private Harness CreateViewModel(bool withSettings)
     {
         var settingsService = new SettingsService(_storageDirectory);
         var vaultService = new VaultService(settingsService);
@@ -34,7 +36,7 @@ public class StatisticsViewModelTests : IDisposable
         var habitService = new HabitService(vaultService);
 
         var aggregationService = new StatisticsAggregationService(vaultService, kanbanService, taskService, authService, habitService);
-        var vm = new StatisticsViewModel(aggregationService, authService);
+        var vm = new StatisticsViewModel(aggregationService, authService, withSettings ? settingsService : null);
         return new Harness(vm, kanbanService, habitService, settingsService);
     }
 
@@ -43,12 +45,13 @@ public class StatisticsViewModelTests : IDisposable
     {
         var h = CreateViewModel();
 
-        // BuildWeeklySeries always returns one point per week in range (zeroed, not omitted) — the
-        // empty state is driven by HasEnoughData, not by an empty Weeks collection. See
+        // BuildWeeklySeries always returns one point per week in range (zeroed, not omitted) — el estado
+        // vacío lo decide HasEnoughData, no que las series vengan vacías. Ver
         // StatisticsAggregationServiceTests.BuildWeeklySeries_EmptyVault_ReturnsZeroedWeeksWithNoHabitData.
         Assert.False(h.Vm.HasEnoughData);
-        Assert.All(h.Vm.Weeks, w => Assert.Equal(0, w.NotesTotal));
-        Assert.All(h.Vm.Weeks, w => Assert.Equal(0, w.TasksCompleted));
+        Assert.NotEmpty(h.Vm.WeeklyNotesSeries);
+        Assert.All(h.Vm.WeeklyNotesSeries, w => Assert.Equal(0, w.Value));
+        Assert.All(h.Vm.WeeklyTasksSeries, w => Assert.Equal(0, w.Value));
     }
 
     [Fact]
@@ -106,5 +109,72 @@ public class StatisticsViewModelTests : IDisposable
         h.Vm.SelectRangeCommand.Execute("AllTime");
 
         Assert.Equal(StatisticsRange.AllTime, h.Vm.Range);
+    }
+
+    // ===================== Sub-secciones plegables =====================
+
+    [Fact]
+    public void Sections_StartExpandedAndCarryASummary()
+    {
+        var h = CreateViewModel();
+
+        Assert.Equal(6, h.Vm.Sections.Count);
+        Assert.All(h.Vm.Sections, section => Assert.True(section.IsExpanded));
+        // El resumen es lo único que queda visible con la sección plegada: si viniera vacío, plegar
+        // equivaldría a esconder el dato en vez de a resumirlo.
+        Assert.All(h.Vm.Sections, section => Assert.False(string.IsNullOrWhiteSpace(section.Summary)));
+        Assert.All(h.Vm.Sections, section => Assert.False(string.IsNullOrWhiteSpace(section.Title)));
+    }
+
+    [Fact]
+    public void ToggleSection_PersistsTheCollapsedKeyInSettings()
+    {
+        var h = CreateViewModel(withSettings: true);
+
+        h.Vm.RhythmSection.ToggleCommand.Execute(null);
+
+        Assert.False(h.Vm.RhythmSection.IsExpanded);
+        Assert.Equal(["rhythm"], h.Settings.Settings.StatisticsCollapsedSections);
+
+        h.Vm.RhythmSection.ToggleCommand.Execute(null);
+
+        Assert.True(h.Vm.RhythmSection.IsExpanded);
+        Assert.Empty(h.Settings.Settings.StatisticsCollapsedSections);
+    }
+
+    [Fact]
+    public void Sections_RestoreTheirCollapsedStateFromSettings()
+    {
+        var h = CreateViewModel(withSettings: true);
+        h.Vm.StorageSection.ToggleCommand.Execute(null);
+        h.Vm.TasksSection.ToggleCommand.Execute(null);
+
+        // Un segundo ViewModel sobre el mismo SettingsService equivale a volver a abrir la app.
+        var reopened = CreateViewModel(withSettings: true);
+
+        Assert.False(reopened.Vm.StorageSection.IsExpanded);
+        Assert.False(reopened.Vm.TasksSection.IsExpanded);
+        Assert.True(reopened.Vm.PulseSection.IsExpanded);
+    }
+
+    [Fact]
+    public void ToggleSection_WithoutSettingsService_StillTogglesWithoutThrowing()
+    {
+        var h = CreateViewModel();
+
+        h.Vm.HabitsSection.ToggleCommand.Execute(null);
+
+        Assert.False(h.Vm.HabitsSection.IsExpanded);
+    }
+
+    [Fact]
+    public void ToggleTooltip_SwitchesBetweenCollapseAndExpand()
+    {
+        var h = CreateViewModel();
+        var whenExpanded = h.Vm.PulseSection.ToggleTooltip;
+
+        h.Vm.PulseSection.ToggleCommand.Execute(null);
+
+        Assert.NotEqual(whenExpanded, h.Vm.PulseSection.ToggleTooltip);
     }
 }

@@ -1,7 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-        xmlns:controls="clr-namespace:enki.Controls">
+        xmlns:controls="clr-namespace:enki.Controls"
+        xmlns:charts="clr-namespace:enki.Controls.Charts">
 
   <!-- ===================================================================
        Brutalismo editorial suizo, monocromo — ver docs/sistema-diseno-web.md
@@ -1395,6 +1396,64 @@
   </Style>
 
   <!-- Stat card: sin borde propio, vive dentro de una rejilla "gap-1px" -->
+  <!-- ===================== Cabecera de sección plegable (Estadísticas) =====================
+       Toda la fila es el objetivo de clic, no solo el chevron: con seis secciones, obligar a apuntar a un
+       icono de 14px es la diferencia entre plegar la página a gusto y no plegarla nunca. El hover sube la
+       tinta del rótulo en vez de pintar un fondo, que es como se comporta el resto de la navegación. -->
+  <Style Selector="Button.section-header">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0,4" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.section-header /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Button.section-header:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.section-header TextBlock.eyebrow">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.3" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.section-header:pointerover TextBlock.eyebrow">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.section-header:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- ===================== Gráficos de Estadísticas (controls/charts) =====================
+       Los controles de gráfico no resuelven ni un color por su cuenta: toda su paleta entra por estas
+       propiedades, así que siguen el tema activo (incluidos los temas personalizados del usuario) igual
+       que cualquier otro control. `:is(...)` en vez del selector de tipo a secas porque el selector de
+       tipo de Avalonia solo casa con el tipo exacto, y aquí hace falta que llegue a las nueve
+       subclases. -->
+  <Style Selector=":is(charts|ChartBase)">
+    <Setter Property="Ink" Value="{DynamicResource InkBrush}" />
+    <Setter Property="SecondaryInk" Value="{DynamicResource Ink30}" />
+    <Setter Property="GridLine" Value="{DynamicResource Ink10}" />
+    <Setter Property="LabelInk" Value="{DynamicResource Ink40}" />
+    <Setter Property="Surface" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="LabelFontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="LabelFontSize" Value="9" />
+  </Style>
+
+  <!-- Bajada de una tarjeta de gráfico: explica en una línea qué se está mirando, en el mismo tono
+       secundario que los subtítulos de página. -->
+  <Style Selector="TextBlock.card-caption">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
   <Style Selector="Border.stat-card">
     <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
     <Setter Property="Padding" Value="18,16" />

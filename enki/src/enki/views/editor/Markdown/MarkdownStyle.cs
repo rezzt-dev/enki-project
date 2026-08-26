@@ -28,6 +28,17 @@ public sealed class MarkdownStyle
     public required FontFamily MonoFontFamily { get; init; }
     public double BaseFontSize { get; set; } = 14.5;
 
+    /// <summary>Horizontal breathing room (px) between a fenced code block's border and the code text
+    /// inside it. The box is painted this far OUTSIDE the text column on both sides rather than inset
+    /// into it — see <see cref="MarkdownBackgroundRenderer"/> for why that's the only placement that
+    /// also keeps a wrapped code line's continuation rows inside the box. Both the reserved space it
+    /// bleeds into and the clip that lets it paint there live in EditorView.axaml/.axaml.cs, so this
+    /// constant can't grow past the editor's own horizontal padding without them growing too.</summary>
+    public const double CodeBlockHorizontalPadding = 8;
+
+    /// <summary>Corner radius of the fenced code block's box, matching the app's card/input chrome.</summary>
+    public const double CodeBlockCornerRadius = 6;
+
     public static MarkdownStyle FromApp(FontFamily bodyFont, FontFamily monoFont, double baseFontSize)
     {
         IBrush FindBrush(string key, string fallbackHex)

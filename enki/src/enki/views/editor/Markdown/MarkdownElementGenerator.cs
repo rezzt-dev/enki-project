@@ -52,6 +52,11 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         {
             case MdBlockKind.Heading:
             case MdBlockKind.HorizontalRule:
+            // Code fences need no zone of their own beyond concealing the "```lang" delimiter: the
+            // padding that keeps code text clear of the block's border is produced by drawing the box
+            // wider than the text column (see MarkdownBackgroundRenderer), not by inserting a spacer
+            // run here. A spacer only ever indents the first visual row of a wrapped line, which is
+            // precisely why the box used to be overrun by every continuation row.
             case MdBlockKind.CodeFence:
                 if (!lineActive && model.MarkerStart < model.MarkerEnd)
                     zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model));

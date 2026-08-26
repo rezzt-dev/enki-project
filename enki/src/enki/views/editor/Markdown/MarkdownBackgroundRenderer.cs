@@ -31,15 +31,37 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
         var rulePen = new Pen(_style.RuleLine, 1.5);
         var codeBorderPen = new Pen(_style.CodeBlockBorder, 1);
 
-        // Fenced code blocks get one border around the whole block (like the preview's <pre>), not one
-        // per line, so consecutive lines don't each draw their own edge and look like stacked boxes.
+        // The code box is drawn OUTSIDE the text column on both sides, not inset into it: it starts
+        // CodeBlockHorizontalPadding to the left of the first character's X and ends the same distance
+        // past the wrap boundary. That's what guarantees "every glyph is inside the box", including the
+        // continuation rows of a wrapped code line - those always start flush left at x=0 and always run
+        // to the full wrap width, because Avalonia's text formatter ignores the wrap indentation
+        // AvaloniaEdit computes for them (see QuoteRailMargin's doc comment for the full story). Any box
+        // inset into [0, width] would therefore be overrun on both edges by every wrapped code line,
+        // which is exactly the bug this replaced: an inset left edge with an inline spacer padding only
+        // the FIRST row, and a right edge sitting exactly on the wrap boundary.
+        //
+        // Painting past TextView's own bounds needs its clipping relaxed by the same padding - see
+        // EditorView.axaml.cs's UpdateCodeBlockBleed(), which also documents where that space comes from
+        // (QuoteRailMargin's gutter on the left, TextEditor.Padding on the right). If a future Avalonia
+        // version clips it anyway the block degrades to a full-width shaded band rather than breaking.
+        var pad = MarkdownStyle.CodeBlockHorizontalPadding;
+        var codeBoxLeft = -pad;
+        var codeBoxWidth = width + pad * 2;
+        var radius = MarkdownStyle.CodeBlockCornerRadius;
+
+        // Fenced code blocks are painted as ONE rounded rect around the whole block (like the preview's
+        // <pre>), not per line: per-line fills leave hairline seams between visual lines and per-line
+        // borders read as a stack of separate boxes. Fill and border are both deferred to the flush so
+        // the rounded corners only appear at the block's real top and bottom.
         double? codeBlockTop = null;
         double codeBlockBottom = 0;
 
-        void FlushCodeBlockBorder()
+        void FlushCodeBlock()
         {
             if (codeBlockTop is not { } t) return;
-            drawingContext.DrawRectangle(null, codeBorderPen, new Rect(0, t, width, codeBlockBottom - t));
+            var rect = new Rect(codeBoxLeft, t, codeBoxWidth, codeBlockBottom - t);
+            drawingContext.DrawRectangle(_style.CodeBlockBackground, codeBorderPen, rect, radius, radius);
             codeBlockTop = null;
         }
 
@@ -51,12 +73,11 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
             var model = MarkdownLineParser.Parse(text, docLine.Offset, fence);
             var top = visualLine.VisualTop - textView.VerticalOffset;
 
-            if (model.Kind != MdBlockKind.CodeFence) FlushCodeBlockBorder();
+            if (model.Kind != MdBlockKind.CodeFence) FlushCodeBlock();
 
             switch (model.Kind)
             {
                 case MdBlockKind.CodeFence:
-                    drawingContext.FillRectangle(_style.CodeBlockBackground, new Rect(0, top, width, visualLine.Height), 0f);
                     codeBlockTop ??= top;
                     codeBlockBottom = top + visualLine.Height;
                     break;
@@ -73,7 +94,7 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
             }
         }
 
-        FlushCodeBlockBorder();
+        FlushCodeBlock();
 
         DrawSearchHighlights(textView, drawingContext);
     }

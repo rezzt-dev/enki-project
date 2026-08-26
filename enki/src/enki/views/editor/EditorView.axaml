@@ -332,8 +332,13 @@
           <Border Grid.Row="1" x:Name="EditorColumnHost" Margin="8">
             <!-- Left padding is reduced by QuoteRailMargin's own width (see EditorView.axaml.cs) so the
                  margin's reserved gutter exactly replaces that much padding instead of adding to it -
-                 heading/list/paragraph text ends up at the same X it always was, with the quote rail
-                 occupying what used to be blank padding instead of pushing everything else rightward. -->
+                 heading/list/paragraph text ends up at the same X it always was (4 + 16 = the 20px the
+                 other sides use), with the quote rail occupying what used to be blank padding instead of
+                 pushing everything else rightward.
+                 Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
+                 code block's box is painted that far outside the text column on each side, into the left
+                 gutter and into this right padding, so the code text inside it clears the border on every
+                 row - see EditorView.axaml.cs's UpdateCodeBlockBleed(). -->
             <ae:TextEditor x:Name="Editor"
                            Background="Transparent"
                            Foreground="{DynamicResource TextPrimaryBrush}"

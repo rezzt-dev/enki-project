@@ -27,7 +27,6 @@
             <conv:OutlineIndentConverter x:Key="OutlineIndentConverter" />
             <conv:SessionIconConverter x:Key="SessionIconConverter" />
             <conv:HexColorToBrushConverter x:Key="HexColorToBrushConverter" />
-            <conv:HeatmapStateConverter x:Key="HeatmapStateConverter" />
             <conv:TopOffsetToMarginConverter x:Key="TopOffsetToMarginConverter" />
             <conv:DoubleToTranslateYConverter x:Key="DoubleToTranslateYConverter" />
         </ResourceDictionary>
