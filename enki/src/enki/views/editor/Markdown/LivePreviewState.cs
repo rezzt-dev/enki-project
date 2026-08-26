@@ -16,6 +16,12 @@ public sealed class LivePreviewState
     public List<(int Start, int End)> Selections { get; set; } = Empty;
     public Dictionary<int, FenceInfo> Fences { get; set; } = new();
 
+    /// <summary>HTML context of each line — the alignment of the block wrapping it and the inline tags
+    /// still open when it starts (<see cref="MarkdownHtmlParser.ComputeLineStates"/>). Only lines that
+    /// carry something are in the dictionary, so a note without HTML costs one empty lookup per line and
+    /// nothing else.</summary>
+    public Dictionary<int, HtmlLineState> HtmlLines { get; set; } = new();
+
     /// <summary>Term the editor's Buscar/Reemplazar panel is currently searching for — null/empty means
     /// no highlight. Set by the view whenever the panel is open and its search text/match-case changes, so
     /// <see cref="MarkdownBackgroundRenderer"/> can shade every match, not just the one the native text
@@ -25,6 +31,15 @@ public sealed class LivePreviewState
 
     public FenceInfo GetFence(int lineNumber) =>
         Fences.TryGetValue(lineNumber, out var f) ? f : default;
+
+    public HtmlLineState GetHtml(int lineNumber) =>
+        HtmlLines.TryGetValue(lineNumber, out var state) ? state : HtmlLineState.Empty;
+
+    public MdAlign GetAlignment(int lineNumber) => GetHtml(lineNumber).Align;
+
+    /// <summary>Whether the document uses any HTML at all — lets the view skip the extra redraw that
+    /// keeps centred/right-aligned lines correct across a resize when nothing is aligned.</summary>
+    public bool HasAlignments => HtmlLines.Count > 0;
 
     /// <summary>Whether the caret sits inside [start,end] or any selection overlaps [start,end).</summary>
     public bool Intersects(int start, int end)

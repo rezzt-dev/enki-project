@@ -293,4 +293,72 @@ public class NoteExportRendererTests : IDisposable
         Assert.Contains("@page", html);
         Assert.Contains("<p>Cuerpo</p>", html);
     }
+
+    [Fact]
+    public void RenderBody_HtmlBlock_ExportsAsAlignedContainer()
+    {
+        var html = Body("<div align=\"center\">\nHola\n</div>");
+
+        // El align= de HTML4 se traduce a CSS: HTML5 ya no lo reconoce en <div>.
+        Assert.Contains("<div style=\"text-align:center\">", html);
+        Assert.Contains("<p>Hola</p>", html);
+        Assert.Contains("</div>", html);
+        // El contenedor es un bloque, no parte de un párrafo.
+        Assert.DoesNotContain("<p><div", html);
+    }
+
+    [Fact]
+    public void RenderBody_SingleLineHtmlBlock_KeepsItsText()
+    {
+        var html = Body("<p align=\"justify\">Un texto justificado</p>");
+
+        Assert.Contains("<p style=\"text-align:justify\">Un texto justificado</p>", html);
+    }
+
+    [Fact]
+    public void RenderBody_InlineHtmlTags_PassThrough()
+    {
+        var html = Body("hola <b>mundo</b> y <mark>fin</mark>");
+
+        Assert.Contains("hola <b>mundo</b> y <mark>fin</mark>", html);
+    }
+
+    [Fact]
+    public void RenderBody_InlineTagClosingOnALaterLine_StaysBalancedPerBlock()
+    {
+        var html = Body("<i>uno\ndos\ntres</i>\ncuatro");
+
+        // Cada línea se cierra sola: un <i> sin cerrar no sobrevive al </p> del navegador, así que la
+        // cursiva se reabre línea a línea hasta el </i> real y no se derrama sobre "cuatro".
+        Assert.Contains("<i>uno</i>", html);
+        Assert.Contains("<i>dos</i>", html);
+        Assert.Contains("<i>tres</i>", html);
+        Assert.Contains("cuatro</p>", html);
+        Assert.DoesNotContain("<i>cuatro", html);
+    }
+
+    [Fact]
+    public void RenderBody_HtmlAttributes_AreDropped()
+    {
+        var html = Body("<div align=\"right\" onclick=\"alert(1)\">texto</div>");
+
+        Assert.DoesNotContain("onclick", html);
+        Assert.Contains("<div style=\"text-align:right\">", html);
+    }
+
+    [Fact]
+    public void RenderBody_HtmlInsideCodeFence_StaysEscaped()
+    {
+        var html = Body("```html\n<div align=\"center\">\n```");
+
+        Assert.Contains("&lt;div align=&quot;center&quot;&gt;", html);
+    }
+
+    [Fact]
+    public void RenderBody_UnknownTag_IsEscapedLikeAnyOtherText()
+    {
+        var html = Body("un <cualquiercosa> suelto");
+
+        Assert.Contains("&lt;cualquiercosa&gt;", html);
+    }
 }

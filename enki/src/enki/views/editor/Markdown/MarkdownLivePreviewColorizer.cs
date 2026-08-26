@@ -88,37 +88,26 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
 
         foreach (var span in model.Spans)
         {
+            // An HTML tag revealed by the caret reads as markup, not as content: muting it keeps the
+            // line's real text the thing that stands out while it is being edited.
+            if (span.Kind == MdSpanKind.HtmlTag)
+            {
+                SetForeground(span.Start, span.End, _style.TextMuted);
+                continue;
+            }
+
             if (_state.Intersects(span.Start, span.End)) continue;
 
             switch (span.Kind)
             {
                 case MdSpanKind.Bold:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.Bold)));
-                    break;
                 case MdSpanKind.Italic:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic)));
-                    break;
                 case MdSpanKind.BoldItalic:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic, FontWeight.Bold)));
-                    break;
+                case MdSpanKind.Underline:
                 case MdSpanKind.Strikethrough:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTextDecorations(TextDecorations.Strikethrough));
-                    SetForeground(span.ContentStart, span.ContentEnd, _style.TextMuted);
-                    break;
                 case MdSpanKind.InlineCode:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                    {
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily));
-                        el.BackgroundBrush = _style.CodeInlineBackground;
-                    });
-                    SetForeground(span.ContentStart, span.ContentEnd, _style.Accent);
-                    break;
                 case MdSpanKind.Highlight:
-                    Safe(span.ContentStart, span.ContentEnd, el => el.BackgroundBrush = _style.HighlightBackground);
+                    ApplyInlineStyle(span.Kind, span.ContentStart, span.ContentEnd);
                     break;
                 case MdSpanKind.Link:
                     Safe(span.ContentStart, span.ContentEnd, el =>
@@ -142,6 +131,55 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                     break;
                 }
             }
+        }
+
+        // HTML inline formatting (<b>, <em>, <mark>…). Unlike a Markdown span it stays styled while the
+        // caret is inside it: the tags around it are concealed on their own, so there is no raw marker to
+        // fall back to and dropping the style would just make the text flicker as the caret passes through.
+        var html = _state.GetHtml(line.LineNumber);
+        foreach (var (start, end, kind) in MarkdownHtmlParser.BuildStyleRanges(
+                     model.HtmlTags, line.Offset, line.EndOffset, html.OpenInlineTags))
+        {
+            ApplyInlineStyle(kind, start, end);
+        }
+    }
+
+    /// <summary>Paints one inline style over [start,end) — shared by the Markdown spans and by the HTML
+    /// tags that mean the same thing (<c>&lt;b&gt;</c> = <c>**…**</c>), so the two can never drift apart.</summary>
+    private void ApplyInlineStyle(MdSpanKind kind, int start, int end)
+    {
+        switch (kind)
+        {
+            case MdSpanKind.Bold:
+                Safe(start, end, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.Bold)));
+                break;
+            case MdSpanKind.Italic:
+                Safe(start, end, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic)));
+                break;
+            case MdSpanKind.BoldItalic:
+                Safe(start, end, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic, FontWeight.Bold)));
+                break;
+            case MdSpanKind.Underline:
+                Safe(start, end, el => el.TextRunProperties.SetTextDecorations(TextDecorations.Underline));
+                break;
+            case MdSpanKind.Strikethrough:
+                Safe(start, end, el => el.TextRunProperties.SetTextDecorations(TextDecorations.Strikethrough));
+                SetForeground(start, end, _style.TextMuted);
+                break;
+            case MdSpanKind.InlineCode:
+                Safe(start, end, el =>
+                {
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily));
+                    el.BackgroundBrush = _style.CodeInlineBackground;
+                });
+                SetForeground(start, end, _style.Accent);
+                break;
+            case MdSpanKind.Highlight:
+                Safe(start, end, el => el.BackgroundBrush = _style.HighlightBackground);
+                break;
         }
     }
 

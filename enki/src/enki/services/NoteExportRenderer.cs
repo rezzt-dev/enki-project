@@ -76,6 +76,10 @@ public static class NoteExportRenderer
         if (text.Length == 0) return string.Empty;
 
         var fences = MarkdownLineParser.ComputeFences(text);
+        // Contexto HTML por línea: qué etiquetas en línea dejó abiertas una línea anterior. Un
+        // <i> que cierra tres líneas más abajo tiene que seguir en cursiva aquí igual que en el editor,
+        // y cada bloque exportado (<p>, <li>, <h2>…) debe salir balanceado por sí mismo.
+        var htmlStates = MarkdownHtmlParser.ComputeLineStates(text, fences);
         var lines = text.Split('\n');
 
         // Offsets absolutos de cada línea, precomputados una sola vez: el parser trabaja con posiciones
@@ -96,6 +100,9 @@ public static class NoteExportRenderer
         }
 
         bool IsCodeLine(int i) => fences.TryGetValue(i + 1, out var fence) && fence.IsCode;
+
+        IReadOnlyList<string> OpenTags(int i) =>
+            htmlStates.TryGetValue(i + 1, out var state) ? state.OpenInlineTags : HtmlLineState.Empty.OpenInlineTags;
 
         var sb = new StringBuilder(text.Length * 2);
         var inCode = false;
@@ -132,11 +139,21 @@ public static class NoteExportRenderer
 
             var parsed = ParseLine(i);
 
+            // Línea con un contenedor HTML ("<div align=\"center\">", suelto o envolviendo su propio
+            // texto): se vuelca tal cual, sin envolverla en un <p> — es un bloque por sí misma, y el
+            // navegador hereda su text-align a todo lo que quede dentro.
+            if (parsed.Kind == MdBlockKind.Paragraph && MarkdownHtmlParser.HasBlockTag(parsed.HtmlTags))
+            {
+                sb.Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory)).Append('\n');
+                i++;
+                continue;
+            }
+
             switch (parsed.Kind)
             {
                 case MdBlockKind.Heading:
                     sb.Append("<h").Append(parsed.HeadingLevel).Append('>')
-                        .Append(RenderInline(lines[i], lineOffsets[i], parsed.ContentStart, parsed.Spans, noteDirectory))
+                        .Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory))
                         .Append("</h").Append(parsed.HeadingLevel).Append(">\n");
                     i++;
                     break;
@@ -155,7 +172,7 @@ public static class NoteExportRenderer
                             var line = ParseLine(i);
                             if (line.Kind != MdBlockKind.Blockquote) break;
                             if (!first) sb.Append("<br/>\n");
-                            sb.Append(RenderInline(lines[i], lineOffsets[i], line.ContentStart, line.Spans, noteDirectory));
+                            sb.Append(RenderInline(lines[i], lineOffsets[i], line, OpenTags(i), noteDirectory));
                             first = false;
                             i++;
                         }
@@ -166,7 +183,7 @@ public static class NoteExportRenderer
                 case MdBlockKind.BulletList:
                 case MdBlockKind.TaskList:
                 case MdBlockKind.OrderedList:
-                    i = EmitList(lines, lineOffsets, ParseLine, IsCodeLine, i, parsed, sb, noteDirectory);
+                    i = EmitList(lines, lineOffsets, ParseLine, IsCodeLine, OpenTags, i, parsed, sb, noteDirectory);
                     break;
 
                 default:
@@ -183,8 +200,9 @@ public static class NoteExportRenderer
                         {
                             var line = ParseLine(i);
                             if (line.Kind != MdBlockKind.Paragraph) break;
+                            if (MarkdownHtmlParser.HasBlockTag(line.HtmlTags)) break;
                             if (!first) sb.Append("<br/>\n");
-                            sb.Append(RenderInline(lines[i], lineOffsets[i], line.ContentStart, line.Spans, noteDirectory));
+                            sb.Append(RenderInline(lines[i], lineOffsets[i], line, OpenTags(i), noteDirectory));
                             first = false;
                             i++;
                         }
@@ -205,7 +223,7 @@ public static class NoteExportRenderer
     /// exportación tampoco lo hace — coherente con lo que el usuario ve al editar. Devuelve el índice de
     /// la primera línea no consumida.</summary>
     private static int EmitList(string[] lines, int[] lineOffsets, Func<int, MdLine> parseLine, Func<int, bool> isCodeLine,
-        int startIndex, MdLine firstParsed, StringBuilder sb, string? noteDirectory)
+        Func<int, IReadOnlyList<string>> openTags, int startIndex, MdLine firstParsed, StringBuilder sb, string? noteDirectory)
     {
         var kind = firstParsed.Kind;
         if (kind == MdBlockKind.OrderedList)
@@ -234,13 +252,13 @@ public static class NoteExportRenderer
                 sb.Append("<li class=\"task\"><input type=\"checkbox\" disabled")
                     .Append(line.TaskChecked ? " checked" : string.Empty)
                     .Append("/> ")
-                    .Append(RenderInline(lines[i], lineOffsets[i], line.ContentStart, line.Spans, noteDirectory))
+                    .Append(RenderInline(lines[i], lineOffsets[i], line, openTags(i), noteDirectory))
                     .Append("</li>\n");
             }
             else
             {
                 sb.Append("<li>")
-                    .Append(RenderInline(lines[i], lineOffsets[i], line.ContentStart, line.Spans, noteDirectory))
+                    .Append(RenderInline(lines[i], lineOffsets[i], line, openTags(i), noteDirectory))
                     .Append("</li>\n");
             }
             i++;
@@ -254,12 +272,18 @@ public static class NoteExportRenderer
     /// inline del parser: escapa el texto llano y emite las etiquetas de cada span. Los spans llegan en
     /// orden y sin solaparse (el parser nunca anida — <c>**negrita _cursiva_**</c> deja los marcadores
     /// internos como texto literal, igual que el live preview), así que basta un recorrido lineal.</summary>
-    private static string RenderInline(string lineText, int lineOffset, int contentStart, List<MdSpan> spans, string? noteDirectory)
+    private static string RenderInline(string lineText, int lineOffset, MdLine model,
+        IReadOnlyList<string> openAtLineStart, string? noteDirectory)
     {
         var sb = new StringBuilder(lineText.Length * 2);
-        var pos = Math.Max(contentStart, lineOffset);
+        var pos = Math.Max(model.ContentStart, lineOffset);
 
-        foreach (var span in spans)
+        // Las etiquetas en línea que vengan abiertas de una línea previa se reabren aquí, y las que esta
+        // línea deje abiertas se cierran al final: cada bloque HTML que emitimos es autónomo, y un
+        // navegador no arrastra un <i> sin cerrar más allá del </p> que lo contiene.
+        foreach (var name in openAtLineStart) sb.Append('<').Append(name).Append('>');
+
+        foreach (var span in model.Spans)
         {
             if (span.Start < pos) continue;
 
@@ -271,15 +295,20 @@ public static class NoteExportRenderer
                 spanStart--;
 
             AppendPlainText(sb, lineText, pos - lineOffset, spanStart - lineOffset);
-            AppendSpan(sb, span, lineText, lineOffset, noteDirectory);
+            AppendSpan(sb, span, model, lineText, lineOffset, noteDirectory);
             pos = span.End;
         }
 
         AppendPlainText(sb, lineText, pos - lineOffset, lineText.Length);
+
+        var stillOpen = new List<string>(openAtLineStart);
+        MarkdownHtmlParser.ApplyInlineTags(stillOpen, model.HtmlTags);
+        for (var i = stillOpen.Count - 1; i >= 0; i--) sb.Append("</").Append(stillOpen[i]).Append('>');
+
         return sb.ToString();
     }
 
-    private static void AppendSpan(StringBuilder sb, MdSpan span, string lineText, int lineOffset, string? noteDirectory)
+    private static void AppendSpan(StringBuilder sb, MdSpan span, MdLine model, string lineText, int lineOffset, string? noteDirectory)
     {
         var content = Slice(lineText, lineOffset, span.ContentStart, span.ContentEnd);
 
@@ -304,6 +333,13 @@ public static class NoteExportRenderer
             case MdSpanKind.Highlight:
                 sb.Append("<mark>").Append(EscapeText(content)).Append("</mark>");
                 break;
+            case MdSpanKind.HtmlTag:
+                // Las etiquetas HTML reconocidas del editor pasan tal cual al documento exportado — es
+                // la única forma de que un <div align="justify"> siga alineando aquí lo mismo que allí —
+                // pero saneadas (ver MarkdownHtmlParser.SanitizedTag): el contenido de una nota no puede
+                // colar atributos arbitrarios en el HTML resultante.
+                sb.Append(SanitizedTagAt(model, span.Start));
+                break;
             case MdSpanKind.WikiLink:
                 // Un wikilink no resuelve a nada fuera del vault — en el documento estático queda como
                 // texto destacado (subrayado discontinuo, el "enlace interno" del editor), no como un
@@ -317,6 +353,15 @@ public static class NoteExportRenderer
                 else AppendLink(sb, span, content);
                 break;
         }
+    }
+
+    private static string SanitizedTagAt(MdLine model, int start)
+    {
+        foreach (var tag in model.HtmlTags)
+        {
+            if (tag.Start == start) return MarkdownHtmlParser.SanitizedTag(tag);
+        }
+        return string.Empty;
     }
 
     private static void AppendLink(StringBuilder sb, MdSpan span, string text)

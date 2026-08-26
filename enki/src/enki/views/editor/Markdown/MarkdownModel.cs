@@ -24,6 +24,15 @@ public enum MdSpanKind
     Highlight,
     Link,
 
+    /// <summary>Underline — has no Markdown marker of its own; produced only by the HTML
+    /// <c>&lt;u&gt;</c>/<c>&lt;ins&gt;</c> tags (see <see cref="MarkdownHtmlParser"/>).</summary>
+    Underline,
+
+    /// <summary>A recognized HTML tag (<c>&lt;div align="center"&gt;</c>, <c>&lt;b&gt;</c>, <c>&lt;/div&gt;</c>…),
+    /// concealed exactly like a Markdown marker: the span covers the tag itself and has no content, so the
+    /// live preview hides it whenever the caret is elsewhere and the exporter emits it as real HTML.</summary>
+    HtmlTag,
+
     /// <summary>Obsidian-style <c>[[Note]]</c> / <c>[[Note|Alias]]</c> reference — same concealment/click
     /// mechanics as <see cref="Link"/>, but resolved against the vault's notes instead of opened as a
     /// URL.</summary>
@@ -66,6 +75,11 @@ public sealed class MdLine
     public string? FenceLanguage { get; set; }
 
     public List<MdSpan> Spans { get; } = new();
+
+    /// <summary>Recognized HTML tags found on the line, in document order — the same tags that also appear
+    /// in <see cref="Spans"/> as <see cref="MdSpanKind.HtmlTag"/>, kept apart so consumers can reason about
+    /// them as tags (pairing, alignment, export) instead of as opaque concealed ranges.</summary>
+    public List<HtmlTagToken> HtmlTags { get; } = new();
 }
 
 /// <summary>Fence state for one document line, computed once per document over the whole text.</summary>

@@ -7,6 +7,34 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**HTML simple en el editor de notas**: el editor vuelve a interpretar un subconjunto fijo de HTML en vez
+de imprimirlo como texto plano, para poder centrar, alinear a la derecha o justificar un bloque de la nota:
+
+- Contenedores de bloque `<div>`, `<p>` y `<center>` con `align="left|center|right|justify"` (o el
+  equivalente `style="text-align: …"`). La alineación se resuelve para todo el documento, así que se aplica
+  a cada línea que el contenedor envuelva, no solo a la que lleva la etiqueta, y los bloques anidados
+  restauran la alineación del que los contiene al cerrarse.
+- Formato en línea: `<b>`/`<strong>`, `<i>`/`<em>`, `<u>`/`<ins>`, `<s>`/`<strike>`/`<del>`, `<mark>`,
+  `<code>`, `<span>` y `<br>`, con el mismo aspecto que su equivalente Markdown (una negrita anidada dentro
+  de una cursiva se pinta como ambas, no como la última que cierre).
+- Los cierres cuentan igual que las aperturas, incluso a varias líneas de distancia: un `<i>` que abre en
+  una línea sigue en cursiva hasta el `</i>`, esté donde esté, y un `</b>` cierra también lo que quedara
+  abierto dentro de él (`<b><i>x</b>` acaba ahí, no arrastra la cursiva al resto de la nota). Un cierre sin
+  apertura se ignora, y la exportación reabre y cierra cada etiqueta bloque a bloque para que el HTML
+  resultante quede balanceado.
+- Las etiquetas se ocultan como cualquier otro marcador Markdown y reaparecen —atenuadas— cuando el cursor
+  entra en ellas. Lo que no está en esa lista (`<cualquiercosa>`), lo que va dentro de comillas invertidas
+  o de un bloque ``` y lo escapado con `\<div>` se sigue viendo literal.
+- La exportación a HTML/PDF emite los mismos contenedores con su `text-align` (HTML5 ya no reconoce el
+  atributo `align`), saneados: de la etiqueta original solo sobrevive la alineación, nunca atributos
+  arbitrarios de la nota.
+- La alineación funciona fila visual a fila visual, no solo en la primera: un párrafo largo que se parta en
+  cuatro filas se centra (o se pega a la derecha) fila por fila, y `justify` estira los espacios de cada
+  fila hasta el borde de la columna dejando la última en bandera, igual que un navegador. AvaloniaEdit da
+  la misma alineación (izquierda) a todas las filas visuales y no expone ningún ajuste, así que el editor
+  lee del propio motor de texto dónde partió cada fila y cuánto mide, y reserva el hueco que falta; el
+  cálculo converge en una pasada porque el hueco que añade nunca puede mover el corte de fila.
+
 **Dashboard 100% personalizable**: la organización "Personalizada" pasa de repartir las secciones en un
 `UniformGrid` de N columnas (auto-relleno por orden de lista, sin control real) a un editor de rejilla en
 Ajustes › Dashboard donde cada sección tiene su celda y su tamaño:

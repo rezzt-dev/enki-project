@@ -64,7 +64,7 @@ public partial class EditorView : UserControl
             textView.Redraw();
         };
         textView.LineTransformers.Add(_colorizer);
-        textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
+        textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
 
         // Let the fenced code block's box bleed past the text column - see UpdateCodeBlockBleed().
@@ -258,10 +258,16 @@ public partial class EditorView : UserControl
         textArea.TextView.Redraw();
     }
 
+    /// <summary>Recomputes the two pieces of live-preview state that can only be derived from the whole
+    /// document — where the fenced code blocks are, and the HTML context of each line (which block
+    /// container aligns it, which inline tags an earlier line left open). Both are debounced together off
+    /// the same timer: they walk the same text and neither can be answered from the single line being
+    /// drawn.</summary>
     private void RecomputeFences()
     {
         var text = Editor.Text ?? string.Empty;
         _livePreviewState.Fences = MarkdownLineParser.ComputeFences(text);
+        _livePreviewState.HtmlLines = MarkdownHtmlParser.ComputeLineStates(text, _livePreviewState.Fences);
     }
 
     /// <summary>Fires whenever the tab strip switches which note is active (NotesViewModel.ActiveEditor).

@@ -69,6 +69,16 @@ public static class MarkdownLineParser
     public static MdLine Parse(string text, int lineOffset, FenceInfo fence)
     {
         var model = new MdLine();
+        // Tags first: the Markdown scan below has to know where they are to step over them, and inside a
+        // fenced code block there is no markup at all — everything there is literal sample text.
+        if (!fence.IsCode) model.HtmlTags.AddRange(MarkdownHtmlParser.ParseTags(text, lineOffset));
+        ParseInto(model, text, lineOffset, fence);
+        AddHtmlTagSpans(model);
+        return model;
+    }
+
+    private static void ParseInto(MdLine model, string text, int lineOffset, FenceInfo fence)
+    {
         var n = text.Length;
 
         if (fence.IsDelimiter)
@@ -78,7 +88,7 @@ public static class MarkdownLineParser
             model.MarkerStart = lineOffset;
             model.MarkerEnd = lineOffset + n;
             model.ContentStart = model.MarkerEnd;
-            return model;
+            return;
         }
 
         if (fence.IsInside)
@@ -88,7 +98,7 @@ public static class MarkdownLineParser
             model.MarkerStart = lineOffset;
             model.MarkerEnd = lineOffset;
             model.ContentStart = lineOffset;
-            return model;
+            return;
         }
 
         var indent = 0;
@@ -114,7 +124,7 @@ public static class MarkdownLineParser
                 model.MarkerEnd = lineOffset + markerEnd;
                 model.ContentStart = lineOffset + contentStart;
                 ScanInline(model, text, contentStart, n, lineOffset);
-                return model;
+                return;
             }
         }
 
@@ -125,7 +135,7 @@ public static class MarkdownLineParser
             model.MarkerStart = lineOffset + indent;
             model.MarkerEnd = lineOffset + n;
             model.ContentStart = model.MarkerEnd;
-            return model;
+            return;
         }
 
         // Blockquote.
@@ -138,7 +148,7 @@ public static class MarkdownLineParser
             model.MarkerEnd = lineOffset + j;
             model.ContentStart = lineOffset + j;
             ScanInline(model, text, j, n, lineOffset);
-            return model;
+            return;
         }
 
         // Bullet / task list. No indent cap (unlike headings/rules/blockquotes above, which keep the
@@ -168,7 +178,7 @@ public static class MarkdownLineParser
                 while (contentStart < n && (text[contentStart] == ' ' || text[contentStart] == '\t')) contentStart++;
                 model.ContentStart = lineOffset + contentStart;
                 ScanInline(model, text, contentStart, n, lineOffset);
-                return model;
+                return;
             }
 
             model.Kind = MdBlockKind.BulletList;
@@ -181,7 +191,7 @@ public static class MarkdownLineParser
             model.MarkerEnd = lineOffset + contentStartBullet;
             model.ContentStart = lineOffset + contentStartBullet;
             ScanInline(model, text, contentStartBullet, n, lineOffset);
-            return model;
+            return;
         }
 
         // Ordered list. Same no-cap reasoning as the bullet/task branch above.
@@ -199,7 +209,7 @@ public static class MarkdownLineParser
             model.MarkerEnd = lineOffset + markerEnd;
             model.ContentStart = lineOffset + contentStart;
             ScanInline(model, text, contentStart, n, lineOffset);
-            return model;
+            return;
         }
 
         model.Kind = MdBlockKind.Paragraph;
@@ -207,7 +217,6 @@ public static class MarkdownLineParser
         model.MarkerEnd = lineOffset;
         model.ContentStart = lineOffset;
         ScanInline(model, text, 0, n, lineOffset);
-        return model;
     }
 
     private static void ScanInline(MdLine model, string text, int from, int to, int lineOffset)
@@ -215,6 +224,15 @@ public static class MarkdownLineParser
         var i = from;
         while (i < to)
         {
+            // A recognized HTML tag is opaque to the Markdown scanner: whatever punctuation its
+            // attributes contain ("<div style=\"a*b\">") is markup, not emphasis, and a span crossing
+            // into the tag would fight with the concealment that hides the tag as a whole.
+            if (text[i] == '<' && SkipTag(model, lineOffset + i) is { } tagEnd)
+            {
+                i = tagEnd - lineOffset;
+                continue;
+            }
+
             var c = text[i];
 
             if (c == '\\' && i + 1 < to)
@@ -375,6 +393,55 @@ public static class MarkdownLineParser
 
             i++;
         }
+    }
+
+    /// <summary>End offset of the recognized HTML tag starting exactly at <paramref name="offset"/>, or
+    /// null when no tag starts there.</summary>
+    private static int? SkipTag(MdLine model, int offset)
+    {
+        foreach (var tag in model.HtmlTags)
+        {
+            if (tag.Start == offset) return tag.End;
+        }
+        return null;
+    }
+
+    /// <summary>Turns the line's recognized HTML tags into concealable <see cref="MdSpanKind.HtmlTag"/>
+    /// spans. Runs after <see cref="ScanInline"/> so a tag written inside inline code (<c>`&lt;div&gt;`</c>)
+    /// can be dropped: there it is quoted sample text the user wants to see verbatim, not markup.</summary>
+    private static void AddHtmlTagSpans(MdLine model)
+    {
+        if (model.HtmlTags.Count == 0) return;
+
+        for (var i = model.HtmlTags.Count - 1; i >= 0; i--)
+        {
+            var tag = model.HtmlTags[i];
+            if (IsInsideInlineCode(model, tag))
+            {
+                model.HtmlTags.RemoveAt(i);
+                continue;
+            }
+
+            model.Spans.Add(new MdSpan
+            {
+                Kind = MdSpanKind.HtmlTag,
+                Start = tag.Start,
+                End = tag.End,
+                ContentStart = tag.End,
+                ContentEnd = tag.End
+            });
+        }
+
+        model.Spans.Sort((a, b) => a.Start.CompareTo(b.Start));
+    }
+
+    private static bool IsInsideInlineCode(MdLine model, HtmlTagToken tag)
+    {
+        foreach (var span in model.Spans)
+        {
+            if (span.Kind == MdSpanKind.InlineCode && span.Start < tag.End && span.End > tag.Start) return true;
+        }
+        return false;
     }
 
     private static int FindClosingMarker(string text, int from, int to, string marker)

@@ -35,7 +35,7 @@ public partial class SkillEditorView : UserControl
         var textView = textArea.TextView;
 
         textView.LineTransformers.Add(new MarkdownLivePreviewColorizer(_livePreviewState, _style));
-        textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
+        textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
 
         textView.CurrentLineBackground = ResolveCurrentLineBrush();
@@ -97,7 +97,12 @@ public partial class SkillEditorView : UserControl
         textArea.TextView.Redraw();
     }
 
-    private void RecomputeFences() => _livePreviewState.Fences = MarkdownLineParser.ComputeFences(Editor.Text ?? string.Empty);
+    private void RecomputeFences()
+    {
+        var text = Editor.Text ?? string.Empty;
+        _livePreviewState.Fences = MarkdownLineParser.ComputeFences(text);
+        _livePreviewState.HtmlLines = MarkdownHtmlParser.ComputeLineStates(text, _livePreviewState.Fences);
+    }
 
     /// <summary>Cada vez que <c>SkillsView</c> abre una skill distinta, este control se reutiliza con un
     /// nuevo <see cref="SkillEditorViewModel"/> como DataContext — a diferencia de EditorView no hace

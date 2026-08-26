@@ -234,4 +234,69 @@ public class MarkdownLineParserTests
         Assert.Equal(MdSpanKind.Italic, span.Kind);
         Assert.Equal("fitt", text[span.ContentStart..span.ContentEnd]);
     }
+
+    [Fact]
+    public void Parse_HtmlTags_BecomeConcealableSpans()
+    {
+        var text = "<div align=\"center\">Hola</div>";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(2, model.HtmlTags.Count);
+        Assert.Equal(2, model.Spans.Count);
+        Assert.All(model.Spans, span => Assert.Equal(MdSpanKind.HtmlTag, span.Kind));
+        // Un span de etiqueta no tiene contenido: se oculta entero, como cualquier marcador Markdown.
+        Assert.All(model.Spans, span => Assert.Equal(span.End, span.ContentStart));
+        Assert.Equal("<div align=\"center\">", text[model.Spans[0].Start..model.Spans[0].End]);
+        Assert.Equal("</div>", text[model.Spans[1].Start..model.Spans[1].End]);
+    }
+
+    [Fact]
+    public void Parse_MarkdownInsideAnHtmlBlock_StillParses()
+    {
+        var text = "<div align=\"center\">**negrita**</div>";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var bold = Assert.Single(model.Spans, span => span.Kind == MdSpanKind.Bold);
+        Assert.Equal("negrita", text[bold.ContentStart..bold.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_HtmlInsideInlineCode_StaysLiteral()
+    {
+        // `<div>` entre comillas invertidas es texto de ejemplo: ocultarlo dejaría la línea vacía.
+        var text = "usa `<div>` para agrupar";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Empty(model.HtmlTags);
+        Assert.DoesNotContain(model.Spans, span => span.Kind == MdSpanKind.HtmlTag);
+    }
+
+    [Fact]
+    public void Parse_HtmlInsideCodeFence_IsNotMarkup()
+    {
+        var model = MarkdownLineParser.Parse("<div align=\"center\">", 0, new FenceInfo(isDelimiter: false, isInside: true, language: "html"));
+
+        Assert.Empty(model.HtmlTags);
+        Assert.Equal(MdBlockKind.CodeFence, model.Kind);
+    }
+
+    [Fact]
+    public void Parse_UnknownTag_IsPlainText()
+    {
+        var model = MarkdownLineParser.Parse("un <cualquiercosa> suelto", 0, NoFence);
+
+        Assert.Empty(model.HtmlTags);
+        Assert.Empty(model.Spans);
+    }
+
+    [Fact]
+    public void Parse_AttributePunctuation_DoesNotOpenEmphasis()
+    {
+        // El '*' vive dentro de la etiqueta: es markup, no una cursiva a medio abrir.
+        var model = MarkdownLineParser.Parse("<div style=\"a*b\">texto *cursiva* fin</div>", 0, NoFence);
+
+        var italic = Assert.Single(model.Spans, span => span.Kind == MdSpanKind.Italic);
+        Assert.Equal(2, model.HtmlTags.Count);
+        Assert.True(italic.Start > model.HtmlTags[0].End);
+    }
 }
