@@ -4380,4 +4380,67 @@ Happy writing.</value>
   <data name="Statistics_Empty_Tasks" xml:space="preserve">
     <value>No cards on the board yet.</value>
   </data>
+  <data name="Notes_SimpleView_Tree_Tooltip" xml:space="preserve">
+    <value>Note explorer</value>
+  </data>
+  <data name="Notes_SimpleView_Search_Tooltip" xml:space="preserve">
+    <value>Search notes in this session</value>
+  </data>
+  <data name="Notes_SimpleView_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Hide side panel</value>
+  </data>
+  <data name="Notes_SimpleView_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Show side panel</value>
+  </data>
+  <data name="Notes_SimpleView_NewNote_Tooltip" xml:space="preserve">
+    <value>New note in the session root</value>
+  </data>
+  <data name="Notes_SimpleView_NewFolder_Tooltip" xml:space="preserve">
+    <value>New folder in the session root</value>
+  </data>
+  <data name="Notes_SimpleView_DailyNote_Tooltip" xml:space="preserve">
+    <value>Daily note</value>
+  </data>
+  <data name="Notes_SimpleView_Collapse_Tooltip" xml:space="preserve">
+    <value>Collapse all folders</value>
+  </data>
+  <data name="Notes_SimpleView_Session_Tooltip" xml:space="preserve">
+    <value>Switch session</value>
+  </data>
+  <data name="Notes_SimpleView_SearchPlaceholder" xml:space="preserve">
+    <value>Search in this session…</value>
+  </data>
+  <data name="Notes_SimpleView_SearchEmpty" xml:space="preserve">
+    <value>No notes match that search.</value>
+  </data>
+  <data name="Notes_SimpleView_EmptyTree" xml:space="preserve">
+    <value>This session has no notes or folders yet.</value>
+  </data>
+  <data name="Notes_SimpleView_NoNoteOpen" xml:space="preserve">
+    <value>No note open. Pick one from the side panel, or create a new one.</value>
+  </data>
+  <data name="Notes_SimpleView_NewNoteInFolderMenuItem" xml:space="preserve">
+    <value>New note here</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Title" xml:space="preserve">
+    <value>Editor view</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Description" xml:space="preserve">
+    <value>How the Notes page is laid out. The choice is remembered between sessions and applies to notes that are already open.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Full" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple" xml:space="preserve">
+    <value>Simplified</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Full_Description" xml:space="preserve">
+    <value>Front page with the card grid, folder panel and tag filter, plus the editor's formatting toolbar and its outline/links/stats side panel.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple_Description" xml:space="preserve">
+    <value>Side panel with a tree of folders and notes, and the editor with its tabs on the right. Everything else stays out of the way.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple_Omissions" xml:space="preserve">
+    <value>Deliberately left out: the formatting toolbar and the outline/links/stats side panel.</value>
+  </data>
 </root>

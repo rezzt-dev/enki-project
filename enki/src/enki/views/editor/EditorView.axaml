@@ -12,14 +12,24 @@
              x:Class="enki.Views.EditorView"
              x:DataType="vm:EditorViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*" Margin="36,26,36,26">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="{Binding RootMargin}">
 
     <!-- Header: título a la izquierda, metadatos/acciones a la derecha en una sola fila. Oculta por
          completo en modo enfoque/zen (propuesta 7) — junto con la barra de formato y el panel lateral,
          es lo que deja "solo el texto centrado" que pide esa propuesta. -->
-    <Grid x:Name="EditorHeader" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,20" IsVisible="{Binding !IsZenMode}">
-      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+    <Grid x:Name="EditorHeader" Grid.Row="0" Margin="{Binding HeaderMargin}" IsVisible="{Binding !IsZenMode}">
+      <!-- Columna 0 elástica y columnas 1-2 al tamaño de su contenido: lo que cede espacio al estrechar
+           el editor es el título —que se recorta y sigue estando entero en la pestaña— y no las acciones,
+           que dejarían de poder pulsarse. -->
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MinWidth="80" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center"
+                  ClipToBounds="True" Margin="0,0,12,0">
         <Button Classes="icon-btn" Command="{Binding BackCommand}"
+                IsVisible="{Binding ShowFullViewChrome}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_Back_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_Back_Tooltip}">
           <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
@@ -31,7 +41,8 @@
              keystroke while typing a new title, hammering disk I/O and reloading the note grid mid-word.
              "ghost title-edit" layers a rename-specific affordance on top of the chrome-less ghost base
              (§ Styles.axaml) — a hairline underline that only shows on hover/focus. -->
-        <TextBox Classes="ghost title-edit" FontSize="24" FontWeight="Bold" LetterSpacing="-0.5"
+        <TextBox Classes="ghost title-edit" FontSize="{Binding TitleFontSize}" FontWeight="Bold"
+                 LetterSpacing="-0.5"
                  Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                  PlaceholderText="{loc:Tr Editor_Title_Placeholder}" VerticalAlignment="Center"
                  AutomationProperties.Name="{loc:Tr Editor_Title_Placeholder}"
@@ -39,32 +50,46 @@
                  KeyDown="OnTitleKeyDown" GotFocus="OnTitleGotFocus" />
       </StackPanel>
 
-      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-        <!-- Etiquetas con icono y fondo de tarjeta para agrupar visualmente -->
-        <Border Classes="card" Padding="8,5" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="TagOutline" Width="14" Height="14"
-                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-            <TextBox Classes="search tag-input"
-                     Width="180" VerticalAlignment="Center"
-                     Text="{Binding TagsInput, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                     PlaceholderText="{loc:Tr Editor_Tags_Placeholder}"
-                     AutomationProperties.Name="{loc:Tr Editor_Tags_Placeholder}"
-                     KeyDown="OnTagsKeyDown" LostFocus="OnTagsLostFocus" />
-          </StackPanel>
-        </Border>
+      <!-- Etiquetas con icono y fondo de tarjeta para agrupar visualmente. Columna propia (ya no dentro
+           del grupo de acciones) con un ancho acotado por los dos lados: el MinWidth garantiza que siga
+           siendo una caja en la que se puede escribir por estrecho que vaya el editor, y el MaxWidth que
+           no se estire a lo largo de media cabecera en una ventana ancha. Fuera de la vista simplificada
+           (ver ShowFullViewChrome): allí la cabecera se queda en el nombre de la nota y las acciones. -->
+      <Border x:Name="TagsBox" Grid.Column="1" Margin="12,0"
+              IsVisible="{Binding ShowFullViewChrome}"
+              Classes="card" Padding="8,5" VerticalAlignment="Center" HorizontalAlignment="Left"
+              MinWidth="150" MaxWidth="240">
+        <Grid ColumnDefinitions="Auto,*">
+          <mi:MaterialIcon Grid.Column="0" Kind="TagOutline" Width="14" Height="14" Margin="0,0,8,0"
+                           Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" Classes="search tag-input"
+                   MinWidth="0" VerticalAlignment="Center"
+                   Text="{Binding TagsInput, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                   PlaceholderText="{loc:Tr Editor_Tags_Placeholder}"
+                   AutomationProperties.Name="{loc:Tr Editor_Tags_Placeholder}"
+                   KeyDown="OnTagsKeyDown" LostFocus="OnTagsLostFocus" />
+        </Grid>
+      </Border>
 
-        <!-- Indicador de guardado prominente (Fase 2 §2) -->
-        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <!-- Indicador de guardado prominente (Fase 2 §2). En la vista simplificada se queda solo el
+             icono: la pestaña ya lleva su propio punto de "sin guardar", y esos ~70px de etiqueta son la
+             diferencia entre que la cabecera quepa o no en un panel de editor estrecho. -->
+        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding SaveStatus}">
           <mi:MaterialIcon Width="14" Height="14" Kind="CheckCircleOutline" Classes="severity-icon success"
                            IsVisible="{Binding ShowSavedIcon}" />
           <mi:MaterialIcon Width="14" Height="14" Kind="CircleMedium" Classes="severity-icon warning"
                            IsVisible="{Binding !ShowSavedIcon}" />
           <TextBlock Text="{Binding SaveStatus, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" FontSize="11"
-                     VerticalAlignment="Center" />
+                     VerticalAlignment="Center" IsVisible="{Binding ShowFullViewChrome}" />
         </StackPanel>
 
+        <!-- Barra de formato y panel lateral no existen en la vista simplificada de Notas (Ajustes ›
+             Editor › Vista del editor), así que sus interruptores desaparecen con ellos en vez de
+             quedarse como botones que no hacen nada. -->
         <Button Classes="icon-btn" Classes.active="{Binding IsToolbarVisible}"
+                IsVisible="{Binding ShowFullViewChrome}"
                 Command="{Binding ToggleToolbarCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleToolbar_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleToolbar_Tooltip}">
@@ -72,6 +97,7 @@
         </Button>
 
         <Button Classes="icon-btn" Classes.active="{Binding IsSidePanelVisible}"
+                IsVisible="{Binding ShowFullViewChrome}"
                 Command="{Binding ToggleSidePanelCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleSidePanel_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleSidePanel_Tooltip}">

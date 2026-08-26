@@ -50,6 +50,15 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private string _editorFontFamily;
 
+    /// <summary>Vista simplificada de la página de Notas: árbol de carpetas y notas a la izquierda,
+    /// pestañas y editor a la derecha, sin barra de formato ni panel lateral de esquema/enlaces/
+    /// estadísticas. False deja la vista completa de siempre. Se guarda como el string
+    /// "Simple"/"Full" en <see cref="Models.AppSettings.NotesViewMode"/> —mismo criterio que
+    /// <see cref="Models.AppSettings.EditorColumnPosition"/>— y se refleja al vuelo en las notas ya
+    /// abiertas a través de <see cref="EditorPreferences.SimplifiedNotesView"/>.</summary>
+    [ObservableProperty]
+    private bool _isSimplifiedNotesView;
+
     partial void OnEditorFontSizeChanged(double value)
     {
         _settingsService.Settings.EditorFontSize = value;
@@ -108,6 +117,13 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.EditorSidePanelVisible = value;
         _settingsService.Save();
         EditorPreferences.SidePanelVisible = value;
+    }
+
+    partial void OnIsSimplifiedNotesViewChanged(bool value)
+    {
+        _settingsService.Settings.NotesViewMode = value ? "Simple" : "Full";
+        _settingsService.Save();
+        EditorPreferences.SimplifiedNotesView = value;
     }
 
     partial void OnEditorFontFamilyChanged(string value)

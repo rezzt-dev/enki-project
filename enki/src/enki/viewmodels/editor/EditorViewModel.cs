@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -123,7 +124,56 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// Border.Transitions there) — 0 collapses it and lets the editor column's "*" grid width claim the
     /// freed space, instead of the panel merely toggling IsVisible while the layout keeps reserving its
     /// fixed pixel width regardless.</summary>
-    public double SidePanelWidth => IsSidePanelVisible && !IsZenMode ? 361 : 0;
+    public double SidePanelWidth => IsSidePanelVisible && !IsZenMode && !IsSimplifiedView ? 361 : 0;
+
+    /// <summary>Vista simplificada de Notas (Ajustes › Editor › Vista del editor). Mirror de
+    /// <see cref="EditorPreferences.SimplifiedNotesView"/> —igual que <see cref="IsSidePanelVisible"/> lo es
+    /// de <see cref="EditorPreferences.SidePanelVisible"/>— resincronizado por EditorView en cada cambio de
+    /// pestaña o de preferencias (ver <see cref="ApplyToolbarGroupState"/>). Mientras está activa, la barra
+    /// de formato y el panel lateral de esquema/enlaces/estadísticas quedan fuera por definición: son
+    /// justamente las dos cosas que esa vista elimina, así que sus interruptores tampoco se muestran
+    /// (<see cref="ShowFullViewChrome"/>) — encenderlos no haría nada.</summary>
+    [ObservableProperty]
+    private bool _isSimplifiedView = EditorPreferences.SimplifiedNotesView;
+
+    /// <summary>Los adornos de cabecera que solo tienen sentido en la vista completa: los botones de
+    /// barra de formato y panel lateral (en la simplificada encenderían cosas que esa vista no tiene), la
+    /// etiqueta de texto del indicador de guardado (la pestaña ya lleva su punto de "sin guardar"), el
+    /// botón de volver (cierra esta pestaña, que allí es justo lo que hace la "x" de la propia pestaña) y
+    /// la caja de etiquetas. Lo que queda en la cabecera de la vista simplificada es el nombre de la nota
+    /// —en pequeño, ver <see cref="TitleFontSize"/>— y las acciones, para que todo el peso visual se lo
+    /// lleve el espacio de edición.</summary>
+    public bool ShowFullViewChrome => !IsSimplifiedView;
+
+    /// <summary>Tamaño del nombre de la nota en la cabecera. En la vista simplificada baja a un tamaño de
+    /// etiqueta: allí el nombre ya está en la pestaña, y un titular de 24px compitiendo con el texto va en
+    /// contra de lo único que esa vista quiere destacar, que es el espacio de edición.</summary>
+    public double TitleFontSize => IsSimplifiedView ? 13 : 24;
+
+    /// <summary>Separación entre la cabecera y el cuerpo de la nota. Con el título reducido y sin la caja
+    /// de etiquetas, la cabecera de la vista simplificada es una sola línea de iconos: mantener los 20px
+    /// de la vista completa dejaría un hueco desproporcionado sobre el texto.</summary>
+    public Thickness HeaderMargin => IsSimplifiedView
+        ? new Thickness(0, 0, 0, 10)
+        : new Thickness(0, 0, 0, 20);
+
+    /// <summary>Margen exterior del editor. En la vista simplificada la nota ya está enmarcada por el
+    /// panel lateral y la barra de pestañas, así que el aire de la vista completa (36px a los lados, que
+    /// allí separan la nota del borde de la ventana) se queda en un margen más ajustado que devuelve ese
+    /// espacio al texto.</summary>
+    public Thickness RootMargin => IsSimplifiedView
+        ? new Thickness(20, 16, 20, 20)
+        : new Thickness(36, 26, 36, 26);
+
+    partial void OnIsSimplifiedViewChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SidePanelWidth));
+        OnPropertyChanged(nameof(ShowFormattingToolbar));
+        OnPropertyChanged(nameof(ShowFullViewChrome));
+        OnPropertyChanged(nameof(RootMargin));
+        OnPropertyChanged(nameof(TitleFontSize));
+        OnPropertyChanged(nameof(HeaderMargin));
+    }
 
     /// <summary>Mirrors MainWindowViewModel.SidebarToggleIcon's chevron-swap convention for the app's
     /// left nav rail, flipped for this panel sitting on the right: pointing toward the edge the panel
@@ -174,7 +224,7 @@ public sealed partial class EditorViewModel : ViewModelBase
 
     /// <summary>Whether the formatting toolbar row should actually render — combines the user's own
     /// toggle (<see cref="IsToolbarVisible"/>) with zen mode, which hides it regardless.</summary>
-    public bool ShowFormattingToolbar => IsToolbarVisible && !IsZenMode;
+    public bool ShowFormattingToolbar => IsToolbarVisible && !IsZenMode && !IsSimplifiedView;
 
     /// <summary>Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — hides this
     /// tab's header, formatting toolbar, linked-cards row and side panel, leaving only the centered note
@@ -277,6 +327,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         IsToolbarInsertExpanded = EditorPreferences.ToolbarInsertExpanded;
         IsToolbarCodeExpanded = EditorPreferences.ToolbarCodeExpanded;
         IsZenMode = EditorPreferences.IsZenMode;
+        IsSimplifiedView = EditorPreferences.SimplifiedNotesView;
     }
 
     public EditorViewModel(VaultService vaultService, NoteFile note, Action onBack, Action onChanged,

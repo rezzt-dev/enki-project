@@ -205,6 +205,23 @@ public static class EditorPreferences
         }
     }
 
+    /// <summary>Vista simplificada de la página de Notas (Ajustes › Editor › Vista del editor): árbol de
+    /// carpetas y notas a la izquierda, pestañas y editor a la derecha, sin barra de formato ni panel
+    /// lateral de esquema/enlaces/estadísticas. Vive aquí, y no solo en <c>AppSettings</c>, por el mismo
+    /// motivo que <see cref="SidePanelVisible"/>: <c>NotesViewModel</c> y cada <c>EditorViewModel</c>
+    /// abierto la reflejan al vuelo cuando se cambia desde Ajustes, sin cerrar y reabrir la nota.</summary>
+    private static bool _simplifiedNotesView;
+    public static bool SimplifiedNotesView
+    {
+        get => _simplifiedNotesView;
+        set
+        {
+            if (_simplifiedNotesView == value) return;
+            _simplifiedNotesView = value;
+            Changed?.Invoke();
+        }
+    }
+
     /// <summary>Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — oculta la
     /// cabecera, la barra de formato, las tarjetas vinculadas y el panel lateral del editor, además de la
     /// barra de pestañas y el sidebar del shell (ver <c>NotesViewModel.IsZenMode</c>/

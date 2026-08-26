@@ -29,6 +29,7 @@ suscrito — así un cambio hecho en Ajustes se refleja sin tener que cerrar y r
 
 | Ajuste | Rango / valores | Nota |
 |---|---|---|
+| **Vista del editor** (`NotesViewMode`) | Completa / Simplificada, por defecto **Completa** | Segmented control, persistido como string `"Full"`/`"Simple"`. Elige qué disposición usa toda la página de Notas — ver `docs/vista-simplificada-notas.md` |
 | Fuente del editor (`EditorFontFamily`) | fuentes del sistema + "por defecto" (Space Grotesk empaquetada) | Independiente de la fuente de la interfaz (`InterfaceFontFamily`, Ajustes › Apariencia) |
 | Tamaño de fuente (`EditorFontSize`) | 12–20, guardado con debounce de 300 ms | Slider — arrastrar dispara decenas de cambios/seg.; solo la escritura a disco se retrasa, `EditorPreferences.FontSize` se actualiza al instante |
 | Ancho de columna (`EditorColumnWidth`) | 480–1400 px, mismo debounce | "Ancho máximo de la columna de texto" |
@@ -39,10 +40,18 @@ suscrito — así un cambio hecho en Ajustes se refleja sin tener que cerrar y r
 | Panel lateral (`EditorSidePanelVisible`) | on/off, por defecto **on** | Esquema/enlaces inversos/estadísticas — solo visibilidad, no qué pestaña está activa |
 | **Tamaño de tabulación** (`EditorTabSize`) | 2–8 espacios, por defecto **4**, mismo debounce | Aplicado a `AvaloniaEdit.TextEditor.Options.IndentationSize` con `ConvertTabsToSpaces = true` — inserta espacios reales, no un carácter tab literal |
 
+- **Vista del editor**: es el primer ajuste de la página porque decide *cuál* de las dos disposiciones
+  de Notas se está mirando, mientras que todos los demás de esta sección se aplican dentro de cualquiera
+  de las dos. La vista simplificada quita por definición la barra de formato y el panel lateral, así que
+  mientras está activa el ajuste "Panel lateral" de más abajo no tiene efecto visible (se conserva, y
+  vuelve a aplicarse al volver a la vista completa). Se propaga en caliente como el resto, vía
+  `EditorPreferences.SimplifiedNotesView`. Detalle completo en `docs/vista-simplificada-notas.md`.
 - **Autoguardado**: la tarjeta "Autoguardado" de esta página es puramente informativa ("Las notas se
   guardan automáticamente mientras escribís") — no hay ningún ajuste que activar/desactivar; el editor
   autoguarda siempre.
 - **Ajustes del editor que existen en `AppSettings` pero no tienen control en esta página**:
+  `NotesSimpleSidebarVisible`/`NotesSimpleSidebarWidth`/`NotesSimpleExpandedFolderPaths` (estado de
+  ventana de la vista simplificada, escrito desde la propia vista),
   `EditorSidePanelTab` (qué pestaña del panel lateral está activa — "Outline"/"Backlinks"/"Stats") y las
   cinco banderas de expansión de la barra de herramientas de formato
   (`EditorToolbarVisible`/`EditorToolbarTextStyleExpanded`/`…HeadingsExpanded`/`…ListsExpanded`/

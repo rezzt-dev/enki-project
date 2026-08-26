@@ -4380,4 +4380,67 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Statistics_Empty_Tasks" xml:space="preserve">
     <value>Noch keine Karten auf dem Board.</value>
   </data>
+  <data name="Notes_SimpleView_Tree_Tooltip" xml:space="preserve">
+    <value>Notiz-Explorer</value>
+  </data>
+  <data name="Notes_SimpleView_Search_Tooltip" xml:space="preserve">
+    <value>Notizen in dieser Sitzung suchen</value>
+  </data>
+  <data name="Notes_SimpleView_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Seitenleiste ausblenden</value>
+  </data>
+  <data name="Notes_SimpleView_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Seitenleiste einblenden</value>
+  </data>
+  <data name="Notes_SimpleView_NewNote_Tooltip" xml:space="preserve">
+    <value>Neue Notiz im Sitzungsstamm</value>
+  </data>
+  <data name="Notes_SimpleView_NewFolder_Tooltip" xml:space="preserve">
+    <value>Neuer Ordner im Sitzungsstamm</value>
+  </data>
+  <data name="Notes_SimpleView_DailyNote_Tooltip" xml:space="preserve">
+    <value>Tagesnotiz</value>
+  </data>
+  <data name="Notes_SimpleView_Collapse_Tooltip" xml:space="preserve">
+    <value>Alle Ordner einklappen</value>
+  </data>
+  <data name="Notes_SimpleView_Session_Tooltip" xml:space="preserve">
+    <value>Sitzung wechseln</value>
+  </data>
+  <data name="Notes_SimpleView_SearchPlaceholder" xml:space="preserve">
+    <value>In dieser Sitzung suchen…</value>
+  </data>
+  <data name="Notes_SimpleView_SearchEmpty" xml:space="preserve">
+    <value>Keine Notiz passt zur Suche.</value>
+  </data>
+  <data name="Notes_SimpleView_EmptyTree" xml:space="preserve">
+    <value>Diese Sitzung hat noch keine Notizen oder Ordner.</value>
+  </data>
+  <data name="Notes_SimpleView_NoNoteOpen" xml:space="preserve">
+    <value>Keine Notiz geöffnet. Wähle eine in der Seitenleiste oder lege eine neue an.</value>
+  </data>
+  <data name="Notes_SimpleView_NewNoteInFolderMenuItem" xml:space="preserve">
+    <value>Neue Notiz hier</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Title" xml:space="preserve">
+    <value>Editoransicht</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Description" xml:space="preserve">
+    <value>Wie die Notizen-Seite aufgebaut ist. Die Wahl bleibt zwischen Sitzungen erhalten und gilt auch für bereits geöffnete Notizen.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Full" xml:space="preserve">
+    <value>Vollständig</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple" xml:space="preserve">
+    <value>Vereinfacht</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Full_Description" xml:space="preserve">
+    <value>Startseite mit Kartenraster, Ordnerbereich und Tag-Filter, dazu die Formatierungsleiste des Editors und seine Seitenleiste mit Gliederung, Links und Statistik.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple_Description" xml:space="preserve">
+    <value>Seitenleiste mit einem Baum aus Ordnern und Notizen, rechts der Editor mit seinen Tabs. Alles andere bleibt außen vor.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple_Omissions" xml:space="preserve">
+    <value>Bewusst weggelassen: die Formatierungsleiste und die Seitenleiste mit Gliederung, Links und Statistik.</value>
+  </data>
 </root>

@@ -7,6 +7,34 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Dos vistas para la página de Notas**: nuevo ajuste **Ajustes › Editor › Vista del editor** (Completa /
+Simplificada, persistido en `NotesViewMode` y aplicado en caliente, sin cerrar ni reabrir nada). La vista
+completa es la de siempre; la simplificada es una disposición mínima al estilo Obsidian, pensada para
+escribir sin distracciones:
+
+- Panel lateral con un **árbol de carpetas y notas** de la sesión activa (solo markdown), con renombrado en
+  línea, menú contextual (nueva nota aquí, nueva subcarpeta, renombrar, eliminar) y arrastrar una nota
+  sobre una carpeta —o sobre el fondo, que es la raíz de la sesión— para moverla. A la derecha, las mismas
+  pestañas y el mismo editor de siempre; abrir una nota ya abierta salta a su pestaña en vez de duplicarla,
+  y el árbol resalta y despliega la rama de la nota activa se abra desde donde se abra.
+- Encima del árbol, los botones de **nueva nota**, **nueva carpeta** (ambos en la raíz de la sesión),
+  **nota diaria** y **contraer todo**; encima del panel, los modos **árbol** y **buscar** —búsqueda
+  recursiva acotada a la sesión activa— y el botón de mostrar/ocultar el panel; abajo, la **sesión
+  seleccionada** con su desplegable. Con el panel oculto queda un raíl con solo esas dos salidas: volver a
+  mostrarlo y cambiar de sesión.
+- El panel se ensancha arrastrando su separador, y tanto su ancho como si está desplegado y qué carpetas
+  quedan abiertas sobreviven a reiniciar la app.
+- Esta vista deja fuera a propósito la **barra de formato** y el **panel lateral de esquema/enlaces/
+  estadísticas**, junto con sus interruptores de la cabecera, el botón de volver (lo hace la "x" de la
+  pestaña), la etiqueta de texto del indicador de guardado (la pestaña ya lleva su punto de "sin guardar")
+  y la caja de etiquetas. Los interruptores del usuario no se pisan: se conservan y vuelven a aplicarse al
+  volver a la vista completa.
+- La cabecera del editor se queda ahí en **el nombre de la nota, en pequeño, y las acciones** —el nombre
+  baja de 24px a 13px y sigue siendo donde se renombra—, para que todo el peso visual se lo lleve el
+  espacio de edición.
+- De paso, la cabecera aguanta anchos pequeños sin recortar nada que haga falta pulsar: lo que cede
+  espacio es el nombre de la nota, que además está entero en la pestaña.
+
 **HTML simple en el editor de notas**: el editor vuelve a interpretar un subconjunto fijo de HTML en vez
 de imprimirlo como texto plano, para poder centrar, alinear a la derecha o justificar un bloque de la nota:
 

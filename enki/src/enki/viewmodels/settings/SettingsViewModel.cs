@@ -225,6 +225,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorLineNumbers = settingsService.Settings.EditorLineNumbers;
         _editorWordWrap = settingsService.Settings.EditorWordWrap;
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
+        _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
         _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";
@@ -288,6 +289,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.ToolbarListsExpanded = settingsService.Settings.EditorToolbarListsExpanded;
         EditorPreferences.ToolbarInsertExpanded = settingsService.Settings.EditorToolbarInsertExpanded;
         EditorPreferences.ToolbarCodeExpanded = settingsService.Settings.EditorToolbarCodeExpanded;
+        EditorPreferences.SimplifiedNotesView = _isSimplifiedNotesView;
 
         AvailableFonts = BuildAvailableFonts();
 

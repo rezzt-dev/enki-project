@@ -133,6 +133,10 @@ public sealed partial class NotesViewModel : ViewModelBase
         Notes.CollectionChanged += (_, _) => OnPropertyChanged(nameof(NotesCountLabel));
         TagFilter.Changed += Reload;
 
+        // Antes de ReloadSessions: seleccionar la sesión inicial dispara ya un Reload(), que a su vez
+        // construye el árbol del panel lateral — así la vista simplificada arranca poblada sin necesitar
+        // una recarga extra (ver NotesViewModel.SimpleView.cs).
+        InitializeSimpleView();
         ReloadSessions();
     }
 
@@ -189,6 +193,7 @@ public sealed partial class NotesViewModel : ViewModelBase
             newValue.PropertyChanged += OnActiveEditorPropertyChanged;
         }
         IsZenMode = newValue?.IsZenMode ?? false;
+        SyncSimpleTreeSelection();
         PersistOpenTabs();
     }
 
@@ -281,6 +286,7 @@ public sealed partial class NotesViewModel : ViewModelBase
             BrowserItems.Clear();
             IsEmpty = true;
             TagFilter.Reload([]);
+            ReloadSimpleTree();
             return;
         }
 
@@ -320,6 +326,11 @@ public sealed partial class NotesViewModel : ViewModelBase
         IsEmpty = BrowserItems.Count == 0;
 
         TagFilter.Reload(all.SelectMany(n => n.Tags).Distinct(StringComparer.OrdinalIgnoreCase));
+
+        // El árbol de la vista simplificada mira el mismo disco que esta rejilla, así que cualquier cosa
+        // que invalide una invalida el otro — un único punto de recarga en vez de que cada comando tenga
+        // que acordarse de refrescar los dos. No-op mientras la vista simplificada está desactivada.
+        ReloadSimpleTree();
     }
 
     public void ReloadFolders()
@@ -756,31 +767,43 @@ public sealed partial class NotesViewModel : ViewModelBase
     {
         if (!string.IsNullOrWhiteSpace(card.EditingName) && card.EditingName != card.Title)
         {
-            var oldPath = card.Note.FullPath;
-            NoteFile updated;
-            try
-            {
-                updated = _vaultService.RenameNote(card.Note, card.EditingName);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
-            {
-                NotifyVaultWriteFailed(ex);
-                card.IsRenaming = false;
-                return;
-            }
-
-            card.UpdateNote(updated);
-            _kanbanService?.RelinkNotePath(oldPath, updated.FullPath);
-            NotifyRenameCollisionIfAny(card.EditingName, updated);
-
-            // Keep an already-open tab for this note in sync — otherwise it'd keep pointing at the
-            // file's old path/name after the rename happens from the grid instead of the tab itself.
-            var openEditor = OpenEditors.FirstOrDefault(e =>
-                VaultService.PathsEqual(e.Note.FullPath, oldPath));
-            openEditor?.SyncRenamedNote(updated);
+            var updated = RenameNoteFile(card.Note, card.EditingName);
+            if (updated is not null) card.UpdateNote(updated);
         }
         card.IsRenaming = false;
         Reload();
+    }
+
+    /// <summary>Renombra el archivo de una nota y deja al día todo lo que dependía de su ruta anterior:
+    /// los enlaces de tarjetas Kanban, el aviso de colisión de nombre y la pestaña que la tuviera abierta.
+    /// Compartido por el renombrado en línea de la rejilla (<see cref="CommitRenameNote"/>) y el del árbol
+    /// de la vista simplificada (<c>CommitRenameTreeItem</c>), para que las dos vistas se comporten igual
+    /// en vez de tener cada una su propia copia de estos cuatro pasos. Devuelve null si la escritura
+    /// falló — en ese caso ya se ha notificado al usuario.</summary>
+    private NoteFile? RenameNoteFile(NoteFile note, string newName)
+    {
+        var oldPath = note.FullPath;
+        NoteFile updated;
+        try
+        {
+            updated = _vaultService.RenameNote(note, newName);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            NotifyVaultWriteFailed(ex);
+            return null;
+        }
+
+        _kanbanService?.RelinkNotePath(oldPath, updated.FullPath);
+        NotifyRenameCollisionIfAny(newName, updated);
+
+        // Keep an already-open tab for this note in sync — otherwise it'd keep pointing at the
+        // file's old path/name after the rename happens from the grid instead of the tab itself.
+        var openEditor = OpenEditors.FirstOrDefault(e =>
+            VaultService.PathsEqual(e.Note.FullPath, oldPath));
+        openEditor?.SyncRenamedNote(updated);
+
+        return updated;
     }
 
     /// <summary>A rename to an already-taken name gets a numeric suffix instead of silently doing nothing

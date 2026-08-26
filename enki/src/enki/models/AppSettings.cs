@@ -229,6 +229,32 @@ public sealed class AppSettings
     public bool EditorToolbarInsertExpanded { get; set; } = true;
     public bool EditorToolbarCodeExpanded { get; set; } = true;
 
+    // ===================== Vista del editor de notas (completa / simplificada) =====================
+    // La página de Notas se puede dibujar de dos formas distintas, elegidas en Ajustes › Editor:
+    // "Full" es la vista de siempre (portada con rejilla de tarjetas, panel de carpetas, barra de
+    // formato y panel lateral de esquema/enlaces/estadísticas) y "Simple" es una vista mínima al
+    // estilo Obsidian — árbol de carpetas y notas a la izquierda, pestañas y editor a la derecha —
+    // pensada para escribir sin distracciones. Se guarda como string plano por el mismo motivo que
+    // <see cref="Theme"/>/<see cref="EditorColumnPosition"/>: no acoplar Models a un enum de UI.
+
+    /// <summary>"Full" o "Simple" — qué disposición usa la página de Notas. Ajustes › Editor.</summary>
+    public string NotesViewMode { get; set; } = "Full";
+
+    /// <summary>Si el panel lateral (árbol/búsqueda) de la vista simplificada está desplegado. Es estado
+    /// de ventana, no una preferencia de Ajustes: se guarda al pulsar el botón de mostrar/ocultar para
+    /// que la app reabra tal como se dejó.</summary>
+    public bool NotesSimpleSidebarVisible { get; set; } = true;
+
+    /// <summary>Ancho en píxeles del panel lateral de la vista simplificada, arrastrable por su
+    /// separador. Se acota al rango del GridSplitter al leerlo.</summary>
+    public double NotesSimpleSidebarWidth { get; set; } = 272;
+
+    /// <summary>Rutas de carpeta expandidas en el árbol de la vista simplificada. Deliberadamente
+    /// separado de <see cref="NotesExpandedFolderPaths"/> (el panel de carpetas de la vista completa):
+    /// son dos árboles distintos — este incluye notas y el otro no — y compartir el estado haría que
+    /// navegar en uno reorganizara el otro a la espalda del usuario.</summary>
+    public List<string> NotesSimpleExpandedFolderPaths { get; set; } = [];
+
     // ===================== Notificaciones — horario "no molestar" y sonido =====================
     // docs/ajustes-docs/04-editor-y-notificaciones.md §2 — ventana horaria en la que un evento nuevo se
     // sigue registrando en la campana pero no dispara el toast del sistema, y sonido opcional al llegar.

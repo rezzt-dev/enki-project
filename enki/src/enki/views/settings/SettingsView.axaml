@@ -834,6 +834,43 @@
             <TextBlock Text="{loc:Tr Settings_Editor_Description}" Classes="muted" FontSize="12.5" />
           </StackPanel>
 
+          <!-- Vista del editor de notas: completa (portada con rejilla + editor) o simplificada
+               (árbol a la izquierda, editor a la derecha, sin barra de formato ni panel lateral). Va
+               la primera de la sección porque el resto de ajustes de aquí se aplican dentro de
+               cualquiera de las dos, mientras que esta decide cuál se está mirando. -->
+          <Border Classes="card" Padding="22">
+            <StackPanel Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="ViewSplitVertical" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Editor_ViewMode_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Editor_ViewMode_Description}"
+                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <RadioButton Classes="segment" GroupName="NotesViewMode"
+                             Content="{loc:Tr Settings_Editor_ViewMode_Full, Converter={StaticResource UpperCaseConverter}}"
+                             IsChecked="{Binding !IsSimplifiedNotesView}" />
+                <RadioButton Classes="segment" GroupName="NotesViewMode"
+                             Content="{loc:Tr Settings_Editor_ViewMode_Simple, Converter={StaticResource UpperCaseConverter}}"
+                             IsChecked="{Binding IsSimplifiedNotesView}" />
+              </StackPanel>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <StackPanel Spacing="7">
+                <TextBlock Text="{loc:Tr Settings_Editor_ViewMode_Full_Description}"
+                           Classes="muted" FontSize="11.5" TextWrapping="Wrap"
+                           IsVisible="{Binding !IsSimplifiedNotesView}" />
+                <TextBlock Text="{loc:Tr Settings_Editor_ViewMode_Simple_Description}"
+                           Classes="muted" FontSize="11.5" TextWrapping="Wrap"
+                           IsVisible="{Binding IsSimplifiedNotesView}" />
+                <TextBlock Text="{loc:Tr Settings_Editor_ViewMode_Simple_Omissions}"
+                           Classes="faint" FontSize="11.5" TextWrapping="Wrap"
+                           IsVisible="{Binding IsSimplifiedNotesView}" />
+              </StackPanel>
+            </StackPanel>
+     </Border>
+
           <Border Classes="card" Padding="22">
             <StackPanel Spacing="14">
               <StackPanel Orientation="Horizontal" Spacing="9">

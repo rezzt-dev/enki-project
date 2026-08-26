@@ -25,7 +25,9 @@
             <conv:BoolNotConverter x:Key="BoolNotConverter" />
             <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
             <conv:OutlineIndentConverter x:Key="OutlineIndentConverter" />
+            <conv:TreeIndentConverter x:Key="TreeIndentConverter" />
             <conv:SessionIconConverter x:Key="SessionIconConverter" />
+            <conv:FolderStateIconConverter x:Key="FolderStateIconConverter" />
             <conv:HexColorToBrushConverter x:Key="HexColorToBrushConverter" />
             <conv:TopOffsetToMarginConverter x:Key="TopOffsetToMarginConverter" />
             <conv:DoubleToTranslateYConverter x:Key="DoubleToTranslateYConverter" />

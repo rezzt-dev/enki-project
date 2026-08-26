@@ -4380,4 +4380,67 @@ Disfrutad escribiendo.</value>
   <data name="Statistics_Empty_Tasks" xml:space="preserve">
     <value>Todavía no hay tarjetas en el tablero.</value>
   </data>
+  <data name="Notes_SimpleView_Tree_Tooltip" xml:space="preserve">
+    <value>Explorador de notas</value>
+  </data>
+  <data name="Notes_SimpleView_Search_Tooltip" xml:space="preserve">
+    <value>Buscar notas en esta sesión</value>
+  </data>
+  <data name="Notes_SimpleView_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Ocultar el panel lateral</value>
+  </data>
+  <data name="Notes_SimpleView_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Mostrar el panel lateral</value>
+  </data>
+  <data name="Notes_SimpleView_NewNote_Tooltip" xml:space="preserve">
+    <value>Nueva nota en la raíz de la sesión</value>
+  </data>
+  <data name="Notes_SimpleView_NewFolder_Tooltip" xml:space="preserve">
+    <value>Nueva carpeta en la raíz de la sesión</value>
+  </data>
+  <data name="Notes_SimpleView_DailyNote_Tooltip" xml:space="preserve">
+    <value>Nota diaria</value>
+  </data>
+  <data name="Notes_SimpleView_Collapse_Tooltip" xml:space="preserve">
+    <value>Contraer todas las carpetas</value>
+  </data>
+  <data name="Notes_SimpleView_Session_Tooltip" xml:space="preserve">
+    <value>Cambiar de sesión</value>
+  </data>
+  <data name="Notes_SimpleView_SearchPlaceholder" xml:space="preserve">
+    <value>Buscar en esta sesión…</value>
+  </data>
+  <data name="Notes_SimpleView_SearchEmpty" xml:space="preserve">
+    <value>Ninguna nota coincide con la búsqueda.</value>
+  </data>
+  <data name="Notes_SimpleView_EmptyTree" xml:space="preserve">
+    <value>Esta sesión todavía no tiene notas ni carpetas.</value>
+  </data>
+  <data name="Notes_SimpleView_NoNoteOpen" xml:space="preserve">
+    <value>No hay ninguna nota abierta. Elige una del panel lateral o crea una nueva.</value>
+  </data>
+  <data name="Notes_SimpleView_NewNoteInFolderMenuItem" xml:space="preserve">
+    <value>Nueva nota aquí</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Title" xml:space="preserve">
+    <value>Vista del editor</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Description" xml:space="preserve">
+    <value>Cómo se dispone la página de Notas. La elección se recuerda entre sesiones y se aplica a las notas ya abiertas.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Full" xml:space="preserve">
+    <value>Completa</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple" xml:space="preserve">
+    <value>Simplificada</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Full_Description" xml:space="preserve">
+    <value>Portada con la rejilla de tarjetas, panel de carpetas y filtro de etiquetas, más la barra de formato del editor y su panel lateral de esquema, enlaces y estadísticas.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple_Description" xml:space="preserve">
+    <value>Panel lateral con un árbol de carpetas y notas, y a la derecha el editor con sus pestañas. Todo lo demás se queda fuera.</value>
+  </data>
+  <data name="Settings_Editor_ViewMode_Simple_Omissions" xml:space="preserve">
+    <value>Se dejan fuera a propósito: la barra de formato y el panel lateral de esquema, enlaces y estadísticas.</value>
+  </data>
 </root>
