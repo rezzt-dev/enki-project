@@ -176,7 +176,7 @@ public static class MarkdownLineParser
             var contentStartBullet = markerEnd;
             while (contentStartBullet < n && (text[contentStartBullet] == ' ' || text[contentStartBullet] == '\t')) contentStartBullet++;
             // A diferencia de encabezados/citas, aquí sí se traga todo el espacio extra tras el
-            // marcador: la viñeta renderizada ("•  ") ya reserva un ancho fijo de 2 espacios, así
+            // marcador: la viñeta renderizada ("• ") ya reserva un ancho fijo de 1 espacio, así
             // que dejar visibles los espacios originales del usuario duplicaría la separación.
             model.MarkerEnd = lineOffset + contentStartBullet;
             model.ContentStart = lineOffset + contentStartBullet;

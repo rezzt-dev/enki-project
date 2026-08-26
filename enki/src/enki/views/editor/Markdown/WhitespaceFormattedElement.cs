@@ -9,18 +9,18 @@ using AvaloniaEdit.Rendering;
 namespace enki.Views.Editor.Markdown;
 
 /// <summary>
-/// A <see cref="VisualLineElement"/> that renders a replacement glyph (the "•  " bullet, currently
+/// A <see cref="VisualLineElement"/> that renders a replacement glyph (the "• " bullet, currently
 /// its only user) for a hidden Markdown marker, reserving real visual width instead of collapsing to
 /// nothing — the built-in <see cref="FormattedTextElement"/> always reports a
 /// <see cref="VisualLineElement.VisualLength"/> of 1 regardless of its replacement string, which
-/// isn't enough room for a multi-character glyph like "•  ".
+/// isn't enough room for a multi-character glyph like "• ".
 ///
 /// <see cref="CreateTextRun"/> can be asked to (re)start partway through this element's reserved
 /// span — not just once at its own <see cref="VisualLineElement.VisualColumn"/> — e.g. when
 /// <c>GetIndentationVisualColumn</c>'s wrap-indent measurement probes each remaining visual column
 /// individually. Ignoring <c>startVisualColumn</c> and always handing back the full glyph string
-/// used to redraw "•  " once per reserved column instead of once per element — a 3-column-wide
-/// bullet rendered as three overlapping "•  " glyphs side by side ("•  •  •  "). Slicing the string
+/// used to redraw "• " once per reserved column instead of once per element — a 2-column-wide
+/// bullet rendered as two overlapping "• " glyphs side by side ("• • "). Slicing the string
 /// to what's left from <c>startVisualColumn</c> keeps every probe correctly sized without
 /// re-emitting the glyph itself past its first column.
 ///

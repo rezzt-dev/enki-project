@@ -110,10 +110,8 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             var length = zone.End - zone.Start;
             return zone.Kind switch
             {
-                // Trailing spaces after the glyph give the bullet room to breathe instead of
-                // butting straight into the list text (the hidden marker span it replaces already
-                // covered that width, so this doesn't shift anything else on the line).
-                ZoneKind.Bullet => new WhitespaceFormattedElement("•  ", length),
+                // Single trailing space matches the gap ordered lists get naturally from "1. ".
+                ZoneKind.Bullet => new WhitespaceFormattedElement("• ", length),
                 ZoneKind.Checkbox => new InlineObjectElement(length, BuildCheckbox(zone.Line)),
                 _ => new FormattedTextElement(string.Empty, length)
             };
