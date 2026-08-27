@@ -158,7 +158,8 @@
                en esta vista no existe el concepto de "carpeta actual" de la rejilla, y un destino
                previsible vale más que uno que dependa de dónde se pulsó por última vez. Para crear
                dentro de una carpeta concreta está su menú contextual en el árbol. -->
-          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" Margin="8,8,8,4">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" Margin="8,8,8,4"
+                      HorizontalAlignment="Center">
             <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewNoteAtRootCommand}"
                     ToolTip.Tip="{loc:Tr Notes_SimpleView_NewNote_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Notes_SimpleView_NewNote_Tooltip}">
@@ -255,13 +256,17 @@
                   Padding="10,7" Command="{Binding ToggleSessionMenuCommand}"
                   ToolTip.Tip="{loc:Tr Notes_SimpleView_Session_Tooltip}"
                   AutomationProperties.Name="{loc:Tr A11y_Notes_SessionSelector}">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-              <mi:MaterialIcon Grid.Column="0" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Kind="{Binding SelectedSessionOption.IsVault, Converter={StaticResource SessionIconConverter}}" />
-              <TextBlock Grid.Column="1" Text="{Binding SelectedSessionOption.DisplayName}" FontSize="12"
-                         VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-              <mi:MaterialIcon Grid.Column="2" Kind="UnfoldMoreHorizontal" Width="13" Height="13"
-                               VerticalAlignment="Center" Margin="8,0,0,0" />
+            <!-- Icono + nombre se centran como un grupo en todo el ancho del botón; la doble flecha
+                 va anclada al borde derecho por encima, así no arrastra al grupo fuera del centro. -->
+            <Grid>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <mi:MaterialIcon Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,8,0"
+                                 Kind="{Binding SelectedSessionOption.IsVault, Converter={StaticResource SessionIconConverter}}" />
+                <TextBlock Text="{Binding SelectedSessionOption.DisplayName}" FontSize="12"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="200" />
+              </StackPanel>
+              <mi:MaterialIcon Kind="UnfoldMoreHorizontal" Width="13" Height="13"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" />
             </Grid>
           </Button>
         </Border>

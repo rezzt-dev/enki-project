@@ -3817,7 +3817,7 @@ Feliz escritura.</value>
     <value>Your themes</value>
   </data>
   <data name="Settings_Nav_Dashboard" xml:space="preserve">
-    <value>Panel</value>
+    <value>Dashboard</value>
   </data>
   <data name="Settings_Dashboard_Title" xml:space="preserve">
     <value>Diseño del panel</value>

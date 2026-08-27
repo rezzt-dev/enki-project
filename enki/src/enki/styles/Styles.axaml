@@ -214,7 +214,7 @@
   </Style>
 
   <!-- ===================== Pestañas de editor (Notas) =====================
-       Mismo lenguaje que Button.pill (§ Botones más abajo): caja con borde de 1.5px, esquinas a
+       Mismo lenguaje que Button.pill (§ Botones más abajo): caja con borde fino de 0.75px, esquinas a
        cero radio, sin relleno en reposo. A diferencia del pill, aquí el borde es sutil (Ink15) en
        reposo y sólo sube a InkBrush en hover/activa — con muchas pestañas abiertas a la vez, un
        borde InkBrush pleno en todas se leería como ruido en vez de como una fila de casillas.
@@ -224,7 +224,7 @@
   <Style Selector="Border.editor-tab">
     <Setter Property="Height" Value="41" />
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderThickness" Value="0.75" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink15}" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Cursor" Value="Hand" />
@@ -317,16 +317,16 @@
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
   </Style>
 
-  <!-- Botón "+" para abrir una pestaña nueva: mismo outline que Button.pill (borde InkBrush 1.5px,
-       invierte a solido en hover) pero cuadrado, con el mismo lado (41) que la Height fija de
-       Border.editor-tab de arriba, para sentarse justo después de la última pestaña con
+  <!-- Botón "+" para abrir una pestaña nueva: mismo outline que Button.pill (invierte a solido en
+       hover) pero cuadrado y con borde fino de 0.75px, a juego con Border.editor-tab, con el mismo
+       lado (41) que su Height fija de arriba, para sentarse justo después de la última pestaña con
        exactamente su misma altura. -->
   <Style Selector="Button.tab-add">
     <Setter Property="Width" Value="41" />
     <Setter Property="Height" Value="41" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
-    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderThickness" Value="0.75" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />

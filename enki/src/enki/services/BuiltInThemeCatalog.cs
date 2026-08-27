@@ -160,6 +160,18 @@ public static class BuiltInThemeCatalog
         },
         new()
         {
+            Id = "dark-dev",
+            Name = "Dark Dev",
+            Appearance = ThemeAppearance.Dark,
+            Colors = Palette(
+                "#000000", "#050505", "#050505", "#0A0A0A", "#0D0D0D", "#141414", "#080808", "#080808", "#121212",
+                "#FFFFFF", "#A0A0A0", "#555555",
+                "#FFFFFF", "#000000", "#E0E0E0",
+                "#000000",
+                "#EF4444", "#22C55E", "#EAB308"),
+        },
+        new()
+        {
             Id = "github-light-default",
             Name = "GitHub Light Default",
             Appearance = ThemeAppearance.Light,

@@ -710,14 +710,18 @@
       </Grid>
 
       <!-- Tablero: columnas verticales (una por estado) lado a lado, con scrollbar horizontal cuando no
-           caben todas. "AÑADIR COLUMNA" vive como una columna fantasma más al final de la fila, del
-           mismo ancho que el resto y estirada al mismo alto. Solo una de las dos franjas de abajo está
-           visible según Ajustes › Apariencia › Tablero Kanban (BoardOrientation) — mismo patrón de
-           "ambas viven en el mismo Grid.Row, mutuamente excluyentes por IsVisible" que Board/TaskManagement
-           más abajo en este mismo archivo. -->
+           caben todas. La fila se centra en el tablero (HorizontalAlignment="Center" en el StackPanel):
+           mientras las columnas caben quedan centradas con el mismo margen a ambos lados, y en cuanto
+           desbordan el ScrollViewer las arregla a su ancho real y vuelve el scroll normal desde el
+           extremo izquierdo. "AÑADIR COLUMNA" ya no es una columna fantasma de ancho completo (300px
+           desplazaban el tablero y rompían ese centrado) sino una tira estrecha con solo el icono "+"
+           al final de la fila; para el alta con nombre está además el botón del encabezado. Solo una
+           de las dos franjas de abajo está visible según Ajustes › Apariencia › Tablero Kanban
+           (BoardOrientation) — mismo patrón de "ambas viven en el mismo Grid.Row, mutuamente
+           excluyentes por IsVisible" que Board/TaskManagement más abajo en este mismo archivo. -->
       <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
                     IsVisible="{Binding BoardOrientation, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Vertical}">
-        <StackPanel Orientation="Horizontal" Spacing="16">
+        <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
           <ItemsControl ItemsSource="{Binding Columns}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -726,11 +730,9 @@
             </ItemsControl.ItemsPanel>
           </ItemsControl>
 
-          <Button Classes="ghost-card" Width="300" VerticalAlignment="Stretch" Command="{Binding AddColumnCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Plus" Width="16" Height="16" />
-              <TextBlock Text="{loc:Tr Kanban_Board_AddColumnGhost, Converter={StaticResource UpperCaseConverter}}" FontSize="11" FontWeight="Bold" LetterSpacing="1.5" />
-            </StackPanel>
+          <Button Classes="ghost-card" Width="46" VerticalAlignment="Stretch" Command="{Binding AddColumnCommand}"
+                  ToolTip.Tip="{loc:Tr Kanban_Board_AddColumnGhost}" AutomationProperties.Name="{loc:Tr Kanban_Board_AddColumnGhost}">
+            <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
           </Button>
         </StackPanel>
       </ScrollViewer>
