@@ -36,6 +36,10 @@ public sealed partial class MainWindowViewModel
         // en SettingsViewModel hace lo mismo en caliente si lo cambia desde Ajustes.
         LogService.SetDebugEnabled(_settingsService.Settings.DebugLoggingEnabled);
         _vaultService = new VaultService(_settingsService);
+        // Búsqueda de texto completo sobre el contenido real de las notas (búsqueda global, quick switcher
+        // y los dos filtros de la vista de Notas). Sin estado propio ni persistencia: lee a través de la
+        // caché de notas del vault, así que puede construirse aquí sin orden particular.
+        _noteSearchService = new NoteSearchService(_vaultService);
         _vaultBackupService = new VaultBackupService(_vaultService);
         _vaultSettingsService = new VaultSettingsService(_vaultService);
         _habitService = new HabitService(_vaultService);
@@ -122,9 +126,9 @@ public sealed partial class MainWindowViewModel
             if (e.PropertyName == nameof(ReminderInboxViewModel.OverdueCount)) UpdateCalendarBadge();
         };
         GlobalSearch = new GlobalSearchViewModel(
-            _vaultService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService,
+            _vaultService, _noteSearchService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService,
             OnGlobalSearchResultSelected);
-        QuickSwitcher = new QuickSwitcherViewModel(_vaultService, OpenNoteFromQuickSwitcher);
+        QuickSwitcher = new QuickSwitcherViewModel(_vaultService, _noteSearchService, OpenNoteFromQuickSwitcher);
         // El proveedor se llama de nuevo cada vez que se abre la paleta (ver CommandPaletteViewModel), así
         // que puede referenciar con seguridad Notes/Kanban/Settings aunque todavía sean null aquí — para
         // cuando el usuario realmente pulse Ctrl+Shift+K, InitializeShell ya los habrá construido.
@@ -334,7 +338,7 @@ public sealed partial class MainWindowViewModel
 
         var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService);
         Calendar = new CalendarViewModel(calendarAggregationService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
-        Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService);
+        Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService);
         Notes.PropertyChanged += OnNotesPropertyChanged;
         // Restaurar pestañas abiertas al reiniciar (docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §2) —
         // después de construir Notes pero antes de que la ventana quede lista, para que las pestañas ya

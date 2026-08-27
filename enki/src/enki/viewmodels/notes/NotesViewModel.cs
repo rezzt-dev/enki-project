@@ -103,6 +103,8 @@ public sealed partial class NotesViewModel : ViewModelBase
     [ObservableProperty]
     private SessionOptionViewModel? _selectedSessionOption;
 
+    private readonly NoteSearchService _noteSearchService;
+
     [ObservableProperty]
     private NoteCardViewModel? _notePendingDelete;
 
@@ -117,9 +119,15 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public NotesViewModel(VaultService vaultService, SessionService sessionService,
         KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
-        SettingsService? settingsService = null, NotificationService? notificationService = null)
+        SettingsService? settingsService = null, NotificationService? notificationService = null,
+        NoteSearchService? noteSearchService = null)
     {
         _vaultService = vaultService;
+        // Opcional y con valor por defecto derivado del propio vault: el servicio no tiene estado ni
+        // persistencia (lee a través de la caché de notas de VaultService), así que un test que solo
+        // necesita un NotesViewModel no tiene que componerlo a mano. La app sí pasa el que construye
+        // MainWindowViewModel, para que las cuatro superficies de búsqueda compartan instancia.
+        _noteSearchService = noteSearchService ?? new NoteSearchService(vaultService);
         _sessionService = sessionService;
         _kanbanService = kanbanService;
         _onOpenLinkedCard = onOpenLinkedCard;
@@ -290,11 +298,17 @@ public sealed partial class NotesViewModel : ViewModelBase
             return;
         }
 
+        // `all` sigue siendo la carpeta entera sin filtrar: es lo que alimenta la lista de etiquetas de
+        // TagFilter más abajo, que no debe encogerse según lo que haya escrito el usuario en el buscador.
         var all = _vaultService.GetNotes(CurrentFolderPath);
+
+        // Con búsqueda activa el filtrado se delega en NoteSearchService, que mira el cuerpo completo de
+        // cada nota; antes se comparaba contra NoteFile.Preview y una nota solo aparecía si la palabra
+        // buscada caía dentro de sus primeros 160 caracteres. Ambas llamadas comparten la caché de notas
+        // de VaultService, así que esto no duplica lecturas de disco.
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? all
-            : all.Where(n => n.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-                              || n.Preview.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            : _noteSearchService.SearchFolder(CurrentFolderPath, SearchText).Select(h => h.Note);
 
         var selectedTags = TagFilter.SelectedTags.ToList();
         if (selectedTags.Count > 0)
@@ -531,13 +545,18 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// tab instead of opening a second one for the same file. Matched by full path since that's what
     /// actually identifies "the same note on disk" (NoteFile instances handed in from different callers —
     /// a note card, a graph node, the dashboard — aren't reference-equal even for the same file).</summary>
-    public void OpenNote(NoteFile note)
+    /// <summary>Abre la nota en una pestaña del editor (o activa la que ya la tuviera abierta). Con
+    /// <paramref name="caretOffset"/> el cursor aterriza en esa posición del documento en vez de al
+    /// principio — lo que usa la búsqueda global para llevar al usuario a la línea donde apareció el texto
+    /// que buscaba, no solo a la nota que lo contiene.</summary>
+    public void OpenNote(NoteFile note, int? caretOffset = null)
     {
         var existing = OpenEditors.FirstOrDefault(e =>
             VaultService.PathsEqual(e.Note.FullPath, note.FullPath));
         if (existing is not null)
         {
             ActiveEditor = existing;
+            if (caretOffset is { } offset) existing.RequestCaretAt(offset);
             return;
         }
 
@@ -546,8 +565,11 @@ public sealed partial class NotesViewModel : ViewModelBase
         // run, so it correctly closes this specific tab rather than whichever one was active at the time.
         EditorViewModel? editor = null;
         editor = new EditorViewModel(_vaultService, note, () => CloseEditor(editor!), Reload,
-            OpenNote, _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
+            target => OpenNote(target), _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
             onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService);
+        // Antes de añadir la pestaña: EditorView lee LastCaretOffset al enlazarse con el viewmodel, y ese
+        // enlace ocurre como consecuencia de las dos líneas siguientes.
+        if (caretOffset is { } newTabOffset) editor.RequestCaretAt(newTabOffset);
         OpenEditors.Add(editor);
         ActiveEditor = editor;
     }

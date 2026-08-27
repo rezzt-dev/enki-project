@@ -469,12 +469,11 @@ public sealed partial class NotesViewModel
             return;
         }
 
-        var matches = _vaultService.GetAllNotesRecursive(EffectiveRootPath)
-            .Where(n => n.Title.Contains(SimpleSearchText, StringComparison.OrdinalIgnoreCase)
-                        || n.Preview.Contains(SimpleSearchText, StringComparison.OrdinalIgnoreCase))
-            .Take(200);
+        // Busca en el contenido completo de cada nota del árbol seleccionado, no en NoteFile.Preview
+        // (los primeros 160 caracteres), que es lo que este filtro comparaba antes.
+        var matches = _noteSearchService.SearchTree(EffectiveRootPath, SimpleSearchText, maxResults: 200);
 
-        foreach (var note in matches) SimpleSearchResults.Add(new NoteCardViewModel(note));
+        foreach (var hit in matches) SimpleSearchResults.Add(new NoteCardViewModel(hit.Note));
         OnPropertyChanged(nameof(ShowSimpleSearchEmptyState));
     }
 }

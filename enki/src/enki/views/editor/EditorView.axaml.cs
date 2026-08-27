@@ -280,6 +280,7 @@ public partial class EditorView : UserControl
         if (_boundVm is not null)
         {
             _boundVm.Outline.NavigationRequested -= OnOutlineNavigationRequested;
+            _boundVm.CaretNavigationRequested -= OnOutlineNavigationRequested;
             _boundVm.SlashCommands.CommandSelected -= OnSlashCommandSelected;
             _boundVm.NoteLinkPicker.NoteSelected -= OnNoteLinkSelected;
             _boundVm.FindReplace.OperationRequested -= OnFindReplaceOperationRequested;
@@ -301,6 +302,7 @@ public partial class EditorView : UserControl
         _suppressTextChanged = false;
 
         vm.Outline.NavigationRequested += OnOutlineNavigationRequested;
+        vm.CaretNavigationRequested += OnOutlineNavigationRequested;
         vm.SlashCommands.CommandSelected += OnSlashCommandSelected;
         vm.NoteLinkPicker.NoteSelected += OnNoteLinkSelected;
         vm.FindReplace.OperationRequested += OnFindReplaceOperationRequested;
@@ -656,26 +658,29 @@ public partial class EditorView : UserControl
             : HorizontalAlignment.Center;
     }
 
-    /// <summary>Enter commits the title edit immediately (moving focus to the editor triggers the title
-    /// box's LostFocus, which is what actually pushes Title — and the file rename it causes — through;
-    /// see the UpdateSourceTrigger note in EditorView.axaml) instead of making the user click away.
-    /// Escape discards whatever was typed instead: it resets the box back to the VM's still-unchanged
-    /// Title before moving focus away, so the LostFocus commit that follows is a same-name no-op
-    /// rename (VaultService.RenameNote already treats an unchanged path as one) rather than saving
-    /// a half-typed title the user was trying to back out of.</summary>
+    /// <summary>Enter commits the rename there and then, without moving the caret anywhere: it pushes the
+    /// typed text straight into <see cref="EditorViewModel.Title"/> (whose setter renames the file on disk
+    /// and reloads the note tree/grid) and syncs the box back to the final name — which may carry a
+    /// numeric suffix if the target was taken. Focus stays on the title box, so the rename feels like the
+    /// inline rename in the tree (press Enter, done) instead of yanking the user into the document body.
+    /// The <c>UpdateSourceTrigger=LostFocus</c> binding still fires later when focus does leave, but by
+    /// then the name matches and <see cref="VaultService.RenameNote"/> treats it as a no-op.
+    /// Escape backs out: it restores the box to the VM's still-unchanged Title.</summary>
     private void OnTitleKeyDown(object? sender, KeyEventArgs e)
     {
-        if (sender is not TextBox titleBox) return;
+        if (sender is not TextBox titleBox || DataContext is not EditorViewModel vm) return;
         switch (e.Key)
         {
             case Key.Enter:
                 e.Handled = true;
-                Editor.Focus();
+                vm.Title = titleBox.Text ?? string.Empty;
+                titleBox.Text = vm.Title;
+                titleBox.SelectAll();
                 break;
             case Key.Escape:
                 e.Handled = true;
-                if (DataContext is EditorViewModel vm) titleBox.Text = vm.Title;
-                Editor.Focus();
+                titleBox.Text = vm.Title;
+                titleBox.SelectAll();
                 break;
         }
     }

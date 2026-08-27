@@ -1,7 +1,10 @@
 using System;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.VisualTree;
 using enki.Services;
 using enki.ViewModels;
@@ -257,5 +260,124 @@ public class SimpleNotesViewUiTests : IDisposable
         Assert.Equal("Objetivo", Assert.Single(viewModel.SimpleSearchResults).Title);
 
         window.Close();
+    }
+
+    /// <summary>El cuadro de renombrar en línea ocupa una franja estrecha de una fila ancha, así que un
+    /// clic para colocar el cursor cae casi siempre en el <c>Border</c> de la fila, no en el
+    /// <see cref="TextBox"/>. Mientras la fila está en modo renombrar ese clic no debe activar el nodo
+    /// (abrir la nota o plegar la carpeta): hacerlo sacaría el foco del cuadro y su <c>LostFocus</c>
+    /// cerraría el renombrado antes de tiempo.</summary>
+    [Fact]
+    public void PressingARenamingRow_DoesNotOpenTheNoteOrCollapseTheFolder()
+    {
+        var (view, viewModel, window) = CreateView(simplified: true);
+
+        var folder = VaultService.CreateFolder(_vaultDir, "Carpeta");
+        File.WriteAllText(Path.Combine(folder.FullPath, "hija.md"), "# Hija\n");
+        File.WriteAllText(Path.Combine(_vaultDir, "suelta.md"), "# Suelta\n");
+        viewModel.Reload();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        // Una nota en modo renombrar: pulsar su fila no la abre y no cierra la edición.
+        var noteNode = viewModel.SimpleTreeRoots.First(n => n.IsNote);
+        noteNode.BeginRenameCommand.Execute(null);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        PressRowLeftEdge(view, window, noteNode);
+
+        Assert.True(noteNode.IsRenaming);
+        Assert.Empty(viewModel.OpenEditors);
+
+        // Una carpeta en modo renombrar: pulsar su fila no la pliega y no cierra la edición.
+        var folderNode = viewModel.SimpleTreeRoots.First(n => n.IsFolder);
+        folderNode.IsExpanded = true;
+        folderNode.BeginRenameCommand.Execute(null);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        PressRowLeftEdge(view, window, folderNode);
+
+        Assert.True(folderNode.IsRenaming);
+        Assert.True(folderNode.IsExpanded);
+
+        window.Close();
+    }
+
+    /// <summary>Y una vez la fila deja el modo renombrar, vuelve a comportarse como un objetivo de clic
+    /// normal — el guardado anterior no puede dejarla "muerta".</summary>
+    [Fact]
+    public void AfterRenamingEnds_TheRowActivatesOnPressAgain()
+    {
+        var (view, viewModel, window) = CreateView(simplified: true);
+
+        File.WriteAllText(Path.Combine(_vaultDir, "suelta.md"), "# Suelta\n");
+        viewModel.Reload();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        var noteNode = viewModel.SimpleTreeRoots.First(n => n.IsNote);
+        noteNode.BeginRenameCommand.Execute(null);
+        noteNode.EditingName = "renombrada";
+        viewModel.CommitRenameTreeItemCommand.Execute(noteNode);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.True(File.Exists(Path.Combine(_vaultDir, "renombrada.md")));
+
+        var renamed = viewModel.SimpleTreeRoots.First(n => n.IsNote);
+        Assert.False(renamed.IsRenaming);
+        PressRowLeftEdge(view, window, renamed);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.Single(viewModel.OpenEditors);
+        Assert.EndsWith("renombrada.md", viewModel.ActiveEditor!.Note.FullPath);
+
+        window.Close();
+    }
+
+    /// <summary>En la vista simplificada el nombre de la nota en la cabecera del editor también renombra
+    /// el fichero: Enter lo confirma en el sitio (sin saltar al cuerpo del documento) y el árbol lateral
+    /// pasa a mostrar el nombre nuevo.</summary>
+    [Fact]
+    public void EditorHeaderTitle_EnterCommitsTheRename_AndRefreshesTheTree()
+    {
+        var (view, viewModel, window) = CreateView(simplified: true);
+
+        File.WriteAllText(Path.Combine(_vaultDir, "original.md"), "# Original\ncuerpo");
+        viewModel.Reload();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        viewModel.ActivateTreeItemCommand.Execute(viewModel.SimpleTreeRoots.First(n => n.IsNote));
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        var titleBox = view.GetVisualDescendants().OfType<TextBox>()
+            .First(t => t.Classes.Contains("title-edit"));
+        titleBox.Focus();
+        titleBox.Text = "renombrada-desde-editor";
+        titleBox.RaiseEvent(new Avalonia.Input.KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Key = Key.Enter,
+            Source = titleBox,
+        });
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.True(File.Exists(Path.Combine(_vaultDir, "renombrada-desde-editor.md")));
+        Assert.False(File.Exists(Path.Combine(_vaultDir, "original.md")));
+        Assert.EndsWith("renombrada-desde-editor.md", viewModel.ActiveEditor!.Note.FullPath);
+        Assert.Contains(viewModel.SimpleTreeRoots, n => n.IsNote && n.Name == "renombrada-desde-editor");
+        Assert.True(titleBox.IsFocused, "el foco no debe saltar al cuerpo del documento al confirmar");
+
+        window.Close();
+    }
+
+    /// <summary>Un clic con el botón izquierdo en el borde izquierdo de la fila del árbol de
+    /// <paramref name="node"/> — sobre el <c>Border</c> que lleva el manejador de puntero, no sobre el
+    /// cuadro de texto de renombrar.</summary>
+    private static void PressRowLeftEdge(NotesView view, Window window, NoteTreeItemViewModel node)
+    {
+        var row = view.GetVisualDescendants().OfType<Border>()
+            .First(b => ReferenceEquals(b.DataContext, node) && b.Classes.Contains("folder-row"));
+        var p = row.TranslatePoint(new Point(6, row.Bounds.Height / 2), window) ?? new Point();
+        window.MouseDown(p, MouseButton.Left);
+        window.MouseUp(p, MouseButton.Left);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
     }
 }

@@ -21,6 +21,7 @@ namespace enki.ViewModels;
 public sealed partial class GlobalSearchViewModel : ObservableObject
 {
     private readonly VaultService _vaultService;
+    private readonly NoteSearchService _noteSearchService;
     private readonly KanbanService _kanbanService;
     private readonly PolarTaskService _polarTaskService;
     private readonly ReminderService _reminderService;
@@ -83,6 +84,7 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
 
     public GlobalSearchViewModel(
         VaultService vaultService,
+        NoteSearchService noteSearchService,
         KanbanService kanbanService,
         PolarTaskService polarTaskService,
         ReminderService reminderService,
@@ -90,6 +92,7 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
         Action<GlobalSearchResultViewModel> onResultSelected)
     {
         _vaultService = vaultService;
+        _noteSearchService = noteSearchService;
         _kanbanService = kanbanService;
         _polarTaskService = polarTaskService;
         _reminderService = reminderService;
@@ -224,33 +227,44 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
         }
     }
 
+    /// <summary>Notas que casan con la consulta, delegando en <see cref="NoteSearchService"/> — que busca en
+    /// el <b>contenido completo</b> de cada nota y en todas las notas del vault, incluidas las que viven
+    /// dentro de sesiones.
+    ///
+    /// <para>Esta parte de la búsqueda global recorría antes <c>GetAllNotesRecursive(VaultPath)</c> y
+    /// comparaba contra <see cref="Models.NoteFile.Preview"/>, con dos consecuencias que se notaban a
+    /// diario: cualquier texto más allá de los primeros 160 caracteres de una nota no aparecía nunca, y
+    /// ninguna nota guardada dentro de una sesión aparecía tampoco, porque ese recorrido excluye
+    /// <c>.sessions/</c>.</para></summary>
     private IEnumerable<GlobalSearchResultViewModel> SearchNotes(string query, CancellationToken token)
     {
-        var notes = _vaultService.GetAllNotesRecursive(_vaultService.VaultPath);
-        foreach (var note in notes)
+        foreach (var hit in _noteSearchService.Search(query, token: token))
         {
             token.ThrowIfCancellationRequested();
 
-            if (!Matches(note.Title, query)
-                && !Matches(note.Preview, query)
-                && !note.Tags.Any(tag => Matches(tag, query)))
-            {
-                continue;
-            }
-
-            var subtitle = string.IsNullOrWhiteSpace(_vaultService.VaultPath)
-                ? note.FileName
-                : Path.GetRelativePath(_vaultService.VaultPath, note.FullPath);
-
             yield return new GlobalSearchResultViewModel(
                 GlobalSearchResultType.Note,
-                note.FullPath,
-                note.Title,
-                subtitle,
+                hit.Note.FullPath,
+                hit.Note.Title,
+                BuildSubtitle(hit),
                 "NoteTextOutline",
-                note,
-                _onResultSelected);
+                hit.Note,
+                _onResultSelected,
+                hit.Field == NoteSearchField.Content ? hit.Offset : null);
         }
+    }
+
+    /// <summary>El fragmento del cuerpo donde apareció la consulta cuando el acierto fue de contenido —lo
+    /// que de verdad le dice al usuario por qué esta nota está en la lista— y la ruta relativa de la nota
+    /// en cualquier otro caso, que es lo que este subtítulo mostraba siempre.</summary>
+    private string BuildSubtitle(NoteSearchHit hit)
+    {
+        if (hit.Field == NoteSearchField.Content && !string.IsNullOrWhiteSpace(hit.Snippet))
+            return hit.Snippet;
+
+        return string.IsNullOrWhiteSpace(_vaultService.VaultPath)
+            ? hit.Note.FileName
+            : Path.GetRelativePath(_vaultService.VaultPath, hit.Note.FullPath);
     }
 
     private IEnumerable<GlobalSearchResultViewModel> SearchKanban(string query, CancellationToken token)

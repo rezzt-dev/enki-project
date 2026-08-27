@@ -100,6 +100,22 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// resetting to the top of the note every time.</summary>
     public int LastCaretOffset { get; set; }
 
+    /// <summary>Disparado cuando algo externo al editor pide llevar el cursor a una posición concreta del
+    /// documento — hoy, abrir un resultado de la búsqueda global cuya coincidencia está en el cuerpo de la
+    /// nota. EditorView lo atiende con el mismo manejador que la navegación del panel de Esquema
+    /// (colocar el cursor, enfocar y hacer scroll hasta él).</summary>
+    public event Action<int>? CaretNavigationRequested;
+
+    /// <summary>Coloca el cursor en <paramref name="offset"/>. Escribe también
+    /// <see cref="LastCaretOffset"/> porque una pestaña recién creada todavía no está enlazada a ninguna
+    /// vista: cuando EditorView se enlace a ella leerá ese valor y colocará el cursor por su cuenta,
+    /// mientras que para una pestaña ya abierta lo que actúa es el evento.</summary>
+    public void RequestCaretAt(int offset)
+    {
+        LastCaretOffset = Math.Max(0, offset);
+        CaretNavigationRequested?.Invoke(LastCaretOffset);
+    }
+
     public EditorOutlineViewModel Outline { get; }
     public EditorBacklinksViewModel Backlinks { get; }
     public EditorStatsViewModel Stats { get; }

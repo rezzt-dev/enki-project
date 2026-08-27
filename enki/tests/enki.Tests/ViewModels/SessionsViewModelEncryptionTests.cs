@@ -51,16 +51,67 @@ public class SessionsViewModelEncryptionTests : IDisposable
         vm.NewSessionName = "Privada";
         vm.NewSessionIsProtected = true;
 
-        vm.NewSessionPassword = "short";
-        vm.NewSessionPasswordConfirm = "short";
-        Assert.False(vm.CanConfirmCreate); // too short
+        vm.NewSessionPassword = "abc";
+        vm.NewSessionPasswordConfirm = "abc";
+        Assert.False(vm.CanConfirmCreate); // 3 caracteres: por debajo del mínimo
 
         vm.NewSessionPassword = "una-contraseña-larga";
         vm.NewSessionPasswordConfirm = "otra-distinta-larga";
-        Assert.False(vm.CanConfirmCreate); // mismatch
+        Assert.False(vm.CanConfirmCreate); // no coinciden
 
         vm.NewSessionPasswordConfirm = "una-contraseña-larga";
         Assert.True(vm.CanConfirmCreate);
+    }
+
+    [Fact]
+    public void CanConfirmCreate_AcceptsAFourCharacterPassword()
+    {
+        var (vm, _) = CreateViewModel();
+        vm.NewSessionName = "Privada";
+        vm.NewSessionIsProtected = true;
+
+        vm.NewSessionPassword = "1234";
+        vm.NewSessionPasswordConfirm = "1234";
+
+        Assert.True(vm.CanConfirmCreate);
+    }
+
+    [Theory]
+    [InlineData("1234")]              // solo dígitos
+    [InlineData("abcd")]              // solo letras minúsculas
+    [InlineData("ABCD")]              // solo mayúsculas
+    [InlineData("....")]              // solo símbolos
+    [InlineData("    ")]              // solo espacios
+    [InlineData("ñáé€")]              // no ASCII
+    [InlineData("🔒🔑🗝️📓")]           // emoji
+    public void CanConfirmCreate_ImposesNoCompositionRules(string password)
+    {
+        var (vm, _) = CreateViewModel();
+        vm.NewSessionName = "Privada";
+        vm.NewSessionIsProtected = true;
+
+        vm.NewSessionPassword = password;
+        vm.NewSessionPasswordConfirm = password;
+
+        Assert.True(vm.CanConfirmCreate);
+    }
+
+    [Fact]
+    public async Task AFourCharacterPassword_RoundTripsThroughLockAndUnlock()
+    {
+        var (vm, sessions) = CreateViewModel();
+        vm.NewSessionName = "Privada";
+        vm.NewSessionIsProtected = true;
+        vm.NewSessionPassword = "1234";
+        vm.NewSessionPasswordConfirm = "1234";
+        await vm.ConfirmCreateSessionCommand.ExecuteAsync(null);
+
+        var created = sessions.List().Single(s => s.Name == "Privada");
+        sessions.Lock(created);
+        Assert.False(sessions.IsUnlocked(created));
+
+        Assert.False(sessions.Unlock(created, "12345"));
+        Assert.True(sessions.Unlock(created, "1234"));
     }
 
     [Fact]

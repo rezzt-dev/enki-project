@@ -67,7 +67,7 @@ public class GlobalSearchViewModelTests : IDisposable
     }
 
     private GlobalSearchViewModel CreateViewModel() =>
-        new(_vault, _kanban, _polarTasks, _reminders, _polarAuth, r => _selectedResult = r);
+        new(_vault, new NoteSearchService(_vault), _kanban, _polarTasks, _reminders, _polarAuth, r => _selectedResult = r);
 
     private static async Task RunSearchAsync(GlobalSearchViewModel vm)
     {
@@ -172,7 +172,7 @@ public class GlobalSearchViewModelTests : IDisposable
             list, "Tarea oculta", "Coincide", 1, null, PolarRecurrence.None, 0, []);
 
         var vm = new GlobalSearchViewModel(
-            _vault, _kanban, _polarTasks, _reminders, polarAuthNotLinked, r => _selectedResult = r);
+            _vault, new NoteSearchService(_vault), _kanban, _polarTasks, _reminders, polarAuthNotLinked, r => _selectedResult = r);
         vm.SearchText = "Coincide";
         await RunSearchAsync(vm);
 
@@ -251,5 +251,61 @@ public class GlobalSearchViewModelTests : IDisposable
         vm.OpenResult(result);
 
         Assert.Same(result, _selectedResult);
+    }
+
+    // ===================== Búsqueda de texto completo =====================
+
+    [Fact]
+    public async Task Search_FindsTextDeepInsideANote_AndShowsTheSurroundingSnippet()
+    {
+        // El relleno empuja la frase buscada más allá de los 160 caracteres de NoteFile.Preview, que es
+        // contra lo que esta búsqueda comparaba antes: con el filtro anterior, este resultado no existía.
+        var relleno = string.Join(" ", Enumerable.Repeat("relleno", 60));
+        File.WriteAllText(
+            Path.Combine(_vaultDirectory, "reunion.md"),
+            $"# Notas de reunion\n\n{relleno}\n\nacordamos migrar el backend en octubre");
+
+        var vm = CreateViewModel();
+        vm.SearchText = "migrar el backend";
+        await RunSearchAsync(vm);
+
+        var result = Assert.Single(vm.Results);
+        Assert.Equal(GlobalSearchResultType.Note, result.Type);
+        Assert.Equal("Notas de reunion", result.Title);
+        Assert.Contains("migrar el backend", result.Subtitle);
+        Assert.NotNull(result.CaretOffset);
+    }
+
+    [Fact]
+    public async Task Search_ForATitleMatch_KeepsShowingThePathAsSubtitle_AndCarriesNoCaretOffset()
+    {
+        File.WriteAllText(
+            Path.Combine(_vaultDirectory, "presupuesto.md"),
+            "# Presupuesto anual\n\ncuerpo sin relacion");
+
+        var vm = CreateViewModel();
+        vm.SearchText = "Presupuesto";
+        await RunSearchAsync(vm);
+
+        var result = Assert.Single(vm.Results);
+        Assert.Equal("presupuesto.md", result.Subtitle);
+        Assert.Null(result.CaretOffset);
+    }
+
+    [Fact]
+    public async Task Search_IncludesNotesStoredInsideASession()
+    {
+        var sessions = new SessionService(_vault);
+        var session = sessions.Create("Proyecto");
+        File.WriteAllText(
+            Path.Combine(session.RootPath, "interna.md"),
+            "# Nota interna\n\ndetalle exclusivo de la sesion");
+
+        var vm = CreateViewModel();
+        vm.SearchText = "detalle exclusivo";
+        await RunSearchAsync(vm);
+
+        var result = Assert.Single(vm.Results);
+        Assert.Equal("Nota interna", result.Title);
     }
 }

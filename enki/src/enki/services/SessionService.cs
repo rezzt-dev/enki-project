@@ -219,6 +219,12 @@ public sealed class SessionService
         if (session.IsDefault) return false;
         if (!Directory.Exists(session.RootPath)) return false;
 
+        // La DEK desbloqueada está cacheada por ruta de carpeta, y esta operación mueve esa carpeta fuera
+        // de .sessions/. Sin este Lock la clave quedaría huérfana en memoria bajo una ruta que ya no
+        // existe, y una sesión nueva que reutilizase ese mismo nombre de carpeta nacería marcada como
+        // "desbloqueada" con una clave que no es la suya.
+        Lock(session);
+
         Directory.CreateDirectory(TrashedSessionsRoot);
 
         var folderName = Path.GetFileName(session.RootPath);
@@ -1001,6 +1007,12 @@ public sealed class SessionService
             var tempPath = $"{manifestPath}.tmp-{Guid.NewGuid():N}";
             File.WriteAllText(tempPath, JsonSerializer.Serialize(manifest, JsonOptions));
             File.Move(tempPath, manifestPath, overwrite: true);
+
+            // VaultService memoizes "is this session encrypted?" per session root against the manifest's
+            // mtime; a manifest written and read back inside the same filesystem timestamp tick would
+            // otherwise be served from the pre-write entry. Matters most for CreateEncrypted, whose very
+            // first WriteContent lands microseconds after this line.
+            _vaultService.InvalidateSessionEncryptionCache(sessionPath);
         }
         catch (IOException ex)
         {

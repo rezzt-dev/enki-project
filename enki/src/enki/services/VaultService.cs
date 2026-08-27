@@ -66,14 +66,47 @@ public sealed class VaultService
         VaultPath = settingsService.Settings.VaultPath ?? string.Empty;
     }
 
+    /// <summary>Cached answer to "is the session rooted at this path encrypted?", keyed by session root and
+    /// validated against the manifest's <see cref="FileInfo.LastWriteTimeUtc"/>. Before this existed,
+    /// <see cref="ResolveEncryptedSessionRoot"/> deserialized <c>.session.json</c> from disk on *every*
+    /// content read and write — including the editor's 600 ms autosave and every note of a full-vault
+    /// scan — which is the cost its own doc comment flagged as "worth caching later if profiling ever
+    /// shows it matters". A full-text search over a session-heavy vault is what made it matter.</summary>
+    private readonly Dictionary<string, (bool IsEncrypted, DateTime ManifestWriteUtc)> _sessionEncryptionCache =
+        new(PathComparerFor());
+
+    private static StringComparer PathComparerFor() =>
+        PathComparison == StringComparison.OrdinalIgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+    /// <summary>Drops the cached encryption status for <paramref name="sessionRootPath"/> (or all of them
+    /// when null) — called by <see cref="SessionService"/> whenever it writes a manifest, so a session that
+    /// just became encrypted (or was restored from the trash under a new folder name) is never served from
+    /// a stale entry. The mtime check in <see cref="ResolveEncryptedSessionRoot"/> already covers edits made
+    /// outside the app; this covers the same-tick case where a write and a read share a filesystem timestamp
+    /// granularity too coarse to tell them apart.</summary>
+    internal void InvalidateSessionEncryptionCache(string? sessionRootPath = null)
+    {
+        lock (_sessionEncryptionCache)
+        {
+            if (sessionRootPath is null) _sessionEncryptionCache.Clear();
+            else _sessionEncryptionCache.Remove(sessionRootPath);
+        }
+    }
+
     /// <summary>Null if <paramref name="fullPath"/> isn't under any session, or is under a plain-text one.
     /// Otherwise, the root path of the encrypted session it belongs to — the same identifier
     /// <see cref="SessionEncryptionService"/> uses as its unlocked-DEK cache key. Reads
     /// <c>.session.json</c> directly with its own minimal JSON read (see <see cref="SessionManifestFileName"/>'s
-    /// doc comment for why this doesn't go through <see cref="SessionService"/>). Consulted by every
-    /// content read/write below, so a session's encryption status is effectively re-checked on every call —
-    /// acceptable for now since the manifest is tiny and this only runs for paths actually under
-    /// <c>.sessions/</c>; worth caching later if profiling ever shows it matters.</summary>
+    /// doc comment for why this doesn't go through <see cref="SessionService"/>), memoized per session root
+    /// in <see cref="_sessionEncryptionCache"/>.
+    ///
+    /// <para><b>Fails closed.</b> A manifest that exists but can't be read or parsed used to return null —
+    /// i.e. "this session is plain text" — which is the most dangerous possible guess: the very next
+    /// <see cref="WriteFileAtomic"/> would write the user's note to disk <em>unencrypted</em> inside a
+    /// folder they created precisely so its contents would never be, and would do it silently. A corrupt
+    /// manifest now raises <see cref="SessionLockedException"/> instead, so the session behaves exactly
+    /// like a locked one (readable name/note count in the sidebar, no content access) until the manifest
+    /// is repaired.</para></summary>
     private string? ResolveEncryptedSessionRoot(string fullPath)
     {
         if (string.IsNullOrEmpty(VaultPath)) return null;
@@ -100,17 +133,40 @@ public sealed class VaultService
 
         var sessionRoot = Path.Combine(sessionsRoot, sessionFolder);
         var manifestPath = Path.Combine(sessionRoot, SessionManifestFileName);
-        if (!File.Exists(manifestPath)) return null;
 
+        // No manifest at all: an orphaned folder someone dropped under .sessions/ by hand, which List()
+        // also treats as a plain session via a synthetic manifest. Nothing was ever encrypted here, so
+        // there's no ciphertext to protect and plain text is the correct answer, not a guess.
+        var manifestInfo = new FileInfo(manifestPath);
+        if (!manifestInfo.Exists) return null;
+
+        var manifestWriteUtc = manifestInfo.LastWriteTimeUtc;
+        lock (_sessionEncryptionCache)
+        {
+            if (_sessionEncryptionCache.TryGetValue(sessionRoot, out var cached) && cached.ManifestWriteUtc == manifestWriteUtc)
+                return cached.IsEncrypted ? sessionRoot : null;
+        }
+
+        bool isEncrypted;
         try
         {
             var manifest = JsonSerializer.Deserialize<SessionManifest>(File.ReadAllText(manifestPath));
-            return manifest?.Encryption is not null ? sessionRoot : null;
+            isEncrypted = manifest?.Encryption is not null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            return null; // orphaned/corrupt manifest — treat the session as unencrypted rather than throw
+            // Fail closed — see this method's doc comment. Deliberately NOT cached: the manifest may become
+            // readable again (a transient lock, a restored backup) and nothing should keep serving the
+            // blocked answer once it does.
+            LogService.Error($"No se pudo leer el manifiesto de sesión '{manifestPath}'; se bloquea el acceso a su contenido en vez de tratarlo como texto plano", ex);
+            throw new SessionLockedException(sessionRoot);
         }
+
+        lock (_sessionEncryptionCache)
+        {
+            _sessionEncryptionCache[sessionRoot] = (isEncrypted, manifestWriteUtc);
+        }
+        return isEncrypted ? sessionRoot : null;
     }
 
     /// <summary>Fixed (non-localized) name of the subfolder Enki keeps its vault content in, nested one
@@ -385,8 +441,54 @@ public sealed class VaultService
         if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath)) return [];
 
         return EnumerateMarkdownFiles(folderPath, SearchOption.TopDirectoryOnly)
-            .Select(info => _noteCache.GetOrRead(info, ReadNoteAndContent).Note)
+            .Select(TryReadCached)
+            .Where(entry => entry is not null)
+            .Select(entry => entry!.Value.Note)
             .OrderByDescending(n => n.ModifiedUtc)
+            .ToList();
+    }
+
+    /// <summary>Reads one note through <see cref="_noteCache"/>, yielding null instead of throwing when the
+    /// note belongs to a session that's currently locked (or whose manifest can't be read — see
+    /// <see cref="ResolveEncryptedSessionRoot"/>).
+    ///
+    /// <para>Every enumeration below used to call <c>_noteCache.GetOrRead</c> straight inside a LINQ
+    /// <c>Select</c>, so a single locked note aborted the whole scan with a
+    /// <see cref="SessionLockedException"/> escaping from inside an <see cref="IEnumerable{T}"/> — only
+    /// <see cref="GetAllNotesAcrossVaultWithContent"/> guarded against it, and only at whole-session
+    /// granularity. That made <see cref="GetAllNotesRecursive"/> over a locked session throw rather than
+    /// return, which is a latent crash in every caller that enumerates notes without first checking the
+    /// lock state (the note grid checks; the trash view, the session sidebar and search do not). Skipping
+    /// is the behaviour the rest of the app already assumes: "a locked session contributes nothing",
+    /// exactly like <c>SessionService.LoadGraph</c>.</para></summary>
+    private (NoteFile Note, string Content)? TryReadCached(FileInfo info)
+    {
+        try
+        {
+            return _noteCache.GetOrRead(info, ReadNoteAndContent);
+        }
+        catch (SessionLockedException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>One folder's notes with their content — the same relationship to <see cref="GetNotes"/> that
+    /// <see cref="GetAllNotesRecursiveWithContent"/> has to <see cref="GetAllNotesRecursive"/>. Needed by the
+    /// note grid's search filter, which searches the folder the user is currently looking at and now does so
+    /// over each note's full body rather than <see cref="NoteFile.Preview"/>'s first 160 characters. Shares
+    /// <see cref="_noteCache"/> with <see cref="GetNotes"/>, so asking for both inside one
+    /// <c>NotesViewModel.Reload</c> doesn't read the disk twice.</summary>
+    public List<(NoteFile Note, string Content)> GetNotesWithContent(string? folderPath = null)
+    {
+        folderPath ??= VaultPath;
+        if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath)) return [];
+
+        return EnumerateMarkdownFiles(folderPath, SearchOption.TopDirectoryOnly)
+            .Select(TryReadCached)
+            .Where(entry => entry is not null)
+            .Select(entry => entry!.Value)
+            .OrderByDescending(t => t.Note.ModifiedUtc)
             .ToList();
     }
 
@@ -406,7 +508,9 @@ public sealed class VaultService
 
         return EnumerateMarkdownFiles(root, SearchOption.AllDirectories)
             .Where(info => !IsUnderHiddenDirectory(root, info.FullName))
-            .Select(info => _noteCache.GetOrRead(info, ReadNoteAndContent).Note)
+            .Select(TryReadCached)
+            .Where(entry => entry is not null)
+            .Select(entry => entry!.Value.Note)
             .OrderByDescending(n => n.ModifiedUtc)
             .ToList();
     }
@@ -425,7 +529,9 @@ public sealed class VaultService
 
         return EnumerateMarkdownFiles(root, SearchOption.AllDirectories)
             .Where(info => !IsUnderHiddenDirectory(root, info.FullName))
-            .Select(info => _noteCache.GetOrRead(info, ReadNoteAndContent))
+            .Select(TryReadCached)
+            .Where(entry => entry is not null)
+            .Select(entry => entry!.Value)
             .OrderByDescending(t => t.Note.ModifiedUtc)
             .ToList();
     }
@@ -562,9 +668,78 @@ public sealed class VaultService
     {
         EnsureVaultAvailable();
         var oldPath = note.FullPath;
-        note.FullPath = MoveWithUniqueSuffix(note.FullPath, destinationFolderPath);
+        note.FullPath = MovePreservingEncryption(note.FullPath, destinationFolderPath);
         _noteCache.Invalidate(oldPath);
+        _noteCache.Invalidate(note.FullPath);
         return note;
+    }
+
+    /// <summary>Moves a note or attachment into <paramref name="destinationFolder"/>, converting its
+    /// on-disk representation when the move crosses an encryption boundary — out of a protected session
+    /// into the vault (decrypt), into a protected session from outside it (encrypt), or straight from one
+    /// protected session into another (re-encrypt under the destination's own DEK).
+    ///
+    /// <para>A plain <see cref="File.Move(string, string)"/> — what this used to be — moves the file's
+    /// <em>bytes</em> while <see cref="ResolveEncryptedSessionRoot"/> silently changes its mind about what
+    /// those bytes mean, and both directions destroy the content as far as the user can tell. Dragging a
+    /// vault note into a protected session left plain text sitting in a folder every read now tries to
+    /// AES-GCM-decrypt: the tag check fails, <see cref="SafeReadContent"/> logs and returns "", and the
+    /// note opens blank. Dragging one out left raw ciphertext in the vault root, which nothing decrypts
+    /// any more, so the note opens as binary garbage. Neither case reported an error and neither was
+    /// recoverable from the UI.</para>
+    ///
+    /// <para>Content is written to the destination before the source is removed, so an interrupted move
+    /// leaves a duplicate rather than a hole. A locked source or destination session raises
+    /// <see cref="SessionLockedException"/> from the encryption service and aborts the move with the file
+    /// untouched — moving content into or out of a session you can't open is exactly the operation that
+    /// must not proceed on a guess.</para></summary>
+    private string MovePreservingEncryption(string sourcePath, string destinationFolder)
+    {
+        var destination = ResolveUniqueDestination(sourcePath, destinationFolder);
+
+        var sourceRoot = ResolveEncryptedSessionRoot(sourcePath);
+        var destinationRoot = ResolveEncryptedSessionRoot(destination);
+
+        var sameScope = sourceRoot is null
+            ? destinationRoot is null
+            : destinationRoot is not null && PathsEqual(sourceRoot, destinationRoot);
+        if (sameScope) return MoveWithUniqueSuffix(sourcePath, destinationFolder);
+
+        var raw = File.ReadAllBytes(sourcePath);
+        var plaintext = sourceRoot is null ? raw : _encryptionService.Decrypt(sourceRoot, raw);
+        var payload = destinationRoot is null ? plaintext : _encryptionService.Encrypt(destinationRoot, plaintext);
+
+        try
+        {
+            var tempPath = $"{destination}.tmp-{Guid.NewGuid():N}";
+            File.WriteAllBytes(tempPath, payload);
+            File.Move(tempPath, destination, overwrite: true);
+            File.Delete(sourcePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Error($"No se pudo mover '{sourcePath}' a '{destination}' re-cifrando su contenido", ex);
+            throw;
+        }
+
+        return destination;
+    }
+
+    /// <summary>The name <paramref name="sourcePath"/> would take inside <paramref name="destinationFolder"/>
+    /// once the same " 2"/" 3" collision suffix <see cref="MoveWithUniqueSuffix"/> applies is accounted for —
+    /// split out of it so <see cref="MovePreservingEncryption"/> can know the final destination path (and
+    /// therefore which session, if any, will own the file) <em>before</em> anything is written there.</summary>
+    private static string ResolveUniqueDestination(string sourcePath, string destinationFolder)
+    {
+        var destination = Path.Combine(destinationFolder, Path.GetFileName(sourcePath));
+        var suffix = 2;
+        while (File.Exists(destination))
+        {
+            destination = Path.Combine(destinationFolder,
+                $"{Path.GetFileNameWithoutExtension(sourcePath)} {suffix}{Path.GetExtension(sourcePath)}");
+            suffix++;
+        }
+        return destination;
     }
 
     /// <summary>Moves <paramref name="sourcePath"/> into <paramref name="destinationFolder"/>, appending
@@ -575,15 +750,7 @@ public sealed class VaultService
     /// trace of which move it was.</summary>
     private static string MoveWithUniqueSuffix(string sourcePath, string destinationFolder)
     {
-        var fileName = Path.GetFileName(sourcePath);
-        var destination = Path.Combine(destinationFolder, fileName);
-        var suffix = 2;
-        while (File.Exists(destination))
-        {
-            destination = Path.Combine(destinationFolder,
-                $"{Path.GetFileNameWithoutExtension(sourcePath)} {suffix}{Path.GetExtension(sourcePath)}");
-            suffix++;
-        }
+        var destination = ResolveUniqueDestination(sourcePath, destinationFolder);
 
         try
         {
@@ -643,11 +810,24 @@ public sealed class VaultService
     /// caller able to react proactively (skip a locked note while restoring tabs, refuse an autosave
     /// instead of crashing) should prefer this over a try/catch, mirroring
     /// <c>FilesViewModel.IsSelectedSessionLocked</c> — the one place that already got this right before
-    /// Notas/Editor did (docs/version-alfa-3/01-analisis-detallado.md §4.1).</summary>
+    /// Notas/Editor did (docs/version-alfa-3/01-analisis-detallado.md §4.1).
+    ///
+    /// <para>Also true when the session's manifest itself can't be read, since
+    /// <see cref="ResolveEncryptedSessionRoot"/> now fails closed on that: a guard that threw the very
+    /// exception it exists to pre-empt would be no guard at all — the tab-restore loop in
+    /// <c>NotesViewModel.RestoreOpenTabs</c> calls this precisely so shell initialization can't crash on an
+    /// inaccessible session.</para></summary>
     public bool IsPathInLockedSession(string fullPath)
     {
-        var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
-        return encryptedRoot is not null && !_encryptionService.IsUnlocked(encryptedRoot);
+        try
+        {
+            var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
+            return encryptedRoot is not null && !_encryptionService.IsUnlocked(encryptedRoot);
+        }
+        catch (SessionLockedException)
+        {
+            return true;
+        }
     }
 
     /// <summary>Reads a note's text content — transparently decrypting it first if <paramref name="path"/>
@@ -1110,9 +1290,15 @@ public sealed class VaultService
         };
     }
 
-    public static VaultFile MoveFile(VaultFile file, string destinationFolderPath)
+    /// <summary>Attachment counterpart of <see cref="MoveNote"/> — went through the same raw
+    /// <see cref="File.Move(string, string)"/> and so had the same encryption-boundary bug, which is why
+    /// this is no longer static: re-encrypting needs the instance's <see cref="_encryptionService"/>.</summary>
+    public VaultFile MoveFile(VaultFile file, string destinationFolderPath)
     {
-        file.FullPath = MoveWithUniqueSuffix(file.FullPath, destinationFolderPath);
+        file.FullPath = MovePreservingEncryption(file.FullPath, destinationFolderPath);
+        // Un movimiento normal no cambia el tamaño del vault, pero uno que cruza la frontera de cifrado sí:
+        // el sobre AES-GCM añade (o quita) el nonce y el tag de cada archivo.
+        InvalidateVaultSizeCache();
         return file;
     }
 

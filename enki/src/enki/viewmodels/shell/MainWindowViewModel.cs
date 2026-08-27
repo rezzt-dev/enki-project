@@ -17,6 +17,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly SettingsService _settingsService;
     private readonly CustomThemeService _customThemeService;
     private readonly VaultService _vaultService;
+    private readonly NoteSearchService _noteSearchService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly VaultSettingsService _vaultSettingsService;
     private readonly HabitService _habitService;

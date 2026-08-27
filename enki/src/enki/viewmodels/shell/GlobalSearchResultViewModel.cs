@@ -42,6 +42,12 @@ public sealed partial class GlobalSearchResultViewModel : ObservableObject
     /// </summary>
     public object? Payload { get; }
 
+    /// <summary>Solo para resultados de tipo nota cuya coincidencia está en el cuerpo del documento:
+    /// desplazamiento en caracteres del acierto, para que abrir el resultado deje el cursor en la línea
+    /// encontrada en vez de al principio de la nota. <c>null</c> cuando el acierto fue en el título o en
+    /// una etiqueta, o cuando el resultado no es una nota.</summary>
+    public int? CaretOffset { get; }
+
     private readonly Action<GlobalSearchResultViewModel> _onOpen;
 
     public GlobalSearchResultViewModel(
@@ -51,7 +57,8 @@ public sealed partial class GlobalSearchResultViewModel : ObservableObject
         string subtitle,
         string? iconKind,
         object? payload,
-        Action<GlobalSearchResultViewModel> onOpen)
+        Action<GlobalSearchResultViewModel> onOpen,
+        int? caretOffset = null)
     {
         Type = type;
         Id = id;
@@ -60,6 +67,7 @@ public sealed partial class GlobalSearchResultViewModel : ObservableObject
         IconKind = iconKind;
         Payload = payload;
         _onOpen = onOpen;
+        CaretOffset = caretOffset;
     }
 
     /// <summary>

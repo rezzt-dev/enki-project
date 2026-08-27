@@ -117,7 +117,13 @@ public sealed partial class SessionsViewModel : ViewModelBase
     [ObservableProperty]
     private string _newSessionPasswordConfirm = string.Empty;
 
-    private const int MinPasswordLength = 8;
+    /// <summary>Longitud mínima de la contraseña de una sesión protegida. Es el <em>único</em> requisito:
+    /// no hay reglas de composición (mayúsculas, dígitos, símbolos) ni las va a haber — la contraseña llega
+    /// tal cual a <c>SessionEncryptionService</c>, que la pasa por PBKDF2-SHA256 sobre sus bytes UTF-8, así
+    /// que cualquier combinación de caracteres vale por igual. Enki es una app local de un solo usuario, no
+    /// un servicio expuesto a fuerza bruta remota: exigir una contraseña larga aquí solo consigue que el
+    /// usuario deje de usar sesiones protegidas.</summary>
+    private const int MinPasswordLength = 4;
 
     /// <summary>Non-null while the "here are your 5 recovery codes" dialog is open — opened once, right
     /// after <see cref="ConfirmCreateSession"/> creates a protected session, and never reopened later (the

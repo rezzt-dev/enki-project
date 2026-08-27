@@ -538,7 +538,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         var currentFolderPath = Path.GetDirectoryName(card.File.FullPath);
         if (string.Equals(currentFolderPath, destinationFolderPath, StringComparison.OrdinalIgnoreCase)) return;
 
-        VaultService.MoveFile(card.File, destinationFolderPath);
+        _vaultService.MoveFile(card.File, destinationFolderPath);
         Reload();
     }
 

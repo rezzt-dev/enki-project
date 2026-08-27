@@ -286,7 +286,9 @@ public sealed partial class MainWindowViewModel
         {
             case GlobalSearchResultType.Note:
                 Navigate(AppPage.Notes);
-                if (result.Payload is NoteFile note) Notes?.OpenNote(note);
+                // CaretOffset viene relleno cuando la coincidencia estaba en el cuerpo de la nota, para
+                // abrirla directamente en esa línea (ver GlobalSearchResultViewModel.CaretOffset).
+                if (result.Payload is NoteFile note) Notes?.OpenNote(note, result.CaretOffset);
                 break;
             case GlobalSearchResultType.KanbanCard:
                 Navigate(AppPage.Kanban);

@@ -596,7 +596,7 @@ public class VaultServiceTests : IDisposable
         var destination = VaultService.CreateFolder(_vaultPath, "Destino").FullPath;
         File.WriteAllBytes(Path.Combine(destination, "movida.png"), [2]);
 
-        var moved = VaultService.MoveFile(file, destination);
+        var moved = vault.MoveFile(file, destination);
 
         Assert.Equal(destination, Path.GetDirectoryName(moved.FullPath));
         Assert.Equal("movida 2.png", Path.GetFileName(moved.FullPath));

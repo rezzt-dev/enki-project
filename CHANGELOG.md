@@ -7,6 +7,60 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Búsqueda de texto completo en las notas**: hasta ahora las cuatro superficies de búsqueda de la app
+comparaban lo escrito contra `NoteFile.Preview` —los primeros 160 caracteres del cuerpo de cada nota,
+aplanados—, así que cualquier cosa escrita más allá de ese punto era imposible de encontrar desde Enki. Las
+cuatro buscan ahora en el **contenido completo** de cada nota:
+
+- **Búsqueda global** (`Ctrl+Shift+F`): cada resultado de nota muestra como subtítulo el **fragmento de
+  texto** donde apareció la coincidencia, en vez de la ruta del fichero, y abrirlo lleva el cursor a **esa
+  línea** del editor en lugar de al principio de la nota. Los aciertos por título o por etiqueta siguen
+  mostrando la ruta.
+- **Quick Switcher** (`Ctrl+P`), **buscador de la rejilla de Notas** y **buscador de la vista
+  simplificada**: mismo cambio de alcance. En el Quick Switcher un acierto de título sigue pesando más que
+  uno de etiqueta, y ambos más que uno de contenido — sigue siendo, ante todo, un salto por nombre de nota.
+- La búsqueda global y el Quick Switcher recorren ahora **todo el vault, sesiones incluidas**. Antes solo
+  miraban la raíz, de modo que ninguna nota guardada dentro de una sesión aparecía nunca en ninguno de los
+  dos. Las notas de una sesión bloqueada se siguen quedando fuera, como en el resto de la app.
+- Sin índice nuevo ni almacén nuevo: se lee a través de la caché de notas que `VaultService` ya mantiene
+  (invalidada por fecha de modificación y por cada escritura), así que buscar dos veces seguidas no vuelve
+  a tocar el disco.
+
+**Contraseña mínima de una sesión protegida: 4 caracteres** (antes 8), y sigue sin haber ninguna regla de
+composición — sirve cualquier combinación de letras, dígitos, símbolos, espacios o emoji. La contraseña
+llega tal cual a PBKDF2-SHA256 sobre sus bytes UTF-8, así que ninguna combinación vale más que otra, y Enki
+es una app local de un solo usuario: exigir una contraseña larga solo conseguía que no se usasen sesiones
+protegidas.
+
+**Correcciones en las sesiones protegidas con contraseña**: cuatro fallos silenciosos que afectaban al
+contenido del usuario.
+
+- **Mover una nota o un adjunto cruzando la frontera de una sesión cifrada** movía los bytes sin
+  convertirlos. Arrastrar una nota del vault a una sesión protegida dejaba texto plano dentro de una
+  carpeta que se lee descifrando, así que la nota volvía a abrirse **en blanco**; arrastrarla hacia fuera
+  dejaba el ciphertext en el vault, y la nota se abría como **basura binaria**. Ninguno de los dos casos
+  avisaba de nada ni tenía arreglo desde la interfaz. Ahora el contenido se descifra y se vuelve a cifrar
+  según corresponda —incluido el paso directo de una sesión protegida a otra, que se re-envuelve bajo la
+  clave del destino— y el destino se escribe antes de borrar el origen, de modo que un fallo a mitad deja
+  un duplicado y no un hueco. Mover algo hacia o desde una sesión bloqueada se rechaza y deja el fichero
+  donde estaba, en vez de continuar adivinando.
+- **Un `.session.json` ilegible o corrupto** hacía que la sesión se tratase como texto plano: la siguiente
+  escritura guardaba la nota **sin cifrar** dentro de la carpeta protegida. Ahora falla cerrado — la sesión
+  se comporta como una bloqueada (nombre y número de notas visibles en la barra lateral, contenido
+  inaccesible) hasta que el manifiesto se repare, y el fallo no se cachea, así que repararlo devuelve el
+  acceso sin reiniciar.
+- **Enumerar las notas de una sesión bloqueada** lanzaba `SessionLockedException` desde dentro de un
+  `Select` de LINQ en vez de excluirla, dejando un cierre inesperado latente en cualquier pantalla que
+  listase notas sin comprobar antes el estado de bloqueo. Ahora se excluye, que es lo que ya hacía el resto
+  de la app.
+- **Borrar una sesión protegida** (moverla a la papelera) dejaba su clave desbloqueada colgando en memoria
+  bajo una ruta que ya no existe; una sesión nueva que reutilizase ese nombre de carpeta nacía marcada como
+  desbloqueada con una clave que no era la suya. Ahora se bloquea antes de moverla.
+
+De paso, `VaultService` memoriza si una sesión está cifrada (validado contra la fecha del manifiesto) en
+vez de deserializar `.session.json` en cada lectura y cada escritura de contenido, incluido el autoguardado
+del editor cada 600 ms.
+
 **Dos vistas para la página de Notas**: nuevo ajuste **Ajustes › Editor › Vista del editor** (Completa /
 Simplificada, persistido en `NotesViewMode` y aplicado en caliente, sin cerrar ni reabrir nada). La vista
 completa es la de siempre; la simplificada es una disposición mínima al estilo Obsidian, pensada para

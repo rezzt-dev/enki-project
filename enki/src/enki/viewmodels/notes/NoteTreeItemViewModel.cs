@@ -90,7 +90,10 @@ public sealed partial class NoteTreeItemViewModel : ObservableObject
     [RelayCommand]
     private void ToggleExpand()
     {
-        if (IsFolder) IsExpanded = !IsExpanded;
+        // Ignorado mientras se renombra la carpeta: el botón de la flecha comparte fila con el cuadro
+        // de edición, y plegarla bajo el cursor a mitad de escribir el nombre es justo lo que la vista
+        // simplificada quiere evitar (ver SimpleNotesView.TreeRow_PointerPressed).
+        if (IsFolder && !IsRenaming) IsExpanded = !IsExpanded;
     }
 
     [RelayCommand]

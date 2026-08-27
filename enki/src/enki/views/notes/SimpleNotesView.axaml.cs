@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using enki.ViewModels;
 
 namespace enki.Views;
@@ -27,9 +28,22 @@ public partial class SimpleNotesView : UserControl
     private double _resizeStartX;
     private double _resizeStartWidth;
 
+    /// <summary>Alzado por <see cref="TreeRow_PointerPressed"/> cuando el clic cae en la fila que se está
+    /// renombrando: le dice a <see cref="TreeNameEdit_LostFocus"/> que la pérdida de foco que viene a
+    /// continuación es ese mismo clic —recolocar el cursor, o un roce con el Border que rodea al cuadro
+    /// estrecho— y no un "clic fuera" que deba confirmar. Se rearma solo en el siguiente ciclo del
+    /// dispatcher, así que solo cubre el LostFocus inmediato.</summary>
+    private bool _keepRenamingThroughLostFocus;
+
     public SimpleNotesView()
     {
         InitializeComponent();
+
+        // En túnel (antes que cualquier burbuja y antes de que Avalonia mueva el foco por el clic): si
+        // el clic cae dentro de la fila que se está renombrando, se arma la bandera que impide que el
+        // LostFocus del cuadro —que llega inmediatamente después— confirme el renombrado. El manejador
+        // de burbuja por fila (TreeRow_PointerPressed) es quien luego se traga el evento y reenfoca.
+        AddHandler(PointerPressedEvent, OnTreePreviewPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         DataContextChanged += (_, _) => SubscribeToViewModel();
         Loaded += (_, _) => SubscribeToViewModel();
@@ -65,10 +79,50 @@ public partial class SimpleNotesView : UserControl
 
     // ===================== Filas del árbol =====================
 
+    /// <summary>Ver el comentario del <c>AddHandler</c> en el constructor. Solo arma la bandera; no marca
+    /// el evento como manejado para no romper el comportamiento normal de las filas que no se renombran.</summary>
+    private void OnTreePreviewPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is not Visual source) return;
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return; // el clic derecho abre el menú contextual
+
+        foreach (var ancestor in source.GetSelfAndVisualAncestors())
+        {
+            if (ancestor is StyledElement { DataContext: NoteTreeItemViewModel { IsRenaming: true } })
+            {
+                _keepRenamingThroughLostFocus = true;
+                Dispatcher.UIThread.Post(() => _keepRenamingThroughLostFocus = false, DispatcherPriority.Input);
+                return;
+            }
+        }
+    }
+
     private void TreeRow_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is not Border { DataContext: NoteTreeItemViewModel node } || Vm is not { } vm) return;
         if (e.GetCurrentPoint(sender as Control).Properties.IsRightButtonPressed) return;
+
+        // Mientras la fila está en modo renombrar es una superficie de edición, no un objetivo de clic:
+        // el cuadro de texto solo ocupa una franja estrecha de una fila ancha, así que casi cualquier
+        // clic para colocar el cursor cae en el Border, no en el TextBox. Se traga el evento y se
+        // devuelve el foco al cuadro, para que ni se active el nodo (abrir la nota / plegar la carpeta)
+        // ni el LostFocus del cuadro cierre el renombrado antes de haber escrito nada. Empezar a
+        // renombrar viene del menú contextual, no de aquí, así que esto no impide iniciarlo.
+        if (node.IsRenaming)
+        {
+            // La bandera ya la armó OnTreePreviewPointerPressed en túnel; aquí solo se reenfoca el
+            // cuadro y se marca el evento como manejado para que el clic no haga nada más.
+            foreach (var descendant in ((Visual)sender).GetVisualDescendants())
+            {
+                if (descendant is TextBox { IsVisible: true } renameBox)
+                {
+                    FocusRenameBox(renameBox);
+                    break;
+                }
+            }
+            e.Handled = true;
+            return;
+        }
 
         vm.ActivateTreeItemCommand.Execute(node);
 
@@ -84,7 +138,7 @@ public partial class SimpleNotesView : UserControl
     {
         if (_dragging || _dragPressArgs is null) return;
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-        if (sender is not Border { DataContext: NoteTreeItemViewModel node } || !node.IsNote) return;
+        if (sender is not Border { DataContext: NoteTreeItemViewModel node } || !node.IsNote || node.IsRenaming) return;
 
         var current = e.GetPosition(null);
         var dx = current.X - _dragStartPoint.X;
@@ -179,6 +233,15 @@ public partial class SimpleNotesView : UserControl
     private void TreeNameEdit_LostFocus(object? sender, RoutedEventArgs e)
     {
         if (sender is not TextBox { DataContext: NoteTreeItemViewModel node } || !node.IsRenaming) return;
+
+        // El clic fue en la propia fila que se renombra (ver TreeRow_PointerPressed): no es un "clic
+        // fuera", así que se mantiene la edición y se devuelve el foco al cuadro en vez de confirmar.
+        if (_keepRenamingThroughLostFocus)
+        {
+            if (sender is TextBox box) FocusRenameBox(box);
+            return;
+        }
+
         Vm?.CommitRenameTreeItemCommand.Execute(node);
     }
 
