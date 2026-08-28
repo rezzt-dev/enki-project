@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using Avalonia.Media;
 
 namespace enki.Views.Editor.Markdown;
@@ -82,6 +83,93 @@ internal static class MarkdownLineMeasurer
     public static double MeasureGlyph(string glyph, MdLine model, MarkdownStyle style) =>
         Format(glyph, BaseRunFor(model, style)).WidthIncludingTrailingWhitespace;
 
+    /// <summary>
+    /// Compone el texto visible de un trozo de línea en un <see cref="FormattedText"/> de párrafo: el
+    /// mismo texto que mide <see cref="MeasureVisible"/> (sin los marcadores que el live preview oculta y
+    /// con la tipografía que le toca a cada tramo), pero como un objeto que además se puede dibujar y que,
+    /// al llevar <paramref name="maxWidth"/>, parte el texto en varias líneas cuando no cabe.
+    ///
+    /// <para>Es lo que hace posible que la celda de una tabla envuelva: el texto de una celda no se puede
+    /// partir con los espaciadores del generador (un espaciador solo desplaza la primera línea visual, ver
+    /// <see cref="WhitespaceFormattedElement"/>), así que una fila que envuelve se dibuja como un objeto
+    /// propio a partir de estos párrafos — ver <see cref="MarkdownTableRowVisual"/>.</para>
+    ///
+    /// <para>Se mide y se dibuja siempre como si el cursor estuviera fuera, porque justamente eso es
+    /// cuando una tabla se dibuja: con el cursor dentro se muestra el Markdown en crudo.</para>
+    /// </summary>
+    /// <param name="hidden">Rangos que no se dibujan. <c>Replacement</c> es el texto que ocupa el sitio del
+    /// rango, o null para quitarlo sin más: lo usa la imagen de una celda envuelta, que se anuncia con el
+    /// nombre de su archivo en vez de desaparecer sin dejar rastro de que la nota pedía algo ahí.</param>
+    /// <param name="maxWidth">Ancho al que envolver, o 0 para no envolver.</param>
+    public static FormattedText BuildVisible(
+        string lineText,
+        int lineOffset,
+        MdLine model,
+        IReadOnlyList<(int Start, int End, string? Replacement)> hidden,
+        IReadOnlyList<(int Start, int End, MdSpanKind Kind)> htmlStyles,
+        MarkdownStyle style,
+        IBrush foreground,
+        int from,
+        int to,
+        FontWeight? weightOverride,
+        double maxWidth,
+        TextAlignment alignment)
+    {
+        var n = to < 0 ? lineText.Length : Math.Min(to, lineText.Length);
+
+        var baseRun = BaseRunFor(model, style);
+        if (weightOverride is { } weight) baseRun = baseRun with { Weight = weight };
+
+        var builder = new StringBuilder();
+        var segments = new List<(int Start, int Length, Run Run)>();
+        var i = Math.Max(0, from);
+
+        while (i < n)
+        {
+            if (HiddenAt(hidden, lineOffset + i) is { } range)
+            {
+                if (!string.IsNullOrEmpty(range.Replacement))
+                {
+                    segments.Add((builder.Length, range.Replacement.Length, baseRun));
+                    builder.Append(range.Replacement);
+                }
+                i = Math.Max(i + 1, range.End - lineOffset);
+                continue;
+            }
+
+            var run = RunAt(lineOffset + i, model, htmlStyles, NeverActive, style, baseRun);
+            var j = i + 1;
+            while (j < n && HiddenAt(hidden, lineOffset + j) is null &&
+                   RunAt(lineOffset + j, model, htmlStyles, NeverActive, style, baseRun).Equals(run))
+                j++;
+
+            segments.Add((builder.Length, j - i, run));
+            builder.Append(lineText, i, j - i);
+            i = j;
+        }
+
+        var formatted = new FormattedText(
+            builder.ToString(), CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            new Typeface(baseRun.Family, baseRun.Style, baseRun.Weight), baseRun.Size, foreground)
+        {
+            // Cero es "sin límite" en FormattedText, que es justo lo que hace falta cuando la celda no
+            // tiene que envolver.
+            MaxTextWidth = maxWidth > 0 ? maxWidth : 0,
+            TextAlignment = alignment
+        };
+
+        foreach (var (start, length, run) in segments)
+        {
+            if (length <= 0 || run.Equals(baseRun)) continue;
+            formatted.SetFontTypeface(new Typeface(run.Family, run.Style, run.Weight), start, length);
+            if (Math.Abs(run.Size - baseRun.Size) > 0.01) formatted.SetFontSize(run.Size, start, length);
+        }
+
+        return formatted;
+    }
+
+    private static bool NeverActive(int start, int end) => false;
+
     private readonly record struct Run(FontFamily Family, FontStyle Style, FontWeight Weight, double Size);
 
     private static Run BaseRunFor(MdLine model, MarkdownStyle style) => model.Kind switch
@@ -141,6 +229,18 @@ internal static class MarkdownLineMeasurer
         foreach (var (start, end) in hidden)
         {
             if (start <= offset && end > offset) return end;
+        }
+        return null;
+    }
+
+    /// <summary>Como <see cref="HiddenEnd"/>, pero devolviendo el rango entero: quien compone el párrafo
+    /// necesita además el texto que lo sustituye, si lo hay.</summary>
+    private static (int Start, int End, string? Replacement)? HiddenAt(
+        IReadOnlyList<(int Start, int End, string? Replacement)> hidden, int offset)
+    {
+        foreach (var range in hidden)
+        {
+            if (range.Start <= offset && range.End > offset) return range;
         }
         return null;
     }

@@ -231,15 +231,17 @@ public class EditorViewTablesUiTests : IDisposable
     }
 
     [Fact]
-    public void TableTooWideForTheColumn_StaysAsPlainText()
+    public void TableWithTooManyColumnsToEvenFitAMinimumWidth_StaysAsPlainText()
     {
         var (view, viewModel, window) = CreateView();
-        var wide = new string('x', 400);
+        var columns = string.Concat(Enumerable.Repeat("| dato ", 20));
+        var delimiter = string.Concat(Enumerable.Repeat("| --- ", 20));
         var editor = OpenNoteWith(view, viewModel, window,
-            $"| {wide} | {wide} |\n| --- | --- |\n| {wide} | {wide} |\n");
+            $"{columns}|\n{delimiter}|\n{columns}|\n");
 
-        // Una tabla que no cabe se deja en crudo: dibujarla dejaría las filas partidas y la rejilla
-        // descuadrada, y el Markdown se lee mejor que un dibujo roto.
+        // El único caso que sigue quedando en crudo: tantas columnas que ninguna llega al ancho mínimo.
+        // Por debajo de él una celda envolvería una o dos letras por línea, que se lee peor que el
+        // Markdown sin dibujar. Una tabla que simplemente es larga sí se dibuja, envolviendo.
         Assert.False(DelimiterIsFolded(editor));
 
         window.Close();
@@ -488,6 +490,77 @@ public class EditorViewTablesUiTests : IDisposable
         Assert.Equal(editor.TextArea.TextView.Bounds.Width, geometry.TotalWidth, precision: 1);
         // Sin contenido no hay proporción que respetar: las columnas salen iguales.
         Assert.Equal(geometry.ColumnWidths[0], geometry.ColumnWidths[1], precision: 1);
+
+        window.Close();
+    }
+
+    /// <summary>Texto de celda que no cabe de una vez en la columna de texto del editor, con el que se
+    /// provoca la envoltura en las pruebas de abajo.</summary>
+    private const string LongCell =
+        "porridge: 100 g avena, 250 ml bebida de avena, 120 g platano, 15 g crema de cacahuete, " +
+        "10 g pipas de girasol y un poco mas de texto para no caber de ninguna manera";
+
+    [Fact]
+    public void TableWithACellTooLongForOneLine_IsStillDrawn_Wrapping()
+    {
+        var (view, viewModel, window) = CreateView();
+        var editor = OpenNoteWith(view, viewModel, window,
+            $"| comida | que comer |\n| --- | --- |\n| desayuno | {LongCell} |\n");
+
+        // Antes esto devolvía null ("no cabe") y la tabla se mostraba como Markdown en crudo: bastaba con
+        // que una celda pasara de una línea para perder la tabla entera.
+        var geometry = GeometryOfFirstTable(editor);
+
+        Assert.True(geometry.Wraps, "la tabla debería dibujarse con celdas envueltas");
+        Assert.Equal(editor.TextArea.TextView.Bounds.Width, geometry.TotalWidth, precision: 1);
+        // La columna corta se queda con su ancho natural y la larga se lleva el resto, como en un
+        // <table> al 100 % de ancho.
+        Assert.True(geometry.ColumnWidths[1] > geometry.ColumnWidths[0] * 2,
+            $"columnas de {geometry.ColumnWidths[0]} y {geometry.ColumnWidths[1]}");
+
+        window.Close();
+    }
+
+    [Fact]
+    public void WrappedRow_IsTallerThanARowThatFitsInOneLine()
+    {
+        var (view, viewModel, window) = CreateView();
+        var editor = OpenNoteWith(view, viewModel, window,
+            $"| comida | que comer |\n| --- | --- |\n| cena | tortilla |\n| desayuno | {LongCell} |\n");
+
+        var wrapped = VisualLineOf(editor, 4).Height;
+        var single = VisualLineOf(editor, 3).Height;
+
+        // Dos líneas de texto donde la otra tiene una: la diferencia es del orden de una línea entera,
+        // no de un par de píxeles de redondeo.
+        Assert.True(wrapped > single + 10,
+            $"la fila envuelta mide {wrapped} y la de una línea {single}");
+
+        window.Close();
+    }
+
+    /// <summary>La queja que destapó todo esto: añadir un carácter a una celda —un "+" en
+    /// "patatas + ketchup"— hacía desaparecer la tabla. No era el carácter, era que la fila cruzaba el
+    /// ancho de la columna; el mismo texto sin él sí cabía. Ahora las dos se dibujan.</summary>
+    [Fact]
+    public void OneMoreCharacterInACell_DoesNotMakeTheTableDisappear()
+    {
+        var (view, viewModel, window) = CreateView();
+        var editor = OpenNoteWith(view, viewModel, window,
+            $"| comida | que comer |\n| --- | --- |\n| desayuno | {LongCell} + 10 g pipas |\n");
+
+        Assert.NotNull(GeometryOfFirstTable(editor));
+
+        window.Close();
+    }
+
+    [Fact]
+    public void TableThatFitsInOneLine_DoesNotWrap()
+    {
+        var (view, viewModel, window) = CreateView();
+        var editor = OpenNoteWith(view, viewModel, window, Table);
+
+        Assert.False(GeometryOfFirstTable(editor).Wraps);
 
         window.Close();
     }

@@ -29,7 +29,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     private const double CheckboxSize = 16;
     private const double CheckboxSpacing = 6;
 
-    private enum ZoneKind { Hide, Bullet, Checkbox, Align, JustifySpace, Image, TableRule }
+    private enum ZoneKind { Hide, Bullet, Checkbox, Align, JustifySpace, Image, TableRule, TableRow }
 
     /// <param name="Spacer">Extra blank width (px) this zone reserves before whatever it renders: the
     /// alignment spacing of the visual row starting here, or the share of leftover width a justified
@@ -54,6 +54,12 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         /// <summary>Alto que esta zona impone a su línea, si impone alguno: el relleno vertical de una
         /// fila de tabla o la banda fina de su fila separadora (ver <see cref="SpacerMetrics"/>).</summary>
         public SpacerMetrics Metrics { get; init; }
+
+        /// <summary>Solo para <see cref="ZoneKind.TableRow"/>: la fila y la geometría con las que se dibuja
+        /// una fila de tabla que envuelve (ver <see cref="MarkdownTableRowVisual"/>).</summary>
+        public MdTableRow? TableRow { get; init; }
+
+        public MdTableGeometry? TableGeometry { get; init; }
     }
 
     private readonly LivePreviewState _state;
@@ -185,7 +191,15 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         }
 
         if (tableRow is { } renderedRow && tableGeometry is { } geometry)
-            AddTableZones(zones, line, text, model, renderedRow, geometry);
+        {
+            // Una tabla con celdas que envuelven no se puede colocar con espaciadores: la fila entera pasa
+            // a ser un dibujo (ver MarkdownTableRowVisual). Su fila separadora sigue por el camino de
+            // siempre, que ya la deja en una banda fina.
+            if (geometry.Wraps && renderedRow.Kind != MdTableRowKind.Delimiter)
+                AddWrappedTableRowZone(zones, line, model, renderedRow, geometry);
+            else
+                AddTableZones(zones, line, text, model, renderedRow, geometry);
+        }
 
         if (tableLine is { Kind: MdTableRowKind.Header } headerRow)
             AddFoldedDelimiterZone(zones, line, model, headerRow.Table);
@@ -245,6 +259,23 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         // Lo que quede tras la última celda (espacios sobrantes y la barra de cierre) se oculta sin
         // reservar nada: el borde derecho de la tabla lo dibuja el fondo, no el texto.
         AddTableGapZone(zones, gapStart, line.EndOffset, model, 0, default);
+    }
+
+    /// <summary>Sustituye la fila entera por el objeto que la dibuja con sus celdas envueltas. Se lleva por
+    /// delante cualquier otra zona de la línea (los marcadores que ocultaba, la imagen que reemplazaba):
+    /// nada de eso se dibuja ya como texto, porque el objeto compone él mismo el contenido de cada celda a
+    /// partir del mismo modelo — ver <see cref="MarkdownTableLayout.BuildCell"/>.</summary>
+    private static void AddWrappedTableRowZone(List<Zone> zones, DocumentLine line, MdLine model,
+        MdTableRow row, MdTableGeometry geometry)
+    {
+        zones.Clear();
+        if (line.Length <= 0) return;
+
+        zones.Add(new Zone(line.Offset, line.EndOffset, ZoneKind.TableRow, model, 0)
+        {
+            TableRow = row,
+            TableGeometry = geometry
+        });
     }
 
     /// <summary>Oculta el texto de la fila separadora cuando está plegada. Una línea plegada pierde su
@@ -442,6 +473,13 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // línea entre el encabezado y el cuerpo.
                 ZoneKind.TableRule => new WhitespaceFormattedElement(string.Empty, length, 0,
                     new SpacerMetrics(MarkdownTableLayout.DelimiterRowHeight, 0)),
+                // Una fila de tabla con celdas que envuelven: se dibuja entera en lugar de colocarse con
+                // espaciadores, y su alto arrastra al de la línea igual que el de una imagen.
+                ZoneKind.TableRow => zone is { TableRow: { } tableRow, TableGeometry: { } tableGeometry }
+                    ? new InlineObjectElement(length, new MarkdownTableRowVisual(
+                        CurrentContext.Document.GetText(line), line, zone.Line, tableRow, tableGeometry,
+                        _style, _state, _textArea.TextView.DefaultLineHeight))
+                    : null,
                 ZoneKind.Align => spacer > 0 ? new WhitespaceFormattedElement(string.Empty, 0, spacer) : null,
                 // The space keeps its own glyph and grows by its share of the row's leftover width.
                 ZoneKind.JustifySpace => new WhitespaceFormattedElement(" ", length, spacer),
