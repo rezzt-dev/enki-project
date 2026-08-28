@@ -34,6 +34,10 @@ public partial class SkillEditorView : UserControl
         var textArea = Editor.TextArea;
         var textView = textArea.TextView;
 
+        // Igual que en EditorView: quien pliega la fila separadora de una tabla dibujada, construido antes
+        // del generador de elementos porque este le pregunta qué hay plegado.
+        _livePreviewState.TableFolding = new MarkdownTableFolding(textView, _livePreviewState, _style);
+
         textView.LineTransformers.Add(new MarkdownLivePreviewColorizer(_livePreviewState, _style));
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
@@ -94,6 +98,7 @@ public partial class SkillEditorView : UserControl
         }
         _livePreviewState.Selections = selections;
 
+        _livePreviewState.TableFolding?.Refresh();
         textArea.TextView.Redraw();
     }
 
@@ -102,6 +107,7 @@ public partial class SkillEditorView : UserControl
         var text = Editor.Text ?? string.Empty;
         _livePreviewState.Fences = MarkdownLineParser.ComputeFences(text);
         _livePreviewState.HtmlLines = MarkdownHtmlParser.ComputeLineStates(text, _livePreviewState.Fences);
+        _livePreviewState.Tables.SetRows(MarkdownTableParser.Scan(text, _livePreviewState.Fences));
     }
 
     /// <summary>Cada vez que <c>SkillsView</c> abre una skill distinta, este control se reutiliza con un
@@ -112,6 +118,8 @@ public partial class SkillEditorView : UserControl
         if (DataContext is not SkillEditorViewModel vm) return;
 
         _suppressTextChanged = true;
+        // Una skill distinta es otro texto entero: los pliegues de la anterior ya no significan nada.
+        _livePreviewState.TableFolding?.Reset();
         Editor.Text = vm.Text;
         RecomputeFences();
         OnCaretOrSelectionChanged();
@@ -121,6 +129,7 @@ public partial class SkillEditorView : UserControl
     private void OnEditorTextChanged(object? sender, EventArgs e)
     {
         RecomputeFences();
+        _livePreviewState.TableFolding?.Refresh();
         if (_suppressTextChanged) return;
         if (DataContext is SkillEditorViewModel vm) vm.Text = Editor.Text ?? string.Empty;
     }

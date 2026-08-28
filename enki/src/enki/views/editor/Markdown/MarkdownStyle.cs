@@ -24,6 +24,14 @@ public sealed class MarkdownStyle
     public required IBrush QuoteBar { get; init; }
     public required IBrush RuleLine { get; init; }
 
+    /// <summary>Líneas de la rejilla de una tabla — el mismo 10 % de tinta con el que el resto de la app
+    /// dibuja sus separadores de 1px (ver docs/agent-docs/sistema-diseno-web.md §3.2), para que una tabla
+    /// dentro de una nota se lea como una tabla de la interfaz y no como un elemento traído de fuera.</summary>
+    public required IBrush TableBorder { get; init; }
+
+    /// <summary>Fondo de la fila de encabezados de una tabla.</summary>
+    public required IBrush TableHeaderBackground { get; init; }
+
     public required FontFamily BodyFontFamily { get; set; }
     public required FontFamily MonoFontFamily { get; init; }
     public double BaseFontSize { get; set; } = 14.5;
@@ -36,8 +44,13 @@ public sealed class MarkdownStyle
     /// constant can't grow past the editor's own horizontal padding without them growing too.</summary>
     public const double CodeBlockHorizontalPadding = 8;
 
-    /// <summary>Corner radius of the fenced code block's box, matching the app's card/input chrome.</summary>
-    public const double CodeBlockCornerRadius = 6;
+    /// <summary>Alto (px) al que se encoge la línea de un delimitador <c>```</c> mientras está oculto. La
+    /// línea no desaparece —sigue siendo una línea del documento donde se puede poner el cursor, y al
+    /// hacerlo recupera su alto normal para enseñar el delimitador en crudo—, pero como no dibuja nada,
+    /// dejarla con el alto de una línea de texto metía una banda vacía de ~20px arriba y otra abajo dentro
+    /// del recuadro. Encogida hace de relleno vertical del bloque: el aire justo para que el código no
+    /// toque el borde, el mismo papel que <see cref="CodeBlockHorizontalPadding"/> hace a los lados.</summary>
+    public const double CodeFenceLineHeight = 7;
 
     public static MarkdownStyle FromApp(FontFamily bodyFont, FontFamily monoFont, double baseFontSize)
     {
@@ -62,6 +75,7 @@ public sealed class MarkdownStyle
         // with it was invisible — InputBackgroundBrush plus a visible border is what actually reads as a box.
         var codeBackground = FindBrush("InputBackgroundBrush", "#141414");
         var codeBorder = FindBrush("Ink10", "#2A2A2E");
+        var tableHeader = FindBrush("Ink05", "#1A1A1A");
 
         return new MarkdownStyle
         {
@@ -79,6 +93,8 @@ public sealed class MarkdownStyle
                 : new SolidColorBrush(Color.Parse("#F5C542"), 0.28),
             QuoteBar = accent,
             RuleLine = border,
+            TableBorder = codeBorder,
+            TableHeaderBackground = tableHeader,
             BodyFontFamily = bodyFont,
             MonoFontFamily = monoFont,
             BaseFontSize = baseFontSize

@@ -209,6 +209,12 @@ public sealed class AppSettings
     /// <summary>Enables word wrap in the note editor — Ajustes › Editor.</summary>
     public bool EditorWordWrap { get; set; } = true;
 
+    /// <summary>Si el editor descarga y dibuja las imágenes escritas con una URL http(s) — Ajustes ›
+    /// Editor. Las imágenes del propio vault y las <c>data:</c> incrustadas se dibujan siempre; estas
+    /// otras convierten abrir una nota en una petición a un servidor de terceros, así que se pueden
+    /// apagar. Por defecto activo, como en cualquier editor Markdown.</summary>
+    public bool EditorRemoteImages { get; set; } = true;
+
     /// <summary>Whether the editor's side panel (outline, backlinks, stats) is visible.</summary>
     public bool EditorSidePanelVisible { get; set; } = true;
 

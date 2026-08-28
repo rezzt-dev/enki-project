@@ -36,7 +36,13 @@ public enum MdSpanKind
     /// <summary>Obsidian-style <c>[[Note]]</c> / <c>[[Note|Alias]]</c> reference — same concealment/click
     /// mechanics as <see cref="Link"/>, but resolved against the vault's notes instead of opened as a
     /// URL.</summary>
-    WikiLink
+    WikiLink,
+
+    /// <summary>Imagen: <c>![alt](ruta)</c> o la forma incrustada de Obsidian <c>![[archivo.png]]</c>. A
+    /// diferencia del resto de spans, el live preview no oculta solo sus marcadores sino el span entero,
+    /// y dibuja la imagen real en su lugar (ver <see cref="MarkdownElementGenerator"/>); el rango cubre
+    /// desde el <c>!</c> hasta el paréntesis/corchete de cierre para que ocultarlo no deje residuos.</summary>
+    Image
 }
 
 /// <summary>An inline formatting span. Start/End include the markers; ContentStart/ContentEnd exclude them.</summary>
@@ -50,8 +56,21 @@ public sealed class MdSpan
 
     /// <summary>For <see cref="MdSpanKind.Link"/>: the URL to open. For <see cref="MdSpanKind.WikiLink"/>:
     /// the raw target text (note title or filename, alias/heading-anchor already stripped) to resolve —
-    /// see <see cref="Services.WikiLinkParser.ResolveTarget"/>.</summary>
+    /// see <see cref="Services.WikiLinkParser.ResolveTarget"/>. Para <see cref="MdSpanKind.Image"/>: la
+    /// ruta (relativa a la nota, absoluta, <c>data:</c> o URL) de la imagen.</summary>
     public string? LinkTarget { get; set; }
+
+    /// <summary>Para <see cref="MdSpanKind.Image"/>: tamaño pedido explícitamente con la sintaxis de
+    /// Obsidian <c>![alt|300](ruta)</c> / <c>![alt|300x200](ruta)</c> / <c>![[archivo.png|300]]</c>, en
+    /// píxeles; 0 = sin especificar, y la imagen se dibuja a su tamaño natural limitada al ancho de la
+    /// columna. Con tamaño, el sufijo <c>|300</c> queda fuera de
+    /// <see cref="ContentStart"/>/<see cref="ContentEnd"/>, así que el texto alternativo es el mismo aquí
+    /// y en el HTML exportado.</summary>
+    public int ImageWidth { get; set; }
+
+    /// <summary>Alto explícito en píxeles de la imagen, o 0 — ver <see cref="ImageWidth"/>. Solo se
+    /// rellena con la forma <c>|anchoxalto</c>; <c>|ancho</c> deja el alto proporcional.</summary>
+    public int ImageHeight { get; set; }
 }
 
 /// <summary>Parsed structure of a single document line, in absolute document offsets.</summary>

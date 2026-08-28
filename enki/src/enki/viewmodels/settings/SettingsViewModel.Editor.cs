@@ -44,6 +44,12 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _editorWordWrap;
 
+    /// <summary>Ajustes › Editor › "Imágenes remotas" — ver
+    /// <see cref="EditorPreferences.RemoteImages"/> para por qué esto es un interruptor y no un
+    /// comportamiento fijo.</summary>
+    [ObservableProperty]
+    private bool _editorRemoteImages;
+
     [ObservableProperty]
     private bool _editorSidePanelVisible;
 
@@ -110,6 +116,13 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.EditorWordWrap = value;
         _settingsService.Save();
         EditorPreferences.WordWrap = value;
+    }
+
+    partial void OnEditorRemoteImagesChanged(bool value)
+    {
+        _settingsService.Settings.EditorRemoteImages = value;
+        _settingsService.Save();
+        EditorPreferences.RemoteImages = value;
     }
 
     partial void OnEditorSidePanelVisibleChanged(bool value)

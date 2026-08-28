@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
@@ -45,23 +46,31 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
         // EditorView.axaml.cs's UpdateCodeBlockBleed(), which also documents where that space comes from
         // (QuoteRailMargin's gutter on the left, TextEditor.Padding on the right). If a future Avalonia
         // version clips it anyway the block degrades to a full-width shaded band rather than breaking.
+        // Medio píxel hacia DENTRO en cada lado, no el ajuste al medio píxel más cercano de Snap(): el
+        // recorte que UpdateCodeBlockBleed() abre para el recuadro es exactamente [-pad, width+pad], así
+        // que un trazo centrado en el borde de ese rango se queda a medias fuera (el derecho, entero) y el
+        // borde no llega a verse. Centrado medio píxel dentro, el trazo de 1px cae completo en la banda de
+        // píxeles inmediatamente interior y se ve nítido a ambos lados.
         var pad = MarkdownStyle.CodeBlockHorizontalPadding;
-        var codeBoxLeft = -pad;
-        var codeBoxWidth = width + pad * 2;
-        var radius = MarkdownStyle.CodeBlockCornerRadius;
+        var codeBoxLeft = Math.Round(-pad) + 0.5;
+        var codeBoxRight = Math.Round(width + pad) - 0.5;
 
-        // Fenced code blocks are painted as ONE rounded rect around the whole block (like the preview's
-        // <pre>), not per line: per-line fills leave hairline seams between visual lines and per-line
-        // borders read as a stack of separate boxes. Fill and border are both deferred to the flush so
-        // the rounded corners only appear at the block's real top and bottom.
+        // Fenced code blocks are painted as ONE rect around the whole block (like the preview's <pre>),
+        // not per line: per-line fills leave hairline seams between visual lines and per-line borders read
+        // as a stack of separate boxes. Fill and border are both deferred to the flush so the box closes
+        // at the block's real top and bottom.
+        //
+        // Esquinas rectas, como el resto de la interfaz: el sistema de diseño no tiene radios de esquina
+        // salvo en indicadores circulares (AGENTS.md, "Diseño visual").
         double? codeBlockTop = null;
         double codeBlockBottom = 0;
 
         void FlushCodeBlock()
         {
             if (codeBlockTop is not { } t) return;
-            var rect = new Rect(codeBoxLeft, t, codeBoxWidth, codeBlockBottom - t);
-            drawingContext.DrawRectangle(_style.CodeBlockBackground, codeBorderPen, rect, radius, radius);
+            var top = Snap(t);
+            var rect = new Rect(codeBoxLeft, top, codeBoxRight - codeBoxLeft, Snap(codeBlockBottom) - top);
+            drawingContext.DrawRectangle(_style.CodeBlockBackground, codeBorderPen, rect);
             codeBlockTop = null;
         }
 
@@ -96,8 +105,101 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
 
         FlushCodeBlock();
 
+        DrawTables(textView, drawingContext);
         DrawSearchHighlights(textView, drawingContext);
     }
+
+    /// <summary>Dibuja la rejilla de las tablas visibles: el fondo de la fila de encabezados, las líneas
+    /// que separan filas y columnas, y el borde exterior. Es la contrapartida de los espaciadores que
+    /// colocan el texto (<see cref="MarkdownElementGenerator"/>) — las dos capas leen la misma
+    /// <see cref="MdTableGeometry"/>, así que la línea vertical cae siempre en el hueco entre dos celdas
+    /// y nunca encima de una letra.
+    ///
+    /// <para>Las filas visibles de una misma tabla llegan seguidas (las líneas visuales de AvaloniaEdit
+    /// están en orden), así que se acumulan y se dibujan de una vez: el borde exterior es un rectángulo de
+    /// la tabla, no de cada fila. Y como de una tabla larga puede haber solo un trozo en pantalla, los
+    /// bordes superior e inferior únicamente se dibujan si la primera/última fila de verdad están a la
+    /// vista; los laterales se recortan solos con el desplazamiento.</para></summary>
+    private void DrawTables(TextView textView, DrawingContext drawingContext)
+    {
+        if (!_state.Tables.HasTables || textView.Document is null) return;
+
+        var pen = new Pen(_style.TableBorder, 1);
+        var rows = new List<(MdTableRowKind Kind, int LineNumber, double Top, double Bottom)>();
+        MdTable? currentTable = null;
+        MdTableGeometry? currentGeometry = null;
+
+        void Flush()
+        {
+            if (currentTable is { } table && currentGeometry is { } geometry && rows.Count > 0)
+                DrawTable(drawingContext, pen, table, geometry, rows);
+            rows.Clear();
+            currentTable = null;
+            currentGeometry = null;
+        }
+
+        foreach (var visualLine in textView.VisualLines)
+        {
+            var docLine = visualLine.FirstDocumentLine;
+            if (_state.Tables.GetRow(docLine.LineNumber) is not { } row ||
+                _state.IsTableActive(row.Table, textView.Document) ||
+                _state.Tables.GetGeometry(row.Table, textView, _style, _state) is not { } geometry)
+            {
+                Flush();
+                continue;
+            }
+
+            if (currentTable is not null && !ReferenceEquals(currentTable, row.Table)) Flush();
+            currentTable = row.Table;
+            currentGeometry = geometry;
+
+            var top = visualLine.VisualTop - textView.VerticalOffset;
+            rows.Add((row.Kind, docLine.LineNumber, top, top + visualLine.Height));
+        }
+
+        Flush();
+    }
+
+    private void DrawTable(DrawingContext drawingContext, Pen pen, MdTable table, MdTableGeometry geometry,
+        List<(MdTableRowKind Kind, int LineNumber, double Top, double Bottom)> rows)
+    {
+        var left = Snap(0);
+        var right = Snap(geometry.TotalWidth);
+        var top = Snap(rows[0].Top);
+        var bottom = Snap(rows[^1].Bottom);
+
+        // El encabezado y la banda de la fila separadora comparten fondo: así el texto del encabezado no
+        // acaba en seco justo debajo de sus letras, sino con el mismo aire que tiene por arriba.
+        foreach (var row in rows)
+        {
+            if (row.Kind == MdTableRowKind.Body) continue;
+            drawingContext.DrawRectangle(_style.TableHeaderBackground, null,
+                new Rect(left, row.Top, geometry.TotalWidth, row.Bottom - row.Top));
+        }
+
+        for (var i = 0; i < rows.Count - 1; i++)
+        {
+            var y = Snap(rows[i].Bottom);
+            drawingContext.DrawLine(pen, new Point(left, y), new Point(right, y));
+        }
+
+        for (var column = 1; column < geometry.ColumnX.Length; column++)
+        {
+            var x = Snap(geometry.SeparatorX(column));
+            drawingContext.DrawLine(pen, new Point(x, top), new Point(x, bottom));
+        }
+
+        drawingContext.DrawLine(pen, new Point(left, top), new Point(left, bottom));
+        drawingContext.DrawLine(pen, new Point(right, top), new Point(right, bottom));
+        if (rows[0].LineNumber == table.StartLine)
+            drawingContext.DrawLine(pen, new Point(left, top), new Point(right, top));
+        if (rows[^1].LineNumber == table.EndLine)
+            drawingContext.DrawLine(pen, new Point(left, bottom), new Point(right, bottom));
+    }
+
+    /// <summary>Lleva una coordenada al medio píxel más cercano: una línea de 1px dibujada en una
+    /// coordenada entera se reparte entre dos píxeles y se ve gris y borrosa.</summary>
+    private static double Snap(double value) => Math.Round(value) + 0.5;
 
     /// <summary>Shades every visible occurrence of the Buscar/Reemplazar search term, not just the one the
     /// native text selection already marks as "current" — convención habitual de la mayoría de editores de

@@ -86,6 +86,8 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                 break;
         }
 
+        ColorizeTableRow(line, text);
+
         foreach (var span in model.Spans)
         {
             // An HTML tag revealed by the caret reads as markup, not as content: muting it keeps the
@@ -141,6 +143,41 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                      model.HtmlTags, line.Offset, line.EndOffset, html.OpenInlineTags))
         {
             ApplyInlineStyle(kind, start, end);
+        }
+    }
+
+    /// <summary>Lo que el coloreado aporta a una tabla, que es poco porque casi todo lo hacen las otras
+    /// dos capas (los espaciadores que colocan las celdas y la rejilla del fondo): la fila de encabezados
+    /// va en seminegrita, y cuando la tabla se está editando en crudo sus barras y su fila separadora se
+    /// apagan a color de texto apagado — así, con la sintaxis a la vista, lo que sigue destacando es el
+    /// contenido de las celdas.</summary>
+    private void ColorizeTableRow(DocumentLine line, string text)
+    {
+        if (_state.Tables.GetRow(line.LineNumber) is not { } row) return;
+
+        if (!_state.IsTableActive(row.Table, CurrentContext.Document))
+        {
+            // Solo si la tabla se está dibujando de verdad: una que no cabe a lo ancho se muestra como
+            // texto, y ahí un encabezado en seminegrita sería un adorno suelto sobre Markdown en crudo.
+            if (row.Kind != MdTableRowKind.Header) return;
+            if (_state.Tables.GetGeometry(row.Table, CurrentContext.TextView, _style, _state) is null) return;
+
+            Safe(line.Offset, line.EndOffset, el => el.TextRunProperties.SetTypeface(
+                new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.SemiBold)));
+            SetForeground(line.Offset, line.EndOffset, _style.TextPrimary);
+            return;
+        }
+
+        if (row.Kind == MdTableRowKind.Delimiter)
+        {
+            SetForeground(line.Offset, line.EndOffset, _style.TextMuted);
+            return;
+        }
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (MarkdownTableParser.IsCellSeparator(text, i))
+                SetForeground(line.Offset + i, line.Offset + i + 1, _style.TextMuted);
         }
     }
 

@@ -842,6 +842,47 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
+  <!-- Botón de copiar de un bloque de código en el editor de notas (ver CodeBlockCopyLayer). No reutiliza
+       Button.icon-btn porque aquella es una acción de barra de herramientas (34x34, sin caja propia) y
+       esta es chrome del propio bloque: cuadrada, pequeña y con el mismo fondo y el mismo borde de 1px
+       que el recuadro sobre el que flota, para que se lea como parte de él y no como algo pegado encima.
+       Al pasar por encima se aclara igual que cualquier otro botón de icono de la app. -->
+  <Style Selector="Button.code-copy-btn">
+    <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.code-copy-btn /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.code-copy-btn mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Ink30}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.code-copy-btn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+  </Style>
+  <Style Selector="Button.code-copy-btn:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.code-copy-btn:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink20}" />
+  </Style>
+
   <!-- ===================== Calendario — barra de navegación/vista (HOY/MES/SEMANA/DÍA/AGENDA) =====================
        Modificador propio en vez de agrandar Button.pill/RadioButton.segment/Button.icon-btn de base
        (compartidas por el resto de la app, ver Trash/Dashboard/Sessions/etc.) — solo la barra de esta

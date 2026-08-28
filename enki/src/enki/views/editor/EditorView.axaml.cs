@@ -30,6 +30,10 @@ public partial class EditorView : UserControl
     private readonly LivePreviewState _livePreviewState = new();
     private readonly MarkdownStyle _style;
     private readonly MarkdownLivePreviewColorizer _colorizer;
+
+    /// <summary>Los botones de copiar de los bloques de código, en su lienzo superpuesto al editor. Se
+    /// guarda aunque nadie le pida nada después: es quien escucha al TextView para recolocarlos.</summary>
+    private readonly CodeBlockCopyOverlay _codeBlockCopyOverlay;
     private bool _suppressTextChanged;
 
     /// <summary>Debounces <see cref="RecomputeFences"/> against every keystroke — on a long note with
@@ -61,14 +65,28 @@ public partial class EditorView : UserControl
         {
             _fencesTimer.Stop();
             RecomputeFences();
+            _livePreviewState.TableFolding?.Refresh();
             textView.Redraw();
         };
+        // La fila separadora de una tabla dibujada se pliega para que no deje una banda vacía (ver
+        // MarkdownTableFolding). Se construye antes que el generador de elementos porque este le pregunta
+        // qué hay plegado en cada repintado.
+        _livePreviewState.TableFolding = new MarkdownTableFolding(textView, _livePreviewState, _style);
+
         textView.LineTransformers.Add(_colorizer);
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
+        // El botón de copiar de cada bloque de código va en un lienzo superpuesto al editor, no dentro de
+        // él — ver CodeBlockCopyOverlay.
+        _codeBlockCopyOverlay = new CodeBlockCopyOverlay(CodeBlockOverlay, textView, _livePreviewState);
 
         // Let the fenced code block's box bleed past the text column - see UpdateCodeBlockBleed().
         textView.SizeChanged += (_, _) => UpdateCodeBlockBleed(textArea, textView);
+        // Una tabla puede dejar de caber (o volver a caber) al cambiar el ancho, y con ello cambia si su
+        // fila separadora debe seguir plegada. Va aplazado a propósito: plegar toca el árbol de alturas y
+        // esto se dispara en mitad de un pase de layout.
+        textView.SizeChanged += (_, _) => Dispatcher.UIThread.Post(
+            () => _livePreviewState.TableFolding?.Refresh(), DispatcherPriority.Background);
         textView.AttachedToVisualTree += (_, _) => UpdateCodeBlockBleed(textArea, textView);
         UpdateCodeBlockBleed(textArea, textView);
 
@@ -124,6 +142,7 @@ public partial class EditorView : UserControl
 
         Editor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
+        InitializeImageDropTarget();
 
         EditorPreferences.Changed += OnEditorPreferencesChanged;
         DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
@@ -199,6 +218,13 @@ public partial class EditorView : UserControl
         ApplyWordWrap();
         ApplySidePanelVisibility();
         ApplyToolbarGroupVisibility();
+        // Una imagen que falló (una remota con la descarga desactivada, típicamente) merece otro intento
+        // en el redibujado de abajo: el interruptor que la bloqueaba puede ser justo el que se acaba de
+        // cambiar, y obligar a cerrar y reabrir la nota para verlo sería absurdo.
+        MarkdownImageCache.ForgetFailed();
+        // Otro tamaño de letra o de columna puede dejar a una tabla sin sitio (o devolvérselo), y con ello
+        // cambia si su fila separadora sigue plegada.
+        _livePreviewState.TableFolding?.Refresh();
         Editor.TextArea.TextView.Redraw();
     }
 
@@ -255,19 +281,23 @@ public partial class EditorView : UserControl
 
         if (_boundVm is not null) _boundVm.Outline.UpdateActiveItem(textArea.Caret.Offset);
 
+        // Entrar en una tabla la devuelve a su forma de texto, con su fila separadora incluida; salir de
+        // ella vuelve a plegarla.
+        _livePreviewState.TableFolding?.Refresh();
         textArea.TextView.Redraw();
     }
 
-    /// <summary>Recomputes the two pieces of live-preview state that can only be derived from the whole
-    /// document — where the fenced code blocks are, and the HTML context of each line (which block
-    /// container aligns it, which inline tags an earlier line left open). Both are debounced together off
-    /// the same timer: they walk the same text and neither can be answered from the single line being
-    /// drawn.</summary>
+    /// <summary>Recomputes the pieces of live-preview state that can only be derived from the whole
+    /// document — where the fenced code blocks are, the HTML context of each line (which block container
+    /// aligns it, which inline tags an earlier line left open) y qué líneas forman una tabla. Van
+    /// debounced juntas contra el mismo temporizador: las tres recorren el mismo texto y ninguna se puede
+    /// contestar desde la única línea que se está dibujando.</summary>
     private void RecomputeFences()
     {
         var text = Editor.Text ?? string.Empty;
         _livePreviewState.Fences = MarkdownLineParser.ComputeFences(text);
         _livePreviewState.HtmlLines = MarkdownHtmlParser.ComputeLineStates(text, _livePreviewState.Fences);
+        _livePreviewState.Tables.SetRows(MarkdownTableParser.Scan(text, _livePreviewState.Fences));
     }
 
     /// <summary>Fires whenever the tab strip switches which note is active (NotesViewModel.ActiveEditor).
@@ -290,10 +320,14 @@ public partial class EditorView : UserControl
         if (_boundVm is not { } vm) return;
 
         _suppressTextChanged = true;
+        // Los pliegues viven en el árbol de alturas del TextView, que se reconstruye entero al cambiar de
+        // documento: hay que deshacerlos sobre el documento saliente, no dejarlos apuntando a él.
+        _livePreviewState.TableFolding?.Reset();
         Editor.Document = vm.Document;
         Editor.CaretOffset = Math.Clamp(vm.LastCaretOffset, 0, vm.Document.TextLength);
         Editor.FontSize = EditorPreferences.FontSize;
         _colorizer.WikiLinkNotesProvider = () => vm.WikiLinkScopeNotes;
+        ApplyImageContext(vm);
         ApplyColumnLayout();
         ApplySidePanelVisibility();
         ApplyToolbarGroupVisibility();
@@ -492,6 +526,16 @@ public partial class EditorView : UserControl
         if (_boundVm is null) return;
         var context = GetSlashCommandContext();
         if (context is null) return;
+
+        // "/imagen" no inserta texto: abre el diálogo de archivos y deja que el flujo de adjuntos escriba
+        // el ![](…) ya resuelto, igual que el botón de la barra de formato.
+        if (command.Key == "imagen")
+        {
+            Editor.Document.Remove(context.Value.StartOffset, context.Value.Length);
+            Editor.CaretOffset = context.Value.StartOffset;
+            _ = PickAndInsertImagesAsync(context.Value.StartOffset);
+            return;
+        }
 
         // Invariante a propósito: "/fecha" inserta una marca de fecha técnica en el contenido de la nota,
         // no una etiqueta de UI — debe quedar estable con independencia del idioma activo.
@@ -777,6 +821,16 @@ public partial class EditorView : UserControl
             return;
         }
 
+        // Pegar se intercepta aquí porque el portapapeles puede traer una imagen (una captura, un archivo
+        // copiado en el explorador) y eso hay que averiguarlo de forma asíncrona antes de decidir. Lo que
+        // no sea imagen vuelve al pegado normal de AvaloniaEdit dentro de PasteAsync.
+        if (IsPasteGesture(e))
+        {
+            e.Handled = true;
+            _ = PasteAsync();
+            return;
+        }
+
         // Atajos de formato remapeables (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) — ya no
         // se comparan literales Key.B/Key.I/... contra KeyModifiers.Control, sino el gesto efectivo que
         // Ajustes › Atajos haya asignado a cada uno vía ShortcutRegistry.
@@ -801,6 +855,15 @@ public partial class EditorView : UserControl
             return;
         }
 
+        // Tabulador dentro de una tabla: salta de celda en celda, como en cualquier hoja de cálculo. Fuera
+        // de una tabla el tabulador sigue indentando, que es lo que hace AvaloniaEdit por su cuenta.
+        if (e.Key == Key.Tab && e.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift &&
+            MoveToAdjacentTableCell(forward: e.KeyModifiers != KeyModifiers.Shift))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
 
         var doc = Editor.Document;
@@ -809,6 +872,13 @@ public partial class EditorView : UserControl
         var text = doc.GetText(line);
         var fence = _livePreviewState.GetFence(line.LineNumber);
         var model = MarkdownLineParser.Parse(text, line.Offset, fence);
+
+        // Intro dentro de una tabla añade otra fila, igual que dentro de una lista añade otra viñeta.
+        if (_livePreviewState.Tables.GetRow(line.LineNumber) is { } tableRow && HandleTableEnter(line, text, tableRow))
+        {
+            e.Handled = true;
+            return;
+        }
 
         var continuation = model.Kind switch
         {
@@ -832,6 +902,117 @@ public partial class EditorView : UserControl
         doc.Insert(caretOffset, "\n" + continuation);
         Editor.CaretOffset = caretOffset + 1 + continuation.Length;
         e.Handled = true;
+    }
+
+    /// <summary>Intro sobre una fila de tabla: añade otra fila vacía debajo con las mismas columnas y deja
+    /// el cursor en su primera celda. Sobre el encabezado o la fila separadora la nueva fila va debajo de
+    /// la separadora — nunca entre las dos, que rompería la tabla. Y una fila de datos que ya está vacía
+    /// no genera otra igual: se borra, que es la forma de salir de la tabla, exactamente como una viñeta
+    /// vacía cierra una lista.</summary>
+    private bool HandleTableEnter(DocumentLine line, string text, MdTableRow row)
+    {
+        var doc = Editor.Document;
+
+        if (row.Kind == MdTableRowKind.Body && MarkdownTableParser.SplitCells(text, line.Offset).TrueForAll(c => c.Length == 0))
+        {
+            doc.Remove(line.Offset, line.Length);
+            return true;
+        }
+
+        var afterLine = row.Kind == MdTableRowKind.Body
+            ? line
+            : doc.GetLineByNumber(Math.Min(row.Table.DelimiterLine, doc.LineCount));
+
+        var template = EmptyTableRow(row.Table.ColumnCount);
+        doc.Insert(afterLine.EndOffset, "\n" + template);
+        // +2: justo detrás del "| " de la primera celda, que es donde se empieza a escribir.
+        Editor.CaretOffset = afterLine.EndOffset + 1 + 2;
+        return true;
+    }
+
+    /// <summary>Fila vacía de <paramref name="columns"/> columnas: <c>|  |  |</c>. Los dos espacios por
+    /// celda no son decorativos — dejan sitio para que el cursor caiga entre ellos y lo que se escriba
+    /// quede separado de las barras, que es como se escribe una tabla a mano.</summary>
+    private static string EmptyTableRow(int columns)
+    {
+        var builder = new System.Text.StringBuilder("|");
+        for (var i = 0; i < columns; i++) builder.Append("  |");
+        return builder.ToString();
+    }
+
+    /// <summary>Mueve el cursor a la celda siguiente (o anterior) de la tabla en la que esté, saltándose la
+    /// fila separadora, y devuelve si ha hecho algo — fuera de una tabla, o al final de la última fila,
+    /// devuelve false para que el tabulador siga haciendo lo suyo. Al final de la última fila sí crea una
+    /// fila nueva: es la forma natural de seguir rellenando una tabla sin soltar el teclado.</summary>
+    private bool MoveToAdjacentTableCell(bool forward)
+    {
+        var doc = Editor.Document;
+        var caretOffset = Editor.CaretOffset;
+        var line = doc.GetLineByOffset(caretOffset);
+        if (_livePreviewState.Tables.GetRow(line.LineNumber) is not { } row) return false;
+
+        var cells = MarkdownTableParser.SplitCells(doc.GetText(line), line.Offset);
+        if (row.Kind != MdTableRowKind.Delimiter)
+        {
+            var current = IndexOfCellAt(cells, caretOffset);
+            var next = forward
+                ? (current < 0 ? cells.Count : current + 1)
+                : (current < 0 ? cells.Count - 1 : current - 1);
+            if (next >= 0 && next < cells.Count)
+            {
+                PlaceCaretInCell(line, cells[next]);
+                return true;
+            }
+        }
+
+        // No queda celda en esta fila: se salta a la siguiente (o a la anterior), sin pisar la separadora.
+        var target = row.LineNumber + (forward ? 1 : -1);
+        if (target == row.Table.DelimiterLine) target += forward ? 1 : -1;
+
+        if (target < row.Table.StartLine)
+        {
+            return false;
+        }
+
+        if (target > row.Table.EndLine)
+        {
+            if (!forward) return false;
+            var last = doc.GetLineByNumber(row.Table.EndLine);
+            var template = EmptyTableRow(row.Table.ColumnCount);
+            doc.Insert(last.EndOffset, "\n" + template);
+            Editor.CaretOffset = last.EndOffset + 1 + 2;
+            return true;
+        }
+
+        var targetLine = doc.GetLineByNumber(target);
+        var targetCells = MarkdownTableParser.SplitCells(doc.GetText(targetLine), targetLine.Offset);
+        if (targetCells.Count == 0) return false;
+
+        PlaceCaretInCell(targetLine, forward ? targetCells[0] : targetCells[^1]);
+        return true;
+    }
+
+    /// <summary>Índice de la celda a la que pertenece el cursor: la primera cuyo contenido no haya quedado
+    /// ya atrás. Cuenta como "dentro de la celda" todo lo que va desde la barra que la abre hasta el final
+    /// de su texto, así que el cursor pegado a una barra pertenece a la celda que esa barra abre y no a la
+    /// que cierra. -1 si está más allá de la última celda (tras la barra de cierre de la fila).</summary>
+    private static int IndexOfCellAt(System.Collections.Generic.List<MdTableCell> cells, int caretOffset)
+    {
+        for (var i = 0; i < cells.Count; i++)
+        {
+            if (caretOffset <= cells[i].End && (i == 0 || caretOffset > cells[i - 1].End)) return i;
+        }
+        return -1;
+    }
+
+    /// <summary>Deja el cursor dentro de la celda. En una celda vacía se coloca antes del espacio que
+    /// precede a la barra de cierre, no pegado a ella: escribir ahí deja <c>| texto |</c> y no
+    /// <c>|  texto|</c>.</summary>
+    private void PlaceCaretInCell(DocumentLine line, MdTableCell cell)
+    {
+        var offset = cell.Start;
+        if (cell.Length == 0 && offset - 1 > line.Offset && Editor.Document.GetCharAt(offset - 1) == ' ') offset--;
+        Editor.CaretOffset = offset;
     }
 
     private static string MarkerPrefix(string text, DocumentLine line, MdLine model)
@@ -895,19 +1076,18 @@ public partial class EditorView : UserControl
         foreach (var span in model.Spans)
         {
             if (span.LinkTarget is not { } target) continue;
-            if (span.Kind != MdSpanKind.Link && span.Kind != MdSpanKind.WikiLink) continue;
+            if (span.Kind is not (MdSpanKind.Link or MdSpanKind.WikiLink or MdSpanKind.Image)) continue;
             if (offset < span.Start || offset > span.End) continue;
 
-            if (span.Kind == MdSpanKind.Link)
+            if (span.Kind == MdSpanKind.Image)
             {
-                try
-                {
-                    Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
-                }
-                catch
-                {
-                    // Ignore: malformed or unsupported URL.
-                }
+                // Una imagen que no se puede abrir (ruta rota, esquema desconocido) deja pasar el clic:
+                // marcarlo como atendido dejaría el cursor sin colocarse y el gesto sin efecto visible.
+                if (!TryOpenImage(span)) return;
+            }
+            else if (span.Kind == MdSpanKind.Link)
+            {
+                OpenExternalUrl(target);
             }
             else if (DataContext is EditorViewModel vm)
             {
@@ -916,6 +1096,18 @@ public partial class EditorView : UserControl
 
             e.Handled = true;
             return;
+        }
+    }
+
+    private static void OpenExternalUrl(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            LogService.Warning($"No se pudo abrir '{url}' con la aplicación del sistema", ex);
         }
     }
 
@@ -966,8 +1158,28 @@ public partial class EditorView : UserControl
         Editor.Focus();
     }
     private void OnLinkClick(object? sender, RoutedEventArgs e) => InsertAtCaret(LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
-    private void OnImageClick(object? sender, RoutedEventArgs e) => InsertAtCaret("!" + LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
+    /// <summary>Botón "insertar imagen" de la barra de formato: abre el diálogo de archivos y adjunta lo
+    /// que se elija. Antes insertaba la plantilla de texto <c>![texto](url)</c> para que el usuario la
+    /// rellenara a mano, lo que obligaba a saberse de memoria la ruta del archivo.</summary>
+    private void OnImageClick(object? sender, RoutedEventArgs e) => _ = PickAndInsertImagesAsync(Editor.CaretOffset);
     private void OnHorizontalRuleClick(object? sender, RoutedEventArgs e) => InsertAtCaret("\n---\n");
+
+    /// <summary>Botón "insertar tabla" de la barra de formato: escribe la misma plantilla que <c>/tabla</c>
+    /// (encabezados traducidos incluidos) en su propia línea y deja el cursor en la primera celda del
+    /// encabezado, listo para renombrarla.</summary>
+    private void OnTableClick(object? sender, RoutedEventArgs e)
+    {
+        var line = Editor.Document.GetLineByOffset(Editor.CaretOffset);
+        // Una tabla es un bloque: si la línea donde está el cursor ya tiene texto, se empieza en la
+        // siguiente en vez de partirla por la mitad.
+        var start = line.Length == 0 ? line.Offset : line.EndOffset;
+        var prefix = line.Length == 0 ? string.Empty : "\n";
+        var template = LocalizationService.Instance["Editor_SlashCommand_Table_InsertText"];
+
+        Editor.Document.Insert(start, prefix + template + "\n");
+        Editor.CaretOffset = start + prefix.Length + 2;
+        Editor.Focus();
+    }
 
     /// <summary>Toolbar entry point for the note-link picker — inserts an open <c>[[</c> at the caret and
     /// opens the picker right there, same end state <c>/nota</c> and typing <c>[[</c> by hand converge on.</summary>

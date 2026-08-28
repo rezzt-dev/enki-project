@@ -1,10 +1,17 @@
 using System;
 using System.Collections.Generic;
+using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
+using Material.Icons;
+using Material.Icons.Avalonia;
+using enki.Services;
 
 namespace enki.Views.Editor.Markdown;
 
@@ -22,7 +29,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     private const double CheckboxSize = 16;
     private const double CheckboxSpacing = 6;
 
-    private enum ZoneKind { Hide, Bullet, Checkbox, Align, JustifySpace }
+    private enum ZoneKind { Hide, Bullet, Checkbox, Align, JustifySpace, Image, TableRule }
 
     /// <param name="Spacer">Extra blank width (px) this zone reserves before whatever it renders: the
     /// alignment spacing of the visual row starting here, or the share of leftover width a justified
@@ -32,7 +39,22 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     /// The spacing rides on whatever element comes first at that offset instead of being a zone of its
     /// own: element construction asks each generator only once per offset, so a separate zero-length zone
     /// sharing another zone's offset would make that other one be skipped.</param>
-    private readonly record struct Zone(int Start, int End, ZoneKind Kind, MdLine Line, double Spacer);
+    private readonly record struct Zone(int Start, int End, ZoneKind Kind, MdLine Line, double Spacer)
+    {
+        /// <summary>Solo para <see cref="ZoneKind.Image"/>: el span <c>![…](…)</c> que esta zona sustituye,
+        /// del que salen la ruta y el tamaño pedido. El resto de zonas no necesitan mirar ningún span
+        /// concreto — les basta con el rango que ocultan.</summary>
+        public MdSpan? Span { get; init; }
+
+        /// <summary>Techo del ancho de la imagen de esta zona, o 0 si no lo hay — lo pone a
+        /// <see cref="MarkdownTableLayout.CellImageMaxWidth"/> una imagen dentro de una celda de tabla
+        /// dibujada, que no puede ocupar la columna de texto entera.</summary>
+        public double ImageMaxWidth { get; init; }
+
+        /// <summary>Alto que esta zona impone a su línea, si impone alguno: el relleno vertical de una
+        /// fila de tabla o la banda fina de su fila separadora (ver <see cref="SpacerMetrics"/>).</summary>
+        public SpacerMetrics Metrics { get; init; }
+    }
 
     private readonly LivePreviewState _state;
     private readonly TextArea _textArea;
@@ -51,9 +73,11 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         // An aligned line's spacing is measured against the text column's current width, so a resize
         // invalidates every plan. AvaloniaEdit only rebuilds visual lines on resize when word wrap is on,
         // hence the explicit redraw - skipped entirely for the ordinary note, which declares no alignment.
+        // Lo mismo vale para las tablas: sus anchos de columna se deciden contra el ancho disponible, y
+        // una tabla que dejaba de caber (o que vuelve a caber) cambia de dibujada a texto en crudo.
         textArea.TextView.SizeChanged += (_, _) =>
         {
-            if (!_state.HasAlignments) return;
+            if (!_state.HasAlignments && !_state.Tables.HasTables) return;
             _layout.Invalidate();
             textArea.TextView.Redraw();
         };
@@ -83,18 +107,44 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         var zones = new List<Zone>();
         var lineActive = _state.Intersects(line.Offset, line.EndOffset);
 
+        // Tablas: una fila solo se dibuja como tal si su tabla entera está inactiva (el cursor fuera) y
+        // además cabe a lo ancho de la columna. Se resuelve antes que nada porque condiciona lo demás —
+        // una imagen dentro de una celda no se dibuja al mismo tamaño que suelta en el texto.
+        var tableLine = _state.Tables.GetRow(lineNumber);
+        MdTableRow? tableRow = null;
+        MdTableGeometry? tableGeometry = null;
+        if (tableLine is { } row && !_state.IsTableActive(row.Table, CurrentContext.Document))
+        {
+            tableGeometry = _state.Tables.GetGeometry(row.Table, _textArea.TextView, _style, _state);
+            if (tableGeometry is not null) tableRow = row;
+        }
+        var imageMaxWidth = tableGeometry is null ? 0 : MarkdownTableLayout.CellImageMaxWidth;
+
         switch (model.Kind)
         {
             case MdBlockKind.Heading:
             case MdBlockKind.HorizontalRule:
+                if (!lineActive && model.MarkerStart < model.MarkerEnd)
+                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0));
+                break;
             // Code fences need no zone of their own beyond concealing the "```lang" delimiter: the
             // padding that keeps code text clear of the block's border is produced by drawing the box
             // wider than the text column (see MarkdownBackgroundRenderer), not by inserting a spacer
             // run here. A spacer only ever indents the first visual row of a wrapped line, which is
             // precisely why the box used to be overrun by every continuation row.
+            //
+            // Verticalmente sí manda: la línea del delimitador se queda sin nada que dibujar, así que se
+            // encoge a la banda fina de MarkdownStyle.CodeFenceLineHeight y esa banda hace de relleno
+            // arriba y abajo del bloque. Con el alto normal de una línea de texto quedaban ~20px de hueco
+            // vacío entre el borde del recuadro y la primera/última línea de código. Solo afecta a los
+            // delimitadores: las líneas de dentro del bloque no tienen marcador que ocultar
+            // (MarkerStart == MarkerEnd) y conservan su alto de línea de texto.
             case MdBlockKind.CodeFence:
                 if (!lineActive && model.MarkerStart < model.MarkerEnd)
-                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0));
+                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0)
+                    {
+                        Metrics = new SpacerMetrics(MarkdownStyle.CodeFenceLineHeight, 0)
+                    });
                 break;
             case MdBlockKind.Blockquote:
                 // No reserved-width concern here: the quote rail lives in QuoteRailMargin's own
@@ -116,9 +166,29 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         foreach (var span in model.Spans)
         {
             if (_state.Intersects(span.Start, span.End)) continue;
+
+            // Una imagen no oculta marcadores alrededor de un contenido: se oculta entera y se dibuja la
+            // imagen en su lugar. El texto alternativo tampoco se enseña — es el reemplazo de la imagen
+            // cuando no hay imagen, no una leyenda que acompañe a la que sí se ve.
+            if (span.Kind == MdSpanKind.Image)
+            {
+                zones.Add(new Zone(span.Start, span.End, ZoneKind.Image, model, 0)
+                {
+                    Span = span,
+                    ImageMaxWidth = imageMaxWidth
+                });
+                continue;
+            }
+
             if (span.ContentStart > span.Start) zones.Add(new Zone(span.Start, span.ContentStart, ZoneKind.Hide, model, 0));
             if (span.End > span.ContentEnd) zones.Add(new Zone(span.ContentEnd, span.End, ZoneKind.Hide, model, 0));
         }
+
+        if (tableRow is { } renderedRow && tableGeometry is { } geometry)
+            AddTableZones(zones, line, text, model, renderedRow, geometry);
+
+        if (tableLine is { Kind: MdTableRowKind.Header } headerRow)
+            AddFoldedDelimiterZone(zones, line, model, headerRow.Table);
 
         zones.Sort((a, b) => a.Start.CompareTo(b.Start));
 
@@ -127,6 +197,107 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         _cachedLineNumber = lineNumber;
         _cachedZones = zones;
         return zones;
+    }
+
+    /// <summary>Coloca cada celda de una fila de tabla en la columna que le toca. El mecanismo es el
+    /// mismo con el que se centra una línea —reservar blanco antes del texto—, aplicado ahora a cada
+    /// celda: se oculta lo que separa una celda de la siguiente (los espacios y la barra vertical) y en su
+    /// lugar se reserva exactamente el blanco que hace que el texto de la celda caiga en la X que
+    /// <see cref="MdTableGeometry"/> ha fijado para su columna, incluida la parte que la alinea a la
+    /// derecha o al centro dentro de ella.
+    ///
+    /// <para>La fila separadora es un caso aparte: no se dibuja nada de su texto y se encoge a una banda
+    /// fina, que es donde el fondo pinta la línea que separa el encabezado del cuerpo.</para></summary>
+    private void AddTableZones(List<Zone> zones, DocumentLine line, string text, MdLine model,
+        MdTableRow row, MdTableGeometry geometry)
+    {
+        if (row.Kind == MdTableRowKind.Delimiter)
+        {
+            zones.Clear();
+            if (line.Length > 0) zones.Add(new Zone(line.Offset, line.EndOffset, ZoneKind.TableRule, model, 0));
+            return;
+        }
+
+        var cells = MarkdownTableParser.SplitCells(text, line.Offset);
+        if (cells.Count == 0) return;
+
+        var header = row.Kind == MdTableRowKind.Header;
+        var rowMetrics = new SpacerMetrics(0, MarkdownTableLayout.RowVerticalPadding);
+        var drawnUpTo = 0.0;
+        var gapStart = line.Offset;
+
+        for (var i = 0; i < cells.Count; i++)
+        {
+            var cell = cells[i];
+            var column = Math.Min(cell.Column, geometry.ColumnWidths.Length - 1);
+            var width = MarkdownTableLayout.MeasureCell(text, line, model, cell, header, _style, _state, _textArea.TextView);
+            var target = geometry.ColumnX[column] + AlignOffset(geometry, row.Table, column, width);
+
+            // El relleno vertical viaja en la primera zona de la fila: basta con que un elemento de la
+            // línea sea más alto para que la línea entera lo sea (ver SpacerMetrics).
+            AddTableGapZone(zones, gapStart, cell.Start, model, Math.Max(0, target - drawnUpTo),
+                i == 0 ? rowMetrics : default);
+
+            drawnUpTo = target + width;
+            gapStart = cell.End;
+        }
+
+        // Lo que quede tras la última celda (espacios sobrantes y la barra de cierre) se oculta sin
+        // reservar nada: el borde derecho de la tabla lo dibuja el fondo, no el texto.
+        AddTableGapZone(zones, gapStart, line.EndOffset, model, 0, default);
+    }
+
+    /// <summary>Oculta el texto de la fila separadora cuando está plegada. Una línea plegada pierde su
+    /// línea visual propia y su texto pasa a ser la continuación de la del encabezado, así que sin esto el
+    /// <c>| --- |</c> aparecería pegado al final de los encabezados. El rango incluye el salto de línea
+    /// que las une y acaba exactamente al final del texto de la separadora, nunca dentro de su propio
+    /// salto de línea, que es donde AvaloniaEdit rechazaría el elemento.
+    ///
+    /// <para>Se decide solo por si está plegada, no por si la tabla se dibuja: las dos mitades del pliegue
+    /// (el alto, que quita <see cref="MarkdownTableFolding"/>, y el texto, que se quita aquí) tienen que
+    /// ir siempre juntas, aunque el estado del pliegue vaya un instante por detrás de la geometría.</para></summary>
+    private void AddFoldedDelimiterZone(List<Zone> zones, DocumentLine line, MdLine model, MdTable table)
+    {
+        if (_state.TableFolding?.IsCollapsed(table.DelimiterLine) != true) return;
+        if (table.DelimiterLine > CurrentContext.Document.LineCount) return;
+
+        var delimiter = CurrentContext.Document.GetLineByNumber(table.DelimiterLine);
+        if (delimiter.EndOffset > line.EndOffset)
+            zones.Add(new Zone(line.EndOffset, delimiter.EndOffset, ZoneKind.Hide, model, 0));
+    }
+
+    /// <summary>Blanco que hay que añadir dentro de la columna antes del texto de la celda para que quede
+    /// alineado como pide la fila separadora de la tabla.</summary>
+    private static double AlignOffset(MdTableGeometry geometry, MdTable table, int column, double width)
+    {
+        var free = geometry.ColumnWidths[column] - width;
+        if (free <= 0) return 0;
+        return table.Alignments[column] switch
+        {
+            MdTableAlign.Center => free / 2,
+            MdTableAlign.Right => free,
+            _ => 0
+        };
+    }
+
+    /// <summary>Oculta [start,end) reservando <paramref name="spacer"/> píxeles en su lugar. Si ya hay una
+    /// zona que empieza en ese mismo offset (el marcador de un span que abre la celda), el espacio se le
+    /// cuelga a ella en vez de añadir una segunda: el generador solo construye un elemento por offset, y
+    /// dos zonas compitiendo por el mismo dejarían una sin construir.</summary>
+    private static void AddTableGapZone(List<Zone> zones, int start, int end, MdLine model, double spacer,
+        SpacerMetrics metrics)
+    {
+        if (end < start) return;
+        if (end == start && spacer <= 0 && metrics == default) return;
+
+        for (var i = 0; i < zones.Count; i++)
+        {
+            if (zones[i].Start != start) continue;
+            zones[i] = zones[i] with { Spacer = spacer, Metrics = metrics };
+            return;
+        }
+
+        zones.Add(new Zone(start, end, ZoneKind.Hide, model, spacer) { Metrics = metrics });
     }
 
     /// <summary>Injects the blank space that aligns the line: one spacer at the start of each visual row
@@ -264,11 +435,18 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // Single trailing space matches the gap ordered lists get naturally from "1. ".
                 ZoneKind.Bullet => new WhitespaceFormattedElement("• ", length, spacer),
                 ZoneKind.Checkbox => new InlineObjectElement(length, BuildCheckbox(zone.Line, spacer)),
+                ZoneKind.Image => zone.Span is { } imageSpan
+                    ? new InlineObjectElement(length, BuildImage(imageSpan, spacer, zone.ImageMaxWidth))
+                    : null,
+                // La fila separadora de una tabla: sin texto y con el alto fijo de la banda que hace de
+                // línea entre el encabezado y el cuerpo.
+                ZoneKind.TableRule => new WhitespaceFormattedElement(string.Empty, length, 0,
+                    new SpacerMetrics(MarkdownTableLayout.DelimiterRowHeight, 0)),
                 ZoneKind.Align => spacer > 0 ? new WhitespaceFormattedElement(string.Empty, 0, spacer) : null,
                 // The space keeps its own glyph and grows by its share of the row's leftover width.
                 ZoneKind.JustifySpace => new WhitespaceFormattedElement(" ", length, spacer),
-                _ => spacer > 0
-                    ? new WhitespaceFormattedElement(string.Empty, length, spacer)
+                _ => spacer > 0 || zone.Metrics != default
+                    ? new WhitespaceFormattedElement(string.Empty, length, spacer, zone.Metrics)
                     : new FormattedTextElement(string.Empty, length)
             };
             return element;
@@ -298,6 +476,10 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             {
                 ZoneKind.Bullet => MarkdownLineMeasurer.MeasureGlyph("• ", model, _style),
                 ZoneKind.Checkbox => CheckboxSize + CheckboxSpacing,
+                // Centrar o alinear a la derecha una línea con una imagen exige contar lo que la imagen
+                // ocupa, igual que se cuenta el ancho del texto: si no, la línea se centraría como si la
+                // imagen no estuviera y quedaría desplazada justo su ancho.
+                ZoneKind.Image => zone.Span is { } imageSpan ? MeasureImage(imageSpan, zone.ImageMaxWidth).Width : 0,
                 _ => 0
             };
         }
@@ -317,6 +499,102 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         var free = available - content;
         if (free <= 1) return 0;
         return align == MdAlign.Center ? free / 2 : free;
+    }
+
+    /// <summary>Tamaño al que se dibuja la imagen de <paramref name="span"/>, delegado en
+    /// <see cref="MarkdownImageMeasurer"/> — la misma cuenta que hace la geometría de una tabla para
+    /// dimensionar la columna de una celda con imagen dentro.</summary>
+    private MarkdownImageLayout MeasureImage(MdSpan span, double maxWidth) =>
+        MarkdownImageMeasurer.Measure(_state, _textArea.TextView, span,
+            maxWidth > 0 ? maxWidth : double.PositiveInfinity);
+
+
+    /// <summary>Texto alternativo escrito en la nota, o el nombre del archivo si no hay ninguno — algo que
+    /// anunciar siempre es mejor que una imagen anónima.</summary>
+    private string AltTextOf(MdSpan span)
+    {
+        if (span.ContentEnd > span.ContentStart)
+        {
+            var alt = CurrentContext.Document.GetText(span.ContentStart, span.ContentEnd - span.ContentStart);
+            if (!string.IsNullOrWhiteSpace(alt)) return alt;
+        }
+        return MarkdownImageResolver.ShortLabel(span.LinkTarget ?? string.Empty);
+    }
+
+    /// <summary>Construye el control que ocupa el sitio del <c>![…](…)</c>: la imagen ya decodificada, o
+    /// un hueco con el nombre del archivo mientras carga / si no se pudo cargar. El hueco no es adorno:
+    /// una imagen que falta (ruta mal escrita, adjunto borrado, imagen remota con la descarga desactivada)
+    /// tiene que verse como tal, no desaparecer sin dejar rastro de que la nota pedía algo ahí.</summary>
+    private Control BuildImage(MdSpan span, double leadingWidth, double maxWidth)
+    {
+        var layout = MeasureImage(span, maxWidth);
+        var margin = new Thickness(leadingWidth, MarkdownImageMeasurer.VerticalMargin, 0,
+            MarkdownImageMeasurer.VerticalMargin);
+
+        if (layout.Entry is { State: MarkdownImageState.Ready, Bitmap: { } bitmap })
+        {
+            var image = new Image
+            {
+                Source = bitmap,
+                Width = layout.Width,
+                Height = layout.Height,
+                Stretch = Stretch.Uniform,
+                Margin = margin,
+                // El caret y la selección se colocan clicando el texto que hay detrás: la imagen es
+                // decoración de una línea que se sigue editando como texto, igual que la casilla de una
+                // tarea (ver CreateInertCheckbox).
+                IsHitTestVisible = false
+            };
+            RenderOptions.SetBitmapInterpolationMode(image, BitmapInterpolationMode.HighQuality);
+            // El texto alternativo no se dibuja (no es una leyenda), pero sí es lo que un lector de
+            // pantalla debe anunciar — que es exactamente para lo que el usuario lo escribió.
+            AutomationProperties.SetName(image, AltTextOf(span));
+            return image;
+        }
+
+        var loading = layout.Entry.State == MarkdownImageState.Loading;
+        var label = new TextBlock
+        {
+            Text = MarkdownImageResolver.ShortLabel(span.LinkTarget ?? string.Empty),
+            FontFamily = _style.MonoFontFamily,
+            FontSize = Math.Max(10, _style.BaseFontSize - 3),
+            Foreground = _style.TextMuted,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+
+        var content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(10, 0, 10, 0),
+            Children =
+            {
+                new MaterialIcon
+                {
+                    Kind = loading ? MaterialIconKind.ImageOutline : MaterialIconKind.ImageBrokenVariant,
+                    Width = 14,
+                    Height = 14,
+                    Foreground = _style.TextMuted,
+                    VerticalAlignment = VerticalAlignment.Center
+                },
+                label
+            }
+        };
+
+        return new Border
+        {
+            Width = layout.Width,
+            Height = layout.Height,
+            Margin = margin,
+            Background = _style.CodeBlockBackground,
+            BorderBrush = _style.CodeBlockBorder,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(0),
+            Child = content,
+            IsHitTestVisible = false
+        };
     }
 
     private CheckBox BuildCheckbox(MdLine model, double leadingWidth)

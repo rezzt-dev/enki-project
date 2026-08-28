@@ -33,6 +33,9 @@ public sealed partial class SlashCommandsViewModel : ObservableObject
         // UpdateNoteLinkPicker() justo después de insertar el texto de cualquier comando, que es lo que
         // realmente abre el picker de notas al ver ese "[[" recién insertado sin cerrar.
         new SlashCommand { Key = "nota", Label = LocalizationService.Instance["Editor_SlashCommand_NoteLink_Label"], Icon = "FileLinkOutline", InsertTextLiteral = "[[", CursorOffset = 2 },
+        // "imagen" no lleva texto que insertar: EditorView.OnSlashCommandSelected lo intercepta por su
+        // clave y abre el diálogo de archivos, que es quien acaba escribiendo el ![](…) ya resuelto.
+        new SlashCommand { Key = "imagen", Label = LocalizationService.Instance["Editor_SlashCommand_Image_Label"], Icon = "ImageOutline", InsertTextLiteral = "", CursorOffset = 0 },
         new SlashCommand { Key = "codigo", Label = LocalizationService.Instance["Editor_SlashCommand_InlineCode_Label"], Icon = "CodeTags", InsertTextLiteral = "``", CursorOffset = 1 },
         new SlashCommand { Key = "bloque", Label = LocalizationService.Instance["Editor_SlashCommand_CodeBlock_Label"], Icon = "CodeTags", InsertTextLiteral = "```\n\n```", CursorOffset = 4 },
         // CursorOffset lands right after the opening "| " of the header row rather than inside the data

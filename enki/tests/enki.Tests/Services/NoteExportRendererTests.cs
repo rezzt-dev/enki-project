@@ -212,6 +212,34 @@ public class NoteExportRendererTests : IDisposable
     }
 
     [Fact]
+    public void RenderBody_Image_WithExplicitSize_EmitsWidthAndHeight()
+    {
+        var html = Body("![foto|300x200](https://example.com/foto.png)");
+
+        Assert.Contains("<img src=\"https://example.com/foto.png\" alt=\"foto\" width=\"300\" height=\"200\"/>", html);
+    }
+
+    [Fact]
+    public void RenderBody_Image_WithWidthOnly_LeavesHeightProportional()
+    {
+        var html = Body("![foto|300](https://example.com/foto.png)");
+
+        Assert.Contains("<img src=\"https://example.com/foto.png\" alt=\"foto\" width=\"300\"/>", html);
+    }
+
+    [Fact]
+    public void RenderBody_EmbeddedImageWikiLink_RendersImg()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var imagePath = Path.Combine(_storageDirectory, "captura.png");
+        File.WriteAllBytes(imagePath, [4, 5, 6]);
+
+        var html = NoteExportRenderer.RenderBodyHtml("![[captura.png]]", _storageDirectory);
+
+        Assert.Contains($"<img src=\"data:image/png;base64,{Convert.ToBase64String(new byte[] { 4, 5, 6 })}\"", html);
+    }
+
+    [Fact]
     public void RenderBody_Image_WithPreexistingDataUri_KeepsItAsIs()
     {
         // Fase 8: a data: image (pasted straight into the note, or left over from a previous export) used
@@ -360,5 +388,100 @@ public class NoteExportRendererTests : IDisposable
         var html = Body("un <cualquiercosa> suelto");
 
         Assert.Contains("&lt;cualquiercosa&gt;", html);
+    }
+
+    [Fact]
+    public void RenderBody_Table_RendersHeaderAndBodyRows()
+    {
+        var html = Body("| Fruta | Color |\n| --- | --- |\n| Manzana | Roja |\n| Uva | Verde |");
+
+        Assert.Contains("<table>", html);
+        Assert.Contains("<thead>\n<tr><th>Fruta</th><th>Color</th></tr>", html);
+        Assert.Contains("<tbody>\n<tr><td>Manzana</td><td>Roja</td></tr>", html);
+        Assert.Contains("<tr><td>Uva</td><td>Verde</td></tr>", html);
+        Assert.Contains("</table>", html);
+        // La fila separadora es sintaxis, no contenido: no debe aparecer como una fila más.
+        Assert.DoesNotContain("---", html);
+    }
+
+    [Fact]
+    public void RenderBody_TableColumnAlignment_TravelsAsACssClass()
+    {
+        var html = Body("| a | b | c |\n| :--- | :---: | ---: |\n| 1 | 2 | 3 |");
+
+        Assert.Contains("<th class=\"ta-left\">a</th>", html);
+        Assert.Contains("<th class=\"ta-center\">b</th>", html);
+        Assert.Contains("<th class=\"ta-right\">c</th>", html);
+        Assert.Contains("<td class=\"ta-center\">2</td>", html);
+    }
+
+    [Fact]
+    public void RenderBody_TableWithoutExplicitAlignment_EmitsNoAlignmentClass()
+    {
+        var html = Body("| a |\n| --- |\n| 1 |");
+
+        Assert.Contains("<th>a</th>", html);
+        Assert.DoesNotContain("ta-", html);
+    }
+
+    [Fact]
+    public void RenderBody_TableCells_RenderTheirInlineMarkdown()
+    {
+        var html = Body("| Estado | Enlace |\n| --- | --- |\n| **hecho** | [web](https://ejemplo.com) |");
+
+        Assert.Contains("<td><strong>hecho</strong></td>", html);
+        Assert.Contains("href=\"https://ejemplo.com\"", html);
+    }
+
+    [Fact]
+    public void RenderBody_TableCellWithAnEscapedPipe_KeepsItAsContent()
+    {
+        var html = Body(@"| expresión |" + "\n| --- |\n" + @"| a \| b |");
+
+        Assert.Contains("<td>a | b</td>", html);
+    }
+
+    [Fact]
+    public void RenderBody_RowWithFewerCells_IsPaddedToTheTableWidth()
+    {
+        var html = Body("| a | b |\n| --- | --- |\n| solo |");
+
+        Assert.Contains("<tr><td>solo</td><td></td></tr>", html);
+    }
+
+    [Fact]
+    public void RenderBody_TableWithOnlyHeader_EmitsNoEmptyBody()
+    {
+        var html = Body("| a | b |\n| --- | --- |");
+
+        Assert.Contains("<thead>", html);
+        Assert.DoesNotContain("<tbody>", html);
+    }
+
+    [Fact]
+    public void RenderBody_TextAfterATable_IsStillRenderedAsItsOwnBlock()
+    {
+        var html = Body("| a |\n| --- |\n| 1 |\n\nDespués de la tabla.");
+
+        Assert.Contains("</table>", html);
+        Assert.Contains("<p>Despu&#233;s de la tabla.</p>", html);
+    }
+
+    [Fact]
+    public void RenderBody_TableInsideACodeFence_StaysLiteralCode()
+    {
+        var html = Body("```\n| a |\n| --- |\n```");
+
+        Assert.DoesNotContain("<table>", html);
+        Assert.Contains("| a |", html);
+    }
+
+    [Fact]
+    public void RenderBody_PipesWithoutADelimiterRow_StayAParagraph()
+    {
+        var html = Body("uno | dos\ntres | cuatro");
+
+        Assert.DoesNotContain("<table>", html);
+        Assert.Contains("<p>uno | dos<br/>", html);
     }
 }

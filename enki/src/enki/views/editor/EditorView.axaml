@@ -239,6 +239,10 @@
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_Image_Tooltip}">
             <mi:MaterialIcon Kind="ImageOutline" Width="16" Height="16" />
           </Button>
+          <Button Classes="icon-btn" Click="OnTableClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Table_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Table_Tooltip}">
+            <mi:MaterialIcon Kind="Table" Width="16" Height="16" />
+          </Button>
         </StackPanel>
       </StackPanel>
       <Rectangle Width="1" Height="18" Fill="{DynamicResource Ink10}" Margin="6,0" />
@@ -359,23 +363,31 @@
                to fill it. Constraining a plain Border this way is more reliable than constraining the
                ae:TextEditor directly, since TextEditor is a templated control. The 8px margin keeps the
                text off the card's edges even when the column is left-aligned or its width fills the card. -->
-          <Border Grid.Row="1" x:Name="EditorColumnHost" Margin="8">
-            <!-- Left padding is reduced by QuoteRailMargin's own width (see EditorView.axaml.cs) so the
-                 margin's reserved gutter exactly replaces that much padding instead of adding to it -
-                 heading/list/paragraph text ends up at the same X it always was (4 + 16 = the 20px the
-                 other sides use), with the quote rail occupying what used to be blank padding instead of
-                 pushing everything else rightward.
-                 Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
-                 code block's box is painted that far outside the text column on each side, into the left
-                 gutter and into this right padding, so the code text inside it clears the border on every
-                 row - see EditorView.axaml.cs's UpdateCodeBlockBleed(). -->
-            <ae:TextEditor x:Name="Editor"
-                           Background="Transparent"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           FontSize="14.5"
-                           Padding="4,20,20,20"
-                           LineNumbersForeground="{DynamicResource TextMutedBrush}" />
-          </Border>
+          <!-- El editor y, superpuesto en el mismo hueco, el lienzo donde se colocan los botones de copiar
+               de los bloques de código (ver CodeBlockCopyOverlay). Va aquí fuera y no en una capa del
+               propio AvaloniaEdit porque sus capas no entran en el árbol lógico y un botón dentro de ellas
+               no llega a recibir estilo ni plantilla. Sin Background no entra en el hit-test: todo clic que
+               no caiga en un botón atraviesa el lienzo y llega al editor. -->
+          <Grid Grid.Row="1">
+            <Border x:Name="EditorColumnHost" Margin="8">
+              <!-- Left padding is reduced by QuoteRailMargin's own width (see EditorView.axaml.cs) so the
+                   margin's reserved gutter exactly replaces that much padding instead of adding to it -
+                   heading/list/paragraph text ends up at the same X it always was (4 + 16 = the 20px the
+                   other sides use), with the quote rail occupying what used to be blank padding instead of
+                   pushing everything else rightward.
+                   Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
+                   code block's box is painted that far outside the text column on each side, into the left
+                   gutter and into this right padding, so the code text inside it clears the border on every
+                   row - see EditorView.axaml.cs's UpdateCodeBlockBleed(). -->
+              <ae:TextEditor x:Name="Editor"
+                             Background="Transparent"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             FontSize="14.5"
+                             Padding="4,20,20,20"
+                             LineNumbersForeground="{DynamicResource TextMutedBrush}" />
+            </Border>
+            <Canvas x:Name="CodeBlockOverlay" ClipToBounds="True" />
+          </Grid>
         </Grid>
       </Border>
 
