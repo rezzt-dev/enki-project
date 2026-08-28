@@ -28,6 +28,11 @@
        tombstone round-trip) directly, without needing a live Supabase connection. -->
   <ItemGroup>
     <InternalsVisibleTo Include="enki.Tests" />
+    <!-- Deja que enki.UITests compruebe el pipeline interno de imágenes del live preview
+         (Views/Editor/Markdown/MarkdownImageCache y compañía, internal por vivir dentro de la vista):
+         es la única capa con una plataforma Avalonia levantada, y por tanto la única donde decodificar
+         un bitmap de verdad significa algo. -->
+    <InternalsVisibleTo Include="enki.UITests" />
   </ItemGroup>
 
   <!-- Supabase credentials (SUPABASE_URL/SUPABASE_ANON_KEY) — never committed, see root .gitignore and

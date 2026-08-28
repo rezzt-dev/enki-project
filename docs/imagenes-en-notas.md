@@ -1,0 +1,158 @@
+# Imágenes en las notas
+
+> **Alcance**: cómo se inserta una imagen en una nota Markdown, dónde acaba en disco, cómo se resuelve su
+> ruta y cómo la dibuja el live preview del editor.
+>
+> **Fuera de alcance**: el resto del live preview (encabezados, listas, código, alineación HTML), que se
+> describe en el propio código de `views/editor/Markdown/`, y el módulo Archivos, que gestiona los
+> archivos del vault que no son notas.
+>
+> **Fuente de verdad**: `services/NoteImageAttachments.cs`, `services/NoteImageService.cs`,
+> `viewmodels/editor/EditorViewModel.Images.cs`, `views/editor/EditorView.Images.cs`,
+> `views/editor/Markdown/MarkdownImageSource.cs`, `views/editor/Markdown/MarkdownImageCache.cs`,
+> `views/editor/Markdown/MarkdownElementGenerator.cs` y `views/editor/Markdown/MarkdownLineParser.cs`.
+
+## 1. Las cuatro formas de insertar una imagen
+
+Todas terminan en el mismo sitio —`EditorViewModel.AttachImageBytes` / `AttachImageFile` guardan el
+adjunto y devuelven la ruta relativa, y `EditorView.InsertImageReferences` la escribe en el documento—, así
+que ninguna puede comportarse distinto de otra:
+
+| Gesto | Qué hace |
+|---|---|
+| **`Ctrl+V`** con una captura o un archivo de imagen en el portapapeles | Guarda la imagen como adjunto de la nota e inserta el `![](…)`. |
+| **Arrastrar** uno o varios archivos de imagen sobre el editor | Igual, e inserta en el punto exacto donde se soltó, no donde estaba el cursor. |
+| **Botón de imagen** de la barra de formato | Abre el diálogo de archivos del sistema (selección múltiple). |
+| **`/imagen`** | Lo mismo que el botón. |
+
+El pegado se intercepta en `EditorView.OnEditorKeyDown` porque leer el portapapeles es asíncrono y hay que
+mirar qué trae antes de decidir. El orden de preferencia está pensado para no romper el pegado de texto de
+siempre:
+
+1. **Archivos de imagen primero.** Copiar una imagen en el explorador deja en el portapapeles el archivo
+   *y* su ruta como texto; lo que el usuario quiere pegar es la imagen.
+2. **Un mapa de bits solo si no viene también texto.** Al copiar de un navegador o de un procesador de
+   textos suelen viajar los dos, y ahí lo que se está pegando es texto.
+3. **Cualquier otra cosa** cae en `TextEditor.Paste()`, el pegado normal de AvaloniaEdit.
+
+Una imagen insertada se escribe **en su propia línea, con un salto detrás**. No es solo estética: deja el
+cursor fuera del span de la imagen, que es la condición para que el live preview la dibuje — si el cursor
+quedara pegado al `)` final, se vería el Markdown en crudo hasta moverlo.
+
+## 2. Dónde se guardan los adjuntos
+
+Una imagen pegada o arrastrada a `Proyecto.md` se guarda en **`Proyecto.attachments/`**, carpeta hermana
+de la nota (`NoteImageAttachments.FolderFor`). La nota y sus imágenes se mueven, se copian y se respaldan
+juntas, y el nombre de la carpeta dice a quién pertenecen sin abrir nada.
+
+- El nombre del archivo es `imagen-AAAAMMDD-HHMMSS.png` para una captura del portapapeles, y el nombre
+  original saneado (sin espacios ni caracteres inválidos) para un archivo arrastrado. Una colisión añade
+  `-2`, `-3`…
+- **Un archivo que ya está dentro del vault se enlaza donde está, no se duplica**: arrastrar a una nota una
+  imagen que ya vive en el módulo Archivos debe enlazarla, no dejar dos copias que mantener a la vez.
+- La ruta que se escribe en el Markdown es **relativa a la nota**, con `/` como separador y con los
+  espacios y paréntesis escapados (`%20`, `%28`, `%29`), porque el `)` de cierre de `![](…)` no admite
+  espacios sin ambigüedad.
+- Toda escritura pasa por `VaultService.WriteBinaryFile`, así que un adjunto de una nota que vive en una
+  **sesión protegida queda cifrado** con la misma clave que la nota.
+- **Renombrar o mover una nota se lleva su carpeta de adjuntos** (`VaultService.MoveAttachmentsFolder`), y
+  si el movimiento cruza la frontera de una sesión cifrada, cada imagen se re-cifra igual que la nota. Sin
+  esto, renombrar una nota dejaría cada `![](Proyecto.attachments/…)` apuntando a una carpeta que ya no se
+  llama así.
+
+**Limitación conocida**: borrar una nota **no** borra su carpeta de adjuntos. Es deliberado — la nota se va
+a la papelera y puede restaurarse, y una restauración que recuperase el texto pero no las imágenes sería
+peor que dejar una carpeta huérfana. Vaciar la papelera no la limpia; hay que borrarla desde el módulo
+Archivos.
+
+## 3. Qué sintaxis se reconoce
+
+`MarkdownLineParser` produce un span `MdSpanKind.Image` que **cubre también el `!`** — antes el parser veía
+un `Link` con el `!` fuera, y el exportador tenía que mirar el carácter anterior para distinguir una imagen
+de un enlace.
+
+- `![texto alternativo](ruta)` — con título opcional (`![alt](foto.png "Título")`), del que la ruta es lo
+  que va hasta el primer espacio.
+- `![[archivo.png]]` — la incrustación de Obsidian. Solo cuenta como imagen si el destino tiene extensión
+  de imagen; `![[Otra nota]]` es una transclusión de nota, que este editor no dibuja, y se degrada a
+  wikilink normal para que al menos siga siendo navegable.
+- **Tamaño explícito**, en las dos formas: `![alt|300](ruta)`, `![alt|300x200](ruta)`,
+  `![[archivo.png|300]]`. Un sufijo que no sea un tamaño válido (`![diagrama|versión 2](…)`) se queda como
+  parte del texto alternativo: es más probable que sea contenido del usuario que un tamaño mal escrito.
+
+El texto alternativo no se dibuja junto a la imagen: es el reemplazo de la imagen cuando no hay imagen (y
+lo que viaja al `alt` del HTML exportado), no una leyenda.
+
+## 4. Cómo se resuelve la ruta
+
+`MarkdownImageResolver` clasifica el destino en archivo, `data:` o URL remota, y para un archivo busca de
+lo más explícito a lo más adivinado:
+
+1. ruta absoluta, tal cual;
+2. relativa a la carpeta de la nota;
+3. dentro de la carpeta de adjuntos de la nota;
+4. por nombre en todo el vault — solo para un destino sin carpeta, que es como se escribe un
+   `![[archivo.png]]`.
+
+Si ningún candidato existe se devuelve el primero, para poder decir "falta *este* archivo" con una ruta
+concreta. Resolver toca disco, así que solo se hace desde el hilo de carga de la caché, nunca durante el
+layout del editor.
+
+**Imágenes remotas** (`http`/`https`): se descargan y se dibujan, pero el interruptor **Ajustes › Editor ›
+Imágenes remotas** (`AppSettings.EditorRemoteImages`, por defecto activo) lo desactiva. Con él activo,
+abrir una nota implica una petición a un servidor de terceros, que revela la IP del usuario y el momento
+exacto en que la lee; las imágenes del propio vault y las `data:` incrustadas no dependen del interruptor y
+se dibujan siempre. Al cambiarlo, `MarkdownImageCache.ForgetFailed()` olvida las que no pudieron cargarse
+para que el siguiente repintado lo reintente, sin tener que cerrar y reabrir la nota.
+
+## 5. Cómo se dibuja (y por qué es instantáneo)
+
+El generador de elementos de AvaloniaEdit corre **dentro del layout** de cada repintado. Ahí no puede
+decodificarse nada: un PNG de 3 MB decodificado en ese punto congelaría el editor en cada pulsación de
+tecla. De ahí `MarkdownImageCache`:
+
+- una imagen ya vista se devuelve al instante con una búsqueda en un diccionario — es lo que hace que
+  desplazarse por una nota llena de capturas cueste lo mismo que por una de solo texto;
+- una imagen nueva se decodifica en un hilo de fondo y, al terminar, pide un redibujado;
+- se decodifica **ya reducida al ancho al que se va a dibujar** (`Bitmap.DecodeToWidth` escala dentro de
+  Skia, durante el propio decode) y multiplicada por el factor de escala de la pantalla, de modo que una
+  foto de 6000 px nunca ocupa en memoria más de lo que ocupa en pantalla, y en una pantalla HiDPI no se ve
+  borrosa. El ancho se redondea a saltos de 200 px para que redimensionar la ventana no estrene una entrada
+  de caché por píxel.
+- El tamaño natural se lee de la **cabecera** del archivo con `SKCodec`, sin decodificar sus píxeles, para
+  no ampliar nunca una imagen más pequeña que la columna. Un SVG se rasteriza con `SvgRenderHelper`
+  pasándole `allowUpscale: false`, por el mismo motivo: en una miniatura del módulo Archivos ampliar un
+  icono pequeño es lo correcto, dentro de una nota no.
+- La caché es estática y compartida por todo el proceso (la misma imagen puede estar en varias pestañas), a
+  cambio de un presupuesto de memoria explícito por debajo del cual se desalojan las entradas menos usadas.
+  Un bitmap desalojado no se libera a mano: una línea visual ya dibujada puede seguir enseñándolo.
+- Una imagen ya cargada se comprueba contra su fecha de modificación como mucho una vez cada dos segundos,
+  así que editar una captura en un programa externo se refleja en el editor casi al momento.
+
+**Tamaño con el que se dibuja**, por orden: manda el tamaño explícito de la nota; si no lo hay, el tamaño
+natural; y en cualquier caso nunca más ancha que la columna de texto, reduciendo el alto en la misma
+proporción. Mientras carga —o si no se pudo cargar— queda un hueco del alto de dos líneas con el nombre del
+archivo: una imagen que falta tiene que verse como tal, no desaparecer sin dejar rastro de que la nota
+pedía algo ahí.
+
+**Interacción**: el cursor dentro del `![…](…)` devuelve el Markdown en crudo para poder editarlo, igual
+que con un enlace o una negrita. **Ctrl+clic** abre la imagen con el visor del sistema (con una copia
+temporal descifrada si vive en una sesión protegida) o en el navegador si es una URL.
+
+## 6. Exportación a HTML
+
+`NoteExportRenderer` ya incrustaba las imágenes locales como `data:` URI para que el HTML exportado fuera
+autocontenido. Con el span `Image` propio, además: reconoce `![[archivo.png]]`, y el tamaño explícito viaja
+como atributos `width`/`height`, de modo que el documento exportado se ve como se veía en el editor.
+
+## 7. Cómo se prueba
+
+- `enki.Tests/Views/Editor/Markdown/MarkdownLineParserTests.cs` — la sintaxis reconocida.
+- `enki.Tests/Services/NoteImageAttachmentsTests.cs` — nombres y rutas, sin tocar disco.
+- `enki.Tests/Services/NoteImageServiceTests.cs` — dónde acaba el archivo, y que renombrar/mover una nota
+  se lleve sus adjuntos.
+- `enki.UITests/EditorViewImagesUiTests.cs` — lo puramente visual, contra el `EditorView` real: que
+  aparece un `Image` del tamaño calculado, que la línea crece para alojarlo, que el cursor encima devuelve
+  el Markdown, y que una imagen que falta deja un hueco visible. La plataforma headless de Avalonia
+  devuelve bitmaps de 1×1, así que las medidas se comprueban contra el tamaño natural leído de la
+  cabecera, no contra los píxeles decodificados.

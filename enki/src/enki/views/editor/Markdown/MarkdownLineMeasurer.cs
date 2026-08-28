@@ -25,6 +25,11 @@ internal static class MarkdownLineMeasurer
     /// <summary>Width of the visible text of <paramref name="lineText"/>, excluding the ranges the
     /// generator conceals (<paramref name="hidden"/>) and any trailing whitespace — text centred by a
     /// browser ignores trailing spaces too.</summary>
+    /// <param name="from">Índice (relativo a <paramref name="lineText"/>) donde empezar a medir, o 0 para
+    /// la línea entera. Lo usan las celdas de una tabla, que son trozos de línea.</param>
+    /// <param name="to">Índice donde parar, o -1 para llegar al final de la línea.</param>
+    /// <param name="weightOverride">Grosor con el que se dibujará el texto pese a lo que diga el bloque —
+    /// la fila de encabezados de una tabla, que se pinta en seminegrita sin ser un encabezado Markdown.</param>
     public static double MeasureVisible(
         string lineText,
         int lineOffset,
@@ -32,15 +37,19 @@ internal static class MarkdownLineMeasurer
         IReadOnlyList<(int Start, int End)> hidden,
         IReadOnlyList<(int Start, int End, MdSpanKind Kind)> htmlStyles,
         Func<int, int, bool> isCaretActive,
-        MarkdownStyle style)
+        MarkdownStyle style,
+        int from = 0,
+        int to = -1,
+        FontWeight? weightOverride = null)
     {
-        var n = lineText.Length;
-        if (n == 0) return 0;
+        var n = to < 0 ? lineText.Length : Math.Min(to, lineText.Length);
+        if (n <= from) return 0;
 
         var baseRun = BaseRunFor(model, style);
+        if (weightOverride is { } weight) baseRun = baseRun with { Weight = weight };
         double total = 0;
         double pendingTrailing = 0;
-        var i = 0;
+        var i = from;
 
         while (i < n)
         {

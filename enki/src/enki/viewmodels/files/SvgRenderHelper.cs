@@ -13,8 +13,14 @@ namespace enki.ViewModels;
 public static class SvgRenderHelper
 {
     /// <summary>Rasteriza un SVG (datos XML en crudo) a un <see cref="Bitmap"/> de Avalonia con el
-    /// ancho máximo indicado, manteniendo la proporción original. <paramref name="maxWidth"/> px.</summary>
-    public static Bitmap RenderSvg(byte[] svgData, int maxWidth)
+    /// ancho máximo indicado, manteniendo la proporción original. <paramref name="maxWidth"/> px.
+    ///
+    /// <para><paramref name="allowUpscale"/> gobierna qué hacer con un SVG más pequeño que ese ancho. Una
+    /// miniatura del módulo Archivos lo quiere ampliado (la rejilla dibuja todas las tarjetas del mismo
+    /// tamaño, y un icono diminuto perdido en el centro de una se vería como un fallo), pero una imagen
+    /// dentro de una nota no: ahí ampliar un icono de 64 px hasta el ancho de la columna sería
+    /// exactamente lo contrario de lo que el usuario escribió.</para></summary>
+    public static Bitmap RenderSvg(byte[] svgData, int maxWidth, bool allowUpscale = true)
     {
         using var svg = new SKSvg();
         using var stream = new MemoryStream(svgData);
@@ -25,6 +31,7 @@ public static class SvgRenderHelper
 
         var picture = svg.Picture;
         var scale = maxWidth / picture.CullRect.Width;
+        if (!allowUpscale && scale > 1) scale = 1;
         var width = (int)(picture.CullRect.Width * scale);
         var height = (int)(picture.CullRect.Height * scale);
 

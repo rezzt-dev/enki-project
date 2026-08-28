@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace enki.Views.Editor.Markdown;
@@ -329,6 +330,19 @@ public static class MarkdownLineParser
                     continue;
                 }
             }
+            else if (c == '!' && i + 1 < to && text[i + 1] == '[')
+            {
+                // Imagen antes que enlace: `![alt](ruta)` empieza por un `[` que la rama de enlace de
+                // abajo reconocería igual, dejando el `!` suelto como texto y el span una posición
+                // corrida — que es justo lo que obligaba al exportador a mirar el carácter anterior para
+                // saber si un Link era en realidad una imagen.
+                var imageEnd = ScanImage(model, text, i, to, lineOffset);
+                if (imageEnd > i)
+                {
+                    i = imageEnd;
+                    continue;
+                }
+            }
             else if (c == '[' && i + 1 < to && text[i + 1] == '[')
             {
                 // Wikilink: [[Target]], [[Target|Alias]] or [[Target#Heading]] — checked before the plain
@@ -393,6 +407,122 @@ public static class MarkdownLineParser
 
             i++;
         }
+    }
+
+    /// <summary>Extensiones que el editor sabe dibujar como imagen. Gobierna dos decisiones distintas:
+    /// si <c>![[algo]]</c> es una imagen incrustada o un wikilink normal, y qué se le pide al cargador de
+    /// imágenes que intente decodificar (ver <c>MarkdownImageCache</c>). Mismo juego que reconoce el
+    /// exportador a HTML (<see cref="Services.NoteExportRenderer"/>).</summary>
+    private static readonly string[] ImageExtensions =
+        [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".avif", ".ico", ".tif", ".tiff"];
+
+    /// <summary>Whether <paramref name="target"/> names a file this editor can render as an image, judged
+    /// only by its extension — el destino puede no existir todavía (una nota escrita a mano, un adjunto
+    /// aún sin copiar) y aun así merece tratarse como imagen para que el usuario vea el hueco.</summary>
+    public static bool LooksLikeImage(string target)
+    {
+        if (string.IsNullOrWhiteSpace(target)) return false;
+
+        // Una URL puede traer query/fragmento tras la extensión ("foto.png?v=2"), y `data:image/...` no
+        // tiene extensión ninguna pero es una imagen por definición.
+        if (target.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)) return true;
+
+        var end = target.IndexOfAny(['?', '#']);
+        var path = end >= 0 ? target[..end] : target;
+        foreach (var extension in ImageExtensions)
+        {
+            if (path.EndsWith(extension, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Reconoce una imagen que empieza en <paramref name="start"/> (el <c>!</c>) en cualquiera de
+    /// sus dos formas — <c>![alt](ruta)</c> y la incrustación de Obsidian <c>![[archivo.png]]</c> — y
+    /// devuelve el índice justo tras ella, o <paramref name="start"/> si allí no hay ninguna. La forma
+    /// <c>![[…]]</c> solo cuenta como imagen si su destino tiene extensión de imagen: <c>![[Otra nota]]</c>
+    /// es una transclusión de nota, que este editor no renderiza, y degradarla a wikilink normal la deja
+    /// al menos navegable.</summary>
+    private static int ScanImage(MdLine model, string text, int start, int to, int lineOffset)
+    {
+        var isEmbed = start + 2 < to && text[start + 2] == '[';
+
+        if (isEmbed)
+        {
+            var innerStart = start + 3;
+            var close = text.IndexOf("]]", innerStart, Math.Max(0, to - innerStart), StringComparison.Ordinal);
+            if (close == -1) return start;
+
+            var inner = text[innerStart..close];
+            var (target, size) = SplitImageSize(inner);
+            target = target.Trim();
+            if (target.Length == 0 || !LooksLikeImage(target)) return start;
+
+            model.Spans.Add(new MdSpan
+            {
+                Kind = MdSpanKind.Image,
+                Start = lineOffset + start,
+                End = lineOffset + close + 2,
+                ContentStart = lineOffset + innerStart,
+                ContentEnd = lineOffset + innerStart + (size.Width > 0 || size.Height > 0 ? inner.LastIndexOf('|') : inner.Length),
+                LinkTarget = target,
+                ImageWidth = size.Width,
+                ImageHeight = size.Height
+            });
+            return close + 2;
+        }
+
+        var bracketStart = start + 1;
+        var closeBracket = text.IndexOf(']', bracketStart + 1);
+        if (closeBracket == -1 || closeBracket >= to || closeBracket + 1 >= to || text[closeBracket + 1] != '(') return start;
+
+        var closeParen = text.IndexOf(')', closeBracket + 2);
+        if (closeParen == -1 || closeParen >= to) return start;
+
+        // El título opcional de Markdown (`![alt](foto.png "Título")`) se descarta con el mismo criterio
+        // que en los enlaces: la ruta es lo que va hasta el primer espacio.
+        var rawUrl = text[(closeBracket + 2)..closeParen];
+        var spaceIdx = rawUrl.IndexOf(' ');
+        var url = spaceIdx >= 0 ? rawUrl[..spaceIdx] : rawUrl;
+
+        var alt = text[(bracketStart + 1)..closeBracket];
+        var (altText, altSize) = SplitImageSize(alt);
+
+        model.Spans.Add(new MdSpan
+        {
+            Kind = MdSpanKind.Image,
+            Start = lineOffset + start,
+            End = lineOffset + closeParen + 1,
+            ContentStart = lineOffset + bracketStart + 1,
+            ContentEnd = lineOffset + bracketStart + 1 + altText.Length,
+            LinkTarget = url,
+            ImageWidth = altSize.Width,
+            ImageHeight = altSize.Height
+        });
+        return closeParen + 1;
+    }
+
+    /// <summary>Parte <c>"alt|300x200"</c> en su texto y su tamaño, tal y como lo escribe Obsidian. Un
+    /// sufijo que no sea un tamaño válido (<c>"alt|nota"</c>) se deja como parte del texto: es más
+    /// probable que sea contenido del usuario que un tamaño mal escrito.</summary>
+    private static (string Text, (int Width, int Height) Size) SplitImageSize(string value)
+    {
+        var pipe = value.LastIndexOf('|');
+        if (pipe < 0) return (value, (0, 0));
+
+        var suffix = value[(pipe + 1)..].Trim();
+        if (suffix.Length == 0) return (value, (0, 0));
+
+        var x = suffix.IndexOfAny(['x', 'X']);
+        if (x < 0)
+        {
+            return int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out var only) && only > 0
+                ? (value[..pipe], (only, 0))
+                : (value, (0, 0));
+        }
+
+        var widthOk = int.TryParse(suffix[..x], NumberStyles.None, CultureInfo.InvariantCulture, out var width) && width > 0;
+        var heightOk = int.TryParse(suffix[(x + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var height) && height > 0;
+        return widthOk && heightOk ? (value[..pipe], (width, height)) : (value, (0, 0));
     }
 
     /// <summary>End offset of the recognized HTML tag starting exactly at <paramref name="offset"/>, or

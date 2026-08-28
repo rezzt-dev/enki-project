@@ -112,6 +112,23 @@ public static class EditorPreferences
         }
     }
 
+    /// <summary>Si el live preview descarga y dibuja las imágenes escritas con una URL <c>http(s)</c>
+    /// (Ajustes › Editor). Las imágenes del propio vault y las <c>data:</c> incrustadas en la nota se
+    /// dibujan siempre; estas otras no, porque abrir la nota implicaría una petición a un servidor de
+    /// terceros — que revela la IP del usuario y el momento exacto en que la lee. Por defecto activo,
+    /// como en cualquier editor Markdown, pero desactivable de una sola casilla.</summary>
+    private static bool _remoteImages = true;
+    public static bool RemoteImages
+    {
+        get => _remoteImages;
+        set
+        {
+            if (_remoteImages == value) return;
+            _remoteImages = value;
+            Changed?.Invoke();
+        }
+    }
+
     private static bool _sidePanelVisible = true;
     public static bool SidePanelVisible
     {

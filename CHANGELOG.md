@@ -7,6 +7,74 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Bloques de código más compactos y con botón de copiar**: el recuadro de un bloque ` ``` ` en una nota
+pasa a ser cuadrado —esquinas rectas y borde fino de 1px ajustado al píxel, como el resto de la interfaz—,
+las líneas de los delimitadores se encogen a una banda de pocos píxeles en vez de ocupar una línea de texto
+entera (antes dejaban ~20px de hueco vacío entre el borde y el código, arriba y abajo), y en la esquina
+superior derecha aparece un botón que copia al portapapeles todo el contenido del bloque, sin las comillas,
+y confirma la copia con una marca. El botón se dibuja con el mismo fondo y borde que el bloque, así que se
+lee como parte de él; poner el cursor en un delimitador lo sigue devolviendo a su forma de texto para
+editarlo, igual que antes.
+
+**Tablas dentro de las notas**: el editor dibuja ahora como tabla las tablas Markdown de una nota —
+rejilla, encabezado destacado y columnas cuadradas—, en vez de dejar a la vista las barras verticales del
+texto. Antes solo se veían como tabla al exportar la nota, y ni siquiera eso: el exportador tampoco las
+convertía en `<table>`.
+
+- **Sintaxis**: la de GitHub Flavored Markdown, la misma que usan Obsidian y GitHub, con barras exteriores
+  opcionales, barras escapadas (`\|`) como contenido y alineación por columna con los dos puntos de la
+  fila separadora (`:---`, `---:`, `:---:`). Dos líneas con barras no se convierten en tabla por accidente:
+  hace falta una fila separadora válida con tantas columnas como el encabezado.
+- **Renderizado**: la tabla ocupa siempre el ancho de la columna de texto —el espacio sobrante se reparte
+  entre las columnas en proporción a su contenido— y las columnas se cuadran midiendo el texto real, así
+  que una tabla escrita a mano y sin alinear en el archivo se ve perfectamente alineada sin tocar el
+  archivo; la fila separadora desaparece
+  (se pliega, no deja hueco); el encabezado va en seminegrita sobre fondo propio; y el formato en línea
+  —negrita, cursiva, código, enlaces, imágenes— funciona dentro de las celdas sin descuadrar la columna. El
+  cursor dentro de la tabla la devuelve entera a su forma de texto para editarla, igual que pasa con un
+  enlace o una negrita. Una tabla demasiado ancha para la columna se deja como texto en vez de dibujarse
+  partida.
+- **Edición**: botón de tabla en la barra de formato (grupo de inserción) junto al comando `/tabla` que ya
+  existía; `Tab` y `Mayús+Tab` saltan de celda en celda y `Tab` en la última celda añade otra fila; `Intro`
+  añade una fila con las mismas columnas, y en una fila vacía la borra para salir de la tabla, igual que
+  una viñeta vacía cierra una lista.
+- **Exportar a HTML**: cada tabla sale como un `<table>` real, con `<thead>`/`<tbody>` y la alineación de
+  cada columna.
+
+Documentado en `docs/tablas-en-notas.md`.
+
+**Imágenes dentro de las notas**: el editor dibuja ahora las imágenes de una nota en el propio texto, y hay
+cuatro formas de meterlas sin salir de él. Antes el botón de imagen de la barra de formato solo insertaba
+la plantilla `![texto](url)` para rellenarla a mano, y ninguna imagen se llegaba a ver hasta exportar la
+nota a HTML.
+
+- **Insertar**: `Ctrl+V` pega una captura o un archivo de imagen del portapapeles; arrastrar archivos sobre
+  el editor los inserta en el punto donde se sueltan; el botón de imagen de la barra de formato y el
+  comando `/imagen` abren el diálogo de archivos, con selección múltiple. El pegado de texto de siempre no
+  cambia: solo se intercepta cuando lo que hay en el portapapeles es realmente una imagen.
+- **Dónde acaban**: en `<nota>.attachments/`, carpeta hermana de la nota, con nombre por marca de tiempo
+  (capturas) o el nombre original saneado (archivos). Un archivo que ya vive dentro del vault se **enlaza
+  donde está** en vez de duplicarse. La ruta que se escribe en el Markdown es relativa, así que la nota
+  sigue funcionando si el vault entero se mueve o se sincroniza a otra máquina. Un adjunto de una nota de
+  una **sesión protegida queda cifrado** con la misma clave que la nota, y **renombrar o mover la nota se
+  lleva su carpeta de adjuntos** (re-cifrando si el movimiento cruza la frontera de la sesión).
+- **Renderizado**: la imagen sustituye al `![…](…)` en el editor, a su tamaño natural, nunca más ancha que
+  la columna de texto; el cursor encima devuelve el Markdown en crudo para poder editarlo, igual que con un
+  enlace. Se decodifica en segundo plano y ya reducida al ancho —y a la densidad de píxeles— con que se va
+  a dibujar, y queda en una caché compartida con presupuesto de memoria: abrir una nota llena de capturas y
+  desplazarse por ella cuesta lo mismo que por una de solo texto. Una imagen editada fuera de Enki se
+  refresca sola, y una que falte deja un hueco con su nombre en vez de desaparecer sin dejar rastro.
+- **Sintaxis**: `![alt](ruta)`, la incrustación de Obsidian `![[archivo.png]]`, y tamaño explícito con
+  `![alt|300](ruta)` / `![alt|300x200](ruta)` / `![[archivo.png|300]]`. El tamaño explícito viaja también
+  al HTML exportado como `width`/`height`.
+- **Ctrl+clic** sobre una imagen la abre con el visor del sistema (con una copia temporal descifrada si
+  vive en una sesión protegida) o en el navegador si es una URL remota.
+- **Ajustes › Editor › Imágenes remotas** (activo por defecto) controla si se descargan y dibujan las
+  imágenes escritas con una dirección `http(s)`. Desactivarlo deja el editor sin ninguna petición de red al
+  abrir una nota; las imágenes del vault y las `data:` incrustadas se dibujan siempre.
+
+Documentado en `docs/imagenes-en-notas.md`.
+
 **Búsqueda de texto completo en las notas**: hasta ahora las cuatro superficies de búsqueda de la app
 comparaban lo escrito contra `NoteFile.Preview` —los primeros 160 caracteres del cuerpo de cada nota,
 aplanados—, así que cualquier cosa escrita más allá de ese punto era imposible de encontrar desde Enki. Las

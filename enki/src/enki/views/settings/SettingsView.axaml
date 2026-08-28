@@ -952,6 +952,16 @@
               <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Spacing="3">
+                  <TextBlock Text="{loc:Tr Settings_Editor_RemoteImages_Label}" FontSize="13" />
+                  <TextBlock Text="{loc:Tr Settings_Editor_RemoteImages_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorRemoteImages}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_RemoteImages_Label}" />
+              </Grid>
+
+              <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="3">
                   <TextBlock Text="{loc:Tr Settings_Editor_SidePanel_Label}" FontSize="13" />
                   <TextBlock Text="{loc:Tr Settings_Editor_SidePanel_Description}"
                              Classes="muted" FontSize="11.5" TextWrapping="Wrap" />

@@ -526,6 +526,12 @@
   <data name="Editor_Backlinks_Tooltip" xml:space="preserve">
     <value>Backlinks</value>
   </data>
+  <data name="Editor_CodeBlock_Copied_Tooltip" xml:space="preserve">
+    <value>Copiado</value>
+  </data>
+  <data name="Editor_CodeBlock_Copy_Tooltip" xml:space="preserve">
+    <value>Copiar código</value>
+  </data>
   <data name="Editor_FindReplace_MatchStatus" xml:space="preserve">
     <value>Coincidencia {0} de {1}</value>
   </data>
@@ -549,6 +555,12 @@
   </data>
   <data name="Editor_FindReplace_SearchPlaceholder" xml:space="preserve">
     <value>Buscar…</value>
+  </data>
+  <data name="Editor_ImagePicker_DialogTitle" xml:space="preserve">
+    <value>Insertar imagen</value>
+  </data>
+  <data name="Editor_ImagePicker_FileTypeLabel" xml:space="preserve">
+    <value>Imágenes</value>
   </data>
   <data name="Editor_LinkInsert_Placeholder" xml:space="preserve">
     <value>[texto](url)</value>
@@ -591,6 +603,9 @@
   </data>
   <data name="Editor_SlashCommand_H3_Label" xml:space="preserve">
     <value>Encabezado 3</value>
+  </data>
+  <data name="Editor_SlashCommand_Image_Label" xml:space="preserve">
+    <value>Imagen</value>
   </data>
   <data name="Editor_SlashCommand_InlineCode_Label" xml:space="preserve">
     <value>Código en línea</value>
@@ -716,6 +731,9 @@
   </data>
   <data name="Editor_Toolbar_Strikethrough_Tooltip" xml:space="preserve">
     <value>Tachado</value>
+  </data>
+  <data name="Editor_Toolbar_Table_Tooltip" xml:space="preserve">
+    <value>Tabla</value>
   </data>
   <data name="Editor_Toolbar_TaskList_Tooltip" xml:space="preserve">
     <value>Lista de tareas</value>
@@ -1445,6 +1463,18 @@
   </data>
   <data name="Notification_MarkAllRead" xml:space="preserve">
     <value>Marcar todo como leído</value>
+  </data>
+  <data name="Notification_NoteImageAttachFailed_Message" xml:space="preserve">
+    <value>No se pudo guardar la imagen en la nota: {0}</value>
+  </data>
+  <data name="Notification_NoteImageAttachFailed_Title" xml:space="preserve">
+    <value>No se adjuntó la imagen</value>
+  </data>
+  <data name="Notification_NoteImageOpenFailed_Message" xml:space="preserve">
+    <value>No se encontró una aplicación asociada para abrir "{0}".</value>
+  </data>
+  <data name="Notification_NoteImageOpenFailed_Title" xml:space="preserve">
+    <value>No se pudo abrir la imagen</value>
   </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>NOTIFICACIONES</value>
@@ -2402,6 +2432,12 @@
   </data>
   <data name="Settings_Editor_LineNumbers_Label" xml:space="preserve">
     <value>Números de línea</value>
+  </data>
+  <data name="Settings_Editor_RemoteImages_Description" xml:space="preserve">
+    <value>Descargar y mostrar las imágenes escritas con una dirección http(s). Las imágenes guardadas en el vault se muestran siempre.</value>
+  </data>
+  <data name="Settings_Editor_RemoteImages_Label" xml:space="preserve">
+    <value>Imágenes remotas</value>
   </data>
   <data name="Settings_Editor_ShowScrollbar_Description" xml:space="preserve">
     <value>Mostrar la barra de desplazamiento del editor.</value>

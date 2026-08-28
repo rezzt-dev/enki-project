@@ -669,9 +669,46 @@ public sealed class VaultService
         EnsureVaultAvailable();
         var oldPath = note.FullPath;
         note.FullPath = MovePreservingEncryption(note.FullPath, destinationFolderPath);
+        MoveAttachmentsFolder(oldPath, note.FullPath);
         _noteCache.Invalidate(oldPath);
         _noteCache.Invalidate(note.FullPath);
         return note;
+    }
+
+    /// <summary>Lleva la carpeta de adjuntos de una nota (<c>&lt;nota&gt;.attachments/</c>, ver
+    /// <see cref="NoteImageAttachments"/>) allá donde acabe de irse la nota, sea por un renombrado o por
+    /// un movimiento de carpeta. Sin esto, renombrar una nota dejaría cada <c>![](Nota.attachments/…)</c>
+    /// que contiene apuntando a una carpeta que ya no se llama así: las imágenes desaparecerían del
+    /// editor sin que nada indicase por qué, y arreglarlo exigiría editar el texto de la nota a mano.
+    ///
+    /// <para>Cada archivo se mueve por <see cref="MovePreservingEncryption"/>, no por
+    /// <see cref="File.Move(string, string)"/>, porque mover una nota entre una sesión protegida y el
+    /// vault cruza una frontera de cifrado y sus imágenes tienen que cruzarla con ella — quedarían
+    /// ilegibles exactamente igual que quedaría la nota.</para>
+    ///
+    /// <para>Un fallo aquí se registra y se traga: la nota ya se ha movido y no hay vuelta atrás, así que
+    /// abortar dejaría un estado peor que el de unas imágenes que hay que reubicar a mano.</para></summary>
+    private void MoveAttachmentsFolder(string oldNotePath, string newNotePath)
+    {
+        var source = NoteImageAttachments.FolderFor(oldNotePath);
+        var destination = NoteImageAttachments.FolderFor(newNotePath);
+        if (source is null || destination is null || PathsEqual(source, destination)) return;
+        if (!Directory.Exists(source)) return;
+
+        try
+        {
+            Directory.CreateDirectory(destination);
+            foreach (var file in Directory.GetFiles(source)) MovePreservingEncryption(file, destination);
+            foreach (var subfolder in Directory.GetDirectories(source))
+                Directory.Move(subfolder, Path.Combine(destination, Path.GetFileName(subfolder)));
+
+            if (!Directory.EnumerateFileSystemEntries(source).Any()) Directory.Delete(source);
+            InvalidateVaultSizeCache();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            LogService.Warning($"No se pudo mover la carpeta de adjuntos '{source}' junto a su nota", ex);
+        }
     }
 
     /// <summary>Moves a note or attachment into <paramref name="destinationFolder"/>, converting its
@@ -969,12 +1006,19 @@ public sealed class VaultService
     /// Logs and rethrows on <see cref="IOException"/>/<see cref="UnauthorizedAccessException"/> (which also
     /// covers <see cref="DirectoryNotFoundException"/>) instead of swallowing it, so a disk-full, permission,
     /// or missing-path failure leaves a trace in <see cref="LogService"/> and still reaches the caller.</summary>
-    private void WriteFileAtomic(string path, string content)
+    private void WriteFileAtomic(string path, string content) =>
+        WriteFileAtomic(path, Encoding.UTF8.GetBytes(content));
+
+    /// <summary>Binary counterpart of <see cref="WriteFileAtomic(string, string)"/> — same temp-file +
+    /// atomic move and the same "encrypt first if this path falls under a protected session" rule, for
+    /// content that isn't text (hoy, las imágenes que <see cref="NoteImageService"/> guarda como adjunto
+    /// de una nota).</summary>
+    private void WriteFileAtomic(string path, byte[] plaintext)
     {
         var encryptedRoot = ResolveEncryptedSessionRoot(path);
         var bytes = encryptedRoot is null
-            ? Encoding.UTF8.GetBytes(content)
-            : _encryptionService.Encrypt(encryptedRoot, Encoding.UTF8.GetBytes(content)); // throws SessionLockedException if locked
+            ? plaintext
+            : _encryptionService.Encrypt(encryptedRoot, plaintext); // throws SessionLockedException if locked
 
         try
         {
@@ -1015,6 +1059,23 @@ public sealed class VaultService
 
         InvalidateVaultSizeCache();
         return ReadNoteMetadata(destination);
+    }
+
+    /// <summary>Escribe un archivo binario dentro del vault (creando su carpeta si hace falta) con la
+    /// misma escritura atómica y el mismo cifrado automático que una nota — ver
+    /// <see cref="WriteFileAtomic(string, byte[])"/>. Es la vía por la que <see cref="NoteImageService"/>
+    /// guarda una imagen pegada o arrastrada: una imagen adjunta a una nota de una sesión protegida tiene
+    /// que quedar cifrada igual que la nota que la enseña, y centralizarlo aquí es lo que impide que
+    /// alguna ruta de escritura futura la deje en claro por descuido.</summary>
+    public void WriteBinaryFile(string fullPath, byte[] bytes)
+    {
+        EnsureVaultAvailable();
+
+        var directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+
+        WriteFileAtomic(fullPath, bytes);
+        InvalidateVaultSizeCache();
     }
 
     private string TrashPath => Path.Combine(VaultPath, ".trash");
@@ -1177,6 +1238,7 @@ public sealed class VaultService
         }
 
         note.FullPath = newPath;
+        MoveAttachmentsFolder(oldPath, newPath);
         RewriteWikilinksToRenamedNote(notesBeforeRename, oldPath, Path.GetFileNameWithoutExtension(newPath));
 
         // The rewrite pass above may have touched any note in the pre-rename snapshot (plus the renamed

@@ -224,6 +224,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorTabSize = settingsService.Settings.EditorTabSize;
         _editorLineNumbers = settingsService.Settings.EditorLineNumbers;
         _editorWordWrap = settingsService.Settings.EditorWordWrap;
+        _editorRemoteImages = settingsService.Settings.EditorRemoteImages;
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
@@ -282,6 +283,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.TabSize = settingsService.Settings.EditorTabSize;
         EditorPreferences.LineNumbers = _editorLineNumbers;
         EditorPreferences.WordWrap = _editorWordWrap;
+        EditorPreferences.RemoteImages = _editorRemoteImages;
         EditorPreferences.SidePanelVisible = _editorSidePanelVisible;
         EditorPreferences.ToolbarVisible = settingsService.Settings.EditorToolbarVisible;
         EditorPreferences.ToolbarTextStyleExpanded = settingsService.Settings.EditorToolbarTextStyleExpanded;

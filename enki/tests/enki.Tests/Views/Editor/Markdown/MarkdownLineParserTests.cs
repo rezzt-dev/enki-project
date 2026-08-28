@@ -299,4 +299,122 @@ public class MarkdownLineParserTests
         Assert.Equal(2, model.HtmlTags.Count);
         Assert.True(italic.Start > model.HtmlTags[0].End);
     }
+
+    // ===================== Imágenes =====================
+
+    [Fact]
+    public void Parse_Image_SpanCoversTheExclamationMark()
+    {
+        var text = "Antes ![captura](adjuntos/foto.png) después";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal("adjuntos/foto.png", span.LinkTarget);
+        Assert.Equal("captura", text[span.ContentStart..span.ContentEnd]);
+        // El '!' entra en el span: si quedara fuera, ocultar la imagen dejaría un '!' suelto en la línea.
+        Assert.Equal("![captura](adjuntos/foto.png)", text[span.Start..span.End]);
+    }
+
+    [Fact]
+    public void Parse_LinkAfterImage_StillParsedAsLink()
+    {
+        var text = "![foto](a.png) y [enlace](https://ejemplo.test)";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(2, model.Spans.Count);
+        Assert.Equal(MdSpanKind.Image, model.Spans[0].Kind);
+        Assert.Equal(MdSpanKind.Link, model.Spans[1].Kind);
+    }
+
+    [Theory]
+    [InlineData("![alt|300](a.png)", 300, 0, "alt")]
+    [InlineData("![alt|300x200](a.png)", 300, 200, "alt")]
+    [InlineData("![|420](a.png)", 420, 0, "")]
+    public void Parse_ImageWithExplicitSize_SplitsSizeOutOfAltText(string text, int width, int height, string alt)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal(width, span.ImageWidth);
+        Assert.Equal(height, span.ImageHeight);
+        Assert.Equal(alt, text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_ImageWithNonNumericPipeSuffix_KeepsItAsAltText()
+    {
+        var text = "![diagrama|versión 2](a.png)";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(0, span.ImageWidth);
+        Assert.Equal("diagrama|versión 2", text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_ImageWithTitle_TargetStopsAtFirstSpace()
+    {
+        var text = "![alt](foto.png \"Un título\")";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal("foto.png", span.LinkTarget);
+    }
+
+    [Fact]
+    public void Parse_EmbeddedImageWikiLink_IsAnImageSpan()
+    {
+        var text = "![[captura.png]]";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal("captura.png", span.LinkTarget);
+        Assert.Equal(text, text[span.Start..span.End]);
+    }
+
+    [Fact]
+    public void Parse_EmbeddedImageWikiLinkWithSize_ReadsWidth()
+    {
+        var model = MarkdownLineParser.Parse("![[captura.png|300]]", 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal("captura.png", span.LinkTarget);
+        Assert.Equal(300, span.ImageWidth);
+    }
+
+    [Fact]
+    public void Parse_EmbeddedNoteWikiLink_StaysAWikiLink()
+    {
+        // Una transclusión de nota (`![[Otra nota]]`) no es una imagen; degradarla a wikilink normal la
+        // deja al menos navegable en vez de dibujarla como imagen rota.
+        var model = MarkdownLineParser.Parse("![[Otra nota]]", 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.WikiLink, span.Kind);
+        Assert.Equal("Otra nota", span.LinkTarget);
+    }
+
+    [Fact]
+    public void Parse_ImageInsideCodeFence_IsNotParsed()
+    {
+        var fence = new FenceInfo(isDelimiter: false, isInside: true, language: "md");
+        var model = MarkdownLineParser.Parse("![alt](foto.png)", 0, fence);
+
+        Assert.Empty(model.Spans);
+    }
+
+    [Theory]
+    [InlineData("foto.png", true)]
+    [InlineData("FOTO.PNG", true)]
+    [InlineData("https://ejemplo.test/foto.jpg?v=2", true)]
+    [InlineData("data:image/png;base64,AAAA", true)]
+    [InlineData("Otra nota", false)]
+    [InlineData("documento.pdf", false)]
+    public void LooksLikeImage_JudgesByExtension(string target, bool expected) =>
+        Assert.Equal(expected, MarkdownLineParser.LooksLikeImage(target));
 }
+

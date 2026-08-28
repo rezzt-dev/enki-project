@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -76,6 +77,9 @@ public static class NoteExportRenderer
         if (text.Length == 0) return string.Empty;
 
         var fences = MarkdownLineParser.ComputeFences(text);
+        // Qué líneas forman una tabla es, igual que las cercas de código, una pregunta que no se puede
+        // contestar mirando una línea suelta: "| a | b |" es texto normal si debajo no hay separadora.
+        var tables = MarkdownTableParser.Scan(text, fences);
         // Contexto HTML por línea: qué etiquetas en línea dejó abiertas una línea anterior. Un
         // <i> que cierra tres líneas más abajo tiene que seguir en cursiva aquí igual que en el editor,
         // y cada bloque exportado (<p>, <li>, <h2>…) debe salir balanceado por sí mismo.
@@ -146,6 +150,15 @@ public static class NoteExportRenderer
             {
                 sb.Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory)).Append('\n');
                 i++;
+                continue;
+            }
+
+            // Tabla: se emite entera de una vez (encabezado + cuerpo) y el bucle salta a la primera
+            // línea de después. Va antes del switch porque sus filas son párrafos para
+            // MarkdownLineParser — lo que las hace tabla es el bloque, no la línea.
+            if (tables.TryGetValue(i + 1, out var tableRow) && tableRow.Kind == MdTableRowKind.Header)
+            {
+                i = EmitTable(lines, lineOffsets, ParseLine, OpenTags, tableRow.Table, sb, noteDirectory);
                 continue;
             }
 
@@ -268,15 +281,72 @@ public static class NoteExportRenderer
         return i;
     }
 
+    /// <summary>Vuelca una tabla completa como <c>&lt;table&gt;</c>: la fila de encabezados en
+    /// <c>&lt;thead&gt;</c> con <c>&lt;th&gt;</c>, las de datos en <c>&lt;tbody&gt;</c>, y la fila
+    /// separadora en nada — su única información, la alineación de cada columna, viaja como clase CSS de
+    /// cada celda. Toda fila se rellena hasta <see cref="MdTable.ColumnCount"/> columnas para que el
+    /// documento exportado tenga la misma rejilla rectangular que dibuja el editor, aunque una fila de la
+    /// nota tenga menos celdas que las demás. Devuelve el índice de la primera línea no consumida.</summary>
+    private static int EmitTable(string[] lines, int[] lineOffsets, Func<int, MdLine> parseLine,
+        Func<int, IReadOnlyList<string>> openTags, MdTable table, StringBuilder sb, string? noteDirectory)
+    {
+        void EmitRow(int lineIndex, string cellTag)
+        {
+            var lineText = lines[lineIndex];
+            var lineOffset = lineOffsets[lineIndex];
+            var model = parseLine(lineIndex);
+            var cells = MarkdownTableParser.SplitCells(lineText, lineOffset);
+
+            sb.Append("<tr>");
+            for (var column = 0; column < table.ColumnCount; column++)
+            {
+                sb.Append('<').Append(cellTag).Append(AlignClass(table.Alignments[column])).Append('>');
+                if (column < cells.Count)
+                {
+                    sb.Append(RenderInline(lineText, lineOffset, model, openTags(lineIndex), noteDirectory,
+                        cells[column].Start, cells[column].End));
+                }
+                sb.Append("</").Append(cellTag).Append('>');
+            }
+            sb.Append("</tr>\n");
+        }
+
+        sb.Append("<table>\n<thead>\n");
+        EmitRow(table.StartLine - 1, "th");
+        sb.Append("</thead>\n");
+
+        if (table.BodyRowCount > 0)
+        {
+            sb.Append("<tbody>\n");
+            for (var line = table.DelimiterLine + 1; line <= table.EndLine; line++) EmitRow(line - 1, "td");
+            sb.Append("</tbody>\n");
+        }
+
+        sb.Append("</table>\n");
+        return table.EndLine;
+    }
+
+    private static string AlignClass(MdTableAlign align) => align switch
+    {
+        MdTableAlign.Left => " class=\"ta-left\"",
+        MdTableAlign.Center => " class=\"ta-center\"",
+        MdTableAlign.Right => " class=\"ta-right\"",
+        _ => string.Empty
+    };
+
     /// <summary>Renderiza el rango [<paramref name="contentStart"/>, fin de línea) aplicando los spans
     /// inline del parser: escapa el texto llano y emite las etiquetas de cada span. Los spans llegan en
     /// orden y sin solaparse (el parser nunca anida — <c>**negrita _cursiva_**</c> deja los marcadores
     /// internos como texto literal, igual que el live preview), así que basta un recorrido lineal.</summary>
+    /// <param name="from">Offset absoluto donde empezar, o null para empezar en el contenido de la línea.
+    /// Lo usan las celdas de una tabla, que son trozos de línea y no líneas enteras.</param>
+    /// <param name="to">Offset absoluto donde parar, o null para llegar al final de la línea.</param>
     private static string RenderInline(string lineText, int lineOffset, MdLine model,
-        IReadOnlyList<string> openAtLineStart, string? noteDirectory)
+        IReadOnlyList<string> openAtLineStart, string? noteDirectory, int? from = null, int? to = null)
     {
         var sb = new StringBuilder(lineText.Length * 2);
-        var pos = Math.Max(model.ContentStart, lineOffset);
+        var pos = from ?? Math.Max(model.ContentStart, lineOffset);
+        var limit = to ?? lineOffset + lineText.Length;
 
         // Las etiquetas en línea que vengan abiertas de una línea previa se reabren aquí, y las que esta
         // línea deje abiertas se cierran al final: cada bloque HTML que emitimos es autónomo, y un
@@ -286,20 +356,16 @@ public static class NoteExportRenderer
         foreach (var span in model.Spans)
         {
             if (span.Start < pos) continue;
+            // Un span que se sale del rango (un `**` abierto en una celda y cerrado en la siguiente) no
+            // es de esta celda: se deja como texto literal en vez de emitir una etiqueta a medias.
+            if (span.End > limit) continue;
 
-            // Una imagen ![alt](src) es para el parser un span Link cuyo '!' queda justo fuera, como
-            // carácter llano previo — lo absorbe el span aquí para que no se imprima como texto literal.
-            var spanStart = span.Start;
-            if (span.Kind == MdSpanKind.Link && spanStart - lineOffset - 1 >= 0
-                && lineText[spanStart - lineOffset - 1] == '!')
-                spanStart--;
-
-            AppendPlainText(sb, lineText, pos - lineOffset, spanStart - lineOffset);
+            AppendPlainText(sb, lineText, pos - lineOffset, span.Start - lineOffset);
             AppendSpan(sb, span, model, lineText, lineOffset, noteDirectory);
             pos = span.End;
         }
 
-        AppendPlainText(sb, lineText, pos - lineOffset, lineText.Length);
+        AppendPlainText(sb, lineText, pos - lineOffset, limit - lineOffset);
 
         var stillOpen = new List<string>(openAtLineStart);
         MarkdownHtmlParser.ApplyInlineTags(stillOpen, model.HtmlTags);
@@ -346,11 +412,11 @@ public static class NoteExportRenderer
                 // hiperenlace roto.
                 sb.Append("<span class=\"wikilink\">").Append(EscapeText(content)).Append("</span>");
                 break;
+            case MdSpanKind.Image:
+                AppendImage(sb, span, content, noteDirectory);
+                break;
             case MdSpanKind.Link:
-                // El parser no distingue ![alt](src) de [texto](url) — el '!' queda justo antes del span.
-                var isImage = span.Start - lineOffset - 1 >= 0 && lineText[span.Start - lineOffset - 1] == '!';
-                if (isImage) AppendImage(sb, span, content, noteDirectory);
-                else AppendLink(sb, span, content);
+                AppendLink(sb, span, content);
                 break;
         }
     }
@@ -393,7 +459,12 @@ public static class NoteExportRenderer
 
         var src = TryEmbedLocalImage(url, noteDirectory) ?? url;
         sb.Append("<img src=\"").Append(WebUtility.HtmlEncode(src)).Append("\" alt=\"")
-            .Append(WebUtility.HtmlEncode(EscapeSequenceRegex.Replace(alt, "$1"))).Append("\"/>");
+            .Append(WebUtility.HtmlEncode(EscapeSequenceRegex.Replace(alt, "$1"))).Append('"');
+        // El tamaño explícito de `![alt|300x200](src)` viaja al HTML como atributos width/height, para que
+        // el documento exportado se vea como se veía en el editor y no a tamaño natural.
+        if (span.ImageWidth > 0) sb.Append(" width=\"").Append(span.ImageWidth.ToString(CultureInfo.InvariantCulture)).Append('"');
+        if (span.ImageHeight > 0) sb.Append(" height=\"").Append(span.ImageHeight.ToString(CultureInfo.InvariantCulture)).Append('"');
+        sb.Append("/>");
     }
 
     /// <summary>Incrusta una imagen local (ruta relativa a la carpeta de la nota) como data URI base64,
@@ -525,6 +596,7 @@ public static class NoteExportRenderer
         th, td { border: 1px solid #d4d4d4; padding: 6px 10px; text-align: left; font-size: 0.92em;
                  vertical-align: top; }
         th { background: #f0f0f0; font-weight: 700; }
+        .ta-left { text-align: left; } .ta-center { text-align: center; } .ta-right { text-align: right; }
         hr { border: 0; border-top: 1px solid #c9c9c9; margin: 28px 0; }
         mark { background: #e3e3e3; padding: 0 2px; }
         img { max-width: 100%; height: auto; }

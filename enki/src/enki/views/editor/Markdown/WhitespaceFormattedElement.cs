@@ -38,18 +38,30 @@ namespace enki.Views.Editor.Markdown;
 /// <see cref="QuoteRailMargin"/>'s own gutter column instead of reserving inline width at all - see
 /// that class's doc comment for the full explanation.
 /// </summary>
+/// <summary>Lo que un espaciador le impone al alto de su línea. <see cref="FixedHeight"/> fija el alto
+/// entero (la fila separadora de una tabla, que se encoge a una banda fina), y
+/// <see cref="VerticalPadding"/> lo aumenta a cada lado del texto sin tocar la tipografía (las filas de
+/// una tabla, que necesitan aire entre el texto y la rejilla). Cero en ambos = el alto normal de la
+/// línea.</summary>
+internal readonly record struct SpacerMetrics(double FixedHeight, double VerticalPadding);
+
 internal sealed class WhitespaceFormattedElement : VisualLineElement
 {
     private readonly string _text;
     private readonly double _leadingWidth;
+    private readonly SpacerMetrics _metrics;
     private readonly Dictionary<int, FormattedText> _formattedByOffset = new();
 
     /// <param name="leadingWidth">Blank space (px) reserved before the glyph, used to align the line.</param>
-    public WhitespaceFormattedElement(string text, int documentLength, double leadingWidth = 0)
+    /// <param name="metrics">Alto que este espaciador impone a su línea, si impone alguno — ver
+    /// <see cref="SpacerMetrics"/>.</param>
+    public WhitespaceFormattedElement(string text, int documentLength, double leadingWidth = 0,
+        SpacerMetrics metrics = default)
         : base(Math.Max(1, text.Length), documentLength)
     {
         _text = text;
         _leadingWidth = leadingWidth;
+        _metrics = metrics;
     }
 
     public override bool IsWhitespace(int visualColumn) => true;
@@ -82,7 +94,7 @@ internal sealed class WhitespaceFormattedElement : VisualLineElement
                 rp.FontRenderingEmSize, rp.ForegroundBrush);
             _formattedByOffset[relativeOffset] = formatted;
         }
-        return new SpacerTextRun(glyph, formatted, TextRunProperties, leading, hasGlyph);
+        return new SpacerTextRun(glyph, formatted, TextRunProperties, leading, hasGlyph, _metrics);
     }
 
     public override bool CanSplit => false;
@@ -103,18 +115,29 @@ internal sealed class WhitespaceFormattedElement : VisualLineElement
         private readonly TextRunProperties _props;
         private readonly double _leading;
         private readonly bool _drawGlyph;
-        public SpacerTextRun(string text, FormattedText ft, TextRunProperties props, double leading, bool drawGlyph)
+        private readonly SpacerMetrics _metrics;
+        public SpacerTextRun(string text, FormattedText ft, TextRunProperties props, double leading, bool drawGlyph,
+            SpacerMetrics metrics)
         {
             _text = text;
             _ft = ft;
             _props = props;
             _leading = leading;
             _drawGlyph = drawGlyph;
+            _metrics = metrics;
         }
         public override ReadOnlyMemory<char> Text => _text.AsMemory();
         public override TextRunProperties? Properties => _props;
-        public override double Baseline => _ft.Baseline;
-        public override Size Size => new(_leading + (_drawGlyph ? _ft.WidthIncludingTrailingWhitespace : 0), _ft.Height);
+        // Alto y línea base son lo que la línea entera acaba midiendo: Avalonia compone cada TextLine con
+        // el mayor ascenso y el mayor descenso de sus runs, así que un espaciador más alto (o más bajo)
+        // que el texto arrastra a toda la línea consigo. Es el mecanismo con el que una fila de tabla
+        // consigue relleno vertical y la fila separadora se queda en una banda fina.
+        public override double Baseline => _metrics.FixedHeight > 0
+            ? _metrics.FixedHeight
+            : _ft.Baseline + _metrics.VerticalPadding;
+        public override Size Size => new(
+            _leading + (_drawGlyph ? _ft.WidthIncludingTrailingWhitespace : 0),
+            _metrics.FixedHeight > 0 ? _metrics.FixedHeight : _ft.Height + 2 * _metrics.VerticalPadding);
         public override void Draw(DrawingContext context, Point origin)
         {
             if (_drawGlyph) context.DrawText(_ft, origin.WithX(origin.X + _leading));
