@@ -7,6 +7,27 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Papelera rehecha**: las siete categorías (documentos, archivos, tareas, listas y tareas de Polar,
+recordatorios y sesiones) usaban cada una tarjetas de un tamaño distinto —224x150, 224x120 y 224x100—, así
+que las filas no cuadraban al pasar de una sección a otra y, en las tarjetas bajas, un título de dos líneas
+no cabía y se recortaba a media letra. Ahora todas las tarjetas comparten una única caja de 224x150 —la
+misma que ya usaban las del navegador de Notas y Archivos— con la misma estructura de tres bandas: icono de
+tipo y un dato corto arriba, título y línea de detalle en el centro, y acciones de restaurar/borrar
+alineadas abajo a la derecha, con espacio reservado para que nunca se pisen entre sí.
+
+- **Cabecera de cada sección**: el nombre de la categoría lleva ahora al lado el número de elementos que
+  contiene, una línea fina que llega hasta el botón, y un botón "VACIAR" realmente compacto — antes ese
+  botón medía lo mismo que el "VACIAR PAPELERA" de la página con la letra más pequeña, porque el estilo
+  base le fijaba la altura y el ajuste que traía puesto no hacía nada.
+- **Cabecera de la página**: junto a "VACIAR PAPELERA" aparece el total de elementos de toda la papelera,
+  el mismo número que muestra la insignia de la barra lateral.
+- **Secciones vacías**: en vez de una línea de texto suelta, cada categoría vacía dibuja un recuadro
+  propio, así que la papelera vacía se lee de un vistazo en lugar de como una página a medio cargar.
+- **Tareas de Polar**: las listas y las tareas borradas van bajo su propio subtítulo con su recuento; antes
+  se dibujaban una detrás de otra y el salto entre ambas parecía una fila rota.
+- El ancho del contenido se limita como en Recordatorios y Calendario, para que en una pantalla ancha la
+  página siga alineada con el resto de la app.
+
 **Bloques de código más compactos y con botón de copiar**: el recuadro de un bloque ` ``` ` en una nota
 pasa a ser cuadrado —esquinas rectas y borde fino de 1px ajustado al píxel, como el resto de la interfaz—,
 las líneas de los delimitadores se encogen a una banda de pocos píxeles en vez de ocupar una línea de texto

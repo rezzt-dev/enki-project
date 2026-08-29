@@ -485,6 +485,18 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
+  <!-- Variante compacta para acciones de cabecera de sección (p. ej. el "VACIAR" de cada categoría de
+       la Papelera, subordinado al "VACIAR PAPELERA" de la cabecera de página). Es un modificador y no
+       un Padding inline en la vista porque Button.pill fija Height="40": poner Padding="10,5" en el
+       XAML no encogía nada, el botón seguía midiendo 40px de alto con una etiqueta de 10px flotando
+       dentro, así que hay que sobrescribir también Height. -->
+  <Style Selector="Button.pill.pill-compact">
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontSize" Value="10" />
+  </Style>
+
   <!-- Primario sólido. Hover mirrors Button.pill's inversion (border-outline <-> solid fill) instead
        of a generic opacity fade, so it reads as the same "invert on hover" language as the rest of
        the app — just starting from the opposite end (solid at rest, outline on hover). BorderThickness
@@ -1178,12 +1190,29 @@
     <Setter Property="CornerRadius" Value="0" />
   </Style>
 
-  <!-- Variante para tarjetas de la Papelera: la tarjeta en sí no navega a ningún sitio (solo los
-       botones de restaurar/borrar que contiene lo son), así que sigue el mismo patrón que
-       Border.stat-card — el fondo se ilumina al pasar el cursor, sin el translateY/cursor:hand
-       que Button.note-card/Button.card reservan para tarjetas clicables — en vez de dejarla
-       completamente inerte como el resto de usos de Border.card (paneles estáticos de Ajustes). -->
+  <!-- ===================== Papelera (TrashView) =====================
+       Las siete secciones de la Papelera (documentos, archivos, tareas, listas Polar, tareas Polar,
+       recordatorios y sesiones) comparten UNA sola geometría de tarjeta declarada aquí — antes cada
+       DataTemplate repetía su propio Width/Height/Padding (224x150, 224x120, 224x100…), así que las
+       filas de un WrapPanel no cuadraban entre secciones y en las tarjetas de 100px el título de dos
+       líneas no cabía y se recortaba. Al vivir la caja en el estilo, la vista solo describe contenido
+       y cualquier ajuste de tamaño se hace en un único sitio.
+
+       La caja es la misma 224x150 con calle de 16 que ya usan las tarjetas del navegador de Notas y de
+       Archivos (Button.note-card en FullNotesView/FilesView), para que la Papelera no invente un tercer
+       tamaño de tarjeta propio. Ese alto da de sobra para el contenido: 14+12 de padding vertical, 16 de
+       la fila de metadatos, 10+8 de separación, hasta 56 de cuerpo (título de 2 líneas a LineHeight 18 +
+       línea secundaria de 16) y 30 de la fila de acciones. -->
   <Style Selector="Border.card.trash-card">
+    <Setter Property="Width" Value="224" />
+    <Setter Property="Height" Value="150" />
+    <Setter Property="Padding" Value="16,14,16,12" />
+    <Setter Property="Margin" Value="0,0,16,16" />
+    <!-- La tarjeta en sí no navega a ningún sitio (solo los botones de restaurar/borrar que contiene
+         lo son), así que sigue el mismo patrón que Border.stat-card — el fondo se ilumina al pasar el
+         cursor, sin el translateY/cursor:hand que Button.note-card/Button.card reservan para tarjetas
+         clicables — en vez de dejarla completamente inerte como el resto de usos de Border.card
+         (paneles estáticos de Ajustes). -->
     <Setter Property="Transitions">
       <Transitions>
         <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
@@ -1194,6 +1223,102 @@
   <Style Selector="Border.card.trash-card:pointerover">
     <Setter Property="Background" Value="{DynamicResource PanelBackgroundHoverBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+  </Style>
+
+  <!-- Fila de metadatos de la tarjeta (icono de tipo + "hace 3 días"): alto fijo para que las tres
+       filas del Grid sumen exactamente el alto de la tarjeta y el cuerpo no se coma la fila de
+       acciones cuando el título ocupa dos líneas. -->
+  <Style Selector="TextBlock.trash-card-meta">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="LineHeight" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="MaxLines" Value="1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Título y línea secundaria con LineHeight explícito: sin él, el alto de línea depende de la
+       métrica de la fuente cargada y el cálculo de arriba deja de cuadrar (títulos recortados a media
+       letra en la segunda línea). -->
+  <Style Selector="TextBlock.trash-card-title">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="LineHeight" Value="18" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="0.2" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="MaxLines" Value="2" />
+  </Style>
+  <Style Selector="TextBlock.trash-card-sub">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="LineHeight" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="MaxLines" Value="1" />
+  </Style>
+
+  <!-- Acciones de la tarjeta: 30x30 en vez de los 34x34 de Button.icon-btn de barra de herramientas —
+       dos botones de 34 + separación dentro de una tarjeta de 240 con 32 de padding dejaban la fila
+       visualmente pesada frente al texto de 12-14px que tienen encima. -->
+  <Style Selector="Button.icon-btn.trash-card-action">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+  </Style>
+
+  <!-- Contador de elementos junto al eyebrow de cada sección (y del total en la cabecera de página).
+       Caja de 1px como el resto del sistema, no una píldora redonda. -->
+  <Style Selector="Border.trash-count-badge">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="MinWidth" Value="22" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="Padding" Value="5,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.trash-count-badge TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LineHeight" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextAlignment" Value="Center" />
+  </Style>
+
+  <!-- Estado vacío de sección: una caja real de alto fijo en vez de una línea suelta de texto, para
+       que una sección vacía ocupe un bloque reconocible y las secciones llenas y vacías mantengan el
+       mismo ritmo vertical al recorrer la página. -->
+  <Style Selector="Border.trash-empty-state">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Height" Value="72" />
+    <Setter Property="Padding" Value="18,0" />
+  </Style>
+
+  <!-- Aviso de sección (Polar sin purgar, recordatorios sin borrado permanente): barra de acento a la
+       izquierda como Button.dropdown-item.reminder-item, para que se lea como nota al pie de la
+       sección y no como un elemento más de la lista. -->
+  <Style Selector="Border.trash-hint">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="2,0,0,0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
+
+  <!-- Regla de 1px que rellena el hueco entre el eyebrow de la sección y su botón "VACIAR" (§3.2:
+       los bordes son el sistema de separación). Sustituye a los <Rectangle> sueltos que antes iban
+       entre sección y sección. -->
+  <Style Selector="Rectangle.section-rule">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Fill" Value="{DynamicResource Ink10}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 
   <!-- ===================== Captura de atajo remapeable (propuesta 29, Ajustes › Atajos) ===================== -->

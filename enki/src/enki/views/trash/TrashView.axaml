@@ -18,462 +18,586 @@
        RequestEmptyTrash no hace nada si la papelera está vacía (guarda IsFullyEmpty). Remapeable
        (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) — ver TrashView.axaml.cs (BuildKeyBindings). -->
 
-  <Grid RowDefinitions="Auto,*" Margin="36,30,36,26">
+  <!-- Las siete categorías comparten UNA plantilla de tarjeta con la misma caja (Border.card.trash-card
+       fija Width/Height/Padding/Margin en styles/Styles.axaml) y el mismo esqueleto de tres filas:
 
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,22">
-      <StackPanel Grid.Column="0" Spacing="6">
-        <TextBlock Text="{loc:Tr Trash_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-        <TextBlock Text="{loc:Tr Trash_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
-        <TextBlock Text="{loc:Tr Trash_PageSubtitle}"
-                   Classes="page-subtitle" />
-      </StackPanel>
+         fila 0 (16px)  · icono de tipo + un dato mono corto (cuándo se borró, tamaño, nº de notas)
+         fila 1 (resto) · título de hasta 2 líneas + línea secundaria opcional
+         fila 2 (30px)  · acciones alineadas a la derecha
 
-      <Button Grid.Column="1" Classes="pill" VerticalAlignment="Center"
-              IsEnabled="{Binding !IsFullyEmpty}"
-              Command="{Binding RequestEmptyTrashCommand}">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <mi:MaterialIcon Kind="DeleteSweepOutline" Width="15" Height="15" />
-          <TextBlock Text="{loc:Tr Trash_EmptyAllButton, Converter={StaticResource UpperCaseConverter}}" />
+       Las alturas de las filas 0 y 2 son fijas, no Auto: así el cuerpo nunca le roba espacio a la fila
+       de botones y, al ser todas las tarjetas iguales, las filas del WrapPanel cuadran entre secciones.
+       Antes cada sección declaraba su propio tamaño (224x150 / 224x120 / 224x100) y en las de 100px el
+       título de dos líneas no cabía y se recortaba a media letra. -->
+
+  <UserControl.DataTemplates>
+
+    <!-- ===================== Documentos ===================== -->
+    <DataTemplate DataType="vm:NoteCardViewModel">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="FileDocumentOutline" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ModifiedLabel}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <!-- El título de una nota es su nombre de archivo: una línea con elipsis, y las dos líneas
+               restantes del cuerpo para el extracto — al revés (título de 2 líneas + extracto de 2)
+               no cabrían las cuatro en la caja. -->
+          <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,8">
+            <TextBlock Text="{Binding Title}" Classes="trash-card-title" MaxLines="1" />
+            <TextBlock Text="{Binding Preview}" Classes="trash-card-sub"
+                       TextWrapping="Wrap" MaxLines="2" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteForeverCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+              <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- ===================== Archivos ===================== -->
+    <DataTemplate DataType="vm:FileCardViewModel">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <!-- El icono de tipo (PDF, audio, código…) va en la fila de metadatos como en el resto de
+               categorías, en vez de como bloque grande dentro del cuerpo: así el nombre del archivo
+               dispone del ancho completo de la tarjeta y no de la mitad. -->
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="{Binding IconKind}" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ModifiedLabel}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,8">
+            <TextBlock Text="{Binding FileName}" Classes="trash-card-title" />
+            <TextBlock Text="{Binding SizeLabel}" Classes="trash-card-sub" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreFileCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteFileForeverCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+              <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- ===================== Tareas (Kanban) ===================== -->
+    <DataTemplate DataType="vm:TrashedTaskCardViewModel">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="ViewColumnOutline" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DeletedLabel}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,8">
+            <TextBlock Text="{Binding Title}" Classes="trash-card-title" />
+            <TextBlock Text="{Binding WasInColumnLabel}" Classes="trash-card-sub" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreTaskCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteTaskForeverCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+              <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- ===================== Listas de Polar ===================== -->
+    <DataTemplate DataType="vm:TrashedPolarListCardViewModel">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="FormatListBulletedSquare" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DeletedLabel}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <TextBlock Grid.Row="1" Text="{Binding Title}" Classes="trash-card-title"
+                     Margin="0,10,0,8" VerticalAlignment="Top" />
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestorePolarListCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeletePolarListForeverCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+              <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- ===================== Tareas de Polar ===================== -->
+    <DataTemplate DataType="vm:TrashedPolarTaskCardViewModel">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="CheckboxMarkedOutline" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DeletedLabel}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <TextBlock Grid.Row="1" Text="{Binding Title}" Classes="trash-card-title"
+                     Margin="0,10,0,8" VerticalAlignment="Top" />
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestorePolarTaskCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeletePolarTaskForeverCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+              <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- ===================== Recordatorios =====================
+         Única categoría con una sola acción (no hay borrado permanente individual, ver el aviso al pie
+         de su sección y el comentario en TrashViewModel.RestoreReminder). La fila de acciones mantiene
+         igualmente su altura de 30px y su alineación a la derecha, para que la tarjeta no se lea como
+         una versión rota de las demás. -->
+    <DataTemplate DataType="vm:TrashedReminderCardViewModel">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="BellRingOutline" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DeletedLabel}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <TextBlock Grid.Row="1" Text="{Binding Title}" Classes="trash-card-title"
+                     Margin="0,10,0,8" VerticalAlignment="Top" />
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreReminderCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- ===================== Sesiones =====================
+         El dato mono de la fila de metadatos es el recuento de notas y no una fecha (Session no guarda
+         cuándo se borró): es además el dato que decide la acción, porque restaurar o purgar una sesión
+         arrastra consigo toda su carpeta de notas. -->
+    <DataTemplate DataType="vm:TrashedSessionCardViewModel">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="SitemapOutline" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding NoteCountLabel}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <TextBlock Grid.Row="1" Text="{Binding Name}" Classes="trash-card-title"
+                     Margin="0,10,0,8" VerticalAlignment="Top" />
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreSessionCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteSessionForeverCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+              <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+  </UserControl.DataTemplates>
+
+  <Grid>
+
+    <!-- Mismo ancho máximo que Recordatorios/Calendario: sin él, en una ventana ancha las tarjetas de
+         240px se reparten a lo largo de toda la pantalla y la página deja de alinearse con el resto. -->
+    <Grid RowDefinitions="Auto,*" Margin="36,30,36,26" MaxWidth="1180" HorizontalAlignment="Stretch">
+
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,24">
+        <StackPanel Grid.Column="0" Spacing="6">
+          <TextBlock Text="{loc:Tr Trash_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <TextBlock Text="{loc:Tr Trash_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
+          <TextBlock Text="{loc:Tr Trash_PageSubtitle}" Classes="page-subtitle" />
         </StackPanel>
-      </Button>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <!-- El mismo total que la insignia del nav, escrito, para no tener que sumar de cabeza las
+               seis secciones. Se oculta cuando no hay nada que contar. -->
+          <Border Classes="trash-count-badge" IsVisible="{Binding !IsFullyEmpty}">
+            <TextBlock Text="{Binding TotalCountLabel, Converter={StaticResource UpperCaseConverter}}" />
+          </Border>
+
+          <Button Classes="pill" IsEnabled="{Binding !IsFullyEmpty}"
+                  Command="{Binding RequestEmptyTrashCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="DeleteSweepOutline" Width="15" Height="15" />
+              <TextBlock Text="{loc:Tr Trash_EmptyAllButton, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <!-- Margen derecho extra en el contenido (no Padding del ScrollViewer, mismo motivo que en
+           Dashboard/Ajustes: Avalonia 12 resta el padding del extent scrolleable) — deja hueco para que
+           la scrollbar no se dibuje encima de los botones "VACIAR" de cada sección. -->
+      <ScrollViewer Grid.Row="1">
+        <StackPanel Spacing="30" Margin="0,0,16,0">
+
+          <!-- ===================== Documentos ===================== -->
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
+              <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
+                         Text="{loc:Tr Trash_Documents_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
+              <Border Grid.Column="1" Classes="trash-count-badge" Margin="6,0,0,0"
+                      IsVisible="{Binding !IsEmpty}">
+                <TextBlock Text="{Binding Notes.Count}" />
+              </Border>
+              <Rectangle Grid.Column="2" Classes="section-rule" Margin="16,0" />
+              <Button Grid.Column="3" Classes="pill pill-compact" IsEnabled="{Binding !IsEmpty}"
+                      Command="{Binding RequestEmptyDocumentsCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
+                  <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- El margen negativo cancela la calle de 16px que cada tarjeta lleva a su derecha y
+                 abajo, para que la rejilla quede a ras del borde de la sección por los cuatro lados
+                 (el ancho extra es justo el que necesita la última tarjeta de cada fila). -->
+            <ItemsControl ItemsSource="{Binding Notes}" IsVisible="{Binding !IsEmpty}" Margin="0,0,-16,-16">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <Border Classes="trash-empty-state" IsVisible="{Binding IsEmpty}">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="NoteTextOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
+                <TextBlock Text="{loc:Tr Trash_Documents_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- ===================== Archivos ===================== -->
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
+              <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
+                         Text="{loc:Tr Trash_Files_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
+              <Border Grid.Column="1" Classes="trash-count-badge" Margin="6,0,0,0"
+                      IsVisible="{Binding !IsFilesEmpty}">
+                <TextBlock Text="{Binding Files.Count}" />
+              </Border>
+              <Rectangle Grid.Column="2" Classes="section-rule" Margin="16,0" />
+              <Button Grid.Column="3" Classes="pill pill-compact" IsEnabled="{Binding !IsFilesEmpty}"
+                      Command="{Binding RequestEmptyFilesCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
+                  <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding Files}" IsVisible="{Binding !IsFilesEmpty}" Margin="0,0,-16,-16">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <Border Classes="trash-empty-state" IsVisible="{Binding IsFilesEmpty}">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="FileOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
+                <TextBlock Text="{loc:Tr Trash_Files_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- ===================== Tareas ===================== -->
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
+              <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
+                         Text="{loc:Tr Trash_Tasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
+              <Border Grid.Column="1" Classes="trash-count-badge" Margin="6,0,0,0"
+                      IsVisible="{Binding !IsTasksEmpty}">
+                <TextBlock Text="{Binding Tasks.Count}" />
+              </Border>
+              <Rectangle Grid.Column="2" Classes="section-rule" Margin="16,0" />
+              <Button Grid.Column="3" Classes="pill pill-compact" IsEnabled="{Binding !IsTasksEmpty}"
+                      Command="{Binding RequestEmptyTasksCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
+                  <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding Tasks}" IsVisible="{Binding !IsTasksEmpty}" Margin="0,0,-16,-16">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <Border Classes="trash-empty-state" IsVisible="{Binding IsTasksEmpty}">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="ViewColumnOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
+                <TextBlock Text="{loc:Tr Trash_Tasks_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- ===================== Tareas Polar (análisis alfa-3 §4.3) =====================
+               Única sección con dos colecciones (listas y tareas). Cada una tiene su propio WrapPanel,
+               así que van bajo su propio subtítulo: sin él, el salto de línea entre la última lista y
+               la primera tarea se lee como una fila rota en vez de como el cambio de grupo que es. -->
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
+              <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
+                         Text="{loc:Tr Trash_PolarTasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
+              <Border Grid.Column="1" Classes="trash-count-badge" Margin="6,0,0,0"
+                      IsVisible="{Binding !IsPolarTasksEmpty}">
+                <TextBlock Text="{Binding PolarTotalCount}" />
+              </Border>
+              <Rectangle Grid.Column="2" Classes="section-rule" Margin="16,0" />
+              <Button Grid.Column="3" Classes="pill pill-compact" IsEnabled="{Binding !IsPolarTasksEmpty}"
+                      Command="{Binding RequestEmptyPolarTasksCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
+                  <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <StackPanel Spacing="10" IsVisible="{Binding PolarLists.Count, Converter={StaticResource CountToBoolConverter}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center"
+                           Text="{loc:Tr Trash_PolarTasks_ListsGroup, Converter={StaticResource UpperCaseConverter}}" />
+                <Border Classes="trash-count-badge">
+                  <TextBlock Text="{Binding PolarLists.Count}" />
+                </Border>
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding PolarLists}" Margin="0,0,-16,-16">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </StackPanel>
+
+            <StackPanel Spacing="10" IsVisible="{Binding PolarTasks.Count, Converter={StaticResource CountToBoolConverter}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center"
+                           Text="{loc:Tr Trash_PolarTasks_TasksGroup, Converter={StaticResource UpperCaseConverter}}" />
+                <Border Classes="trash-count-badge">
+                  <TextBlock Text="{Binding PolarTasks.Count}" />
+                </Border>
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding PolarTasks}" Margin="0,0,-16,-16">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </StackPanel>
+
+            <Border Classes="trash-empty-state" IsVisible="{Binding IsPolarTasksEmpty}">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="CloudOffOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
+                <TextBlock Text="{loc:Tr Trash_PolarTasks_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="trash-hint" IsVisible="{Binding !IsPolarTasksEmpty}">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="14" Height="14"
+                                 Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                <TextBlock Grid.Column="1" Text="{loc:Tr Trash_PolarTasks_NoPurgeHint}" Classes="faint"
+                           FontSize="11.5" TextWrapping="Wrap" />
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <!-- ===================== Recordatorios ===================== -->
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
+              <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
+                         Text="{loc:Tr Trash_Reminders_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
+              <Border Grid.Column="1" Classes="trash-count-badge" Margin="6,0,0,0"
+                      IsVisible="{Binding !IsRemindersEmpty}">
+                <TextBlock Text="{Binding Reminders.Count}" />
+              </Border>
+              <Rectangle Grid.Column="2" Classes="section-rule" Margin="16,0" />
+              <Button Grid.Column="3" Classes="pill pill-compact" IsEnabled="{Binding !IsRemindersEmpty}"
+                      Command="{Binding RequestEmptyRemindersCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
+                  <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding Reminders}" IsVisible="{Binding !IsRemindersEmpty}" Margin="0,0,-16,-16">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <Border Classes="trash-empty-state" IsVisible="{Binding IsRemindersEmpty}">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="BellRingOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
+                <TextBlock Text="{loc:Tr Trash_Reminders_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- análisis alfa-3 §4.3, Baja: sin esta pista, la ausencia del botón "borrar para siempre" que
+                 sí tienen el resto de categorías se puede leer como un bug en vez de una decisión deliberada
+                 (ver el comentario en TrashViewModel.RestoreReminder). -->
+            <Border Classes="trash-hint" IsVisible="{Binding !IsRemindersEmpty}">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="14" Height="14"
+                                 Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                <TextBlock Grid.Column="1" Text="{loc:Tr Trash_Reminders_NoDeleteForeverHint}" Classes="faint"
+                           FontSize="11.5" TextWrapping="Wrap" />
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <!-- ===================== Sesiones ===================== -->
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
+              <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
+                         Text="{loc:Tr Trash_Sessions_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
+              <Border Grid.Column="1" Classes="trash-count-badge" Margin="6,0,0,0"
+                      IsVisible="{Binding !IsSessionsEmpty}">
+                <TextBlock Text="{Binding Sessions.Count}" />
+              </Border>
+              <Rectangle Grid.Column="2" Classes="section-rule" Margin="16,0" />
+              <Button Grid.Column="3" Classes="pill pill-compact" IsEnabled="{Binding !IsSessionsEmpty}"
+                      Command="{Binding RequestEmptySessionsCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
+                  <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding Sessions}" IsVisible="{Binding !IsSessionsEmpty}" Margin="0,0,-16,-16">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <Border Classes="trash-empty-state" IsVisible="{Binding IsSessionsEmpty}">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="SitemapOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
+                <TextBlock Text="{loc:Tr Trash_Sessions_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
     </Grid>
-
-    <!-- Margen derecho extra en el contenido (no Padding del ScrollViewer, mismo motivo que en
-         Dashboard/Ajustes: Avalonia 12 resta el padding del extent scrolleable) — deja hueco para que
-         la scrollbar no se dibuje encima de los botones "VACIAR" de cada sección. -->
-    <ScrollViewer Grid.Row="1">
-      <StackPanel Spacing="32" Margin="0,0,16,0">
-
-        <!-- ===================== Documentos ===================== -->
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Trash_Documents_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="pill" Padding="10,5" IsEnabled="{Binding !IsEmpty}"
-                    Command="{Binding RequestEmptyDocumentsCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
-                <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10" />
-              </StackPanel>
-            </Button>
-          </Grid>
-
-          <ItemsControl ItemsSource="{Binding Notes}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:NoteCardViewModel">
-                <Border Classes="card trash-card" Margin="0,0,16,16" Width="224" Height="150" Padding="16">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                      <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink40}" />
-                      <TextBlock Text="{Binding ModifiedLabel}" Classes="faint" />
-                    </StackPanel>
-                    <StackPanel Grid.Row="1" Spacing="5" Margin="0,10,0,0">
-                      <TextBlock Text="{Binding Title}"
-                                 FontWeight="Bold" FontSize="14" LetterSpacing="0.3"
-                                 TextTrimming="CharacterEllipsis" MaxLines="1" />
-                      <TextBlock Text="{Binding Preview}" Classes="muted" FontSize="12"
-                                 TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
-                    </StackPanel>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                      <Button Classes="icon-btn"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
-                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                      </Button>
-                      <Button Classes="icon-btn icon-btn-danger"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteForeverCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
-                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-            </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <StackPanel IsVisible="{Binding IsEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="NoteTextOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_Documents_Empty}" Classes="muted" FontSize="12.5" />
-          </StackPanel>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
-
-        <!-- ===================== Archivos ===================== -->
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Trash_Files_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="pill" Padding="10,5" IsEnabled="{Binding !IsFilesEmpty}"
-                    Command="{Binding RequestEmptyFilesCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
-                <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10" />
-              </StackPanel>
-            </Button>
-          </Grid>
-
-          <ItemsControl ItemsSource="{Binding Files}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:FileCardViewModel">
-                <Border Classes="card trash-card" Margin="0,0,16,16" Width="224" Height="150" Padding="16">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                      <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink40}" />
-                      <TextBlock Text="{Binding ModifiedLabel}" Classes="faint" />
-                    </StackPanel>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,10,0,0" VerticalAlignment="Center">
-                      <mi:MaterialIcon Kind="{Binding IconKind}" Width="24" Height="24" Foreground="{DynamicResource Ink40}" />
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="{Binding FileName}" FontWeight="Bold" FontSize="13.5"
-                                   TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding SizeLabel}" Classes="muted" FontSize="12" />
-                      </StackPanel>
-                    </StackPanel>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                      <Button Classes="icon-btn"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreFileCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
-                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                      </Button>
-                      <Button Classes="icon-btn icon-btn-danger"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteFileForeverCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
-                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-            </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <StackPanel IsVisible="{Binding IsFilesEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="FileOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_Files_Empty}" Classes="muted" FontSize="12.5" />
-          </StackPanel>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
-
-        <!-- ===================== Tareas ===================== -->
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Trash_Tasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="pill" Padding="10,5" IsEnabled="{Binding !IsTasksEmpty}"
-                    Command="{Binding RequestEmptyTasksCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
-                <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10" />
-              </StackPanel>
-            </Button>
-          </Grid>
-
-          <ItemsControl ItemsSource="{Binding Tasks}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:TrashedTaskCardViewModel">
-                <Border Classes="card trash-card" Margin="0,0,16,16" Width="224" Height="120" Padding="16">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                      <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink40}" />
-                      <TextBlock Text="{Binding DeletedLabel}" Classes="faint" />
-                    </StackPanel>
-                    <StackPanel Grid.Row="1" Spacing="5" Margin="0,10,0,0">
-                      <TextBlock Text="{Binding Title}"
-                                 FontWeight="Bold" FontSize="14" LetterSpacing="0.3"
-                                 TextTrimming="CharacterEllipsis" MaxLines="1" />
-                      <TextBlock Text="{Binding WasInColumnLabel}" Classes="muted" FontSize="12"
-                                 TextTrimming="CharacterEllipsis" MaxLines="1" />
-                    </StackPanel>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                      <Button Classes="icon-btn"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreTaskCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
-                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                      </Button>
-                      <Button Classes="icon-btn icon-btn-danger"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteTaskForeverCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
-                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-            </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <StackPanel IsVisible="{Binding IsTasksEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="ViewColumnOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_Tasks_Empty}" Classes="muted" FontSize="12.5" />
-          </StackPanel>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
-
-        <!-- ===================== Tareas Polar (análisis alfa-3 §4.3) ===================== -->
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Trash_PolarTasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="pill" Padding="10,5" IsEnabled="{Binding !IsPolarTasksEmpty}"
-                    Command="{Binding RequestEmptyPolarTasksCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
-                <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10" />
-              </StackPanel>
-            </Button>
-          </Grid>
-
-          <ItemsControl ItemsSource="{Binding PolarLists}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:TrashedPolarListCardViewModel">
-                <Border Classes="card trash-card" Margin="0,0,16,16" Width="224" Height="100" Padding="16">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="FormatListBulletedSquare" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
-                      <TextBlock Text="{Binding DeletedLabel}" Classes="faint" />
-                    </StackPanel>
-                    <TextBlock Grid.Row="1" Text="{Binding Title}"
-                               FontWeight="Bold" FontSize="14" LetterSpacing="0.3" Margin="0,10,0,0"
-                               TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                      <Button Classes="icon-btn"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestorePolarListCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
-                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                      </Button>
-                      <Button Classes="icon-btn icon-btn-danger"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeletePolarListForeverCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
-                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-            </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <ItemsControl ItemsSource="{Binding PolarTasks}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:TrashedPolarTaskCardViewModel">
-                <Border Classes="card trash-card" Margin="0,0,16,16" Width="224" Height="100" Padding="16">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="CheckboxMarkedOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
-                      <TextBlock Text="{Binding DeletedLabel}" Classes="faint" />
-                    </StackPanel>
-                    <TextBlock Grid.Row="1" Text="{Binding Title}"
-                               FontWeight="Bold" FontSize="14" LetterSpacing="0.3" Margin="0,10,0,0"
-                               TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                      <Button Classes="icon-btn"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestorePolarTaskCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
-                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                      </Button>
-                      <Button Classes="icon-btn icon-btn-danger"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeletePolarTaskForeverCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
-                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-            </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <StackPanel IsVisible="{Binding IsPolarTasksEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_PolarTasks_Empty}" Classes="muted" FontSize="12.5" />
-          </StackPanel>
-
-          <StackPanel IsVisible="{Binding !IsPolarTasksEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="InformationOutline" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_PolarTasks_NoPurgeHint}" Classes="faint" FontSize="11.5"
-                       TextWrapping="Wrap" MaxWidth="460" />
-          </StackPanel>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
-
-        <!-- ===================== Recordatorios ===================== -->
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Trash_Reminders_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="pill" Padding="10,5" IsEnabled="{Binding !IsRemindersEmpty}"
-                    Command="{Binding RequestEmptyRemindersCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
-                <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10" />
-              </StackPanel>
-            </Button>
-          </Grid>
-
-          <ItemsControl ItemsSource="{Binding Reminders}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:TrashedReminderCardViewModel">
-                <Border Classes="card trash-card" Margin="0,0,16,16" Width="224" Height="100" Padding="16">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                      <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink40}" />
-                      <TextBlock Text="{Binding DeletedLabel}" Classes="faint" />
-                    </StackPanel>
-                    <TextBlock Grid.Row="1" Text="{Binding Title}"
-                               FontWeight="Bold" FontSize="14" LetterSpacing="0.3" Margin="0,10,0,0"
-                               TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                      <Button Classes="icon-btn"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreReminderCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
-                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-            </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <StackPanel IsVisible="{Binding IsRemindersEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="BellRingOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_Reminders_Empty}" Classes="muted" FontSize="12.5" />
-          </StackPanel>
-
-          <!-- análisis alfa-3 §4.3, Baja: sin esta pista, la ausencia del botón "borrar para siempre" que
-               sí tienen el resto de categorías se puede leer como un bug en vez de una decisión deliberada
-               (ver el comentario en TrashViewModel.RestoreReminder). -->
-          <StackPanel IsVisible="{Binding !IsRemindersEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="InformationOutline" Width="14" Height="14" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_Reminders_NoDeleteForeverHint}" Classes="faint" FontSize="11.5"
-                       TextWrapping="Wrap" MaxWidth="460" />
-          </StackPanel>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
-
-        <!-- ===================== Sesiones ===================== -->
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Trash_Sessions_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="pill" Padding="10,5" IsEnabled="{Binding !IsSessionsEmpty}"
-                    Command="{Binding RequestEmptySessionsCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="DeleteSweepOutline" Width="12" Height="12" />
-                <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" FontSize="10" />
-              </StackPanel>
-            </Button>
-          </Grid>
-
-          <ItemsControl ItemsSource="{Binding Sessions}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:TrashedSessionCardViewModel">
-                <Border Classes="card trash-card" Margin="0,0,16,16" Width="224" Height="100" Padding="16">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                      <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink40}" />
-                      <TextBlock Text="{Binding NoteCountLabel}" Classes="faint" />
-                    </StackPanel>
-                    <TextBlock Grid.Row="1" Text="{Binding Name}"
-                               FontWeight="Bold" FontSize="14" LetterSpacing="0.3" Margin="0,10,0,0"
-                               TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                      <Button Classes="icon-btn"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreSessionCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
-                        <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                      </Button>
-                      <Button Classes="icon-btn icon-btn-danger"
-                              Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteSessionForeverCommand}"
-                              CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
-                              AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
-                        <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-            </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <StackPanel IsVisible="{Binding IsSessionsEmpty}" Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="SitemapOutline" Width="16" Height="16" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Text="{loc:Tr Trash_Sessions_Empty}" Classes="muted" FontSize="12.5" />
-          </StackPanel>
-        </StackPanel>
-
-      </StackPanel>
-    </ScrollViewer>
 
     <!-- ===================== Diálogo: vaciar documentos/tareas/papelera ===================== -->
     <controls:ModalOverlayHost IsOpen="{Binding PendingEmptyTarget, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
-            <TextBlock Text="{Binding PendingEmptyTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding PendingEmptyTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
+                       Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
 
-          <TextBlock Text="{Binding PendingEmptyMessage}" FontSize="14" TextWrapping="Wrap" MaxWidth="320" />
+          <TextBlock Text="{Binding PendingEmptyMessage}" FontSize="14" TextWrapping="Wrap" />
 
-          <Grid ColumnDefinitions="*,Auto,Auto">
-            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelEmptyCommand}" Margin="0,0,18,0">
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelEmptyCommand}">
               <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmEmptyCommand}">
+            <Button Classes="pill-primary-danger" Command="{Binding ConfirmEmptyCommand}">
               <TextBlock Text="{loc:Tr Trash_EmptyButton, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-          </Grid>
+          </StackPanel>
         </StackPanel>
-    </Border>
-  </controls:ModalOverlayHost>
+      </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: borrado permanente individual (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que el de vaciado; el mensaje (con el título del elemento interpolado) viene
@@ -482,22 +606,24 @@
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
-            <TextBlock Text="{loc:Tr Trash_DeleteForeverModal_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr Trash_DeleteForeverModal_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
+                       Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
 
-          <TextBlock Text="{Binding PendingPermanentDeleteMessage}" FontSize="14" TextWrapping="Wrap" MaxWidth="320" />
+          <TextBlock Text="{Binding PendingPermanentDeleteMessage}" FontSize="14" TextWrapping="Wrap" />
 
-          <Grid ColumnDefinitions="*,Auto,Auto">
-            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelPermanentDeleteCommand}" Margin="0,0,18,0">
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelPermanentDeleteCommand}">
               <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmPermanentDeleteCommand}">
+            <Button Classes="pill-primary-danger" Command="{Binding ConfirmPermanentDeleteCommand}">
               <TextBlock Text="{loc:Tr Trash_DeleteForeverButton, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-          </Grid>
+          </StackPanel>
         </StackPanel>
-    </Border>
-  </controls:ModalOverlayHost>
+      </Border>
+    </controls:ModalOverlayHost>
+
   </Grid>
 </UserControl>

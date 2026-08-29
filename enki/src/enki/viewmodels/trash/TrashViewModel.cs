@@ -62,6 +62,12 @@ public sealed partial class TrashViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isPolarTasksEmpty;
 
+    /// <summary>Elementos de la sección "Tareas Polar" (listas + tareas) para su contador de cabecera —
+    /// es la única sección que agrupa dos colecciones, así que su número no sale de un solo
+    /// <c>Count</c> como en las demás. Se refresca desde <see cref="Reload"/>, por donde pasan todas
+    /// las mutaciones de ambas colecciones.</summary>
+    public int PolarTotalCount => PolarLists.Count + PolarTasks.Count;
+
     [ObservableProperty]
     private bool _isRemindersEmpty;
 
@@ -76,6 +82,14 @@ public sealed partial class TrashViewModel : ViewModelBase
     /// can tell there's something to review without opening the page.</summary>
     [ObservableProperty]
     private int _totalCount;
+
+    /// <summary>"12 elementos" — el mismo total que la insignia del nav, pero escrito, para la cabecera
+    /// de la página. Pluralizado en el viewmodel (no con StringFormat en XAML) porque la forma singular/
+    /// plural no se deduce del formato en las 6 lenguas soportadas — ver
+    /// docs/agent-docs/internacionalizacion-i18n.md §1.4.</summary>
+    public string TotalCountLabel => Plural.Get("Trash_ItemCount", TotalCount, TotalCount);
+
+    partial void OnTotalCountChanged(int value) => OnPropertyChanged(nameof(TotalCountLabel));
 
     /// <summary>Non-null while the "vaciar" confirmation dialog is open — same request/cancel/confirm
     /// shape as KanbanViewModel.CardPendingDelete, just parameterized by which section is being cleared
@@ -159,6 +173,9 @@ public sealed partial class TrashViewModel : ViewModelBase
         OnPropertyChanged(nameof(PendingEmptyMessage));
         OnPropertyChanged(nameof(PendingPermanentDeleteMessage));
         Reload();
+        // Reload() solo dispara OnTotalCountChanged si el número cambia, y en un cambio de idioma no
+        // cambia — así que la etiqueta hay que refrescarla explícitamente.
+        OnPropertyChanged(nameof(TotalCountLabel));
     }
 
     partial void OnPendingEmptyTargetChanged(TrashEmptyTarget? value)
@@ -198,6 +215,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         PolarTasks.Clear();
         foreach (var task in _polarTaskService.Store.Tasks.Where(t => t.IsDeleted)) PolarTasks.Add(new TrashedPolarTaskCardViewModel(task));
         IsPolarTasksEmpty = PolarLists.Count == 0 && PolarTasks.Count == 0;
+        OnPropertyChanged(nameof(PolarTotalCount));
 
         Reminders.Clear();
         foreach (var reminder in _reminderService.DeletedReminders) Reminders.Add(new TrashedReminderCardViewModel(reminder));

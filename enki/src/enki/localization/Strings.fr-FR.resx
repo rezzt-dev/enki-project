@@ -3240,6 +3240,18 @@
   <data name="Trash_Files_Eyebrow" xml:space="preserve">
     <value>Fichiers</value>
   </data>
+  <data name="Trash_ItemCount_one" xml:space="preserve">
+    <value>{0} élément</value>
+  </data>
+  <data name="Trash_ItemCount_other" xml:space="preserve">
+    <value>{0} éléments</value>
+  </data>
+  <data name="Trash_PolarTasks_ListsGroup" xml:space="preserve">
+    <value>Listes</value>
+  </data>
+  <data name="Trash_PolarTasks_TasksGroup" xml:space="preserve">
+    <value>Tâches</value>
+  </data>
   <data name="Trash_PolarTasks_Empty" xml:space="preserve">
     <value>Aucune tâche Polar dans la corbeille</value>
   </data>
