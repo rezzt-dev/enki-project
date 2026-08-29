@@ -88,6 +88,49 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
+  <!-- ===================== Chrome de Fluent en botones: neutralizado (§7.2) =====================
+       El ControlTheme de Fluent pinta ButtonBackgroundPointerOver / ButtonBackgroundPressed (y su
+       Foreground) directamente sobre el ContentPresenter de la plantilla, y esos setters ganan al
+       {TemplateBinding Background} del estado normal. Consecuencia: todo botón que no redefina a mano el
+       fondo de su ContentPresenter en hover/pulsado se come un recuadro gris ajeno al diseño, y los que
+       declaran su hover sobre el propio Button (kanban-card, calendar-agenda-card) lo ven ignorado.
+       Aquí se devuelve el ContentPresenter a los valores del control en esos dos estados, que es lo que
+       la plantilla hace en reposo.
+
+       Va al principio del fichero a propósito: las clases que sí quieren un fondo propio en hover
+       (nav-item, pill, icon-btn, skill-card, dropdown-item…) lo declaran más abajo y, por ser estilos
+       posteriores, siguen ganando. Cualquier clase nueva que quiera fondo de hover debe declararlo
+       igual, sobre su ContentPresenter, en vez de confiar en el gris de Fluent. -->
+  <Style Selector="Button:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    <Setter Property="Foreground" Value="{TemplateBinding Foreground}" />
+  </Style>
+  <Style Selector="Button:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    <Setter Property="Foreground" Value="{TemplateBinding Foreground}" />
+  </Style>
+  <Style Selector="ToggleButton:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    <Setter Property="Foreground" Value="{TemplateBinding Foreground}" />
+  </Style>
+  <Style Selector="ToggleButton:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    <Setter Property="Foreground" Value="{TemplateBinding Foreground}" />
+  </Style>
+  <!-- Y lo mismo con :checked, que en un ToggleButton de Fluent es un relleno de acento: los chips del
+       calendario y el disparador "+N más" (cuyo IsChecked es simplemente el estado abierto de su popup)
+       se teñían de azul al pulsarlos, tapando su color de evento. tag-chip, que sí quiere un fondo propio
+       al marcarse, lo declara más abajo y sigue ganando. -->
+  <Style Selector="ToggleButton:checked /template/ ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    <Setter Property="Foreground" Value="{TemplateBinding Foreground}" />
+  </Style>
+
   <!-- ===================== Sidebar nav item (§7.8) ===================== -->
   <Style Selector="Button.nav-item">
     <Setter Property="HorizontalAlignment" Value="Stretch" />
