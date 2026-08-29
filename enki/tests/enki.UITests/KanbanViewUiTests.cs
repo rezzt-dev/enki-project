@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using enki.Services;
@@ -47,18 +49,49 @@ public class KanbanViewUiTests : IDisposable
         return (view, viewModel, window);
     }
 
+    /// <summary>El nombre de una columna se dibuja siempre en mayúsculas, escriba el usuario lo que
+    /// escriba — es estructura del tablero, no contenido. Así que lo que se busca en el árbol visual es el
+    /// título en mayúsculas, y de paso se comprueba que el modelo conserva el original: la regla es de
+    /// presentación, no debe tocar el dato.</summary>
     [Fact]
-    public void Loading_TheSeedBoard_RendersEveryColumn()
+    public void Loading_TheSeedBoard_RendersEveryColumnTitle_Uppercased()
     {
         var (view, viewModel, window) = CreateView();
 
-        var renderedColumnTitles = view.GetVisualDescendants()
+        var renderedTexts = view.GetVisualDescendants()
             .OfType<TextBlock>()
             .Select(t => t.Text)
             .ToList();
 
         foreach (var column in viewModel.Columns)
-            Assert.Contains(column.Title, renderedColumnTitles);
+        {
+            Assert.Contains(column.Title.ToUpper(CultureInfo.CurrentCulture), renderedTexts);
+            Assert.Equal(column.Column.Title, column.Title);
+        }
+
+        window.Close();
+    }
+
+    /// <summary>La regla de las mayúsculas es de presentación: un título tecleado en minúsculas se dibuja
+    /// en mayúsculas en la cabecera, pero el campo de renombrar sigue ofreciendo el texto literal para
+    /// editarlo — si no, renombrar iría convirtiendo el título a mayúsculas de verdad a cada pasada.</summary>
+    [Fact]
+    public void ATitleTypedInLowercase_RendersUppercased_ButIsEditedAsTyped()
+    {
+        var (view, viewModel, window) = CreateView();
+        var column = viewModel.Columns[0];
+        column.ApplyTitle("pendientes de revisar");
+        view.Measure(new Size(1400, 900));
+        view.Arrange(new Rect(0, 0, 1400, 900));
+
+        var renderedTexts = view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Contains("PENDIENTES DE REVISAR", renderedTexts);
+        Assert.DoesNotContain("pendientes de revisar", renderedTexts);
+
+        column.BeginRenameCommand.Execute(null);
+
+        Assert.Equal("pendientes de revisar", column.EditingTitle);
+        Assert.Equal("pendientes de revisar", column.Column.Title);
 
         window.Close();
     }

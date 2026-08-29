@@ -646,7 +646,10 @@
                             <mi:MaterialIcon Kind="Close" Width="11" Height="11" />
                           </Button>
                         </Grid>
-                        <TextBlock Text="{Binding ColumnTitle}" Classes="faint" FontSize="10.5" />
+                        <!-- Mismo criterio que en el propio tablero: el nombre de una columna se dibuja
+                             siempre en mayúsculas, escriba el usuario lo que escriba. -->
+                        <TextBlock Text="{Binding ColumnTitle, Converter={StaticResource UpperCaseConverter}}"
+                                   Classes="faint" FontSize="10.5" LetterSpacing="1" />
                       </StackPanel>
                     </Button>
                   </DataTemplate>

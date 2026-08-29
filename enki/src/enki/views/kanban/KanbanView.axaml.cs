@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using enki.ViewModels;
 
 namespace enki.Views;
@@ -34,10 +35,12 @@ public partial class KanbanView : UserControl
     private void KanbanView_Loaded(object? sender, RoutedEventArgs e) => Focus();
 
     /// <summary>Atajos de teclado del tablero:
-    /// N nueva tarjeta, C nueva columna (Fase 7 de docs/analisis-proyecto/roadmap.md), Delete borrar la
-    /// tarjeta enfocada, Esc cerrar el diálogo abierto, Ctrl+F saltar al buscador. Enter ya abre el
-    /// detalle sin código adicional: cada tarjeta es un Button enfocable, así que Avalonia dispara su
-    /// Command con Enter/Espacio de forma nativa.</summary>
+    /// N nueva tarjeta, C nueva columna (Fase 7 de docs/agent-docs/analisis-proyecto/roadmap.md), Delete
+    /// borrar la tarjeta enfocada, Esc cerrar el diálogo abierto (o, si no hay ninguno, limpiar el
+    /// buscador), Ctrl+F saltar al buscador. Enter ya abre el detalle sin código adicional: cada tarjeta
+    /// es un Button enfocable, así que Avalonia dispara su Command con Enter/Espacio de forma nativa.
+    /// Se anuncian en la interfaz desde el aviso de tablero vacío y desde los tooltips de "nueva
+    /// columna" y "añadir tarjeta", en vez de existir solo en este comentario.</summary>
     private void KanbanView_KeyDown(object? sender, KeyEventArgs e)
     {
         if (Vm is not { } vm) return;
@@ -58,7 +61,7 @@ public partial class KanbanView : UserControl
         switch (e.Key)
         {
             case Key.N when vm.DisplayMode == KanbanDisplayMode.Board && vm.CardEditor is null && vm.CardDetail is null:
-                if (vm.Columns.Count > 0) vm.OpenCreateCardCommand.Execute(vm.Columns[0]);
+                if (TargetColumnForNewCard(vm, e.Source as Visual) is { } column) vm.OpenCreateCardCommand.Execute(column);
                 e.Handled = true;
                 break;
 
@@ -75,12 +78,37 @@ public partial class KanbanView : UserControl
                 }
                 break;
 
+            // Orden de cierre = orden de apilado de los diálogos: el más "encima" primero. El de borrado
+            // de columna faltaba en esta lista y era el único modal del tablero del que Escape no sacaba.
+            // Sin ningún diálogo abierto, Escape limpia el buscador, que es el gesto que espera quien
+            // acaba de filtrar y quiere el tablero entero de vuelta.
             case Key.Escape:
                 if (vm.CardPendingDelete is not null) { vm.CancelDeleteCardCommand.Execute(null); e.Handled = true; }
+                else if (vm.ColumnPendingDelete is not null) { vm.CancelDeleteColumnCommand.Execute(null); e.Handled = true; }
                 else if (vm.CardEditor is not null) { vm.CancelCardEditorCommand.Execute(null); e.Handled = true; }
                 else if (vm.CardDetail is not null) { vm.CloseCardDetailCommand.Execute(null); e.Handled = true; }
+                else if (vm.HasActiveFilters) { vm.ClearFiltersCommand.Execute(null); e.Handled = true; }
                 break;
         }
+    }
+
+    /// <summary>Columna en la que aterriza la tarjeta que crea el atajo "N": la del elemento enfocado si
+    /// lo hay (una tarjeta, o cualquier control dentro de una columna), y la primera del tablero como
+    /// último recurso. Antes iba siempre a la primera columna, que con el foco puesto en "En progreso"
+    /// es justo donde el usuario no la quería. El origen es <c>e.Source</c> del propio KeyDown, que en
+    /// una pulsación de teclado es ya el elemento enfocado — no hace falta consultar el FocusManager.</summary>
+    private static KanbanColumnViewModel? TargetColumnForNewCard(KanbanViewModel vm, Visual? focused)
+    {
+        for (; focused is not null; focused = focused.GetVisualParent())
+        {
+            switch ((focused as Control)?.DataContext)
+            {
+                case KanbanColumnViewModel column: return column;
+                case KanbanCardViewModel card: return FindColumn(vm, card);
+            }
+        }
+
+        return vm.Columns.Count > 0 ? vm.Columns[0] : null;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

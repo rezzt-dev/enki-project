@@ -1,6 +1,9 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using Avalonia.Controls.Primitives;
+using enki.Localization;
 using enki.Models;
 using enki.Services;
 using enki.ViewModels;
@@ -420,5 +423,196 @@ public class KanbanViewModelTests : IDisposable
         vm.OpenCardById("no-existe");
 
         Assert.Null(vm.CardDetail);
+    }
+
+    [Fact]
+    public void OpenCardDetail_CarriesTheColumnTitle_SoTheDialogCanNameTheStateItIsIn()
+    {
+        var vm = CreateViewModel(out _);
+        var column = vm.Columns.First(c => c.Cards.Count > 0);
+        var card = column.Cards[0];
+
+        vm.OpenCardById(card.Id);
+
+        Assert.Equal(column.Title, vm.CardDetail!.ColumnTitle);
+        Assert.True(vm.CardDetail.HasColumnTitle);
+    }
+
+    [Fact]
+    public void EditCardFromDetail_ClosesTheDetail_AndOpensTheEditorOnTheSameCard()
+    {
+        var vm = CreateViewModel(out _);
+        var card = vm.Columns.SelectMany(c => c.Cards).First();
+        vm.OpenCardById(card.Id);
+
+        vm.EditCardFromDetailCommand.Execute(null);
+
+        Assert.Null(vm.CardDetail);
+        Assert.NotNull(vm.CardEditor);
+        Assert.Same(card, vm.CardEditor!.SourceCard);
+    }
+
+    [Fact]
+    public void DeleteCardFromDetail_ClosesTheDetail_AndAsksForConfirmation()
+    {
+        var vm = CreateViewModel(out _);
+        var card = vm.Columns.SelectMany(c => c.Cards).First();
+        vm.OpenCardById(card.Id);
+
+        vm.DeleteCardFromDetailCommand.Execute(null);
+
+        Assert.Null(vm.CardDetail);
+        Assert.Same(card, vm.CardPendingDelete);
+    }
+
+    // ===================== Filtros rápidos, resumen y estados vacíos =====================
+
+    [Fact]
+    public void ToggleQuickFilter_HighPriority_HidesEveryOtherCard_AndTogglingAgainRestoresThem()
+    {
+        var vm = CreateViewModel(out var kanbanService);
+        var column = vm.Columns[0];
+        column.Column.Cards.Clear();
+        column.Cards.Clear();
+        AddCard(vm, column, "alta", KanbanPriority.High);
+        AddCard(vm, column, "media", KanbanPriority.Medium);
+
+        vm.ToggleQuickFilterCommand.Execute(KanbanQuickFilter.HighPriority);
+
+        Assert.Equal(KanbanQuickFilter.HighPriority, vm.QuickFilter);
+        Assert.True(vm.IsHighPriorityFilterActive);
+        Assert.True(column.Cards.Single(c => c.Id == "alta").IsVisible);
+        Assert.False(column.Cards.Single(c => c.Id == "media").IsVisible);
+
+        vm.ToggleQuickFilterCommand.Execute(KanbanQuickFilter.HighPriority);
+
+        Assert.Equal(KanbanQuickFilter.None, vm.QuickFilter);
+        Assert.True(column.Cards.All(c => c.IsVisible));
+        Assert.NotNull(kanbanService.Board);
+    }
+
+    [Fact]
+    public void ClearFilters_ResetsSearch_TagsAndQuickFilter_InOneGo()
+    {
+        var vm = CreateViewModel(out _);
+        var column = vm.Columns[0];
+        AddCard(vm, column, "etiquetada", KanbanPriority.High, tag: "urgente");
+        vm.Reload();
+
+        vm.SearchText = "etiquet";
+        vm.ToggleQuickFilterCommand.Execute(KanbanQuickFilter.HighPriority);
+        vm.TagFilter.Items.First(i => i.Tag == "urgente").ToggleCommand.Execute(null);
+        Assert.True(vm.HasActiveFilters);
+
+        vm.ClearFiltersCommand.Execute(null);
+
+        Assert.False(vm.HasActiveFilters);
+        Assert.Equal(string.Empty, vm.SearchText);
+        Assert.Equal(KanbanQuickFilter.None, vm.QuickFilter);
+        Assert.DoesNotContain(vm.TagFilter.Items, i => i.IsSelected);
+        Assert.True(vm.Columns.SelectMany(c => c.Cards).All(c => c.IsVisible));
+    }
+
+    [Fact]
+    public void HasNoFilterMatches_IsTrue_OnlyWhenTheBoardHasCardsButNoneSurviveTheFilter()
+    {
+        var vm = CreateViewModel(out _);
+        Assert.False(vm.IsBoardEmpty);
+        Assert.False(vm.HasNoFilterMatches);
+
+        vm.SearchText = "esto-no-existe-en-ninguna-tarjeta";
+
+        Assert.True(vm.HasNoFilterMatches);
+
+        vm.ClearFiltersCommand.Execute(null);
+
+        Assert.False(vm.HasNoFilterMatches);
+    }
+
+    [Fact]
+    public void BoardSummaryLabel_FallsBackToTheInstructions_OnlyWhileTheBoardIsEmpty()
+    {
+        var vm = CreateViewModel(out var kanbanService);
+
+        foreach (var column in kanbanService.Board.Columns) column.Cards.Clear();
+        vm.Reload();
+
+        Assert.True(vm.IsBoardEmpty);
+        Assert.Equal(LocalizationService.Instance["Kanban_Board_Subtitle"], vm.BoardSummaryLabel);
+    }
+
+    [Fact]
+    public void BoardSummaryLabel_CountsColumnsAndCards_AndOnlyMentionsOverdueWhenThereIsAny()
+    {
+        var vm = CreateViewModel(out _);
+
+        Assert.False(vm.IsBoardEmpty);
+        Assert.Contains(vm.TotalColumns.ToString(CultureInfo.CurrentCulture), vm.BoardSummaryLabel, StringComparison.Ordinal);
+        Assert.Contains(vm.TotalCards.ToString(CultureInfo.CurrentCulture), vm.BoardSummaryLabel, StringComparison.Ordinal);
+
+        var overdueFragment = Plural.Get("Kanban_Summary_Overdue", vm.OverdueCount, vm.OverdueCount);
+        Assert.Equal(vm.OverdueCount > 0, vm.BoardSummaryLabel.Contains(overdueFragment, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void QuickFilterChips_AreOnlyOffered_WhenThereIsSomethingToFilter()
+    {
+        var vm = CreateViewModel(out var kanbanService);
+
+        foreach (var column in kanbanService.Board.Columns) column.Cards.Clear();
+        vm.Reload();
+        Assert.False(vm.HasHighPriorityCards);
+        Assert.False(vm.HasOverdueCards);
+
+        AddCard(vm, vm.Columns[0], "alta", KanbanPriority.High);
+        vm.Reload();
+
+        Assert.True(vm.HasHighPriorityCards);
+    }
+
+    [Fact]
+    public void Columns_ShareTheAvailableWidth_WhileThereAreFewEnoughOfThem()
+    {
+        var vm = CreateViewModel(out _);
+
+        Assert.Equal(3, vm.TotalColumns);
+        Assert.True(vm.ColumnsShareAvailableWidth);
+        // NaN = "sin ancho propio": lo decide el reparto del UniformGrid en la vista.
+        Assert.True(double.IsNaN(vm.BoardColumnWidth));
+        Assert.Equal(ScrollBarVisibility.Disabled, vm.BoardHorizontalScrollBarVisibility);
+    }
+
+    [Fact]
+    public void Columns_FallBackToAFixedWidthAndHorizontalScroll_OnceThereAreTooManyToShare()
+    {
+        var vm = CreateViewModel(out var kanbanService);
+
+        // El quinto reparto (1180/5 ≈ 236px) todavía entra; el sexto ya no.
+        while (vm.TotalColumns < 5) vm.AddColumnCommand.Execute(null);
+        Assert.True(vm.ColumnsShareAvailableWidth);
+        Assert.True(double.IsNaN(vm.BoardColumnWidth));
+
+        vm.AddColumnCommand.Execute(null);
+
+        Assert.Equal(6, vm.TotalColumns);
+        Assert.False(vm.ColumnsShareAvailableWidth);
+        Assert.False(double.IsNaN(vm.BoardColumnWidth));
+        Assert.True(vm.BoardColumnWidth > 0);
+        Assert.Equal(ScrollBarVisibility.Auto, vm.BoardHorizontalScrollBarVisibility);
+        Assert.NotNull(kanbanService.Board);
+    }
+
+    /// <summary>Añade una tarjeta a la vez al modelo y al viewmodel de la columna, que es lo que hace
+    /// SaveCardEditor — las pruebas de arriba necesitan tarjetas con prioridad/etiquetas concretas sin
+    /// pasar por el formulario completo.</summary>
+    private static void AddCard(KanbanViewModel vm, KanbanColumnViewModel column, string id,
+        KanbanPriority priority, string? tag = null)
+    {
+        var card = new KanbanCard { Id = id, Title = id, Priority = priority };
+        if (tag is not null) card.Tags.Add(tag);
+
+        column.Column.Cards.Add(card);
+        column.Cards.Add(new KanbanCardViewModel(card));
+        _ = vm;
     }
 }

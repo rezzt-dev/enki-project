@@ -116,14 +116,18 @@
                       Background="{Binding ChipBackgroundColorHex, Converter={StaticResource HexColorToBrushConverter}, ConverterParameter=0.08}"
                       Initialized="Chip_Initialized">
           <Panel>
+            <!-- Icono y texto en la misma línea óptica: la fuente mono asienta sus glifos en la mitad
+                 baja de la caja de línea (mucho más hueco por encima que por debajo), así que un icono
+                 centrado en la fila quedaba visiblemente por encima del texto. Un empujón de 1px hacia
+                 abajo en el icono lo alinea con la masa visible del texto. -->
             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-              <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="9" Height="9" Margin="0,0,4,0"
+              <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="9" Height="9" Margin="0,1,4,0"
                                 VerticalAlignment="Center"
                                 Foreground="{Binding EffectiveBorderColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
               <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="10.5" VerticalAlignment="Center"
                          TextTrimming="CharacterEllipsis" />
               <!-- Ocurrencia fantasma — doc 10 §4: glifo de repetición junto al título. -->
-              <mi:MaterialIcon Grid.Column="2" Kind="Repeat" Width="9" Height="9" Margin="4,0,0,0"
+              <mi:MaterialIcon Grid.Column="2" Kind="Repeat" Width="9" Height="9" Margin="4,1,0,0"
                                 VerticalAlignment="Center" IsVisible="{Binding IsGhostOccurrence}"
                                 Foreground="{DynamicResource Ink40}" />
               <TextBlock Grid.Column="3" Text="{Binding TimeLabel}" Classes="faint" FontSize="9"

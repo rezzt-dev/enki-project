@@ -816,6 +816,20 @@
   <Style Selector="ToggleButton.tag-chip:checked TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
   </Style>
+  <!-- Mismo motivo que la regla de arriba, para los chips que además llevan icono (los filtros rápidos
+       del tablero Kanban): sin esto el glifo se queda blanco sobre el relleno blanco del chip activo. -->
+  <Style Selector="ToggleButton.tag-chip:checked mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
+  </Style>
+
+  <!-- Variante de barra de herramientas: mismo chip, pero alineado con los controles de 34px de alto de
+       su fila en vez de con la rejilla envolvente de chips de etiquetas (que necesita margen inferior
+       para respirar al saltar de línea). -->
+  <Style Selector="ToggleButton.tag-chip.toolbar-chip">
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="Padding" Value="12,0" />
+  </Style>
   <Style Selector="ToggleButton.tag-chip:checked:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource InkBrush}" />
   </Style>
@@ -1960,6 +1974,136 @@
   </Style>
   <Style Selector="Button.kanban-card.drag-over /template/ ContentPresenter">
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- ===================== Acciones que aparecen al pasar el ratón =====================
+       Editar/eliminar de cada tarjeta y renombrar/eliminar de cada cabecera de columna solo se dibujan
+       cuando el puntero está encima o algo dentro tiene el foco de teclado. Con veinte tarjetas en
+       pantalla, cuarenta iconos permanentes compiten con el contenido real; revelarlos por contexto
+       deja el tablero legible sin esconder ninguna función.
+
+       Se anima Opacity, no IsVisible: ocultar por layout haría que la tarjeta cambiara de alto al pasar
+       por encima. Y hay dos clases (no una) a propósito — un único selector descendiente desde la
+       columna encendería también las acciones de todas sus tarjetas a la vez.
+
+       :focus-within es la mitad accesible de la regla: quien navega con Tab ve aparecer las mismas
+       acciones al llegar a ellas, y quien no usa el ratón en absoluto las tiene además en el diálogo de
+       detalle de la tarjeta (Editar/Eliminar), que nunca depende del hover. -->
+  <Style Selector="StackPanel.card-actions, StackPanel.column-actions">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.kanban-card:pointerover StackPanel.card-actions">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Button.kanban-card:focus-within StackPanel.card-actions">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Border.kanban-column:pointerover StackPanel.column-actions">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Border.kanban-column:focus-within StackPanel.column-actions">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- ===================== Estructura interna de la columna =====================
+       Cabecera y pie separados del cuerpo por una línea de 1px en vez de por aire (§3.2: los bordes son
+       el sistema de separación). El pie es fijo: "añadir tarjeta" deja de ser la última loseta de la
+       pila —inalcanzable sin bajar del todo en una columna larga— y pasa a estar siempre a la vista. -->
+  <Style Selector="Border.kanban-column-header">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="16,12" />
+  </Style>
+  <Style Selector="Border.kanban-column-footer">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="8" />
+  </Style>
+
+  <!-- Contador de la cabecera. MinWidth fija el ancho para uno o dos dígitos, así el bloque de acciones
+       de la derecha no se desplaza lateralmente al añadir la décima tarjeta. -->
+  <Style Selector="Border.kanban-count">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="7,2" />
+    <Setter Property="MinWidth" Value="28" />
+  </Style>
+
+  <!-- "Añadir tarjeta" del pie: fila plana a todo el ancho, no una loseta con borde. Compite mucho menos
+       con las tarjetas reales que el ghost-card de 16px de padding que ocupaba antes su sitio. -->
+  <Style Selector="Button.kanban-add-card">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.kanban-add-card TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+  <Style Selector="Button.kanban-add-card mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+  <Style Selector="Button.kanban-add-card /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.kanban-add-card:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="Button.kanban-add-card:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.kanban-add-card:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Aviso dentro del cuerpo de una columna: "aún no hay tarjetas" (columna vacía de verdad) o "sin
+       coincidencias" (el filtro las esconde todas). Centrado y en tinta muy baja: informa sin pedir
+       atención, y sobre todo distingue las dos situaciones, que a ojo se veían idénticas. -->
+  <Style Selector="TextBlock.column-hint">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="LetterSpacing" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource Ink30}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- Aviso a nivel de tablero (primer uso, o filtro sin resultados). Barra de acento a la izquierda,
+       mismo lenguaje que Border.trash-hint en la Papelera: se lee como nota al margen del tablero y no
+       como un elemento más de él. -->
+  <Style Selector="Border.board-hint">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="2,0,0,0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="14,12" />
+  </Style>
+
+  <!-- Icono decorativo dentro del buscador del tablero: marca el campo como "búsqueda" de un vistazo,
+       sin robarle el clic al TextBox que tiene detrás. -->
+  <Style Selector="mi|MaterialIcon.search-adornment">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource Ink40}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="12,0,0,0" />
   </Style>
 
   <!-- Punto de prioridad: sin color de marca, solo intensidad de tinta (§1.3) — más opaco = más

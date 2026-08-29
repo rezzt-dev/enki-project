@@ -36,6 +36,12 @@ public sealed partial class KanbanCardDetailViewModel : ObservableObject
     public bool HasTags => SourceCard.HasTags;
     public string TagsLabel => SourceCard.TagsLabel;
 
+    /// <summary>Columna en la que vive la tarjeta. El diálogo se abre desde sitios que no son el tablero
+    /// (buzón de recordatorios, calendario), donde no hay ninguna columna alrededor que lo diga — así que
+    /// el dato viaja con el detalle en vez de darse por evidente.</summary>
+    public string ColumnTitle { get; }
+    public bool HasColumnTitle => !string.IsNullOrWhiteSpace(ColumnTitle);
+
     public bool HasLinkedNote => SourceCard.HasLinkedNote;
     public string LinkedNoteLabel => SourceCard.LinkedNoteLabel;
     public bool IsLinkedNoteMissing => SourceCard.IsLinkedNoteMissing;
@@ -44,9 +50,11 @@ public sealed partial class KanbanCardDetailViewModel : ObservableObject
 
     public ObservableCollection<KanbanSubtaskItemViewModel> Subtasks { get; } = [];
 
-    public KanbanCardDetailViewModel(KanbanCardViewModel sourceCard, Action persist, Action<string>? onOpenLinkedNote = null)
+    public KanbanCardDetailViewModel(KanbanCardViewModel sourceCard, Action persist,
+        Action<string>? onOpenLinkedNote = null, string columnTitle = "")
     {
         SourceCard = sourceCard;
+        ColumnTitle = columnTitle;
         _persist = persist;
         _onOpenLinkedNote = onOpenLinkedNote;
 

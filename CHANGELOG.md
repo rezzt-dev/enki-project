@@ -7,6 +7,54 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Tablero Kanban rehecho de arriba abajo**: la pantalla dedicaba las tres primeras bandas —subtítulo fijo
+de manual, rejilla de cuatro tarjetas de estadísticas y una barra de herramientas con cuatro segmentos de
+ordenación siempre desplegados— a información que no cambia o que no se puede accionar, y las columnas
+empezaban a ~250px del borde superior. Ahora esa altura la ocupa el tablero.
+
+- **Cabecera**: bajo el título va una línea de estado en vivo ("3 columnas · 12 tarjetas · 2 vencidas") en
+  lugar de la frase de manual, que solo vuelve a aparecer —con los atajos de teclado al lado— cuando el
+  tablero está vacío y sirve de algo. La rejilla de cuatro estadísticas desaparece: sus cuatro cifras caben
+  en esa línea.
+- **Filtros rápidos**: "alta prioridad" y "vencidas" dejan de ser números pasivos y son chips de un clic
+  que filtran el tablero entero, y solo existen cuando hay algo que filtrar. Un botón "LIMPIAR" apaga
+  buscador, etiquetas y filtro rápido a la vez, y aparece solo si hay algo puesto.
+- **Buscador** con lupa y aspa de limpiar dentro del propio campo. Los chips de etiquetas bajan a su propia
+  fila y solo se dibujan si el tablero tiene etiquetas — antes ocupaban sitio incluso para anunciar "Sin
+  etiquetas".
+- **Ordenación** en un desplegable que enseña el orden activo en el botón, en vez de cuatro segmentos
+  permanentes ocupando media barra.
+- **Tarjetas**: editar y eliminar solo aparecen al pasar el ratón o al enfocar la tarjeta con el teclado, y
+  se han mudado al hueco libre de la fila de prioridad, quitando una fila entera a cada tarjeta. La
+  palabra de la prioridad solo se escribe cuando es "alta" (baja y media ya se distinguen por la intensidad
+  del punto, y el tooltip dice siempre cuál es). Subtareas, fecha, nota vinculada y etiquetas van en una
+  sola línea de metadatos, y la nota vinculada se ve por fin desde el tablero, sin abrir la tarjeta.
+- **Columnas a lo ancho**: dejan de medir 300px fijos y quedarse centradas —lo que en una pantalla normal
+  dejaba unos 120px muertos a cada lado— y se reparten a partes iguales todo el ancho del contenido, de
+  borde a borde y alineadas al píxel con la barra de herramientas de arriba, para que el tablero se lea
+  como un bloque. A partir de la sexta columna el reparto las estrecharía por debajo de lo que necesita la
+  propia tarjeta, así que ahí vuelven a un ancho fijo cómodo y el tablero se desplaza en horizontal.
+- **Nombres de columna siempre en mayúsculas**, escriba el usuario lo que escriba: la columna es
+  estructura del tablero, no contenido, y en este sistema de diseño la estructura va en mayúsculas. Aplica
+  en la cabecera de la columna, en el selector de columna del formulario de tarjeta, en el diálogo de
+  detalle, en el de eliminar columna, en el buzón de recordatorios y en la Papelera. Solo cambia cómo se
+  dibuja: el título se guarda tal cual se tecleó y es eso lo que aparece al renombrarlo.
+- **Columnas**: cabecera, cuerpo desplazable y pie, separados por líneas de 1px. "Añadir tarjeta" vive en
+  el pie fijo, así que sigue a un clic de distancia por larga que sea la columna, en vez de ser la última
+  loseta de la pila. Renombrar y eliminar también se revelan al pasar el ratón, y el candado de las
+  columnas del flujo base aparece justo donde el usuario va a buscar la papelera que no está.
+- **Estados vacíos**: una columna sin tarjetas y una columna cuyo filtro lo esconde todo se veían iguales;
+  ahora cada una lo dice, y el contador de la cabecera pasa a "2/5" mientras se filtra. Si ningún resultado
+  sobrevive al filtro, el tablero avisa y ofrece limpiarlo ahí mismo.
+- **Diálogo de detalle** de una tarjeta: dice en qué columna está y gana botones de editar y eliminar, así
+  que esas dos acciones nunca dependen de pasar el ratón.
+- **Teclado**: `Esc` cierra también el diálogo de borrar columna —era el único del que no sacaba— y, sin
+  ningún diálogo abierto, limpia los filtros. `N` crea la tarjeta en la columna donde esté el foco, no
+  siempre en la primera. Los atajos se anuncian en la interfaz en vez de vivir solo en el código.
+- Se corrigen de paso dos fallos de medida: las tarjetas con etiquetas largas se salían 14px por la derecha
+  de su columna, y una tarjeta escondida por el filtro dejaba un hueco fantasma que desalineaba unas
+  columnas respecto a otras.
+
 **Papelera rehecha**: las siete categorías (documentos, archivos, tareas, listas y tareas de Polar,
 recordatorios y sesiones) usaban cada una tarjetas de un tamaño distinto —224x150, 224x120 y 224x100—, así
 que las filas no cuadraban al pasar de una sección a otra y, en las tarjetas bajas, un título de dos líneas

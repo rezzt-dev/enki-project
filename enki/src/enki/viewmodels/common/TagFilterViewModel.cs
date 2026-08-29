@@ -51,5 +51,22 @@ public sealed partial class TagFilterViewModel : ObservableObject
         IsEmpty = Items.Count == 0;
     }
 
+    /// <summary>Deselecciona todos los chips sin reconstruir la lista — respalda el "limpiar filtros" de
+    /// la barra de herramientas del tablero Kanban, que apaga buscador, etiquetas y filtro rápido de una
+    /// sola acción. Solo dispara <see cref="Changed"/> si algo estaba realmente seleccionado, para no
+    /// provocar un refiltrado inútil cuando ya no había nada que limpiar.</summary>
+    public void ClearSelection()
+    {
+        var changed = false;
+        foreach (var item in Items)
+        {
+            if (!item.IsSelected) continue;
+            item.IsSelected = false;
+            changed = true;
+        }
+
+        if (changed) Changed?.Invoke();
+    }
+
     private void OnItemToggled(TagFilterItemViewModel _) => Changed?.Invoke();
 }

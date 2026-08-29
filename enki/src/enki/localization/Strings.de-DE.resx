@@ -879,11 +879,20 @@
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>Neue Spalte</value>
   </data>
-  <data name="Kanban_Board_AddColumnGhost" xml:space="preserve">
-    <value>SPALTE HINZUFÜGEN</value>
+  <data name="Kanban_Board_EmptyHint" xml:space="preserve">
+    <value>Hier ist noch nichts. Füge einer beliebigen Spalte eine Karte hinzu oder erstelle eine neue Spalte für deinen Ablauf.</value>
+  </data>
+  <data name="Kanban_Board_AddColumnTooltip" xml:space="preserve">
+    <value>Neue Spalte erstellen (C)</value>
   </data>
   <data name="Kanban_Board_Eyebrow" xml:space="preserve">
     <value>LOKALES BOARD</value>
+  </data>
+  <data name="Kanban_Board_ShortcutsHint" xml:space="preserve">
+    <value>N neue Karte · C neue Spalte · Strg+F suchen</value>
+  </data>
+  <data name="Kanban_Board_NoMatches" xml:space="preserve">
+    <value>Keine Karte entspricht den aktiven Filtern.</value>
   </data>
   <data name="Kanban_Board_Subtitle" xml:space="preserve">
     <value>Organisiere deine Arbeit in Spalten und verschiebe Karten nach vorne, während sie voranschreiten.</value>
@@ -963,8 +972,14 @@
   <data name="Kanban_Card_EditTooltip" xml:space="preserve">
     <value>Karte bearbeiten</value>
   </data>
+  <data name="Kanban_Card_PriorityTooltip" xml:space="preserve">
+    <value>Priorität: {0} – zum Ändern klicken</value>
+  </data>
   <data name="Kanban_Column_AddCard" xml:space="preserve">
     <value>KARTE HINZUFÜGEN</value>
+  </data>
+  <data name="Kanban_Column_AddCardTooltip" xml:space="preserve">
+    <value>Karte zu dieser Spalte hinzufügen (N)</value>
   </data>
   <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve">
     <value>Basis-Workflow-Spalte: kann nicht gelöscht werden</value>
@@ -974,6 +989,12 @@
   </data>
   <data name="Kanban_Column_DeleteTooltip" xml:space="preserve">
     <value>Spalte löschen</value>
+  </data>
+  <data name="Kanban_Column_NoMatchesLabel" xml:space="preserve">
+    <value>Keine Treffer hier</value>
+  </data>
+  <data name="Kanban_Column_EmptyLabel" xml:space="preserve">
+    <value>Noch keine Karten</value>
   </data>
   <data name="Kanban_Column_RenameTooltip" xml:space="preserve">
     <value>Spalte umbenennen</value>
@@ -1007,6 +1028,12 @@
   </data>
   <data name="Kanban_DeleteTask_Title" xml:space="preserve">
     <value>AUFGABE LÖSCHEN</value>
+  </data>
+  <data name="Kanban_Detail_EditTooltip" xml:space="preserve">
+    <value>Diese Karte im vollständigen Formular öffnen</value>
+  </data>
+  <data name="Kanban_Detail_DeleteTooltip" xml:space="preserve">
+    <value>Diese Karte in den Papierkorb verschieben</value>
   </data>
   <data name="Kanban_DueDate_ClearButton" xml:space="preserve">
     <value>Löschen</value>
@@ -1043,6 +1070,18 @@
   </data>
   <data name="Kanban_Field_TitleLabel" xml:space="preserve">
     <value>TITEL</value>
+  </data>
+  <data name="Kanban_Filter_OverdueTooltip" xml:space="preserve">
+    <value>Nur überfällige Karten anzeigen</value>
+  </data>
+  <data name="Kanban_Filter_HighPriorityTooltip" xml:space="preserve">
+    <value>Nur Karten mit hoher Priorität anzeigen</value>
+  </data>
+  <data name="Kanban_Filter_ClearTooltip" xml:space="preserve">
+    <value>Suche, Tags und Schnellfilter zurücksetzen</value>
+  </data>
+  <data name="Kanban_Filter_ClearButton" xml:space="preserve">
+    <value>ZURÜCKSETZEN</value>
   </data>
   <data name="Kanban_Home_EmptyTitle" xml:space="preserve">
     <value>Du hast keine ausstehenden Aufgaben</value>
@@ -1110,6 +1149,9 @@
   <data name="Kanban_Recurrence_None" xml:space="preserve">
     <value>KEINE</value>
   </data>
+  <data name="Kanban_Search_ClearTooltip" xml:space="preserve">
+    <value>Suche löschen</value>
+  </data>
   <data name="Kanban_Search_Placeholder" xml:space="preserve">
     <value>Karten durchsuchen…</value>
   </data>
@@ -1146,6 +1188,9 @@
   <data name="Kanban_Seed_ColumnTodo" xml:space="preserve">
     <value>Zu erledigen</value>
   </data>
+  <data name="Kanban_Sort_ButtonLabel" xml:space="preserve">
+    <value>SORTIEREN</value>
+  </data>
   <data name="Kanban_Sort_Created" xml:space="preserve">
     <value>ERSTELLT</value>
   </data>
@@ -1158,11 +1203,11 @@
   <data name="Kanban_Sort_ManualTooltip" xml:space="preserve">
     <value>Manuelle Reihenfolge (Drag &amp; Drop)</value>
   </data>
+  <data name="Kanban_Sort_MenuTooltip" xml:space="preserve">
+    <value>Ändern, wie Karten innerhalb jeder Spalte sortiert werden</value>
+  </data>
   <data name="Kanban_Sort_Priority" xml:space="preserve">
     <value>PRIORITÄT</value>
-  </data>
-  <data name="Kanban_Stat_Columns" xml:space="preserve">
-    <value>SPALTEN</value>
   </data>
   <data name="Kanban_Stat_HighPriority" xml:space="preserve">
     <value>HOHE PRIORITÄT</value>
@@ -1175,9 +1220,6 @@
   </data>
   <data name="Kanban_Stat_Pending" xml:space="preserve">
     <value>AUSSTEHEND</value>
-  </data>
-  <data name="Kanban_Stat_TotalCards" xml:space="preserve">
-    <value>KARTEN INSGESAMT</value>
   </data>
   <data name="Kanban_Stat_TotalTasks" xml:space="preserve">
     <value>AUFGABEN INSGESAMT</value>
@@ -1196,6 +1238,24 @@
   </data>
   <data name="Kanban_Subtasks_EmptyLabel" xml:space="preserve">
     <value>Keine Teilaufgaben</value>
+  </data>
+  <data name="Kanban_Summary_Overdue_other" xml:space="preserve">
+    <value>{0} überfällig</value>
+  </data>
+  <data name="Kanban_Summary_Overdue_one" xml:space="preserve">
+    <value>{0} überfällig</value>
+  </data>
+  <data name="Kanban_Summary_Columns_other" xml:space="preserve">
+    <value>{0} Spalten</value>
+  </data>
+  <data name="Kanban_Summary_Columns_one" xml:space="preserve">
+    <value>{0} Spalte</value>
+  </data>
+  <data name="Kanban_Summary_Cards_other" xml:space="preserve">
+    <value>{0} Karten</value>
+  </data>
+  <data name="Kanban_Summary_Cards_one" xml:space="preserve">
+    <value>{0} Karte</value>
   </data>
   <data name="Kanban_TagFilter_HiddenHint" xml:space="preserve">
     <value>Tags sind ausgeblendet. Du kannst sie in Einstellungen → Allgemein → Aufgabenverwaltung wieder anzeigen.</value>

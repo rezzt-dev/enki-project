@@ -879,11 +879,20 @@
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>New column</value>
   </data>
-  <data name="Kanban_Board_AddColumnGhost" xml:space="preserve">
-    <value>ADD COLUMN</value>
+  <data name="Kanban_Board_EmptyHint" xml:space="preserve">
+    <value>Nothing here yet. Add a card to any column, or create a new column to shape your workflow.</value>
+  </data>
+  <data name="Kanban_Board_AddColumnTooltip" xml:space="preserve">
+    <value>Create a new column (C)</value>
   </data>
   <data name="Kanban_Board_Eyebrow" xml:space="preserve">
     <value>LOCAL BOARD</value>
+  </data>
+  <data name="Kanban_Board_ShortcutsHint" xml:space="preserve">
+    <value>N new card · C new column · Ctrl+F search</value>
+  </data>
+  <data name="Kanban_Board_NoMatches" xml:space="preserve">
+    <value>No card matches the active filters.</value>
   </data>
   <data name="Kanban_Board_Subtitle" xml:space="preserve">
     <value>Organize your work into columns and move cards forward as they progress.</value>
@@ -963,8 +972,14 @@
   <data name="Kanban_Card_EditTooltip" xml:space="preserve">
     <value>Edit card</value>
   </data>
+  <data name="Kanban_Card_PriorityTooltip" xml:space="preserve">
+    <value>Priority: {0} — click to change</value>
+  </data>
   <data name="Kanban_Column_AddCard" xml:space="preserve">
     <value>ADD CARD</value>
+  </data>
+  <data name="Kanban_Column_AddCardTooltip" xml:space="preserve">
+    <value>Add a card to this column (N)</value>
   </data>
   <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve">
     <value>Base workflow column: cannot be deleted</value>
@@ -974,6 +989,12 @@
   </data>
   <data name="Kanban_Column_DeleteTooltip" xml:space="preserve">
     <value>Delete column</value>
+  </data>
+  <data name="Kanban_Column_NoMatchesLabel" xml:space="preserve">
+    <value>No matches here</value>
+  </data>
+  <data name="Kanban_Column_EmptyLabel" xml:space="preserve">
+    <value>No cards yet</value>
   </data>
   <data name="Kanban_Column_RenameTooltip" xml:space="preserve">
     <value>Rename column</value>
@@ -1007,6 +1028,12 @@
   </data>
   <data name="Kanban_DeleteTask_Title" xml:space="preserve">
     <value>DELETE TASK</value>
+  </data>
+  <data name="Kanban_Detail_EditTooltip" xml:space="preserve">
+    <value>Open this card in the full form</value>
+  </data>
+  <data name="Kanban_Detail_DeleteTooltip" xml:space="preserve">
+    <value>Move this card to the trash</value>
   </data>
   <data name="Kanban_DueDate_ClearButton" xml:space="preserve">
     <value>Clear</value>
@@ -1043,6 +1070,18 @@
   </data>
   <data name="Kanban_Field_TitleLabel" xml:space="preserve">
     <value>TITLE</value>
+  </data>
+  <data name="Kanban_Filter_OverdueTooltip" xml:space="preserve">
+    <value>Show only overdue cards</value>
+  </data>
+  <data name="Kanban_Filter_HighPriorityTooltip" xml:space="preserve">
+    <value>Show only high-priority cards</value>
+  </data>
+  <data name="Kanban_Filter_ClearTooltip" xml:space="preserve">
+    <value>Clear the search, the tags and the quick filters</value>
+  </data>
+  <data name="Kanban_Filter_ClearButton" xml:space="preserve">
+    <value>CLEAR</value>
   </data>
   <data name="Kanban_Home_EmptyTitle" xml:space="preserve">
     <value>You have no pending tasks</value>
@@ -1110,6 +1149,9 @@
   <data name="Kanban_Recurrence_None" xml:space="preserve">
     <value>NONE</value>
   </data>
+  <data name="Kanban_Search_ClearTooltip" xml:space="preserve">
+    <value>Clear the search</value>
+  </data>
   <data name="Kanban_Search_Placeholder" xml:space="preserve">
     <value>Search cards…</value>
   </data>
@@ -1146,6 +1188,9 @@
   <data name="Kanban_Seed_ColumnTodo" xml:space="preserve">
     <value>To do</value>
   </data>
+  <data name="Kanban_Sort_ButtonLabel" xml:space="preserve">
+    <value>SORT</value>
+  </data>
   <data name="Kanban_Sort_Created" xml:space="preserve">
     <value>CREATED</value>
   </data>
@@ -1158,11 +1203,11 @@
   <data name="Kanban_Sort_ManualTooltip" xml:space="preserve">
     <value>Manual order (drag and drop)</value>
   </data>
+  <data name="Kanban_Sort_MenuTooltip" xml:space="preserve">
+    <value>Change how cards are ordered inside each column</value>
+  </data>
   <data name="Kanban_Sort_Priority" xml:space="preserve">
     <value>PRIORITY</value>
-  </data>
-  <data name="Kanban_Stat_Columns" xml:space="preserve">
-    <value>COLUMNS</value>
   </data>
   <data name="Kanban_Stat_HighPriority" xml:space="preserve">
     <value>HIGH PRIORITY</value>
@@ -1175,9 +1220,6 @@
   </data>
   <data name="Kanban_Stat_Pending" xml:space="preserve">
     <value>PENDING</value>
-  </data>
-  <data name="Kanban_Stat_TotalCards" xml:space="preserve">
-    <value>TOTAL CARDS</value>
   </data>
   <data name="Kanban_Stat_TotalTasks" xml:space="preserve">
     <value>TOTAL TASKS</value>
@@ -1196,6 +1238,24 @@
   </data>
   <data name="Kanban_Subtasks_EmptyLabel" xml:space="preserve">
     <value>No subtasks</value>
+  </data>
+  <data name="Kanban_Summary_Overdue_other" xml:space="preserve">
+    <value>{0} overdue</value>
+  </data>
+  <data name="Kanban_Summary_Overdue_one" xml:space="preserve">
+    <value>{0} overdue</value>
+  </data>
+  <data name="Kanban_Summary_Columns_other" xml:space="preserve">
+    <value>{0} columns</value>
+  </data>
+  <data name="Kanban_Summary_Columns_one" xml:space="preserve">
+    <value>{0} column</value>
+  </data>
+  <data name="Kanban_Summary_Cards_other" xml:space="preserve">
+    <value>{0} cards</value>
+  </data>
+  <data name="Kanban_Summary_Cards_one" xml:space="preserve">
+    <value>{0} card</value>
   </data>
   <data name="Kanban_TagFilter_HiddenHint" xml:space="preserve">
     <value>Tags are hidden. You can show them again from Settings → General → Task Management.</value>

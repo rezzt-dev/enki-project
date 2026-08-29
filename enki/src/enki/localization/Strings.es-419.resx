@@ -879,11 +879,20 @@
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>Columna nueva</value>
   </data>
-  <data name="Kanban_Board_AddColumnGhost" xml:space="preserve">
-    <value>AGREGAR COLUMNA</value>
+  <data name="Kanban_Board_EmptyHint" xml:space="preserve">
+    <value>Aquí todavía no hay nada. Agreguen una tarjeta a cualquier columna, o creen una columna nueva para darle forma a su flujo de trabajo.</value>
+  </data>
+  <data name="Kanban_Board_AddColumnTooltip" xml:space="preserve">
+    <value>Crear una columna nueva (C)</value>
   </data>
   <data name="Kanban_Board_Eyebrow" xml:space="preserve">
     <value>TABLERO LOCAL</value>
+  </data>
+  <data name="Kanban_Board_ShortcutsHint" xml:space="preserve">
+    <value>N nueva tarjeta · C nueva columna · Ctrl+F buscar</value>
+  </data>
+  <data name="Kanban_Board_NoMatches" xml:space="preserve">
+    <value>Ninguna tarjeta coincide con los filtros activos.</value>
   </data>
   <data name="Kanban_Board_Subtitle" xml:space="preserve">
     <value>Organicen su trabajo en columnas y muevan las tarjetas hacia adelante a medida que avanzan.</value>
@@ -963,8 +972,14 @@
   <data name="Kanban_Card_EditTooltip" xml:space="preserve">
     <value>Editar tarjeta</value>
   </data>
+  <data name="Kanban_Card_PriorityTooltip" xml:space="preserve">
+    <value>Prioridad: {0} — clic para cambiarla</value>
+  </data>
   <data name="Kanban_Column_AddCard" xml:space="preserve">
     <value>AGREGAR TARJETA</value>
+  </data>
+  <data name="Kanban_Column_AddCardTooltip" xml:space="preserve">
+    <value>Agregar una tarjeta a esta columna (N)</value>
   </data>
   <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve">
     <value>Columna base del flujo de trabajo: no se puede eliminar</value>
@@ -974,6 +989,12 @@
   </data>
   <data name="Kanban_Column_DeleteTooltip" xml:space="preserve">
     <value>Eliminar columna</value>
+  </data>
+  <data name="Kanban_Column_NoMatchesLabel" xml:space="preserve">
+    <value>Sin coincidencias aquí</value>
+  </data>
+  <data name="Kanban_Column_EmptyLabel" xml:space="preserve">
+    <value>Aún no hay tarjetas</value>
   </data>
   <data name="Kanban_Column_RenameTooltip" xml:space="preserve">
     <value>Renombrar columna</value>
@@ -1007,6 +1028,12 @@
   </data>
   <data name="Kanban_DeleteTask_Title" xml:space="preserve">
     <value>ELIMINAR TAREA</value>
+  </data>
+  <data name="Kanban_Detail_EditTooltip" xml:space="preserve">
+    <value>Abrir esta tarjeta en el formulario completo</value>
+  </data>
+  <data name="Kanban_Detail_DeleteTooltip" xml:space="preserve">
+    <value>Mover esta tarjeta a la papelera</value>
   </data>
   <data name="Kanban_DueDate_ClearButton" xml:space="preserve">
     <value>Limpiar</value>
@@ -1043,6 +1070,18 @@
   </data>
   <data name="Kanban_Field_TitleLabel" xml:space="preserve">
     <value>TÍTULO</value>
+  </data>
+  <data name="Kanban_Filter_OverdueTooltip" xml:space="preserve">
+    <value>Mostrar solo las tarjetas vencidas</value>
+  </data>
+  <data name="Kanban_Filter_HighPriorityTooltip" xml:space="preserve">
+    <value>Mostrar solo las tarjetas de prioridad alta</value>
+  </data>
+  <data name="Kanban_Filter_ClearTooltip" xml:space="preserve">
+    <value>Limpiar el buscador, las etiquetas y los filtros rápidos</value>
+  </data>
+  <data name="Kanban_Filter_ClearButton" xml:space="preserve">
+    <value>LIMPIAR</value>
   </data>
   <data name="Kanban_Home_EmptyTitle" xml:space="preserve">
     <value>No tienen tareas pendientes</value>
@@ -1110,6 +1149,9 @@
   <data name="Kanban_Recurrence_None" xml:space="preserve">
     <value>NINGUNA</value>
   </data>
+  <data name="Kanban_Search_ClearTooltip" xml:space="preserve">
+    <value>Limpiar la búsqueda</value>
+  </data>
   <data name="Kanban_Search_Placeholder" xml:space="preserve">
     <value>Buscar tarjetas…</value>
   </data>
@@ -1146,6 +1188,9 @@
   <data name="Kanban_Seed_ColumnTodo" xml:space="preserve">
     <value>Por hacer</value>
   </data>
+  <data name="Kanban_Sort_ButtonLabel" xml:space="preserve">
+    <value>ORDEN</value>
+  </data>
   <data name="Kanban_Sort_Created" xml:space="preserve">
     <value>CREACIÓN</value>
   </data>
@@ -1158,11 +1203,11 @@
   <data name="Kanban_Sort_ManualTooltip" xml:space="preserve">
     <value>Orden manual (arrastrar y soltar)</value>
   </data>
+  <data name="Kanban_Sort_MenuTooltip" xml:space="preserve">
+    <value>Cambiar cómo se ordenan las tarjetas dentro de cada columna</value>
+  </data>
   <data name="Kanban_Sort_Priority" xml:space="preserve">
     <value>PRIORIDAD</value>
-  </data>
-  <data name="Kanban_Stat_Columns" xml:space="preserve">
-    <value>COLUMNAS</value>
   </data>
   <data name="Kanban_Stat_HighPriority" xml:space="preserve">
     <value>ALTA PRIORIDAD</value>
@@ -1175,9 +1220,6 @@
   </data>
   <data name="Kanban_Stat_Pending" xml:space="preserve">
     <value>PENDIENTES</value>
-  </data>
-  <data name="Kanban_Stat_TotalCards" xml:space="preserve">
-    <value>TARJETAS TOTALES</value>
   </data>
   <data name="Kanban_Stat_TotalTasks" xml:space="preserve">
     <value>TAREAS TOTALES</value>
@@ -1196,6 +1238,24 @@
   </data>
   <data name="Kanban_Subtasks_EmptyLabel" xml:space="preserve">
     <value>Sin subtareas</value>
+  </data>
+  <data name="Kanban_Summary_Overdue_other" xml:space="preserve">
+    <value>{0} vencidas</value>
+  </data>
+  <data name="Kanban_Summary_Overdue_one" xml:space="preserve">
+    <value>{0} vencida</value>
+  </data>
+  <data name="Kanban_Summary_Columns_other" xml:space="preserve">
+    <value>{0} columnas</value>
+  </data>
+  <data name="Kanban_Summary_Columns_one" xml:space="preserve">
+    <value>{0} columna</value>
+  </data>
+  <data name="Kanban_Summary_Cards_other" xml:space="preserve">
+    <value>{0} tarjetas</value>
+  </data>
+  <data name="Kanban_Summary_Cards_one" xml:space="preserve">
+    <value>{0} tarjeta</value>
   </data>
   <data name="Kanban_TagFilter_HiddenHint" xml:space="preserve">
     <value>Las etiquetas están ocultas. Pueden mostrarlas de nuevo desde Configuración → General → Gestión de tareas.</value>
