@@ -33,7 +33,15 @@ public class SessionsViewModelGraphFilterTests : IDisposable
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
-    private (SessionsViewModel Vm, SessionService Sessions, VaultService Vault) CreateViewModel()
+    /// <summary>El constructor de <see cref="SessionsViewModel"/> lanza un <c>Reload</c> en segundo plano
+    /// (recorre el vault entero y arma el grafo), y esperar a que termine antes de devolver el viewmodel no
+    /// es cortesía: sin eso el test y esa carga compiten. Los dos síntomas eran reales y de los que solo
+    /// aparecen con la máquina cargada, que es cuando la carga tarda lo bastante como para seguir viva aquí:
+    /// el test escribe sus ficheros mientras la carga recorre el árbol, y —peor— la carga del constructor
+    /// puede publicar su <c>GraphReady</c> justo después de que <see cref="LoadGraphAsync"/> se haya
+    /// suscrito, de modo que el test se quedaba con un grafo anterior a las sesiones y notas que él
+    /// mismo acababa de crear y contaba cero grupos donde esperaba dos.</summary>
+    private async Task<(SessionsViewModel Vm, SessionService Sessions, VaultService Vault)> CreateViewModelAsync()
     {
         var settings = new SettingsService(_storageDirectory);
         var vault = new VaultService(settings);
@@ -41,12 +49,15 @@ public class SessionsViewModelGraphFilterTests : IDisposable
         var sessions = new SessionService(vault);
         var notifications = new NotificationService(settings, _storageDirectory);
         var vm = new SessionsViewModel(vault, sessions, notifications, (_, _) => { }, () => { });
+        await vm.PendingLoad;
         return (vm, sessions, vault);
     }
 
-    /// <summary>Awaits the next full graph (re)load — <see cref="SessionsViewModel.LoadGraph"/> is
-    /// "async void" by design (fire-and-forget from a UI action/constructor), so tests need to hook
-    /// <see cref="SessionsViewModel.GraphReady"/> to know when the background scan actually finished.</summary>
+    /// <summary>Awaits the next full graph (re)load. <see cref="SessionsViewModel.LoadGraph"/> es "dispara y
+    /// olvida" (una acción de UI, o el constructor), así que hacen falta las dos mitades: esperar a
+    /// <see cref="SessionsViewModel.PendingLoad"/> para saber que el recorrido de disco terminó de verdad
+    /// —y que un fallo salga como fallo aquí, en vez de como un plantón de diez segundos—, y engancharse a
+    /// <see cref="SessionsViewModel.GraphReady"/> para quedarse con el grafo que publicó.</summary>
     private static async Task<SessionGraph> LoadGraphAsync(SessionsViewModel vm)
     {
         var tcs = new TaskCompletionSource<SessionGraph>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -55,6 +66,7 @@ public class SessionsViewModelGraphFilterTests : IDisposable
         try
         {
             vm.LoadGraph();
+            await vm.PendingLoad;
             return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
         }
         finally
@@ -84,7 +96,7 @@ public class SessionsViewModelGraphFilterTests : IDisposable
     [Fact]
     public async Task RebuildGraphGroupFilters_CreatesOneRowPerGroup_VaultRootFirst_AllActiveByDefault()
     {
-        var (vm, sessions, vault) = CreateViewModel();
+        var (vm, sessions, vault) = await CreateViewModelAsync();
         var sessionA = sessions.Create("Sesión A");
         File.WriteAllText(Path.Combine(sessionA.RootPath, "Nota.md"), "# Nota");
         File.WriteAllText(Path.Combine(vault.VaultPath, "Suelta.md"), "# Suelta");
@@ -100,7 +112,7 @@ public class SessionsViewModelGraphFilterTests : IDisposable
     [Fact]
     public async Task TogglingAFilterOff_HidesThatGroupsNodes_FromThePublishedGraph()
     {
-        var (vm, sessions, _) = CreateViewModel();
+        var (vm, sessions, _) = await CreateViewModelAsync();
         var sessionA = sessions.Create("Sesión A");
         var sessionB = sessions.Create("Sesión B");
         File.WriteAllText(Path.Combine(sessionA.RootPath, "A.md"), "# A");
@@ -122,7 +134,7 @@ public class SessionsViewModelGraphFilterTests : IDisposable
     [Fact]
     public async Task TogglingAFilterOff_HidesCrossGroupEdges_WhereEitherEndpointIsHidden()
     {
-        var (vm, sessions, _) = CreateViewModel();
+        var (vm, sessions, _) = await CreateViewModelAsync();
         var sessionA = sessions.Create("Sesión A");
         var sessionB = sessions.Create("Sesión B");
         // A wikilink from A's note to B's note only resolves cross-scope via the global graph pass
@@ -142,7 +154,7 @@ public class SessionsViewModelGraphFilterTests : IDisposable
     [Fact]
     public async Task TogglingAFilterBackOn_RestoresItsGroupsNodes_AndClearsIsGraphFiltered()
     {
-        var (vm, sessions, _) = CreateViewModel();
+        var (vm, sessions, _) = await CreateViewModelAsync();
         var sessionA = sessions.Create("Sesión A");
         var sessionB = sessions.Create("Sesión B");
         File.WriteAllText(Path.Combine(sessionA.RootPath, "A.md"), "# A");
@@ -164,7 +176,7 @@ public class SessionsViewModelGraphFilterTests : IDisposable
     [Fact]
     public async Task RebuildGraphGroupFilters_WithOnlyRootNotesAndNoSessions_CreatesSingleRootRow()
     {
-        var (vm, _, vault) = CreateViewModel();
+        var (vm, _, vault) = await CreateViewModelAsync();
         File.WriteAllText(Path.Combine(vault.VaultPath, "Suelta.md"), "# Suelta");
 
         await LoadGraphAsync(vm);
@@ -177,7 +189,7 @@ public class SessionsViewModelGraphFilterTests : IDisposable
     [Fact]
     public async Task RebuildGraphGroupFilters_PreservesInactiveSelection_AcrossAReload()
     {
-        var (vm, sessions, _) = CreateViewModel();
+        var (vm, sessions, _) = await CreateViewModelAsync();
         var sessionA = sessions.Create("Sesión A");
         var sessionB = sessions.Create("Sesión B");
         File.WriteAllText(Path.Combine(sessionA.RootPath, "A.md"), "# A");

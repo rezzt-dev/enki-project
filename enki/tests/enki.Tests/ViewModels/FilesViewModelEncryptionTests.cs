@@ -75,6 +75,28 @@ public class FilesViewModelEncryptionTests : IDisposable
         Assert.Contains(vm.Files, f => f.FileName == "imagen.png");
     }
 
+    /// <summary>Importar dentro de una sesión protegida y bloqueada cifra con una clave que no está en
+    /// memoria: <c>SessionEncryptionService</c> lanza <see cref="SessionLockedException"/> desde dentro del
+    /// manejador del "soltar", así que sin este guardado la excepción salía a la cara del usuario. Debe
+    /// avisar y no importar nada, no reventar.</summary>
+    [Fact]
+    public void ImportingIntoALockedSession_NotifiesInsteadOfThrowing()
+    {
+        var (vm, sessions, vault) = CreateViewModel();
+        var (session, _) = sessions.CreateEncrypted("Adjuntos privados", "una-contraseña-larga");
+        sessions.Lock(session);
+        vm.ReloadSessions();
+        vm.SelectSession(session.Id);
+
+        var sourcePath = Path.Combine(_storageDirectory, "entrante.png");
+        File.WriteAllBytes(sourcePath, [1, 2, 3, 4]);
+
+        var exception = Record.Exception(() => vm.ImportPaths([sourcePath], session.RootPath));
+
+        Assert.Null(exception);
+        Assert.False(File.Exists(Path.Combine(session.RootPath, "entrante.png")));
+    }
+
     [Fact]
     public void SelectingPlainVault_IsNeverReportedAsLocked()
     {

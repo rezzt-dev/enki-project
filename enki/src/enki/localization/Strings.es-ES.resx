@@ -4551,4 +4551,160 @@ Disfrutad escribiendo.</value>
   <data name="Settings_Editor_ViewMode_Simple_Omissions" xml:space="preserve">
     <value>Se dejan fuera a propósito: la barra de formato y el panel lateral de esquema, enlaces y estadísticas.</value>
   </data>
+  <data name="Skills_DefaultFolderName" xml:space="preserve">
+    <value>Carpeta nueva</value>
+  </data>
+  <data name="Skills_Error_FolderHasDefault" xml:space="preserve">
+    <value>Esta carpeta contiene la skill del sistema «{0}», que no se puede eliminar. Sácala de la carpeta primero.</value>
+  </data>
+  <data name="Skills_Error_FolderIntoItself" xml:space="preserve">
+    <value>Una carpeta no se puede mover dentro de sí misma.</value>
+  </data>
+  <data name="Skills_AllFolder" xml:space="preserve">
+    <value>TODAS</value>
+  </data>
+  <data name="Skills_Notify_FolderCreateFailed_Title" xml:space="preserve">
+    <value>No se pudo crear la carpeta</value>
+  </data>
+  <data name="Skills_Notify_FolderRenameFailed_Title" xml:space="preserve">
+    <value>No se pudo renombrar la carpeta</value>
+  </data>
+  <data name="Skills_Notify_FolderDeleteFailed_Title" xml:space="preserve">
+    <value>No se pudo eliminar la carpeta</value>
+  </data>
+  <data name="Skills_Notify_MoveFailed_Title" xml:space="preserve">
+    <value>No se pudo mover</value>
+  </data>
+  <data name="Skills_NewFolder_Button" xml:space="preserve">
+    <value>Nueva carpeta</value>
+  </data>
+  <data name="Skills_NewFolder_Tooltip" xml:space="preserve">
+    <value>Crear una carpeta para agrupar skills por tema</value>
+  </data>
+  <data name="Skills_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Nueva subcarpeta</value>
+  </data>
+  <data name="Skills_RenameFolder_Action" xml:space="preserve">
+    <value>Renombrar carpeta</value>
+  </data>
+  <data name="Skills_DeleteFolder_Tooltip" xml:space="preserve">
+    <value>Eliminar carpeta</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Title" xml:space="preserve">
+    <value>Eliminar carpeta</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Message" xml:space="preserve">
+    <value>Se eliminará la carpeta y todo lo que contiene.</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Warning" xml:space="preserve">
+    <value>La biblioteca de skills no tiene papelera, así que esto no se puede deshacer.</value>
+  </data>
+  <data name="Skills_FolderEmpty_Title" xml:space="preserve">
+    <value>Esta carpeta está vacía</value>
+  </data>
+  <data name="Skills_FolderEmpty_Description" xml:space="preserve">
+    <value>Arrastra aquí skills de otra carpeta, importa nuevas o crea una subcarpeta.</value>
+  </data>
+  <data name="Skills_UpOneLevel" xml:space="preserve">
+    <value>Subir un nivel</value>
+  </data>
+  <data name="Skills_Nav_Tooltip" xml:space="preserve">
+    <value>Cómo navegar esta sección</value>
+  </data>
+  <data name="Skills_Nav_Browser" xml:space="preserve">
+    <value>Explorador: panel de carpetas y rejilla de tarjetas</value>
+  </data>
+  <data name="Skills_Nav_Tree" xml:space="preserve">
+    <value>Árbol: carpetas y skills en un mismo panel</value>
+  </data>
+  <data name="Skills_Tree_Browse_Tooltip" xml:space="preserve">
+    <value>Recorrer la biblioteca</value>
+  </data>
+  <data name="Skills_Tree_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Ocultar el panel</value>
+  </data>
+  <data name="Skills_Tree_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Mostrar el panel</value>
+  </data>
+  <data name="Skills_Tree_Collapse_Tooltip" xml:space="preserve">
+    <value>Contraer todas las carpetas</value>
+  </data>
+  <data name="Skills_Tree_SearchPlaceholder" xml:space="preserve">
+    <value>Buscar en toda la biblioteca</value>
+  </data>
+  <data name="Skills_Tree_EmptyTree" xml:space="preserve">
+    <value>Todavía no hay skills. Importa una o crea una carpeta para empezar.</value>
+  </data>
+  <data name="Skills_Tree_SearchEmpty" xml:space="preserve">
+    <value>Ninguna skill coincide con esa búsqueda.</value>
+  </data>
+  <data name="Skills_Tree_NoSelection" xml:space="preserve">
+    <value>Elige una skill del panel para ver qué hace.</value>
+  </data>
+  <data name="Skills_Detail_Location_Label" xml:space="preserve">
+    <value>Ubicación</value>
+  </data>
+  <data name="Skills_Detail_Location_Root" xml:space="preserve">
+    <value>Raíz de la biblioteca</value>
+  </data>
+  <data name="A11y_Skills_ToggleFolder" xml:space="preserve">
+    <value>Expandir o contraer la carpeta</value>
+  </data>
+  <data name="A11y_Skills_FolderNameField" xml:space="preserve">
+    <value>Nombre de la carpeta</value>
+  </data>
+  <data name="A11y_Skills_FolderPanelSplitter" xml:space="preserve">
+    <value>Redimensionar el panel de carpetas</value>
+  </data>
+  <data name="Files_Nav_Tooltip" xml:space="preserve">
+    <value>Cómo navegar esta sección</value>
+  </data>
+  <data name="Files_Nav_Browser" xml:space="preserve">
+    <value>Explorador: panel de carpetas y rejilla de tarjetas</value>
+  </data>
+  <data name="Files_Nav_Tree" xml:space="preserve">
+    <value>Árbol: carpetas y archivos en un mismo panel</value>
+  </data>
+  <data name="Files_Tree_Browse_Tooltip" xml:space="preserve">
+    <value>Explorar los archivos</value>
+  </data>
+  <data name="Files_Tree_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Ocultar el panel</value>
+  </data>
+  <data name="Files_Tree_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Mostrar el panel</value>
+  </data>
+  <data name="Files_Tree_Collapse_Tooltip" xml:space="preserve">
+    <value>Contraer todas las carpetas</value>
+  </data>
+  <data name="Files_Tree_SearchPlaceholder" xml:space="preserve">
+    <value>Buscar archivos aquí</value>
+  </data>
+  <data name="Files_Tree_EmptyTree" xml:space="preserve">
+    <value>Todavía no hay archivos ni carpetas. Importa un archivo o crea una carpeta para empezar.</value>
+  </data>
+  <data name="Files_Tree_SearchEmpty" xml:space="preserve">
+    <value>Ningún archivo coincide con esa búsqueda.</value>
+  </data>
+  <data name="Files_Tree_NoSelection" xml:space="preserve">
+    <value>Elige un archivo del panel para previsualizarlo.</value>
+  </data>
+  <data name="Files_Notify_FolderCreateFailed_Title" xml:space="preserve">
+    <value>No se pudo crear la carpeta</value>
+  </data>
+  <data name="Files_Notify_FolderRenameFailed_Title" xml:space="preserve">
+    <value>No se pudo renombrar la carpeta</value>
+  </data>
+  <data name="Files_Notify_MoveFailed_Title" xml:space="preserve">
+    <value>No se pudo mover el archivo</value>
+  </data>
+  <data name="Files_Notify_ImportFailed_Title" xml:space="preserve">
+    <value>No se pudieron importar los archivos</value>
+  </data>
+  <data name="A11y_Files_TreeItemNameField" xml:space="preserve">
+    <value>Nombre de la carpeta o del archivo</value>
+  </data>
+  <data name="A11y_Files_TreeSidebarSplitter" xml:space="preserve">
+    <value>Redimensionar el panel lateral</value>
+  </data>
 </root>

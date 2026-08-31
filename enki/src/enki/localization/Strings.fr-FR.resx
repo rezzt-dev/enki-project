@@ -4551,4 +4551,160 @@ Bonne rédaction.</value>
   <data name="Settings_Editor_ViewMode_Simple_Omissions" xml:space="preserve">
     <value>Volontairement absents : la barre de format et le panneau latéral (plan, liens, statistiques).</value>
   </data>
+  <data name="Skills_DefaultFolderName" xml:space="preserve">
+    <value>Nouveau dossier</value>
+  </data>
+  <data name="Skills_Error_FolderHasDefault" xml:space="preserve">
+    <value>Ce dossier contient la skill intégrée « {0} », qui ne peut pas être supprimée. Sortez-la du dossier d'abord.</value>
+  </data>
+  <data name="Skills_Error_FolderIntoItself" xml:space="preserve">
+    <value>Un dossier ne peut pas être déplacé dans lui-même.</value>
+  </data>
+  <data name="Skills_AllFolder" xml:space="preserve">
+    <value>TOUTES</value>
+  </data>
+  <data name="Skills_Notify_FolderCreateFailed_Title" xml:space="preserve">
+    <value>Impossible de créer le dossier</value>
+  </data>
+  <data name="Skills_Notify_FolderRenameFailed_Title" xml:space="preserve">
+    <value>Impossible de renommer le dossier</value>
+  </data>
+  <data name="Skills_Notify_FolderDeleteFailed_Title" xml:space="preserve">
+    <value>Impossible de supprimer le dossier</value>
+  </data>
+  <data name="Skills_Notify_MoveFailed_Title" xml:space="preserve">
+    <value>Déplacement impossible</value>
+  </data>
+  <data name="Skills_NewFolder_Button" xml:space="preserve">
+    <value>Nouveau dossier</value>
+  </data>
+  <data name="Skills_NewFolder_Tooltip" xml:space="preserve">
+    <value>Créer un dossier pour regrouper les skills par thème</value>
+  </data>
+  <data name="Skills_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>Nouveau sous-dossier</value>
+  </data>
+  <data name="Skills_RenameFolder_Action" xml:space="preserve">
+    <value>Renommer le dossier</value>
+  </data>
+  <data name="Skills_DeleteFolder_Tooltip" xml:space="preserve">
+    <value>Supprimer le dossier</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Title" xml:space="preserve">
+    <value>Supprimer le dossier</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Message" xml:space="preserve">
+    <value>Le dossier et tout ce qu'il contient seront supprimés.</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Warning" xml:space="preserve">
+    <value>La bibliothèque de skills n'a pas de corbeille : c'est irréversible.</value>
+  </data>
+  <data name="Skills_FolderEmpty_Title" xml:space="preserve">
+    <value>Ce dossier est vide</value>
+  </data>
+  <data name="Skills_FolderEmpty_Description" xml:space="preserve">
+    <value>Faites glisser ici des skills d'un autre dossier, importez-en ou créez un sous-dossier.</value>
+  </data>
+  <data name="Skills_UpOneLevel" xml:space="preserve">
+    <value>Remonter d'un niveau</value>
+  </data>
+  <data name="Skills_Nav_Tooltip" xml:space="preserve">
+    <value>Comment naviguer dans cette section</value>
+  </data>
+  <data name="Skills_Nav_Browser" xml:space="preserve">
+    <value>Explorateur : panneau de dossiers et grille de cartes</value>
+  </data>
+  <data name="Skills_Nav_Tree" xml:space="preserve">
+    <value>Arborescence : dossiers et skills dans un même panneau</value>
+  </data>
+  <data name="Skills_Tree_Browse_Tooltip" xml:space="preserve">
+    <value>Parcourir la bibliothèque</value>
+  </data>
+  <data name="Skills_Tree_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Masquer le panneau</value>
+  </data>
+  <data name="Skills_Tree_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Afficher le panneau</value>
+  </data>
+  <data name="Skills_Tree_Collapse_Tooltip" xml:space="preserve">
+    <value>Replier tous les dossiers</value>
+  </data>
+  <data name="Skills_Tree_SearchPlaceholder" xml:space="preserve">
+    <value>Rechercher dans toute la bibliothèque</value>
+  </data>
+  <data name="Skills_Tree_EmptyTree" xml:space="preserve">
+    <value>Aucune skill pour l'instant. Importez-en une ou créez un dossier.</value>
+  </data>
+  <data name="Skills_Tree_SearchEmpty" xml:space="preserve">
+    <value>Aucune skill ne correspond à cette recherche.</value>
+  </data>
+  <data name="Skills_Tree_NoSelection" xml:space="preserve">
+    <value>Choisissez une skill dans le panneau pour voir ce qu'elle fait.</value>
+  </data>
+  <data name="Skills_Detail_Location_Label" xml:space="preserve">
+    <value>Emplacement</value>
+  </data>
+  <data name="Skills_Detail_Location_Root" xml:space="preserve">
+    <value>Racine de la bibliothèque</value>
+  </data>
+  <data name="A11y_Skills_ToggleFolder" xml:space="preserve">
+    <value>Développer ou replier le dossier</value>
+  </data>
+  <data name="A11y_Skills_FolderNameField" xml:space="preserve">
+    <value>Nom du dossier</value>
+  </data>
+  <data name="A11y_Skills_FolderPanelSplitter" xml:space="preserve">
+    <value>Redimensionner le panneau de dossiers</value>
+  </data>
+  <data name="Files_Nav_Tooltip" xml:space="preserve">
+    <value>Comment naviguer dans cette section</value>
+  </data>
+  <data name="Files_Nav_Browser" xml:space="preserve">
+    <value>Explorateur : panneau de dossiers et grille de cartes</value>
+  </data>
+  <data name="Files_Nav_Tree" xml:space="preserve">
+    <value>Arborescence : dossiers et fichiers dans un même panneau</value>
+  </data>
+  <data name="Files_Tree_Browse_Tooltip" xml:space="preserve">
+    <value>Parcourir les fichiers</value>
+  </data>
+  <data name="Files_Tree_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Masquer le panneau</value>
+  </data>
+  <data name="Files_Tree_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Afficher le panneau</value>
+  </data>
+  <data name="Files_Tree_Collapse_Tooltip" xml:space="preserve">
+    <value>Replier tous les dossiers</value>
+  </data>
+  <data name="Files_Tree_SearchPlaceholder" xml:space="preserve">
+    <value>Rechercher des fichiers ici</value>
+  </data>
+  <data name="Files_Tree_EmptyTree" xml:space="preserve">
+    <value>Aucun fichier ni dossier pour l'instant. Importez un fichier ou créez un dossier pour commencer.</value>
+  </data>
+  <data name="Files_Tree_SearchEmpty" xml:space="preserve">
+    <value>Aucun fichier ne correspond à cette recherche.</value>
+  </data>
+  <data name="Files_Tree_NoSelection" xml:space="preserve">
+    <value>Choisissez un fichier dans le panneau pour l'afficher.</value>
+  </data>
+  <data name="Files_Notify_FolderCreateFailed_Title" xml:space="preserve">
+    <value>Impossible de créer le dossier</value>
+  </data>
+  <data name="Files_Notify_FolderRenameFailed_Title" xml:space="preserve">
+    <value>Impossible de renommer le dossier</value>
+  </data>
+  <data name="Files_Notify_MoveFailed_Title" xml:space="preserve">
+    <value>Impossible de déplacer le fichier</value>
+  </data>
+  <data name="Files_Notify_ImportFailed_Title" xml:space="preserve">
+    <value>Impossible d’importer les fichiers</value>
+  </data>
+  <data name="A11y_Files_TreeItemNameField" xml:space="preserve">
+    <value>Nom du dossier ou du fichier</value>
+  </data>
+  <data name="A11y_Files_TreeSidebarSplitter" xml:space="preserve">
+    <value>Redimensionner le panneau latéral</value>
+  </data>
 </root>

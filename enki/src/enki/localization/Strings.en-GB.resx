@@ -4551,4 +4551,160 @@ Happy writing.</value>
   <data name="Settings_Editor_ViewMode_Simple_Omissions" xml:space="preserve">
     <value>Deliberately left out: the formatting toolbar and the outline/links/stats side panel.</value>
   </data>
+  <data name="Skills_DefaultFolderName" xml:space="preserve">
+    <value>New folder</value>
+  </data>
+  <data name="Skills_Error_FolderHasDefault" xml:space="preserve">
+    <value>This folder contains the built-in skill “{0}”, which cannot be deleted. Move it out of the folder first.</value>
+  </data>
+  <data name="Skills_Error_FolderIntoItself" xml:space="preserve">
+    <value>A folder cannot be moved inside itself.</value>
+  </data>
+  <data name="Skills_AllFolder" xml:space="preserve">
+    <value>ALL</value>
+  </data>
+  <data name="Skills_Notify_FolderCreateFailed_Title" xml:space="preserve">
+    <value>Could not create the folder</value>
+  </data>
+  <data name="Skills_Notify_FolderRenameFailed_Title" xml:space="preserve">
+    <value>Could not rename the folder</value>
+  </data>
+  <data name="Skills_Notify_FolderDeleteFailed_Title" xml:space="preserve">
+    <value>Could not delete the folder</value>
+  </data>
+  <data name="Skills_Notify_MoveFailed_Title" xml:space="preserve">
+    <value>Could not move it</value>
+  </data>
+  <data name="Skills_NewFolder_Button" xml:space="preserve">
+    <value>New folder</value>
+  </data>
+  <data name="Skills_NewFolder_Tooltip" xml:space="preserve">
+    <value>Create a folder to organise skills by topic</value>
+  </data>
+  <data name="Skills_CreateSubfolderMenuItem" xml:space="preserve">
+    <value>New subfolder</value>
+  </data>
+  <data name="Skills_RenameFolder_Action" xml:space="preserve">
+    <value>Rename folder</value>
+  </data>
+  <data name="Skills_DeleteFolder_Tooltip" xml:space="preserve">
+    <value>Delete folder</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Title" xml:space="preserve">
+    <value>Delete folder</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Message" xml:space="preserve">
+    <value>The folder and everything inside it will be deleted.</value>
+  </data>
+  <data name="Skills_DeleteFolderModal_Warning" xml:space="preserve">
+    <value>The skills library has no trash, so this cannot be undone.</value>
+  </data>
+  <data name="Skills_FolderEmpty_Title" xml:space="preserve">
+    <value>This folder is empty</value>
+  </data>
+  <data name="Skills_FolderEmpty_Description" xml:space="preserve">
+    <value>Drag skills here from another folder, import new ones, or create a subfolder.</value>
+  </data>
+  <data name="Skills_UpOneLevel" xml:space="preserve">
+    <value>Up one level</value>
+  </data>
+  <data name="Skills_Nav_Tooltip" xml:space="preserve">
+    <value>How to navigate this section</value>
+  </data>
+  <data name="Skills_Nav_Browser" xml:space="preserve">
+    <value>Explorer: folder panel and card grid</value>
+  </data>
+  <data name="Skills_Nav_Tree" xml:space="preserve">
+    <value>Tree: folders and skills in one sidebar</value>
+  </data>
+  <data name="Skills_Tree_Browse_Tooltip" xml:space="preserve">
+    <value>Browse the library</value>
+  </data>
+  <data name="Skills_Tree_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Hide the sidebar</value>
+  </data>
+  <data name="Skills_Tree_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Show the sidebar</value>
+  </data>
+  <data name="Skills_Tree_Collapse_Tooltip" xml:space="preserve">
+    <value>Collapse all folders</value>
+  </data>
+  <data name="Skills_Tree_SearchPlaceholder" xml:space="preserve">
+    <value>Search the whole library</value>
+  </data>
+  <data name="Skills_Tree_EmptyTree" xml:space="preserve">
+    <value>No skills yet. Import one or create a folder to get started.</value>
+  </data>
+  <data name="Skills_Tree_SearchEmpty" xml:space="preserve">
+    <value>No skill matches that search.</value>
+  </data>
+  <data name="Skills_Tree_NoSelection" xml:space="preserve">
+    <value>Pick a skill from the sidebar to see what it does.</value>
+  </data>
+  <data name="Skills_Detail_Location_Label" xml:space="preserve">
+    <value>Location</value>
+  </data>
+  <data name="Skills_Detail_Location_Root" xml:space="preserve">
+    <value>Library root</value>
+  </data>
+  <data name="A11y_Skills_ToggleFolder" xml:space="preserve">
+    <value>Expand or collapse folder</value>
+  </data>
+  <data name="A11y_Skills_FolderNameField" xml:space="preserve">
+    <value>Folder name</value>
+  </data>
+  <data name="A11y_Skills_FolderPanelSplitter" xml:space="preserve">
+    <value>Resize the folder panel</value>
+  </data>
+  <data name="Files_Nav_Tooltip" xml:space="preserve">
+    <value>How to navigate this section</value>
+  </data>
+  <data name="Files_Nav_Browser" xml:space="preserve">
+    <value>Explorer: folder panel and card grid</value>
+  </data>
+  <data name="Files_Nav_Tree" xml:space="preserve">
+    <value>Tree: folders and files in one sidebar</value>
+  </data>
+  <data name="Files_Tree_Browse_Tooltip" xml:space="preserve">
+    <value>Browse the files</value>
+  </data>
+  <data name="Files_Tree_HideSidebar_Tooltip" xml:space="preserve">
+    <value>Hide the sidebar</value>
+  </data>
+  <data name="Files_Tree_ShowSidebar_Tooltip" xml:space="preserve">
+    <value>Show the sidebar</value>
+  </data>
+  <data name="Files_Tree_Collapse_Tooltip" xml:space="preserve">
+    <value>Collapse all folders</value>
+  </data>
+  <data name="Files_Tree_SearchPlaceholder" xml:space="preserve">
+    <value>Search files here</value>
+  </data>
+  <data name="Files_Tree_EmptyTree" xml:space="preserve">
+    <value>No files or folders here yet. Import a file or create a folder to get started.</value>
+  </data>
+  <data name="Files_Tree_SearchEmpty" xml:space="preserve">
+    <value>No file matches that search.</value>
+  </data>
+  <data name="Files_Tree_NoSelection" xml:space="preserve">
+    <value>Pick a file from the sidebar to preview it.</value>
+  </data>
+  <data name="Files_Notify_FolderCreateFailed_Title" xml:space="preserve">
+    <value>Could not create the folder</value>
+  </data>
+  <data name="Files_Notify_FolderRenameFailed_Title" xml:space="preserve">
+    <value>Could not rename the folder</value>
+  </data>
+  <data name="Files_Notify_MoveFailed_Title" xml:space="preserve">
+    <value>Could not move the file</value>
+  </data>
+  <data name="Files_Notify_ImportFailed_Title" xml:space="preserve">
+    <value>Could not import the files</value>
+  </data>
+  <data name="A11y_Files_TreeItemNameField" xml:space="preserve">
+    <value>Folder or file name</value>
+  </data>
+  <data name="A11y_Files_TreeSidebarSplitter" xml:space="preserve">
+    <value>Resize the sidebar</value>
+  </data>
 </root>

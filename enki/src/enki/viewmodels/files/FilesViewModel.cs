@@ -70,8 +70,9 @@ public sealed partial class FilesViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isRootDropTarget;
 
-    /// <summary>Whether an OS drag is currently hovering the file grid itself (as opposed to a folder row)
-    /// — drives the grid border's drag-over highlight while dropping files in from the system explorer.</summary>
+    /// <summary>Whether an OS drag is currently hovering the drop target that imports into the current
+    /// destination — the file grid in the browser layout, anywhere outside a folder row in the tree layout —
+    /// as opposed to a folder row, which highlights itself. Drives the drag-over highlight of both.</summary>
     [ObservableProperty]
     private bool _isGridDropTarget;
 
@@ -115,6 +116,9 @@ public sealed partial class FilesViewModel : ViewModelBase
         };
         Files.CollectionChanged += (_, _) => OnPropertyChanged(nameof(FilesCountLabel));
 
+        // Antes de la primera carga: así la sección aparece ya en la disposición que el usuario dejó
+        // (ver FilesViewModel.Tree.cs), sin un parpadeo intermedio en la otra.
+        InitializeNavigationPreferences();
         ReloadSessions();
     }
 
@@ -150,24 +154,49 @@ public sealed partial class FilesViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(IsSelectedSessionLocked));
         OnPropertyChanged(nameof(ShowEmptyState));
+        OnPropertyChanged(nameof(ShowTreeEmptyState));
         CurrentFolder = null;
+        PersistSelectedSession();
         ReloadFolders();
         Reload();
     }
 
+    /// <summary>Guarda qué sesión está elegida en <see cref="Models.AppSettings.FilesSessionId"/> para que la
+    /// app reabra Archivos en el mismo espacio de trabajo en vez de volver siempre al vault — mismo
+    /// mecanismo, y por el mismo motivo, que <c>NotesViewModel.PersistSelectedSession</c>, con la que esta
+    /// sección comparte selector. No-op en los tests que construyen este viewmodel sin
+    /// <see cref="SettingsService"/>. Se escribe en cada cambio de selección, así que el ajuste y la
+    /// selección viva nunca se separan.</summary>
+    private void PersistSelectedSession()
+    {
+        if (_settingsService is null) return;
+        _settingsService.Settings.FilesSessionId = SelectedSessionOption?.Session?.Id;
+        _settingsService.Save();
+    }
+
     partial void OnIsEmptyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
 
+    /// <summary>Rehace el selector de espacio de trabajo (el vault más cada sesión) conservando la elección
+    /// actual si sigue existiendo. Se llama en el arranque y cada vez que se crea/renombra/borra una sesión,
+    /// haya pasado aquí o en la página de Sesiones.</summary>
     public void ReloadSessions()
     {
-        var previouslySelectedId = SelectedSessionOption?.Session?.Id;
+        // En el arranque todavía no hay selección viva, y ahí es donde entra la guardada: la sesión con la
+        // que se cerró la app. Pasado el arranque las dos coinciden siempre —cada cambio de selección
+        // reescribe el ajuste—, así que este mismo orden vale para las recargas posteriores sin resucitar
+        // nada que el usuario ya dejó atrás. Mismo criterio que NotesViewModel.ReloadSessions.
+        var targetId = SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.FilesSessionId;
 
         SessionOptions.Clear();
         SessionOptions.Add(new SessionOptionViewModel(null));
         foreach (var session in _sessionService.List()) SessionOptions.Add(new SessionOptionViewModel(session));
 
-        SelectedSessionOption = previouslySelectedId is null
+        // Una sesión protegida arranca siempre bloqueada y aun así se vuelve a elegir: la sección ya sabe
+        // enseñar ese estado, y devolver al usuario al vault sería perder justo la elección que se quería
+        // recordar. Una que ya no exista —borrada, o de otro vault— cae al vault en silencio.
+        SelectedSessionOption = targetId is null
             ? SessionOptions[0]
-            : SessionOptions.FirstOrDefault(o => o.Session?.Id == previouslySelectedId) ?? SessionOptions[0];
+            : SessionOptions.FirstOrDefault(o => o.Session?.Id == targetId) ?? SessionOptions[0];
     }
 
     public void SelectSession(string? sessionId)
@@ -182,14 +211,22 @@ public sealed partial class FilesViewModel : ViewModelBase
     {
         // Drop any decrypted PDF temp copies the outgoing cards were holding onto before discarding them —
         // Reload() runs on every folder switch/search keystroke, so this is the main point at which those
-        // temp files would otherwise leak for the lifetime of the process.
-        foreach (var card in Files) card.PdfDocument?.Close();
+        // temp files would otherwise leak for the lifetime of the process. La tarjeta que se está
+        // previsualizando queda fuera: su PdfDocument sujeta la copia descifrada que el visor sigue leyendo
+        // página a página, y borrarla dejaría el PDF abierto apuntando a un fichero que ya no está (el modo
+        // árbol enseña previsualización y árbol a la vez, así que ahí cualquier importar/mover/renombrar
+        // pasa por aquí con un PDF abierto delante). Mismo criterio que el bucle equivalente de RebuildTree.
+        foreach (var card in Files)
+        {
+            if (!ReferenceEquals(card, ActivePreview)) card.PdfDocument?.Close();
+        }
 
         if (IsSelectedSessionLocked)
         {
             Files.Clear();
             BrowserItems.Clear();
             IsEmpty = true;
+            if (IsTreeView) RebuildTree();
             return;
         }
 
@@ -226,6 +263,12 @@ public sealed partial class FilesViewModel : ViewModelBase
 
         IsEmpty = BrowserItems.Count == 0;
         RebuildFilterOptions(all);
+
+        // El árbol del modo árbol se reconstruye aquí, pero solo mientras ese modo esté activo: montarlo
+        // enumera carpeta por carpeta toda la raíz efectiva, y Reload() corre en cada cambio de carpeta,
+        // de filtro y de búsqueda de la rejilla. Al volver a entrar en el modo árbol se reconstruye de
+        // nuevo (ver OnIsTreeViewChanged en FilesViewModel.Tree.cs), así que nunca se enseña obsoleto.
+        if (IsTreeView) RebuildTree();
     }
 
     /// <summary>Reconstruye las opciones del filtro por tipo cada vez que cambia la carpeta actual,
@@ -331,8 +374,12 @@ public sealed partial class FilesViewModel : ViewModelBase
         return null;
     }
 
+    /// <summary>Abre el selector de archivos del sistema e importa lo elegido. El destino es la carpeta
+    /// actual de la rejilla salvo que se pase uno explícito: el modo árbol pasa su raíz efectiva, porque
+    /// allí no existe el concepto visible de "carpeta actual" y un destino que dependiera de dónde se
+    /// navegó por última vez en la otra disposición sería invisible desde ésta.</summary>
     [RelayCommand]
-    private async Task Import()
+    private async Task Import(string? destinationFolderPath)
     {
         var topLevel = App.MainWindowRef is not null
             ? Avalonia.Controls.TopLevel.GetTopLevel(App.MainWindowRef)
@@ -345,31 +392,58 @@ public sealed partial class FilesViewModel : ViewModelBase
             AllowMultiple = true
         });
 
-        ImportPaths(files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Select(p => p!));
+        ImportPaths(files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Select(p => p!),
+            destinationFolderPath);
     }
 
     /// <summary>Shared entry point for every way a file can land in the current folder — the "IMPORTAR"
     /// picker above and dropping files from the OS file explorer onto the grid
     /// (<c>FilesView.axaml.cs</c>), both funnel through the same <see cref="VaultService.ImportFile"/>
     /// call the "IMPORTAR" button already used, just with a different source.</summary>
-    public void ImportPaths(IEnumerable<string> sourcePaths)
+    public void ImportPaths(IEnumerable<string> sourcePaths, string? destinationFolderPath = null)
     {
+        var destination = destinationFolderPath ?? CurrentFolderPath;
         var imported = false;
+        Exception? failure = null;
+
         foreach (var path in sourcePaths)
         {
-            _vaultService.ImportFile(path, CurrentFolderPath);
-            imported = true;
+            try
+            {
+                _vaultService.ImportFile(path, destination);
+                imported = true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+            {
+                // Importar a una sesión protegida y bloqueada cifra con una clave que no está en memoria, y
+                // eso lanza SessionLockedException desde dentro de un manejador de Drop: sin este catch la
+                // excepción salía a la cara del usuario en vez de contarle qué pasa. Se guarda solo la
+                // primera —un lote entero suele fallar por el mismo motivo, y no tiene sentido apilar un
+                // aviso por archivo— pero se sigue intentando el resto, que puede que sí entre.
+                failure ??= ex;
+            }
         }
+
         if (imported) Reload();
+        if (failure is not null) NotifyFilesFailure("Files_Notify_ImportFailed_Title", failure);
     }
 
     [RelayCommand]
     private void OpenCard(FileCardViewModel card)
     {
+        LoadPreviewContent(card);
+        ActivePreview = card;
+    }
+
+    /// <summary>Carga perezosa de lo que la previsualización necesita para dibujar esta tarjeta —cada
+    /// llamada es no-op si ya está cargado, así que se puede pedir tantas veces como haga falta. Está
+    /// aparte de <see cref="OpenCard"/> porque hay un segundo momento en que hace falta: renombrar el
+    /// archivo abierto, que deja la tarjeta en blanco (ver <see cref="CommitRenameFile"/>).</summary>
+    private static void LoadPreviewContent(FileCardViewModel card)
+    {
         card.EnsureThumbnailLoaded();
         card.EnsurePdfDocumentLoaded();
         card.EnsureCodeContentLoaded();
-        ActivePreview = card;
     }
 
     [RelayCommand]
@@ -498,6 +572,11 @@ public sealed partial class FilesViewModel : ViewModelBase
         {
             var updated = _vaultService.RenameFile(card.File, card.EditingName);
             card.UpdateFile(updated);
+
+            // UpdateFile deja la tarjeta como recién creada —sin miniatura, sin PDF y sin código—, y en el
+            // modo árbol se renombra en línea con la previsualización abierta al lado: sin rearmarla, el
+            // panel derecho se queda en blanco hasta que se vuelve a pulsar el archivo.
+            if (ReferenceEquals(ActivePreview, card)) LoadPreviewContent(card);
         }
         card.IsRenaming = false;
         Reload();

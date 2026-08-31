@@ -73,9 +73,17 @@ frontmatter). El YAML se parsea con `YamlDotNet`, convención de nombres camelCa
 
 Además de los campos anteriores, `SkillFile` guarda:
 
-- `Id` — nombre de archivo sin extensión; es el identificador técnico de la skill.
+- `Id` — nombre de archivo sin extensión. Es el identificador técnico *dentro de su carpeta*: desde que
+  existen subcarpetas ya no es único en la biblioteca (dos temas pueden tener cada uno su `redactor.md`),
+  así que se sigue usando para proponer el nombre al duplicar, pero **no** para comparar skills entre
+  recargas — eso lo hace `FilePath`.
 - `Content` — el Markdown completo del archivo, frontmatter incluido.
-- `FilePath` — ruta absoluta en disco.
+- `FilePath` — ruta absoluta en disco. Es la identidad estable de una skill.
+- `FolderPath` — carpeta que la contiene, absoluta.
+- `RelativeFolderPath` — esa misma carpeta relativa a la raíz de la biblioteca, con `/` como separador y
+  cadena vacía en la raíz (p. ej. `"escritura/blog"`). Es lo que se muestra como "ubicación" en el
+  inspector y en la tarjeta cuando la rejilla enseña resultados de toda la biblioteca.
+- `IsAtRoot` — atajo de "`RelativeFolderPath` está vacío".
 - `IsDefault` — `true` si el archivo pertenece al conjunto de skills empaquetadas con la app (ver más
   abajo). Controla si se puede eliminar y si "Editar" pide confirmación primero.
 
@@ -84,8 +92,9 @@ Además de los campos anteriores, `SkillFile` guarda:
 `SkillService.SkillsDirectory` (`enki/src/enki/services/SkillService.cs:38`) apunta a
 **`<vault>/.enki/skills/`**, calculada en vivo a partir de `VaultService.VaultPath` en vez de fijarse una
 sola vez en el constructor — así, si el usuario cambia de vault desde Ajustes, `SkillsViewModel` sigue
-apuntando al vault activo sin necesitar reconstruirse. Solo se leen archivos `.md` de esa carpeta
-(`Directory.EnumerateFiles(..., "*.md", SearchOption.TopDirectoryOnly)`), sin recursión a subcarpetas.
+apuntando al vault activo sin necesitar reconstruirse. Solo se leen archivos `.md`, pero **de forma
+recursiva** (`SearchOption.AllDirectories`): la biblioteca es un árbol de carpetas que el usuario
+organiza, ver la sección siguiente.
 
 Esto sigue el mismo patrón de persistencia "directa a archivo" que `VaultService` usa para las notas —
 **a diferencia de** `KanbanService`, `PolarTaskService`, `ReminderService`, etc., que serializan a un JSON
@@ -94,6 +103,72 @@ disco *es* el dato.
 
 Un archivo individual que no se puede leer (permisos, corrupción, YAML inválido) se descarta en silencio
 durante la carga (`TryReadSkill`, `TryParseFrontMatter`) sin abortar la carga del resto de la biblioteca.
+
+## Organización en carpetas
+
+El usuario puede crear carpetas y subcarpetas dentro de `<vault>/.enki/skills/` para agrupar skills por
+tema. No hay ningún índice ni metadato aparte: **las carpetas en disco son la organización**, igual que
+el archivo `.md` *es* la skill.
+
+- `SkillService.GetFolderTree()` devuelve el árbol como `Models/SkillFolder` — un POCO propio y no el
+  `NoteFolder` que comparten Notas y Archivos, porque este árbol vive en el almacén de skills y además
+  lleva dos contadores ya resueltos (`SkillCount`, las de la carpeta; `TotalSkillCount`, incluyendo
+  subcarpetas) que la rejilla y el panel pintan sin volver a enumerar el disco por cada fila.
+- `LoadSkills()` carga la biblioteca entera (recursiva); `LoadSkillsIn(carpeta)` carga solo un nivel. La
+  sección usa la primera como fuente de verdad y decide en memoria qué subconjunto enseña.
+- Crear, renombrar, eliminar y mover carpetas vive en `SkillService`, **no** delegado en los métodos
+  equivalentes de `VaultService`: aquéllos mueven a la papelera del vault, que no tiene nada que ver con
+  esta carpeta interna. Crear y renombrar aplican la misma política de colisión que el resto del proyecto
+  (sufijo ` 2`, ` 3`… en vez de fallar o pisar en silencio).
+- **Eliminar una carpeta borra todo lo que contiene y no hay papelera**, así que la UI siempre confirma
+  salvo que el usuario haya desactivado `ConfirmBeforeDelete`. Y hay una regla propia del servicio: si
+  dentro cuelga una skill *default*, `DeleteFolder` lanza `InvalidOperationException` — si no, borrar la
+  carpeta sería la puerta trasera para eliminar justo lo que `DeleteSkill` protege.
+- `MoveSkill(skill, destino)` mueve un archivo entre carpetas (es lo que hacen los arrastres de las dos
+  vistas), con sufijo numérico si el nombre ya está ocupado en el destino. `MoveFolder` rechaza mover una
+  carpeta dentro de sí misma o de una descendiente suya.
+- Una skill sigue siendo *default* esté donde esté: `IsDefault` se decide por nombre de archivo contra
+  `default-skills/`, y `IsWithinSkillsDirectory` comprueba pertenencia a la biblioteca a cualquier
+  profundidad. Mover las skills empaquetadas a una carpeta propia es un uso previsto, no un caso raro.
+- `EnsureDefaultSkills` considera la biblioteca "no vacía" si hay algún `.md` a cualquier profundidad, de
+  modo que mover todas las skills a carpetas no provoca que se vuelvan a copiar las de fábrica.
+
+## Las dos formas de navegar la sección
+
+La sección se dibuja de una de dos maneras, elegidas con el conmutador de su propia barra de herramientas
+(y del encabezado del panel derecho en el modo árbol) y persistidas en `AppSettings.SkillsViewMode`
+(`"Browser"` / `"Tree"`, string plano por el mismo motivo que `NotesViewMode`: no acoplar `Models` a un
+enum de UI):
+
+- **Explorador** (`SkillsBrowserView`, por defecto) — panel de carpetas a la izquierda y rejilla de
+  tarjetas a la derecha, la misma disposición que la sección Archivos. Conserva intactos el encabezado de
+  la sección, el filtro de etiquetas, el banner de la comunidad y el inspector de detalle. La rejilla
+  muestra primero las carpetas navegables (con la entrada `..` si no se está en la raíz) y después las
+  skills de la carpeta actual.
+- **Árbol** (`SkillsTreeView`) — el panel lateral de la vista simplificada de Notas adaptado a skills:
+  carpetas y skills entremezcladas en una misma lista jerárquica, con su propio modo de búsqueda, y a la
+  derecha el detalle de la seleccionada o su editor. Deja fuera a propósito el encabezado, el banner y el
+  filtro de etiquetas, que es lo que aporta la portada del explorador al principio y estorba después.
+
+El chooser vive en la sección y no en Ajustes —a diferencia de la vista del editor de Notas— porque es una
+decisión de *cómo navegar* que se toma mientras se navega y cuyo efecto se ve al instante.
+
+Las dos comparten el mismo `SkillsViewModel` y el mismo estado (carpeta actual, selección, editor
+abierto): cambiar de modo reordena la pantalla, nunca reinicia lo que se estaba haciendo.
+`SkillsView` es solo un contenedor: monta **una** de las dos en su `ContentControl` y descarta la otra
+—por el mismo motivo que `NotesView`: cada una lleva su propio `SkillEditorView`, y dos editores vivos
+sobre el mismo `SkillEditorViewModel` escribirían los dos sobre su `Text`— y aloja los cuatro diálogos
+modales, que son idénticos en ambas.
+
+El estado de expansión se guarda por separado para cada árbol (`SkillsExpandedFolderPaths` para el panel
+del explorador, `SkillsTreeExpandedFolderPaths` para el árbol), igual que Notas separa el suyo entre sus
+dos vistas: son dos árboles distintos —uno incluye skills y el otro no— y compartir el estado haría que
+navegar en uno reorganizara el otro a la espalda del usuario. El ancho y la visibilidad del panel del modo
+árbol viven en `SkillsTreeSidebarWidth`/`SkillsTreeSidebarVisible`, y el ancho se escribe al soltar el
+separador, no en cada píxel del arrastre.
+
+`SkillsViewModel.Tree.cs` es el parcial con todo lo propio del modo árbol (construcción del árbol,
+búsqueda del panel, estado del panel lateral), igual que `NotesViewModel.SimpleView.cs`.
 
 ## Skills por defecto vs. skills de usuario
 
@@ -165,13 +240,23 @@ construido), por el mismo motivo que `SkillsDirectory` se calcula en vivo. Se su
 
 ### Listar, buscar, filtrar
 
-- `Reload()` carga todas las skills del vault (`LoadSkills()`, ordenadas por nombre), las envuelve en
-  `SkillViewModel` y reconstruye el filtro de etiquetas (`TagFilterViewModel`, la misma pieza reutilizable
-  que Notas/Kanban/Polar).
-- `SearchText` filtra por coincidencia de subcadena (case-insensitive) en nombre, descripción o etiquetas.
-- El filtro de etiquetas se combina en AND con el texto de búsqueda.
-- Contadores de la franja de estadísticas: total, por defecto, personalizadas (`!IsDefault`), y con
-  etiquetas — todos recalculados sobre la lista sin filtrar.
+- `Reload()` carga toda la biblioteca (`LoadSkills()`, recursiva), reconstruye el árbol de carpetas
+  conservando qué estaba expandido y cuál era la carpeta actual, reconstruye el árbol del modo árbol y
+  recarga el filtro de etiquetas (`TagFilterViewModel`, la misma pieza reutilizable que
+  Notas/Kanban/Polar). Un flag `_reloading` evita que las reasignaciones internas de `CurrentFolder` y
+  `SelectedSkill` vuelvan a filtrar a media reconstrucción.
+- `ApplyFilter()` es el único punto donde se decide qué se ve. Sin búsqueda ni etiquetas activas, la
+  rejilla enseña **el contenido de la carpeta actual**; con cualquiera de las dos activas pasa a enseñar
+  **resultados de toda la biblioteca** (`IsFlatResults`), sin tarjetas de carpeta y con la ubicación
+  visible en cada tarjeta. Es deliberado: buscar dentro de una carpeta y no encontrar lo que está en otra
+  sería justo lo contrario de para lo que sirve buscar.
+- `SearchText` filtra por coincidencia de subcadena (case-insensitive) en nombre, descripción, carpeta o
+  etiquetas. El filtro de etiquetas se combina en AND con él.
+- Tres estados vacíos distintos, porque la salida de cada uno es otra: `IsEmpty` (biblioteca sin nada,
+  onboarding de "importa tu primera skill"), `IsCurrentFolderEmpty` (la carpeta abierta está vacía) y
+  `HasNoSearchResults` (hay skills pero ninguna coincide).
+- Contadores de la franja de estadísticas: total, por defecto, personalizadas (`!IsDefault`) y con
+  etiquetas — todos recalculados sobre la biblioteca sin filtrar.
 
 ### Ver detalle
 
@@ -217,8 +302,10 @@ el siguiente tick — la skill se queda marcada como "no guardada" en vez de per
 
 - sanea el id propuesto quitando caracteres inválidos para nombre de archivo (`SanitizeId`; si queda
   vacío, usa un GUID),
-- falla con `InvalidOperationException` si ya existe un archivo con ese nombre en `SkillsDirectory`,
-- copia el `Content` completo del original a un archivo nuevo `<id>.md`.
+- falla con `InvalidOperationException` si ya existe un archivo con ese nombre **en la carpeta del
+  original**,
+- copia el `Content` completo del original a un archivo nuevo `<id>.md` **junto al original**, no en la
+  raíz: duplicar una skill que el usuario colocó dentro de un tema debe dejar las dos juntas.
 
 El mismo método se reutiliza para el flujo "editar una skill default" descrito arriba.
 
@@ -231,10 +318,15 @@ abierta en el editor, ambos estados se limpian antes de recargar.
 
 ### Importar
 
-Dos entradas: `ImportSkillsCommand` (selector de archivos `.md`, multiselección) e
-`ImportSkillsFolderCommand` (selector de carpeta; solo se toman los `.md` de primer nivel, sin recursión).
-`SkillService.Import` copia cada archivo a `SkillsDirectory` conservando su nombre original. Si detecta una
-colisión de nombre:
+Tres entradas: `ImportSkillsCommand` (selector de archivos `.md`, multiselección),
+`ImportSkillsFolderCommand` (selector de carpeta) y soltar archivos desde el explorador del sistema sobre
+la rejilla del modo explorador — las tres convergen en `SkillsViewModel.BeginImport`.
+
+El destino es siempre **la carpeta que se está navegando** (`CurrentFolderPath`), no la raíz: importar
+mientras se recorre un tema deja las skills nuevas en ese tema. Si el origen es una carpeta, sus
+**subcarpetas se recrean** bajo el destino (su primer nivel aterriza directamente en él): la organización
+que el usuario ya tenía fuera de Enki es exactamente la que esta funcionalidad existe para conservar. Si
+detecta una colisión de nombre:
 
 - con resolución **Cancelar** (`ConflictResolution.Cancel`): el archivo se omite y se cuenta en
   `Skipped`.
@@ -242,17 +334,21 @@ colisión de nombre:
   `nombre 3.md`, …) hasta encontrar un nombre libre.
 - con **Sobrescribir** (`ConflictResolution.Overwrite`): reemplaza el archivo existente.
 
-`SkillsViewModel` detecta las colisiones *antes* de llamar al servicio (`DetectImportConflicts`) para poder
-mostrar el modal "Cancelar / Cambiar nombre / Sobrescribir" solo cuando hace falta; si no hay conflictos,
-importa directamente con `Overwrite` (que en ausencia de colisión real es un simple copy). La resolución
-elegida se aplica a **todos** los conflictos de esa importación, no archivo por archivo.
+`SkillsViewModel` detecta las colisiones *antes* de llamar al servicio (`DetectImportConflicts`, que
+reutiliza el mismo `SkillService.ExpandMarkdownFiles` que hará la copia, para no razonar dos veces sobre
+qué archivos entran) y así muestra el modal "Cancelar / Cambiar nombre / Sobrescribir" solo cuando hace
+falta; si no hay conflictos, importa directamente con `Overwrite` (que en ausencia de colisión real es un
+simple copy). La resolución elegida se aplica a **todos** los conflictos de esa importación, no archivo
+por archivo. Las entradas de `SkillImportResult` son rutas relativas al destino, no nombres sueltos, para
+que dos homónimos en subcarpetas distintas no se confundan en el diálogo.
 
 ### Exportar
 
 `ExportSkillsCommand` exporta las skills marcadas con la casilla de la tarjeta (`IsCheckedForExport`); si
 ninguna está marcada, exporta la seleccionada actualmente en el panel de detalle como fallback. Copia cada
-archivo a la carpeta destino elegida por el usuario, conservando el nombre de archivo original
-(`SkillService.Export`, simple `File.Copy` por cada skill).
+archivo a la carpeta destino elegida por el usuario, conservando el nombre de archivo original y
+**recreando bajo ella la carpeta en la que vivía cada skill** (`SkillService.Export`), de modo que
+exportar y volver a importar devuelve la biblioteca a la misma organización en vez de aplanarla.
 
 ## Persistencia y escritura atómica (`SkillService`)
 
@@ -297,5 +393,8 @@ constante para que no puedan desincronizarse entre sí.
 - Los campos `tools`, `permissions` y `color` del frontmatter se leen y persisten, pero no tienen ninguna
   lógica de aplicación (`tools`/`permissions`) ni renderizado (`color`) en el código actual — son
   metadata reservada para un desarrollo futuro que todavía no existe.
-- No hay soporte para subcarpetas dentro de `.enki/skills/`: la carga y el filtrado de "colisión de
-  nombre" al importar son de primer nivel únicamente.
+- No se puede renombrar una skill desde el árbol ni desde la rejilla: su nombre sale del `name` del
+  frontmatter, así que se cambia editándola. Solo las carpetas se renombran en línea.
+- La biblioteca de skills no tiene papelera propia: eliminar una skill o una carpeta borra del disco. Por
+  eso `ConfirmBeforeDelete` es la única red, y por eso una carpeta con skills default no se puede
+  eliminar.

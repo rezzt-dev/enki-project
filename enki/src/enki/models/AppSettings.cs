@@ -166,6 +166,35 @@ public sealed class AppSettings
     /// Disabled by default because it is intended for advanced users.</summary>
     public bool SkillsPanelEnabled { get; set; }
 
+    // La biblioteca de skills es un árbol de carpetas, y la sección se puede navegar de dos formas
+    // distintas, elegidas con el conmutador de su propia barra de herramientas: "Browser" es el
+    // explorador (panel de carpetas + rejilla de tarjetas, como la sección Archivos) y "Tree" es el
+    // árbol (panel lateral que entremezcla carpetas y skills + detalle a la derecha, como la vista
+    // simplificada de Notas). Se guarda como string plano por el mismo motivo que
+    // <see cref="NotesViewMode"/>: no acoplar Models a un enum de UI.
+
+    /// <summary>"Browser" o "Tree" — qué disposición usa la sección IA Skills.</summary>
+    public string SkillsViewMode { get; set; } = "Browser";
+
+    /// <summary>Rutas de carpeta expandidas en el panel de carpetas del modo explorador.</summary>
+    public List<string> SkillsExpandedFolderPaths { get; set; } = [];
+
+    /// <summary>Rutas de carpeta expandidas en el árbol del modo árbol. Deliberadamente separado de
+    /// <see cref="SkillsExpandedFolderPaths"/>, por el mismo motivo que
+    /// <see cref="NotesSimpleExpandedFolderPaths"/> lo está de <see cref="NotesExpandedFolderPaths"/>:
+    /// son dos árboles distintos —este incluye skills y el otro no— y compartir el estado haría que
+    /// navegar en uno reorganizara el otro a la espalda del usuario.</summary>
+    public List<string> SkillsTreeExpandedFolderPaths { get; set; } = [];
+
+    /// <summary>Si el panel lateral del modo árbol está desplegado. Es estado de ventana, no una
+    /// preferencia de Ajustes: se guarda al pulsar el botón de mostrar/ocultar para que la app reabra tal
+    /// como se dejó.</summary>
+    public bool SkillsTreeSidebarVisible { get; set; } = true;
+
+    /// <summary>Ancho en píxeles del panel lateral del modo árbol, arrastrable por su separador. Se acota
+    /// al rango permitido al leerlo.</summary>
+    public double SkillsTreeSidebarWidth { get; set; } = 272;
+
     // ===================== Secciones de la barra lateral (Ajustes › General) =====================
     // Same "hide the nav entry entirely" idea as CalendarPanelEnabled/SkillsPanelEnabled above, extended to
     // every other always-on sidebar section so the user can declutter the app down to only what they use.
@@ -260,6 +289,14 @@ public sealed class AppSettings
     /// son dos árboles distintos — este incluye notas y el otro no — y compartir el estado haría que
     /// navegar en uno reorganizara el otro a la espalda del usuario.</summary>
     public List<string> NotesSimpleExpandedFolderPaths { get; set; } = [];
+
+    /// <summary>Id de la sesión elegida en el selector de espacio de trabajo de la página de Notas, o null
+    /// si lo elegido era el vault entero. Es estado de ventana como <see cref="NotesSimpleSidebarVisible"/>,
+    /// no una preferencia de Ajustes: se guarda al cambiar de sesión para que la app reabra en el mismo
+    /// espacio en el que se cerró, en vez de volver siempre al vault. Una sesión que ya no exista —borrada,
+    /// o de otro vault tras cambiar de vault— cae en silencio al vault, mismo criterio tolerante que
+    /// <see cref="OpenNotePaths"/>.</summary>
+    public string? NotesSessionId { get; set; }
 
     // ===================== Notificaciones — horario "no molestar" y sonido =====================
     // docs/ajustes-docs/04-editor-y-notificaciones.md §2 — ventana horaria en la que un evento nuevo se
@@ -357,6 +394,40 @@ public sealed class AppSettings
 
     public List<string> NotesExpandedFolderPaths { get; set; } = [];
     public List<string> FilesExpandedFolderPaths { get; set; } = [];
+
+    // ===================== Archivos: las dos formas de navegar (docs/agent-docs/seccion-archivos.md) =====================
+    // La sección Archivos se puede navegar de dos formas distintas, elegidas con el conmutador de su
+    // propia barra de herramientas: "Browser" es el explorador (panel de carpetas + rejilla de tarjetas)
+    // y "Tree" es el árbol (panel lateral que entremezcla carpetas y archivos + previsualización a la
+    // derecha, como la vista simplificada de Notas). Se guarda como string plano por el mismo motivo que
+    // <see cref="NotesViewMode"/> y <see cref="SkillsViewMode"/>: no acoplar Models a un enum de UI.
+
+    /// <summary>"Browser" o "Tree" — qué disposición usa la sección Archivos.</summary>
+    public string FilesViewMode { get; set; } = "Browser";
+
+    /// <summary>Rutas de carpeta expandidas en el árbol del modo árbol. Deliberadamente separado de
+    /// <see cref="FilesExpandedFolderPaths"/> (el panel de carpetas del modo explorador), por el mismo
+    /// motivo que <see cref="SkillsTreeExpandedFolderPaths"/> lo está de
+    /// <see cref="SkillsExpandedFolderPaths"/>: son dos árboles distintos —este incluye archivos y el
+    /// otro no— y compartir el estado haría que navegar en uno reorganizara el otro a la espalda del
+    /// usuario.</summary>
+    public List<string> FilesTreeExpandedFolderPaths { get; set; } = [];
+
+    /// <summary>Si el panel lateral del modo árbol de Archivos está desplegado. Es estado de ventana, no
+    /// una preferencia de Ajustes: se guarda al pulsar el botón de mostrar/ocultar para que la app reabra
+    /// tal como se dejó.</summary>
+    public bool FilesTreeSidebarVisible { get; set; } = true;
+
+    /// <summary>Ancho en píxeles del panel lateral del modo árbol de Archivos, arrastrable por su
+    /// separador. Se acota al rango permitido al leerlo.</summary>
+    public double FilesTreeSidebarWidth { get; set; } = 272;
+
+    /// <summary>Id de la sesión elegida en el selector de espacio de trabajo de la página de Archivos, o
+    /// null si lo elegido era el vault entero. Gemelo de <see cref="NotesSessionId"/> y por los mismos
+    /// motivos —es estado de ventana, no una preferencia de Ajustes, y una sesión que ya no exista cae en
+    /// silencio al vault—, pero con clave propia: son dos selectores independientes, y compartir la clave
+    /// haría que cambiar de espacio en una sección moviera la otra a la espalda del usuario.</summary>
+    public string? FilesSessionId { get; set; }
 
     // ===================== Hábitos y Estadísticas (propuestas 13/15, docs/propuesta-nuevas-funcionalidades.md) =====================
 

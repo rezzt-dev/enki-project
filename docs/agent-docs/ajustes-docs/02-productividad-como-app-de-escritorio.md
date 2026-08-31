@@ -42,6 +42,23 @@ es un comportamiento siempre activo del editor de notas.
   - **Una ruta que ya no existe** (nota borrada o movida fuera del vault seguido) se ignora en
     silencio — `VaultService.GetNote` devuelve `null` para ella y simplemente no se reabre esa pestaña,
     sin error visible al usuario.
+- **El espacio de trabajo elegido también se recuerda** (`AppSettings.NotesSessionId`, escrito por
+  `NotesViewModel.PersistSelectedSession` en cada cambio del selector y releído por `ReloadSessions` al
+  construir el viewmodel): la app reabre Notas en la sesión en la que se cerró, en vez de volver siempre
+  al vault entero. Es la otra mitad de restaurar la sesión de trabajo — reabrir las pestañas de una sesión
+  mientras el selector apunta al vault dejaba la pantalla contando dos cosas distintas.
+  - Una sesión guardada que ya no existe —borrada, o de otro vault tras cambiar de vault— cae al vault en
+    silencio, mismo criterio tolerante que una ruta de pestaña que ya no está.
+  - Una sesión **cifrada arranca siempre bloqueada** y aun así se vuelve a elegir: la sección sabe enseñar
+    ese estado ("desbloquéala en Sesiones") y devolver al usuario al vault sería perder justo la elección
+    que se quería recordar. Sus pestañas, en cambio, no se reabren (ver arriba).
+  - **Archivos hace lo mismo con su propio selector** (`AppSettings.FilesSessionId`, escrito por
+    `FilesViewModel.PersistSelectedSession` y releído por su `ReloadSessions`, igual que aquí): es el mismo
+    selector sobre el mismo árbol de carpetas, y que una sección recordara el espacio de trabajo y la otra
+    no era una diferencia sin motivo. Cada una guarda en **su propia clave** a propósito: son dos
+    selectores independientes, y compartir una sola haría que cambiar de espacio en una moviera la otra a
+    la espalda del usuario.
+
 - No hay ningún toggle en Ajustes para desactivar esta restauración: es comportamiento fijo del editor
   de notas, documentado aquí porque el código lo cita explícitamente como funcionalidad de "Enki como
   app de escritorio" (guardar/recuperar sesión de trabajo entre reinicios, igual que un IDE).

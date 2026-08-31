@@ -440,7 +440,7 @@ public sealed class VaultService
         folderPath ??= VaultPath;
         if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath)) return [];
 
-        return EnumerateMarkdownFiles(folderPath, SearchOption.TopDirectoryOnly)
+        return ReadableMarkdownFiles(folderPath, SearchOption.TopDirectoryOnly)
             .Select(TryReadCached)
             .Where(entry => entry is not null)
             .Select(entry => entry!.Value.Note)
@@ -484,7 +484,7 @@ public sealed class VaultService
         folderPath ??= VaultPath;
         if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath)) return [];
 
-        return EnumerateMarkdownFiles(folderPath, SearchOption.TopDirectoryOnly)
+        return ReadableMarkdownFiles(folderPath, SearchOption.TopDirectoryOnly)
             .Select(TryReadCached)
             .Where(entry => entry is not null)
             .Select(entry => entry!.Value)
@@ -506,7 +506,7 @@ public sealed class VaultService
     {
         if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return [];
 
-        return EnumerateMarkdownFiles(root, SearchOption.AllDirectories)
+        return ReadableMarkdownFiles(root, SearchOption.AllDirectories)
             .Where(info => !IsUnderHiddenDirectory(root, info.FullName))
             .Select(TryReadCached)
             .Where(entry => entry is not null)
@@ -527,7 +527,7 @@ public sealed class VaultService
     {
         if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return [];
 
-        return EnumerateMarkdownFiles(root, SearchOption.AllDirectories)
+        return ReadableMarkdownFiles(root, SearchOption.AllDirectories)
             .Where(info => !IsUnderHiddenDirectory(root, info.FullName))
             .Select(TryReadCached)
             .Where(entry => entry is not null)
@@ -584,6 +584,31 @@ public sealed class VaultService
     private static IEnumerable<FileInfo> EnumerateMarkdownFiles(string root, SearchOption option) =>
         new DirectoryInfo(root).EnumerateFiles("*.md", option)
             .Where(info => !info.Name.StartsWith('.'));
+
+    /// <summary>Los ficheros que <see cref="EnumerateMarkdownFiles"/> llega a leer, ya materializados y sin
+    /// dejar escapar un fallo de disco. El <c>Directory.Exists</c> que cada recorrido hace justo antes no
+    /// basta: entre esa comprobación y el primer paso real del enumerador la raíz puede haber desaparecido,
+    /// y entonces esto lanza <see cref="DirectoryNotFoundException"/>. La ventana no es teórica — borrar una
+    /// sesión mueve su carpeta entera a la papelera mientras <c>SessionService.LoadGlobalGraph</c> puede
+    /// estar recorriendo en segundo plano la lista de sesiones que tomó un momento antes—, y el recorrido
+    /// vive dentro de los <c>async void</c> de <c>SessionsViewModel</c>, donde una excepción ya no tiene
+    /// quién la recoja: se lleva el proceso por delante. Devolver lo que se pudo leer es inocuo, porque la
+    /// carpeta que falta es justo la que ha dejado de existir y el siguiente recorrido ya ve el árbol como
+    /// quedó.
+    ///
+    /// <para>Una subcarpeta que se borre a media enumeración no hace falta tratarla aparte: el enumerador
+    /// del framework ya se la salta. Es la raíz la que no perdona.</para></summary>
+    private static List<FileInfo> ReadableMarkdownFiles(string root, SearchOption option)
+    {
+        try
+        {
+            return EnumerateMarkdownFiles(root, option).ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
 
     private (NoteFile Note, string Content) ReadNoteAndContent(FileInfo info)
     {
@@ -1165,7 +1190,7 @@ public sealed class VaultService
     {
         if (!Directory.Exists(TrashPath)) return [];
 
-        return EnumerateMarkdownFiles(TrashPath, SearchOption.TopDirectoryOnly)
+        return ReadableMarkdownFiles(TrashPath, SearchOption.TopDirectoryOnly)
             .Where(info => !IsTrashedItemFromLockedSession(info.FullName))
             .Select(info => _noteCache.GetOrRead(info, ReadNoteAndContent).Note)
             .OrderByDescending(n => n.ModifiedUtc)

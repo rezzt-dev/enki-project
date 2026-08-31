@@ -306,10 +306,14 @@ public sealed partial class SessionsViewModel : ViewModelBase
     // LoadGlobalGraph() both walk the vault's directory tree and read+parse every note's content, which
     // froze the whole app for the duration on every tab switch/session change, worse the more notes a
     // vault has. Both now hand the disk I/O to a background thread (see SessionService.ListAsync/
-    // LoadGlobalGraphAsync) and only touch bound properties once the result is back — "async void" is
-    // fine here since these are effectively fire-and-forget UI actions (constructor call, command,
-    // navigation), same as every [RelayCommand] below already was from the caller's point of view.
-    public async void Reload()
+    // LoadGlobalGraphAsync) and only touch bound properties once the result is back.
+    //
+    // Siguen siendo "dispara y olvida" para quien llama (el constructor, un comando, una navegación), pero
+    // ya no son "async void": lo que sale de aquí se guarda en PendingLoad, y eso es lo que separa un fallo
+    // de disco a mitad del recorrido de que se caiga el proceso entero — ver Track.
+    public void Reload() => PendingLoad = Track(ReloadAsync());
+
+    private async Task ReloadAsync()
     {
         var generation = ++_loadGeneration;
         var previouslySelectedId = SelectedSession?.Session.Id;
@@ -333,7 +337,40 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     /// <summary>(Re)computes the combined graph — every session's notes at once — and pushes a full
     /// reload to the WebView. Doesn't require (or use) a selected session at all.</summary>
-    public async void LoadGraph() => await LoadGraphCoreAsync(++_loadGeneration);
+    public void LoadGraph() => PendingLoad = Track(LoadGraphCoreAsync(++_loadGeneration));
+
+    /// <summary>La carga en segundo plano que lanzó el último <see cref="Reload"/>/<see cref="LoadGraph"/>,
+    /// ya envuelta por <see cref="Track"/> y por tanto siempre completable sin fallo. La app no la espera
+    /// nunca —por eso esos dos son métodos void y no <c>async Task</c> que nadie fuera de aquí querría
+    /// await—: esto existe para que los tests tengan un punto de encuentro determinista con el recorrido de
+    /// disco que arranca el constructor, en vez de competir con él por el árbol de ficheros o quedarse con
+    /// un grafo anterior a lo que el propio test acaba de crear.</summary>
+    public Task PendingLoad { get; private set; } = Task.CompletedTask;
+
+    /// <summary>Aísla una carga en segundo plano de dos cosas que la app no puede permitirse.
+    ///
+    /// <para>La primera, que un fallo de disco se lleve el proceso por delante. Hasta aquí llegan recorridos
+    /// del vault entero (<see cref="SessionService.ListAsync"/>, <see cref="SessionService.LoadGlobalGraphAsync"/>)
+    /// que corren mientras el usuario mueve, borra e importa carpetas delante —borrar una sesión mueve su
+    /// carpeta entera a la papelera justo mientras el recorrido la visita—, así que encontrarse con algo que
+    /// ya no está es lo normal, no lo excepcional. Mientras esto fue <c>async void</c> esa excepción no tenía
+    /// dónde ir y terminaba el proceso. No se avisa al usuario porque no hay nada que decidir ni que
+    /// reintentar a mano: el siguiente Reload/LoadGraph (cambiar de pestaña, crear o borrar una sesión) ya
+    /// vuelve a leer el árbol como haya quedado.</para>
+    ///
+    /// <para>La segunda, que la carga quede como tarea fallida sin observar: <see cref="PendingLoad"/> la
+    /// guarda y los tests la esperan, y una tarea fallida ahí volvería a lanzar en quien la espere.</para></summary>
+    private static async Task Track(Task load)
+    {
+        try
+        {
+            await load;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Error("No se pudo completar la carga de sesiones/grafo en segundo plano", ex);
+        }
+    }
 
     private async Task LoadGraphCoreAsync(int generation)
     {

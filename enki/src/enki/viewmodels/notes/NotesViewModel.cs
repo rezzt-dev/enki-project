@@ -180,8 +180,21 @@ public sealed partial class NotesViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSelectedSessionLocked));
         OnPropertyChanged(nameof(ShowEmptyState));
         CurrentFolder = null;
+        PersistSelectedSession();
         ReloadFolders();
         Reload();
+    }
+
+    /// <summary>Guarda qué sesión está elegida en <see cref="Models.AppSettings.NotesSessionId"/> para que
+    /// la app reabra en el mismo espacio de trabajo en vez de volver siempre al vault — misma mecánica que
+    /// <see cref="PersistOpenTabs"/>, y no-op en los tests que construyen este viewmodel sin
+    /// <see cref="SettingsService"/>. Se escribe en cada cambio de selección, así que el ajuste y la
+    /// selección viva nunca se separan.</summary>
+    private void PersistSelectedSession()
+    {
+        if (_settingsService is null) return;
+        _settingsService.Settings.NotesSessionId = SelectedSessionOption?.Session?.Id;
+        _settingsService.Save();
     }
 
     partial void OnIsEmptyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
@@ -265,15 +278,22 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// whether that happened here or on the Sessions page.</summary>
     public void ReloadSessions()
     {
-        var previouslySelectedId = SelectedSessionOption?.Session?.Id;
+        // En el arranque todavía no hay selección viva, y ahí es donde entra la guardada: la sesión con la
+        // que se cerró la app. Pasado el arranque las dos coinciden siempre —cada cambio de selección
+        // reescribe el ajuste—, así que este mismo orden vale para las recargas posteriores (crear,
+        // renombrar o borrar una sesión, o cambiar de vault) sin resucitar nada que el usuario ya dejó.
+        var targetId = SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.NotesSessionId;
 
         SessionOptions.Clear();
         SessionOptions.Add(new SessionOptionViewModel(null));
         foreach (var session in _sessionService.List()) SessionOptions.Add(new SessionOptionViewModel(session));
 
-        SelectedSessionOption = previouslySelectedId is null
+        // Una sesión cifrada arranca siempre bloqueada y aun así se vuelve a elegir: la sección ya sabe
+        // enseñar ese estado ("desbloquéala en Sesiones"), y devolver al usuario al vault sería perder
+        // justo la elección que se quería recordar.
+        SelectedSessionOption = targetId is null
             ? SessionOptions[0]
-            : SessionOptions.FirstOrDefault(o => o.Session?.Id == previouslySelectedId) ?? SessionOptions[0];
+            : SessionOptions.FirstOrDefault(o => o.Session?.Id == targetId) ?? SessionOptions[0];
     }
 
     /// <summary>Switches the active workspace to the given session (or the vault, if null) — used when

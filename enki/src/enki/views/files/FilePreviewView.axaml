@@ -1,0 +1,281 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="enki.Views.FilePreviewView"
+             x:Name="PreviewRoot"
+             x:DataType="vm:FilesViewModel">
+
+  <!-- Previsualización del archivo abierto (ActivePreview), compartida por las dos disposiciones de la
+       sección: en el modo explorador ocupa la pantalla entera en lugar de la rejilla, y en el modo árbol
+       ocupa el panel derecho con el árbol intacto al lado. Su DataContext es el FilesViewModel de la
+       sección, no la tarjeta: los comandos de la barra (cerrar, abrir con el sistema) son de la sección, y
+       colgar del viewmodel de sección es lo que permite montarla tal cual desde las dos disposiciones sin
+       reencaminar bindings.
+
+       Deliberadamente sin tira de pestañas (docs/agent-docs/seccion-archivos.md §5): abrir un archivo
+       sustituye esta previsualización única en vez de acumular varias — los archivos se visualizan, no se
+       editan, así que no hay "trabajo en curso" que perder al cambiar de uno a otro.
+
+       Extraída a un control propio justo porque se monta una sola vez: instala TextMate sobre un
+       AvaloniaEdit y rasteriza PDFs con PDFium, y tener dos vivas a la vez duplicaría ambas cosas. -->
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- Atajos de página — sin efecto fuera del visor de PDF, ya que PdfDocument es null en cualquier
+         otro caso y Avalonia trata un Command nulo como deshabilitado. -->
+    <Grid.KeyBindings>
+      <KeyBinding Gesture="Left" Command="{Binding ActivePreview.PdfDocument.PreviousPageCommand}" />
+      <KeyBinding Gesture="Right" Command="{Binding ActivePreview.PdfDocument.NextPageCommand}" />
+      <KeyBinding Gesture="PageUp" Command="{Binding ActivePreview.PdfDocument.PreviousPageCommand}" />
+      <KeyBinding Gesture="PageDown" Command="{Binding ActivePreview.PdfDocument.NextPageCommand}" />
+    </Grid.KeyBindings>
+
+    <Border Grid.Row="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+            Background="{DynamicResource AppBackgroundBrush}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="20,10">
+        <Button Grid.Column="0" Classes="icon-btn" Command="{Binding ClosePreviewCommand}"
+                ToolTip.Tip="{loc:Tr Files_BackToGridTooltip}" AutomationProperties.Name="{loc:Tr Files_BackToGridTooltip}" Margin="0,0,12,0">
+          <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+        </Button>
+        <TextBlock Grid.Column="1" Text="{Binding ActivePreview.FileName}" FontSize="14" FontWeight="Bold"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+        <!-- Barra de páginas + zoom — solo para PDFs (ActivePreview.PdfDocument es null en cualquier
+             otro caso, y el StackPanel entero se oculta). -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                    Margin="0,0,16,0" IsVisible="{Binding ActivePreview.IsPdf}">
+          <Button Classes="icon-btn" Width="26" Height="26"
+                  Command="{Binding ActivePreview.PdfDocument.PreviousPageCommand}" ToolTip.Tip="{loc:Tr Files_PrevPageTooltip}" AutomationProperties.Name="{loc:Tr Files_PrevPageTooltip}">
+            <mi:MaterialIcon Kind="ChevronLeft" Width="16" Height="16" />
+          </Button>
+          <TextBlock Text="{Binding ActivePreview.PdfDocument.PageIndicator}" Classes="faint"
+                     VerticalAlignment="Center" MinWidth="56" TextAlignment="Center" />
+          <Button Classes="icon-btn" Width="26" Height="26"
+                  Command="{Binding ActivePreview.PdfDocument.NextPageCommand}" ToolTip.Tip="{loc:Tr Files_NextPageTooltip}" AutomationProperties.Name="{loc:Tr Files_NextPageTooltip}">
+            <mi:MaterialIcon Kind="ChevronRight" Width="16" Height="16" />
+          </Button>
+          <Border Width="1" Height="18" Background="{DynamicResource Ink10}" Margin="8,0" />
+          <Button Classes="icon-btn" Width="26" Height="26"
+                  Command="{Binding ActivePreview.PdfDocument.ZoomOutCommand}" ToolTip.Tip="{loc:Tr Files_ZoomOutTooltip}" AutomationProperties.Name="{loc:Tr Files_ZoomOutTooltip}">
+            <mi:MaterialIcon Kind="MagnifyMinusOutline" Width="15" Height="15" />
+          </Button>
+          <TextBlock Text="{Binding ActivePreview.PdfDocument.ZoomLabel}" Classes="faint"
+                     VerticalAlignment="Center" MinWidth="42" TextAlignment="Center" />
+          <Button Classes="icon-btn" Width="26" Height="26"
+                  Command="{Binding ActivePreview.PdfDocument.ZoomInCommand}" ToolTip.Tip="{loc:Tr Files_ZoomInTooltip}" AutomationProperties.Name="{loc:Tr Files_ZoomInTooltip}">
+            <mi:MaterialIcon Kind="MagnifyPlusOutline" Width="15" Height="15" />
+          </Button>
+        </StackPanel>
+
+        <Button Grid.Column="3" Classes="pill" Padding="10,6"
+                Command="{Binding OpenWithSystemCommand}" CommandParameter="{Binding ActivePreview}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
+            <TextBlock Text="{loc:Tr Files_OpenWithSystemButton, Converter={StaticResource UpperCaseConverter}}" FontSize="11" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1">
+      <!-- Imágenes: sin dependencia nueva, Bitmap decodificado directamente. -->
+      <Image Source="{Binding ActivePreview.Thumbnail}" Stretch="Uniform" Margin="24"
+             IsVisible="{Binding ActivePreview.IsImage}" />
+
+      <!-- PDFs: visor completo vía PDFtoImage/PDFium (ver PdfRenderHelper) — rail de páginas a la
+           izquierda, página actual a la derecha con zoom real (re-renderizado a mayor DPI, no un
+           escalado borroso del mismo bitmap). El DataContext de todo este subárbol cambia al
+           PdfDocumentViewModel del archivo activo, así que dentro de él los bindings ya no llevan el
+           prefijo "ActivePreview.PdfDocument.". -->
+      <!-- Panel envolvente separado del Grid interior a propósito: si IsVisible y DataContext se
+           declaran en el mismo elemento, Avalonia resuelve IsVisible contra el DataContext NUEVO
+           (PdfDocumentViewModel) en vez del heredado (FilesViewModel), y "ActivePreview.IsPdf" deja de
+           existir ahí. Separarlos en dos elementos evita esa resolución cruzada. -->
+      <Panel IsVisible="{Binding ActivePreview.IsPdf}">
+      <Grid ColumnDefinitions="150,*" DataContext="{Binding ActivePreview.PdfDocument}">
+
+        <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0"
+                Background="{DynamicResource AppBackgroundAltBrush}" IsVisible="{Binding IsReady}">
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Pages}" Margin="10">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <!-- Virtualizado a propósito: un PDF de cientos de páginas solo debe renderizar las
+                       miniaturas realmente cerca del viewport (ver PdfPageThumb_Initialized), nunca
+                       todas de golpe. -->
+                  <VirtualizingStackPanel Orientation="Vertical" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:PdfPageThumbnailViewModel">
+                  <Button Classes="pdf-page-thumb" Classes.active="{Binding IsCurrent}" Margin="0,0,0,10"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                          Command="{Binding $parent[ItemsControl].((vm:PdfDocumentViewModel)DataContext).GoToPageCommand}"
+                          CommandParameter="{Binding}"
+                          Initialized="PdfPageThumb_Initialized">
+                    <StackPanel Spacing="4">
+                      <Border Background="{DynamicResource PanelBackgroundBrush}"
+                              BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="2">
+                        <Image Source="{Binding Thumbnail}" Width="110" Stretch="Uniform" />
+                      </Border>
+                      <TextBlock Text="{Binding PageNumber}" Classes="faint" FontSize="10"
+                                 HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+
+        <Grid Grid.Column="1">
+          <ScrollViewer IsVisible="{Binding IsReady}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <Panel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="24"
+                   Width="{Binding CurrentPageImageWidth}" Height="{Binding CurrentPageImageHeight}"
+                   Background="Transparent">
+              <Image Source="{Binding CurrentPageImage}" Stretch="None" />
+            </Panel>
+          </ScrollViewer>
+
+          <StackPanel IsVisible="{Binding IsLoading}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Spacing="12">
+            <mi:MaterialIcon Classes="spin" Kind="Loading" Width="30" Height="30"
+                              Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Tr Files_PdfRenderingLabel}" Classes="muted" HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel IsVisible="{Binding IsFaulted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Spacing="14" MaxWidth="340">
+            <mi:MaterialIcon Kind="FileAlertOutline" Width="48" Height="48"
+                              Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Tr Files_PdfRenderErrorMessage}"
+                       Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+            <Button Classes="pill-primary" HorizontalAlignment="Center"
+                    Command="{Binding #PreviewRoot.((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
+                    CommandParameter="{Binding #PreviewRoot.((vm:FilesViewModel)DataContext).ActivePreview}">
+              <TextBlock Text="{loc:Tr Files_OpenWithSystemFallbackButton, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+
+      </Grid>
+      </Panel>
+
+      <!-- Visor de código (docs/seccion-archivos.md §6): editor de solo lectura con resaltado de
+           sintaxis via AvaloniaEdit + TextMate — ya referenciados en el proyecto (skills de IA).
+           Mismo lenguaje visual que el editor de notas: fondo Ink05, borde Ink10, sin barra de
+           herramientas. El DataContext de todo este subárbol es el FileCardViewModel del archivo
+           activo, así que los bindings ya no llevan el prefijo "ActivePreview.". -->
+      <Panel IsVisible="{Binding ActivePreview.IsCode}">
+      <Grid RowDefinitions="Auto,*" DataContext="{Binding ActivePreview}">
+        <Border Grid.Row="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+                Padding="14,8">
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <mi:MaterialIcon Kind="CodeBraces" Width="16" Height="16"
+                              Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="Bold"
+                       VerticalAlignment="Center" />
+            <Border Padding="8,3" Background="{DynamicResource Ink05}" CornerRadius="0"
+                    IsVisible="{Binding CodeLanguageLabel, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                    VerticalAlignment="Center">
+              <TextBlock Text="{Binding CodeLanguageLabel}" Classes="faint" FontSize="10"
+                         Foreground="{DynamicResource Ink40}" />
+            </Border>
+            <Border Padding="8,3" Background="{DynamicResource Ink05}" CornerRadius="0"
+                    VerticalAlignment="Center">
+              <TextBlock Text="{Binding SizeLabel}" Classes="faint" FontSize="10" />
+            </Border>
+          </StackPanel>
+        </Border>
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+          <ae:TextEditor x:Name="CodeEditor" Margin="0"
+                         IsReadOnly="True"
+                         ShowLineNumbers="True"
+                         WordWrap="False"
+                         FontFamily="{DynamicResource MonoFontFamily}"
+                         FontSize="13"
+                         Padding="12"
+                         Document="{Binding CodeDocument}" />
+        </ScrollViewer>
+      </Grid>
+      </Panel>
+
+      <!-- Reproductor de audio: vista previa con un layout informativo que invita a abrir
+           el archivo con el reproductor del sistema — el reproductor nativo de cada SO (VLC,
+           Windows Media Player, etc.) maneja los codecs mejor que una WebView HTML5. -->
+      <Panel IsVisible="{Binding ActivePreview.IsAudio}">
+        <Grid RowDefinitions="Auto,*" MaxWidth="600" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding ActivePreview}">
+          <StackPanel Grid.Row="0" Spacing="10" HorizontalAlignment="Center" Margin="0,0,0,20">
+            <mi:MaterialIcon Kind="MusicNoteOutline" Width="64" Height="64"
+                              Foreground="{DynamicResource Ink40}" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding FileName}" FontSize="16" FontWeight="Bold"
+                       HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBlock Text="{Binding SizeLabel}" Classes="faint" HorizontalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" HorizontalAlignment="Center" Spacing="14">
+            <TextBlock Text="{loc:Tr Files_AudioPreviewHint}" Classes="faint"
+                       HorizontalAlignment="Center" TextAlignment="Center" />
+            <Button Classes="pill-primary"
+                    Command="{Binding #PreviewRoot.((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
+                    CommandParameter="{Binding}" HorizontalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="PlayCircleOutline" Width="18" Height="18" />
+                <TextBlock Text="{loc:Tr Files_PlayWithSystemButton, Converter={StaticResource UpperCaseConverter}}" FontSize="12" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Panel>
+
+      <!-- Reproductor de vídeo: ídem que audio — layout informativo que invita a abrir
+           con el reproductor del sistema. -->
+      <Panel IsVisible="{Binding ActivePreview.IsVideo}">
+        <Grid RowDefinitions="Auto,*" MaxWidth="700" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding ActivePreview}">
+          <StackPanel Grid.Row="0" Spacing="10" HorizontalAlignment="Center" Margin="0,0,0,20">
+            <mi:MaterialIcon Kind="VideoOutline" Width="64" Height="64"
+                              Foreground="{DynamicResource Ink40}" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding FileName}" FontSize="16" FontWeight="Bold"
+                       HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBlock Text="{Binding SizeLabel}" Classes="faint" HorizontalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" HorizontalAlignment="Center" Spacing="14">
+            <TextBlock Text="{loc:Tr Files_VideoPreviewHint}" Classes="faint"
+                       HorizontalAlignment="Center" TextAlignment="Center" />
+            <Button Classes="pill-primary"
+                    Command="{Binding #PreviewRoot.((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
+                    CommandParameter="{Binding}" HorizontalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="PlayCircleOutline" Width="18" Height="18" />
+                <TextBlock Text="{loc:Tr Files_PlayWithSystemButton, Converter={StaticResource UpperCaseConverter}}" FontSize="12" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Panel>
+
+      <!-- Cualquier otro tipo (docs/seccion-archivos.md §6): fallback universal, nunca un error duro. -->
+      <StackPanel IsVisible="{Binding ActivePreview.IsOther}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Spacing="14" MaxWidth="360">
+        <mi:MaterialIcon Kind="{Binding ActivePreview.IconKind}" Width="56" Height="56"
+                          Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding ActivePreview.FileName}" Classes="muted" FontSize="13.5"
+                   TextWrapping="Wrap" TextAlignment="Center" />
+        <TextBlock Text="{loc:Tr Files_NoPreviewAvailable}"
+                   Classes="faint" TextWrapping="Wrap" TextAlignment="Center" />
+        <Button Classes="pill-primary" Command="{Binding OpenWithSystemCommand}" CommandParameter="{Binding ActivePreview}"
+                HorizontalAlignment="Center">
+          <TextBlock Text="{loc:Tr Files_OpenWithSystemFallbackButton, Converter={StaticResource UpperCaseConverter}}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

@@ -39,6 +39,20 @@ public sealed class SkillFile
     /// <summary>Ruta absoluta del archivo en disco.</summary>
     public string FilePath { get; set; } = string.Empty;
 
+    /// <summary>Carpeta que contiene el archivo, en absoluto. Coincide con
+    /// <see cref="Services.SkillService.SkillsDirectory"/> para una skill que vive en la raiz.</summary>
+    public string FolderPath { get; set; } = string.Empty;
+
+    /// <summary>Ruta de <see cref="FolderPath"/> relativa a la carpeta de skills, con <c>/</c> como
+    /// separador y cadena vacia en la raiz (p. ej. <c>"escritura/blog"</c>). Es lo que se muestra como
+    /// "ubicacion" en la tarjeta y el detalle, y lo que distingue dos skills con el mismo nombre de
+    /// archivo en carpetas distintas — <see cref="Id"/> sigue siendo solo el nombre de archivo porque es
+    /// lo que se propone al duplicar.</summary>
+    public string RelativeFolderPath { get; set; } = string.Empty;
+
+    /// <summary>Indica si la skill vive en la raiz de la carpeta de skills.</summary>
+    public bool IsAtRoot => string.IsNullOrEmpty(RelativeFolderPath);
+
     /// <summary>Indica si es una skill del sistema que no se puede eliminar.</summary>
     public bool IsDefault { get; set; }
 }

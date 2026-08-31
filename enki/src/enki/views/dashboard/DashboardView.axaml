@@ -325,10 +325,14 @@
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
               <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
                           IsVisible="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).HasBoardCards}">
+                <!-- Orden Hecho -> En progreso -> Pendientes a proposito: la barra acompana a la etiqueta
+                     "{percent}% COMPLETADO", asi que lo completado ocupa el tramo izquierdo y lo que falta
+                     queda a la derecha, como cualquier barra de progreso. Con el orden inverso el tramo
+                     claro crecia desde el borde derecho y parecia llenarse al reves. -->
                 <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-                  <Border Width="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).PendingBarWidth}" Height="6" Background="{DynamicResource Ink20}" />
-                  <Border Width="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).InProgressBarWidth}" Height="6" Background="{DynamicResource Ink50}" />
                   <Border Width="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).DoneBarWidth}" Height="6" Background="{DynamicResource InkBrush}" />
+                  <Border Width="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).InProgressBarWidth}" Height="6" Background="{DynamicResource Ink50}" />
+                  <Border Width="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).PendingBarWidth}" Height="6" Background="{DynamicResource Ink20}" />
                 </StackPanel>
                 <TextBlock Text="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).BoardProgressLabel}" Classes="faint" FontSize="10.5" />
               </StackPanel>

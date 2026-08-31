@@ -7,6 +7,52 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Archivos: soltar del sistema sobre una carpeta, y la sección recuerda el espacio de trabajo**.
+
+- **Las filas de carpeta del modo explorador aceptan archivos del explorador del sistema**, y los importan
+  dentro de esa carpeta — igual que la fila "TODOS", que los deja en la raíz. Hasta ahora esas filas solo
+  aceptaban el arrastre interno de la propia sección, mientras que el modo árbol sí importaba a la carpeta
+  soltada: la misma carpeta, arrastrada lo mismo desde el mismo sitio, aceptaba o rechazaba según la
+  disposición desde la que se estuviera mirando. La carpeta se resalta mientras el arrastre pasa por encima,
+  así que se ve dónde va a caer antes de soltar, y con una sesión protegida y bloqueada elegida el gesto
+  sigue sin aceptarse en ninguna de las dos disposiciones.
+- **El selector de sesión de Archivos recuerda su elección** entre arranques, como ya hacía el de Notas: la
+  app reabre la sección en el espacio de trabajo en el que se cerró en vez de volver siempre al vault
+  entero. Cada sección guarda la suya por separado, así que cambiar de espacio en una no mueve la otra. Una
+  sesión que ya no exista cae al vault en silencio, y una protegida se vuelve a elegir aunque arranque
+  bloqueada.
+- **Corregido un cierre inesperado de la app** al borrar una sesión (o al desaparecer una carpeta por
+  cualquier otra vía) justo mientras el recorrido en segundo plano que arma el grafo de Sesiones la estaba
+  visitando: ese fallo de disco no tenía dónde ser recogido y se llevaba el proceso por delante. Ahora el
+  recorrido devuelve lo que pudo leer y el siguiente ya ve el árbol como quedó.
+
+**IA Skills: carpetas propias y dos formas de navegar la seccion**. La biblioteca era una unica lista
+plana: con veinte o cincuenta skills importadas, encontrar la de un tema concreto pasaba por la busqueda
+si o si, y no habia ninguna forma de decir que media docena de ellas van juntas.
+
+- **Carpetas y subcarpetas** dentro de `<vault>/.enki/skills/`, con la profundidad que el usuario quiera.
+  Se crean, renombran y eliminan desde la propia seccion, y las skills se mueven entre ellas arrastrando.
+  No hay indice ni metadato aparte: las carpetas en disco son la organizacion, igual que el `.md` es la
+  skill, asi que la biblioteca se sigue pudiendo tocar desde fuera de Enki.
+- **Se elige como navegar la seccion**, con un conmutador en su propia barra de herramientas:
+  - *Explorador* — panel de carpetas a la izquierda y rejilla de tarjetas a la derecha, la misma
+    disposicion que la seccion Archivos, con miga de pan y tarjeta ".." para volver.
+  - *Arbol* — panel lateral que entremezcla carpetas y skills en una sola lista jerarquica, con su propia
+    busqueda y el detalle o el editor a la derecha, la misma disposicion que la vista simplificada de
+    Notas.
+  Las dos comparten estado: cambiar de modo reordena la pantalla, no reinicia lo que se estaba haciendo.
+  La eleccion, el ancho del panel y que carpetas quedan abiertas se recuerdan entre arranques.
+- **Buscar sigue mirando toda la biblioteca**, tambien desde dentro de una carpeta: con busqueda o filtro
+  de etiquetas activos la rejilla pasa a resultados globales y cada tarjeta dice de que carpeta viene.
+- **Importar respeta la organizacion**: lo importado aterriza en la carpeta que se esta navegando, y al
+  importar una carpeta se recrean sus subcarpetas. Exportar hace lo simetrico, de modo que exportar y
+  volver a importar devuelve la biblioteca tal cual estaba en vez de aplanarla. Ahora tambien se pueden
+  soltar `.md` desde el explorador del sistema directamente sobre la rejilla.
+- **Duplicar deja la copia junto al original**, no en la raiz.
+- **Eliminar una carpeta pide confirmacion aparte**, diciendo que se lleva todo lo de dentro y que la
+  biblioteca de skills no tiene papelera. Una carpeta que contenga una skill del sistema no se puede
+  eliminar: si no, seria la puerta trasera para borrar justo lo que la app protege.
+
 **Tablero Kanban rehecho de arriba abajo**: la pantalla dedicaba las tres primeras bandas —subtítulo fijo
 de manual, rejilla de cuatro tarjetas de estadísticas y una barra de herramientas con cuatro segmentos de
 ordenación siempre desplegados— a información que no cambia o que no se puede accionar, y las columnas

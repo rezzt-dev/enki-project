@@ -70,6 +70,16 @@ físicas en disco.
 al `VaultService.VaultPath` si la selección es "vault completo". `CurrentFolderPath` resuelve además
 sobre `CurrentFolder`, que puede ser `null` (equivalente a "TODOS", la raíz efectiva).
 
+La elección **se recuerda entre arranques** (`AppSettings.FilesSessionId`): `PersistSelectedSession` la
+escribe en cada cambio del selector y `ReloadSessions` la relee al construir el viewmodel, de modo que la
+app reabre Archivos en el espacio de trabajo en el que se cerró en vez de volver siempre al vault. Es el
+mismo mecanismo que `NotesSessionId` en Documentos, con **clave propia**: son dos selectores
+independientes, y compartir una sola haría que cambiar de espacio en una sección moviera la otra a la
+espalda del usuario. Una sesión guardada que ya no exista —borrada, o de otro vault— cae al vault en
+silencio; una cifrada se vuelve a elegir aunque arranque bloqueada, porque la sección ya sabe enseñar ese
+estado y devolver al usuario al vault sería perder justo la elección que se quería recordar. Ver
+`docs/agent-docs/ajustes-docs/02-productividad-como-app-de-escritorio.md` §2.
+
 Cambiar de sesión, de carpeta o de texto de búsqueda dispara `Reload()`, que llama a
 `VaultService.GetFiles(carpetaActual)` — enumeración de un único nivel (`SearchOption.TopDirectoryOnly`),
 no recursiva — y filtra en memoria por `FileName.Contains(SearchText, OrdinalIgnoreCase)`. `GetFiles`
@@ -192,14 +202,44 @@ Hay dos caminos de entrada, ambos convergen en el mismo método:
 - **Botón "IMPORTAR"** (`FilesViewModel.Import`, `[RelayCommand]`): abre un selector de archivos del
   sistema (`IStorageProvider.OpenFilePickerAsync`, multi-selección) y pasa las rutas locales
   resueltas a `ImportPaths`.
-- **Arrastrar y soltar desde el explorador del SO**: `FilesGrid_DragEnter/DragOver/DragLeave/Drop` en
-  `FilesView.axaml.cs`, usando el formato `DataFormat.File` que expone `DataTransfer` de Avalonia para
-  ítems soltados desde fuera de la app (a diferencia de los formatos internos usados para
-  reordenar/mover archivos ya presentes en la rejilla — ver §9). No hay precedente de este patrón en
-  ninguna otra pantalla: Notas/Kanban/Calendario solo manejan arrastre *interno*.
+- **Arrastrar y soltar desde el explorador del SO**, usando el formato `DataFormat.File` que expone
+  `DataTransfer` de Avalonia para ítems soltados desde fuera de la app (a diferencia del formato interno
+  usado para mover archivos ya presentes en la sección — ver §9). No hay precedente de este patrón en
+  ninguna otra pantalla: Notas/Kanban/Calendario solo manejan arrastre *interno*. En el **modo explorador**
+  (`FilesBrowserView.axaml.cs`) hay tres destinos, y los tres importan en el sitio sobre el que se suelta:
+  - La **rejilla de tarjetas** (`FilesGrid_DragEnter/DragOver/DragLeave/Drop`) importa en la carpeta que se
+    está navegando.
+  - Una **fila de carpeta** del panel lateral (`FolderRow_*`) importa dentro de esa carpeta.
+  - La **fila "TODOS"** (`RootFolderRow_*`) importa en la raíz efectiva.
+
+  Las filas aceptaron durante un tiempo solo el arrastre interno, y con el modo árbol importando a la
+  carpeta soltada la asimetría no se sostenía: la misma carpeta, arrastrada lo mismo desde el mismo sitio,
+  aceptaba o rechazaba según la disposición desde la que se estuviera mirando.
+
+En el **modo árbol** (la disposición "simplificada" de la sección) los destinos son otros, porque ahí la
+rejilla no existe y el árbol ocupa solo la franja del panel lateral:
+
+- La **vista entera** acepta el arrastre entrante del SO (`TreeView_DragEnter/DragOver/DragLeave/Drop` en
+  `FilesTreeView.axaml.cs`) e importa en la raíz efectiva. Sin esto, la previsualización de la derecha —que
+  es la mayor parte de la ventana— quedaba muerta al arrastre y soltar archivos parecía no funcionar.
+- El **fondo del árbol** importa también en la raíz efectiva, y además acepta el arrastre interno (mover a
+  la raíz, el equivalente de la fila "TODOS" del modo explorador).
+- Una **fila de carpeta** importa dentro de esa carpeta, y acepta igualmente el arrastre interno. Las filas
+  de archivo no son destino: dejan burbujear el arrastre hasta el fondo.
+
+Los tres se encadenan por burbujeo: el destino más específico que acepta el arrastre marca el evento como
+manejado, así que solo uno actúa. El realce sigue el mismo criterio: la carpeta destino se resalta ella sola
+(`Border.folder-row.drag-over`) y apaga el recuadro de la vista entera (`IsGridDropTarget`), que es el que se
+enciende cuando el destino es la raíz efectiva.
 
 `ImportPaths` (punto de entrada compartido) llama a `VaultService.ImportFile(ruta, carpetaActual)`
-por cada archivo, y recarga la rejilla si al menos uno se importó. `VaultService.ImportFile` copia el
+por cada archivo, y recarga la rejilla si al menos uno se importó. Cada archivo va en su propio
+`try`/`catch` (`IOException`, `UnauthorizedAccessException`, `SessionLockedException`): importar dentro de
+una sesión protegida y bloqueada cifra con una clave que no está en memoria, y esa excepción salía desde
+dentro del manejador del "soltar" a la cara del usuario. Se guarda solo la primera y se avisa una vez por
+gesto (`Files_Notify_ImportFailed_Title` + `VaultFailureReasons.Describe`), sin dejar de intentar el resto
+del lote. Además, con una sesión bloqueada elegida los destinos de arrastre ni siquiera aceptan el gesto —
+en las dos disposiciones—, para no ofrecer algo que solo puede terminar en aviso de error. `VaultService.ImportFile` copia el
 archivo (no lo mueve) a la carpeta destino, resolviendo colisiones de nombre con un sufijo numérico
 (`nombre 2.ext`, `nombre 3.ext`, ...).
 
@@ -219,12 +259,21 @@ Todas las operaciones de escritura viven en `FilesViewModel` como `[RelayCommand
 - `MoveFileToFolder` (llamado desde el drop de un archivo sobre una fila de carpeta o sobre "TODOS")
   → `VaultService.MoveFile`.
 
-**Arrastrar para mover** (`FileCard_PointerPressed`/`PointerMoved` en `FilesView.axaml.cs`): un
-arrastre interno de una tarjeta usa un formato de datos propio (`com.enki.file-path`,
-`DataFormat.CreateStringApplicationFormat`) para transportar la ruta completa del archivo, distinto
-del `DataFormat.File` usado para arrastres entrantes desde el SO (§8). El umbral de inicio de arrastre
-es de ~4px de movimiento tras pulsar. Las filas de carpeta y la fila raíz "TODOS" son objetivos de
-drop válidos únicamente cuando el `DataTransfer` contiene ese formato interno.
+**Arrastrar para mover** (`FileCard_PointerPressed`/`PointerMoved` en `FilesBrowserView.axaml.cs`,
+`TreeRow_*` en `FilesTreeView.axaml.cs`): un arrastre interno de una tarjeta o fila usa un formato de datos
+propio (`com.enki.file-path`, `DataFormat.CreateStringApplicationFormat`) para transportar la ruta completa
+del archivo, distinto del `DataFormat.File` usado para arrastres entrantes desde el SO (§8). Ser el **mismo
+formato en las dos disposiciones** es lo que hace que un arrastre valga igual en cualquiera de ellas. El
+umbral de inicio de arrastre es de ~4px de movimiento tras pulsar.
+
+Las filas de carpeta y la fila raíz "TODOS" aceptan **las dos clases de arrastre** y las distinguen por su
+formato: el interno mueve (`MoveFileToFolder`), el del SO importa (`ImportPaths`). Quien decide es
+`EffectsFor`, uno por disposición (`FilesBrowserView`/`FilesTreeView`) pero con el mismo criterio, incluido
+el de no aceptar nada con una sesión protegida y bloqueada elegida (§8).
+
+Este reparto —qué destino acepta qué y a dónde va a parar lo soltado— vive entero en el code-behind de las
+vistas, así que un test de solo viewmodel no lo ve: lo cubre `FilesDropTargetUiTests`, que levanta el XAML
+compilado de verdad y lanza `DragOver`/`Drop` reales sobre las filas en las dos disposiciones.
 
 Los archivos borrados van a la misma papelera del vault que usa `TrashViewModel`
 (`VaultService.GetTrashedFiles`), junto a notas y otros elementos borrables — no hay una papelera

@@ -28,6 +28,7 @@
             <conv:TreeIndentConverter x:Key="TreeIndentConverter" />
             <conv:SessionIconConverter x:Key="SessionIconConverter" />
             <conv:FolderStateIconConverter x:Key="FolderStateIconConverter" />
+            <conv:ParentFolderIconConverter x:Key="ParentFolderIconConverter" />
             <conv:HexColorToBrushConverter x:Key="HexColorToBrushConverter" />
             <conv:TopOffsetToMarginConverter x:Key="TopOffsetToMarginConverter" />
             <conv:DoubleToTranslateYConverter x:Key="DoubleToTranslateYConverter" />
