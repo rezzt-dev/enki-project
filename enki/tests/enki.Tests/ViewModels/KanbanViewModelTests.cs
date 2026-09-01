@@ -602,6 +602,235 @@ public class KanbanViewModelTests : IDisposable
         Assert.NotNull(kanbanService.Board);
     }
 
+    // ===================== Tareas archivadas =====================
+    // docs/agent-docs/kanban-tareas-archivadas.md. Lo que se comprueba aquí es la invariante que sostiene
+    // toda la funcionalidad: archivar saca la tarjeta del tablero pero la deja intacta en su columna del
+    // modelo, que es lo que el Calendario, las Estadísticas y la búsqueda global siguen leyendo.
+
+    [Fact]
+    public void ArchiveCard_RemovesItFromTheBoard_ButKeepsItInTheColumnModel()
+    {
+        var vm = CreateViewModel(out var kanbanService);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "archive-me", KanbanPriority.Medium);
+        var card = doneColumn.Cards.First(c => c.Id == "archive-me");
+
+        vm.ArchiveCardCommand.Execute(card);
+
+        Assert.DoesNotContain(card, doneColumn.Cards);
+        Assert.Contains(card.Card, doneColumn.Column.Cards);
+        Assert.Contains(card, vm.ArchivedCards);
+        Assert.Equal(1, vm.ArchivedCount);
+        Assert.True(card.IsArchived);
+        Assert.NotNull(card.Card.CompletedAtUtc);
+        Assert.Contains(kanbanService.Board.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
+    }
+
+    [Fact]
+    public void ArchiveCard_IsRefusedOutsideTheDoneColumn()
+    {
+        var vm = CreateViewModel(out _);
+        var backlogColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Backlog);
+        AddCard(vm, backlogColumn, "not-done", KanbanPriority.Medium);
+        var card = backlogColumn.Cards.First(c => c.Id == "not-done");
+
+        vm.ArchiveCardCommand.Execute(card);
+
+        Assert.False(card.IsArchived);
+        Assert.Contains(card, backlogColumn.Cards);
+        Assert.Empty(vm.ArchivedCards);
+    }
+
+    [Fact]
+    public void ArchivedCards_SurviveAReload_AndStayOffTheBoard()
+    {
+        var vm = CreateViewModel(out var kanbanService);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "archive-me", KanbanPriority.Medium);
+        vm.ArchiveCardCommand.Execute(doneColumn.Cards.First(c => c.Id == "archive-me"));
+        var boardCards = vm.TotalCards;
+
+        vm.Reload();
+
+        Assert.Equal(boardCards, vm.TotalCards);
+        Assert.Equal(1, vm.ArchivedCount);
+        Assert.DoesNotContain(vm.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
+        Assert.Contains(kanbanService.Board.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
+    }
+
+    [Fact]
+    public void UnarchiveCard_ReturnsItToItsColumn_InItsOriginalPosition()
+    {
+        var vm = CreateViewModel(out _);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "first", KanbanPriority.Medium);
+        AddCard(vm, doneColumn, "second", KanbanPriority.Medium);
+        AddCard(vm, doneColumn, "third", KanbanPriority.Medium);
+        var middle = doneColumn.Cards.First(c => c.Id == "second");
+
+        vm.ArchiveCardCommand.Execute(middle);
+        Assert.DoesNotContain(middle, doneColumn.Cards);
+
+        vm.UnarchiveCardCommand.Execute(middle);
+
+        Assert.False(middle.IsArchived);
+        Assert.Empty(vm.ArchivedCards);
+        var ids = doneColumn.Cards.Select(c => c.Id).ToList();
+        Assert.Equal(ids.IndexOf("first") + 1, ids.IndexOf("second"));
+        Assert.Equal(ids.IndexOf("second") + 1, ids.IndexOf("third"));
+    }
+
+    [Fact]
+    public void MoveCard_KeepsModelOrder_WhenAnArchivedCardSitsInBetween()
+    {
+        var vm = CreateViewModel(out _);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        var backlogColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Backlog);
+        var doneCardsBefore = doneColumn.Cards.Count; // el tablero semilla ya trae una tarjeta en "Hecho"
+        AddCard(vm, doneColumn, "visible-a", KanbanPriority.Medium);
+        AddCard(vm, doneColumn, "hidden", KanbanPriority.Medium);
+        AddCard(vm, doneColumn, "visible-b", KanbanPriority.Medium);
+        vm.ArchiveCardCommand.Execute(doneColumn.Cards.First(c => c.Id == "hidden"));
+
+        AddCard(vm, backlogColumn, "moved", KanbanPriority.Medium);
+        var moved = backlogColumn.Cards.First(c => c.Id == "moved");
+
+        // Se suelta justo antes de "visible-b", que en el modelo va después de la archivada: los dos
+        // índices (vista y modelo) no coinciden, y es el del modelo el que decide dónde acaba de verdad.
+        vm.MoveCard(moved, doneColumn, doneColumn.Cards.First(c => c.Id == "visible-b"));
+
+        var modelIds = doneColumn.Column.Cards.Select(c => c.Id).ToList();
+        Assert.Equal(modelIds.IndexOf("moved") + 1, modelIds.IndexOf("visible-b"));
+        Assert.Equal(doneCardsBefore + 3, doneColumn.Cards.Count);
+        Assert.Equal(1, vm.ArchivedCount);
+    }
+
+    [Fact]
+    public void Sort_KeepsArchivedCardsInTheModel()
+    {
+        var vm = CreateViewModel(out _);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "low", KanbanPriority.Low);
+        AddCard(vm, doneColumn, "archived", KanbanPriority.Medium);
+        AddCard(vm, doneColumn, "high", KanbanPriority.High);
+        vm.ArchiveCardCommand.Execute(doneColumn.Cards.First(c => c.Id == "archived"));
+
+        vm.SetSortModeCommand.Execute(KanbanCardSortMode.Priority);
+
+        Assert.Contains(doneColumn.Column.Cards, c => c.Id == "archived");
+        Assert.Equal(1, vm.ArchivedCount);
+        Assert.Equal("high", doneColumn.Cards[0].Id);
+    }
+
+    [Fact]
+    public void ArchiveAllDone_ArchivesTheWholeColumn_AndNotifies()
+    {
+        var vm = CreateViewModel(out _, out var notificationService);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "a", KanbanPriority.Medium);
+        AddCard(vm, doneColumn, "b", KanbanPriority.Medium);
+        var expected = doneColumn.Cards.Count;
+        var notificationsBefore = notificationService.Notifications.Count;
+
+        vm.RequestArchiveAllDoneCommand.Execute(null);
+        Assert.True(vm.IsArchiveAllPending);
+        vm.ConfirmArchiveAllDoneCommand.Execute(null);
+
+        Assert.False(vm.IsArchiveAllPending);
+        Assert.Empty(doneColumn.Cards);
+        Assert.Equal(expected, vm.ArchivedCount);
+        Assert.Equal(expected, doneColumn.Column.Cards.Count);
+        Assert.True(notificationService.Notifications.Count > notificationsBefore);
+    }
+
+    [Fact]
+    public void ArchiveFilters_CombineSearchPriorityAndTags()
+    {
+        var vm = CreateViewModel(out _);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "informe anual", KanbanPriority.High, "trabajo");
+        AddCard(vm, doneColumn, "informe mensual", KanbanPriority.Low, "trabajo");
+        AddCard(vm, doneColumn, "compra", KanbanPriority.High, "casa");
+        foreach (var card in doneColumn.Cards.ToList()) vm.ArchiveCardCommand.Execute(card);
+
+        vm.ArchiveSearchText = "informe";
+        Assert.Equal(2, vm.FilteredArchivedCards.Count);
+
+        vm.ToggleArchivePriorityFilterCommand.Execute(KanbanPriority.High);
+        Assert.Single(vm.FilteredArchivedCards);
+        Assert.Equal("informe anual", vm.FilteredArchivedCards[0].Title);
+
+        vm.ToggleArchivePriorityFilterCommand.Execute(KanbanPriority.High);
+        Assert.Equal(2, vm.FilteredArchivedCards.Count);
+
+        vm.ArchiveSearchText = "no-existe";
+        Assert.Empty(vm.FilteredArchivedCards);
+        Assert.True(vm.HasNoArchiveMatches);
+
+        vm.ClearArchiveFiltersCommand.Execute(null);
+        Assert.False(vm.HasNoArchiveMatches);
+        Assert.Equal(vm.ArchivedCount, vm.FilteredArchivedCards.Count);
+    }
+
+    [Fact]
+    public void ArchiveSortMode_Title_OrdersAlphabetically()
+    {
+        var vm = CreateViewModel(out _);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "zeta", KanbanPriority.Medium);
+        AddCard(vm, doneColumn, "alfa", KanbanPriority.Medium);
+        foreach (var card in doneColumn.Cards.ToList()) vm.ArchiveCardCommand.Execute(card);
+
+        vm.SetArchiveSortModeCommand.Execute(KanbanArchiveSortMode.Title);
+
+        Assert.Equal("alfa", vm.FilteredArchivedCards[0].Title);
+        Assert.False(vm.IsArchiveSortMenuOpen);
+    }
+
+    /// <summary>La tarjeta archivada llega a la papelera como cualquier otra; quien le quita la marca de
+    /// archivado es la restauración (<c>TrashViewModel.RestoreTask</c>, cubierto por sus propias pruebas),
+    /// para que ese "vuelve al tablero" valga igual venga el borrado del tablero o del Calendario.</summary>
+    [Fact]
+    public void DeleteArchivedCard_SendsItToTheTrash_AndOutOfTheArchive()
+    {
+        var vm = CreateViewModel(out var kanbanService);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "archive-me", KanbanPriority.Medium);
+        var card = doneColumn.Cards.First(c => c.Id == "archive-me");
+        vm.ArchiveCardCommand.Execute(card);
+
+        vm.RequestDeleteArchivedCardCommand.Execute(card);
+        vm.ConfirmDeleteCardCommand.Execute(null);
+
+        Assert.Single(kanbanService.Board.TrashedCards, t => t.Card.Id == "archive-me");
+        Assert.Empty(vm.ArchivedCards);
+        Assert.Equal(0, vm.ArchivedCount);
+        Assert.DoesNotContain(kanbanService.Board.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
+    }
+
+    [Fact]
+    public void OpeningAnArchivedCard_ReopensTheArchiveWindow_WhenTheDialogCloses()
+    {
+        var vm = CreateViewModel(out _);
+        var doneColumn = vm.Columns.First(c => c.Column.Role == CoreColumnRole.Done);
+        AddCard(vm, doneColumn, "archive-me", KanbanPriority.Medium);
+        var card = doneColumn.Cards.First(c => c.Id == "archive-me");
+        vm.ArchiveCardCommand.Execute(card);
+
+        vm.OpenArchiveCommand.Execute(null);
+        vm.OpenArchivedCardDetailCommand.Execute(card);
+
+        Assert.False(vm.IsArchiveOpen);
+        Assert.NotNull(vm.CardDetail);
+        Assert.True(vm.CardDetail!.IsArchived);
+        Assert.Equal(doneColumn.Title, vm.CardDetail.ColumnTitle);
+
+        vm.CloseCardDetailCommand.Execute(null);
+
+        Assert.Null(vm.CardDetail);
+        Assert.True(vm.IsArchiveOpen);
+    }
+
     /// <summary>Añade una tarjeta a la vez al modelo y al viewmodel de la columna, que es lo que hace
     /// SaveCardEditor — las pruebas de arriba necesitan tarjetas con prioridad/etiquetas concretas sin
     /// pasar por el formulario completo.</summary>

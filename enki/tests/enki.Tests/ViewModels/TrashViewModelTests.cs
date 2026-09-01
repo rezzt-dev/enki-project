@@ -179,6 +179,36 @@ public class TrashViewModelTests : IDisposable
         Assert.Contains(column.Cards, c => c.Id == "trashed-card");
     }
 
+    /// <summary>Restaurar significa "vuelve al tablero": una tarjeta que estaba archivada cuando se borró
+    /// (docs/agent-docs/kanban-tareas-archivadas.md) pierde esa marca al restaurarla, porque si no
+    /// aparecería en su columna sin que el tablero llegara a dibujarla.</summary>
+    [Fact]
+    public void RestoreTaskCommand_ClearsTheArchivedMark()
+    {
+        var (trash, _, kanban, _, _, _) = CreateViewModel();
+        var column = kanban.Board.Columns[0];
+        var card = new KanbanCard
+        {
+            Id = "archived-card",
+            Title = "Tarjeta archivada",
+            ArchivedAtUtc = DateTime.UtcNow.AddDays(-3),
+            CompletedAtUtc = DateTime.UtcNow.AddDays(-3)
+        };
+        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        {
+            Card = card,
+            ColumnId = column.Id,
+            ColumnTitle = column.Title
+        });
+        trash.Reload();
+
+        trash.RestoreTaskCommand.Execute(trash.Tasks.Single());
+
+        Assert.Contains(column.Cards, c => c.Id == "archived-card");
+        Assert.False(card.IsArchived);
+        Assert.NotNull(card.CompletedAtUtc);
+    }
+
     [Fact]
     public void RestoreTaskCommand_InsertsCardAtOriginalIndex()
     {

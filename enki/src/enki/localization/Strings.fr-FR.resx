@@ -876,6 +876,60 @@
   <data name="A11y_Files_FilterSelector" xml:space="preserve">
     <value>Filtre par type de fichier</value>
   </data>
+  <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
+    <value>Elles restent dans le calendrier et dans les statistiques, et chacune peut être récupérée depuis la fenêtre des archives.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
+    <value>{0} tâche terminée quittera le tableau et rejoindra les archives.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_other" xml:space="preserve">
+    <value>{0} tâches terminées quitteront le tableau et rejoindront les archives.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Title" xml:space="preserve">
+    <value>Archiver les tâches terminées</value>
+  </data>
+  <data name="Kanban_Archive_ActionsHint" xml:space="preserve">
+    <value>Un clic sur une tâche l'affiche en entier ; le clic droit propose de la désarchiver, la modifier ou la supprimer.</value>
+  </data>
+  <data name="Kanban_Archive_Badge" xml:space="preserve">
+    <value>Archivée</value>
+  </data>
+  <data name="Kanban_Archive_ButtonLabel" xml:space="preserve">
+    <value>Archivées</value>
+  </data>
+  <data name="Kanban_Archive_ButtonTooltip" xml:space="preserve">
+    <value>Ouvrir la fenêtre des tâches archivées</value>
+  </data>
+  <data name="Kanban_Archive_Count_one" xml:space="preserve">
+    <value>{0} tâche archivée</value>
+  </data>
+  <data name="Kanban_Archive_Count_other" xml:space="preserve">
+    <value>{0} tâches archivées</value>
+  </data>
+  <data name="Kanban_Archive_EmptyHint" xml:space="preserve">
+    <value>Rien d'archivé pour l'instant. Un clic droit sur une carte de la colonne des tâches terminées l'archive : elle quitte le tableau mais reste dans le calendrier.</value>
+  </data>
+  <data name="Kanban_Archive_NoMatches" xml:space="preserve">
+    <value>Aucune tâche archivée ne correspond aux filtres.</value>
+  </data>
+  <data name="Kanban_Archive_SearchPlaceholder" xml:space="preserve">
+    <value>Rechercher dans les archives…</value>
+  </data>
+  <data name="Kanban_Archive_SearchTooltip" xml:space="preserve">
+    <value>Rechercher dans les archives par titre, description ou sous-tâche</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Archived" xml:space="preserve">
+    <value>Date d'archivage</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Title" xml:space="preserve">
+    <value>Titre</value>
+  </data>
+  <data name="Kanban_Archive_Title" xml:space="preserve">
+    <value>Archivées</value>
+  </data>
+  <data name="Kanban_Archive_UnarchiveMenu" xml:space="preserve">
+    <value>Désarchiver</value>
+  </data>
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>Nouvelle colonne</value>
   </data>
@@ -963,6 +1017,9 @@
   <data name="Kanban_CardEditor_TitlePlaceholder" xml:space="preserve">
     <value>Titre de la carte…</value>
   </data>
+  <data name="Kanban_Card_ArchiveMenu" xml:space="preserve">
+    <value>Archiver</value>
+  </data>
   <data name="Kanban_Card_ChangePriorityTooltip" xml:space="preserve">
     <value>Modifier la priorité</value>
   </data>
@@ -980,6 +1037,9 @@
   </data>
   <data name="Kanban_Column_AddCardTooltip" xml:space="preserve">
     <value>Ajouter une carte à cette colonne (N)</value>
+  </data>
+  <data name="Kanban_Column_ArchiveAllTooltip" xml:space="preserve">
+    <value>Archiver toutes les tâches terminées de cette colonne</value>
   </data>
   <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve">
     <value>Colonne de workflow de base : impossible à supprimer</value>
@@ -1029,11 +1089,17 @@
   <data name="Kanban_DeleteTask_Title" xml:space="preserve">
     <value>SUPPRIMER LA TÂCHE</value>
   </data>
+  <data name="Kanban_Detail_ArchiveTooltip" xml:space="preserve">
+    <value>Archiver cette tâche : elle quitte le tableau mais reste dans le calendrier</value>
+  </data>
   <data name="Kanban_Detail_EditTooltip" xml:space="preserve">
     <value>Ouvrir cette carte dans le formulaire complet</value>
   </data>
   <data name="Kanban_Detail_DeleteTooltip" xml:space="preserve">
     <value>Déplacer cette carte vers la corbeille</value>
+  </data>
+  <data name="Kanban_Detail_UnarchiveTooltip" xml:space="preserve">
+    <value>Renvoyer cette tâche dans la colonne des tâches terminées</value>
   </data>
   <data name="Kanban_DueDate_ClearButton" xml:space="preserve">
     <value>Effacer</value>
@@ -1124,6 +1190,15 @@
   </data>
   <data name="Kanban_NotePicker_VaultWorkspaceLabel" xml:space="preserve">
     <value>Coffre</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_one" xml:space="preserve">
+    <value>{0} tâche a quitté '{1}' et se trouve dans les archives.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_other" xml:space="preserve">
+    <value>{0} tâches ont quitté '{1}' et se trouvent dans les archives.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Title" xml:space="preserve">
+    <value>Tâches archivées</value>
   </data>
   <data name="Kanban_Notify_ColumnDeleted_Message" xml:space="preserve">
     <value>'{0}' supprimée — {1} dans la corbeille.</value>

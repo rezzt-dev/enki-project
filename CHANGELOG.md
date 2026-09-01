@@ -7,6 +7,26 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Kanban: archivar tareas completadas**. La columna "Hecho" solo crecía, y la única forma de vaciarla era
+borrar sus tarjetas —lo que las manda a la papelera, las saca del calendario y las purga a los 30 días—.
+Archivar es la vía intermedia que faltaba: la tarea sale del tablero pero no desaparece de la app.
+
+- **Clic derecho sobre una tarjeta de la columna de completadas → "archivar"**, y la tarjeta deja de
+  ocupar sitio en el tablero. Sigue viéndose en el calendario, sigue contando en las estadísticas, se
+  sigue encontrando desde la búsqueda global y sigue apareciendo entre las "tareas vinculadas" de la nota
+  a la que estuviera enlazada: solo el tablero deja de dibujarla. El panel de inicio, que es un espejo del
+  tablero, tampoco las cuenta.
+- **La cabecera de la columna de completadas ofrece archivarlas todas de golpe**, con confirmación y un
+  aviso al terminar.
+- **Nueva ventana de archivadas**, a un clic desde la barra de herramientas del tablero, con el número de
+  tareas guardadas en el propio botón. Dentro se busca por texto y se acota por prioridad y etiquetas, y
+  se ordena por fecha de archivado, fecha límite, prioridad o título.
+- **Un clic sobre una tarea archivada abre su ficha completa**, y el clic derecho ofrece desarchivarla,
+  editarla o eliminarla. Desarchivar la devuelve a la columna de completadas, en la misma posición que
+  ocupaba. Archivar y desarchivar están también en la propia ficha, para no depender del clic derecho.
+- Restaurar desde la papelera una tarea que estaba archivada la devuelve al tablero a la vista, en vez de
+  dejarla en una columna que no la dibuja.
+
 **Archivos: soltar del sistema sobre una carpeta, y la sección recuerda el espacio de trabajo**.
 
 - **Las filas de carpeta del modo explorador aceptan archivos del explorador del sistema**, y los importan

@@ -876,6 +876,60 @@
   <data name="A11y_Files_FilterSelector" xml:space="preserve">
     <value>Dateityp-Filter</value>
   </data>
+  <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
+    <value>Sie bleiben im Kalender und in den Statistiken, und jede lässt sich aus dem Archivfenster zurückholen.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
+    <value>{0} erledigte Aufgabe verlässt das Board und wandert ins Archiv.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_other" xml:space="preserve">
+    <value>{0} erledigte Aufgaben verlassen das Board und wandern ins Archiv.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Title" xml:space="preserve">
+    <value>Erledigte archivieren</value>
+  </data>
+  <data name="Kanban_Archive_ActionsHint" xml:space="preserve">
+    <value>Ein Klick auf eine Aufgabe zeigt sie vollständig; der Rechtsklick bietet Wiederherstellen, Bearbeiten und Löschen.</value>
+  </data>
+  <data name="Kanban_Archive_Badge" xml:space="preserve">
+    <value>Archiviert</value>
+  </data>
+  <data name="Kanban_Archive_ButtonLabel" xml:space="preserve">
+    <value>Archiv</value>
+  </data>
+  <data name="Kanban_Archive_ButtonTooltip" xml:space="preserve">
+    <value>Fenster der archivierten Aufgaben öffnen</value>
+  </data>
+  <data name="Kanban_Archive_Count_one" xml:space="preserve">
+    <value>{0} archivierte Aufgabe</value>
+  </data>
+  <data name="Kanban_Archive_Count_other" xml:space="preserve">
+    <value>{0} archivierte Aufgaben</value>
+  </data>
+  <data name="Kanban_Archive_EmptyHint" xml:space="preserve">
+    <value>Noch nichts archiviert. Ein Rechtsklick auf eine Karte in der Spalte der erledigten Aufgaben archiviert sie: Sie verlässt das Board, bleibt aber im Kalender.</value>
+  </data>
+  <data name="Kanban_Archive_NoMatches" xml:space="preserve">
+    <value>Keine archivierte Aufgabe passt zu den Filtern.</value>
+  </data>
+  <data name="Kanban_Archive_SearchPlaceholder" xml:space="preserve">
+    <value>Im Archiv suchen…</value>
+  </data>
+  <data name="Kanban_Archive_SearchTooltip" xml:space="preserve">
+    <value>Im Archiv nach Titel, Beschreibung oder Teilaufgabe suchen</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Archived" xml:space="preserve">
+    <value>Archivierungsdatum</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Title" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="Kanban_Archive_Title" xml:space="preserve">
+    <value>Archiviert</value>
+  </data>
+  <data name="Kanban_Archive_UnarchiveMenu" xml:space="preserve">
+    <value>Aus Archiv holen</value>
+  </data>
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>Neue Spalte</value>
   </data>
@@ -963,6 +1017,9 @@
   <data name="Kanban_CardEditor_TitlePlaceholder" xml:space="preserve">
     <value>Kartentitel…</value>
   </data>
+  <data name="Kanban_Card_ArchiveMenu" xml:space="preserve">
+    <value>Archivieren</value>
+  </data>
   <data name="Kanban_Card_ChangePriorityTooltip" xml:space="preserve">
     <value>Priorität ändern</value>
   </data>
@@ -980,6 +1037,9 @@
   </data>
   <data name="Kanban_Column_AddCardTooltip" xml:space="preserve">
     <value>Karte zu dieser Spalte hinzufügen (N)</value>
+  </data>
+  <data name="Kanban_Column_ArchiveAllTooltip" xml:space="preserve">
+    <value>Alle erledigten Aufgaben dieser Spalte archivieren</value>
   </data>
   <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve">
     <value>Basis-Workflow-Spalte: kann nicht gelöscht werden</value>
@@ -1029,11 +1089,17 @@
   <data name="Kanban_DeleteTask_Title" xml:space="preserve">
     <value>AUFGABE LÖSCHEN</value>
   </data>
+  <data name="Kanban_Detail_ArchiveTooltip" xml:space="preserve">
+    <value>Diese Aufgabe archivieren: Sie verlässt das Board, bleibt aber im Kalender</value>
+  </data>
   <data name="Kanban_Detail_EditTooltip" xml:space="preserve">
     <value>Diese Karte im vollständigen Formular öffnen</value>
   </data>
   <data name="Kanban_Detail_DeleteTooltip" xml:space="preserve">
     <value>Diese Karte in den Papierkorb verschieben</value>
+  </data>
+  <data name="Kanban_Detail_UnarchiveTooltip" xml:space="preserve">
+    <value>Diese Aufgabe zurück in die Spalte der erledigten Aufgaben legen</value>
   </data>
   <data name="Kanban_DueDate_ClearButton" xml:space="preserve">
     <value>Löschen</value>
@@ -1124,6 +1190,15 @@
   </data>
   <data name="Kanban_NotePicker_VaultWorkspaceLabel" xml:space="preserve">
     <value>Tresor</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_one" xml:space="preserve">
+    <value>{0} Aufgabe hat '{1}' verlassen und liegt im Archiv.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_other" xml:space="preserve">
+    <value>{0} Aufgaben haben '{1}' verlassen und liegen im Archiv.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Title" xml:space="preserve">
+    <value>Aufgaben archiviert</value>
   </data>
   <data name="Kanban_Notify_ColumnDeleted_Message" xml:space="preserve">
     <value>'{0}' wurde gelöscht — {1} im Papierkorb.</value>

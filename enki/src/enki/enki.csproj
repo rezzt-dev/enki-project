@@ -43,11 +43,11 @@
     <None Include="../../local.properties" Link="local.properties" CopyToOutputDirectory="PreserveNewest" Condition="Exists('../../local.properties')" />
   </ItemGroup>
 
-  <!-- Skills de IA por defecto (docs/ia-skills/especificacion-desarrollo.md §2) — copiadas junto al
+  <!-- Skills de IA por defecto (docs/agent-docs/ia-skills/especificacion-desarrollo.md §2) — copiadas junto al
        ejecutable para que SkillService.EnsureDefaultSkills las encuentre en runtime vía
        Path.Combine(AppContext.BaseDirectory, "default-skills"). -->
   <ItemGroup>
-    <Content Include="../../../docs/ia-skills/default-skills/*.md" CopyToOutputDirectory="PreserveNewest" TargetPath="default-skills/%(Filename)%(Extension)" />
+    <Content Include="../../../docs/agent-docs/ia-skills/default-skills/*.md" CopyToOutputDirectory="PreserveNewest" TargetPath="default-skills/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

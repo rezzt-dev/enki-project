@@ -93,6 +93,21 @@ public sealed partial class KanbanCardViewModel : ObservableObject
     /// itself fails, instead of adding a second string for the same fact.</summary>
     public string? LinkedNoteTooltip => IsLinkedNoteMissing ? LocalizationService.Instance["Notification_LinkedNoteMissing_Title"] : null;
 
+    /// <summary>Archivada (docs/agent-docs/kanban-tareas-archivadas.md): el tablero no la dibuja, pero la
+    /// tarjeta sigue en su columna del modelo y por tanto en el Calendario y en las Estadísticas.</summary>
+    public bool IsArchived => Card.IsArchived;
+
+    public string ArchivedAtLabel => Card.ArchivedAtUtc is { } archived
+        ? archived.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture)
+        : string.Empty;
+
+    /// <summary>Solo se archiva desde la columna "Hecho". La tarjeta no conoce su columna —
+    /// <see cref="KanbanColumnViewModel"/> sella esta bandera sobre todas las suyas cada vez que su
+    /// colección cambia, que es el único punto por el que una tarjeta entra o sale de una columna, venga
+    /// del arrastre, del editor o de desarchivar.</summary>
+    [ObservableProperty]
+    private bool _canArchive;
+
     [ObservableProperty]
     private bool _isDropTarget;
 
@@ -174,5 +189,7 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         OnPropertyChanged(nameof(IsLinkedNoteMissing));
         OnPropertyChanged(nameof(LinkedNoteIcon));
         OnPropertyChanged(nameof(LinkedNoteTooltip));
+        OnPropertyChanged(nameof(IsArchived));
+        OnPropertyChanged(nameof(ArchivedAtLabel));
     }
 }

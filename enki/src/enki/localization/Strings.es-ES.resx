@@ -945,6 +945,60 @@
   <data name="A11y_Files_FilterSelector" xml:space="preserve">
     <value>Filtro de tipo de archivo</value>
   </data>
+  <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
+    <value>Siguen en el calendario y en las estadísticas, y cualquiera de ellas se puede recuperar desde la ventana de archivadas.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
+    <value>Se archivará {0} tarea completada, que saldrá del tablero.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_other" xml:space="preserve">
+    <value>Se archivarán {0} tareas completadas, que saldrán del tablero.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Title" xml:space="preserve">
+    <value>Archivar completadas</value>
+  </data>
+  <data name="Kanban_Archive_ActionsHint" xml:space="preserve">
+    <value>Un clic sobre una tarea la muestra completa; el clic derecho ofrece desarchivar, editar y eliminar.</value>
+  </data>
+  <data name="Kanban_Archive_Badge" xml:space="preserve">
+    <value>Archivada</value>
+  </data>
+  <data name="Kanban_Archive_ButtonLabel" xml:space="preserve">
+    <value>Archivadas</value>
+  </data>
+  <data name="Kanban_Archive_ButtonTooltip" xml:space="preserve">
+    <value>Abrir la ventana de tareas archivadas</value>
+  </data>
+  <data name="Kanban_Archive_Count_one" xml:space="preserve">
+    <value>{0} tarea archivada</value>
+  </data>
+  <data name="Kanban_Archive_Count_other" xml:space="preserve">
+    <value>{0} tareas archivadas</value>
+  </data>
+  <data name="Kanban_Archive_EmptyHint" xml:space="preserve">
+    <value>Todavía no hay nada archivado. Con el clic derecho sobre una tarjeta de la columna de completadas se archiva: sale del tablero pero sigue en el calendario.</value>
+  </data>
+  <data name="Kanban_Archive_NoMatches" xml:space="preserve">
+    <value>Ninguna tarea archivada coincide con los filtros.</value>
+  </data>
+  <data name="Kanban_Archive_SearchPlaceholder" xml:space="preserve">
+    <value>Buscar entre las archivadas…</value>
+  </data>
+  <data name="Kanban_Archive_SearchTooltip" xml:space="preserve">
+    <value>Buscar entre las archivadas por título, descripción o subtarea</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Archived" xml:space="preserve">
+    <value>Fecha de archivado</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Title" xml:space="preserve">
+    <value>Título</value>
+  </data>
+  <data name="Kanban_Archive_Title" xml:space="preserve">
+    <value>Archivadas</value>
+  </data>
+  <data name="Kanban_Archive_UnarchiveMenu" xml:space="preserve">
+    <value>Desarchivar</value>
+  </data>
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>Nueva columna</value>
   </data>
@@ -1032,6 +1086,9 @@
   <data name="Kanban_CardEditor_TitlePlaceholder" xml:space="preserve">
     <value>Título de la tarjeta…</value>
   </data>
+  <data name="Kanban_Card_ArchiveMenu" xml:space="preserve">
+    <value>Archivar</value>
+  </data>
   <data name="Kanban_Card_ChangePriorityTooltip" xml:space="preserve">
     <value>Cambiar prioridad</value>
   </data>
@@ -1049,6 +1106,9 @@
   </data>
   <data name="Kanban_Column_AddCardTooltip" xml:space="preserve">
     <value>Añadir una tarjeta a esta columna (N)</value>
+  </data>
+  <data name="Kanban_Column_ArchiveAllTooltip" xml:space="preserve">
+    <value>Archivar todas las tareas completadas de esta columna</value>
   </data>
   <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve">
     <value>Columna base del flujo de trabajo: no se puede eliminar</value>
@@ -1098,11 +1158,17 @@
   <data name="Kanban_DeleteTask_Title" xml:space="preserve">
     <value>ELIMINAR TAREA</value>
   </data>
+  <data name="Kanban_Detail_ArchiveTooltip" xml:space="preserve">
+    <value>Archivar esta tarea: sale del tablero pero sigue en el calendario</value>
+  </data>
   <data name="Kanban_Detail_EditTooltip" xml:space="preserve">
     <value>Abrir esta tarjeta en el formulario completo</value>
   </data>
   <data name="Kanban_Detail_DeleteTooltip" xml:space="preserve">
     <value>Mover esta tarjeta a la papelera</value>
+  </data>
+  <data name="Kanban_Detail_UnarchiveTooltip" xml:space="preserve">
+    <value>Devolver esta tarea a la columna de completadas</value>
   </data>
   <data name="Kanban_DueDate_ClearButton" xml:space="preserve">
     <value>Borrar</value>
@@ -1193,6 +1259,15 @@
   </data>
   <data name="Kanban_NotePicker_VaultWorkspaceLabel" xml:space="preserve">
     <value>Almacén</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_one" xml:space="preserve">
+    <value>{0} tarea ha salido de '{1}' y está en el archivo.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_other" xml:space="preserve">
+    <value>{0} tareas han salido de '{1}' y están en el archivo.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Title" xml:space="preserve">
+    <value>Tareas archivadas</value>
   </data>
   <data name="Kanban_Notify_ColumnDeleted_Message" xml:space="preserve">
     <value>'{0}' eliminada — {1} en la papelera.</value>

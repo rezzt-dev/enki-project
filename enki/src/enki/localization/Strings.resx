@@ -945,6 +945,60 @@
   <data name="A11y_Files_FilterSelector" xml:space="preserve">
     <value>File type filter</value>
   </data>
+  <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
+    <value>They stay in the calendar and in your statistics, and any of them can be brought back from the archived window.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
+    <value>{0} completed task will leave the board and move to the archive.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Message_other" xml:space="preserve">
+    <value>{0} completed tasks will leave the board and move to the archive.</value>
+  </data>
+  <data name="Kanban_ArchiveAll_Title" xml:space="preserve">
+    <value>Archive completed</value>
+  </data>
+  <data name="Kanban_Archive_ActionsHint" xml:space="preserve">
+    <value>Click a task to see it in full, or right-click it to unarchive, edit or delete it.</value>
+  </data>
+  <data name="Kanban_Archive_Badge" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Kanban_Archive_ButtonLabel" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Kanban_Archive_ButtonTooltip" xml:space="preserve">
+    <value>Open the archived tasks window</value>
+  </data>
+  <data name="Kanban_Archive_Count_one" xml:space="preserve">
+    <value>{0} archived task</value>
+  </data>
+  <data name="Kanban_Archive_Count_other" xml:space="preserve">
+    <value>{0} archived tasks</value>
+  </data>
+  <data name="Kanban_Archive_EmptyHint" xml:space="preserve">
+    <value>Nothing archived yet. Right-click a card in the done column to archive it: it leaves the board but stays in the calendar.</value>
+  </data>
+  <data name="Kanban_Archive_NoMatches" xml:space="preserve">
+    <value>No archived task matches the current filters.</value>
+  </data>
+  <data name="Kanban_Archive_SearchPlaceholder" xml:space="preserve">
+    <value>Search archived tasks…</value>
+  </data>
+  <data name="Kanban_Archive_SearchTooltip" xml:space="preserve">
+    <value>Search archived tasks by title, description or subtask</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Archived" xml:space="preserve">
+    <value>Archived date</value>
+  </data>
+  <data name="Kanban_Archive_Sort_Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Kanban_Archive_Title" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Kanban_Archive_UnarchiveMenu" xml:space="preserve">
+    <value>Unarchive</value>
+  </data>
   <data name="Kanban_Board_AddColumnButton" xml:space="preserve">
     <value>New column</value>
   </data>
@@ -1032,6 +1086,9 @@
   <data name="Kanban_CardEditor_TitlePlaceholder" xml:space="preserve">
     <value>Card title…</value>
   </data>
+  <data name="Kanban_Card_ArchiveMenu" xml:space="preserve">
+    <value>Archive</value>
+  </data>
   <data name="Kanban_Card_ChangePriorityTooltip" xml:space="preserve">
     <value>Change priority</value>
   </data>
@@ -1049,6 +1106,9 @@
   </data>
   <data name="Kanban_Column_AddCardTooltip" xml:space="preserve">
     <value>Add a card to this column (N)</value>
+  </data>
+  <data name="Kanban_Column_ArchiveAllTooltip" xml:space="preserve">
+    <value>Archive every completed task in this column</value>
   </data>
   <data name="Kanban_Column_CoreLockedTooltip" xml:space="preserve">
     <value>Base workflow column: cannot be deleted</value>
@@ -1098,11 +1158,17 @@
   <data name="Kanban_DeleteTask_Title" xml:space="preserve">
     <value>DELETE TASK</value>
   </data>
+  <data name="Kanban_Detail_ArchiveTooltip" xml:space="preserve">
+    <value>Archive this task: it leaves the board but stays in the calendar</value>
+  </data>
   <data name="Kanban_Detail_EditTooltip" xml:space="preserve">
     <value>Open this card in the full form</value>
   </data>
   <data name="Kanban_Detail_DeleteTooltip" xml:space="preserve">
     <value>Move this card to the trash</value>
+  </data>
+  <data name="Kanban_Detail_UnarchiveTooltip" xml:space="preserve">
+    <value>Return this task to the done column</value>
   </data>
   <data name="Kanban_DueDate_ClearButton" xml:space="preserve">
     <value>Clear</value>
@@ -1193,6 +1259,15 @@
   </data>
   <data name="Kanban_NotePicker_VaultWorkspaceLabel" xml:space="preserve">
     <value>Vault</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_one" xml:space="preserve">
+    <value>{0} task left '{1}' and moved to the archive.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Message_other" xml:space="preserve">
+    <value>{0} tasks left '{1}' and moved to the archive.</value>
+  </data>
+  <data name="Kanban_Notify_CardsArchived_Title" xml:space="preserve">
+    <value>Tasks archived</value>
   </data>
   <data name="Kanban_Notify_ColumnDeleted_Message" xml:space="preserve">
     <value>'{0}' was deleted — {1} in the trash.</value>

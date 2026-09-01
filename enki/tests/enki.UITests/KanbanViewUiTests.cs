@@ -122,4 +122,41 @@ public class KanbanViewUiTests : IDisposable
 
         window.Close();
     }
+
+    /// <summary>Archivar una tarjeta la saca del tablero dibujado sin sacarla del modelo
+    /// (docs/agent-docs/kanban-tareas-archivadas.md), y la ventana de archivadas —que es XAML nuevo con su
+    /// propia plantilla de fila— la vuelve a pintar con su título. Esta prueba existe sobre todo por la
+    /// segunda mitad: recorre el árbol visual real, así que un binding roto en el modal o una plantilla
+    /// que no resuelve se ven aquí y no en la primera ejecución del usuario.</summary>
+    [Fact]
+    public void ArchivingACard_TakesItOffTheBoard_AndTheArchiveWindowRendersIt()
+    {
+        var (view, viewModel, window) = CreateView();
+        var doneColumn = viewModel.Columns.First(c => c.IsDoneColumn && c.Cards.Count > 0);
+        var card = doneColumn.Cards[0];
+        var title = card.Title;
+
+        viewModel.ArchiveCardCommand.Execute(card);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.True(card.IsArchived);
+        Assert.DoesNotContain(card, doneColumn.Cards);
+        Assert.Contains(card.Card, doneColumn.Column.Cards);
+        Assert.DoesNotContain(title, view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+
+        viewModel.OpenArchiveCommand.Execute(null);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        var renderedInArchive = window.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Contains(title, renderedInArchive);
+        Assert.Contains(viewModel.ArchiveCountLabel, renderedInArchive);
+
+        viewModel.UnarchiveCardCommand.Execute(card);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.False(card.IsArchived);
+        Assert.Contains(card, doneColumn.Cards);
+
+        window.Close();
+    }
 }

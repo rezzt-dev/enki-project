@@ -326,6 +326,13 @@ public sealed partial class TrashViewModel : ViewModelBase
             : targetColumn.Cards.Count;
         targetColumn.Cards.Insert(insertIndex, trashed.Card);
 
+        // Restaurar significa "vuelve al tablero", así que una tarjeta que estaba archivada cuando se
+        // borró (docs/agent-docs/kanban-tareas-archivadas.md) pierde aquí esa marca: si no, la
+        // restauración la dejaría en una columna que no la dibuja y habría que ir a buscarla a la ventana
+        // de archivadas para verla. Se decide en este único sitio y no en cada camino de borrado, que son
+        // varios (el tablero y el propio Calendario).
+        trashed.Card.ArchivedAtUtc = null;
+
         _kanbanService.Save();
         _notificationService.Push(
             LocalizationService.Instance["Trash_Notify_CardRestored_Title"],

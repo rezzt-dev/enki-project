@@ -436,9 +436,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
         // Real column totals, not the 5-item preview cap above — otherwise the badge next to "PENDIENTES"
         // would silently read "5" forever on a board with more than five cards, and the completion bar
         // below would be built on truncated numbers.
-        PendingTaskCount = pendingColumn?.Cards.Count ?? 0;
-        InProgressTaskCount = inProgressColumn?.Cards.Count ?? 0;
-        DoneTaskCount = doneColumn?.Cards.Count ?? 0;
+        PendingTaskCount = VisibleCards(pendingColumn).Count();
+        InProgressTaskCount = VisibleCards(inProgressColumn).Count();
+        DoneTaskCount = VisibleCards(doneColumn).Count();
         BoardTotalCount = PendingTaskCount + InProgressTaskCount + DoneTaskCount;
         BoardProgressPercent = BoardTotalCount > 0 ? (int)Math.Round(DoneTaskCount * 100.0 / BoardTotalCount) : 0;
         PendingBarWidth = BoardTotalCount > 0 ? BoardBarTotalWidth * PendingTaskCount / BoardTotalCount : 0;
@@ -605,12 +605,19 @@ public sealed partial class DashboardViewModel : ViewModelBase
         target.Clear();
         if (column is null) return;
 
-        foreach (var card in column.Cards
+        foreach (var card in VisibleCards(column)
                      .OrderBy(c => c.DueDateUtc ?? DateTime.MaxValue)
                      .ThenByDescending(c => c.Priority)
                      .Take(5))
             target.Add(new KanbanCardViewModel(card));
     }
+
+    /// <summary>Las tarjetas que el tablero Kanban dibuja de verdad — es decir, sin las archivadas
+    /// (docs/agent-docs/kanban-tareas-archivadas.md). Este panel es un espejo del tablero, así que sus
+    /// listas y sus contadores tienen que decir lo mismo que él; las Estadísticas, que miran el histórico
+    /// y no el estado actual, sí siguen contando las archivadas.</summary>
+    private static IEnumerable<KanbanCard> VisibleCards(KanbanColumn? column) =>
+        column?.Cards.Where(c => !c.IsArchived) ?? [];
 
     [RelayCommand]
     private void OpenCard(NoteCardViewModel card) => _openNote(card.Note);

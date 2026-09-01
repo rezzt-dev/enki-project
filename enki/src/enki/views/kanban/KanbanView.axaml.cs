@@ -47,8 +47,11 @@ public partial class KanbanView : UserControl
 
         if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control)
         {
-            KanbanSearchBox.Focus();
-            KanbanSearchBox.SelectAll();
+            // Con la ventana de archivadas abierta, el buscador que el usuario tiene delante es el suyo,
+            // no el del tablero que hay detrás.
+            var searchBox = vm.IsArchiveOpen ? ArchiveSearchBox : KanbanSearchBox;
+            searchBox.Focus();
+            searchBox.SelectAll();
             e.Handled = true;
             return;
         }
@@ -60,12 +63,12 @@ public partial class KanbanView : UserControl
 
         switch (e.Key)
         {
-            case Key.N when vm.DisplayMode == KanbanDisplayMode.Board && vm.CardEditor is null && vm.CardDetail is null:
+            case Key.N when vm.DisplayMode == KanbanDisplayMode.Board && vm.CardEditor is null && vm.CardDetail is null && !vm.IsArchiveOpen:
                 if (TargetColumnForNewCard(vm, e.Source as Visual) is { } column) vm.OpenCreateCardCommand.Execute(column);
                 e.Handled = true;
                 break;
 
-            case Key.C when vm.DisplayMode == KanbanDisplayMode.Board && vm.CardEditor is null && vm.CardDetail is null:
+            case Key.C when vm.DisplayMode == KanbanDisplayMode.Board && vm.CardEditor is null && vm.CardDetail is null && !vm.IsArchiveOpen:
                 vm.AddColumnCommand.Execute(null);
                 e.Handled = true;
                 break;
@@ -73,7 +76,10 @@ public partial class KanbanView : UserControl
             case Key.Delete:
                 if (e.Source is Control { DataContext: KanbanCardViewModel card })
                 {
-                    vm.RequestDeleteCardCommand.Execute(card);
+                    // Desde la ventana de archivadas se borra por el mismo camino, pero pasando por el
+                    // comando que sabe cerrarla y volver a abrirla alrededor de la confirmación.
+                    if (vm.IsArchiveOpen) vm.RequestDeleteArchivedCardCommand.Execute(card);
+                    else vm.RequestDeleteCardCommand.Execute(card);
                     e.Handled = true;
                 }
                 break;
@@ -85,8 +91,12 @@ public partial class KanbanView : UserControl
             case Key.Escape:
                 if (vm.CardPendingDelete is not null) { vm.CancelDeleteCardCommand.Execute(null); e.Handled = true; }
                 else if (vm.ColumnPendingDelete is not null) { vm.CancelDeleteColumnCommand.Execute(null); e.Handled = true; }
+                else if (vm.IsArchiveAllPending) { vm.CancelArchiveAllDoneCommand.Execute(null); e.Handled = true; }
                 else if (vm.CardEditor is not null) { vm.CancelCardEditorCommand.Execute(null); e.Handled = true; }
                 else if (vm.CardDetail is not null) { vm.CloseCardDetailCommand.Execute(null); e.Handled = true; }
+                // La ventana de archivadas va después del detalle y del editor porque los tres pueden
+                // encadenarse: se abren desde ella y la dejan esperando debajo.
+                else if (vm.IsArchiveOpen) { vm.CloseArchiveCommand.Execute(null); e.Handled = true; }
                 else if (vm.HasActiveFilters) { vm.ClearFiltersCommand.Execute(null); e.Handled = true; }
                 break;
         }

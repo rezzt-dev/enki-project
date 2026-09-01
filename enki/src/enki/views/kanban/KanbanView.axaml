@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:models="clr-namespace:enki.Models"
              xmlns:views="clr-namespace:enki.Views"
              xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
@@ -39,6 +40,26 @@
               DragDrop.DragOver="CardBody_DragOver"
               DragDrop.DragLeave="CardBody_DragLeave"
               DragDrop.Drop="CardBody_Drop">
+        <!-- Menú contextual de la tarjeta: las mismas acciones que los botones que solo aparecen al pasar
+             el ratón, más "archivar", que solo existe en la columna "Hecho" (KanbanCardViewModel.CanArchive).
+             Archivar saca la tarjeta del tablero sin borrarla; se sigue viendo en el Calendario y se
+             recupera desde la ventana de archivadas (docs/agent-docs/kanban-tareas-archivadas.md). -->
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenEditCardCommand}"
+                      CommandParameter="{Binding}" />
+            <MenuItem Header="{loc:Tr Kanban_Card_ArchiveMenu, Converter={StaticResource UpperCaseConverter}}"
+                      IsVisible="{Binding CanArchive}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).ArchiveCardCommand}"
+                      CommandParameter="{Binding}" />
+            <Separator />
+            <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RequestDeleteCardCommand}"
+                      CommandParameter="{Binding}" />
+          </ContextMenu>
+        </Button.ContextMenu>
+
         <StackPanel Spacing="9">
 
           <!-- Prioridad (clic para rotar Baja → Media → Alta) + acciones de la tarjeta.
@@ -173,6 +194,15 @@
 
               <StackPanel Grid.Column="2" Classes="column-actions" Orientation="Horizontal" Spacing="2"
                           Margin="6,0,0,0" VerticalAlignment="Center" IsVisible="{Binding !IsRenaming}">
+                <!-- Archivar de golpe todo lo que hay en "Hecho": solo aparece en esa columna y solo
+                     mientras tenga tarjetas (KanbanColumnViewModel.CanArchiveAllCards). Pasa por
+                     confirmación, como el resto de acciones que tocan muchas tarjetas a la vez. -->
+                <Button Classes="icon-btn" Width="24" Height="24"
+                        IsVisible="{Binding CanArchiveAllCards}"
+                        Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RequestArchiveAllDoneCommand}"
+                        ToolTip.Tip="{loc:Tr Kanban_Column_ArchiveAllTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Column_ArchiveAllTooltip}">
+                  <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="13" Height="13" />
+                </Button>
                 <Button Classes="icon-btn" Width="24" Height="24"
                         Command="{Binding BeginRenameCommand}" ToolTip.Tip="{loc:Tr Kanban_Column_RenameTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Column_RenameTooltip}">
                   <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
@@ -510,6 +540,77 @@
        del archivo (p.ej. la fila de tarea de Gestión de tareas, repetida en vez de compartida). -->
   <UserControl.Resources>
 
+    <!-- ===================== Fila de tarjeta archivada (ventana de archivadas) =====================
+         Misma loseta que la tarjeta del tablero, pero tumbada: en la ventana de archivadas no hay columnas
+         que llenar ni arrastre que soportar, así que la fila ocupa todo el ancho y reparte el sitio entre
+         el título (que es lo que se busca) y la fecha en que se archivó (que es como se ordena por
+         defecto). La prioridad se pinta pero no se rota con un clic: lo archivado se consulta, y para
+         cambiarlo está "editar" en el menú contextual. -->
+    <DataTemplate x:Key="KanbanArchivedCardTemplate" DataType="vm:KanbanCardViewModel">
+      <Button Classes="kanban-card" HorizontalAlignment="Stretch" Margin="0,0,0,8"
+              Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenArchivedCardDetailCommand}"
+              CommandParameter="{Binding}"
+              AutomationProperties.Name="{Binding Title}">
+
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="{loc:Tr Kanban_Archive_UnarchiveMenu, Converter={StaticResource UpperCaseConverter}}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).UnarchiveCardCommand}"
+                      CommandParameter="{Binding}" />
+            <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).EditArchivedCardCommand}"
+                      CommandParameter="{Binding}" />
+            <Separator />
+            <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RequestDeleteArchivedCardCommand}"
+                      CommandParameter="{Binding}" />
+          </ContextMenu>
+        </Button.ContextMenu>
+
+        <Grid ColumnDefinitions="Auto,*,Auto" >
+          <Ellipse Grid.Column="0" Classes="priority-dot" Margin="0,0,10,0" VerticalAlignment="Center"
+                   Classes.low="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Low}"
+                   Classes.medium="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium}"
+                   Classes.high="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High}"
+                   ToolTip.Tip="{Binding PriorityLabel}" />
+
+          <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="13" LetterSpacing="0.1"
+                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
+
+            <!-- Misma línea de metadatos que la tarjeta del tablero: subtareas, fecha límite, nota
+                 vinculada y etiquetas, en ese orden y con los mismos iconos. -->
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasMeta}">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
+                          VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
+                <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{Binding SubtaskProgressLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
+                          VerticalAlignment="Center" IsVisible="{Binding HasDueDate}">
+                <mi:MaterialIcon Kind="CalendarOutline" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{Binding DueDateLabel}" Classes="faint" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <mi:MaterialIcon Grid.Column="2" Kind="{Binding LinkedNoteIcon}" Width="11" Height="11" Margin="0,1,12,0"
+                                VerticalAlignment="Center" Foreground="{DynamicResource Ink40}"
+                                IsVisible="{Binding HasLinkedNote}"
+                                ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
+
+              <TextBlock Grid.Column="3" Text="{Binding TagsLabel}" Classes="faint" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" MaxLines="1" IsVisible="{Binding HasTags}" />
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" Margin="14,0,0,0" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="ArchiveOutline" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{Binding ArchivedAtLabel}" Classes="faint" VerticalAlignment="Center" />
+          </StackPanel>
+        </Grid>
+      </Button>
+    </DataTemplate>
+
     <!-- ===================== Tarjeta horizontal =====================
          Cuadrada (mismo Width/Height) para encajar en la franja horizontal de su columna: el cuerpo va
          en una fila en estrella, así que título y descripción se recortan con elipsis en vez de crecer
@@ -531,6 +632,26 @@
               DragDrop.DragOver="CardBody_DragOver"
               DragDrop.DragLeave="CardBody_DragLeave"
               DragDrop.Drop="CardBody_Drop">
+        <!-- Menú contextual de la tarjeta: las mismas acciones que los botones que solo aparecen al pasar
+             el ratón, más "archivar", que solo existe en la columna "Hecho" (KanbanCardViewModel.CanArchive).
+             Archivar saca la tarjeta del tablero sin borrarla; se sigue viendo en el Calendario y se
+             recupera desde la ventana de archivadas (docs/agent-docs/kanban-tareas-archivadas.md). -->
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenEditCardCommand}"
+                      CommandParameter="{Binding}" />
+            <MenuItem Header="{loc:Tr Kanban_Card_ArchiveMenu, Converter={StaticResource UpperCaseConverter}}"
+                      IsVisible="{Binding CanArchive}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).ArchiveCardCommand}"
+                      CommandParameter="{Binding}" />
+            <Separator />
+            <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RequestDeleteCardCommand}"
+                      CommandParameter="{Binding}" />
+          </ContextMenu>
+        </Button.ContextMenu>
+
         <Grid RowDefinitions="Auto,*,Auto,Auto,Auto">
 
               <!-- Prioridad (clic para rotar Baja → Media → Alta) + acciones de la tarjeta.
@@ -661,6 +782,15 @@
 
               <StackPanel Grid.Column="2" Classes="column-actions" Orientation="Horizontal" Spacing="2"
                           Margin="6,0,0,0" VerticalAlignment="Center" IsVisible="{Binding !IsRenaming}">
+                <!-- Archivar de golpe todo lo que hay en "Hecho": solo aparece en esa columna y solo
+                     mientras tenga tarjetas (KanbanColumnViewModel.CanArchiveAllCards). Pasa por
+                     confirmación, como el resto de acciones que tocan muchas tarjetas a la vez. -->
+                <Button Classes="icon-btn" Width="24" Height="24"
+                        IsVisible="{Binding CanArchiveAllCards}"
+                        Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RequestArchiveAllDoneCommand}"
+                        ToolTip.Tip="{loc:Tr Kanban_Column_ArchiveAllTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Column_ArchiveAllTooltip}">
+                  <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="13" Height="13" />
+                </Button>
                 <Button Classes="icon-btn" Width="24" Height="24"
                         Command="{Binding BeginRenameCommand}" ToolTip.Tip="{loc:Tr Kanban_Column_RenameTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Column_RenameTooltip}">
                   <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
@@ -767,7 +897,7 @@
            si hay algo que limpiar, así que en un tablero tranquilo la fila se queda en el buscador y el
            orden. Antes esta misma fila llevaba fijos el rótulo "Sin etiquetas" y cuatro segmentos de
            ordenación de los que solo uno importa en cada momento. -->
-      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,0,0,14">
+      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="0,0,0,14">
 
         <!-- Buscador con la lupa y el aspa de limpiar dentro del propio campo: sin aspa había que
              seleccionar el texto y borrarlo a mano para volver a ver el tablero entero. -->
@@ -827,10 +957,26 @@
           </StackPanel>
         </Button>
 
+        <!-- Archivadas: puerta a la ventana del archivo, con el número de tareas guardadas dentro para
+             que se note que existen sin tener que abrirla. Solo aparece cuando hay algo archivado —
+             un botón permanente que casi siempre lleva a una lista vacía es el mismo ruido que la rejilla
+             de estadísticas que esta barra ya se quitó de encima. -->
+        <Button Grid.Column="4" Classes="pill" Height="34" Margin="0,0,10,0" VerticalAlignment="Center"
+                IsVisible="{Binding HasArchivedCards}" Command="{Binding OpenArchiveCommand}"
+                ToolTip.Tip="{loc:Tr Kanban_Archive_ButtonTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Archive_ButtonTooltip}">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="ArchiveOutline" Width="14" Height="14" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr Kanban_Archive_ButtonLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+            <Border Classes="kanban-count" VerticalAlignment="Center">
+              <TextBlock Text="{Binding ArchivedCount}" Classes="faint" FontSize="10.5" HorizontalAlignment="Center" />
+            </Border>
+          </StackPanel>
+        </Button>
+
         <!-- Ordenación: desplegable que enseña el orden activo en el propio botón, en vez de cuatro
              segmentos permanentes ocupando media barra. Mismo Popup con luz de descarte y misma
              Border.dropdown-popover que el resto de desplegables de la app. -->
-        <Panel Grid.Column="4">
+        <Panel Grid.Column="5">
           <Button Name="KanbanSortTrigger" Classes="pill" Height="34" Command="{Binding ToggleSortMenuCommand}"
                   ToolTip.Tip="{loc:Tr Kanban_Sort_MenuTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Sort_MenuTooltip}">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -2054,6 +2200,17 @@
               <TextBlock Text="{Binding ColumnTitle, Converter={StaticResource UpperCaseConverter}}" Classes="faint"
                          LetterSpacing="1" VerticalAlignment="Center" />
             </StackPanel>
+
+            <!-- Archivada: el detalle se abre también desde la ventana de archivadas, desde el calendario y
+                 desde la búsqueda global, donde nada alrededor dice que la tarjeta ya no está en el
+                 tablero. La fecha de archivado va al lado porque es el dato que sitúa el "cuándo". -->
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsArchived}">
+              <mi:MaterialIcon Kind="ArchiveOutline" Width="11" Height="11" Margin="0,1,0,0"
+                                VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+              <TextBlock Text="{loc:Tr Kanban_Archive_Badge, Converter={StaticResource UpperCaseConverter}}" Classes="faint"
+                         LetterSpacing="1" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ArchivedAtLabel}" Classes="faint" VerticalAlignment="Center" />
+            </StackPanel>
           </StackPanel>
 
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,-14,0" Padding="0,0,14,0">
@@ -2121,16 +2278,41 @@
                Enter desde el teclado, es la vía que no depende del hover. Eliminar va a la izquierda y
                separado del par cerrar/editar, para que no se pulse por inercia. -->
           <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,18,0,0">
-            <Button Grid.Column="0" Classes="ghost" Padding="0" VerticalAlignment="Center"
-                    Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).DeleteCardFromDetailCommand}"
-                    ToolTip.Tip="{loc:Tr Kanban_Detail_DeleteTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Detail_DeleteTooltip}">
-              <StackPanel Orientation="Horizontal" Spacing="7">
-                <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" VerticalAlignment="Center"
-                                  Foreground="{DynamicResource DangerBrush}" />
-                <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
-                           Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
+              <Button Classes="ghost" Padding="0" VerticalAlignment="Center"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).DeleteCardFromDetailCommand}"
+                      ToolTip.Tip="{loc:Tr Kanban_Detail_DeleteTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Detail_DeleteTooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" VerticalAlignment="Center"
+                                    Foreground="{DynamicResource DangerBrush}" />
+                  <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
+                             Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Archivar/desarchivar viven aquí por el mismo motivo que editar y eliminar: en el tablero
+                   solo se llega a ellas con el clic derecho, y este diálogo es la vía que no depende de
+                   ningún gesto oculto. Solo una de las dos puede verse a la vez. -->
+              <Button Classes="ghost" Padding="0" VerticalAlignment="Center" IsVisible="{Binding CanArchive}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).ArchiveCardFromDetailCommand}"
+                      ToolTip.Tip="{loc:Tr Kanban_Detail_ArchiveTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Detail_ArchiveTooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="13" Height="13" VerticalAlignment="Center"
+                                    Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Kanban_Card_ArchiveMenu, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <Button Classes="ghost" Padding="0" VerticalAlignment="Center" IsVisible="{Binding IsArchived}"
+                      Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).UnarchiveCardFromDetailCommand}"
+                      ToolTip.Tip="{loc:Tr Kanban_Detail_UnarchiveTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Detail_UnarchiveTooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <mi:MaterialIcon Kind="ArchiveArrowUpOutline" Width="13" Height="13" VerticalAlignment="Center"
+                                    Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{loc:Tr Kanban_Archive_UnarchiveMenu, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
 
             <Button Grid.Column="2" Classes="ghost modal-cancel" Margin="0,0,18,0"
                     Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).CloseCardDetailCommand}">
@@ -2143,6 +2325,217 @@
             </Button>
           </Grid>
         </Grid>
+    </Border>
+  </controls:ModalOverlayHost>
+
+    <!-- ===================== Ventana: tareas archivadas =====================
+         docs/agent-docs/kanban-tareas-archivadas.md. Es un modal sobre el propio tablero y no una sección
+         aparte: el archivo es el reverso del tablero, se entra a mirarlo y se vuelve, no es un sitio donde
+         se trabaja. Por eso hereda su lenguaje —el mismo buscador con lupa y aspa, los mismos chips de
+         filtro, el mismo desplegable de orden— en vez de inventarse una barra de herramientas propia.
+
+         Los diálogos del tablero son excluyentes entre sí, así que abrir el detalle, el editor o la
+         confirmación de borrado desde aquí cierra esta ventana y la vuelve a abrir al cerrarlos
+         (KanbanViewModel._returnToArchive). -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsArchiveOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
+              MaxWidth="760" MaxHeight="720">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" MinWidth="660">
+
+          <!-- Encabezado -->
+          <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,18">
+            <TextBlock Text="{loc:Tr Kanban_Board_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            <TextBlock Text="{loc:Tr Kanban_Archive_Title, Converter={StaticResource UpperCaseSpacedBulletConverter}}" Classes="page-title" />
+            <TextBlock Text="{Binding ArchiveCountLabel}" Classes="page-subtitle" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <!-- Barra de herramientas: buscar, acotar por prioridad y ordenar -->
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,12">
+            <Grid Grid.Column="0" MinWidth="220" Margin="0,0,10,0">
+              <TextBox Classes="search" Name="ArchiveSearchBox" Height="34" Padding="34,0,32,0"
+                       VerticalContentAlignment="Center"
+                       Text="{Binding ArchiveSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="{loc:Tr Kanban_Archive_SearchPlaceholder}"
+                       ToolTip.Tip="{loc:Tr Kanban_Archive_SearchTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Archive_SearchTooltip}" />
+              <mi:MaterialIcon Classes="search-adornment" Kind="Magnify" />
+              <Button Classes="icon-btn" Width="24" Height="24" HorizontalAlignment="Right" Margin="0,0,5,0"
+                      IsVisible="{Binding ArchiveSearchText, Converter={x:Static baseconv:StringConverters.IsNotNullOrEmpty}}"
+                      Command="{Binding ClearArchiveSearchCommand}"
+                      ToolTip.Tip="{loc:Tr Kanban_Search_ClearTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Search_ClearTooltip}">
+                <mi:MaterialIcon Kind="Close" Width="12" Height="12" />
+              </Button>
+            </Grid>
+
+            <!-- Prioridad: tres chips que se apagan volviendo a pulsar el que ya estaba puesto, igual
+                 que los filtros rápidos del tablero. -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,10,0">
+              <ToggleButton Classes="tag-chip toolbar-chip"
+                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High, Mode=OneWay}"
+                            Command="{Binding ToggleArchivePriorityFilterCommand}"
+                            CommandParameter="{x:Static models:KanbanPriority.High}">
+                <TextBlock Text="{loc:Tr Kanban_Priority_High, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+              </ToggleButton>
+              <ToggleButton Classes="tag-chip toolbar-chip"
+                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium, Mode=OneWay}"
+                            Command="{Binding ToggleArchivePriorityFilterCommand}"
+                            CommandParameter="{x:Static models:KanbanPriority.Medium}">
+                <TextBlock Text="{loc:Tr Kanban_Priority_Medium, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+              </ToggleButton>
+              <ToggleButton Classes="tag-chip toolbar-chip"
+                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Low, Mode=OneWay}"
+                            Command="{Binding ToggleArchivePriorityFilterCommand}"
+                            CommandParameter="{x:Static models:KanbanPriority.Low}">
+                <TextBlock Text="{loc:Tr Kanban_Priority_Low, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+              </ToggleButton>
+            </StackPanel>
+
+            <Button Grid.Column="2" Classes="ghost" Height="34" Margin="0,0,10,0" VerticalAlignment="Center"
+                    IsVisible="{Binding HasActiveArchiveFilters}" Command="{Binding ClearArchiveFiltersCommand}"
+                    ToolTip.Tip="{loc:Tr Kanban_Filter_ClearTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Filter_ClearTooltip}">
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="FilterRemoveOutline" Width="13" Height="13" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Kanban_Filter_ClearButton, Converter={StaticResource UpperCaseConverter}}"
+                           FontSize="11" FontWeight="Bold" LetterSpacing="1.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <Panel Grid.Column="3">
+              <Button Name="ArchiveSortTrigger" Classes="pill" Height="34" Command="{Binding ToggleArchiveSortMenuCommand}"
+                      ToolTip.Tip="{loc:Tr Kanban_Sort_MenuTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Sort_MenuTooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="SortVariant" Width="14" Height="14" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding ArchiveSortModeLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Kind="MenuDown" Width="14" Height="14" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <Popup PlacementTarget="{Binding #ArchiveSortTrigger}" Placement="BottomEdgeAlignedRight"
+                     VerticalOffset="6" IsLightDismissEnabled="True"
+                     OverlayInputPassThroughElement="{Binding #ArchiveSortTrigger}"
+                     IsOpen="{Binding IsArchiveSortMenuOpen, Mode=TwoWay}">
+                <Border Classes="dropdown-popover" Width="250">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{loc:Tr Kanban_Sort_ButtonLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Margin="0,0,0,10" />
+
+                    <Button Classes="dropdown-item" Command="{Binding SetArchiveSortModeCommand}"
+                            CommandParameter="{x:Static vm:KanbanArchiveSortMode.ArchivedDate}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{loc:Tr Kanban_Archive_Sort_Archived, Converter={StaticResource UpperCaseConverter}}"
+                                   FontSize="11.5" FontWeight="Bold" LetterSpacing="1.2" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Grid.Column="1" Kind="Check" Width="14" Height="14" VerticalAlignment="Center"
+                                          IsVisible="{Binding ArchiveSortMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=ArchivedDate}" />
+                      </Grid>
+                    </Button>
+
+                    <Button Classes="dropdown-item" Command="{Binding SetArchiveSortModeCommand}"
+                            CommandParameter="{x:Static vm:KanbanArchiveSortMode.DueDate}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{loc:Tr Kanban_Sort_DueDate, Converter={StaticResource UpperCaseConverter}}"
+                                   FontSize="11.5" FontWeight="Bold" LetterSpacing="1.2" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Grid.Column="1" Kind="Check" Width="14" Height="14" VerticalAlignment="Center"
+                                          IsVisible="{Binding ArchiveSortMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=DueDate}" />
+                      </Grid>
+                    </Button>
+
+                    <Button Classes="dropdown-item" Command="{Binding SetArchiveSortModeCommand}"
+                            CommandParameter="{x:Static vm:KanbanArchiveSortMode.Priority}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{loc:Tr Kanban_Sort_Priority, Converter={StaticResource UpperCaseConverter}}"
+                                   FontSize="11.5" FontWeight="Bold" LetterSpacing="1.2" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Grid.Column="1" Kind="Check" Width="14" Height="14" VerticalAlignment="Center"
+                                          IsVisible="{Binding ArchiveSortMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Priority}" />
+                      </Grid>
+                    </Button>
+
+                    <Button Classes="dropdown-item" Command="{Binding SetArchiveSortModeCommand}"
+                            CommandParameter="{x:Static vm:KanbanArchiveSortMode.Title}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{loc:Tr Kanban_Archive_Sort_Title, Converter={StaticResource UpperCaseConverter}}"
+                                   FontSize="11.5" FontWeight="Bold" LetterSpacing="1.2" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Grid.Column="1" Kind="Check" Width="14" Height="14" VerticalAlignment="Center"
+                                          IsVisible="{Binding ArchiveSortMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Title}" />
+                      </Grid>
+                    </Button>
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </Panel>
+          </Grid>
+
+          <!-- Etiquetas: solo las que existen entre lo archivado, y solo si hay alguna. Mismo control y
+               mismo cuidado con IsVisible (evaluado contra el propio filtro) que en el tablero. -->
+          <views:TagFilterView Grid.Row="2" DataContext="{Binding ArchiveTagFilter}"
+                               IsVisible="{Binding !IsEmpty}" Margin="0,0,0,6" />
+
+          <!-- Lista -->
+          <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,-14,0" Padding="0,0,14,0">
+            <StackPanel>
+              <ItemsControl ItemsSource="{Binding FilteredArchivedCards}" ItemTemplate="{StaticResource KanbanArchivedCardTemplate}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+
+              <!-- Los dos huecos posibles se nombran distinto, igual que en las columnas del tablero: no
+                   hay nada archivado, o sí lo hay pero el filtro lo esconde todo. -->
+              <Border Classes="board-hint" IsVisible="{Binding IsArchiveEmpty}">
+                <TextBlock Text="{loc:Tr Kanban_Archive_EmptyHint}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+              </Border>
+
+              <Border Classes="board-hint" IsVisible="{Binding HasNoArchiveMatches}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{loc:Tr Kanban_Archive_NoMatches}" Classes="muted" FontSize="12.5"
+                             TextWrapping="Wrap" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="ghost" Margin="14,0,0,0" VerticalAlignment="Center"
+                          Command="{Binding ClearArchiveFiltersCommand}"
+                          ToolTip.Tip="{loc:Tr Kanban_Filter_ClearTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Filter_ClearTooltip}">
+                    <TextBlock Text="{loc:Tr Kanban_Filter_ClearButton, Converter={StaticResource UpperCaseConverter}}"
+                               FontSize="11" FontWeight="Bold" LetterSpacing="1.5" />
+                  </Button>
+                </Grid>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+
+          <!-- Pie: la ayuda dice cómo se opera sobre una fila, porque el menú contextual es la única vía
+               que no se ve hasta que se prueba. -->
+          <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,18,0,0">
+            <TextBlock Grid.Column="0" Text="{loc:Tr Kanban_Archive_ActionsHint}" Classes="faint"
+                       TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,18,0" />
+            <Button Grid.Column="1" Classes="pill-primary" Command="{Binding CloseArchiveCommand}">
+              <TextBlock Text="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </Grid>
+    </Border>
+  </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: archivar todas las completadas ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsArchiveAllPending}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Kanban_ArchiveAll_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding ArchiveAllMessage}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Kanban_ArchiveAll_Hint}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel"
+                    Command="{Binding CancelArchiveAllDoneCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmArchiveAllDoneCommand}">
+              <TextBlock Text="{loc:Tr Kanban_Card_ArchiveMenu, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
     </Border>
   </controls:ModalOverlayHost>
 
