@@ -961,16 +961,26 @@
              que se note que existen sin tener que abrirla. Solo aparece cuando hay algo archivado —
              un botón permanente que casi siempre lleva a una lista vacía es el mismo ruido que la rejilla
              de estadísticas que esta barra ya se quitó de encima. -->
-        <Button Grid.Column="4" Classes="pill" Height="34" Margin="0,0,10,0" VerticalAlignment="Center"
+        <!-- Padding vertical a 0: Button.pill trae 20,11 de serie y, con la altura fija de 34 de la barra,
+             los 22px de padding no dejan sitio al contenido y el número acababa recortado. Con el padding
+             solo horizontal el contenido se centra entero dentro de los 34px.
+             Dentro va un Grid en vez de un StackPanel y el botón estira su contenido (MinWidth + Stretch):
+             icono y etiqueta se quedan pegados al borde izquierdo y el contador se va al derecho, con la
+             columna elástica del medio absorbiendo el resto. El contador va sin recuadro de fondo: al
+             estar solo en su extremo ya se lee como un dato aparte y no necesita caja. -->
+        <Button Grid.Column="4" Classes="pill" Height="34" MinWidth="185" Padding="16,0" Margin="0,0,10,0"
+                VerticalAlignment="Center" HorizontalContentAlignment="Stretch"
                 IsVisible="{Binding HasArchivedCards}" Command="{Binding OpenArchiveCommand}"
                 ToolTip.Tip="{loc:Tr Kanban_Archive_ButtonTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Archive_ButtonTooltip}">
-          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="ArchiveOutline" Width="14" Height="14" VerticalAlignment="Center" />
-            <TextBlock Text="{loc:Tr Kanban_Archive_ButtonLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
-            <Border Classes="kanban-count" VerticalAlignment="Center">
-              <TextBlock Text="{Binding ArchivedCount}" Classes="faint" FontSize="10.5" HorizontalAlignment="Center" />
-            </Border>
-          </StackPanel>
+          <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+              <mi:MaterialIcon Kind="ArchiveOutline" Width="14" Height="14" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr Kanban_Archive_ButtonLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Grid.Column="2" Text="{Binding ArchivedCount}" Classes="faint" FontSize="10.5"
+                       Margin="10,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" />
+          </Grid>
         </Button>
 
         <!-- Ordenación: desplegable que enseña el orden activo en el propio botón, en vez de cuatro
@@ -2339,19 +2349,28 @@
          (KanbanViewModel._returnToArchive). -->
     <controls:ModalOverlayHost IsOpen="{Binding IsArchiveOpen}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
-              MaxWidth="760" MaxHeight="720">
-        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" MinWidth="660">
+              MaxWidth="820" MaxHeight="760">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" MinWidth="680">
 
-          <!-- Encabezado -->
-          <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,18">
-            <TextBlock Text="{loc:Tr Kanban_Board_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-            <TextBlock Text="{loc:Tr Kanban_Archive_Title, Converter={StaticResource UpperCaseSpacedBulletConverter}}" Classes="page-title" />
-            <TextBlock Text="{Binding ArchiveCountLabel}" Classes="page-subtitle" TextWrapping="Wrap" />
-          </StackPanel>
+          <!-- Encabezado: el cierre queda junto al título para que la salida del archivo sea evidente,
+               sin obligar a recorrer la lista hasta el pie. -->
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
+            <StackPanel Grid.Column="0" Spacing="6">
+              <TextBlock Text="{loc:Tr Kanban_Board_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+              <TextBlock Text="{loc:Tr Kanban_Archive_Title, Converter={StaticResource UpperCaseSpacedBulletConverter}}" Classes="page-title" />
+              <TextBlock Text="{Binding ArchiveCountLabel}" Classes="page-subtitle" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="icon-btn" Width="34" Height="34" Margin="18,0,0,0"
+                    VerticalAlignment="Top" Command="{Binding CloseArchiveCommand}"
+                    ToolTip.Tip="{loc:Tr Common_Close}" AutomationProperties.Name="{loc:Tr Common_Close}">
+              <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+            </Button>
+          </Grid>
 
-          <!-- Barra de herramientas: buscar, acotar por prioridad y ordenar -->
-          <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,12">
-            <Grid Grid.Column="0" MinWidth="220" Margin="0,0,10,0">
+          <!-- Primera fila: la búsqueda es la acción principal; la ordenación, secundaria. Separarlas
+               de los filtros evita que el buscador se comprima o quede tapado cuando caben tres chips. -->
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+            <Grid Grid.Column="0" MinWidth="260" Margin="0,0,10,0">
               <TextBox Classes="search" Name="ArchiveSearchBox" Height="34" Padding="34,0,32,0"
                        VerticalContentAlignment="Center"
                        Text="{Binding ArchiveSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -2366,40 +2385,7 @@
               </Button>
             </Grid>
 
-            <!-- Prioridad: tres chips que se apagan volviendo a pulsar el que ya estaba puesto, igual
-                 que los filtros rápidos del tablero. -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,10,0">
-              <ToggleButton Classes="tag-chip toolbar-chip"
-                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High, Mode=OneWay}"
-                            Command="{Binding ToggleArchivePriorityFilterCommand}"
-                            CommandParameter="{x:Static models:KanbanPriority.High}">
-                <TextBlock Text="{loc:Tr Kanban_Priority_High, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
-              </ToggleButton>
-              <ToggleButton Classes="tag-chip toolbar-chip"
-                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium, Mode=OneWay}"
-                            Command="{Binding ToggleArchivePriorityFilterCommand}"
-                            CommandParameter="{x:Static models:KanbanPriority.Medium}">
-                <TextBlock Text="{loc:Tr Kanban_Priority_Medium, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
-              </ToggleButton>
-              <ToggleButton Classes="tag-chip toolbar-chip"
-                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Low, Mode=OneWay}"
-                            Command="{Binding ToggleArchivePriorityFilterCommand}"
-                            CommandParameter="{x:Static models:KanbanPriority.Low}">
-                <TextBlock Text="{loc:Tr Kanban_Priority_Low, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
-              </ToggleButton>
-            </StackPanel>
-
-            <Button Grid.Column="2" Classes="ghost" Height="34" Margin="0,0,10,0" VerticalAlignment="Center"
-                    IsVisible="{Binding HasActiveArchiveFilters}" Command="{Binding ClearArchiveFiltersCommand}"
-                    ToolTip.Tip="{loc:Tr Kanban_Filter_ClearTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Filter_ClearTooltip}">
-              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="FilterRemoveOutline" Width="13" Height="13" VerticalAlignment="Center" />
-                <TextBlock Text="{loc:Tr Kanban_Filter_ClearButton, Converter={StaticResource UpperCaseConverter}}"
-                           FontSize="11" FontWeight="Bold" LetterSpacing="1.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
-
-            <Panel Grid.Column="3">
+            <Panel Grid.Column="1">
               <Button Name="ArchiveSortTrigger" Classes="pill" Height="34" Command="{Binding ToggleArchiveSortMenuCommand}"
                       ToolTip.Tip="{loc:Tr Kanban_Sort_MenuTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Sort_MenuTooltip}">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -2462,13 +2448,65 @@
             </Panel>
           </Grid>
 
-          <!-- Etiquetas: solo las que existen entre lo archivado, y solo si hay alguna. Mismo control y
-               mismo cuidado con IsVisible (evaluado contra el propio filtro) que en el tablero. -->
-          <views:TagFilterView Grid.Row="2" DataContext="{Binding ArchiveTagFilter}"
-                               IsVisible="{Binding !IsEmpty}" Margin="0,0,0,6" />
+          <!-- Segunda fila: los filtros forman un grupo propio, con rótulo para que no parezcan tres
+               botones de acción. Mantiene el ancho de la ventana estable incluso con los tres visibles. -->
+          <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center" Margin="0,0,14,0">
+              <mi:MaterialIcon Kind="FlagVariantOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+              <TextBlock Text="{loc:Tr Kanban_Field_PriorityLabel, Converter={StaticResource UpperCaseConverter}}"
+                         Classes="eyebrow" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Prioridad: tres chips que se apagan volviendo a pulsar el que ya estaba puesto, igual
+                 que los filtros rápidos del tablero. -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <ToggleButton Classes="tag-chip toolbar-chip"
+                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High, Mode=OneWay}"
+                            Command="{Binding ToggleArchivePriorityFilterCommand}"
+                            CommandParameter="{x:Static models:KanbanPriority.High}">
+                <TextBlock Text="{loc:Tr Kanban_Priority_High, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+              </ToggleButton>
+              <ToggleButton Classes="tag-chip toolbar-chip"
+                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium, Mode=OneWay}"
+                            Command="{Binding ToggleArchivePriorityFilterCommand}"
+                            CommandParameter="{x:Static models:KanbanPriority.Medium}">
+                <TextBlock Text="{loc:Tr Kanban_Priority_Medium, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+              </ToggleButton>
+              <ToggleButton Classes="tag-chip toolbar-chip"
+                            IsChecked="{Binding ArchivePriorityFilter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Low, Mode=OneWay}"
+                            Command="{Binding ToggleArchivePriorityFilterCommand}"
+                            CommandParameter="{x:Static models:KanbanPriority.Low}">
+                <TextBlock Text="{loc:Tr Kanban_Priority_Low, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+              </ToggleButton>
+            </StackPanel>
+
+            <Button Grid.Column="2" Classes="ghost" Height="34" Margin="12,0,0,0" VerticalAlignment="Center"
+                    IsVisible="{Binding HasActiveArchiveFilters}" Command="{Binding ClearArchiveFiltersCommand}"
+                    ToolTip.Tip="{loc:Tr Kanban_Filter_ClearTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Filter_ClearTooltip}">
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="FilterRemoveOutline" Width="13" Height="13" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Kanban_Filter_ClearButton, Converter={StaticResource UpperCaseConverter}}"
+                           FontSize="11" FontWeight="Bold" LetterSpacing="1.5" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Etiquetas: una franja propia deja claro que estos chips se suman a la prioridad, no son
+               otra variante de ella. Solo se muestran las que existen entre lo archivado. -->
+          <Border Grid.Row="3" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0"
+                  Padding="0,12,0,2" IsVisible="{Binding ArchiveTagFilter.IsEmpty, Converter={x:Static baseconv:BoolConverters.Not}}">
+            <Grid ColumnDefinitions="Auto,*">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Top" Margin="0,7,14,0">
+                <mi:MaterialIcon Kind="TagOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Kanban_Field_TagsReadonlyLabel, Converter={StaticResource UpperCaseConverter}}"
+                           Classes="eyebrow" VerticalAlignment="Center" />
+              </StackPanel>
+              <views:TagFilterView Grid.Column="1" DataContext="{Binding ArchiveTagFilter}" />
+            </Grid>
+          </Border>
 
           <!-- Lista -->
-          <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,-14,0" Padding="0,0,14,0">
+          <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" Margin="0,0,-14,0" Padding="0,0,14,0">
             <StackPanel>
               <ItemsControl ItemsSource="{Binding FilteredArchivedCards}" ItemTemplate="{StaticResource KanbanArchivedCardTemplate}">
                 <ItemsControl.ItemsPanel>
@@ -2501,7 +2539,7 @@
 
           <!-- Pie: la ayuda dice cómo se opera sobre una fila, porque el menú contextual es la única vía
                que no se ve hasta que se prueba. -->
-          <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,18,0,0">
+          <Grid Grid.Row="5" ColumnDefinitions="*,Auto" Margin="0,18,0,0">
             <TextBlock Grid.Column="0" Text="{loc:Tr Kanban_Archive_ActionsHint}" Classes="faint"
                        TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,18,0" />
             <Button Grid.Column="1" Classes="pill-primary" Command="{Binding CloseArchiveCommand}">
