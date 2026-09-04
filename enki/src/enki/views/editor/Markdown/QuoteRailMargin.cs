@@ -20,11 +20,10 @@ namespace enki.Views.Editor.Markdown;
 /// alike, with zero dependency on text-flow indentation - so it's the only way to get Obsidian-style
 /// consistent separation between the rail and the quoted text.
 ///
-/// <see cref="GutterWidth"/> is sized to exactly replace the left padding EditorView.axaml trims off
-/// the &lt;ae:TextEditor&gt; (20px there down to 4px) rather than adding on top of it, so heading/
-/// list/plain-paragraph text lands at the same X it always did - only the blockquote rail moves into
-/// what used to be blank padding. Changing this constant without adjusting that XAML padding by the
-/// same amount will shift all text sideways again.
+/// <see cref="GutterWidth"/> se suma al padding izquierdo de 20px de EditorView.axaml. Ese primer tramo
+/// mantiene la barra dentro del margen visual de la columna; el gutter desplaza la cita hacia dentro,
+/// deja exactamente <see cref="GapToText"/> píxeles entre la barra y el texto y aplica el mismo hueco a
+/// todas las filas cuando la cita hace wrap.
 ///
 /// The rail sits near the RIGHT edge of that gutter (<see cref="GapToText"/> from where text starts),
 /// not centered or flush left in it: a fenced code block's background/border spans the full text
@@ -32,9 +31,9 @@ namespace enki.Views.Editor.Markdown;
 /// gutter behind it, reads as disconnected from the content column those blocks establish.</summary>
 public sealed class QuoteRailMargin : AbstractMargin
 {
-    private const double GutterWidth = 16;
+    private const double GutterWidth = 24;
     private const double RailThickness = 3;
-    private const double GapToText = 4;
+    private const double GapToText = 5;
     private const double RailOffset = GutterWidth - RailThickness - GapToText;
 
     private readonly LivePreviewState _state;
@@ -63,7 +62,7 @@ public sealed class QuoteRailMargin : AbstractMargin
 
             var top = visualLine.VisualTop - textView.VerticalOffset;
             context.FillRectangle(_style.QuoteBar,
-                new Rect(RailOffset, top + 2, RailThickness, visualLine.Height - 4), 2f);
+                new Rect(RailOffset, top + 2, RailThickness, visualLine.Height - 4));
         }
     }
 }

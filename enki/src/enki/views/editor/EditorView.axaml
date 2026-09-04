@@ -368,13 +368,12 @@
                propio AvaloniaEdit porque sus capas no entran en el árbol lógico y un botón dentro de ellas
                no llega a recibir estilo ni plantilla. Sin Background no entra en el hit-test: todo clic que
                no caiga en un botón atraviesa el lienzo y llega al editor. -->
-          <Grid Grid.Row="1">
+          <Grid x:Name="CodeBlockInputHost" Grid.Row="1">
             <Border x:Name="EditorColumnHost" Margin="8">
-              <!-- Left padding is reduced by QuoteRailMargin's own width (see EditorView.axaml.cs) so the
-                   margin's reserved gutter exactly replaces that much padding instead of adding to it -
-                   heading/list/paragraph text ends up at the same X it always was (4 + 16 = the 20px the
-                   other sides use), with the quote rail occupying what used to be blank padding instead of
-                   pushing everything else rightward.
+              <!-- El padding izquierdo conserva 20px antes del canal de QuoteRailMargin. De este modo la
+                   barra de una cita queda dentro del margen visual del texto, en vez de pegada al borde
+                   izquierdo de la tarjeta. El canal añade otros 24px antes del contenido editable y
+                   reserva 5px exactos entre la barra y el texto citado.
                    Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
                    code block's box is painted that far outside the text column on each side, into the left
                    gutter and into this right padding, so the code text inside it clears the border on every
@@ -383,10 +382,10 @@
                              Background="Transparent"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              FontSize="14.5"
-                             Padding="4,20,20,20"
+                             Padding="20"
                              LineNumbersForeground="{DynamicResource TextMutedBrush}" />
             </Border>
-            <Canvas x:Name="CodeBlockOverlay" ClipToBounds="True" />
+            <Canvas x:Name="CodeBlockOverlay" ClipToBounds="True" Panel.ZIndex="1" />
           </Grid>
         </Grid>
       </Border>

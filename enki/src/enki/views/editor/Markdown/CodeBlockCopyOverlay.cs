@@ -4,7 +4,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using AvaloniaEdit.Rendering;
@@ -41,10 +43,11 @@ namespace enki.Views.Editor.Markdown;
 /// </summary>
 internal sealed class CodeBlockCopyOverlay
 {
-    /// <summary>Lado del botón y separación con el borde del recuadro. Deliberadamente pequeño: es chrome
-    /// del bloque, no una acción de la barra de formato (los <c>Button.icon-btn</c> de la barra miden 34).</summary>
-    private const double ButtonSize = 20;
-    private const double Inset = 3;
+    /// <summary>Lado del área interactiva y separación con el borde del recuadro. El icono sigue siendo
+    /// compacto, pero el objetivo de 28px evita tener que acertar exactamente sobre sus trazos de 12px
+    /// para que Avalonia detecte <c>:pointerover</c> y el clic.</summary>
+    private const double ButtonSize = 28;
+    private const double Inset = 4;
 
     /// <summary>Cuánto se queda el icono de confirmación antes de volver al de copiar.</summary>
     private static readonly TimeSpan FeedbackDuration = TimeSpan.FromSeconds(1.4);
@@ -55,8 +58,9 @@ internal sealed class CodeBlockCopyOverlay
     private readonly List<CopyButton> _buttons = new();
     private readonly DispatcherTimer _feedbackTimer;
     private CopyButton? _feedbackButton;
+    private CopyButton? _pointerButton;
 
-    public CodeBlockCopyOverlay(Canvas host, TextView textView, LivePreviewState state)
+    public CodeBlockCopyOverlay(Canvas host, InputElement inputHost, TextView textView, LivePreviewState state)
     {
         _host = host;
         _textView = textView;
@@ -72,6 +76,17 @@ internal sealed class CodeBlockCopyOverlay
         // realimenta otro.
         textView.LayoutUpdated += (_, _) => Update();
         textView.ScrollOffsetChanged += (_, _) => Update();
+
+        // El Canvas transparente deja pasar correctamente los clics destinados al texto, pero según la
+        // plataforma/renderer también puede dejar fuera del hit-test a sus hijos superpuestos. Escuchar
+        // en el Grid común resuelve ambos casos: el evento llega aquí tanto si Avalonia encontró el botón
+        // como si encontró el editor que hay debajo. Solo se marca como atendido dentro del rectángulo
+        // real de uno de los botones; el resto del editor conserva selección, caret y arrastre normales.
+        inputHost.AddHandler(InputElement.PointerMovedEvent, OnPointerMoved,
+            RoutingStrategies.Tunnel, handledEventsToo: true);
+        inputHost.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed,
+            RoutingStrategies.Tunnel, handledEventsToo: true);
+        inputHost.PointerExited += (_, _) => SetPointerButton(null);
     }
 
     /// <summary>Recoloca los botones sobre los bloques que hay ahora mismo en pantalla. Recorre solo las
@@ -119,6 +134,44 @@ internal sealed class CodeBlockCopyOverlay
         }
 
         for (var i = used; i < _buttons.Count; i++) _buttons[i].IsVisible = false;
+        if (_pointerButton is not null && !_pointerButton.IsVisible) SetPointerButton(null);
+    }
+
+    private void OnPointerMoved(object? sender, PointerEventArgs e) =>
+        SetPointerButton(ButtonAt(e.GetPosition(_host)));
+
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(_host).Properties.IsLeftButtonPressed) return;
+        var button = ButtonAt(e.GetPosition(_host));
+        if (button is null) return;
+
+        // Se ejecuta desde el host en fase túnel, sin depender de que el Canvas transparente haya sido
+        // el destino del hit-test. Evita también que el mismo gesto coloque el caret bajo el botón.
+        e.Handled = true;
+        _ = CopyAsync(button);
+    }
+
+    private CopyButton? ButtonAt(Point point)
+    {
+        foreach (var button in _buttons)
+        {
+            if (!button.IsVisible) continue;
+            var left = Canvas.GetLeft(button);
+            var top = Canvas.GetTop(button);
+            if (double.IsNaN(left) || double.IsNaN(top)) continue;
+            if (new Rect(left, top, ButtonSize, ButtonSize).Contains(point)) return button;
+        }
+
+        return null;
+    }
+
+    private void SetPointerButton(CopyButton? button)
+    {
+        if (ReferenceEquals(button, _pointerButton)) return;
+        _pointerButton?.Classes.Set("proxy-over", false);
+        _pointerButton = button;
+        _pointerButton?.Classes.Set("proxy-over", true);
     }
 
     private CopyButton Rent(int index)

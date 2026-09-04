@@ -78,7 +78,8 @@ public partial class EditorView : UserControl
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
         // El botón de copiar de cada bloque de código va en un lienzo superpuesto al editor, no dentro de
         // él — ver CodeBlockCopyOverlay.
-        _codeBlockCopyOverlay = new CodeBlockCopyOverlay(CodeBlockOverlay, textView, _livePreviewState);
+        _codeBlockCopyOverlay = new CodeBlockCopyOverlay(
+            CodeBlockOverlay, CodeBlockInputHost, textView, _livePreviewState);
 
         // Let the fenced code block's box bleed past the text column - see UpdateCodeBlockBleed().
         textView.SizeChanged += (_, _) => UpdateCodeBlockBleed(textArea, textView);
@@ -161,8 +162,8 @@ public partial class EditorView : UserControl
     /// is bounded at the TextArea itself so nothing above the editor is ever touched.
     ///
     /// The room the box bleeds into is real, reserved space on both sides, not other content:
-    /// <see cref="Markdown.QuoteRailMargin"/>'s 16px gutter on the left, and the 20px right padding
-    /// EditorView.axaml puts on the &lt;ae:TextEditor&gt; on the right.</summary>
+    /// <see cref="Markdown.QuoteRailMargin"/>'s 24px gutter plus the editor's 20px inset on the left,
+    /// and the 20px right padding EditorView.axaml puts on the &lt;ae:TextEditor&gt; on the right.</summary>
     private static void UpdateCodeBlockBleed(AvaloniaEdit.Editing.TextArea textArea, AvaloniaEdit.Rendering.TextView textView)
     {
         var pad = MarkdownStyle.CodeBlockHorizontalPadding;

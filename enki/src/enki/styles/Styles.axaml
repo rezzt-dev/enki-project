@@ -911,11 +911,11 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
-  <!-- Botón de copiar de un bloque de código en el editor de notas (ver CodeBlockCopyLayer). No reutiliza
+  <!-- Botón de copiar de un bloque de código en el editor de notas (ver CodeBlockCopyOverlay). No reutiliza
        Button.icon-btn porque aquella es una acción de barra de herramientas (34x34, sin caja propia) y
-       esta es chrome del propio bloque: cuadrada, pequeña y con el mismo fondo y el mismo borde de 1px
-       que el recuadro sobre el que flota, para que se lea como parte de él y no como algo pegado encima.
-       Al pasar por encima se aclara igual que cualquier otro botón de icono de la app. -->
+       esta es chrome del propio bloque: cuadrada, con un objetivo de puntero de 28px y el mismo fondo y
+       borde de 1px que el recuadro sobre el que flota. El icono permanece pequeño para que la acción no
+       gane más peso visual. Al pasar por encima se aclara igual que cualquier otro botón de icono. -->
   <Style Selector="Button.code-copy-btn">
     <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
@@ -945,7 +945,14 @@
     <Setter Property="Background" Value="{DynamicResource Ink10}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
   </Style>
+  <Style Selector="Button.code-copy-btn.proxy-over /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+  </Style>
   <Style Selector="Button.code-copy-btn:pointerover mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.code-copy-btn.proxy-over mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
   <Style Selector="Button.code-copy-btn:pressed /template/ ContentPresenter">
