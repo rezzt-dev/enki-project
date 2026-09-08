@@ -76,14 +76,11 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         _textArea = textArea;
         _style = style;
 
-        // An aligned line's spacing is measured against the text column's current width, so a resize
-        // invalidates every plan. AvaloniaEdit only rebuilds visual lines on resize when word wrap is on,
-        // hence the explicit redraw - skipped entirely for the ordinary note, which declares no alignment.
-        // Lo mismo vale para las tablas: sus anchos de columna se deciden contra el ancho disponible, y
-        // una tabla que dejaba de caber (o que vuelve a caber) cambia de dibujada a texto en crudo.
+        // El centrado de imágenes, las alineaciones y las tablas dependen del ancho disponible.
+        // AvaloniaEdit solo reconstruye líneas al redimensionar si el ajuste de línea está activo;
+        // el redibujado explícito mantiene estas posiciones también sin ajuste de línea.
         textArea.TextView.SizeChanged += (_, _) =>
         {
-            if (!_state.HasAlignments && !_state.Tables.HasTables) return;
             _layout.Invalidate();
             textArea.TextView.Redraw();
         };
@@ -171,7 +168,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
 
         foreach (var span in model.Spans)
         {
-            if (_state.Intersects(span.Start, span.End)) continue;
+            if (_state.IsSpanActive(span)) continue;
 
             // Una imagen no oculta marcadores alrededor de un contenido: se oculta entera y se dibuja la
             // imagen en su lugar. El texto alternativo tampoco se enseña — es el reemplazo de la imagen
@@ -206,7 +203,22 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
 
         zones.Sort((a, b) => a.Start.CompareTo(b.Start));
 
-        AddAlignmentZones(zones, line, text, model);
+        // Una imagen sola ocupa su línea y se centra incluso dentro de un bloque alineado a otro lado.
+        var standaloneImage = zones.FindIndex(zone => zone.Kind == ZoneKind.Image
+            && string.IsNullOrWhiteSpace(text[..(zone.Start - line.Offset)])
+            && string.IsNullOrWhiteSpace(text[(zone.End - line.Offset)..]));
+        if (standaloneImage >= 0 && tableLine is null)
+        {
+            var zone = zones[standaloneImage];
+            var width = MeasureImage(zone.Span!, zone.ImageMaxWidth).Width;
+            var leading = Math.Max(0, (_textArea.TextView.Bounds.Width - width) / 2);
+            zones.Clear();
+            zones.Add(zone with { Start = line.Offset, End = line.EndOffset, Spacer = leading });
+        }
+        else
+        {
+            AddAlignmentZones(zones, line, text, model);
+        }
 
         _cachedLineNumber = lineNumber;
         _cachedZones = zones;
@@ -566,8 +578,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     private Control BuildImage(MdSpan span, double leadingWidth, double maxWidth)
     {
         var layout = MeasureImage(span, maxWidth);
-        var margin = new Thickness(leadingWidth, MarkdownImageMeasurer.VerticalMargin, 0,
-            MarkdownImageMeasurer.VerticalMargin);
+        var margin = new Thickness(leadingWidth, 0, 0, 0);
 
         if (layout.Entry is { State: MarkdownImageState.Ready, Bitmap: { } bitmap })
         {
@@ -583,6 +594,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // tarea (ver CreateInertCheckbox).
                 IsHitTestVisible = false
             };
+            SetImageBaseline(image, layout.Height);
             RenderOptions.SetBitmapInterpolationMode(image, BitmapInterpolationMode.HighQuality);
             // El texto alternativo no se dibuja (no es una leyenda), pero sí es lo que un lector de
             // pantalla debe anunciar — que es exactamente para lo que el usuario lo escribió.
@@ -621,7 +633,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             }
         };
 
-        return new Border
+        var placeholder = new Border
         {
             Width = layout.Width,
             Height = layout.Height,
@@ -633,6 +645,17 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             Child = content,
             IsHitTestVisible = false
         };
+        SetImageBaseline(placeholder, layout.Height);
+        return placeholder;
+    }
+
+    /// <summary>Aloja las métricas del texto dentro del alto de la imagen. Sin baseline explícita,
+    /// el objeto inline reserva además una franja de texto vacía que no pertenece al documento.</summary>
+    private void SetImageBaseline(Control control, double height)
+    {
+        var textView = _textArea.TextView;
+        var descent = textView.DefaultLineHeight - textView.DefaultBaseline;
+        TextBlock.SetBaselineOffset(control, Math.Max(0, height - descent));
     }
 
     private CheckBox BuildCheckbox(MdLine model, double leadingWidth)

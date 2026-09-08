@@ -227,11 +227,8 @@ public partial class EditorView
         return references;
     }
 
-    /// <summary>Escribe los <c>![](…)</c> en el documento, cada uno en su propia línea y con un salto
-    /// detrás. Que la imagen quede sola en su línea no es solo estética: el cursor acaba <em>después</em>
-    /// del salto, es decir fuera del span de la imagen, y eso es justo lo que hace que la imagen aparezca
-    /// dibujada en el mismo instante en que se pega — si el cursor quedase pegado al <c>)</c> final, el
-    /// live preview enseñaría el Markdown en crudo hasta que el usuario moviera el cursor.</summary>
+    /// <summary>Escribe cada imagen en su propia línea, reutilizando el salto existente y sin añadir
+    /// una línea vacía al final. El cursor puede quedar al final del span sin ocultar la imagen.</summary>
     private void InsertImageReferences(List<string> references, int offset)
     {
         if (references.Count == 0) return;
@@ -240,10 +237,14 @@ public partial class EditorView
         var start = Math.Clamp(offset, 0, document.TextLength);
         var line = document.GetLineByOffset(start);
         var needsLeadingBreak = start > line.Offset;
+        var needsTrailingBreak = start < line.EndOffset;
+        var newline = line.DelimiterLength > 0
+            ? document.GetText(line.EndOffset, line.DelimiterLength)
+            : "\n";
 
-        var text = (needsLeadingBreak ? "\n" : string.Empty)
-                   + string.Join("\n", references.Select(reference => $"![]({reference})"))
-                   + "\n";
+        var text = (needsLeadingBreak ? newline : string.Empty)
+                   + string.Join(newline, references.Select(reference => $"![]({reference})"))
+                   + (needsTrailingBreak ? newline : string.Empty);
 
         document.Insert(start, text);
         Editor.CaretOffset = start + text.Length;

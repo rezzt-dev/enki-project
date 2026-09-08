@@ -129,6 +129,59 @@ public class EditorViewImagesUiTests : IDisposable
         window.Close();
     }
 
+    [Theory]
+    [InlineData("![](captura.png)", 1)]
+    [InlineData("![](captura.png)\nTexto", 1)]
+    [InlineData("<div align=\"right\">\n![](captura.png)\n</div>\nTexto", 2)]
+    public void Image_IsCenteredWithoutAnExtraVisualLine(string content, int imageLineNumber)
+    {
+        var (view, viewModel, window) = CreateView();
+        try
+        {
+            var (editor, _) = OpenNoteWith(view, viewModel, window, content, CreatePng(120, 60), "captura.png");
+            Pump(window, () => RenderedImages(editor).Length > 0);
+            var image = Assert.Single(RenderedImages(editor));
+            var textView = editor.TextArea.TextView;
+            Assert.InRange(Math.Abs(image.Bounds.Center.X - textView.Bounds.Width / 2), 0, 0.5);
+            var line = textView.VisualLines.First(line => line.FirstDocumentLine.LineNumber == imageLineNumber);
+            Assert.Single(line.TextLines);
+            Assert.True(line.Height < image.Height + textView.DefaultLineHeight,
+                $"Alto de imagen: {image.Height}; alto de línea: {line.Height}");
+
+            window.Width = 900;
+            Pump(window, () => RenderedImages(editor).Any(current =>
+                Math.Abs(current.Bounds.Center.X - textView.Bounds.Width / 2) <= 0.5));
+            image = Assert.Single(RenderedImages(editor));
+            Assert.InRange(Math.Abs(image.Bounds.Center.X - textView.Bounds.Width / 2), 0, 0.5);
+        }
+        finally { window.Close(); }
+    }
+
+    [Theory]
+    [InlineData("", 0, "![](captura.png)")]
+    [InlineData("\nTexto", 0, "![](captura.png)\nTexto")]
+    [InlineData("\r\nTexto", 0, "![](captura.png)\r\nTexto")]
+    [InlineData("Antes", 5, "Antes\n![](captura.png)")]
+    [InlineData("AntesDespues", 5, "Antes\n![](captura.png)\nDespues")]
+    public void InsertImage_DoesNotAddAnEmptyLine(string initial, int offset, string expected)
+    {
+        var (view, viewModel, window) = CreateView();
+        try
+        {
+            var (editor, _) = OpenNoteWith(view, viewModel, window, initial, CreatePng(120, 60), "captura.png");
+            var editorView = view.GetVisualDescendants().OfType<EditorView>().First();
+            typeof(EditorView).GetMethod("InsertImageReferences",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .Invoke(editorView, [new System.Collections.Generic.List<string> { "captura.png" }, offset]);
+            Assert.Equal(expected, editor.Document.Text);
+            Pump(window, () => RenderedImages(editor).Length > 0);
+            Assert.Single(RenderedImages(editor));
+            editor.Undo();
+            Assert.Equal(initial, editor.Document.Text);
+        }
+        finally { window.Close(); }
+    }
+
     [Fact]
     public void RenderedImage_AnnouncesTheAltTextWrittenInTheNote()
     {

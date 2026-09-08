@@ -73,6 +73,13 @@ public sealed class LivePreviewState
     /// keeps centred/right-aligned lines correct across a resize when nothing is aligned.</summary>
     public bool HasAlignments => HtmlLines.Count > 0;
 
+    /// <summary>En imágenes, el extremo final queda fuera del contenido editable: permite mantener
+    /// la vista previa al insertar al final de la nota sin necesitar otra línea.</summary>
+    public bool IsSpanActive(MdSpan span) => span.Kind == MdSpanKind.Image
+        ? (CaretOffset >= span.Start && CaretOffset < span.End)
+          || Selections.Any(selection => selection.Start < span.End && selection.End > span.Start)
+        : Intersects(span.Start, span.End);
+
     /// <summary>Whether the caret sits inside [start,end] or any selection overlaps [start,end).</summary>
     public bool Intersects(int start, int end)
     {

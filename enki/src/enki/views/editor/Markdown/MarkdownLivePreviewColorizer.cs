@@ -98,7 +98,7 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                 continue;
             }
 
-            if (_state.Intersects(span.Start, span.End)) continue;
+            if (_state.IsSpanActive(span)) continue;
 
             switch (span.Kind)
             {

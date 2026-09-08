@@ -18,10 +18,6 @@ internal readonly record struct MarkdownImageLayout(MarkdownImageEntry Entry, do
 /// </summary>
 internal static class MarkdownImageMeasurer
 {
-    /// <summary>Espacio que el editor deja arriba y abajo de una imagen para que no quede pegada al texto
-    /// de las líneas vecinas. Cuenta como alto del elemento, así que es también lo que crece la línea.</summary>
-    public const double VerticalMargin = 4;
-
     /// <summary>Ancho del hueco que se dibuja mientras la imagen carga (o si no se pudo cargar).</summary>
     private const double PlaceholderWidth = 260;
 

@@ -35,9 +35,9 @@ siempre:
    textos suelen viajar los dos, y ahí lo que se está pegando es texto.
 3. **Cualquier otra cosa** cae en `TextEditor.Paste()`, el pegado normal de AvaloniaEdit.
 
-Una imagen insertada se escribe **en su propia línea, con un salto detrás**. No es solo estética: deja el
-cursor fuera del span de la imagen, que es la condición para que el live preview la dibuje — si el cursor
-quedara pegado al `)` final, se vería el Markdown en crudo hasta moverlo.
+Una imagen insertada se escribe **en su propia línea, sin crear una línea vacía debajo**: reutiliza el
+salto existente y solo añade uno detrás si hay texto que separar. Al final de la nota no añade salto.
+El cursor justo después del `)` final mantiene la imagen visible; entrar en su sintaxis permite editarla.
 
 ## 2. Dónde se guardan los adjuntos
 
@@ -134,6 +134,12 @@ natural; y en cualquier caso nunca más ancha que la columna de texto, reduciend
 proporción. Mientras carga —o si no se pudo cargar— queda un hueco del alto de dos líneas con el nombre del
 archivo: una imagen que falta tiene que verse como tal, no desaparecer sin dejar rastro de que la nota
 pedía algo ahí.
+
+**Alineación y espaciado**: las imágenes que ocupan su propia línea se centran horizontalmente en la
+columna, también al redimensionar el editor y dentro de bloques HTML con otra alineación. No llevan
+margen vertical adicional; su baseline aloja las métricas del texto dentro del alto de la imagen para
+no reservar una franja vacía que el usuario no pueda borrar. Las imágenes integradas en texto o tablas
+conservan la disposición del contenido que las rodea.
 
 **Interacción**: el cursor dentro del `![…](…)` devuelve el Markdown en crudo para poder editarlo, igual
 que con un enlace o una negrita. **Ctrl+clic** abre la imagen con el visor del sistema (con una copia
