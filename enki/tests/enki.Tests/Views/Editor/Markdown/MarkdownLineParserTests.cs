@@ -99,17 +99,20 @@ public class MarkdownLineParserTests
         Assert.Equal(contentStart, model.ContentStart);
     }
 
+    /// <summary>A diferencia de encabezados y citas, la viñeta se traga los espacios extra: la "• " que
+    /// se pinta en su lugar ya reserva su propia separación, así que conservarlos visibles duplicaría el
+    /// hueco entre el marcador y el texto.</summary>
     [Theory]
-    [InlineData("- Item", 0, 2, 2)]
-    [InlineData("-  Item", 0, 2, 3)]
-    [InlineData("-   Item", 0, 2, 4)]
-    public void Parse_BulletList_PreservesExtraSpaces(string text, int markerStart, int markerEnd, int contentStart)
+    [InlineData("- Item", 0, 2)]
+    [InlineData("-  Item", 0, 3)]
+    [InlineData("-   Item", 0, 4)]
+    public void Parse_BulletList_AbsorbsExtraSpacesIntoTheMarker(string text, int markerStart, int contentStart)
     {
         var model = MarkdownLineParser.Parse(text, 0, NoFence);
 
         Assert.Equal(MdBlockKind.BulletList, model.Kind);
         Assert.Equal(markerStart, model.MarkerStart);
-        Assert.Equal(markerEnd, model.MarkerEnd);
+        Assert.Equal(contentStart, model.MarkerEnd);
         Assert.Equal(contentStart, model.ContentStart);
     }
 

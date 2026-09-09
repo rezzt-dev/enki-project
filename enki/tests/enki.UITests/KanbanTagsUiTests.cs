@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using Avalonia;
@@ -24,7 +25,7 @@ public sealed class KanbanTagsUiTests
     [Theory]
     [InlineData(KanbanBoardOrientation.Vertical)]
     [InlineData(KanbanBoardOrientation.Horizontal)]
-    public void Board_AppliesVisibilityLive_AndExpansionStaysInsideTheCard(KanbanBoardOrientation orientation)
+    public void Board_AppliesTagFilterVisibilityLive_AndExpansionStaysInsideTheCard(KanbanBoardOrientation orientation)
     {
         var directory = Path.Combine(Path.GetTempPath(), $"enki-tests-{Guid.NewGuid():N}");
         Window? window = null;
@@ -45,12 +46,19 @@ public sealed class KanbanTagsUiTests
             window.UpdateLayout();
             var tags = view.GetVisualDescendants().OfType<KanbanTags>().Single(t => t.Tags?.Contains("etiqueta-12") == true);
             Assert.True(tags.IsVisible);
+            var filter = view.GetVisualDescendants().OfType<TagFilterView>()
+                .Single(f => ReferenceEquals(f.DataContext, vm.TagFilter));
+            Assert.True(filter.IsVisible);
+            // El ajuste de Apariencia esconde la fila de chips de filtro, no las etiquetas de las
+            // tarjetas: estas se pintan siempre que la tarjeta tenga alguna.
             settings.Settings.KanbanShowTagFilter = false;
             settings.Save();
-            Assert.False(tags.IsVisible);
+            Assert.False(filter.IsVisible);
+            Assert.True(tags.IsVisible);
             Assert.Equal(12, model.Tags.Count);
             settings.Settings.KanbanShowTagFilter = true;
             settings.Save();
+            Assert.True(filter.IsVisible);
             window.UpdateLayout();
             var expand = tags.FindControl<Button>("ExpandButton")!;
             var point = expand.TranslatePoint(new Point(expand.Bounds.Width / 2, expand.Bounds.Height / 2), window)!.Value;
@@ -71,9 +79,10 @@ public sealed class KanbanTagsUiTests
     }
 
     [Fact]
-    public void Overflow_ShowsFiveTags_ExpandsAndCollapses_WithoutOpeningTheCard()
+    public void Overflow_ShowsWhatFitsWithACounter_ExpandsAndCollapses_WithoutOpeningTheCard()
     {
-        var control = new KanbanTags { Tags = ["uno", "dos", "tres", "cuatro", "cinco", "seis", "siete"] };
+        string[] tags = ["uno", "dos", "tres", "cuatro", "cinco", "seis", "siete"];
+        var control = new KanbanTags { Tags = tags };
         var parentClicks = 0;
         var card = new Button { Content = control, Width = 150 };
         card.Click += (_, _) => parentClicks++;
@@ -85,16 +94,48 @@ public sealed class KanbanTagsUiTests
             var button = control.FindControl<Button>("ExpandButton")!;
             var label = control.FindControl<TextBlock>("TagsText")!;
             Assert.True(button.IsVisible);
-            Assert.Equal("uno, dos, tres, cuatro, cinco", label.Text);
+            // En una tarjeta estrecha no caben las siete: se ve el prefijo que quepa en una línea y el
+            // resto se resume en un "+N" que no se pierde tras los puntos suspensivos.
+            var shown = AssertCollapsed(label.Text, tags);
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             window.UpdateLayout();
-            Assert.Equal("uno, dos, tres, cuatro, cinco, seis, siete", label.Text);
+            Assert.Equal(string.Join(", ", tags), label.Text);
             Assert.Equal(0, label.MaxLines);
             Assert.Equal(0, parentClicks);
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Assert.Equal("uno, dos, tres, cuatro, cinco", label.Text);
+            Assert.Equal(shown, AssertCollapsed(label.Text, tags));
         }
         finally { window.Close(); }
+    }
+
+    [Fact]
+    public void Overflow_NeverShowsMoreThanFiveTags_EvenWhenMoreWouldFit()
+    {
+        var tags = Enumerable.Range(1, 12).Select(i => $"t{i:00}").ToArray();
+        var control = new KanbanTags { Tags = tags, Width = 300 };
+        var window = new Window { Content = control, Width = 600, Height = 400 };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            var label = control.FindControl<TextBlock>("TagsText")!;
+            Assert.True(control.FindControl<Button>("ExpandButton")!.IsVisible);
+            Assert.Equal(5, AssertCollapsed(label.Text, tags));
+        }
+        finally { window.Close(); }
+    }
+
+    /// <summary>Comprueba que el texto plegado son las N primeras etiquetas seguidas del contador de
+    /// las que quedan fuera, y devuelve N para poder contrastarlo con el tope de cinco.</summary>
+    private static int AssertCollapsed(string? text, IReadOnlyList<string> tags)
+    {
+        var parts = (text ?? string.Empty).Split("  +");
+        Assert.Equal(2, parts.Length);
+        var shown = parts[0].Split(", ");
+        Assert.InRange(shown.Length, 1, 5);
+        Assert.Equal(string.Join(", ", tags.Take(shown.Length)), parts[0]);
+        Assert.Equal((tags.Count - shown.Length).ToString(), parts[1]);
+        return shown.Length;
     }
 
     [Fact]

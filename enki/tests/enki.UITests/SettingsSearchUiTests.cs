@@ -136,13 +136,13 @@ public sealed class SettingsSearchUiTests : IDisposable
         var (view, vm, window) = CreateView();
         try
         {
-            vm.SearchText = "etiquetas tarjetas";
+            vm.SearchText = "filtro etiquetas";
             Dispatcher.UIThread.RunJobs();
             Assert.False(view.FindControl<TextBlock>("SearchNoResults")!.IsVisible);
             LocalizationService.Instance.SetLanguage("en-US");
             Dispatcher.UIThread.RunJobs();
             Assert.True(view.FindControl<TextBlock>("SearchNoResults")!.IsVisible);
-            vm.SearchText = "card tags";
+            vm.SearchText = "tag filter";
             Dispatcher.UIThread.RunJobs();
             Assert.False(view.FindControl<TextBlock>("SearchNoResults")!.IsVisible);
             vm.SearchText = "zzzz-no-such-option";
