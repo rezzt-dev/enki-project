@@ -137,6 +137,45 @@ public class EditorViewTablesUiTests : IDisposable
         "| Kiwi | 14 |\n";
 
     [Fact]
+    public void SwitchingAndClosingTabs_WithFoldedTables_PreservesDocumentsAndUndo()
+    {
+        var (view, viewModel, window) = CreateView();
+        try
+        {
+            var editor = OpenNoteWith(view, viewModel, window, Table + "\nFin.\n");
+            var first = viewModel.ActiveEditor!;
+            Assert.True(DelimiterIsFolded(editor));
+
+            viewModel.NewNoteCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var second = viewModel.ActiveEditor!;
+            second.Document.Text = "Nota corta\notra línea";
+            for (var i = 0; i < 10; i++)
+            {
+                viewModel.SelectEditorCommand.Execute(first);
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                viewModel.SelectEditorCommand.Execute(second);
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+            }
+            second.Document.Insert(second.Document.TextLength, " cambio");
+            viewModel.CloseEditorTabCommand.Execute(first);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            second.Document.UndoStack.Undo();
+            Assert.Equal("Nota corta\notra línea", second.Document.Text);
+            viewModel.CloseActiveEditorCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            viewModel.NewNoteCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.NotNull(viewModel.ActiveEditor);
+        }
+        finally
+        {
+            viewModel.CloseAllEditorsCommand.Execute(null);
+            window.Close();
+        }
+    }
+
+    [Fact]
     public void TableCells_OfTheSameColumn_StartAtTheSameX()
     {
         var (view, viewModel, window) = CreateView();

@@ -13,6 +13,55 @@
              x:DataType="vm:CalendarViewModel"
              Focusable="True" Loaded="CalendarView_Loaded" KeyDown="CalendarView_KeyDown">
 
+  <UserControl.Styles>
+    <!-- Cabeceras plegables: solo el texto y la flecha reflejan la interacción. -->
+    <Style Selector="ToggleButton.calendar-section-toggle">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="8,4" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ToggleButton.calendar-section-toggle /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="ToggleButton.calendar-section-toggle TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{Binding $parent[ToggleButton].Foreground}" />
+    </Style>
+    <Style Selector="ToggleButton.calendar-section-toggle mi|MaterialIcon">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{Binding $parent[ToggleButton].Foreground}" />
+    </Style>
+    <Style Selector="ToggleButton.calendar-section-toggle:checked, ToggleButton.calendar-section-toggle:pointerover, ToggleButton.calendar-section-toggle:focus-visible">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.calendar-section-toggle:pressed">
+      <Setter Property="Foreground" Value="{DynamicResource Ink60}" />
+    </Style>
+    <!-- Plantilla sin rellenos de estado de Fluent para la cabecera mensual. -->
+    <Style Selector="ToggleButton.calendar-mini-toggle">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="Center"
+                            Background="Transparent" BorderThickness="0" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+  </UserControl.Styles>
+
   <UserControl.Resources>
     <!-- Fase 3 (docs/calendar-feature/05-interacciones-y-microinteracciones.md §4–7,
          06-creacion-y-edicion-de-items.md §3/§5): cuerpo del popover de detalle, compartido entre el chip
@@ -323,22 +372,34 @@
         <ScrollViewer VerticalScrollBarVisibility="{Binding SidebarScrollBarVisibility}" Margin="0,0,-14,0" Padding="0,0,14,0">
         <StackPanel Spacing="22">
         <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="Auto,*,Auto">
-            <Button Grid.Column="0" Classes="icon-btn calendar-nav" Command="{Binding MiniCalendarPreviousMonthCommand}"
+          <Grid ColumnDefinitions="34,*,34">
+            <Button Grid.Column="0" Classes="icon-btn calendar-nav" Width="34" Height="34" VerticalAlignment="Center" Command="{Binding MiniCalendarPreviousMonthCommand}"
                     ToolTip.Tip="{loc:Tr Calendar_MiniCalendar_PreviousMonthTooltip}"
                     AutomationProperties.Name="{loc:Tr Calendar_MiniCalendar_PreviousMonthTooltip}">
               <mi:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" />
             </Button>
-            <TextBlock Grid.Column="1" Text="{Binding MiniCalendarLabel}" Classes="eyebrow" FontSize="10"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <Button Grid.Column="2" Classes="icon-btn calendar-nav" Command="{Binding MiniCalendarNextMonthCommand}"
+            <ToggleButton x:Name="MiniCalendarSectionToggle" Grid.Column="1"
+                          Classes="calendar-section-toggle calendar-mini-toggle" HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch" IsChecked="{Binding IsMiniCalendarExpanded, Mode=TwoWay}"
+                          AutomationProperties.Name="{Binding MiniCalendarLabel}">
+              <Grid ColumnDefinitions="14,*,14" VerticalAlignment="Center">
+                <TextBlock Grid.Column="1" Text="{Binding MiniCalendarLabel}" Classes="eyebrow"
+                           FontSize="10" LineHeight="14" LetterSpacing="3"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Panel Grid.Column="2" Width="14" Height="14" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsMiniCalendarExpanded}" />
+                  <mi:MaterialIcon Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsMiniCalendarExpanded}" />
+                </Panel>
+              </Grid>
+            </ToggleButton>
+            <Button Grid.Column="2" Classes="icon-btn calendar-nav" Width="34" Height="34" VerticalAlignment="Center" Command="{Binding MiniCalendarNextMonthCommand}"
                     ToolTip.Tip="{loc:Tr Calendar_MiniCalendar_NextMonthTooltip}"
                     AutomationProperties.Name="{loc:Tr Calendar_MiniCalendar_NextMonthTooltip}">
               <mi:MaterialIcon Kind="ChevronRight" Width="14" Height="14" />
             </Button>
           </Grid>
 
-          <ItemsControl ItemsSource="{Binding MiniWeekdayHeaders}">
+          <ItemsControl ItemsSource="{Binding MiniWeekdayHeaders}" IsVisible="{Binding IsMiniCalendarExpanded}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <UniformGrid Columns="7" />
@@ -353,7 +414,7 @@
 
           <!-- 42 celdas fijas, mismo cálculo que la vista Mes (MonthGridCalculator) — sin chips, solo
                el punto de "tiene contenido" (CalendarMiniDayViewModel.HasItems). -->
-          <ItemsControl ItemsSource="{Binding MiniCalendarDays}">
+          <ItemsControl ItemsSource="{Binding MiniCalendarDays}" IsVisible="{Binding IsMiniCalendarExpanded}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <UniformGrid Columns="7" Rows="6" />
@@ -379,135 +440,179 @@
         <!-- ===================== Capas por origen — docs/calendar-feature/
              07-filtros-busqueda-y-capas.md §1 ===================== -->
         <StackPanel Spacing="8">
-          <TextBlock Text="{loc:Tr Calendar_Sidebar_LayersHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-          <Border Background="{DynamicResource Ink10}" Padding="1">
-            <ItemsControl ItemsSource="{Binding Layers}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel Spacing="1" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CalendarLayerViewModel">
-                  <Border Background="{DynamicResource PanelBackgroundBrush}" Padding="7,6">
-                    <Grid ColumnDefinitions="Auto,*,Auto">
-                      <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center"
-                               Fill="{Binding ColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
-                      <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="10.5" Margin="8,0,6,0"
-                                 VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                      <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
-                                    AutomationProperties.Name="{Binding Label}" />
-                    </Grid>
-              </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-     </Border>
+          <ToggleButton x:Name="LayersSectionToggle" Classes="calendar-section-toggle" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch" Padding="8,4"
+                        IsChecked="{Binding IsLayersExpanded, Mode=TwoWay}"
+                        AutomationProperties.Name="{loc:Tr Calendar_Sidebar_LayersHeader}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{loc:Tr Calendar_Sidebar_LayersHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsLayersExpanded}" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsLayersExpanded}" />
+            </Grid>
+          </ToggleButton>
+          <StackPanel x:Name="LayersSectionContent" Spacing="8" IsVisible="{Binding IsLayersExpanded}">
+            <Border Background="{DynamicResource Ink10}" Padding="1">
+              <ItemsControl ItemsSource="{Binding Layers}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="1" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CalendarLayerViewModel">
+                    <Border Background="{DynamicResource PanelBackgroundBrush}" Padding="7,6">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center"
+                                 Fill="{Binding ColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="10.5" Margin="8,0,6,0"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                      AutomationProperties.Name="{Binding Label}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+          </StackPanel>
         </StackPanel>
 
         <!-- ===================== Búsqueda — doc §2: "underline search" (TextBox.search, mismo
              patrón que NotesView/RemindersView) ===================== -->
         <StackPanel Spacing="8">
-          <TextBlock Text="{loc:Tr Calendar_Sidebar_SearchHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-          <TextBox Classes="search" Text="{Binding SearchText}" PlaceholderText="{loc:Tr Calendar_Sidebar_SearchPlaceholder}" />
+          <ToggleButton x:Name="SearchSectionToggle" Classes="calendar-section-toggle" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch" Padding="8,4"
+                        IsChecked="{Binding IsSearchExpanded, Mode=TwoWay}"
+                        AutomationProperties.Name="{loc:Tr Calendar_Sidebar_SearchHeader}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{loc:Tr Calendar_Sidebar_SearchHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsSearchExpanded}" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsSearchExpanded}" />
+            </Grid>
+          </ToggleButton>
+          <StackPanel x:Name="SearchSectionContent" Spacing="8" IsVisible="{Binding IsSearchExpanded}">
+            <TextBox Classes="search" Text="{Binding SearchText}" PlaceholderText="{loc:Tr Calendar_Sidebar_SearchPlaceholder}" />
+          </StackPanel>
         </StackPanel>
 
         <!-- ===================== Filtros secundarios — doc §3 ===================== -->
         <StackPanel Spacing="8">
-          <TextBlock Text="{loc:Tr Calendar_Sidebar_FiltersHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+          <ToggleButton x:Name="FiltersSectionToggle" Classes="calendar-section-toggle" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch" Padding="8,4"
+                        IsChecked="{Binding IsFiltersExpanded, Mode=TwoWay}"
+                        AutomationProperties.Name="{loc:Tr Calendar_Sidebar_FiltersHeader}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{loc:Tr Calendar_Sidebar_FiltersHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsFiltersExpanded}" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsFiltersExpanded}" />
+            </Grid>
+          </ToggleButton>
+          <StackPanel x:Name="FiltersSectionContent" Spacing="8" IsVisible="{Binding IsFiltersExpanded}">
 
-          <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Calendar_Sidebar_PriorityHeader, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9" />
-            <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
-              <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_High, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
-              <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterHigh}" OnContent="" OffContent=""
-                            AutomationProperties.Name="{loc:Tr Polar_Priority_High}" />
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Tr Calendar_Sidebar_PriorityHeader, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9" />
+              <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_High, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterHigh}" OnContent="" OffContent=""
+                              AutomationProperties.Name="{loc:Tr Polar_Priority_High}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_Medium, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterMedium}" OnContent="" OffContent=""
+                              AutomationProperties.Name="{loc:Tr Polar_Priority_Medium}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_Low, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterLow}" OnContent="" OffContent=""
+                              AutomationProperties.Name="{loc:Tr Polar_Priority_Low}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_None, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterNone}" OnContent="" OffContent=""
+                              AutomationProperties.Name="{loc:Tr Polar_Priority_None}" />
+              </Grid>
+            </StackPanel>
+
+            <!-- Etiquetas (doc §3/§5): solo si Polar está vinculado y hay al menos una etiqueta en uso. -->
+            <StackPanel Spacing="4" IsVisible="{Binding IsPolarLinked}">
+              <TextBlock Text="{loc:Tr Calendar_Sidebar_TagsHeader, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9" Margin="0,6,0,0"
+                         IsVisible="{Binding TagFilters.Count, Converter={StaticResource CountToBoolConverter}}" />
+              <ItemsControl ItemsSource="{Binding TagFilters}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="2" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CalendarTagFilterViewModel">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Grid.Column="0" Text="{Binding Tag}" FontSize="11" VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis" />
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                    AutomationProperties.Name="{Binding Tag}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
+            <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4,0,0" />
+
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Tr Calendar_Sidebar_HideCompleted, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding HideCompletedItems}" OnContent="" OffContent=""
+                            AutomationProperties.Name="{loc:Tr Calendar_Sidebar_HideCompleted}" />
             </Grid>
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_Medium, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
-              <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterMedium}" OnContent="" OffContent=""
-                            AutomationProperties.Name="{loc:Tr Polar_Priority_Medium}" />
-            </Grid>
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_Low, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
-              <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterLow}" OnContent="" OffContent=""
-                            AutomationProperties.Name="{loc:Tr Polar_Priority_Low}" />
-            </Grid>
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="{loc:Tr Polar_Priority_None, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
-              <ToggleSwitch Grid.Column="1" IsChecked="{Binding PriorityFilterNone}" OnContent="" OffContent=""
-                            AutomationProperties.Name="{loc:Tr Polar_Priority_None}" />
+              <TextBlock Grid.Column="0" Text="{loc:Tr Calendar_Sidebar_HideGhostOccurrences, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center"
+                         TextWrapping="Wrap" />
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding HideGhostOccurrences}" OnContent="" OffContent=""
+                            AutomationProperties.Name="{loc:Tr Calendar_Sidebar_HideGhostOccurrences}" />
             </Grid>
           </StackPanel>
-
-          <!-- Etiquetas (doc §3/§5): solo si Polar está vinculado y hay al menos una etiqueta en uso. -->
-          <StackPanel Spacing="4" IsVisible="{Binding IsPolarLinked}">
-            <TextBlock Text="{loc:Tr Calendar_Sidebar_TagsHeader, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9" Margin="0,6,0,0"
-                       IsVisible="{Binding TagFilters.Count, Converter={StaticResource CountToBoolConverter}}" />
-            <ItemsControl ItemsSource="{Binding TagFilters}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel Spacing="2" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CalendarTagFilterViewModel">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0" Text="{Binding Tag}" FontSize="11" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
-                                  AutomationProperties.Name="{Binding Tag}" />
-                  </Grid>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-
-          <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4,0,0" />
-
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Calendar_Sidebar_HideCompleted, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center" />
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding HideCompletedItems}" OnContent="" OffContent=""
-                          AutomationProperties.Name="{loc:Tr Calendar_Sidebar_HideCompleted}" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Calendar_Sidebar_HideGhostOccurrences, Converter={StaticResource UpperCaseConverter}}" FontSize="11" VerticalAlignment="Center"
-                       TextWrapping="Wrap" />
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding HideGhostOccurrences}" OnContent="" OffContent=""
-                          AutomationProperties.Name="{loc:Tr Calendar_Sidebar_HideGhostOccurrences}" />
-          </Grid>
         </StackPanel>
 
         <!-- ===================== Panel "sin programadas" — docs/calendar-feature/
              04-vistas-y-navegacion.md §8 ===================== -->
         <StackPanel Spacing="8" IsVisible="{Binding HasUnscheduledItems}">
-          <TextBlock Text="{loc:Tr Calendar_Sidebar_UnscheduledHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-          <Border Background="{DynamicResource Ink10}" Padding="1">
-            <ItemsControl ItemsSource="{Binding UnscheduledItems}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel Spacing="1" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CalendarUnscheduledItemViewModel">
-                  <Border Classes="calendar-unscheduled-item" Initialized="UnscheduledItem_Initialized">
-                    <Grid ColumnDefinitions="Auto,*">
-                      <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="10" Height="10"
-                                        Margin="0,2,6,0" VerticalAlignment="Top"
-                                        Foreground="{Binding LayerColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
-                      <StackPanel Grid.Column="1" Spacing="1">
-                        <TextBlock Text="{Binding Title}" FontSize="11" TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding ParentContextLabel}" Classes="faint" FontSize="9"
-                                   IsVisible="{Binding HasParentContext}" />
-                      </StackPanel>
-                    </Grid>
-              </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-     </Border>
-          <TextBlock Text="{loc:Tr Calendar_Sidebar_UnscheduledHint}" Classes="faint" FontSize="9.5" TextWrapping="Wrap" />
+          <ToggleButton x:Name="UnscheduledSectionToggle" Classes="calendar-section-toggle" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch" Padding="8,4"
+                        IsChecked="{Binding IsUnscheduledExpanded, Mode=TwoWay}"
+                        AutomationProperties.Name="{loc:Tr Calendar_Sidebar_UnscheduledHeader}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{loc:Tr Calendar_Sidebar_UnscheduledHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsUnscheduledExpanded}" />
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsUnscheduledExpanded}" />
+            </Grid>
+          </ToggleButton>
+          <StackPanel x:Name="UnscheduledSectionContent" Spacing="8" IsVisible="{Binding IsUnscheduledExpanded}">
+            <Border Background="{DynamicResource Ink10}" Padding="1">
+              <ItemsControl ItemsSource="{Binding UnscheduledItems}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="1" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CalendarUnscheduledItemViewModel">
+                    <Border Classes="calendar-unscheduled-item" Initialized="UnscheduledItem_Initialized">
+                      <Grid ColumnDefinitions="Auto,*">
+                        <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="10" Height="10"
+                                          Margin="0,2,6,0" VerticalAlignment="Top"
+                                          Foreground="{Binding LayerColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+                        <StackPanel Grid.Column="1" Spacing="1">
+                          <TextBlock Text="{Binding Title}" FontSize="11" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding ParentContextLabel}" Classes="faint" FontSize="9"
+                                     IsVisible="{Binding HasParentContext}" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+            <TextBlock Text="{loc:Tr Calendar_Sidebar_UnscheduledHint}" Classes="faint" FontSize="9.5" TextWrapping="Wrap" />
+          </StackPanel>
         </StackPanel>
 
         </StackPanel>

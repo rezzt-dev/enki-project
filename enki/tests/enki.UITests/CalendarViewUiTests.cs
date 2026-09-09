@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using enki.Services;
 using enki.ViewModels;
@@ -44,6 +45,39 @@ public class CalendarViewUiTests : IDisposable
         window.Show();
 
         return (view, viewModel, window);
+    }
+
+    [Fact]
+    public void SidebarSections_ToggleContent_AndRestoreAfterRestart()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            foreach (var section in new[] { "Layers", "Search", "Filters" })
+            {
+                var toggle = view.FindControl<ToggleButton>(section + "SectionToggle")!;
+                var content = view.FindControl<StackPanel>(section + "SectionContent")!;
+                Assert.False(content.IsVisible);
+                toggle.IsChecked = true;
+                Assert.True(content.IsVisible);
+            }
+            vm.IsMiniCalendarExpanded = false;
+            vm.IsUnscheduledExpanded = true;
+            vm.IsSidebarCollapsed = true;
+        }
+        finally { window.Close(); }
+
+        var (_, restored, restoredWindow) = CreateView();
+        try
+        {
+            Assert.False(restored.IsMiniCalendarExpanded);
+            Assert.True(restored.IsLayersExpanded);
+            Assert.True(restored.IsSearchExpanded);
+            Assert.True(restored.IsFiltersExpanded);
+            Assert.True(restored.IsUnscheduledExpanded);
+            Assert.True(restored.IsSidebarCollapsed);
+        }
+        finally { restoredWindow.Close(); }
     }
 
     [Fact]

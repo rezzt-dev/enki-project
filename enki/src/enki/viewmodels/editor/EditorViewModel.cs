@@ -46,6 +46,8 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// app, p. ej. <c>MainWindowViewModel.Navigate</c> con Sesiones/Kanban).</summary>
     public ObservableCollection<LinkedCardItemViewModel> LinkedCards { get; } = [];
 
+    [ObservableProperty] private bool _isLinkedCardsExpanded;
+
     public bool HasLinkedCards => LinkedCards.Count > 0;
 
     /// <summary>Whether the "linked cards" row should actually render — hidden in zen mode even when
@@ -82,6 +84,11 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// one (see NotesView.axaml's editor-tab.active style). Doesn't affect editing/saving at all.</summary>
     [ObservableProperty]
     private bool _isActive;
+
+    partial void OnIsActiveChanged(bool value)
+    {
+        if (!value) IsLinkedCardsExpanded = false;
+    }
 
     /// <summary>Backs the "delete this note" confirmation dialog opened from the editor's own toolbar —
     /// the same <see cref="AppSettings.ConfirmBeforeDelete"/> guard as <c>NotesViewModel.DeleteNote</c>
@@ -257,6 +264,7 @@ public sealed partial class EditorViewModel : ViewModelBase
 
     partial void OnIsZenModeChanged(bool value)
     {
+        if (value) IsLinkedCardsExpanded = false;
         OnPropertyChanged(nameof(SidePanelWidth));
         OnPropertyChanged(nameof(ShowFormattingToolbar));
         OnPropertyChanged(nameof(ShowLinkedCards));
@@ -401,7 +409,11 @@ public sealed partial class EditorViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenLinkedCard(string cardId) => _onOpenLinkedCard?.Invoke(cardId);
+    private void OpenLinkedCard(string cardId)
+    {
+        IsLinkedCardsExpanded = false;
+        _onOpenLinkedCard?.Invoke(cardId);
+    }
 
     /// <summary>Ctrl+click en un wikilink (<see cref="Views.Editor.Markdown.MdSpanKind.WikiLink"/>) —
     /// resuelve <paramref name="target"/> contra todas las notas del vault (raíz más cada sesión

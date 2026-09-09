@@ -197,13 +197,6 @@
                   <TextBlock Text="{loc:Tr Sessions_Graph_FilterButton, Converter={StaticResource UpperCaseConverter}}" />
                 </StackPanel>
               </Button>
-              <Button Classes="link-mode-toggle" Classes.active="{Binding IsLinkMode}" Command="{Binding ToggleLinkModeCommand}"
-                      ToolTip.Tip="{loc:Tr Sessions_LinkModeInstructions}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="VectorPolyline" Width="14" Height="14" />
-                  <TextBlock Text="{loc:Tr Sessions_LinkModeButton, Converter={StaticResource UpperCaseConverter}}" />
-                </StackPanel>
-              </Button>
             </StackPanel>
 
             <Popup PlacementTarget="{Binding #GraphFilterTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
@@ -232,12 +225,6 @@
                 </StackPanel>
               </Border>
             </Popup>
-
-            <Border Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16"
-                    IsVisible="{Binding IsLinkMode}" MaxWidth="260" IsHitTestVisible="False">
-              <TextBlock Classes="muted" FontSize="11" TextWrapping="Wrap"
-                         Text="{loc:Tr Sessions_LinkModeInstructions}" />
-     </Border>
           </Grid>
         </Border>
       </Grid>

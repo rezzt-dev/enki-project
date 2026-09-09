@@ -18,11 +18,12 @@
          completo en modo enfoque/zen (propuesta 7) — junto con la barra de formato y el panel lateral,
          es lo que deja "solo el texto centrado" que pide esa propuesta. -->
     <Grid x:Name="EditorHeader" Grid.Row="0" Margin="{Binding HeaderMargin}" IsVisible="{Binding !IsZenMode}">
-      <!-- Columna 0 elástica y columnas 1-2 al tamaño de su contenido: lo que cede espacio al estrechar
+      <!-- Columna 0 elástica y columnas 1-3 al tamaño de su contenido: lo que cede espacio al estrechar
            el editor es el título —que se recorta y sigue estando entero en la pestaña— y no las acciones,
            que dejarían de poder pulsarse. -->
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*" MinWidth="80" />
+        <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
@@ -50,12 +51,54 @@
                  KeyDown="OnTitleKeyDown" GotFocus="OnTitleGotFocus" />
       </StackPanel>
 
+      <!-- Tareas vinculadas en la cabecera; el desplegable no desplaza el editor. -->
+      <Panel Grid.Column="1" Margin="8,0" VerticalAlignment="Center" IsVisible="{Binding ShowLinkedCards}">
+        <ToggleButton x:Name="LinkedCardsTrigger" Classes="tag-chip toolbar-chip" Padding="8,5"
+                      IsChecked="{Binding IsLinkedCardsExpanded, Mode=TwoWay}"
+                      AutomationProperties.Name="{loc:Tr Editor_LinkedCards_Label}"
+                      ToolTip.Tip="{loc:Tr Editor_LinkedCards_Label}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" />
+            <TextBlock Text="{Binding LinkedCards.Count}" FontSize="11" />
+            <mi:MaterialIcon Kind="ChevronDown" Width="12" Height="12" IsVisible="{Binding !IsLinkedCardsExpanded}" />
+            <mi:MaterialIcon Kind="ChevronUp" Width="12" Height="12" IsVisible="{Binding IsLinkedCardsExpanded}" />
+          </StackPanel>
+        </ToggleButton>
+        <Popup x:Name="LinkedCardsPopup" PlacementTarget="{Binding #LinkedCardsTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
+               IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #LinkedCardsTrigger}"
+               IsOpen="{Binding IsLinkedCardsExpanded, Mode=TwoWay}">
+          <Border Classes="dropdown-popover" MinWidth="200" MaxWidth="320">
+            <StackPanel Spacing="10">
+              <TextBlock Text="{loc:Tr Editor_LinkedCards_Label}" Classes="eyebrow" FontSize="9" />
+              <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding LinkedCards}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="6" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LinkedCardItemViewModel">
+                      <Button Classes="pill" Padding="10,4"
+                              Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).OpenLinkedCardCommand}"
+                              CommandParameter="{Binding Id}">
+                        <TextBlock Text="{Binding Title}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="280" />
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Panel>
+
       <!-- Etiquetas con icono y fondo de tarjeta para agrupar visualmente. Columna propia (ya no dentro
            del grupo de acciones) con un ancho acotado por los dos lados: el MinWidth garantiza que siga
            siendo una caja en la que se puede escribir por estrecho que vaya el editor, y el MaxWidth que
            no se estire a lo largo de media cabecera en una ventana ancha. Fuera de la vista simplificada
            (ver ShowFullViewChrome): allí la cabecera se queda en el nombre de la nota y las acciones. -->
-      <Border x:Name="TagsBox" Grid.Column="1" Margin="12,0"
+      <Border x:Name="TagsBox" Grid.Column="2" Margin="12,0"
               IsVisible="{Binding ShowFullViewChrome}"
               Classes="card" Padding="8,5" VerticalAlignment="Center" HorizontalAlignment="Left"
               MinWidth="150" MaxWidth="240">
@@ -71,7 +114,7 @@
         </Grid>
       </Border>
 
-      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <!-- Indicador de guardado prominente (Fase 2 §2). En la vista simplificada se queda solo el
              icono: la pestaña ya lleva su propio punto de "sin guardar", y esos ~70px de etiqueta son la
              diferencia entre que la cabecera quepa o no en un panel de editor estrecho. -->
@@ -271,30 +314,6 @@
           </Button>
         </StackPanel>
       </StackPanel>
-    </StackPanel>
-
-    <!-- Tareas vinculadas (enlace nota↔tarea, "Capa 1") — lado inverso, derivado, del enlace nota↔tarea
-         que se fija desde el editor de tarjeta Kanban. -->
-    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,14"
-                VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                IsVisible="{Binding ShowLinkedCards}">
-      <TextBlock Text="{loc:Tr Editor_LinkedCards_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" VerticalAlignment="Center" />
-      <ItemsControl ItemsSource="{Binding LinkedCards}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="6" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate DataType="vm:LinkedCardItemViewModel">
-            <Button Classes="pill" Padding="10,4"
-                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).OpenLinkedCardCommand}"
-                    CommandParameter="{Binding Id}">
-              <TextBlock Text="{Binding Title}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="160" />
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
     </StackPanel>
 
     <!-- Body -->

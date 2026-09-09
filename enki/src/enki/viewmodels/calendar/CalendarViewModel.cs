@@ -310,6 +310,52 @@ public sealed partial class CalendarViewModel : ViewModelBase
     partial void OnPriorityFilterLowChanged(bool value) => Rebuild();
     partial void OnPriorityFilterNoneChanged(bool value) => Rebuild();
 
+    [ObservableProperty] private bool _isMiniCalendarExpanded;
+
+    partial void OnIsMiniCalendarExpandedChanged(bool value)
+    {
+        _settingsService.Settings.CalendarMiniCalendarExpanded = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty] private bool _isLayersExpanded;
+
+    partial void OnIsLayersExpandedChanged(bool value)
+    {
+        _settingsService.Settings.CalendarLayersExpanded = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty] private bool _isSearchExpanded;
+
+    partial void OnIsSearchExpandedChanged(bool value)
+    {
+        _settingsService.Settings.CalendarSearchExpanded = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty] private bool _isFiltersExpanded;
+
+    partial void OnIsFiltersExpandedChanged(bool value)
+    {
+        _settingsService.Settings.CalendarFiltersExpanded = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty] private bool _isUnscheduledExpanded;
+
+    partial void OnIsUnscheduledExpandedChanged(bool value)
+    {
+        _settingsService.Settings.CalendarUnscheduledExpanded = value;
+        _settingsService.Save();
+    }
+
+    partial void OnIsSidebarCollapsedChanged(bool value)
+    {
+        _settingsService.Settings.CalendarSidebarCollapsed = value;
+        _settingsService.Save();
+    }
+
     partial void OnHideCompletedItemsChanged(bool value)
     {
         _settingsService.Settings.CalendarHideCompletedItems = value;
@@ -346,6 +392,12 @@ public sealed partial class CalendarViewModel : ViewModelBase
         // Read before subscribing to the On*Changed handlers below, so restoring these persisted
         // preferences at startup doesn't immediately re-save the same value back to disk or re-trigger a
         // rebuild that's about to happen anyway at the end of the constructor.
+        _isMiniCalendarExpanded = _settingsService.Settings.CalendarMiniCalendarExpanded;
+        _isLayersExpanded = _settingsService.Settings.CalendarLayersExpanded;
+        _isSearchExpanded = _settingsService.Settings.CalendarSearchExpanded;
+        _isFiltersExpanded = _settingsService.Settings.CalendarFiltersExpanded;
+        _isUnscheduledExpanded = _settingsService.Settings.CalendarUnscheduledExpanded;
+        _isSidebarCollapsed = _settingsService.Settings.CalendarSidebarCollapsed;
         _hideCompletedItems = _settingsService.Settings.CalendarHideCompletedItems;
         _hideGhostOccurrences = _settingsService.Settings.CalendarHideGhostOccurrences;
         _showSidebarScrollbar = _settingsService.Settings.CalendarShowSidebarScrollbar;

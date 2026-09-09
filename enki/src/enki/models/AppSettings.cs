@@ -108,6 +108,14 @@ public sealed class AppSettings
     /// Defaults to hidden — the row starts collapsed behind the setting until the user opts in.</summary>
     public bool PolarShowTaskTags { get; set; }
 
+    /// <summary>Estado de despliegue de cada bloque lateral del calendario, conservado entre arranques.</summary>
+    public bool CalendarMiniCalendarExpanded { get; set; } = true;
+    public bool CalendarLayersExpanded { get; set; }
+    public bool CalendarSearchExpanded { get; set; }
+    public bool CalendarFiltersExpanded { get; set; }
+    public bool CalendarUnscheduledExpanded { get; set; }
+    public bool CalendarSidebarCollapsed { get; set; }
+
     // ===================== Calendario (docs/calendar-feature/07-filtros-busqueda-y-capas.md §1/§3) =====================
     // Fase 4: layer visibility persists as the set of *hidden* keys rather than the active ones, so a
     // newly created Polar list (or the fixed "kanban"/"reminder" layers) is active by default without any
