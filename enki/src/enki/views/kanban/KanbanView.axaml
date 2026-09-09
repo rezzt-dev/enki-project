@@ -139,14 +139,7 @@
                               ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
 
           </Grid>
-          <controls:KanbanTags Tags="{Binding Tags}">
-            <controls:KanbanTags.IsVisible>
-              <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
-                <Binding Path="HasTags" />
-                <Binding Path="$parent[UserControl].((vm:KanbanViewModel)DataContext).ShowCardTags" />
-              </MultiBinding>
-            </controls:KanbanTags.IsVisible>
-          </controls:KanbanTags>
+          <controls:KanbanTags Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
 
         </StackPanel>
       </Button>
@@ -599,14 +592,7 @@
                                 ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
 
             </Grid>
-            <controls:KanbanTags Tags="{Binding Tags}">
-              <controls:KanbanTags.IsVisible>
-                <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
-                  <Binding Path="HasTags" />
-                  <Binding Path="$parent[UserControl].((vm:KanbanViewModel)DataContext).ShowCardTags" />
-                </MultiBinding>
-              </controls:KanbanTags.IsVisible>
-            </controls:KanbanTags>
+            <controls:KanbanTags Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
           </StackPanel>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" Margin="14,0,0,0" VerticalAlignment="Center">
@@ -722,14 +708,7 @@
                    sin abrirla. Los iconos van 1px más abajo porque la fuente mono asienta sus glifos en la
                    mitad baja de la caja de línea. -->
               <!-- Las etiquetas ocupan una fila independiente y pueden desplegarse completas. -->
-              <controls:KanbanTags Grid.Row="3" Tags="{Binding Tags}">
-                <controls:KanbanTags.IsVisible>
-                  <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
-                    <Binding Path="HasTags" />
-                    <Binding Path="$parent[UserControl].((vm:KanbanViewModel)DataContext).ShowCardTags" />
-                  </MultiBinding>
-                </controls:KanbanTags.IsVisible>
-              </controls:KanbanTags>
+              <controls:KanbanTags Grid.Row="3" Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
 
               <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
@@ -1061,9 +1040,17 @@
       <!-- Chips de etiquetas: fila propia, y solo si el tablero tiene alguna etiqueta. Antes ocupaban
            sitio en la barra de herramientas incluso para anunciar "Sin etiquetas", que es exactamente la
            información que nadie necesita ver. IsVisible se evalúa contra el propio TagFilter porque
-           DataContext se reapunta en este mismo elemento (mismo cuidado que en el panel de más abajo). -->
-      <views:TagFilterView Grid.Row="2" DataContext="{Binding TagFilter}"
-                           IsVisible="{Binding !IsEmpty}" Margin="0,0,0,6" />
+           DataContext se reapunta en este mismo elemento (mismo cuidado que en el panel de más abajo),
+           y se cruza con el ajuste de Apariencia que permite esconder la fila entera: ocultarla no
+           limpia el filtro, solo deja de pintarlo. -->
+      <views:TagFilterView Grid.Row="2" DataContext="{Binding TagFilter}" Margin="0,0,0,6">
+        <views:TagFilterView.IsVisible>
+          <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
+            <Binding Path="!IsEmpty" />
+            <Binding Path="$parent[UserControl].((vm:KanbanViewModel)DataContext).ShowTagFilter" />
+          </MultiBinding>
+        </views:TagFilterView.IsVisible>
+      </views:TagFilterView>
 
       <!-- ===================== Avisos del tablero ===================== -->
       <StackPanel Grid.Row="3">

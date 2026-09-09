@@ -229,7 +229,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
-        _kanbanShowCardTags = settingsService.Settings.KanbanShowCardTags;
+        _kanbanShowTagFilter = settingsService.Settings.KanbanShowTagFilter;
         _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";
         _isBuiltInDarkThemesCollapsed = settingsService.Settings.BuiltInDarkThemesCollapsed;
         _isBuiltInLightThemesCollapsed = settingsService.Settings.BuiltInLightThemesCollapsed;

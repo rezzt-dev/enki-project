@@ -980,7 +980,7 @@
                       <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Label}" FontSize="13" />
                       <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                     </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowCardTags}" OnContent="" OffContent=""
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowTagFilter}" OnContent="" OffContent=""
                                   AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanTags_Label}" />
                   </Grid>
                 </StackPanel>

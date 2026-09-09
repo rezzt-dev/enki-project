@@ -3300,6 +3300,12 @@
   <data name="TagFilter_Empty" xml:space="preserve">
     <value>Aucun tag</value>
   </data>
+  <data name="TagFilter_ShowLess" xml:space="preserve">
+    <value>Réduire</value>
+  </data>
+  <data name="TagFilter_ShowAll" xml:space="preserve">
+    <value>Tout afficher</value>
+  </data>
   <data name="Trash_DeleteForeverButton" xml:space="preserve">
     <value>Supprimer définitivement</value>
   </data>
@@ -4825,13 +4831,13 @@ Bonne rédaction.</value>
     <value>Luminosité</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Title" xml:space="preserve">
-    <value>Étiquettes des cartes Kanban</value>
+    <value>Étiquettes du tableau Kanban</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Label" xml:space="preserve">
-    <value>Afficher les étiquettes des cartes</value>
+    <value>Afficher le filtre par étiquettes</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
-    <value>Masquez les étiquettes pour alléger le tableau. Au-delà d’une ligne, affichez jusqu’à cinq étiquettes et développez la liste pour toutes les voir.</value>
+    <value>Masquez la rangée d’étiquettes du tableau pour l’alléger. Au-delà d’une ligne, cinq étiquettes au maximum restent visibles et vous pouvez déplier le reste.</value>
   </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Tout afficher</value>

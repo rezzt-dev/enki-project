@@ -3300,6 +3300,12 @@
   <data name="TagFilter_Empty" xml:space="preserve">
     <value>Sin etiquetas</value>
   </data>
+  <data name="TagFilter_ShowLess" xml:space="preserve">
+    <value>Mostrar menos</value>
+  </data>
+  <data name="TagFilter_ShowAll" xml:space="preserve">
+    <value>Mostrar todas</value>
+  </data>
   <data name="Trash_DeleteForeverButton" xml:space="preserve">
     <value>Eliminar de forma permanente</value>
   </data>
@@ -4825,13 +4831,13 @@ Feliz escritura.</value>
     <value>Brillo</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Title" xml:space="preserve">
-    <value>Etiquetas de las tarjetas Kanban</value>
+    <value>Etiquetas del tablero Kanban</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Label" xml:space="preserve">
-    <value>Mostrar etiquetas de las tarjetas</value>
+    <value>Mostrar el filtro por etiquetas</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
-    <value>Oculta las etiquetas para despejar el tablero. Cuando superen una línea, se muestran hasta cinco y puedes desplegarlas todas.</value>
+    <value>Oculta la fila de etiquetas del tablero para despejarlo. Cuando pase de una línea, se ven hasta cinco y pueden desplegar el resto.</value>
   </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Mostrar todas</value>

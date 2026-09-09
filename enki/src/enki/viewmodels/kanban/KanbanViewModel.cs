@@ -231,8 +231,10 @@ public sealed partial class KanbanViewModel : ViewModelBase
     [ObservableProperty]
     private KanbanBoardOrientation _boardOrientation = KanbanBoardOrientation.Vertical;
 
+    /// <summary>Ajustes › Apariencia › Etiquetas del tablero Kanban: pinta o esconde la fila de chips
+    /// de filtro que va bajo el buscador. Los filtros ya seleccionados siguen aplicándose.</summary>
     [ObservableProperty]
-    private bool _showCardTags = true;
+    private bool _showTagFilter = true;
 
     public KanbanViewModel(KanbanService kanbanService, PolarAuthService polarAuthService, PolarTaskManagementViewModel taskManagement,
         VaultService? vaultService = null, SessionService? sessionService = null, Action<string>? onOpenLinkedNote = null,
@@ -248,8 +250,8 @@ public sealed partial class KanbanViewModel : ViewModelBase
         TaskManagement = taskManagement;
         if (settingsService is not null)
         {
-            _showCardTags = settingsService.Settings.KanbanShowCardTags;
-            settingsService.SettingsChanged += () => ShowCardTags = settingsService.Settings.KanbanShowCardTags;
+            _showTagFilter = settingsService.Settings.KanbanShowTagFilter;
+            settingsService.SettingsChanged += () => ShowTagFilter = settingsService.Settings.KanbanShowTagFilter;
         }
 
         if (settingsService is not null &&

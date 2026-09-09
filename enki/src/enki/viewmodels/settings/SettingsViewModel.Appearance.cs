@@ -160,11 +160,11 @@ public sealed partial class SettingsViewModel
     }
 
     [ObservableProperty]
-    private bool _kanbanShowCardTags;
+    private bool _kanbanShowTagFilter;
 
-    partial void OnKanbanShowCardTagsChanged(bool value)
+    partial void OnKanbanShowTagFilterChanged(bool value)
     {
-        _settingsService.Settings.KanbanShowCardTags = value;
+        _settingsService.Settings.KanbanShowTagFilter = value;
         _settingsService.Save();
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace enki.ViewModels;
 
@@ -15,6 +16,29 @@ public sealed partial class TagFilterViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isEmpty = true;
+
+    /// <summary>Con la lista plegada solo se ve la primera fila de chips. Es estado de vista y vive
+    /// aquí —no en el panel— porque el botón que lo alterna es hermano del panel, no hijo suyo.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCollapsed))]
+    private bool _isExpanded;
+
+    /// <summary>Chips que la vista plegada deja fuera. Lo escribe <c>TagChipsPanel</c> al medirse,
+    /// que es el único que sabe cuántos caben de verdad en una línea.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHiddenTags))]
+    [NotifyPropertyChangedFor(nameof(HiddenBadge))]
+    private int _hiddenCount;
+
+    public bool IsCollapsed => !IsExpanded;
+
+    /// <summary>Solo hay algo que desplegar si la lista no cabe en una línea.</summary>
+    public bool HasHiddenTags => HiddenCount > 0;
+
+    public string HiddenBadge => $"+{HiddenCount}";
+
+    [RelayCommand]
+    private void ToggleExpanded() => IsExpanded = !IsExpanded;
 
     /// <summary>Etiquetas actualmente seleccionadas. Si está vacío, el consumidor debe mostrar todo.</summary>
     public IEnumerable<string> SelectedTags => Items.Where(i => i.IsSelected).Select(i => i.Tag);
