@@ -229,6 +229,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
+        _kanbanShowCardTags = settingsService.Settings.KanbanShowCardTags;
         _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";
         _isBuiltInDarkThemesCollapsed = settingsService.Settings.BuiltInDarkThemesCollapsed;
         _isBuiltInLightThemesCollapsed = settingsService.Settings.BuiltInLightThemesCollapsed;
@@ -317,7 +318,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 .Select(group => new ShortcutCategoryViewModel(
                     group.Key,
                     group.Select(d => new ShortcutRowViewModel(
-                        d.Id, d.LabelKey, ShortcutRegistry.GetGestureDisplay(d.Id), ShortcutRegistry.IsCustomized(d.Id))).ToList())));
+                        d.Id, d.LabelKey, ShortcutRegistry.GetGestureDisplay(d.Id), ShortcutRegistry.IsCustomized(d.Id), group.Key)).ToList())));
         // Mantiene las filas al día si otra ventana (o un reset disparado desde aquí mismo) cambia un
         // atajo — mismo "live mirror" que EditorPreferences.Changed, sin desuscripción porque este
         // viewmodel vive tanto como la shell (igual que Notes/Kanban, nunca se reconstruye salvo reinicio).
@@ -459,7 +460,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SelectSection(SettingsSection section) => SelectedSection = section;
+    private void SelectSection(SettingsSection section)
+    {
+        SearchText = string.Empty;
+        SelectedSection = section;
+    }
 
     partial void OnSelectedLanguageChanged(SupportedLanguageInfo? value)
     {
@@ -520,6 +525,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         RebuildAvailableFonts();
         RebuildShortcutLabels();
         ThemeEditor?.RefreshLabels();
+        RefreshSearchTexts();
     }
 
     private void RebuildSections()

@@ -57,10 +57,15 @@ public sealed partial class KanbanCardViewModel : ObservableObject
     public GridLength SubtaskProgressRemainingStar => new(Card.Subtasks.Count - DoneSubtaskCount, GridUnitType.Star);
 
     public bool HasTags => Card.Tags.Count > 0;
+    /// <summary>Instantánea de presentación, renovada cuando se edita la entidad real.</summary>
+    public IReadOnlyList<string> Tags => Card.Tags.ToArray();
+
     public string TagsLabel => string.Join(", ", Card.Tags);
 
     /// <summary>La tarjeta tiene algo que enseñar en la línea de metadatos del pie. Sin esta comprobación,
     /// una tarjeta que solo tiene título arrastraba el margen de una fila vacía debajo del texto.</summary>
+    public bool HasStatusMetadata => HasSubtasks || HasDueDate || HasLinkedNote;
+
     public bool HasMeta => HasSubtasks || HasDueDate || HasTags || HasLinkedNote;
 
     /// <summary>Enlace nota↔tarea, "Capa 1". El label es el nombre de archivo derivado de la ruta, no el
@@ -183,7 +188,9 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         OnPropertyChanged(nameof(SubtaskProgressRemainingStar));
         OnPropertyChanged(nameof(HasTags));
         OnPropertyChanged(nameof(TagsLabel));
+        OnPropertyChanged(nameof(Tags));
         OnPropertyChanged(nameof(HasMeta));
+        OnPropertyChanged(nameof(HasStatusMetadata));
         OnPropertyChanged(nameof(HasLinkedNote));
         OnPropertyChanged(nameof(LinkedNoteLabel));
         OnPropertyChanged(nameof(IsLinkedNoteMissing));

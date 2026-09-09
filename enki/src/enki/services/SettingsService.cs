@@ -10,6 +10,9 @@ public sealed class SettingsService
     private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
 
     private readonly string _settingsPath;
+    /// <summary>Notifica un guardado completado para actualizar las preferencias visibles.</summary>
+    public event Action? SettingsChanged;
+
     public AppSettings Settings { get; private set; }
 
     /// <summary>True cuando <c>settings.json</c> existía pero no se pudo leer o deserializar (archivo
@@ -75,6 +78,7 @@ public sealed class SettingsService
 
             JsonFileStore.Save(_settingsPath, Settings);
         });
+        SettingsChanged?.Invoke();
     }
 
     /// <summary>Only ever called from inside the <see cref="JsonFileStore.WithLock"/> block in

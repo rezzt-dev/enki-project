@@ -65,6 +65,34 @@ public class SettingsViewModelTests : IDisposable
         return (vm, settingsService, vault, vaultSettingsService);
     }
 
+    [Fact]
+    public void KanbanTags_PersistsVisibility_AndNotifiesListeners()
+    {
+        var (vm, service, _, _) = CreateViewModel();
+        Assert.True(vm.KanbanShowCardTags);
+        var changes = 0;
+        service.SettingsChanged += () => changes++;
+        vm.KanbanShowCardTags = false;
+        Assert.False(new SettingsService(_storageDirectory).Settings.KanbanShowCardTags);
+        Assert.Equal(1, changes);
+        vm.KanbanShowCardTags = true;
+        Assert.True(new SettingsService(_storageDirectory).Settings.KanbanShowCardTags);
+    }
+
+    [Fact]
+    public void Search_ClearingAndNavigationRestoreNormalSections()
+    {
+        var (vm, _, _, _) = CreateViewModel();
+        vm.SearchText = "etiquetas";
+        Assert.True(vm.IsSearching);
+        vm.ClearSearchCommand.Execute(null);
+        Assert.False(vm.IsSearching);
+        vm.SearchText = "fuente";
+        vm.SelectSectionCommand.Execute(SettingsSection.Editor);
+        Assert.Equal(SettingsSection.Editor, vm.SelectedSection);
+        Assert.False(vm.IsSearching);
+    }
+
     [Theory]
     [InlineData("en-GB")]
     [InlineData("en-US")]

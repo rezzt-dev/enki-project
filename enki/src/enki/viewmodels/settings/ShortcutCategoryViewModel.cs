@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using enki.Localization;
 
@@ -15,6 +16,8 @@ public sealed partial class ShortcutCategoryViewModel : ObservableObject
     [ObservableProperty]
     private string _label;
 
+    public string SearchText => string.Join("\n", Items.Select(item => Label + " " + item.Label));
+
     public IReadOnlyList<ShortcutRowViewModel> Items { get; }
 
     public ShortcutCategoryViewModel(string categoryKey, IReadOnlyList<ShortcutRowViewModel> items)
@@ -28,5 +31,6 @@ public sealed partial class ShortcutCategoryViewModel : ObservableObject
     {
         Label = LocalizationService.Instance[_categoryKey];
         foreach (var item in Items) item.RefreshLabel();
+        OnPropertyChanged(nameof(SearchText));
     }
 }

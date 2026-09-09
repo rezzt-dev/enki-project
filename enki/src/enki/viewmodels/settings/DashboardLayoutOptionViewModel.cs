@@ -16,6 +16,8 @@ public sealed partial class DashboardLayoutOptionViewModel : ObservableObject
 
     public required string Description { get; init; }
 
+    public string SearchText => Title + " " + Description;
+
     /// <summary>The layout's slot geometry against a representative full set of 7 sections, rendered as a
     /// tiny 6-column grid diagram on the option card.</summary>
     public required ObservableCollection<DashboardLayoutBlockViewModel> Blocks { get; init; }

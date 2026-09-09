@@ -4824,4 +4824,28 @@ Bonne rédaction.</value>
   <data name="ColorPicker_Value" xml:space="preserve">
     <value>Luminosité</value>
   </data>
+  <data name="Settings_Appearance_KanbanTags_Title" xml:space="preserve">
+    <value>Étiquettes des cartes Kanban</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Label" xml:space="preserve">
+    <value>Afficher les étiquettes des cartes</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
+    <value>Masquez les étiquettes pour alléger le tableau. Au-delà d’une ligne, affichez jusqu’à cinq étiquettes et développez la liste pour toutes les voir.</value>
+  </data>
+  <data name="Kanban_Tags_ShowAll" xml:space="preserve">
+    <value>Tout afficher</value>
+  </data>
+  <data name="Kanban_Tags_ShowLess" xml:space="preserve">
+    <value>Réduire</value>
+  </data>
+  <data name="Settings_Search_Placeholder" xml:space="preserve">
+    <value>Rechercher un paramètre…</value>
+  </data>
+  <data name="Settings_Search_Clear" xml:space="preserve">
+    <value>Effacer la recherche</value>
+  </data>
+  <data name="Settings_Search_NoResults" xml:space="preserve">
+    <value>Aucun paramètre trouvé. Essayez d’autres mots.</value>
+  </data>
 </root>

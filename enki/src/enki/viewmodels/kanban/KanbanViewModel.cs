@@ -231,6 +231,9 @@ public sealed partial class KanbanViewModel : ViewModelBase
     [ObservableProperty]
     private KanbanBoardOrientation _boardOrientation = KanbanBoardOrientation.Vertical;
 
+    [ObservableProperty]
+    private bool _showCardTags = true;
+
     public KanbanViewModel(KanbanService kanbanService, PolarAuthService polarAuthService, PolarTaskManagementViewModel taskManagement,
         VaultService? vaultService = null, SessionService? sessionService = null, Action<string>? onOpenLinkedNote = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null)
@@ -243,6 +246,11 @@ public sealed partial class KanbanViewModel : ViewModelBase
         _settingsService = settingsService;
         _notificationService = notificationService;
         TaskManagement = taskManagement;
+        if (settingsService is not null)
+        {
+            _showCardTags = settingsService.Settings.KanbanShowCardTags;
+            settingsService.SettingsChanged += () => ShowCardTags = settingsService.Settings.KanbanShowCardTags;
+        }
 
         if (settingsService is not null &&
             Enum.TryParse<KanbanBoardOrientation>(settingsService.Settings.KanbanBoardOrientation, out var storedOrientation))

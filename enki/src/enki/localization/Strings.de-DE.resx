@@ -4824,4 +4824,28 @@ Viel Erfolg beim Schreiben.</value>
   <data name="ColorPicker_Value" xml:space="preserve">
     <value>Helligkeit</value>
   </data>
+  <data name="Settings_Appearance_KanbanTags_Title" xml:space="preserve">
+    <value>Schlagwörter auf Kanban-Karten</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Label" xml:space="preserve">
+    <value>Schlagwörter auf Karten anzeigen</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
+    <value>Blenden Sie Schlagwörter für mehr Übersicht aus. Bei mehr als einer Zeile werden bis zu fünf angezeigt. Die Liste lässt sich vollständig aufklappen.</value>
+  </data>
+  <data name="Kanban_Tags_ShowAll" xml:space="preserve">
+    <value>Alle anzeigen</value>
+  </data>
+  <data name="Kanban_Tags_ShowLess" xml:space="preserve">
+    <value>Weniger anzeigen</value>
+  </data>
+  <data name="Settings_Search_Placeholder" xml:space="preserve">
+    <value>Einstellungen durchsuchen…</value>
+  </data>
+  <data name="Settings_Search_Clear" xml:space="preserve">
+    <value>Suche löschen</value>
+  </data>
+  <data name="Settings_Search_NoResults" xml:space="preserve">
+    <value>Keine passenden Einstellungen gefunden. Versuchen Sie andere Wörter.</value>
+  </data>
 </root>

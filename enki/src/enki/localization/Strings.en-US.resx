@@ -4824,4 +4824,28 @@ Happy writing.</value>
   <data name="ColorPicker_Value" xml:space="preserve">
     <value>Brightness</value>
   </data>
+  <data name="Settings_Appearance_KanbanTags_Title" xml:space="preserve">
+    <value>Kanban card tags</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Label" xml:space="preserve">
+    <value>Show card tags</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
+    <value>Hide tags for a cleaner board. When tags exceed one line, show up to five and expand to see them all.</value>
+  </data>
+  <data name="Kanban_Tags_ShowAll" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="Kanban_Tags_ShowLess" xml:space="preserve">
+    <value>Show less</value>
+  </data>
+  <data name="Settings_Search_Placeholder" xml:space="preserve">
+    <value>Search settings…</value>
+  </data>
+  <data name="Settings_Search_Clear" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="Settings_Search_NoResults" xml:space="preserve">
+    <value>No matching settings. Try other words.</value>
+  </data>
 </root>

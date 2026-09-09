@@ -159,6 +159,15 @@ public sealed partial class SettingsViewModel
         _onTitleBarModeChanged(value);
     }
 
+    [ObservableProperty]
+    private bool _kanbanShowCardTags;
+
+    partial void OnKanbanShowCardTagsChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowCardTags = value;
+        _settingsService.Save();
+    }
+
     partial void OnKanbanBoardVerticalChanged(bool value)
     {
         var orientation = value ? "Vertical" : "Horizontal";
@@ -382,6 +391,7 @@ public sealed partial class SettingsViewModel
                 previewAccentHex: theme.Colors["AccentColor"]);
             (theme.Appearance == ThemeAppearance.Dark ? BuiltInDarkThemes : BuiltInLightThemes).Add(row);
         }
+        OnPropertyChanged(nameof(ThemeSearchText));
     }
 
     /// <summary>Backs the empty-state text in Ajustes › Apariencia › Tema personalizado — manually notified

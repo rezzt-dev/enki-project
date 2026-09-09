@@ -14,8 +14,12 @@ public sealed partial class ShortcutRowViewModel : ObservableObject
 {
     public string Id { get; }
     private readonly string _labelKey;
+    private readonly string? _categoryKey;
+
+    public string SearchText => Label + (_categoryKey is null ? string.Empty : " " + LocalizationService.Instance[_categoryKey]);
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SearchText))]
     private string _label;
 
     [ObservableProperty]
@@ -44,14 +48,19 @@ public sealed partial class ShortcutRowViewModel : ObservableObject
     /// "usar de todas formas". Not observable — nothing in the view binds to it directly.</summary>
     public KeyGesture? PendingGesture { get; set; }
 
-    public ShortcutRowViewModel(string id, string labelKey, string gestureDisplay, bool isCustomized)
+    public ShortcutRowViewModel(string id, string labelKey, string gestureDisplay, bool isCustomized, string? categoryKey = null)
     {
         Id = id;
         _labelKey = labelKey;
+        _categoryKey = categoryKey;
         _label = LocalizationService.Instance[labelKey];
         _gestureDisplay = gestureDisplay;
         _isCustomized = isCustomized;
     }
 
-    public void RefreshLabel() => Label = LocalizationService.Instance[_labelKey];
+    public void RefreshLabel()
+    {
+        Label = LocalizationService.Instance[_labelKey];
+        OnPropertyChanged(nameof(SearchText));
+    }
 }

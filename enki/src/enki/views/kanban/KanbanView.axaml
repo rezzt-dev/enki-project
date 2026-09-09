@@ -117,14 +117,9 @@
             </Grid>
           </Border>
 
-          <!-- Metadatos en una sola línea: subtareas, fecha límite, nota vinculada y etiquetas. Antes
-               eran tres bloques apilados, cada uno con su propio margen, para tres datos de una línea.
-               Columnas Auto para lo de ancho previsible y una en estrella para las etiquetas, que son lo
-               único de longitud imprevisible y por tanto lo único que se recorta. El icono de nota
-               vinculada es nuevo en la tarjeta: antes no había forma de saber que una tarjeta tenía nota
-               sin abrirla. Los iconos van 1px más abajo porque la fuente mono asienta sus glifos en la
-               mitad baja de la caja de línea. -->
-          <Grid ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasMeta}">
+          <!-- Metadatos compactos; las etiquetas usan el ancho completo en su propia fila
+               para poder desplegarse sin estrechar la fecha ni el progreso de las subtareas. -->
+          <Grid ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                         VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
               <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
@@ -143,9 +138,15 @@
                               IsVisible="{Binding HasLinkedNote}"
                               ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
 
-            <TextBlock Grid.Column="3" Text="{Binding TagsLabel}" Classes="faint" VerticalAlignment="Center"
-                       TextTrimming="CharacterEllipsis" MaxLines="1" IsVisible="{Binding HasTags}" />
           </Grid>
+          <controls:KanbanTags Tags="{Binding Tags}">
+            <controls:KanbanTags.IsVisible>
+              <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
+                <Binding Path="HasTags" />
+                <Binding Path="$parent[UserControl].((vm:KanbanViewModel)DataContext).ShowCardTags" />
+              </MultiBinding>
+            </controls:KanbanTags.IsVisible>
+          </controls:KanbanTags>
 
         </StackPanel>
       </Button>
@@ -578,9 +579,8 @@
             <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="13" LetterSpacing="0.1"
                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
 
-            <!-- Misma línea de metadatos que la tarjeta del tablero: subtareas, fecha límite, nota
-                 vinculada y etiquetas, en ese orden y con los mismos iconos. -->
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasMeta}">
+            <!-- Mismos metadatos y etiquetas desplegables que en el tablero. -->
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
               <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                           VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
                 <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
@@ -598,9 +598,15 @@
                                 IsVisible="{Binding HasLinkedNote}"
                                 ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
 
-              <TextBlock Grid.Column="3" Text="{Binding TagsLabel}" Classes="faint" VerticalAlignment="Center"
-                         TextTrimming="CharacterEllipsis" MaxLines="1" IsVisible="{Binding HasTags}" />
             </Grid>
+            <controls:KanbanTags Tags="{Binding Tags}">
+              <controls:KanbanTags.IsVisible>
+                <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
+                  <Binding Path="HasTags" />
+                  <Binding Path="$parent[UserControl].((vm:KanbanViewModel)DataContext).ShowCardTags" />
+                </MultiBinding>
+              </controls:KanbanTags.IsVisible>
+            </controls:KanbanTags>
           </StackPanel>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" Margin="14,0,0,0" VerticalAlignment="Center">
@@ -612,16 +618,15 @@
     </DataTemplate>
 
     <!-- ===================== Tarjeta horizontal =====================
-         Cuadrada (mismo Width/Height) para encajar en la franja horizontal de su columna: el cuerpo va
-         en una fila en estrella, así que título y descripción se recortan con elipsis en vez de crecer
-         en alto y todas las tarjetas de una fila comparten silueta sea cual sea su contenido. Prioridad
-         arriba y metadatos abajo quedan anclados a los bordes de la loseta.
+         Parte de una loseta de 216px y puede crecer al desplegar las etiquetas: el cuerpo va
+         en una fila en estrella. Título y descripción conservan sus límites de líneas, mientras
+         las etiquetas pueden desplegarse completas sin quedar fuera de la tarjeta.
 
          Duplica a propósito el cuerpo de la tarjeta vertical en vez de parametrizarlo con bindings
          dinámicos: mismo criterio de "explícito antes que genérico" que ya usa el resto del archivo. -->
     <DataTemplate x:Key="KanbanCardTemplateHorizontal" DataType="vm:KanbanCardViewModel">
       <Button Classes="kanban-card" Classes.drag-over="{Binding IsDropTarget}"
-              Width="216" Height="216" Margin="0,0,10,0"
+              Width="216" MinHeight="216" VerticalAlignment="Top" Margin="0,0,10,0"
               IsVisible="{Binding IsVisible}"
               Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenCardDetailCommand}"
               CommandParameter="{Binding}"
@@ -716,14 +721,17 @@
                    vinculada es nuevo en la tarjeta: antes no había forma de saber que una tarjeta tenía nota
                    sin abrirla. Los iconos van 1px más abajo porque la fuente mono asienta sus glifos en la
                    mitad baja de la caja de línea. -->
-              <!-- Las etiquetas van en su propia línea, no en la de metadatos como en la tarjeta
-                   vertical: en una loseta de 216px la fila de metadatos ya se come el ancho con
-                   subtareas y fecha, y las etiquetas quedaban reducidas a unos puntos suspensivos que
-                   no informan de nada. -->
-              <TextBlock Grid.Row="3" Text="{Binding TagsLabel}" Classes="faint" Margin="0,0,0,6"
-                         TextTrimming="CharacterEllipsis" MaxLines="1" IsVisible="{Binding HasTags}" />
+              <!-- Las etiquetas ocupan una fila independiente y pueden desplegarse completas. -->
+              <controls:KanbanTags Grid.Row="3" Tags="{Binding Tags}">
+                <controls:KanbanTags.IsVisible>
+                  <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
+                    <Binding Path="HasTags" />
+                    <Binding Path="$parent[UserControl].((vm:KanbanViewModel)DataContext).ShowCardTags" />
+                  </MultiBinding>
+                </controls:KanbanTags.IsVisible>
+              </controls:KanbanTags>
 
-              <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" IsVisible="{Binding HasMeta}">
+              <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                             VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
                   <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />

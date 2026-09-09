@@ -18,6 +18,8 @@ public sealed partial class DashboardSectionConfigViewModel : ObservableObject
     /// Dashboard, so a user picks sections by what they contain rather than by name alone.</summary>
     public required string Description { get; init; }
 
+    public string SearchText => Title + " " + Description;
+
     /// <summary>Same glyph the section header uses on the real Dashboard (<see cref="Views.DashboardView"/>),
     /// kept here purely for display — this row never renders anything conditionally on it.</summary>
     public required MaterialIconKind Icon { get; init; }

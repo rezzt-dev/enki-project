@@ -11,6 +11,17 @@
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.EditorView"
              x:DataType="vm:EditorViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.linked-card-row">
+      <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Button.linked-card-row:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+  </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="{Binding RootMargin}">
 
@@ -53,15 +64,15 @@
 
       <!-- Tareas vinculadas en la cabecera; el desplegable no desplaza el editor. -->
       <Panel Grid.Column="1" Margin="8,0" VerticalAlignment="Center" IsVisible="{Binding ShowLinkedCards}">
-        <ToggleButton x:Name="LinkedCardsTrigger" Classes="tag-chip toolbar-chip" Padding="8,5"
+        <ToggleButton x:Name="LinkedCardsTrigger" Classes="tag-chip toolbar-chip" Padding="9,5" MinHeight="30" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                       IsChecked="{Binding IsLinkedCardsExpanded, Mode=TwoWay}"
                       AutomationProperties.Name="{loc:Tr Editor_LinkedCards_Label}"
                       ToolTip.Tip="{loc:Tr Editor_LinkedCards_Label}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" />
-            <TextBlock Text="{Binding LinkedCards.Count}" FontSize="11" />
-            <mi:MaterialIcon Kind="ChevronDown" Width="12" Height="12" IsVisible="{Binding !IsLinkedCardsExpanded}" />
-            <mi:MaterialIcon Kind="ChevronUp" Width="12" Height="12" IsVisible="{Binding IsLinkedCardsExpanded}" />
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LinkedCards.Count}" FontSize="11" FontFamily="{StaticResource MonoFontFamily}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="ChevronDown" Width="12" Height="12" VerticalAlignment="Center" IsVisible="{Binding !IsLinkedCardsExpanded}" />
+            <mi:MaterialIcon Kind="ChevronUp" Width="12" Height="12" VerticalAlignment="Center" IsVisible="{Binding IsLinkedCardsExpanded}" />
           </StackPanel>
         </ToggleButton>
         <Popup x:Name="LinkedCardsPopup" PlacementTarget="{Binding #LinkedCardsTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
@@ -74,15 +85,15 @@
                 <ItemsControl ItemsSource="{Binding LinkedCards}">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                      <StackPanel Spacing="6" />
+                      <StackPanel Spacing="1" Background="{DynamicResource Ink10}" />
                     </ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:LinkedCardItemViewModel">
-                      <Button Classes="pill" Padding="10,4"
+                      <Button Classes="linked-card-row" Padding="10,9" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                               Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).OpenLinkedCardCommand}"
                               CommandParameter="{Binding Id}">
-                        <TextBlock Text="{Binding Title}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="280" />
+                        <TextBlock Text="{Binding Title}" FontSize="12" TextWrapping="Wrap" />
                       </Button>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

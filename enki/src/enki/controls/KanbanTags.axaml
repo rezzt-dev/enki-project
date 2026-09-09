@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:enki.Localization"
+             x:Class="enki.Controls.KanbanTags">
+  <StackPanel x:Name="TagsPanel" Spacing="3">
+    <TextBlock x:Name="TagsText" Classes="faint" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
+    <Button x:Name="ExpandButton" Classes="ghost" Padding="0,2" MinHeight="22"
+            HorizontalAlignment="Left" Click="ToggleExpanded" FontSize="10" />
+  </StackPanel>
+</UserControl>

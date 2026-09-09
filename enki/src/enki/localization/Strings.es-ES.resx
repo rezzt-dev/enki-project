@@ -4824,4 +4824,28 @@ Disfrutad escribiendo.</value>
   <data name="ColorPicker_Value" xml:space="preserve">
     <value>Brillo</value>
   </data>
+  <data name="Settings_Appearance_KanbanTags_Title" xml:space="preserve">
+    <value>Etiquetas de las tarjetas Kanban</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Label" xml:space="preserve">
+    <value>Mostrar etiquetas de las tarjetas</value>
+  </data>
+  <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
+    <value>Oculta las etiquetas para despejar el tablero. Cuando superen una línea, se muestran hasta cinco y puedes desplegarlas todas.</value>
+  </data>
+  <data name="Kanban_Tags_ShowAll" xml:space="preserve">
+    <value>Mostrar todas</value>
+  </data>
+  <data name="Kanban_Tags_ShowLess" xml:space="preserve">
+    <value>Mostrar menos</value>
+  </data>
+  <data name="Settings_Search_Placeholder" xml:space="preserve">
+    <value>Buscar en ajustes…</value>
+  </data>
+  <data name="Settings_Search_Clear" xml:space="preserve">
+    <value>Limpiar búsqueda</value>
+  </data>
+  <data name="Settings_Search_NoResults" xml:space="preserve">
+    <value>No se encontraron ajustes. Prueba con otras palabras.</value>
+  </data>
 </root>

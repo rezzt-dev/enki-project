@@ -37,6 +37,9 @@ public sealed class AppSettings
     /// raíl y el pulgar, el scroll con rueda/teclado sigue funcionando igual.</summary>
     public bool DashboardShowScrollbar { get; set; } = true;
 
+    /// <summary>Muestra las etiquetas de las tarjetas del tablero; no altera sus datos ni filtros.</summary>
+    public bool KanbanShowCardTags { get; set; } = true;
+
     /// <summary>"Vertical" o "Horizontal" — Ajustes › Apariencia. Vertical apila las tarjetas dentro de
     /// columnas lado a lado (la disposición clásica de un tablero Kanban); Horizontal gira cada columna
     /// 90° en una franja de ancho completo con sus tarjetas desplazándose de lado a lado. Stored as a

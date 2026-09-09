@@ -1,4 +1,11 @@
+using System;
+using System.ComponentModel;
+using System.Linq;
 using Avalonia;
+using Avalonia.LogicalTree;
+using Avalonia.Threading;
+using enki.Controls;
+using enki.Localization;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -18,6 +25,74 @@ public partial class SettingsView : UserControl
     public SettingsView()
     {
         InitializeComponent();
+        DataContextChanged += (_, _) => ObserveSearch();
+        foreach (var section in SettingsContent.GetLogicalDescendants().OfType<SettingsSearchOption>().Where(o => o.Section is not null))
+            section.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == IsVisibleProperty) QueueSearchPresentation(resetScroll: false);
+            };
+    }
+
+    private SettingsViewModel? _searchViewModel;
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ObserveSearch();
+        LocalizationService.Instance.PropertyChanged += SearchLanguageChanged;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (_searchViewModel is not null) _searchViewModel.PropertyChanged -= SearchChanged;
+        _searchViewModel = null;
+        LocalizationService.Instance.PropertyChanged -= SearchLanguageChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void ObserveSearch()
+    {
+        if (_searchViewModel is not null) _searchViewModel.PropertyChanged -= SearchChanged;
+        _searchViewModel = Vm;
+        if (_searchViewModel is not null) _searchViewModel.PropertyChanged += SearchChanged;
+        QueueSearchPresentation();
+    }
+
+    private void SearchChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(SettingsViewModel.SearchText) or nameof(SettingsViewModel.SelectedSection))
+            QueueSearchPresentation();
+    }
+
+    private void SearchLanguageChanged(object? sender, PropertyChangedEventArgs e) => QueueSearchPresentation();
+
+    /// <summary>La vista conserva el desplazamiento y el estado vacío como detalles de presentación.
+    /// Se ejecuta tras actualizar los bindings heredados del filtro.</summary>
+    private bool _searchPresentationQueued;
+    private bool _resetSearchScroll;
+
+    private void QueueSearchPresentation(bool resetScroll = true)
+    {
+        _resetSearchScroll |= resetScroll;
+        if (_searchPresentationQueued) return;
+        _searchPresentationQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _searchPresentationQueued = false;
+            if (_resetSearchScroll) SettingsContentScroll.Offset = default;
+            _resetSearchScroll = false;
+            SearchNoResults.IsVisible = Vm?.IsSearching == true && !SettingsContent.GetLogicalDescendants()
+                .OfType<SettingsSearchOption>().Any(option => option.Section is not null && option.IsVisible);
+        });
+    }
+
+    private void ClearSearch_Click(object? sender, RoutedEventArgs e) => SettingsSearchBox.Focus();
+
+    private void Search_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || Vm is not { IsSearching: true } vm) return;
+        vm.ClearSearchCommand.Execute(null);
+        e.Handled = true;
     }
 
     private SettingsViewModel? Vm => DataContext as SettingsViewModel;
