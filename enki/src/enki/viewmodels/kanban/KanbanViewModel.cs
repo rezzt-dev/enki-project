@@ -274,6 +274,9 @@ public sealed partial class KanbanViewModel : ViewModelBase
         OnPropertyChanged(nameof(ArchiveCountLabel));
         OnPropertyChanged(nameof(ArchiveAllMessage));
         Reload();
+        // Reload() reconstruye columnas y tarjetas, pero deliberadamente no el editor abierto: se refresca
+        // en el sitio para no descartar lo que el usuario tuviera a medio escribir.
+        CardEditor?.RefreshLocalizedLabels();
     }
 
     [RelayCommand]
@@ -494,13 +497,9 @@ public sealed partial class KanbanViewModel : ViewModelBase
         RefreshTagFilter();
         Persist();
 
-        _notificationService?.Push(
-            LocalizationService.Instance["Kanban_Notify_ColumnDeleted_Title"],
-            string.Format(
-                CultureInfo.CurrentCulture,
-                LocalizationService.Instance["Kanban_Notify_ColumnDeleted_Message"],
-                columnTitle,
-                Plural.Get("Kanban_DeleteColumn_Cards", cardCount, cardCount)),
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Kanban_Notify_ColumnDeleted_Title"),
+            LocalizedTextFormatter.Format("Kanban_Notify_ColumnDeleted_Message", columnTitle, LocalizedTextFormatter.PluralFormat("Kanban_DeleteColumn_Cards", cardCount, cardCount)),
             NotificationSeverity.Warning);
     }
 
@@ -953,9 +952,9 @@ public sealed partial class KanbanViewModel : ViewModelBase
         ReloadArchive();
         Persist();
 
-        _notificationService?.Push(
-            LocalizationService.Instance["Kanban_Notify_CardsArchived_Title"],
-            Plural.Get("Kanban_Notify_CardsArchived_Message", cards.Count, cards.Count, column.Title),
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Kanban_Notify_CardsArchived_Title"),
+            LocalizedTextFormatter.PluralFormat("Kanban_Notify_CardsArchived_Message", cards.Count, cards.Count, column.Title),
             NotificationSeverity.Info);
     }
 

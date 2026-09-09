@@ -273,7 +273,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _notificationSoundVolume = settingsService.Settings.NotificationSoundVolume;
         _interfaceFontFamily = ToLabel(settingsService.Settings.InterfaceFontFamily);
         _editorFontFamily = ToLabel(settingsService.Settings.EditorFontFamily);
-        _selectedLanguage = SupportedLanguages.Find(settingsService.Settings.Language) ?? SupportedLanguages.All[0];
+        _selectedLanguage = SupportedLanguages.Find(settingsService.Settings.Language)
+            ?? SupportedLanguages.Find(LocalizationService.Instance.CurrentCulture.Name)
+            ?? SupportedLanguages.All[0];
 
         EditorPreferences.FontSize = _editorFontSize;
         EditorPreferences.ColumnWidth = _editorColumnWidth;
@@ -463,9 +465,25 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (value is null) return;
 
-        LocalizationService.Instance.SetLanguage(value.CultureCode);
+        var previousLanguage = _settingsService.Settings.Language;
         _settingsService.Settings.Language = value.CultureCode;
-        _settingsService.Save();
+        try
+        {
+            _settingsService.Save();
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            _settingsService.Settings.Language = previousLanguage;
+            _selectedLanguage = SupportedLanguages.Find(previousLanguage)
+                ?? SupportedLanguages.Find(LocalizationService.Instance.CurrentCulture.Name);
+            OnPropertyChanged(nameof(SelectedLanguage));
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_Language_SaveFailed"),
+                VaultFailureReasons.DescribeLocalized(ex), Models.NotificationSeverity.Error);
+            return;
+        }
+
+        LocalizationService.Instance.SetLanguage(value.CultureCode);
 
         // El shell se encarga de coordinar el refresco de etiquetas en todos los viewmodels para evitar
         // suscripciones directas al singleton de localización desde cada uno de ellos (i18n Fase 4).
@@ -485,8 +503,16 @@ public sealed partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
         OnPropertyChanged(nameof(SyncNowButtonLabel));
         OnPropertyChanged(nameof(LinkButtonLabel));
+        // Las dos dependían de que otra cosa cambiara para refrescarse: la del volumen, de que se moviera
+        // el deslizador (hoy su unidad es "{0}%" en los seis idiomas, pero en alemán lo correcto es
+        // "{0} %" con espacio fino, y ese día la etiqueta se quedaría atrás); la del error de sync, de que
+        // el texto reasignado abajo fuera distinto al que ya había. Anunciarlas no depende de ninguna de
+        // las dos coincidencias.
+        OnPropertyChanged(nameof(NotificationSoundVolumeLabel));
+        OnPropertyChanged(nameof(SyncErrorLabel));
 
         RefreshLastSyncedLabel();
+        SyncError = _polarSyncService.LastError;
         RebuildSections();
         BuildDashboardLayoutOptions();
         BuildDashboardSections();
@@ -514,9 +540,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private void RebuildAvailableFonts()
     {
         if (AvailableFonts is null || AvailableFonts.Count == 0) return;
+        var previousDefault = AvailableFonts[0];
+        var interfaceWasDefault = InterfaceFontFamily == previousDefault;
+        var editorWasDefault = EditorFontFamily == previousDefault;
         AvailableFonts[0] = DefaultFontLabel;
-        InterfaceFontFamily = ToLabel(FromLabel(InterfaceFontFamily));
-        EditorFontFamily = ToLabel(FromLabel(EditorFontFamily));
+        if (interfaceWasDefault) InterfaceFontFamily = DefaultFontLabel;
+        if (editorWasDefault) EditorFontFamily = DefaultFontLabel;
     }
 
     /// <summary>Host legible de <see cref="SkillsViewModel.CommunitySkillsUrl"/> — ver el comentario de

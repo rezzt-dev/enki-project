@@ -3001,7 +3001,7 @@
     <value>PDF Viewer</value>
   </data>
   <data name="Settings_Shortcuts_Description" xml:space="preserve">
-    <value>Keyboard shortcuts for navigation, editor, Kanban, and view zoom.</value>
+    <value>Keyboard shortcuts for navigation, view zoom, and the notes editor — click any shortcut to remap it. Kanban and PDF viewer shortcuts stay fixed for now.</value>
   </data>
   <data name="Settings_Shortcuts_Title" xml:space="preserve">
     <value>Keyboard Shortcuts</value>
@@ -3841,7 +3841,7 @@ Happy writing.</value>
     <value>Custom theme</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Description" xml:space="preserve">
-    <value>Download the default CSS template, change only its color values, and import it back. Only colors are customizable — the template's structure can't change, so a file with different variables is rejected.</value>
+    <value>Download the default CSS template, change only its colour values, and import it back. Only colours are customisable — the template's structure can't change, so a file with different variables is rejected.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_DownloadTemplateButton" xml:space="preserve">
     <value>Download template</value>
@@ -3883,10 +3883,10 @@ Happy writing.</value>
     <value>Missing variables: {0}.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Error_UnexpectedVariables" xml:space="preserve">
-    <value>This file has variables the template doesn't recognize: {0}. Only the template's color values can be changed — variables can't be added or removed.</value>
+    <value>This file has variables the template doesn't recognise: {0}. Only the template's colour values can be changed — variables can't be added or removed.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Error_InvalidColorValue" xml:space="preserve">
-    <value>Invalid color value: {0}. Use the #RRGGBB format.</value>
+    <value>Invalid colour value: {0}. Use the #RRGGBB format.</value>
   </data>
   <data name="Settings_Shortcuts_ApplyAnywayButton" xml:space="preserve">
     <value>Use anyway</value>
@@ -3964,7 +3964,7 @@ Happy writing.</value>
     <value>Theme imported</value>
   </data>
   <data name="Notification_ThemeImported_Message" xml:space="preserve">
-    <value>'{0}' was imported and activated.</value>
+    <value>'{0}' was imported.</value>
   </data>
   <data name="Settings_Appearance_Theme_Highlight" xml:space="preserve">
     <value>Highlight</value>
@@ -4781,5 +4781,47 @@ Happy writing.</value>
   </data>
   <data name="A11y_Files_TreeSidebarSplitter" xml:space="preserve">
     <value>Resize the sidebar</value>
+  </data>
+  <data name="Common_Error_Unexpected" xml:space="preserve">
+    <value>The operation could not be completed. Try again. If the problem persists, check the diagnostic log.</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_TemplateInstructions" xml:space="preserve">
+    <value>Enki — custom theme template
+1. Change only the hexadecimal colour values (#RRGGBB). Do not add, remove or rename variables.
+2. Save the file and choose Settings › Appearance › Custom theme › Import theme in Enki.
+3. The file name without .css becomes the theme name.</value>
+  </data>
+  <data name="Settings_General_Language_SaveFailed" xml:space="preserve">
+    <value>Language could not be saved</value>
+  </data>
+  <data name="ColorPicker_Hex" xml:space="preserve">
+    <value>Hexadecimal colour</value>
+  </data>
+  <data name="ColorPicker_Spectrum" xml:space="preserve">
+    <value>Colour spectrum</value>
+  </data>
+  <data name="ColorPicker_Component" xml:space="preserve">
+    <value>Colour component</value>
+  </data>
+  <data name="ColorPicker_Alpha" xml:space="preserve">
+    <value>Opacity</value>
+  </data>
+  <data name="ColorPicker_Red" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="ColorPicker_Green" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="ColorPicker_Blue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="ColorPicker_Hue" xml:space="preserve">
+    <value>Hue</value>
+  </data>
+  <data name="ColorPicker_Saturation" xml:space="preserve">
+    <value>Saturation</value>
+  </data>
+  <data name="ColorPicker_Value" xml:space="preserve">
+    <value>Brightness</value>
   </data>
 </root>

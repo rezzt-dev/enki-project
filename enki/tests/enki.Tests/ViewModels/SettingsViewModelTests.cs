@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using enki.Services;
+using enki.Localization;
 using enki.ViewModels;
 using Xunit;
 
@@ -11,6 +12,7 @@ namespace enki.Tests.ViewModels;
 /// <see cref="SettingsService"/> — same pattern as the rest of the JSON-backed services
 /// (03-problemas-y-deuda-tecnica.md §8 flags this viewmodel as untested). Every navigation/live callback is
 /// a no-op unless a test needs to observe it.</summary>
+[Collection("LocalizationMutatingTests")]
 public class SettingsViewModelTests : IDisposable
 {
     private readonly string _storageDirectory =
@@ -50,16 +52,67 @@ public class SettingsViewModelTests : IDisposable
         var authService = new PolarAuthService(settingsService);
         var (backupService, syncService, notificationService, customThemeService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
 
-        var vm = new SettingsViewModel(
+        SettingsViewModel? vm = null;
+        vm = new SettingsViewModel(
             settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
             onKanbanBoardOrientationChanged: _ => { },
             onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { },
-            onLanguageChanged: () => { });
+            onLanguageChanged: () => vm!.RefreshLocalizedLabels());
 
         return (vm, settingsService, vault, vaultSettingsService);
+    }
+
+    [Theory]
+    [InlineData("en-GB")]
+    [InlineData("en-US")]
+    [InlineData("de-DE")]
+    [InlineData("fr-FR")]
+    public void LanguageSwitch_PersistsChoice_AndKeepsDefaultFontSemantics(string culture)
+    {
+        var original = LocalizationService.Instance.CurrentCulture.Name;
+        try
+        {
+            LocalizationService.Instance.SetLanguage("es-ES");
+            var (vm, settings, _, _) = CreateViewModel();
+            vm.SelectedLanguage = SupportedLanguages.Find(culture);
+            Assert.Equal(culture, LocalizationService.Instance.CurrentCulture.Name);
+            Assert.Equal(culture, new SettingsService(_storageDirectory).Settings.Language);
+            Assert.Equal(SettingsViewModel.DefaultFontLabel, vm.InterfaceFontFamily);
+            Assert.Equal(SettingsViewModel.DefaultFontLabel, vm.EditorFontFamily);
+            Assert.Null(settings.Settings.InterfaceFontFamily);
+            Assert.Null(settings.Settings.EditorFontFamily);
+            vm.FlushPendingSave();
+        }
+        finally
+        {
+            LocalizationService.Instance.SetLanguage(original);
+        }
+    }
+
+    [Fact]
+    public void LanguageSwitch_PreservesCustomFonts()
+    {
+        var original = LocalizationService.Instance.CurrentCulture.Name;
+        try
+        {
+            LocalizationService.Instance.SetLanguage("es-ES");
+            var (vm, settings, _, _) = CreateViewModel();
+            vm.InterfaceFontFamily = "Space Grotesk";
+            vm.EditorFontFamily = "JetBrains Mono";
+            vm.SelectedLanguage = SupportedLanguages.Find("fr-FR");
+            Assert.Equal("Space Grotesk", vm.InterfaceFontFamily);
+            Assert.Equal("JetBrains Mono", vm.EditorFontFamily);
+            Assert.Equal("Space Grotesk", settings.Settings.InterfaceFontFamily);
+            Assert.Equal("JetBrains Mono", settings.Settings.EditorFontFamily);
+            vm.FlushPendingSave();
+        }
+        finally
+        {
+            LocalizationService.Instance.SetLanguage(original);
+        }
     }
 
     [Fact]

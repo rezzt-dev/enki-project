@@ -276,20 +276,24 @@ public sealed partial class SettingsViewModel
         try
         {
             CustomThemeService.ExportDefaultTemplate(destination);
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_ThemeTemplateExported_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_ThemeTemplateExported_Message"], destination),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExported_Title"),
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExported_Message", destination),
                 Models.NotificationSeverity.Success);
         }
         catch (UnauthorizedAccessException)
         {
-            _notificationService.Push(LocalizationService.Instance["Notification_ThemeTemplateExportFailed_Title"],
-                LocalizationService.Instance["Common_Error_AccessDenied"], Models.NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
+                Models.NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            _notificationService.Push(LocalizationService.Instance["Notification_ThemeTemplateExportFailed_Title"],
-                LocalizationService.Instance["Common_Error_IOFailure"], Models.NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
+                Models.NotificationSeverity.Error);
         }
     }
 
@@ -314,9 +318,9 @@ public sealed partial class SettingsViewModel
         var result = _customThemeService.Import(source);
         if (!result.Success)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_ThemeImportFailed_Title"],
-                string.Join("\n", result.Errors),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeImportFailed_Title"),
+                LocalizedTextFormatter.Join("\n", result.LocalizedErrors.ToArray()),
                 Models.NotificationSeverity.Error);
             return;
         }
@@ -324,9 +328,9 @@ public sealed partial class SettingsViewModel
         RefreshCustomThemes();
 
         var importedName = _customThemeService.Themes.First(t => t.Id == result.ThemeId).Name;
-        _notificationService.Push(
-            LocalizationService.Instance["Notification_ThemeImported_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_ThemeImported_Message"], importedName),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_ThemeImported_Title"),
+            LocalizedTextFormatter.Format("Notification_ThemeImported_Message", importedName),
             Models.NotificationSeverity.Success);
     }
 

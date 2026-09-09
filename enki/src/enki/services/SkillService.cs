@@ -252,7 +252,7 @@ public sealed class SkillService
         var safeId = SanitizeId(newId);
         var destination = Path.Combine(targetFolder, $"{safeId}.md");
         if (File.Exists(destination))
-            throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Skills_Error_NameExists"], safeId));
+            throw LocalizedValidationErrors.Create("Skills_Error_NameExists", safeId);
 
         File.WriteAllText(destination, source.Content);
         SkillsChanged?.Invoke();
@@ -263,7 +263,7 @@ public sealed class SkillService
     public void DeleteSkill(SkillFile skill)
     {
         if (skill.IsDefault)
-            throw new InvalidOperationException(LocalizationService.Instance["Skills_Error_CannotDeleteDefault"]);
+            throw LocalizedValidationErrors.Create("Skills_Error_CannotDeleteDefault");
 
         if (File.Exists(skill.FilePath)) File.Delete(skill.FilePath);
         SkillsChanged?.Invoke();
@@ -343,8 +343,7 @@ public sealed class SkillService
         var blocking = Directory.EnumerateFiles(folder.FullPath, "*.md", SearchOption.AllDirectories)
             .FirstOrDefault(file => IsDefaultFileName(Path.GetFileName(file)));
         if (blocking is not null)
-            throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
-                LocalizationService.Instance["Skills_Error_FolderHasDefault"], Path.GetFileName(blocking)));
+            throw LocalizedValidationErrors.Create("Skills_Error_FolderHasDefault", Path.GetFileName(blocking));
 
         Directory.Delete(folder.FullPath, recursive: true);
         SkillsChanged?.Invoke();
@@ -360,7 +359,7 @@ public sealed class SkillService
 
         if (PathsEqual(Path.GetDirectoryName(source), destinationParent)) return folder;
         if (PathsEqual(source, destinationParent) || IsUnder(destinationParent, source))
-            throw new InvalidOperationException(LocalizationService.Instance["Skills_Error_FolderIntoItself"]);
+            throw LocalizedValidationErrors.Create("Skills_Error_FolderIntoItself");
 
         Directory.CreateDirectory(destinationParent);
         var newPath = Path.Combine(destinationParent, Path.GetFileName(source));

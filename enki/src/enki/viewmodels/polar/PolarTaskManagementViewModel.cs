@@ -173,6 +173,11 @@ public sealed partial class PolarTaskManagementViewModel : ViewModelBase
         OnPropertyChanged(nameof(LastSyncedDisplayLabel));
         RefreshSyncStatus();
         Reload();
+        // Reload() rehace listas y filas, pero no los overlays abiertos: se refrescan en el sitio para no
+        // descartar lo que el usuario tuviera a medio escribir.
+        TaskEditor?.RefreshLocalizedLabels();
+        ListEditor?.RefreshLocalizedLabels();
+        TaskDetail?.RefreshLocalizedLabels();
     }
 
     public void Reload()

@@ -514,9 +514,9 @@ public sealed partial class EditorViewModel : ViewModelBase
     private void HandleSaveFailure(Exception ex, string currentText)
     {
         LogService.Error($"No se pudo guardar la nota '{Note.FullPath}'", ex);
-        _notificationService?.Push(
-            LocalizationService.Instance["Notification_NoteSaveFailed_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteSaveFailed_Message"], Title, DescribeFailureReason(ex)),
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_NoteSaveFailed_Title"),
+            LocalizedTextFormatter.Format("Notification_NoteSaveFailed_Message", Title, VaultFailureReasons.DescribeLocalized(ex)),
             NotificationSeverity.Error);
 
         _pendingText = currentText;
@@ -587,9 +587,9 @@ public sealed partial class EditorViewModel : ViewModelBase
             // pointing at a file that never actually got renamed on disk — revert it instead of letting the
             // ViewModel and the filesystem silently diverge (docs/analisis-proyecto/roadmap.md, Fase 1).
             LogService.Error($"No se pudo renombrar la nota '{oldPath}'", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteRenameFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteRenameFailed_Message"], oldTitle, DescribeFailureReason(ex)),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteRenameFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteRenameFailed_Message", oldTitle, VaultFailureReasons.DescribeLocalized(ex)),
                 NotificationSeverity.Error);
 
             _suppressTitleRename = true;
@@ -609,9 +609,9 @@ public sealed partial class EditorViewModel : ViewModelBase
             Title = finalTitle;
             _suppressTitleRename = false;
 
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteRenameCollision_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteRenameCollision_Message"], finalTitle),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteRenameCollision_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteRenameCollision_Message", finalTitle),
                 NotificationSeverity.Info);
         }
 

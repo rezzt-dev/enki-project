@@ -93,9 +93,9 @@ public sealed partial class SettingsViewModel
         if (MainSidebarSections.Any(s => s.Key != key && s.IsVisible)) return false;
 
         revert();
-        _notificationService.Push(
-            LocalizationService.Instance["Settings_General_Sidebar_CannotHideLast_Title"],
-            LocalizationService.Instance["Settings_General_Sidebar_CannotHideLast_Message"],
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Settings_General_Sidebar_CannotHideLast_Title"),
+            LocalizedTextFormatter.Format("Settings_General_Sidebar_CannotHideLast_Message"),
             Models.NotificationSeverity.Warning);
         return true;
     }
@@ -336,9 +336,9 @@ public sealed partial class SettingsViewModel
         return null;
     }
 
-    private void WarnBottomSidebarGroupFull() => _notificationService.Push(
-        LocalizationService.Instance["Settings_General_Sidebar_BottomGroupFull_Title"],
-        LocalizationService.Instance["Settings_General_Sidebar_BottomGroupFull_Message"],
+    private void WarnBottomSidebarGroupFull() => _notificationService.PushLocalized(
+        LocalizedTextFormatter.Format("Settings_General_Sidebar_BottomGroupFull_Title"),
+        LocalizedTextFormatter.Format("Settings_General_Sidebar_BottomGroupFull_Message"),
         Models.NotificationSeverity.Warning);
 
     /// <summary>Moves <paramref name="sourceKey"/> to the position of <paramref name="targetKey"/>,

@@ -33,6 +33,14 @@ public sealed class SessionService
     /// sintético de <see cref="ReadManifest"/>.</summary>
     public event Action<string>? ManifestError;
 
+    public LocalizedText? LastManifestError { get; private set; }
+
+    private void ReportManifestError(LocalizedText text)
+    {
+        LastManifestError = text;
+        ManifestError?.Invoke(LocalizedTextFormatter.Resolve(text));
+    }
+
     public SessionService(VaultService vaultService)
     {
         _vaultService = vaultService;
@@ -89,7 +97,7 @@ public sealed class SessionService
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             LogService.Warning($"No se pudieron enumerar las sesiones en '{root}'", ex);
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ListError"], ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ListError", VaultFailureReasons.DescribeLocalized(ex)));
             return [];
         }
     }
@@ -914,12 +922,12 @@ public sealed class SessionService
         }
         catch (IOException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestReadError"], Path.GetFileName(sessionPath), ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestReadError", Path.GetFileName(sessionPath), VaultFailureReasons.DescribeLocalized(ex)));
             return null;
         }
         catch (UnauthorizedAccessException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestReadError"], Path.GetFileName(sessionPath), ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestReadError", Path.GetFileName(sessionPath), VaultFailureReasons.DescribeLocalized(ex)));
             return null;
         }
         catch (JsonException)
@@ -957,12 +965,12 @@ public sealed class SessionService
         }
         catch (IOException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestReadError"], RootGraphManifestFileName, ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestReadError", RootGraphManifestFileName, VaultFailureReasons.DescribeLocalized(ex)));
             return new RootGraphManifest();
         }
         catch (UnauthorizedAccessException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestReadError"], RootGraphManifestFileName, ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestReadError", RootGraphManifestFileName, VaultFailureReasons.DescribeLocalized(ex)));
             return new RootGraphManifest();
         }
         catch (JsonException)
@@ -984,11 +992,11 @@ public sealed class SessionService
         }
         catch (IOException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestWriteError"], RootGraphManifestFileName, ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestWriteError", RootGraphManifestFileName, VaultFailureReasons.DescribeLocalized(ex)));
         }
         catch (UnauthorizedAccessException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestWriteError"], RootGraphManifestFileName, ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestWriteError", RootGraphManifestFileName, VaultFailureReasons.DescribeLocalized(ex)));
         }
     }
 
@@ -1016,11 +1024,11 @@ public sealed class SessionService
         }
         catch (IOException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestWriteError"], Path.GetFileName(sessionPath), ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestWriteError", Path.GetFileName(sessionPath), VaultFailureReasons.DescribeLocalized(ex)));
         }
         catch (UnauthorizedAccessException ex)
         {
-            ManifestError?.Invoke(string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_ManifestWriteError"], Path.GetFileName(sessionPath), ex.Message));
+            ReportManifestError(LocalizedTextFormatter.Format("Sessions_ManifestWriteError", Path.GetFileName(sessionPath), VaultFailureReasons.DescribeLocalized(ex)));
         }
     }
 }

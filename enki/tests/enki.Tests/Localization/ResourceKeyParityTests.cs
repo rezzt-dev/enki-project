@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using System.Text;
 using Xunit;
 
 namespace enki.Tests.Localization;
@@ -96,6 +97,18 @@ public class ResourceKeyParityTests
         Assert.True(missing.Count == 0, "Missing Plural.Get resource keys: " + string.Join(", ", missing));
     }
 
+    [Fact]
+    public void FormattedResources_HaveValidCompositeFormatSyntax()
+    {
+        foreach (var file in s_cultures.Select(c => $"Strings.{c}.resx").Prepend("Strings.resx"))
+        foreach (var pair in LoadKeyValues(file))
+        {
+            if (!Regex.IsMatch(pair.Value, @"\{[0-9]+")) continue;
+            var error = Record.Exception(() => CompositeFormat.Parse(pair.Value));
+            Assert.True(error is null, $"{file}: {pair.Key}: {error?.Message}");
+        }
+    }
+
     private static HashSet<string> LoadKeys(string fileName)
     {
         var path = Path.Combine(s_resourcesDirectory, fileName);
@@ -130,7 +143,7 @@ public class ResourceKeyParityTests
     }
 
     private static HashSet<string> ExtractPlaceholders(string value) =>
-        Regex.Matches(value, @"\{[0-9]+\}")
-            .Select(m => m.Value)
+        Regex.Matches(value, @"(?<!\{)\{([0-9]+)(?:,[^:}]+)?(?::[^}]+)?\}")
+            .Select(m => m.Groups[1].Value)
             .ToHashSet();
 }

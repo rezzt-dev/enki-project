@@ -68,7 +68,8 @@ public sealed class PolarSyncService
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     public bool IsSyncing { get; private set; }
-    public string? LastError { get; private set; }
+    public LocalizedText? LocalizedError { get; private set; }
+    public string? LastError => LocalizedError is null ? null : LocalizedTextFormatter.Resolve(LocalizedError);
 
     public PolarSyncStatus Status =>
         !_auth.IsLinked ? PolarSyncStatus.NotLinked :
@@ -128,7 +129,7 @@ public sealed class PolarSyncService
         if (!await _gate.WaitAsync(0, ct)) return PolarSyncOutcome.SkippedAlreadyRunning; // a sync is already running — skip, don't queue up
 
         IsSyncing = true;
-        LastError = null;
+        LocalizedError = null;
         LastErrorWasNetwork = false;
         var tasksChanged = false;
         var remindersChanged = false;
@@ -166,12 +167,13 @@ public sealed class PolarSyncService
             // exponencial vive en el temporizador que llama a este método, no aquí, y solo debe aplicar
             // mientras el dispositivo esté realmente sin conexión: un HttpRequestException con StatusCode
             // (401/403/429/500...) significa que el servidor sí respondió, así que no es un fallo de red.
-            LastError = TranslateSyncError(ex);
+            LocalizedError = TranslateSyncError(ex);
             LastErrorWasNetwork = ex is HttpRequestException { StatusCode: null } or TaskCanceledException;
         }
         catch (Exception ex)
         {
-            LastError = ex.Message;
+            LogService.Warning("Sincronización de Polar fallida", ex);
+            LocalizedError = TranslateSyncError(ex);
         }
         finally
         {
@@ -189,24 +191,22 @@ public sealed class PolarSyncService
     /// indicate success: 401 (Unauthorized)."), indistinguible entre "reinicia sesión", "espera y
     /// reintenta" o "problema del servidor" (04-oportunidades-de-integracion.md, mejora básica de sync
     /// #4).</summary>
-    private static string TranslateSyncError(Exception ex) => ex switch
+    private static LocalizedText TranslateSyncError(Exception ex) => ex switch
     {
         HttpRequestException { StatusCode: System.Net.HttpStatusCode.Unauthorized } =>
-            LocalizationService.Instance["Polar_Sync_Error_Unauthorized"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_Unauthorized"),
         HttpRequestException { StatusCode: System.Net.HttpStatusCode.Forbidden } =>
-            LocalizationService.Instance["Polar_Sync_Error_Forbidden"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_Forbidden"),
         HttpRequestException { StatusCode: System.Net.HttpStatusCode.TooManyRequests } =>
-            LocalizationService.Instance["Polar_Sync_Error_TooManyRequests"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_TooManyRequests"),
         HttpRequestException { StatusCode: not null } httpEx when (int)httpEx.StatusCode!.Value >= 500 =>
-            LocalizationService.Instance["Polar_Sync_Error_ServerError"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_ServerError"),
         HttpRequestException { StatusCode: null } =>
-            LocalizationService.Instance["Polar_Sync_Error_NoConnection"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_NoConnection"),
         TaskCanceledException =>
-            LocalizationService.Instance["Polar_Sync_Error_Timeout"],
-        // Last-resort fallback for unexpected exception types — ex.Message may come from the .NET
-        // runtime/OS in its own language (docs/agent-docs/internacionalizacion-i18n.md §5.3), a known,
-        // documented limitation rather than a bug to fix here.
-        _ => ex.Message
+            LocalizedTextFormatter.Format("Polar_Sync_Error_Timeout"),
+        // Los fallos inesperados tampoco exponen mensajes del sistema operativo o del servidor.
+        _ => LocalizedTextFormatter.Format("Common_Error_Unexpected")
     };
 
     // ===================== Push =====================

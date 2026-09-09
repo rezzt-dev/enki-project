@@ -482,9 +482,9 @@ public sealed partial class FilesViewModel : ViewModelBase
         catch
         {
             if (isTempCopy) VaultService.TryCleanupDecryptedTempFile(readablePath);
-            _notificationService.Push(
-                LocalizationService.Instance["Files_OpenWithSystem_FailedTitle"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Files_OpenWithSystem_FailedMessage"], card.FileName),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Files_OpenWithSystem_FailedTitle"),
+                LocalizedTextFormatter.Format("Files_OpenWithSystem_FailedMessage", card.FileName),
                 Models.NotificationSeverity.Warning);
         }
     }

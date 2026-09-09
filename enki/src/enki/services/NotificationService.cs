@@ -60,12 +60,24 @@ public sealed class NotificationService
     /// still handed back to the caller (keeps the signature simple) but never recorded or broadcast, so a
     /// muted category leaves no trace in the log either.</summary>
     public AppNotification Push(string title, string message = "", NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(title, message, severity);
+
+    /// <summary>Guarda las claves junto al texto de respaldo para que el historial siga el idioma
+    /// activo incluso tras reiniciar. Mantiene el mismo almacén y los mismos eventos de notificación.</summary>
+    public AppNotification PushLocalized(LocalizedText title, LocalizedText message, NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(enki.Localization.LocalizedTextFormatter.Resolve(title),
+            enki.Localization.LocalizedTextFormatter.Resolve(message), severity, title, message);
+
+    private AppNotification PushCore(string title, string message, NotificationSeverity severity,
+        LocalizedText? localizedTitle = null, LocalizedText? localizedMessage = null)
     {
         var notification = new AppNotification
         {
             Id = Guid.NewGuid().ToString("N"),
             Title = title,
             Message = message,
+            LocalizedTitle = localizedTitle,
+            LocalizedMessage = localizedMessage,
             Severity = severity
         };
 
@@ -74,7 +86,15 @@ public sealed class NotificationService
         Notifications.Insert(0, notification);
         if (Notifications.Count > MaxItems) Notifications.RemoveRange(MaxItems, Notifications.Count - MaxItems);
 
-        Save();
+        try
+        {
+            Save();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // El aviso de un fallo de escritura debe poder mostrarse aunque el disco siga fallando.
+            LogService.Warning("No se pudo persistir la notificación; se conserva en memoria", ex);
+        }
         NotificationAdded?.Invoke(notification);
         NotificationsChanged?.Invoke();
         return notification;

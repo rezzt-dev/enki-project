@@ -9,9 +9,9 @@ public sealed class NotificationItemViewModel(AppNotification notification)
     public AppNotification Notification { get; } = notification;
 
     public string Id => Notification.Id;
-    public string Title => Notification.Title;
-    public string Message => Notification.Message;
-    public bool HasMessage => !string.IsNullOrWhiteSpace(Notification.Message);
+    public string Title => LocalizedTextFormatter.Resolve(Notification.LocalizedTitle, Notification.Title);
+    public string Message => LocalizedTextFormatter.Resolve(Notification.LocalizedMessage, Notification.Message);
+    public bool HasMessage => !string.IsNullOrWhiteSpace(Message);
     public bool IsRead => Notification.IsRead;
 
     /// <summary>Fase 2 §4.7: replaces this class's own hand-rolled "hace 2 min" logic with the single

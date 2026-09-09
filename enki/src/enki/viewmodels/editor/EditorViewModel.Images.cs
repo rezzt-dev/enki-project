@@ -83,11 +83,9 @@ public sealed partial class EditorViewModel
         {
             if (isTempCopy) VaultService.TryCleanupDecryptedTempFile(readablePath);
             LogService.Warning($"No se pudo abrir la imagen '{fullPath}' con el visor del sistema", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteImageOpenFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture,
-                    LocalizationService.Instance["Notification_NoteImageOpenFailed_Message"],
-                    Path.GetFileName(fullPath)),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteImageOpenFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteImageOpenFailed_Message", Path.GetFileName(fullPath)),
                 NotificationSeverity.Warning);
         }
     }
@@ -106,11 +104,9 @@ public sealed partial class EditorViewModel
                                        or SessionLockedException)
         {
             LogService.Error($"No se pudo adjuntar una imagen a la nota '{Note.FullPath}'", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteImageAttachFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture,
-                    LocalizationService.Instance["Notification_NoteImageAttachFailed_Message"],
-                    DescribeFailureReason(ex)),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteImageAttachFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteImageAttachFailed_Message", VaultFailureReasons.DescribeLocalized(ex)),
                 NotificationSeverity.Error);
             return null;
         }

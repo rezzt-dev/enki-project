@@ -13,12 +13,20 @@ namespace enki.Services;
 /// (docs/analisis-proyecto/roadmap.md, Fase 1; docs/version-alfa-3/01-analisis-detallado.md §4.1).</summary>
 public static class VaultFailureReasons
 {
-    public static string Describe(Exception ex) => ex switch
+    public static string Describe(Exception ex) => LocalizedTextFormatter.Resolve(DescribeLocalized(ex));
+
+    /// <summary>Versión persistible de la razón de error; el diagnóstico técnico queda en el log.</summary>
+    public static LocalizedText DescribeLocalized(Exception ex)
     {
-        VaultUnavailableException => LocalizationService.Instance["Notification_VaultUnavailable_Reason"],
-        SessionLockedException => LocalizationService.Instance["Notification_SessionLocked_Reason"],
-        UnauthorizedAccessException => LocalizationService.Instance["Common_Error_AccessDenied"],
-        DirectoryNotFoundException => LocalizationService.Instance["Notification_SaveFailed_Reason_PathNotFound"],
-        _ => LocalizationService.Instance["Common_Error_IOFailure"]
-    };
+        LogService.Warning("Operación de archivo fallida", ex);
+        return LocalizedTextFormatter.Format(ex switch
+        {
+            VaultUnavailableException => "Notification_VaultUnavailable_Reason",
+            SessionLockedException => "Notification_SessionLocked_Reason",
+            UnauthorizedAccessException => "Common_Error_AccessDenied",
+            DirectoryNotFoundException => "Notification_SaveFailed_Reason_PathNotFound",
+            IOException => "Common_Error_IOFailure",
+            _ => "Common_Error_Unexpected"
+        });
+    }
 }

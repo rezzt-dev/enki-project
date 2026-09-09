@@ -2,12 +2,7 @@ using System;
 
 namespace enki.Localization;
 
-/// <summary>Single localized implementation of the "hace 2 min"/"2 min ago" pattern that today is
-/// duplicated, hardcoded in Spanish, and never pluralized in 5 places (<c>NoteFile.cs</c>,
-/// <c>VaultFile.cs</c>, <c>TrashedReminderCardViewModel.cs</c>, <c>TrashedTaskCardViewModel.cs</c>,
-/// <c>NotificationItemViewModel.cs</c>) — see docs/agent-docs/internacionalizacion-i18n.md §4.7. Fase 2
-/// wires the 5 call sites to this formatter instead of their own copy; this class is infrastructure only for
-/// now and isn't referenced anywhere yet.</summary>
+/// <summary>Formato común de tiempos relativos y fechas, según el idioma activo de la aplicación.</summary>
 public static class RelativeTimeFormatter
 {
     public static string Format(DateTime utc) => Format(utc, DateTime.UtcNow);
@@ -31,7 +26,7 @@ public static class RelativeTimeFormatter
             var days = (int)delta.TotalDays;
             return Plural.Get("Common_RelativeTime_DaysAgo", days, days);
         }
-        return utc.ToLocalTime().ToString("dd MMM yyyy", LocalizationService.Instance.CurrentCulture);
+        return utc.ToLocalTime().ToString("d", LocalizationService.Instance.CurrentCulture);
     }
 
     /// <summary>The forward-looking counterpart of <see cref="Format"/> — "in 2 minutes" instead of "2
@@ -46,20 +41,16 @@ public static class RelativeTimeFormatter
         return Plural.Get("Common_RelativeTime_InMinutes", minutes, minutes);
     }
 
-    /// <summary>"dd MMM yyyy, HH:mm" in the app's current locale — the full absolute timestamp shown next to
-    /// a notification or a reminder's creation date, instead of <see cref="Format"/>'s relative wording.
-    /// Fase 6 (gap 33) consolidates this into one place: it used to be duplicated in
-    /// <c>NotificationItemViewModel</c>, <c>ReminderListItemViewModel</c> and <c>EditorStatsViewModel</c>,
-    /// and the latter two omitted <see cref="LocalizationService.CurrentCulture"/> entirely — a language
-    /// leak where month names silently fell back to the OS/thread culture instead of the language the user
-    /// picked inside Enki.</summary>
+    /// <summary>Fecha y hora locales con el orden regional y el reloj de 12/24 horas del idioma activo.</summary>
     public static string FormatAbsolute(DateTime utc) =>
-        utc.ToLocalTime().ToString("dd MMM yyyy, HH:mm", LocalizationService.Instance.CurrentCulture);
+        utc.ToLocalTime().ToString("g", LocalizationService.Instance.CurrentCulture);
 
-    /// <summary><see cref="FormatAbsolute"/> without the year — used where the year is implied (due dates,
-    /// last-synced timestamps). Same consolidation as <see cref="FormatAbsolute"/>: previously duplicated
-    /// across <c>RemindersViewModel</c>, <c>SettingsViewModel</c> and <c>PolarTaskManagementViewModel</c>,
-    /// two of which never passed the current culture through.</summary>
-    public static string FormatAbsoluteShort(DateTime utc) =>
-        utc.ToLocalTime().ToString("dd MMM, HH:mm", LocalizationService.Instance.CurrentCulture);
+    /// <summary>Fecha abreviada sin año y hora local, respetando el orden de día y mes del idioma.</summary>
+    public static string FormatAbsoluteShort(DateTime utc)
+    {
+        var culture = LocalizationService.Instance.CurrentCulture;
+        var pattern = culture.DateTimeFormat.MonthDayPattern.Replace("MMMM", "MMM", StringComparison.Ordinal);
+        var local = utc.ToLocalTime();
+        return local.ToString(pattern, culture) + ", " + local.ToString("t", culture);
+    }
 }

@@ -57,13 +57,9 @@ public static class EditorBacklinksService
         var backlinks = FindBacklinks(allNotesWithContent, note);
         if (backlinks.Count == 0) return;
 
-        notificationService.Push(
-            LocalizationService.Instance["Notification_NoteDeletedWithBacklinks_Title"],
-            string.Format(
-                CultureInfo.CurrentCulture,
-                LocalizationService.Instance["Notification_NoteDeletedWithBacklinks_Message"],
-                note.Title,
-                Plural.Get("Notification_NoteDeletedWithBacklinks_Notes", backlinks.Count, backlinks.Count)),
+        notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_NoteDeletedWithBacklinks_Title"),
+            LocalizedTextFormatter.Format("Notification_NoteDeletedWithBacklinks_Message", note.Title, LocalizedTextFormatter.PluralFormat("Notification_NoteDeletedWithBacklinks_Notes", backlinks.Count, backlinks.Count)),
             NotificationSeverity.Warning);
     }
 

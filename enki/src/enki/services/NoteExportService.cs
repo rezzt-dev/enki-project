@@ -22,7 +22,7 @@ public static class NoteExportService
     /// <paramref name="topLevel"/> (tests, donde <c>App.MainWindowRef</c> es null — mismo criterio que
     /// los comandos de importar/exportar ajustes) o si el usuario cancela el diálogo.</summary>
     public static async Task ExportHtmlAsync(NoteFile note, string content, bool includeTags,
-        TopLevel? topLevel, Action<string, string, NotificationSeverity>? notify)
+        TopLevel? topLevel, Action<LocalizedText, LocalizedText, NotificationSeverity>? notify)
     {
         if (topLevel?.StorageProvider is null) return;
 
@@ -43,25 +43,23 @@ public static class NoteExportService
             var html = NoteExportRenderer.RenderDocument(note, content, includeTags);
             await File.WriteAllTextAsync(destination, html);
             notify?.Invoke(
-                loc["Notification_NoteExportSuccess_Title"],
-                string.Format(CultureInfo.CurrentCulture, loc["Notification_NoteExportSuccess_Message"], destination),
+                LocalizedTextFormatter.Format("Notification_NoteExportSuccess_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteExportSuccess_Message", destination),
                 NotificationSeverity.Success);
         }
-        // Specific, expected failure types get a fully-translated message (docs/agent-docs/
-        // internacionalizacion-i18n.md §5.3); anything else falls back to the platform message as a
-        // documented last resort — same catch chain as SettingsViewModel.CreateBackup/ExportSettings.
+        // Los errores visibles usan recursos; el diagnóstico técnico se conserva en el log.
         catch (UnauthorizedAccessException)
         {
-            notify?.Invoke(loc["Notification_NoteExportFailed_Title"], loc["Common_Error_AccessDenied"], NotificationSeverity.Error);
+            notify?.Invoke(LocalizedTextFormatter.Format("Notification_NoteExportFailed_Title"), LocalizedTextFormatter.Format("Common_Error_AccessDenied"), NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            notify?.Invoke(loc["Notification_NoteExportFailed_Title"], loc["Common_Error_IOFailure"], NotificationSeverity.Error);
+            notify?.Invoke(LocalizedTextFormatter.Format("Notification_NoteExportFailed_Title"), LocalizedTextFormatter.Format("Common_Error_IOFailure"), NotificationSeverity.Error);
         }
         catch (Exception ex)
         {
             LogService.Error($"No se pudo exportar la nota '{note.FullPath}' a HTML", ex);
-            notify?.Invoke(loc["Notification_NoteExportFailed_Title"], ex.Message, NotificationSeverity.Error);
+            notify?.Invoke(LocalizedTextFormatter.Format("Notification_NoteExportFailed_Title"), VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
         }
     }
 }

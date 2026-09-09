@@ -34,6 +34,9 @@ local.properties
 .DS_Store
 Thumbs.db
 
+# Documentación privada (no se sube al repositorio)
+docs/
+
 # Logs
 *.log
 logs/

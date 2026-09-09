@@ -92,11 +92,7 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            // Last-resort fallback for exception types we can't give a fully-translated message to.
-            // Exception.Message here is a documented limitation, not a bug to "fully fix" — a platform
-            // exception's text is never guaranteed to be in Enki's active language unless Enki intercepts
-            // it by type, as the cases above already do for the common, expectable ones.
-            ErrorMessage = string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["VaultSetup_Error_Generic"], ex.Message);
+            ErrorMessage = VaultFailureReasons.Describe(ex);
         }
     }
 }

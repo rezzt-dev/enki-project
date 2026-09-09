@@ -812,9 +812,9 @@ public sealed partial class CalendarViewModel : ViewModelBase
                 };
                 column.Cards.Add(card);
                 _kanbanService.Save();
-                _notificationService.Push(
-                    LocalizationService.Instance["Calendar_Notify_ItemCreated_Title"],
-                    string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Calendar_Notify_ItemCreated_Message"], title, LocalizationService.Instance["Calendar_Label_Kanban"]),
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Title"),
+                    LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Message", title, LocalizedTextFormatter.Format("Calendar_Label_Kanban")),
                     NotificationSeverity.Success);
                 return new CalendarItemViewModel
                 {
@@ -829,9 +829,9 @@ public sealed partial class CalendarViewModel : ViewModelBase
             {
                 var durationMinutes = draft.CanShowDuration && draft.HasDuration ? draft.DurationMinutes : (int?)null;
                 var task = _polarTaskService.CreateTask(list, title, string.Empty, 0, dueUtc, PolarRecurrence.None, 0, [], durationMinutes);
-                _notificationService.Push(
-                    LocalizationService.Instance["Calendar_Notify_ItemCreated_Title"],
-                    string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Calendar_Notify_ItemCreated_Message"], title, LocalizationService.Instance["Calendar_Source_PolarTask"]),
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Title"),
+                    LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Message", title, LocalizedTextFormatter.Format("Calendar_Source_PolarTask")),
                     NotificationSeverity.Success);
                 return new CalendarItemViewModel
                 {
@@ -846,9 +846,9 @@ public sealed partial class CalendarViewModel : ViewModelBase
             {
                 var durationMinutes = draft.CanShowDuration && draft.HasDuration ? draft.DurationMinutes : (int?)null;
                 var reminder = _reminderService.Create(title, string.Empty, dueUtc, MaterialIconKind.BellRingOutline.ToString(), durationMinutes);
-                _notificationService.Push(
-                    LocalizationService.Instance["Calendar_Notify_ItemCreated_Title"],
-                    string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Calendar_Notify_ItemCreated_Message"], title, LocalizationService.Instance["Calendar_Label_Reminder"]),
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Title"),
+                    LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Message", title, LocalizedTextFormatter.Format("Calendar_Label_Reminder")),
                     NotificationSeverity.Success);
                 return new CalendarItemViewModel
                 {

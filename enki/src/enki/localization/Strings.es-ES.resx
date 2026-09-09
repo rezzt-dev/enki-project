@@ -4782,4 +4782,46 @@ Disfrutad escribiendo.</value>
   <data name="A11y_Files_TreeSidebarSplitter" xml:space="preserve">
     <value>Redimensionar el panel lateral</value>
   </data>
+  <data name="Common_Error_Unexpected" xml:space="preserve">
+    <value>No se ha podido completar la operación. Inténtalo de nuevo. Si el problema persiste, consulta el registro de diagnóstico.</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_TemplateInstructions" xml:space="preserve">
+    <value>Enki — plantilla de tema personalizado
+1. Cambia solo los valores de color hexadecimales (#RRGGBB). No añadas, elimines ni renombres variables.
+2. Guarda el archivo y elige Ajustes › Apariencia › Tema personalizado › Importar tema en Enki.
+3. El nombre del archivo sin .css se utiliza como nombre del tema.</value>
+  </data>
+  <data name="Settings_General_Language_SaveFailed" xml:space="preserve">
+    <value>No se ha podido guardar el idioma</value>
+  </data>
+  <data name="ColorPicker_Hex" xml:space="preserve">
+    <value>Color hexadecimal</value>
+  </data>
+  <data name="ColorPicker_Spectrum" xml:space="preserve">
+    <value>Espectro de colores</value>
+  </data>
+  <data name="ColorPicker_Component" xml:space="preserve">
+    <value>Componente de color</value>
+  </data>
+  <data name="ColorPicker_Alpha" xml:space="preserve">
+    <value>Opacidad</value>
+  </data>
+  <data name="ColorPicker_Red" xml:space="preserve">
+    <value>Rojo</value>
+  </data>
+  <data name="ColorPicker_Green" xml:space="preserve">
+    <value>Verde</value>
+  </data>
+  <data name="ColorPicker_Blue" xml:space="preserve">
+    <value>Azul</value>
+  </data>
+  <data name="ColorPicker_Hue" xml:space="preserve">
+    <value>Tono</value>
+  </data>
+  <data name="ColorPicker_Saturation" xml:space="preserve">
+    <value>Saturación</value>
+  </data>
+  <data name="ColorPicker_Value" xml:space="preserve">
+    <value>Brillo</value>
+  </data>
 </root>

@@ -173,6 +173,21 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         ? LocalizationService.Instance["Common_Create"]
         : LocalizationService.Instance["Common_Save"];
 
+    /// <summary>El editor es un overlay dentro de KanbanView, no una ventana modal: la barra lateral sigue
+    /// activa, así que se puede dejar una tarjeta abierta, ir a Ajustes, cambiar de idioma y volver. Sin
+    /// esto, el diálogo reaparecía con su cabecera, su botón de confirmar y sus fechas en el idioma
+    /// anterior. Lo invoca <see cref="KanbanViewModel.RefreshLocalizedLabels"/>, que no reconstruye el
+    /// editor abierto porque haría perder lo que el usuario llevara escrito.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(HeadingEyebrow));
+        OnPropertyChanged(nameof(HeadingTitle));
+        OnPropertyChanged(nameof(ConfirmLabel));
+        OnPropertyChanged(nameof(LinkedNoteDisplayLabel));
+        OnPropertyChanged(nameof(DueDateDisplayLabel));
+        OnPropertyChanged(nameof(CalendarMonthLabel));
+    }
+
     private KanbanCardEditorViewModel(CardEditorMode mode, KanbanColumnViewModel targetColumn,
         IReadOnlyList<KanbanColumnViewModel> availableColumns, KanbanCardViewModel? sourceCard,
         VaultService? vaultService, SessionService? sessionService, Action<string>? onOpenNote)

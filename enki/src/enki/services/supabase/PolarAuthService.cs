@@ -87,8 +87,13 @@ public sealed class PolarAuthService
             using var response = await _http.SendAsync(request, ct);
             if (!response.IsSuccessStatusCode)
             {
-                var error = await TryReadErrorAsync(response, ct);
-                return (false, error ?? LocalizationService.Instance["Polar_Auth_Error_InvalidCredentials"]);
+                var key = response.StatusCode switch
+                {
+                    System.Net.HttpStatusCode.TooManyRequests => "Polar_Sync_Error_TooManyRequests",
+                    _ when (int)response.StatusCode >= 500 => "Polar_Sync_Error_ServerError",
+                    _ => "Polar_Auth_Error_InvalidCredentials"
+                };
+                return (false, LocalizationService.Instance[key]);
             }
 
             var body = await response.Content.ReadFromJsonAsync<AuthTokenDto>(cancellationToken: ct);
@@ -100,7 +105,8 @@ public sealed class PolarAuthService
         }
         catch (HttpRequestException ex)
         {
-            return (false, string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Polar_Auth_Error_ConnectionFailed"], ex.Message));
+            LogService.Warning("No se pudo conectar con Polar", ex);
+            return (false, LocalizationService.Instance["Polar_Sync_Error_NoConnection"]);
         }
         catch (TaskCanceledException)
         {
@@ -186,16 +192,4 @@ public sealed class PolarAuthService
         LinkStateChanged?.Invoke();
     }
 
-    private static async Task<string?> TryReadErrorAsync(HttpResponseMessage response, CancellationToken ct)
-    {
-        try
-        {
-            var error = await response.Content.ReadFromJsonAsync<SupabaseErrorDto>(cancellationToken: ct);
-            return error?.ReadableMessage;
-        }
-        catch
-        {
-            return null;
-        }
-    }
 }

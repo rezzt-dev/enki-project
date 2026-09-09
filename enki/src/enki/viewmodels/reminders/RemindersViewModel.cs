@@ -137,6 +137,8 @@ public sealed partial class RemindersViewModel : ViewModelBase
         WeekdayLabels = BuildWeekdayLabels();
         OnPropertyChanged(nameof(WeekdayLabels));
         Reload();
+        // El editor abierto no se reconstruye en Reload() para no perder lo escrito.
+        Editor?.RefreshLocalizedLabels();
     }
 
     private void HandleSyncCompleted(bool tasksChanged, bool remindersChanged)

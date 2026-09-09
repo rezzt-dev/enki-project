@@ -384,9 +384,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
     {
         VaultSizeLabel = FileSizeFormatter.Format(_vaultService.GetVaultSizeBytes());
         if (_vaultService.LastVaultSizeCalculationIncomplete && !_vaultSizeWasIncomplete)
-            _notificationService.Push(
-                LocalizationService.Instance["Dashboard_VaultSizeIncomplete_Title"],
-                LocalizationService.Instance["Dashboard_VaultSizeIncomplete_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Dashboard_VaultSizeIncomplete_Title"),
+                LocalizedTextFormatter.Format("Dashboard_VaultSizeIncomplete_Message"),
                 NotificationSeverity.Warning);
         _vaultSizeWasIncomplete = _vaultService.LastVaultSizeCalculationIncomplete;
     }

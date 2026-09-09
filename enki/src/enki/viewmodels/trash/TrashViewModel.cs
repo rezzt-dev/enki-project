@@ -312,9 +312,9 @@ public sealed partial class TrashViewModel : ViewModelBase
             ?? _kanbanService.Board.Columns.FirstOrDefault();
         if (targetColumn is null)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Trash_Notify_CardRestoreFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_CardRestoreFailed_Message"], trashed.Card.Title),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Title"),
+                LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Message", trashed.Card.Title),
                 NotificationSeverity.Warning);
             return;
         }
@@ -334,13 +334,9 @@ public sealed partial class TrashViewModel : ViewModelBase
         trashed.Card.ArchivedAtUtc = null;
 
         _kanbanService.Save();
-        _notificationService.Push(
-            LocalizationService.Instance["Trash_Notify_CardRestored_Title"],
-            string.Format(
-                CultureInfo.CurrentCulture,
-                LocalizationService.Instance["Trash_Notify_CardRestored_Message"],
-                trashed.Card.Title,
-                targetColumn.Title),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Title"),
+            LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Message", trashed.Card.Title, targetColumn.Title),
             NotificationSeverity.Success);
         Reload();
     }
@@ -361,9 +357,9 @@ public sealed partial class TrashViewModel : ViewModelBase
             return;
         }
 
-        _notificationService.Push(
-            LocalizationService.Instance["Trash_Notify_SessionRestored_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_SessionRestored_Message"], card.Name),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Trash_Notify_SessionRestored_Title"),
+            LocalizedTextFormatter.Format("Trash_Notify_SessionRestored_Message", card.Name),
             NotificationSeverity.Success);
         _onSessionsChanged?.Invoke();
         Reload();
@@ -392,9 +388,9 @@ public sealed partial class TrashViewModel : ViewModelBase
     private void RestoreReminder(TrashedReminderCardViewModel reminder)
     {
         _reminderService.Restore(reminder.Reminder.Id);
-        _notificationService.Push(
-            LocalizationService.Instance["Trash_Notify_ReminderRestored_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_ReminderRestored_Message"], reminder.Title),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Trash_Notify_ReminderRestored_Title"),
+            LocalizedTextFormatter.Format("Trash_Notify_ReminderRestored_Message", reminder.Title),
             NotificationSeverity.Success);
         Reload();
     }
@@ -482,8 +478,8 @@ public sealed partial class TrashViewModel : ViewModelBase
         }
 
         if (notesDeleted + tasksDeleted + filesDeleted + polarTasksDeleted + remindersDeleted + sessionsDeleted > 0)
-            _notificationService.Push(
-                LocalizationService.Instance["Trash_Notify_TrashEmptied_Title"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Trash_Notify_TrashEmptied_Title"),
                 BuildEmptyPushMessage(notesDeleted, tasksDeleted, filesDeleted, polarTasksDeleted, remindersDeleted, sessionsDeleted),
                 NotificationSeverity.Warning);
 
@@ -497,20 +493,22 @@ public sealed partial class TrashViewModel : ViewModelBase
     /// the correct singular/plural form per locale instead of the old hand-rolled "s" suffix, and the
     /// per-category fragments are joined into the final sentence via a resource-keyed template (see
     /// docs/agent-docs/internacionalizacion-i18n.md §1.3/§1.4) instead of a fixed-word-order concatenation.</summary>
-    private static string BuildEmptyPushMessage(int notesDeleted, int tasksDeleted, int filesDeleted, int polarTasksDeleted, int remindersDeleted, int sessionsDeleted)
+    private static LocalizedText BuildEmptyPushMessage(int notesDeleted, int tasksDeleted, int filesDeleted, int polarTasksDeleted, int remindersDeleted, int sessionsDeleted)
     {
-        var parts = new List<string>();
-        if (notesDeleted > 0) parts.Add(Plural.Get("Trash_Notify_DocumentsCount", notesDeleted, notesDeleted));
-        if (tasksDeleted > 0) parts.Add(Plural.Get("Trash_Notify_TasksCount", tasksDeleted, tasksDeleted));
-        if (filesDeleted > 0) parts.Add(Plural.Get("Trash_Notify_FilesCount", filesDeleted, filesDeleted));
-        if (polarTasksDeleted > 0) parts.Add(Plural.Get("Trash_Notify_PolarTasksCount", polarTasksDeleted, polarTasksDeleted));
-        if (remindersDeleted > 0) parts.Add(Plural.Get("Trash_Notify_RemindersCount", remindersDeleted, remindersDeleted));
-        if (sessionsDeleted > 0) parts.Add(Plural.Get("Trash_Notify_SessionsCount", sessionsDeleted, sessionsDeleted));
+        var parts = new List<LocalizedText>();
+        if (notesDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_DocumentsCount", notesDeleted, notesDeleted));
+        if (tasksDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_TasksCount", tasksDeleted, tasksDeleted));
+        if (filesDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_FilesCount", filesDeleted, filesDeleted));
+        if (polarTasksDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_PolarTasksCount", polarTasksDeleted, polarTasksDeleted));
+        if (remindersDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_RemindersCount", remindersDeleted, remindersDeleted));
+        if (sessionsDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_SessionsCount", sessionsDeleted, sessionsDeleted));
 
         var itemsList = parts.Count <= 1
-            ? string.Join(string.Empty, parts)
-            : string.Join(", ", parts.Take(parts.Count - 1)) + $" {LocalizationService.Instance["Trash_Notify_ListConjunction"]} " + parts[^1];
+            ? LocalizedTextFormatter.Join(string.Empty, parts.ToArray())
+            : LocalizedTextFormatter.Join(" ",
+                LocalizedTextFormatter.Join(", ", parts.Take(parts.Count - 1).ToArray()),
+                LocalizedTextFormatter.Format("Trash_Notify_ListConjunction"), parts[^1]);
 
-        return string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_TrashEmptied_Message"], itemsList);
+        return LocalizedTextFormatter.Format("Trash_Notify_TrashEmptied_Message", itemsList);
     }
 }

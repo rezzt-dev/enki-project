@@ -100,14 +100,14 @@ public class PolarAuthServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task LinkAsync_InvalidCredentials_ReturnsServerErrorMessage()
+    public async Task LinkAsync_InvalidCredentials_ReturnsLocalizedErrorWithoutServerText()
     {
         _handler.Enqueue(JsonResponse(HttpStatusCode.BadRequest, new { error_description = "Invalid login credentials" }));
 
         var (success, error) = await _auth.LinkAsync("user@example.com", "wrong-password");
 
         Assert.False(success);
-        Assert.Equal("Invalid login credentials", error);
+        Assert.Equal(LocalizationService.Instance["Polar_Auth_Error_InvalidCredentials"], error);
         Assert.False(_auth.IsLinked);
     }
 
@@ -120,7 +120,7 @@ public class PolarAuthServiceTests : IDisposable
 
         Assert.False(success);
         Assert.Equal(
-            string.Format(LocalizationService.Instance["Polar_Auth_Error_ConnectionFailed"], "Name or service not known"),
+            LocalizationService.Instance["Polar_Sync_Error_NoConnection"],
             error);
     }
 

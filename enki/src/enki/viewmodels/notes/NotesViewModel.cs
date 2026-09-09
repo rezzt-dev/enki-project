@@ -154,6 +154,9 @@ public sealed partial class NotesViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(NotesCountLabel));
         OnPropertyChanged(nameof(CurrentFolderLabel));
+        // Solo se anunciaba desde OnIsSimplifiedViewChanged, y el modo de vista no cambia al cambiar de
+        // idioma: sin esto el tooltip del botón "nueva nota" se quedaba en el idioma anterior.
+        OnPropertyChanged(nameof(NewTabTooltip));
         Reload();
         foreach (var editor in OpenEditors) editor.RefreshLocalizedLabels();
     }
@@ -472,9 +475,9 @@ public sealed partial class NotesViewModel : ViewModelBase
     private void NotifyVaultWriteFailed(Exception ex)
     {
         LogService.Error("Fallo al escribir en el vault desde Documentos", ex);
-        _notificationService?.Push(
-            LocalizationService.Instance["Notification_VaultWriteFailed_Title"],
-            VaultFailureReasons.Describe(ex),
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_VaultWriteFailed_Title"),
+            VaultFailureReasons.DescribeLocalized(ex),
             NotificationSeverity.Error);
     }
 
@@ -526,10 +529,13 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// — lo recibe <see cref="NoteExportService"/> para anunciar éxito/fallo sin referenciar el servicio
     /// directamente. La lambda es necesaria: <c>Push</c> devuelve el <see cref="AppNotification"/> creado,
     /// así que no convierte directamente a un <c>Action</c>.</summary>
-    private Action<string, string, NotificationSeverity>? NotifyCallback =>
+    private Action<LocalizedText, LocalizedText, NotificationSeverity>? NotifyCallback =>
         _notificationService is null
             ? null
-            : (title, message, severity) => _notificationService.Push(title, message, severity);
+            : (title, message, severity) => _notificationService.PushLocalized(
+                title,
+                message,
+                severity);
 
     /// <summary>Contenido a exportar: si la nota está abierta en una pestaña, el texto en vivo de su
     /// documento (incluye cambios aún sin guardar — lo que el usuario ve es lo que se exporta); si no, el
@@ -552,9 +558,9 @@ public sealed partial class NotesViewModel : ViewModelBase
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
             LogService.Error($"No se pudo leer la nota '{note.FullPath}' para exportarla", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteExportFailed_Title"],
-                VaultFailureReasons.Describe(ex),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteExportFailed_Title"),
+                VaultFailureReasons.DescribeLocalized(ex),
                 NotificationSeverity.Error);
             content = string.Empty;
             return false;
@@ -665,9 +671,9 @@ public sealed partial class NotesViewModel : ViewModelBase
         PersistOpenTabs();
         Reload();
 
-        _notificationService?.Push(
-            LocalizationService.Instance["Notification_SessionLockedTabsClosed_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_SessionLockedTabsClosed_Message"], session.Name),
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Title"),
+            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Message", session.Name),
             NotificationSeverity.Info);
     }
 
@@ -856,9 +862,9 @@ public sealed partial class NotesViewModel : ViewModelBase
         var finalName = Path.GetFileNameWithoutExtension(updated.FullPath);
         if (string.Equals(finalName, requestedTitle, StringComparison.Ordinal)) return;
 
-        _notificationService?.Push(
-            LocalizationService.Instance["Notification_NoteRenameCollision_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteRenameCollision_Message"], finalName),
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_NoteRenameCollision_Title"),
+            LocalizedTextFormatter.Format("Notification_NoteRenameCollision_Message", finalName),
             NotificationSeverity.Info);
     }
 

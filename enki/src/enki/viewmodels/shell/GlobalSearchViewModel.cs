@@ -160,6 +160,16 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
     /// </summary>
     public void OpenResult(GlobalSearchResultViewModel result) => _onResultSelected(result);
 
+    /// <summary>Repite la consulta visible para actualizar fechas y etiquetas de sistema.
+    /// La búsqueda anterior se cancela para que no reponga resultados en el idioma previo.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        if (!IsOpen) return;
+        _searchCts?.Cancel();
+        Results.Clear();
+        OnSearchTextChanged(SearchText);
+    }
+
     private void NotifySearchStateChanged()
     {
         OnPropertyChanged(nameof(HasResults));

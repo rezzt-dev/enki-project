@@ -134,19 +134,18 @@ public sealed partial class SettingsViewModel
             var result = _vaultBackupService.CreateBackup(destination);
             if (result.IsComplete)
             {
-                _notificationService.Push(
-                    LocalizationService.Instance["Settings_General_DangerZone_BackupCreatedTitle"],
-                    string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_General_DangerZone_BackupCreatedMessage"], destination),
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupCreatedTitle"),
+                    LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupCreatedMessage", destination),
                     Models.NotificationSeverity.Success);
             }
             else
             {
                 // Fase 1 (docs/analisis-proyecto/roadmap.md): antes un fichero bloqueado/ilegible se omitía
                 // del .zip en silencio — el backup "tenía éxito" mostrando el mismo mensaje que uno completo.
-                _notificationService.Push(
-                    LocalizationService.Instance["Settings_General_DangerZone_BackupIncompleteTitle"],
-                    Plural.Get("Settings_General_DangerZone_BackupIncompleteMessage", result.FailedEntries.Count,
-                        result.FailedEntries.Count, destination),
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupIncompleteTitle"),
+                    LocalizedTextFormatter.PluralFormat("Settings_General_DangerZone_BackupIncompleteMessage", result.FailedEntries.Count, result.FailedEntries.Count, destination),
                     Models.NotificationSeverity.Warning);
             }
         }
@@ -155,27 +154,24 @@ public sealed partial class SettingsViewModel
         // in the OS's own language rather than Enki's active one.
         catch (UnauthorizedAccessException)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_BackupFailedTitle"],
-                LocalizationService.Instance["Common_Error_AccessDenied"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
                 Models.NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_BackupFailedTitle"],
-                LocalizationService.Instance["Common_Error_IOFailure"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
                 Models.NotificationSeverity.Error);
         }
         catch (Exception ex)
         {
-            // Last-resort fallback for exception types we can't give a fully-translated message to — a
-            // documented limitation (§5.3), not a bug: a platform exception's text is never guaranteed to
-            // be in Enki's active language unless Enki intercepts it by type, as the cases above already
-            // do for the common, expectable ones.
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_BackupFailedTitle"],
-                ex.Message,
+            // El detalle técnico se registra; el aviso usa una razón traducible.
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupFailedTitle"),
+                VaultFailureReasons.DescribeLocalized(ex),
                 Models.NotificationSeverity.Error);
         }
     }
@@ -209,25 +205,32 @@ public sealed partial class SettingsViewModel
         {
             _settingsService.Save();
             System.IO.File.WriteAllText(destination, _settingsService.BuildRedactedExportJson());
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_ExportedTitle"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_General_DangerZone_ExportedMessage"], destination),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ExportedTitle"),
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ExportedMessage", destination),
                 Models.NotificationSeverity.Success);
         }
         catch (UnauthorizedAccessException)
         {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ExportFailedTitle"],
-                LocalizationService.Instance["Common_Error_AccessDenied"], Models.NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ExportFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
+                Models.NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ExportFailedTitle"],
-                LocalizationService.Instance["Common_Error_IOFailure"], Models.NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ExportFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
+                Models.NotificationSeverity.Error);
         }
         catch (Exception ex)
         {
-            // Last-resort fallback documented in §5.3 — see CreateBackup's catch chain above.
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ExportFailedTitle"], ex.Message, Models.NotificationSeverity.Error);
+            // Mantener el diagnóstico técnico fuera del mensaje visible.
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ExportFailedTitle"),
+                VaultFailureReasons.DescribeLocalized(ex),
+                Models.NotificationSeverity.Error);
         }
     }
 
@@ -253,25 +256,32 @@ public sealed partial class SettingsViewModel
         try
         {
             System.IO.File.Copy(source, _settingsService.SettingsFilePath, overwrite: true);
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_ImportedTitle"],
-                LocalizationService.Instance["Settings_General_DangerZone_ImportedMessage"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ImportedTitle"),
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ImportedMessage"),
                 Models.NotificationSeverity.Success);
         }
         catch (UnauthorizedAccessException)
         {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ImportFailedTitle"],
-                LocalizationService.Instance["Common_Error_AccessDenied"], Models.NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ImportFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
+                Models.NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ImportFailedTitle"],
-                LocalizationService.Instance["Common_Error_IOFailure"], Models.NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ImportFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
+                Models.NotificationSeverity.Error);
         }
         catch (Exception ex)
         {
-            // Last-resort fallback documented in §5.3 — see CreateBackup's catch chain above.
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ImportFailedTitle"], ex.Message, Models.NotificationSeverity.Error);
+            // Mantener el diagnóstico técnico fuera del mensaje visible.
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_ImportFailedTitle"),
+                VaultFailureReasons.DescribeLocalized(ex),
+                Models.NotificationSeverity.Error);
         }
     }
 
@@ -290,9 +300,9 @@ public sealed partial class SettingsViewModel
     {
         _settingsService.ResetToDefaults();
         PendingResetSettings = false;
-        _notificationService.Push(
-            LocalizationService.Instance["Settings_General_DangerZone_ResetDoneTitle"],
-            LocalizationService.Instance["Settings_General_DangerZone_ResetDoneMessage"],
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Settings_General_DangerZone_ResetDoneTitle"),
+            LocalizedTextFormatter.Format("Settings_General_DangerZone_ResetDoneMessage"),
             Models.NotificationSeverity.Success);
     }
 }

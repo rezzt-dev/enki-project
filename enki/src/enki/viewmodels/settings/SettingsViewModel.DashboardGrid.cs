@@ -332,9 +332,9 @@ public sealed partial class SettingsViewModel
 
         PersistDashboardLayout(layout);
 
-        _notificationService.Push(
-            LocalizationService.Instance["Settings_Dashboard_Grid_AutoArranged_Title"],
-            LocalizationService.Instance["Settings_Dashboard_Grid_AutoArranged_Message"],
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Settings_Dashboard_Grid_AutoArranged_Title"),
+            LocalizedTextFormatter.Format("Settings_Dashboard_Grid_AutoArranged_Message"),
             Models.NotificationSeverity.Info);
     }
 

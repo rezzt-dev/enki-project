@@ -98,6 +98,12 @@ public sealed partial class CommandPaletteViewModel : ObservableObject
         item.Item.Execute();
     }
 
+    /// <summary>Actualiza los comandos visibles conservando la consulta al cambiar de idioma.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        if (IsOpen) RefreshResults();
+    }
+
     private void RefreshResults()
     {
         Results.Clear();

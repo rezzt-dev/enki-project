@@ -44,7 +44,7 @@ public sealed partial class MainWindowViewModel
         _vaultSettingsService = new VaultSettingsService(_vaultService);
         _habitService = new HabitService(_vaultService);
         _sessionService = new SessionService(_vaultService);
-        _kanbanService = new KanbanService();
+        _kanbanService = new KanbanService(deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
         _notificationService = new NotificationService(_settingsService);
         _dismissedReminderService = new DismissedReminderService();
         // Fase 10 (docs/analisis-proyecto/roadmap.md): una tarjeta borrada para siempre no debe dejar un
@@ -66,35 +66,35 @@ public sealed partial class MainWindowViewModel
         // con Polar que se pierde junto con el resto de los ajustes.
         if (_settingsService.LoadedFromCorruptData)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_SettingsCorrupt_Title"],
-                LocalizationService.Instance["Notification_SettingsCorrupt_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_SettingsCorrupt_Title"),
+                LocalizedTextFormatter.Format("Notification_SettingsCorrupt_Message"),
                 Models.NotificationSeverity.Error);
         }
         if (_kanbanService.LoadedFromCorruptData)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_KanbanCorrupt_Title"],
-                LocalizationService.Instance["Notification_KanbanCorrupt_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Title"),
+                LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Message"),
                 Models.NotificationSeverity.Error);
         }
         if (_notificationService.LoadedFromCorruptData)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_NotificationsCorrupt_Title"],
-                LocalizationService.Instance["Notification_NotificationsCorrupt_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NotificationsCorrupt_Title"),
+                LocalizedTextFormatter.Format("Notification_NotificationsCorrupt_Message"),
                 Models.NotificationSeverity.Warning);
         }
         if (_reminderService.LoadedFromCorruptData)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_RemindersCorrupt_Title"],
-                LocalizationService.Instance["Notification_RemindersCorrupt_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_RemindersCorrupt_Title"),
+                LocalizedTextFormatter.Format("Notification_RemindersCorrupt_Message"),
                 Models.NotificationSeverity.Error);
         }
-        _sessionService.ManifestError += message => _notificationService.Push(
-            LocalizationService.Instance["Notification_SessionError_Title"],
-            message,
+        _sessionService.ManifestError += message => _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_SessionError_Title"),
+            _sessionService.LastManifestError ?? LocalizedTextFormatter.Literal(message),
             Models.NotificationSeverity.Warning);
 
         _isSidebarExpanded = _settingsService.Settings.SidebarExpanded;
@@ -190,16 +190,16 @@ public sealed partial class MainWindowViewModel
                 if (hadData)
                 {
                     _polarTaskService.ClearAll();
-                    _notificationService.Push(
-                        LocalizationService.Instance["Notification_PolarUnlinked_TasksCleared_Title"],
-                        LocalizationService.Instance["Notification_PolarUnlinked_TasksCleared_Message"],
+                    _notificationService.PushLocalized(
+                        LocalizedTextFormatter.Format("Notification_PolarUnlinked_TasksCleared_Title"),
+                        LocalizedTextFormatter.Format("Notification_PolarUnlinked_TasksCleared_Message"),
                         Models.NotificationSeverity.Info);
                 }
             }
         };
-        _polarAuthService.SessionExpired += () => _notificationService.Push(
-            LocalizationService.Instance["Notification_PolarSessionExpired_Title"],
-            LocalizationService.Instance["Notification_PolarSessionExpired_Message"],
+        _polarAuthService.SessionExpired += () => _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_PolarSessionExpired_Title"),
+            LocalizedTextFormatter.Format("Notification_PolarSessionExpired_Message"),
             Models.NotificationSeverity.Warning);
         _polarSyncService.SyncCompleted += (_, _) =>
         {
@@ -227,9 +227,9 @@ public sealed partial class MainWindowViewModel
                 && DateTime.UtcNow - lastNotified >= PolarSyncFailureRenotifyInterval;
             if (justStartedFailing || stillFailingPastRenotifyWindow)
             {
-                _notificationService.Push(
-                    LocalizationService.Instance["Notification_PolarSyncFailed_Title"],
-                    _polarSyncService.LastError!,
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Notification_PolarSyncFailed_Title"),
+                    _polarSyncService.LocalizedError ?? LocalizedTextFormatter.Format("Common_Error_Unexpected"),
                     Models.NotificationSeverity.Error);
                 _lastPolarSyncFailureNotifiedUtc = DateTime.UtcNow;
             }
@@ -243,11 +243,11 @@ public sealed partial class MainWindowViewModel
             // time someone looked at it. Batched into one notification per sync cycle (see
             // PolarSyncService.LocalEditsOverwritten's own remarks) rather than one per row.
             var itemsFragment = titles.Count == 1
-                ? Plural.Get("Notification_PolarConflictOverwritten_Items", 1, titles[0])
-                : Plural.Get("Notification_PolarConflictOverwritten_Items", titles.Count, titles.Count);
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_PolarConflictOverwritten_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_PolarConflictOverwritten_Message"], itemsFragment),
+                ? LocalizedTextFormatter.PluralFormat("Notification_PolarConflictOverwritten_Items", 1, titles[0])
+                : LocalizedTextFormatter.PluralFormat("Notification_PolarConflictOverwritten_Items", titles.Count, titles.Count);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_PolarConflictOverwritten_Title"),
+                LocalizedTextFormatter.Format("Notification_PolarConflictOverwritten_Message", itemsFragment),
                 Models.NotificationSeverity.Warning);
         };
         if (_polarAuthService.IsLinked)
@@ -258,7 +258,7 @@ public sealed partial class MainWindowViewModel
 
         // El flujo de primer arranque: idioma primero, luego vault, luego shell. Ver
         // docs/agent-docs/internacionalizacion-i18n.md §3.1.
-        if (string.IsNullOrEmpty(_settingsService.Settings.Language))
+        if (SupportedLanguages.Find(_settingsService.Settings.Language) is null)
         {
             LanguageSetup = new LanguageSetupViewModel(_settingsService, OnLanguageSelected);
         }
@@ -301,9 +301,9 @@ public sealed partial class MainWindowViewModel
                 // unplugged) — worth surfacing as a real failure, unlike a brand-new install where VaultPath
                 // is simply empty and there's nothing to have failed yet.
                 infoMessage = LocalizationService.Instance["VaultSetup_VaultMissing_Info"];
-                _notificationService.Push(
-                    LocalizationService.Instance["Shell_VaultLoadFailed_Title"],
-                    LocalizationService.Instance["Shell_VaultLoadFailed_Message"],
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Shell_VaultLoadFailed_Title"),
+                    LocalizedTextFormatter.Format("Shell_VaultLoadFailed_Message"),
                     Models.NotificationSeverity.Error);
             }
 
@@ -313,6 +313,7 @@ public sealed partial class MainWindowViewModel
 
     private void InitializeShell()
     {
+        _kanbanService.EnsureSeedBoard();
         // Guarantees every vault this shell ever opens has a "default" session — a brand-new vault, one
         // just pointed at for the first time, or one created by an older Enki build that predates
         // sessions entirely. EnsureDefaultSession is idempotent, so this is a no-op once it already exists.

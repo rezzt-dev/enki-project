@@ -201,23 +201,23 @@ public sealed partial class ThemeEditorViewModel : ObservableObject
         try
         {
             _customThemeService.Export(_theme.Id, destination);
-            _notificationService.Push(
-                _localization["Notification_ThemeTemplateExported_Title"],
-                string.Format(CultureInfo.CurrentCulture, _localization["Notification_ThemeTemplateExported_Message"], destination),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExported_Title"),
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExported_Message", destination),
                 NotificationSeverity.Success);
         }
         catch (UnauthorizedAccessException)
         {
-            _notificationService.Push(
-                _localization["Notification_ThemeTemplateExportFailed_Title"],
-                _localization["Common_Error_AccessDenied"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
                 NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            _notificationService.Push(
-                _localization["Notification_ThemeTemplateExportFailed_Title"],
-                _localization["Common_Error_IOFailure"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
                 NotificationSeverity.Error);
         }
     }

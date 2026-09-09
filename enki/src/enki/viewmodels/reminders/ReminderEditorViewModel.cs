@@ -86,6 +86,15 @@ public sealed partial class ReminderEditorViewModel : ObservableObject
         CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(CalendarMonth.Month).ToUpper(CultureInfo.CurrentCulture),
         CalendarMonth.Year);
 
+    /// <summary>El editor de recordatorio es un overlay que sobrevive a la navegación a Ajustes, y
+    /// <c>Reload()</c> no lo reconstruye para no perder lo escrito: se refresca en el sitio desde
+    /// <see cref="RemindersViewModel.RefreshLocalizedLabels"/>.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(NotifyDateDisplayLabel));
+        OnPropertyChanged(nameof(CalendarMonthLabel));
+    }
+
     public ReminderEditorViewModel()
     {
         RebuildCalendarDays();

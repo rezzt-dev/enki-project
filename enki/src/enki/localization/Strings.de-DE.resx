@@ -1165,7 +1165,7 @@
     <value>Abhängigkeitskette</value>
   </data>
   <data name="Kanban_ListEditor_IconLabel" xml:space="preserve">
-    <value>ICON</value>
+    <value>SYMBOL</value>
   </data>
   <data name="Kanban_ListEditor_NamePlaceholder" xml:space="preserve">
     <value>Listenname…</value>
@@ -2368,7 +2368,7 @@
     <value>Zwischen hellem und dunklem Theme wechseln.</value>
   </data>
   <data name="Settings_Appearance_Theme_Title" xml:space="preserve">
-    <value>Theme</value>
+    <value>Design</value>
   </data>
   <data name="Settings_Appearance_Title" xml:space="preserve">
     <value>ERSCHEINUNGSBILD</value>
@@ -2896,7 +2896,7 @@
     <value>Zu Skills wechseln</value>
   </data>
   <data name="Settings_Navigation_ToStatistics" xml:space="preserve">
-    <value>Go to Statistics</value>
+    <value>Zur Statistik</value>
   </data>
   <data name="Settings_Navigation_ToTrash" xml:space="preserve">
     <value>Zu Papierkorb wechseln</value>
@@ -2944,7 +2944,7 @@
     <value>Warnung</value>
   </data>
   <data name="Settings_Notifications_Panels_Title" xml:space="preserve">
-    <value>Panels</value>
+    <value>Bereiche</value>
   </data>
   <data name="Settings_Notifications_RemindersTray_Description" xml:space="preserve">
     <value>Die Erinnerungsleiste in der Titelleiste anzeigen.</value>
@@ -3127,10 +3127,10 @@
     <value>Tags</value>
   </data>
   <data name="Skills_Detail_Tools_Label" xml:space="preserve">
-    <value>Tools</value>
+    <value>Werkzeuge</value>
   </data>
   <data name="Skills_Detail_Vibe_Label" xml:space="preserve">
-    <value>Vibe</value>
+    <value>Stil</value>
   </data>
   <data name="Skills_Duplicate_Tooltip" xml:space="preserve">
     <value>Duplizieren</value>
@@ -3565,7 +3565,7 @@ Dies ist dein persönlicher Wissensarbeitsbereich. Du kannst Notizen in Markdown
 Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="WelcomeNote_FileName" xml:space="preserve">
-    <value>Welcome.md</value>
+    <value>Willkommen.md</value>
   </data>
   <data name="Notification_VaultUnavailable_Reason" xml:space="preserve">
     <value>Dein Tresor ist gerade nicht verfügbar — prüfe, ob das Laufwerk verbunden ist.</value>
@@ -3655,349 +3655,349 @@ Viel Erfolg beim Schreiben.</value>
     <value>Eine Notiz mit diesem Namen existierte bereits — stattdessen gespeichert als „{0}“.</value>
   </data>
   <data name="Settings_Appearance_Theme_NewThemeButton" xml:space="preserve">
-    <value>New theme</value>
+    <value>Neues Design</value>
   </data>
   <data name="Settings_Appearance_Theme_NewThemeName" xml:space="preserve">
-    <value>New theme</value>
+    <value>Neues Design</value>
   </data>
   <data name="Settings_Appearance_Theme_EditorTitle" xml:space="preserve">
-    <value>Theme editor</value>
+    <value>Design-Editor</value>
   </data>
   <data name="Settings_Appearance_Theme_EditorNamePlaceholder" xml:space="preserve">
-    <value>Theme name</value>
+    <value>Designname</value>
   </data>
   <data name="Settings_Appearance_Theme_BackButton" xml:space="preserve">
-    <value>Back</value>
+    <value>Zurück</value>
   </data>
   <data name="Settings_Appearance_Theme_SaveButton" xml:space="preserve">
-    <value>Save</value>
+    <value>Speichern</value>
   </data>
   <data name="Settings_Appearance_Theme_ResetButton" xml:space="preserve">
-    <value>Reset</value>
+    <value>Zurücksetzen</value>
   </data>
   <data name="Settings_Appearance_Theme_LowContrastWarning" xml:space="preserve">
     <value>Der Kontrast zwischen Text und Hintergrund ist sehr niedrig — dieses Thema könnte schwer lesbar sein.</value>
   </data>
   <data name="Settings_Appearance_Theme_ExportButton" xml:space="preserve">
-    <value>Export</value>
+    <value>Exportieren</value>
   </data>
   <data name="Settings_Appearance_Theme_Category_Backgrounds" xml:space="preserve">
-    <value>Backgrounds</value>
+    <value>Hintergründe</value>
   </data>
   <data name="Settings_Appearance_Theme_Category_Text" xml:space="preserve">
     <value>Text</value>
   </data>
   <data name="Settings_Appearance_Theme_Category_Ink" xml:space="preserve">
-    <value>Ink &amp; accent</value>
+    <value>Vordergrund und Akzent</value>
   </data>
   <data name="Settings_Appearance_Theme_Category_Scroll" xml:space="preserve">
-    <value>Scroll</value>
+    <value>Scrollen</value>
   </data>
   <data name="Settings_Appearance_Theme_Category_Status" xml:space="preserve">
     <value>Status</value>
   </data>
   <data name="Settings_Appearance_Theme_AppBackground" xml:space="preserve">
-    <value>App background</value>
+    <value>App-Hintergrund</value>
   </data>
   <data name="Settings_Appearance_Theme_AppBackgroundAlt" xml:space="preserve">
-    <value>Alt background</value>
+    <value>Alternativer Hintergrund</value>
   </data>
   <data name="Settings_Appearance_Theme_SidebarBackground" xml:space="preserve">
-    <value>Sidebar</value>
+    <value>Seitenleiste</value>
   </data>
   <data name="Settings_Appearance_Theme_Surface" xml:space="preserve">
-    <value>Surface</value>
+    <value>Oberfläche</value>
   </data>
   <data name="Settings_Appearance_Theme_PanelBackground" xml:space="preserve">
-    <value>Panel</value>
+    <value>Bereich</value>
   </data>
   <data name="Settings_Appearance_Theme_PanelBackgroundHover" xml:space="preserve">
-    <value>Panel hover</value>
+    <value>Bereich beim Darüberfahren</value>
   </data>
   <data name="Settings_Appearance_Theme_InputBackground" xml:space="preserve">
-    <value>Input</value>
+    <value>Eingabefeld</value>
   </data>
   <data name="Settings_Appearance_Theme_RowBackground" xml:space="preserve">
-    <value>Row</value>
+    <value>Zeile</value>
   </data>
   <data name="Settings_Appearance_Theme_RowBackgroundHover" xml:space="preserve">
-    <value>Row hover</value>
+    <value>Zeile beim Darüberfahren</value>
   </data>
   <data name="Settings_Appearance_Theme_TextPrimary" xml:space="preserve">
-    <value>Primary text</value>
+    <value>Primärer Text</value>
   </data>
   <data name="Settings_Appearance_Theme_TextSecondary" xml:space="preserve">
-    <value>Secondary text</value>
+    <value>Sekundärer Text</value>
   </data>
   <data name="Settings_Appearance_Theme_TextMuted" xml:space="preserve">
-    <value>Muted text</value>
+    <value>Gedämpfter Text</value>
   </data>
   <data name="Settings_Appearance_Theme_Ink" xml:space="preserve">
-    <value>Ink</value>
+    <value>Vordergrund</value>
   </data>
   <data name="Settings_Appearance_Theme_InkOn" xml:space="preserve">
-    <value>Ink inverse</value>
+    <value>Invertierter Vordergrund</value>
   </data>
   <data name="Settings_Appearance_Theme_Accent" xml:space="preserve">
-    <value>Accent</value>
+    <value>Akzent</value>
   </data>
   <data name="Settings_Appearance_Theme_ScrollTrack" xml:space="preserve">
-    <value>Scroll track</value>
+    <value>Bildlaufleistenhintergrund</value>
   </data>
   <data name="Settings_Appearance_Theme_Danger" xml:space="preserve">
-    <value>Danger</value>
+    <value>Gefahr</value>
   </data>
   <data name="Settings_Appearance_Theme_Success" xml:space="preserve">
-    <value>Success</value>
+    <value>Erfolg</value>
   </data>
   <data name="CommandPalette_Action_AddKanbanColumn" xml:space="preserve">
-    <value>New Kanban column</value>
+    <value>Neue Kanban-Spalte</value>
   </data>
   <data name="CommandPalette_Action_ImportNotes" xml:space="preserve">
-    <value>Import notes</value>
+    <value>Notizen importieren</value>
   </data>
   <data name="CommandPalette_Action_OpenCommunitySkills" xml:space="preserve">
-    <value>Open community Skills</value>
+    <value>Community-Skills öffnen</value>
   </data>
   <data name="CommandPalette_Action_OpenDailyNote" xml:space="preserve">
-    <value>Open today's daily note</value>
+    <value>Heutige Tagesnotiz öffnen</value>
   </data>
   <data name="CommandPalette_Action_OpenGlobalSearch" xml:space="preserve">
-    <value>Search everything</value>
+    <value>Alles durchsuchen</value>
   </data>
   <data name="CommandPalette_Action_OpenNotifications" xml:space="preserve">
-    <value>Open Notifications</value>
+    <value>Benachrichtigungen öffnen</value>
   </data>
   <data name="CommandPalette_Action_OpenQuickSwitcher" xml:space="preserve">
-    <value>Go to note…</value>
+    <value>Zur Notiz…</value>
   </data>
   <data name="CommandPalette_Action_OpenReminders" xml:space="preserve">
-    <value>Open Reminders</value>
+    <value>Erinnerungen öffnen</value>
   </data>
   <data name="CommandPalette_Action_OpenSettings" xml:space="preserve">
-    <value>Open Settings</value>
+    <value>Einstellungen öffnen</value>
   </data>
   <data name="CommandPalette_Action_OpenVaultFolder" xml:space="preserve">
-    <value>Open vault folder</value>
+    <value>Vault-Ordner öffnen</value>
   </data>
   <data name="CommandPalette_Action_QuickNewNote" xml:space="preserve">
-    <value>New note</value>
+    <value>Neue Notiz</value>
   </data>
   <data name="CommandPalette_Action_SyncPolarNow" xml:space="preserve">
-    <value>Sync Polar now</value>
+    <value>Polar jetzt synchronisieren</value>
   </data>
   <data name="CommandPalette_Action_ToggleSidebar" xml:space="preserve">
-    <value>Toggle sidebar</value>
+    <value>Seitenleiste ein-/ausblenden</value>
   </data>
   <data name="CommandPalette_Action_ToggleTheme" xml:space="preserve">
-    <value>Toggle light/dark theme</value>
+    <value>Helles/dunkles Design wechseln</value>
   </data>
   <data name="CommandPalette_Action_DisableCustomTheme" xml:space="preserve">
     <value>Benutzerdefiniertes Thema deaktivieren</value>
   </data>
   <data name="CommandPalette_Action_ToggleZenMode" xml:space="preserve">
-    <value>Toggle focus mode</value>
+    <value>Fokusmodus ein-/ausschalten</value>
   </data>
   <data name="CommandPalette_Action_ZoomIn" xml:space="preserve">
-    <value>Zoom in</value>
+    <value>Vergrößern</value>
   </data>
   <data name="CommandPalette_Action_ZoomOut" xml:space="preserve">
-    <value>Zoom out</value>
+    <value>Verkleinern</value>
   </data>
   <data name="CommandPalette_Action_ZoomReset" xml:space="preserve">
-    <value>Reset zoom</value>
+    <value>Zoom zurücksetzen</value>
   </data>
   <data name="CommandPalette_GoToFormat" xml:space="preserve">
-    <value>Go to {0}</value>
+    <value>Zu {0}</value>
   </data>
   <data name="CommandPalette_NoResults" xml:space="preserve">
-    <value>No matching commands</value>
+    <value>Keine passenden Befehle</value>
   </data>
   <data name="CommandPalette_SearchPlaceholder" xml:space="preserve">
-    <value>Type a command…</value>
+    <value>Befehl eingeben…</value>
   </data>
   <data name="Editor_Toolbar_ToggleZenMode_Tooltip" xml:space="preserve">
-    <value>Toggle focus mode</value>
+    <value>Fokusmodus ein-/ausschalten</value>
   </data>
   <data name="Notes_ExportHtmlMenuItem" xml:space="preserve">
-    <value>Export as HTML…</value>
+    <value>Als HTML exportieren…</value>
   </data>
   <data name="Export_HtmlDialog_Title" xml:space="preserve">
-    <value>Export note as HTML</value>
+    <value>Notiz als HTML exportieren</value>
   </data>
   <data name="Export_HtmlFileType" xml:space="preserve">
-    <value>HTML file</value>
+    <value>HTML-Datei</value>
   </data>
   <data name="Notification_NoteExportSuccess_Title" xml:space="preserve">
-    <value>Note exported</value>
+    <value>Notiz exportiert</value>
   </data>
   <data name="Notification_NoteExportSuccess_Message" xml:space="preserve">
-    <value>Saved to {0}</value>
+    <value>Unter {0} gespeichert</value>
   </data>
   <data name="Notification_NoteExportFailed_Title" xml:space="preserve">
-    <value>Export failed</value>
+    <value>Export fehlgeschlagen</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Title" xml:space="preserve">
-    <value>Custom theme</value>
+    <value>Benutzerdefiniertes Design</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Description" xml:space="preserve">
-    <value>Download the default CSS template, change only its color values, and import it back. Only colors are customizable — the template's structure can't change, so a file with different variables is rejected.</value>
+    <value>Lade die CSS-Standardvorlage herunter, ändere nur die Farbwerte und importiere sie wieder. Nur Farben lassen sich anpassen. Die Struktur der Vorlage muss unverändert bleiben; Dateien mit abweichenden Variablen werden abgelehnt.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_DownloadTemplateButton" xml:space="preserve">
-    <value>Download template</value>
+    <value>Vorlage herunterladen</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_ImportButton" xml:space="preserve">
-    <value>Import theme</value>
+    <value>Design importieren</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Empty" xml:space="preserve">
-    <value>Import a theme to see it here.</value>
+    <value>Importiere ein Design, um es hier anzuzeigen.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_ActiveLabel" xml:space="preserve">
-    <value>Active</value>
+    <value>Aktiv</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_ActivateButton" xml:space="preserve">
-    <value>Activate</value>
+    <value>Aktivieren</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_DeleteButton" xml:space="preserve">
-    <value>Delete theme</value>
+    <value>Design löschen</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_UseSystemThemeButton" xml:space="preserve">
-    <value>Use system theme</value>
+    <value>Systemdesign verwenden</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_ActiveHint" xml:space="preserve">
-    <value>Disabled while a custom theme is active.</value>
+    <value>Deaktiviert, solange ein benutzerdefiniertes Design aktiv ist.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_TemplateSaveDialog_Title" xml:space="preserve">
-    <value>Save theme template</value>
+    <value>Designvorlage speichern</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_ImportDialog_Title" xml:space="preserve">
-    <value>Import custom theme</value>
+    <value>Benutzerdefiniertes Design importieren</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_CssFileType" xml:space="preserve">
-    <value>CSS file</value>
+    <value>CSS-Datei</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Error_NoRootBlock" xml:space="preserve">
-    <value>The file doesn't have a :root { ... } block.</value>
+    <value>Die Datei enthält keinen :root { ... }-Block.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Error_MissingVariables" xml:space="preserve">
-    <value>Missing variables: {0}.</value>
+    <value>Fehlende Variablen: {0}.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Error_UnexpectedVariables" xml:space="preserve">
-    <value>This file has variables the template doesn't recognize: {0}. Only the template's color values can be changed — variables can't be added or removed.</value>
+    <value>Diese Datei enthält unbekannte Variablen: {0}. Nur die Farbwerte der Vorlage dürfen geändert werden. Variablen dürfen weder hinzugefügt noch entfernt werden.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Error_InvalidColorValue" xml:space="preserve">
-    <value>Invalid color value: {0}. Use the #RRGGBB format.</value>
+    <value>Ungültiger Farbwert: {0}. Verwende das Format #RRGGBB.</value>
   </data>
   <data name="Settings_Shortcuts_ApplyAnywayButton" xml:space="preserve">
-    <value>Use anyway</value>
+    <value>Trotzdem verwenden</value>
   </data>
   <data name="Settings_Shortcuts_CaptureHint" xml:space="preserve">
-    <value>Click, then press a new key combination · Esc to cancel</value>
+    <value>Klicken und eine neue Tastenkombination drücken · Esc zum Abbrechen</value>
   </data>
   <data name="Settings_Shortcuts_Category_Reminders" xml:space="preserve">
-    <value>Reminders Shortcuts</value>
+    <value>Tastenkürzel für Erinnerungen</value>
   </data>
   <data name="Settings_Shortcuts_Category_Trash" xml:space="preserve">
-    <value>Trash Shortcuts</value>
+    <value>Tastenkürzel für den Papierkorb</value>
   </data>
   <data name="Settings_Shortcuts_CommandPalette" xml:space="preserve">
-    <value>Open the command palette</value>
+    <value>Befehlspalette öffnen</value>
   </data>
   <data name="Settings_Shortcuts_ConflictMessage" xml:space="preserve">
-    <value>Already used by "{0}". Use it anyway, or press a different combination.</value>
+    <value>Bereits von „{0}“ verwendet. Trotzdem verwenden oder eine andere Kombination drücken.</value>
   </data>
   <data name="Settings_Shortcuts_EmptyTrash" xml:space="preserve">
-    <value>Empty the trash</value>
+    <value>Papierkorb leeren</value>
   </data>
   <data name="Settings_Shortcuts_FindReplace" xml:space="preserve">
-    <value>Find and replace in the note</value>
+    <value>In der Notiz suchen und ersetzen</value>
   </data>
   <data name="Settings_Shortcuts_NextTab" xml:space="preserve">
-    <value>Switch to the next tab</value>
+    <value>Zum nächsten Tab wechseln</value>
   </data>
   <data name="Settings_Shortcuts_PreviousTab" xml:space="preserve">
-    <value>Switch to the previous tab</value>
+    <value>Zum vorherigen Tab wechseln</value>
   </data>
   <data name="Settings_Shortcuts_QuickSwitcher" xml:space="preserve">
-    <value>Open the quick switcher</value>
+    <value>Schnellwechsler öffnen</value>
   </data>
   <data name="Settings_Shortcuts_ReferenceSectionNote" xml:space="preserve">
-    <value>Kanban and the PDF viewer use single-key shortcuts that can't be remapped yet, shown here for reference.</value>
+    <value>Kanban und der PDF-Viewer verwenden einzelne Tasten als Kürzel, die sich noch nicht ändern lassen. Sie sind hier zur Referenz aufgeführt.</value>
   </data>
   <data name="Settings_Shortcuts_ReferenceSectionTitle" xml:space="preserve">
-    <value>Fixed Shortcuts (Reference Only)</value>
+    <value>Feste Tastenkürzel (nur zur Referenz)</value>
   </data>
   <data name="Settings_Shortcuts_RemindersNew" xml:space="preserve">
-    <value>Create a new reminder</value>
+    <value>Neue Erinnerung erstellen</value>
   </data>
   <data name="Settings_Shortcuts_RequiresModifierWarning" xml:space="preserve">
-    <value>Shortcuts must include Ctrl, Alt, or Cmd (function keys are the only exception).</value>
+    <value>Tastenkürzel müssen Strg, Alt oder Cmd enthalten (ausgenommen Funktionstasten).</value>
   </data>
   <data name="Settings_Shortcuts_ResetAllButton" xml:space="preserve">
-    <value>Restore Default Shortcuts</value>
+    <value>Standard-Tastenkürzel wiederherstellen</value>
   </data>
   <data name="Settings_Shortcuts_ResetRowTooltip" xml:space="preserve">
-    <value>Reset to default</value>
+    <value>Auf Standard zurücksetzen</value>
   </data>
   <data name="Settings_Shortcuts_ToggleZenMode" xml:space="preserve">
-    <value>Toggle focus mode</value>
+    <value>Fokusmodus ein-/ausschalten</value>
   </data>
   <data name="Settings_Shortcuts_ZoomIn" xml:space="preserve">
-    <value>Increase zoom</value>
+    <value>Zoom erhöhen</value>
   </data>
   <data name="Settings_Shortcuts_ZoomOut" xml:space="preserve">
-    <value>Decrease zoom</value>
+    <value>Zoom verringern</value>
   </data>
   <data name="Notification_ThemeTemplateExported_Title" xml:space="preserve">
-    <value>Template exported</value>
+    <value>Vorlage exportiert</value>
   </data>
   <data name="Notification_ThemeTemplateExported_Message" xml:space="preserve">
-    <value>Saved to {0}</value>
+    <value>Unter {0} gespeichert</value>
   </data>
   <data name="Notification_ThemeTemplateExportFailed_Title" xml:space="preserve">
-    <value>Export failed</value>
+    <value>Export fehlgeschlagen</value>
   </data>
   <data name="Notification_ThemeImportFailed_Title" xml:space="preserve">
-    <value>Import failed</value>
+    <value>Import fehlgeschlagen</value>
   </data>
   <data name="Notification_ThemeImported_Title" xml:space="preserve">
-    <value>Theme imported</value>
+    <value>Design importiert</value>
   </data>
   <data name="Notification_ThemeImported_Message" xml:space="preserve">
-    <value>'{0}' was imported and activated.</value>
+    <value>„{0}“ wurde importiert.</value>
   </data>
   <data name="Settings_Appearance_Theme_Highlight" xml:space="preserve">
-    <value>Highlight</value>
+    <value>Hervorhebung</value>
   </data>
   <data name="Settings_Appearance_Theme_DuplicateButton" xml:space="preserve">
-    <value>Duplicate</value>
+    <value>Duplizieren</value>
   </data>
   <data name="Settings_Appearance_Theme_DuplicateSuffix" xml:space="preserve">
-    <value>(copy)</value>
+    <value>(Kopie)</value>
   </data>
   <data name="Settings_Appearance_Theme_ExportDialogTitle" xml:space="preserve">
-    <value>Export theme</value>
+    <value>Design exportieren</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_DuplicateButton" xml:space="preserve">
-    <value>Duplicate</value>
+    <value>Duplizieren</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_EditButton" xml:space="preserve">
-    <value>Edit</value>
+    <value>Bearbeiten</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_BuiltInDarkTitle" xml:space="preserve">
-    <value>Dark</value>
+    <value>Dunkel</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_BuiltInLightTitle" xml:space="preserve">
-    <value>Light</value>
+    <value>Hell</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_CollapseSection" xml:space="preserve">
-    <value>Collapse</value>
+    <value>Einklappen</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_ExpandSection" xml:space="preserve">
-    <value>Expand</value>
+    <value>Ausklappen</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_YourThemesTitle" xml:space="preserve">
-    <value>Your themes</value>
+    <value>Deine Designs</value>
   </data>
   <data name="Settings_Nav_Dashboard" xml:space="preserve">
     <value>Dashboard</value>
@@ -4781,5 +4781,47 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="A11y_Files_TreeSidebarSplitter" xml:space="preserve">
     <value>Seitenleiste anpassen</value>
+  </data>
+  <data name="Common_Error_Unexpected" xml:space="preserve">
+    <value>Der Vorgang konnte nicht abgeschlossen werden. Versuche es erneut. Wenn das Problem weiterhin besteht, prüfe das Diagnoseprotokoll.</value>
+  </data>
+  <data name="Settings_Appearance_CustomTheme_TemplateInstructions" xml:space="preserve">
+    <value>Enki — Vorlage für ein benutzerdefiniertes Design
+1. Ändere nur die hexadezimalen Farbwerte (#RRGGBB). Variablen dürfen weder hinzugefügt, entfernt noch umbenannt werden.
+2. Speichere die Datei und wähle in Enki Einstellungen › Darstellung › Benutzerdefiniertes Design › Design importieren.
+3. Der Dateiname ohne .css wird als Designname verwendet.</value>
+  </data>
+  <data name="Settings_General_Language_SaveFailed" xml:space="preserve">
+    <value>Sprache konnte nicht gespeichert werden</value>
+  </data>
+  <data name="ColorPicker_Hex" xml:space="preserve">
+    <value>Hexadezimale Farbe</value>
+  </data>
+  <data name="ColorPicker_Spectrum" xml:space="preserve">
+    <value>Farbspektrum</value>
+  </data>
+  <data name="ColorPicker_Component" xml:space="preserve">
+    <value>Farbkomponente</value>
+  </data>
+  <data name="ColorPicker_Alpha" xml:space="preserve">
+    <value>Deckkraft</value>
+  </data>
+  <data name="ColorPicker_Red" xml:space="preserve">
+    <value>Rot</value>
+  </data>
+  <data name="ColorPicker_Green" xml:space="preserve">
+    <value>Grün</value>
+  </data>
+  <data name="ColorPicker_Blue" xml:space="preserve">
+    <value>Blau</value>
+  </data>
+  <data name="ColorPicker_Hue" xml:space="preserve">
+    <value>Farbton</value>
+  </data>
+  <data name="ColorPicker_Saturation" xml:space="preserve">
+    <value>Sättigung</value>
+  </data>
+  <data name="ColorPicker_Value" xml:space="preserve">
+    <value>Helligkeit</value>
   </data>
 </root>

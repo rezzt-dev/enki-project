@@ -40,6 +40,8 @@ public sealed partial class MainWindowViewModel
         ReminderInbox.RefreshLocalizedLabels();
 
         RebuildNavItems();
+        CommandPalette.RefreshLocalizedLabels();
+        GlobalSearch.RefreshLocalizedLabels();
     }
 
     /// <summary>Whether the sidebar section for <paramref name="page"/> is currently shown — one flag per
@@ -234,9 +236,9 @@ public sealed partial class MainWindowViewModel
         var note = _vaultService.GetNote(notePath);
         if (note is null)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_LinkedNoteMissing_Title"],
-                LocalizationService.Instance["Notification_LinkedNoteMissing_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_LinkedNoteMissing_Title"),
+                LocalizedTextFormatter.Format("Notification_LinkedNoteMissing_Message"),
                 NotificationSeverity.Warning);
             return;
         }
@@ -333,9 +335,9 @@ public sealed partial class MainWindowViewModel
         Statistics!.Reload();
         UpdateTrashBadge();
 
-        _notificationService.Push(
-            LocalizationService.Instance["Notification_VaultChanged_Title"],
-            LocalizationService.Instance["Notification_VaultChanged_Message"],
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_VaultChanged_Title"),
+            LocalizedTextFormatter.Format("Notification_VaultChanged_Message"),
             NotificationSeverity.Success);
     }
 
@@ -349,9 +351,9 @@ public sealed partial class MainWindowViewModel
         if (due.Count == 0) return;
 
         foreach (var reminder in due)
-            _notificationService.Push(
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_ReminderDue_Title"], reminder.Title),
-                reminder.Description,
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ReminderDue_Title", reminder.Title),
+                LocalizedTextFormatter.Literal(reminder.Description),
                 NotificationSeverity.Info);
 
         Reminders?.Reload();

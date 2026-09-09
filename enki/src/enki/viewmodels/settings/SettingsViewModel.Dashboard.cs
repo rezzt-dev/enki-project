@@ -269,9 +269,9 @@ public sealed partial class SettingsViewModel
 
         if (item.IsVisible && DashboardSections.Count(s => s.IsVisible) <= 1)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_Dashboard_CannotHideLast_Title"],
-                LocalizationService.Instance["Settings_Dashboard_CannotHideLast_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_Dashboard_CannotHideLast_Title"),
+                LocalizedTextFormatter.Format("Settings_Dashboard_CannotHideLast_Message"),
                 Models.NotificationSeverity.Warning);
             return;
         }

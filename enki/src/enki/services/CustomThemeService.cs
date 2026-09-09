@@ -118,7 +118,7 @@ public sealed class CustomThemeService
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("/* ============================================================");
-        sb.AppendLine("   Enki — tema personalizado");
+        sb.Append("   Enki — ").AppendLine(LocalizationService.Instance["Settings_Appearance_CustomTheme_Title"]);
         sb.AppendLine("   ============================================================ */");
         sb.AppendLine();
         sb.AppendLine(":root {");
@@ -126,7 +126,7 @@ public sealed class CustomThemeService
         for (var i = 0; i < groups.Count; i++)
         {
             if (i > 0) sb.AppendLine();
-            sb.Append("  /* ").Append(groups[i].Key).AppendLine(" */");
+            sb.Append("  /* ").Append(LocalizationService.Instance["Settings_Appearance_Theme_Category_" + groups[i].Key]).AppendLine(" */");
             foreach (var definition in groups[i])
             {
                 var hex = theme.Colors.TryGetValue(definition.ResourceKey, out var value)
@@ -259,9 +259,11 @@ public sealed class CustomThemeService
         File.Copy(sourcePath, destinationPath, overwrite: true);
     }
 
-    public sealed record ImportResult(bool Success, string? ThemeId, IReadOnlyList<string> Errors)
+    public sealed record ImportResult(bool Success, string? ThemeId, IReadOnlyList<LocalizedText> LocalizedErrors)
     {
-        public static ImportResult Failed(params string[] errors) => new(false, null, errors);
+        public IReadOnlyList<string> Errors => LocalizedErrors.Select(e => LocalizedTextFormatter.Resolve(e)).ToArray();
+
+        public static ImportResult Failed(params LocalizedText[] errors) => new(false, null, errors);
     }
 
     /// <summary>Validates a user-picked CSS file and, on success, imports it as a new theme.
@@ -276,16 +278,16 @@ public sealed class CustomThemeService
         }
         catch (UnauthorizedAccessException)
         {
-            return ImportResult.Failed(loc["Common_Error_AccessDenied"]);
+            return ImportResult.Failed(LocalizedTextFormatter.Format("Common_Error_AccessDenied"));
         }
         catch (IOException)
         {
-            return ImportResult.Failed(loc["Common_Error_IOFailure"]);
+            return ImportResult.Failed(LocalizedTextFormatter.Format("Common_Error_IOFailure"));
         }
 
         var parseResult = ThemeCssParser.Parse(text);
         if (!parseResult.Success)
-            return new ImportResult(false, null, parseResult.Errors.Select(e => DescribeParseError(e, loc)).ToList());
+            return new ImportResult(false, null, parseResult.Errors.Select(e => DescribeParseError(e)).ToList());
 
         var id = Guid.NewGuid().ToString("N");
         var name = Path.GetFileNameWithoutExtension(sourceCssPath);
@@ -308,15 +310,15 @@ public sealed class CustomThemeService
         ThemeRegistry.ApplySystemAccent(colors);
     }
 
-    private static string DescribeParseError(ThemeParseError error, LocalizationService loc) => error.Kind switch
+    private static LocalizedText DescribeParseError(ThemeParseError error) => error.Kind switch
     {
-        ThemeParseErrorKind.MissingRootBlock => loc["Settings_Appearance_CustomTheme_Error_NoRootBlock"],
+        ThemeParseErrorKind.MissingRootBlock => LocalizedTextFormatter.Format("Settings_Appearance_CustomTheme_Error_NoRootBlock"),
         ThemeParseErrorKind.MissingVariables =>
-            string.Format(CultureInfo.CurrentCulture, loc["Settings_Appearance_CustomTheme_Error_MissingVariables"], error.Detail),
+            LocalizedTextFormatter.Format("Settings_Appearance_CustomTheme_Error_MissingVariables", error.Detail),
         ThemeParseErrorKind.UnexpectedVariables =>
-            string.Format(CultureInfo.CurrentCulture, loc["Settings_Appearance_CustomTheme_Error_UnexpectedVariables"], error.Detail),
+            LocalizedTextFormatter.Format("Settings_Appearance_CustomTheme_Error_UnexpectedVariables", error.Detail),
         ThemeParseErrorKind.InvalidColorValue =>
-            string.Format(CultureInfo.CurrentCulture, loc["Settings_Appearance_CustomTheme_Error_InvalidColorValue"], error.Detail),
-        _ => error.Detail,
+            LocalizedTextFormatter.Format("Settings_Appearance_CustomTheme_Error_InvalidColorValue", error.Detail),
+        _ => LocalizedTextFormatter.Format("Common_Error_Unexpected"),
     };
 }

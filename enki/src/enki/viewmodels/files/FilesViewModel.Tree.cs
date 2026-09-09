@@ -527,8 +527,10 @@ public sealed partial class FilesViewModel
     private void NotifyFilesFailure(string titleKey, Exception ex)
     {
         LogService.Error("Operación de carpeta de Archivos fallida", ex);
-        _notificationService.Push(LocalizationService.Instance[titleKey],
-            VaultFailureReasons.Describe(ex), NotificationSeverity.Error);
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format(titleKey),
+            VaultFailureReasons.DescribeLocalized(ex),
+            NotificationSeverity.Error);
     }
 
     private static bool PathsEqual(string a, string b) =>

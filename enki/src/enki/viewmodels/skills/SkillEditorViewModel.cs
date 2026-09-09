@@ -91,9 +91,9 @@ public sealed partial class SkillEditorViewModel : ViewModelBase
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             LogService.Error($"No se pudo guardar la skill '{_skill.FilePath}'", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_SkillSaveFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_SkillSaveFailed_Message"], Title, VaultFailureReasons.Describe(ex)),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_SkillSaveFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_SkillSaveFailed_Message", Title, VaultFailureReasons.DescribeLocalized(ex)),
                 NotificationSeverity.Error);
 
             _saveTimer.Stop();

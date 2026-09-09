@@ -31,6 +31,15 @@ public sealed partial class PolarTaskDetailViewModel : ObservableObject
         ? LocalizationService.Instance["Polar_TaskDetail_Completed"]
         : LocalizationService.Instance["Polar_TaskDetail_MarkCompleted"];
 
+    /// <summary>La ficha de detalle sigue abierta al volver de Ajustes y sus etiquetas se calculan al
+    /// leerse, así que basta con anunciarlas; <see cref="SourceRow"/> resuelve las suyas igual.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(CompletedLabel));
+        OnPropertyChanged(nameof(PriorityLabel));
+        OnPropertyChanged(nameof(DueDateLabel));
+    }
+
     public bool HasPriority => SourceRow.HasPriority;
     public int Priority => SourceRow.Priority;
     public string PriorityLabel => SourceRow.PriorityLabel;

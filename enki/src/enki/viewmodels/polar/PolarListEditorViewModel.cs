@@ -44,6 +44,15 @@ public sealed partial class PolarListEditorViewModel : ObservableObject
         : LocalizationService.Instance["Polar_Editor_ConfirmSave"];
     public bool CanSave => !string.IsNullOrWhiteSpace(Title);
 
+    /// <summary>Mismo motivo que en <see cref="PolarTaskEditorViewModel.RefreshLocalizedLabels"/>: el
+    /// overlay abierto no se reconstruye en <c>Reload()</c>, se refresca en el sitio.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(HeadingEyebrow));
+        OnPropertyChanged(nameof(HeadingTitle));
+        OnPropertyChanged(nameof(ConfirmLabel));
+    }
+
     private PolarListEditorViewModel(PolarListEditorMode mode, PolarTaskList? sourceList)
     {
         Mode = mode;

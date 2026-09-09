@@ -405,8 +405,9 @@ public sealed partial class SkillsViewModel : ViewModelBase
         if (clipboard is null) return;
 
         await clipboard.SetTextAsync(skill.Model.Content);
-        _notificationService.Push(LocalizationService.Instance["Skills_Notify_ContentCopied_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Skills_Notify_ContentCopied_Message"], skill.Name),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Skills_Notify_ContentCopied_Title"),
+            LocalizedTextFormatter.Format("Skills_Notify_ContentCopied_Message", skill.Name),
             NotificationSeverity.Success);
     }
 
@@ -514,7 +515,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
         }
         catch (InvalidOperationException ex)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_FolderDeleteFailed_Title"], ex.Message, NotificationSeverity.Warning);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_FolderDeleteFailed_Title"),
+                LocalizedValidationErrors.Describe(ex),
+                NotificationSeverity.Warning);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -557,7 +561,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
         }
         catch (InvalidOperationException ex)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_MoveFailed_Title"], ex.Message, NotificationSeverity.Warning);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_MoveFailed_Title"),
+                LocalizedValidationErrors.Describe(ex),
+                NotificationSeverity.Warning);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -582,8 +589,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
     private void NotifyFolderFailure(string titleKey, Exception ex)
     {
         LogService.Error("Operación de carpeta de skills fallida", ex);
-        _notificationService.Push(LocalizationService.Instance[titleKey],
-            VaultFailureReasons.Describe(ex), NotificationSeverity.Error);
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format(titleKey),
+            VaultFailureReasons.DescribeLocalized(ex),
+            NotificationSeverity.Error);
     }
 
     // ===================== Editar =====================
@@ -608,7 +617,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
                 }
                 catch (InvalidOperationException ex)
                 {
-                    _notificationService.Push(LocalizationService.Instance["Skills_Notify_CopyFailed_Title"], ex.Message, NotificationSeverity.Warning);
+                    _notificationService.PushLocalized(
+                        LocalizedTextFormatter.Format("Skills_Notify_CopyFailed_Title"),
+                        LocalizedValidationErrors.Describe(ex),
+                        NotificationSeverity.Warning);
                 }
             });
             return;
@@ -653,7 +665,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
             }
             catch (InvalidOperationException ex)
             {
-                _notificationService.Push(LocalizationService.Instance["Skills_Notify_DuplicateFailed_Title"], ex.Message, NotificationSeverity.Warning);
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Skills_Notify_DuplicateFailed_Title"),
+                    LocalizedValidationErrors.Describe(ex),
+                    NotificationSeverity.Warning);
             }
         });
     }
@@ -722,7 +737,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
         }
         catch (InvalidOperationException ex)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_DeleteFailed_Title"], ex.Message, NotificationSeverity.Warning);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_DeleteFailed_Title"),
+                LocalizedValidationErrors.Describe(ex),
+                NotificationSeverity.Warning);
         }
     }
 
@@ -820,25 +838,32 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
             if (result.Imported.Count > 0)
             {
-                _notificationService.Push(LocalizationService.Instance["Skills_Notify_Imported_Title"],
-                    Plural.Get("Skills_Notify_Imported_Message", result.Imported.Count, result.Imported.Count),
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Skills_Notify_Imported_Title"),
+                    LocalizedTextFormatter.PluralFormat("Skills_Notify_Imported_Message", result.Imported.Count, result.Imported.Count),
                     NotificationSeverity.Success);
             }
             if (result.Skipped.Count > 0)
             {
-                _notificationService.Push(LocalizationService.Instance["Skills_Notify_SomeSkipped_Title"],
-                    Plural.Get("Skills_Notify_Skipped_Message", result.Skipped.Count, result.Skipped.Count), NotificationSeverity.Warning);
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("Skills_Notify_SomeSkipped_Title"),
+                    LocalizedTextFormatter.PluralFormat("Skills_Notify_Skipped_Message", result.Skipped.Count, result.Skipped.Count),
+                    NotificationSeverity.Warning);
             }
         }
         catch (UnauthorizedAccessException)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_ImportFailed_Title"],
-                LocalizationService.Instance["Common_Error_AccessDenied"], NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_ImportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
+                NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_ImportFailed_Title"],
-                LocalizationService.Instance["Common_Error_IOFailure"], NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_ImportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
+                NotificationSeverity.Error);
         }
     }
 
@@ -852,8 +877,9 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
         if (selected.Count == 0)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_NothingToExport_Title"],
-                LocalizationService.Instance["Skills_Notify_NothingToExport_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_NothingToExport_Title"),
+                LocalizedTextFormatter.Format("Skills_Notify_NothingToExport_Message"),
                 NotificationSeverity.Info);
             return;
         }
@@ -874,19 +900,24 @@ public sealed partial class SkillsViewModel : ViewModelBase
         {
             SkillService.Export(selected.Select(s => s.Model).ToList(), destination);
             foreach (var skill in selected) skill.IsCheckedForExport = false;
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_Exported_Title"],
-                Plural.Get("Skills_Notify_Exported_Message", selected.Count, selected.Count, destination),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_Exported_Title"),
+                LocalizedTextFormatter.PluralFormat("Skills_Notify_Exported_Message", selected.Count, selected.Count, destination),
                 NotificationSeverity.Success);
         }
         catch (UnauthorizedAccessException)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_ExportFailed_Title"],
-                LocalizationService.Instance["Common_Error_AccessDenied"], NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_ExportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
+                NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            _notificationService.Push(LocalizationService.Instance["Skills_Notify_ExportFailed_Title"],
-                LocalizationService.Instance["Common_Error_IOFailure"], NotificationSeverity.Error);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_ExportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
+                NotificationSeverity.Error);
         }
     }
 }

@@ -558,9 +558,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
             SessionPendingUnlock = null;
             _onOpenInNotes(item.Session, null);
             LoadGraph();
-            _notificationService.Push(
-                LocalizationService.Instance["Sessions_Unlock_PasswordResetTitle"],
-                LocalizationService.Instance["Sessions_Unlock_PasswordResetMessage"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Sessions_Unlock_PasswordResetTitle"),
+                LocalizedTextFormatter.Format("Sessions_Unlock_PasswordResetMessage"),
                 NotificationSeverity.Success);
         }
         else
@@ -647,9 +647,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
         Reload();
         SelectedSession = Sessions.FirstOrDefault(s => s.Session.Id == created.Id);
         _onSessionsChanged();
-        _notificationService.Push(
-            LocalizationService.Instance["Sessions_CreatedNotification_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_CreatedNotification_Message"], created.Name),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Sessions_CreatedNotification_Title"),
+            LocalizedTextFormatter.Format("Sessions_CreatedNotification_Message", created.Name),
             NotificationSeverity.Success);
     }
 
@@ -677,16 +677,16 @@ public sealed partial class SessionsViewModel : ViewModelBase
         try
         {
             await File.WriteAllTextAsync(destination, string.Join(Environment.NewLine, PendingRecoveryCodes));
-            _notificationService.Push(
-                LocalizationService.Instance["Sessions_RecoveryCodes_DownloadedNotification_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Sessions_RecoveryCodes_DownloadedNotification_Message"], destination),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Sessions_RecoveryCodes_DownloadedNotification_Title"),
+                LocalizedTextFormatter.Format("Sessions_RecoveryCodes_DownloadedNotification_Message", destination),
                 NotificationSeverity.Success);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Sessions_RecoveryCodes_DownloadFailedTitle"],
-                ex.Message,
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Sessions_RecoveryCodes_DownloadFailedTitle"),
+                VaultFailureReasons.DescribeLocalized(ex),
                 NotificationSeverity.Error);
         }
     }
@@ -706,9 +706,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
         var text = string.Join(Environment.NewLine, PendingRecoveryCodes);
         await clipboard.SetTextAsync(text);
-        _notificationService.Push(
-            LocalizationService.Instance["Sessions_RecoveryCodes_CopiedNotification_Title"],
-            LocalizationService.Instance["Sessions_RecoveryCodes_CopiedNotification_Message"],
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Sessions_RecoveryCodes_CopiedNotification_Title"),
+            LocalizedTextFormatter.Format("Sessions_RecoveryCodes_CopiedNotification_Message"),
             NotificationSeverity.Success);
 
         // Fire-and-forget: the command itself is done the moment the copy succeeds, the clear just

@@ -102,6 +102,18 @@ public sealed partial class PolarTaskEditorViewModel : ObservableObject
         ? LocalizationService.Instance["Polar_Editor_ConfirmCreate"]
         : LocalizationService.Instance["Polar_Editor_ConfirmSave"];
 
+    /// <summary>Un editor abierto sobrevive a ir a Ajustes y volver, y <c>Reload()</c> no lo reconstruye
+    /// para no descartar lo escrito — así que sus etiquetas se refrescan en el sitio desde
+    /// <see cref="PolarTaskManagementViewModel.RefreshLocalizedLabels"/>.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(HeadingEyebrow));
+        OnPropertyChanged(nameof(HeadingTitle));
+        OnPropertyChanged(nameof(ConfirmLabel));
+        OnPropertyChanged(nameof(DueDateDisplayLabel));
+        OnPropertyChanged(nameof(CalendarMonthLabel));
+    }
+
     private DateTime? CombinedDueDate => DueDate is { } date
         ? (HasDueTime ? date.Date.Add(new TimeSpan(DueHour, DueMinute, 0)) : date.Date)
         : null;
