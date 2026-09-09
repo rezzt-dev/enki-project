@@ -87,6 +87,7 @@
     <Grid Grid.Row="1">
       <!-- Imágenes: sin dependencia nueva, Bitmap decodificado directamente. -->
       <Image Source="{Binding ActivePreview.Thumbnail}" Stretch="Uniform" Margin="24"
+             RenderOptions.BitmapInterpolationMode="HighQuality"
              IsVisible="{Binding ActivePreview.IsImage}" />
 
       <!-- PDFs: visor completo vía PDFtoImage/PDFium (ver PdfRenderHelper) — rail de páginas a la
@@ -123,7 +124,8 @@
                     <StackPanel Spacing="4">
                       <Border Background="{DynamicResource PanelBackgroundBrush}"
                               BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="2">
-                        <Image Source="{Binding Thumbnail}" Width="110" Stretch="Uniform" />
+                        <Image Source="{Binding Thumbnail}" Width="110" Stretch="Uniform"
+                               RenderOptions.BitmapInterpolationMode="HighQuality" />
                       </Border>
                       <TextBlock Text="{Binding PageNumber}" Classes="faint" FontSize="10"
                                  HorizontalAlignment="Center" />

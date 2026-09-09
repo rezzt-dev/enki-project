@@ -4878,8 +4878,8 @@ Happy writing.</value>
   <data name="Settings_Appearance_BrandLogo_RemoveButton" xml:space="preserve">
     <value>Remove</value>
   </data>
-  <data name="Settings_Appearance_BrandLogo_OptimizedHint" xml:space="preserve">
-    <value>On import the image is scaled down to 256 px and re-encoded, so it looks identical at the size it is drawn and takes up a fraction of the disk space.</value>
+  <data name="Settings_Appearance_BrandLogo_QualityHint" xml:space="preserve">
+    <value>The image is kept exactly as you chose it — no resizing, no re-encoding — and is scaled down only when it is drawn, so it stays sharp on any screen.</value>
   </data>
   <data name="Settings_Appearance_BrandLogo_ShapeLabel" xml:space="preserve">
     <value>Shape</value>
@@ -4903,7 +4903,7 @@ Happy writing.</value>
     <value>Logo updated</value>
   </data>
   <data name="Notification_BrandLogoImported_Message" xml:space="preserve">
-    <value>The image was optimised from {0} to {1}.</value>
+    <value>The image was saved at full quality ({0}).</value>
   </data>
   <data name="Notification_BrandLogoImportFailed_Title" xml:space="preserve">
     <value>The logo could not be changed</value>

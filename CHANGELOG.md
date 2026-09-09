@@ -15,11 +15,19 @@ Enki. Ahora Ajustes › Apariencia › "Logo de la barra lateral" permite poner 
   botón aparte para quitarla del todo.
 - **Forma cuadrada o circular**, la única forma redonda de toda la app. Solo se ofrece con imagen propia; el
   icono de Enki, que ya es una insignia cuadrada, se sigue dibujando cuadrado.
-- **La imagen se optimiza al importarla**: se reduce a 256 px de lado mayor —holgura de sobra para el cuadro
-  de 32 px en pantallas HiDPI y con el zoom de interfaz al 200 %— y se recodifica quedándose con el formato
-  que menos ocupe, sin cambiar un PNG sin pérdida por un JPEG que apenas ahorre. Una foto de varios megas
-  acaba en unas decenas de kilobytes, y los ajustes dicen cuánto ocupa ya guardada.
+- **La imagen se guarda tal cual**, sin reducirla ni recodificarla. Enki guarda todo en local y el logo no
+  viaja a ningún sitio, así que ahorrar unos kilobytes nunca compensa degradar la imagen que uno ha elegido
+  a mano: se copia el archivo entero, con su formato, su transparencia y todos sus píxeles. Los ajustes
+  dicen cuánto mide y cuánto ocupa.
+- **Se encoge solo al dibujarla**, de una vez y con el remuestreo de calidad de Skia. Antes la imagen
+  llegaba al cuadro de 32 px sin filtrar —quedarse con uno de cada N píxeles—, que es lo que la dejaba
+  dentada; ahora se ve nítida, y guardar el original completo es lo que le deja aprovechar una pantalla
+  HiDPI o el zoom de interfaz al 200 %.
 - El cambio se ve en la barra lateral al momento, sin reiniciar.
+
+**Imágenes menos dentadas en "Archivos"**. Las miniaturas de la cuadrícula, la vista previa grande y el rail
+de páginas de un PDF encogían la imagen sin filtrar ninguno de los píxeles que descartaban. Ahora se dibujan
+con filtrado de calidad, como el logo de la barra lateral y como ya hacía el editor de notas.
 
 **Kanban: archivar tareas completadas**. La columna "Hecho" solo crecía, y la única forma de vaciarla era
 borrar sus tarjetas —lo que las manda a la papelera, las saca del calendario y las purga a los 30 días—.

@@ -199,13 +199,16 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _isBrandLogoCircular;
 
-    /// <summary>La imagen importada, ya optimizada, tal y como se verá en el sidebar — o <c>null</c> si
-    /// todavía no hay ninguna. Se decodifica desde bytes en memoria (no desde la ruta) para no dejar el
-    /// archivo abierto mientras Ajustes lo enseña, que es justo cuando el usuario puede reemplazarlo.</summary>
+    /// <summary>La imagen importada tal y como se verá en el sidebar — o <c>null</c> si todavía no hay
+    /// ninguna. Se decodifica desde bytes en memoria (no desde la ruta) para no dejar el archivo abierto
+    /// mientras Ajustes lo enseña, que es justo cuando el usuario puede reemplazarlo, y se reduce al
+    /// tamaño del cuadro de 44 px con <see cref="BrandLogoImage"/>, igual que el sidebar.</summary>
     [ObservableProperty]
     private Bitmap? _brandLogoPreview;
 
-    /// <summary>"18 KB" bajo la vista previa — lo que ocupa ya optimizada, no el original.</summary>
+    /// <summary>"1200 × 800 px · 1,4 MB" bajo la vista previa: lo que hay guardado, que es el archivo
+    /// original tal cual. Sin traducir — son números, "px" y una unidad que ya localiza
+    /// <see cref="FileSizeFormatter"/>.</summary>
     [ObservableProperty]
     private string? _brandLogoSizeLabel;
 
@@ -246,9 +249,9 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(BrandLogoStretch));
     }
 
-    /// <summary>"Elegir imagen…" — pide un archivo, lo optimiza y lo deja como logo activo. Elegir una
-    /// imagen implica quererla puesta, así que activa también el modo personalizado en vez de dejar al
-    /// usuario delante de una vista previa que no se ve en ningún sitio.</summary>
+    /// <summary>"Elegir imagen…" — pide un archivo y lo deja como logo activo. Elegir una imagen implica
+    /// quererla puesta, así que activa también el modo personalizado en vez de dejar al usuario delante de
+    /// una vista previa que no se ve en ningún sitio.</summary>
     [RelayCommand]
     private async Task ChooseBrandLogo()
     {
@@ -296,7 +299,7 @@ public sealed partial class SettingsViewModel
         _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Notification_BrandLogoImported_Title"),
             LocalizedTextFormatter.Format("Notification_BrandLogoImported_Message",
-                FileSizeFormatter.Format(result.OriginalBytes), FileSizeFormatter.Format(result.StoredBytes)),
+                FileSizeFormatter.Format(result.Logo?.Bytes ?? 0)),
             Models.NotificationSeverity.Success);
     }
 
@@ -331,31 +334,15 @@ public sealed partial class SettingsViewModel
     {
         // El <see cref="Bitmap"/> anterior no se libera a mano: el compositor de Avalonia todavía puede
         // tener referenciado el que acaba de salir de pantalla, y liberar por debajo lo que el hilo de
-        // render está a punto de dibujar es un fallo mucho peor que dejar que lo recoja el GC — son 256 px
-        // como mucho, y esto solo corre al importar o quitar el logo.
-        var bytes = _brandLogoService.ReadLogoBytes();
-        if (bytes is null)
-        {
-            BrandLogoPreview = null;
-            BrandLogoSizeLabel = null;
-        }
-        else
-        {
-            try
-            {
-                using var stream = new MemoryStream(bytes);
-                BrandLogoPreview = new Bitmap(stream);
-                BrandLogoSizeLabel = FileSizeFormatter.Format(bytes.LongLength);
-            }
-            catch (Exception ex)
-            {
-                // Un archivo que Skia escribió y ya no decodifica solo puede venir de una corrupción en
-                // disco; se trata como "no hay logo" en vez de dejar Ajustes a medias.
-                LogService.Warning("No se pudo decodificar el logo personalizado guardado", ex);
-                BrandLogoPreview = null;
-                BrandLogoSizeLabel = null;
-            }
-        }
+        // render está a punto de dibujar es un fallo mucho peor que dejar que lo recoja el GC — la copia
+        // decodificada no pasa de 176 px, y esto solo corre al importar o quitar el logo.
+        var info = _brandLogoService.Describe();
+        // Un archivo que ya no se decodifica (borrado a mano, corrupción en disco) se trata como "no hay
+        // logo" en vez de dejar Ajustes con una vista previa vacía y una etiqueta que habla de ella.
+        BrandLogoPreview = BrandLogoImage.Decode(_brandLogoService.ReadLogoBytes(), BrandLogoImage.PreviewPixels);
+        BrandLogoSizeLabel = BrandLogoPreview is null || info is null
+            ? null
+            : $"{info.PixelWidth} × {info.PixelHeight} px · {FileSizeFormatter.Format(info.Bytes)}";
 
         OnPropertyChanged(nameof(HasCustomBrandLogo));
         OnPropertyChanged(nameof(BrandLogoPreviewCornerRadius));

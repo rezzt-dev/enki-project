@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -185,26 +184,24 @@ public partial class MainWindow : Window
 
     /// <summary>Repinta el logo del brand header del sidebar: la imagen que el usuario haya importado
     /// (Ajustes › Apariencia › Logo) si la tiene puesta, y si no la misma versión adaptativa al tema del
-    /// icono de Enki (PNG 1024×1024 escalado a 32×32). El recorte —cuadrado o circular— y el encaje los
-    /// pone el XAML enlazando <c>BrandLogoCornerRadius</c>/<c>BrandLogoStretch</c>, así que aquí solo se
-    /// decide la fuente. Se llama al arrancar, en cada cambio de tema y cada vez que el viewmodel avisa
-    /// de que el logo cambió.</summary>
+    /// icono de Enki (PNG 1024×1024). El recorte —cuadrado o circular— y el encaje los pone el XAML
+    /// enlazando <c>BrandLogoCornerRadius</c>/<c>BrandLogoStretch</c>, así que aquí solo se decide la
+    /// fuente. Se llama al arrancar, en cada cambio de tema y cada vez que el viewmodel avisa de que el
+    /// logo cambió.
+    ///
+    /// <para>Ninguna de las dos imágenes llega al <c>Image</c> a su tamaño original: las dos se reducen
+    /// antes a <see cref="BrandLogoImage.SidebarPixels"/> con el remuestreo de calidad de Skia. Dejar que
+    /// el control encogiera un PNG de 1024 px hasta un cuadro de 32 es lo que dejaba el logo dentado —ver
+    /// la nota de <see cref="BrandLogoImage"/>—, y le pasaba igual al icono por defecto.</para></summary>
     private void UpdateBrandIcon()
     {
         var customBytes = (DataContext as MainWindowViewModel)?.CustomBrandLogoBytes;
-        if (customBytes is not null)
+        // Una imagen ilegible (corrupción en disco) devuelve null y cae al icono de Enki de aquí abajo,
+        // en vez de dejar el sidebar sin logo.
+        if (BrandLogoImage.Decode(customBytes, BrandLogoImage.SidebarPixels) is { } customLogo)
         {
-            try
-            {
-                using var customStream = new MemoryStream(customBytes);
-                BrandIcon.Source = new Bitmap(customStream);
-                return;
-            }
-            catch (Exception)
-            {
-                // Imagen ilegible (corrupción en disco): cae al icono de Enki de aquí abajo en vez de
-                // dejar el sidebar sin logo.
-            }
+            BrandIcon.Source = customLogo;
+            return;
         }
 
         var resourceName = IsDarkTheme() ? "enki-light-1024.png" : "enki-1024.png";
@@ -212,7 +209,8 @@ public partial class MainWindow : Window
         try
         {
             using var stream = AssetLoader.Open(uri);
-            BrandIcon.Source = new Bitmap(stream);
+            BrandIcon.Source = Bitmap.DecodeToWidth(stream, BrandLogoImage.SidebarPixels,
+                BitmapInterpolationMode.HighQuality);
         }
         catch (Exception)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using SkiaSharp;
 
 namespace enki.Services;
@@ -12,42 +13,42 @@ public enum BrandLogoImportFailure
     None,
     /// <summary>El archivo elegido ya no está donde el diálogo dijo (movido/borrado entre medias).</summary>
     FileNotFound,
-    /// <summary>Más grande que <see cref="BrandLogoService.MaxSourceBytes"/>: decodificarlo entero en
-    /// memoria para acabar guardando 256 px no compensa.</summary>
+    /// <summary>Más grande que <see cref="BrandLogoService.MaxSourceBytes"/>: un archivo que hay que releer
+    /// y decodificar en cada arranque no puede ser de cualquier tamaño.</summary>
     TooLarge,
     /// <summary>Skia no supo decodificarlo: no es una imagen, o es un formato que no entiende (SVG, por
     /// ejemplo, que sí acepta el editor de notas pero aquí no aporta — el logo se rasteriza igual).</summary>
     UnsupportedFormat,
-    /// <summary>La imagen se leyó y optimizó bien, pero no se pudo escribir en <c>%AppData%/Enki</c>.</summary>
+    /// <summary>La imagen se leyó bien, pero no se pudo copiar a <c>%AppData%/Enki</c>.</summary>
     WriteFailed
 }
 
-/// <summary>Resultado de importar un logo: además de si salió bien, cuánto ocupaba el original y cuánto
-/// ocupa ya optimizado, que es lo que Ajustes enseña debajo del logo ("1,4 MB → 18 KB").</summary>
+/// <summary>Lo que hay guardado ahora mismo: el tamaño del archivo y las dimensiones reales de la imagen,
+/// que es lo que Ajustes enseña debajo de la vista previa ("1200 × 800 px · 1,4 MB").</summary>
+public sealed record BrandLogoInfo(long Bytes, int PixelWidth, int PixelHeight);
+
+/// <summary>Resultado de importar un logo: si salió bien y, cuando sí, qué quedó guardado.</summary>
 public sealed record BrandLogoImportResult(
     bool Success,
     BrandLogoImportFailure Failure = BrandLogoImportFailure.None,
-    long OriginalBytes = 0,
-    long StoredBytes = 0);
+    BrandLogoInfo? Logo = null);
 
 /// <summary>
 /// Ajustes › Apariencia › Logo: guarda la imagen que el usuario elige para el brand header del sidebar
 /// (<c>MainWindow.axaml</c>, esquina superior izquierda) y la deja lista para pintarse.
 ///
-/// <para><b>Optimización.</b> El logo se dibuja en un cuadro de 32×32 px, así que guardar el archivo
-/// original —un PNG exportado a 2000 px, la foto de un móvil— sería almacenar dos órdenes de magnitud más
-/// de píxeles de los que se llegan a ver nunca. Al importar se reescala a <see cref="MaxDimensionPixels"/>
-/// px de lado mayor (holgura de sobra para pantallas HiDPI y para el zoom de interfaz al 200%: 32 × 2 × 2 =
-/// 128) y se recodifica. Nada de esto es una pérdida de calidad visible al tamaño en el que se muestra, y
-/// el archivo pasa de megabytes a decenas de kilobytes.</para>
+/// <para><b>Se guarda tal cual.</b> El archivo elegido se copia sin tocar un solo píxel: ni reescalado ni
+/// recodificado. Enki es una aplicación local — el logo vive en el disco del usuario, no viaja por la red
+/// ni se sincroniza — así que ahorrar unos cientos de kilobytes nunca compensa degradar la única imagen
+/// que el usuario ha elegido a mano. Guardar el original es además lo que deja margen para pintarla bien
+/// en cualquier pantalla y a cualquier zoom, en vez de congelar en disco la resolución que hoy nos parece
+/// suficiente. Reducir de tamaño es cosa de quien la pinta, en memoria y al vuelo
+/// (<c>ViewModels.BrandLogoImage</c>), no de lo que se archiva.</para>
 ///
-/// <para><b>Formato.</b> Se codifica en PNG y, si la imagen no tiene ni un píxel transparente, también en
-/// JPEG de calidad <see cref="JpegQuality"/>; el JPEG solo se conserva si ahorra de verdad
-/// (<see cref="JpegMustBeatPngBy"/>). Una foto pierde con PNG por goleada y el JPEG gana claro; un logo
-/// plano de pocos colores se queda en PNG, que además es sin pérdida. El margen existe porque a 256 px los
-/// dos candidatos de un logo plano rondan el kilobyte, y cambiar lo sin pérdida por lo que tiene pérdida
-/// para ahorrar cincuenta bytes sería vender calidad por nada. Una imagen con transparencia ni siquiera
-/// se codifica en JPEG, que no la admite y la rellenaría de negro.</para>
+/// <para><b>Formato.</b> El que trajera el original (PNG, JPG, WEBP, BMP, GIF, ICO — ver
+/// <see cref="PickerPatterns"/>). La extensión con la que se guarda no sale del nombre del archivo de
+/// origen sino de lo que Skia reconoce al leer su cabecera, para que un ".png" que en realidad era un JPEG
+/// no deje en <c>%AppData%</c> un archivo que miente sobre su contenido.</para>
 ///
 /// <para>La imagen vive fuera de <c>settings.json</c>, en un archivo propio dentro de la misma carpeta
 /// (<see cref="AppDataDirectory"/>) — meterla como base64 en los ajustes engordaría un JSON que se lee y
@@ -58,21 +59,14 @@ public sealed record BrandLogoImportResult(
 /// </summary>
 public sealed class BrandLogoService
 {
-    /// <summary>Lado mayor al que se reescala la imagen importada. Ver la nota de optimización arriba.</summary>
-    public const int MaxDimensionPixels = 256;
-
-    /// <summary>Calidad JPEG del candidato con pérdida. 92 está por encima del umbral en el que aparecen
-    /// artefactos visibles, y a 256 px de lado el archivo sigue siendo de pocos kilobytes.</summary>
-    private const int JpegQuality = 92;
-
-    /// <summary>Cuánto tiene que bajar el JPEG respecto al PNG para que compense cambiar a un formato con
-    /// pérdida: un 20 %. Ver la nota de formato en la clase.</summary>
-    private const double JpegMustBeatPngBy = 0.8;
-
-    /// <summary>Techo del archivo de origen. No es un límite del formato sino de memoria: decodificar un
-    /// TIFF de 200 MB para quedarnos con 256 px sería pagar un pico de RAM absurdo por el mismo
-    /// resultado.</summary>
+    /// <summary>Techo del archivo de origen. Con la imagen guardándose entera es lo único que la acota: se
+    /// relee y se decodifica en cada arranque para pintar un cuadro de 32 px, y un TIFF de 200 MB sería
+    /// pagar un pico de RAM absurdo por el mismo resultado. 64 MB deja pasar cualquier foto de móvil y
+    /// cualquier exportación razonable.</summary>
     public const long MaxSourceBytes = 64L * 1024 * 1024;
+
+    /// <summary>Nombre del archivo guardado, sin extensión: la que lleve depende del formato del original.</summary>
+    private const string FileBaseName = "brand-logo";
 
     /// <summary>Extensiones que ofrece el diálogo de "elegir imagen". Es un subconjunto de las que acepta
     /// el editor de notas (<see cref="NoteImageAttachments"/>): fuera queda SVG, que Skia no decodifica
@@ -80,8 +74,7 @@ public sealed class BrandLogoService
     public static readonly string[] PickerPatterns =
         ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp", "*.gif", "*.ico"];
 
-    private readonly string _pngPath;
-    private readonly string _jpegPath;
+    private readonly string _directory;
 
     /// <summary>Se dispara tras importar o quitar el logo, para que el brand header del sidebar lo
     /// recargue en caliente. Mismo patrón de evento que el resto de servicios (<c>KanbanService.BoardChanged</c>,
@@ -93,20 +86,37 @@ public sealed class BrandLogoService
     /// la app real, pero deja que los tests escriban en un directorio desechable.</param>
     public BrandLogoService(string? storageDirectory = null)
     {
-        var directory = storageDirectory ?? AppDataDirectory.Resolve();
-        Directory.CreateDirectory(directory);
-        _pngPath = Path.Combine(directory, "brand-logo.png");
-        _jpegPath = Path.Combine(directory, "brand-logo.jpg");
+        _directory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_directory);
     }
 
     /// <summary>Ruta del logo importado, o <c>null</c> si el usuario no ha elegido ninguno todavía. Solo
-    /// puede existir uno de los dos archivos a la vez: <see cref="Import"/> borra el del formato que
-    /// descarta.</summary>
-    public string? LogoPath =>
-        File.Exists(_pngPath) ? _pngPath :
-        File.Exists(_jpegPath) ? _jpegPath : null;
+    /// puede existir un <c>brand-logo.*</c> a la vez: <see cref="Import"/> borra el de la importación
+    /// anterior cuando el formato nuevo no coincide. Se ordena por nombre para que, si una caída dejara
+    /// dos archivos a medias, al menos siempre se elija el mismo.</summary>
+    public string? LogoPath => StoredFiles().FirstOrDefault();
 
     public bool HasLogo => LogoPath is not null;
+
+    /// <summary>Tamaño en disco y dimensiones reales del logo guardado, o <c>null</c> si no hay ninguno (o
+    /// si el archivo dejó de ser legible). Las dimensiones salen de la cabecera, sin decodificar píxeles.</summary>
+    public BrandLogoInfo? Describe()
+    {
+        if (LogoPath is not { } path) return null;
+
+        try
+        {
+            var bytes = new FileInfo(path).Length;
+            using var stream = File.OpenRead(path);
+            using var codec = SKCodec.Create(stream);
+            return codec is null ? new BrandLogoInfo(bytes, 0, 0) : new BrandLogoInfo(bytes, codec.Info.Width, codec.Info.Height);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning("No se pudo leer el logo personalizado", ex);
+            return null;
+        }
+    }
 
     /// <summary>Lee el logo guardado como bytes en vez de dejar que quien lo pinta abra el archivo: así
     /// nadie mantiene un <see cref="FileStream"/> vivo sobre él y reemplazarlo desde Ajustes no choca con
@@ -125,9 +135,9 @@ public sealed class BrandLogoService
         }
     }
 
-    /// <summary>Optimiza <paramref name="sourcePath"/> y lo guarda como el logo activo, reemplazando al
-    /// anterior si lo había. Un fallo deja el logo previo intacto: la escritura solo ocurre cuando la
-    /// imagen ya se decodificó y recodificó con éxito.</summary>
+    /// <summary>Copia <paramref name="sourcePath"/> tal cual como el logo activo, reemplazando al anterior
+    /// si lo había. Un fallo deja el logo previo intacto: la copia solo ocurre cuando la imagen ya se ha
+    /// reconocido como tal.</summary>
     public BrandLogoImportResult Import(string sourcePath)
     {
         FileInfo info;
@@ -143,31 +153,39 @@ public sealed class BrandLogoService
             return new BrandLogoImportResult(false, BrandLogoImportFailure.FileNotFound);
         }
 
-        byte[] encoded;
-        bool isPng;
+        string extension;
+        int width, height;
         try
         {
-            using var decoded = SKBitmap.Decode(sourcePath);
-            if (decoded is null || decoded.Width <= 0 || decoded.Height <= 0)
+            // Solo la cabecera: basta para saber que es una imagen, de qué formato y de qué tamaño, sin
+            // decodificar los píxeles de un archivo que vamos a copiar byte a byte de todos modos.
+            using var stream = File.OpenRead(sourcePath);
+            using var codec = SKCodec.Create(stream);
+            if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0)
                 return new BrandLogoImportResult(false, BrandLogoImportFailure.UnsupportedFormat);
 
-            using var scaled = ScaleToFit(decoded);
-            (encoded, isPng) = EncodeSmallest(scaled ?? decoded);
+            extension = ExtensionFor(codec.EncodedFormat);
+            (width, height) = (codec.Info.Width, codec.Info.Height);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OutOfMemoryException)
         {
-            LogService.Warning("No se pudo decodificar la imagen elegida para el logo", ex);
+            LogService.Warning("No se pudo leer la imagen elegida para el logo", ex);
             return new BrandLogoImportResult(false, BrandLogoImportFailure.UnsupportedFormat);
         }
 
+        long storedBytes;
         try
         {
-            // Primero el archivo nuevo y después el del otro formato: si el proceso muere entre medias,
-            // LogoPath encuentra el PNG antes que el JPEG y nunca queda "sin logo" con la casilla puesta.
-            var destination = isPng ? _pngPath : _jpegPath;
-            var obsolete = isPng ? _jpegPath : _pngPath;
-            File.WriteAllBytes(destination, encoded);
-            if (File.Exists(obsolete)) File.Delete(obsolete);
+            // Primero la copia nueva y después los restos del formato anterior: si el proceso muere entre
+            // medias quedan dos archivos, pero nunca ninguno con la casilla de "personalizado" puesta.
+            var destination = Path.Combine(_directory, FileBaseName + extension);
+            // Reimportar el propio archivo guardado (el diálogo puede navegar hasta %AppData%) no es un
+            // error: ya está donde tiene que estar, y File.Copy sobre sí mismo solo sabe lanzar.
+            if (!PathsMatch(sourcePath, destination)) File.Copy(sourcePath, destination, overwrite: true);
+            storedBytes = new FileInfo(destination).Length;
+
+            foreach (var obsolete in StoredFiles().Where(path => !PathsMatch(path, destination)))
+                File.Delete(obsolete);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -176,7 +194,7 @@ public sealed class BrandLogoService
         }
 
         LogoChanged?.Invoke();
-        return new BrandLogoImportResult(true, OriginalBytes: info.Length, StoredBytes: encoded.Length);
+        return new BrandLogoImportResult(true, Logo: new BrandLogoInfo(storedBytes, width, height));
     }
 
     /// <summary>Borra el logo importado. Devuelve <c>false</c> si no había ninguno que borrar, para que
@@ -184,11 +202,10 @@ public sealed class BrandLogoService
     public bool Remove()
     {
         var removed = false;
-        foreach (var path in new[] { _pngPath, _jpegPath })
+        foreach (var path in StoredFiles())
         {
             try
             {
-                if (!File.Exists(path)) continue;
                 File.Delete(path);
                 removed = true;
             }
@@ -202,56 +219,38 @@ public sealed class BrandLogoService
         return removed;
     }
 
-    /// <summary>Reescala manteniendo la proporción hasta que el lado mayor quepa en
-    /// <see cref="MaxDimensionPixels"/>. Devuelve <c>null</c> cuando la imagen ya cabe: ampliarla solo
-    /// añadiría peso e interpolación a algo que se va a dibujar a 32 px.</summary>
-    private static SKBitmap? ScaleToFit(SKBitmap source)
+    /// <summary>Los <c>brand-logo.*</c> que haya en la carpeta, en orden estable. En condiciones normales
+    /// es cero o uno.</summary>
+    private string[] StoredFiles()
     {
-        var longestSide = Math.Max(source.Width, source.Height);
-        if (longestSide <= MaxDimensionPixels) return null;
-
-        var scale = MaxDimensionPixels / (double)longestSide;
-        var width = Math.Max(1, (int)Math.Round(source.Width * scale));
-        var height = Math.Max(1, (int)Math.Round(source.Height * scale));
-
-        var target = new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
-        using var surface = SKSurface.Create(target);
-        surface.Canvas.Clear(SKColors.Transparent);
-        using var image = SKImage.FromBitmap(source);
-        // Mitchell: el remuestreo cúbico que Skia recomienda para reducir, sin el "halo" de sharpening de
-        // CatmullRom ni el emborronado de una interpolación bilineal a esta escala de reducción.
-        surface.Canvas.DrawImage(image, SKRect.Create(width, height), new SKSamplingOptions(SKCubicResampler.Mitchell));
-        surface.Canvas.Flush();
-
-        using var snapshot = surface.Snapshot();
-        return SKBitmap.FromImage(snapshot);
+        try
+        {
+            var files = Directory.GetFiles(_directory, FileBaseName + ".*");
+            Array.Sort(files, StringComparer.Ordinal);
+            return files;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
+        {
+            LogService.Warning("No se pudo listar el logo personalizado", ex);
+            return [];
+        }
     }
 
-    /// <summary>Codifica en PNG y —solo si la imagen es totalmente opaca— también en JPEG, y devuelve el
-    /// resultado más pequeño junto con qué formato ganó. Ver la nota de formato en la clase.</summary>
-    private static (byte[] Data, bool IsPng) EncodeSmallest(SKBitmap bitmap)
+    /// <summary>Extensión que le corresponde al formato que Skia reconoció. Un formato exótico que sepa
+    /// decodificar pero que no esté en el diálogo (HEIF de una foto de iPhone, AVIF) se guarda con su
+    /// propio nombre en vez de rechazarse: si Skia lo abre, el sidebar lo va a pintar.</summary>
+    private static string ExtensionFor(SKEncodedImageFormat format) => format switch
     {
-        using var image = SKImage.FromBitmap(bitmap);
-        using var png = image.Encode(SKEncodedImageFormat.Png, 100);
-        var pngBytes = png.ToArray();
+        SKEncodedImageFormat.Png => ".png",
+        SKEncodedImageFormat.Jpeg => ".jpg",
+        SKEncodedImageFormat.Webp => ".webp",
+        SKEncodedImageFormat.Bmp => ".bmp",
+        SKEncodedImageFormat.Gif => ".gif",
+        SKEncodedImageFormat.Ico => ".ico",
+        _ => "." + format.ToString().ToLowerInvariant()
+    };
 
-        if (HasTransparency(bitmap)) return (pngBytes, true);
-
-        using var jpeg = image.Encode(SKEncodedImageFormat.Jpeg, JpegQuality);
-        var jpegBytes = jpeg.ToArray();
-        return jpegBytes.Length < pngBytes.Length * JpegMustBeatPngBy ? (jpegBytes, false) : (pngBytes, true);
-    }
-
-    /// <summary>Recorre los píxeles ya reescalados (256×256 como mucho, así que es instantáneo) buscando
-    /// uno no opaco. Mirar solo el <c>AlphaType</c> no vale: un PNG se decodifica con canal alfa aunque no
-    /// lo use, y eso descartaría el candidato JPEG en todas las imágenes que más lo aprovechan.</summary>
-    private static bool HasTransparency(SKBitmap bitmap)
-    {
-        if (bitmap.AlphaType == SKAlphaType.Opaque) return false;
-
-        foreach (var pixel in bitmap.Pixels)
-            if (pixel.Alpha != byte.MaxValue) return true;
-
-        return false;
-    }
+    private static bool PathsMatch(string left, string right) =>
+        string.Equals(Path.GetFullPath(left), Path.GetFullPath(right),
+            OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
 }

@@ -318,6 +318,7 @@
                                ver FileCardViewModel.EnsureThumbnailLoaded. -->
                           <Panel Grid.Row="0" Margin="0,0,0,10">
                             <Image Source="{Binding Thumbnail}" Stretch="Uniform"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"
                                    IsVisible="{Binding Thumbnail, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
                             <mi:MaterialIcon Kind="{Binding IconKind}" Width="40" Height="40"
                                               Foreground="{DynamicResource Ink40}"

@@ -950,7 +950,7 @@
                               Settings_Appearance_BrandLogo_SourceLabel Settings_Appearance_BrandLogo_SourceDefault
                               Settings_Appearance_BrandLogo_SourceCustom Settings_Appearance_BrandLogo_Empty
                               Settings_Appearance_BrandLogo_ChooseButton Settings_Appearance_BrandLogo_RemoveButton
-                              Settings_Appearance_BrandLogo_OptimizedHint Settings_Appearance_BrandLogo_ShapeLabel
+                              Settings_Appearance_BrandLogo_QualityHint Settings_Appearance_BrandLogo_ShapeLabel
                               Settings_Appearance_BrandLogo_ShapeDescription Settings_Appearance_BrandLogo_ShapeSquare
                               Settings_Appearance_BrandLogo_ShapeCircle Settings_Nav_Appearance">
               <Border Classes="card" Padding="22">
@@ -985,12 +985,13 @@
                             CornerRadius="{Binding BrandLogoPreviewCornerRadius}"
                             Background="{DynamicResource Ink10}"
                             IsVisible="{Binding HasCustomBrandLogo}">
-                      <Image Source="{Binding BrandLogoPreview}" Stretch="{Binding BrandLogoStretch}" />
+                      <Image Source="{Binding BrandLogoPreview}" Stretch="{Binding BrandLogoStretch}"
+                             RenderOptions.BitmapInterpolationMode="HighQuality" />
                     </Border>
                     <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                       <TextBlock Text="{Binding BrandLogoSizeLabel}" FontSize="12.5"
                                  IsVisible="{Binding HasCustomBrandLogo}" />
-                      <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_OptimizedHint}"
+                      <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_QualityHint}"
                                  Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">

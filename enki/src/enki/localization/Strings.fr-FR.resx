@@ -4878,8 +4878,8 @@ Bonne rédaction.</value>
   <data name="Settings_Appearance_BrandLogo_RemoveButton" xml:space="preserve">
     <value>Retirer</value>
   </data>
-  <data name="Settings_Appearance_BrandLogo_OptimizedHint" xml:space="preserve">
-    <value>À l'import, l'image est réduite à 256 px et ré-encodée : elle reste identique à la taille où elle s'affiche et n'occupe qu'une fraction de l'espace disque.</value>
+  <data name="Settings_Appearance_BrandLogo_QualityHint" xml:space="preserve">
+    <value>L'image est conservée telle quelle — sans redimensionnement ni ré-encodage — et n'est réduite qu'au moment de l'affichage, pour rester nette sur n'importe quel écran.</value>
   </data>
   <data name="Settings_Appearance_BrandLogo_ShapeLabel" xml:space="preserve">
     <value>Forme</value>
@@ -4903,7 +4903,7 @@ Bonne rédaction.</value>
     <value>Logo mis à jour</value>
   </data>
   <data name="Notification_BrandLogoImported_Message" xml:space="preserve">
-    <value>L'image a été optimisée de {0} à {1}.</value>
+    <value>L'image a été enregistrée sans perte de qualité ({0}).</value>
   </data>
   <data name="Notification_BrandLogoImportFailed_Title" xml:space="preserve">
     <value>Impossible de changer le logo</value>

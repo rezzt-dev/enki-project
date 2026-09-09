@@ -9,10 +9,12 @@ using Xunit;
 namespace enki.Tests.Services;
 
 /// <summary>Cubre <see cref="BrandLogoService"/> — el logo que el usuario elige en Ajustes › Apariencia:
-/// que se optimice de verdad (se reduzca a <see cref="BrandLogoService.MaxDimensionPixels"/> px y ocupe
-/// menos), que no pierda la transparencia por el camino, que solo quede un archivo por logo y que un
-/// archivo que no es una imagen no rompa nada. Mismo patrón que el resto de pruebas de servicios: cada
-/// una escribe en su propio directorio temporal desechable, nunca en <c>%AppData%/Enki</c>.</summary>
+/// que se guarde tal cual, sin reescalar ni recodificar (Enki es local, degradar la imagen no compra
+/// nada), que la extensión salga del formato real y no del nombre, que solo quede un archivo por logo y
+/// que un archivo que no es una imagen no rompa nada. Cómo se reduce para pintarla es cosa de
+/// <c>BrandLogoImage</c>, que se prueba en <c>enki.UITests</c> porque necesita plataforma gráfica. Mismo
+/// patrón que el resto de pruebas de servicios: cada una escribe en su propio directorio temporal
+/// desechable, nunca en <c>%AppData%/Enki</c>.</summary>
 public class BrandLogoServiceTests : IDisposable
 {
     private readonly string _storageDirectory =
@@ -28,9 +30,9 @@ public class BrandLogoServiceTests : IDisposable
 
     private string SourcePath(string fileName) => Path.Combine(_storageDirectory, fileName);
 
-    /// <summary>Imagen con detalle de alta frecuencia en todos los píxeles: el caso "foto", donde PNG no
-    /// tiene nada que comprimir y JPEG sí.</summary>
-    private string WritePhoto(string fileName, int width, int height)
+    /// <summary>Imagen con detalle de alta frecuencia en todos los píxeles: el caso "foto", el que más
+    /// perdería si se recodificara.</summary>
+    private string WritePhoto(string fileName, int width, int height, SKEncodedImageFormat format = SKEncodedImageFormat.Png)
     {
         using var bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Opaque);
         for (var x = 0; x < width; x++)
@@ -39,7 +41,7 @@ public class BrandLogoServiceTests : IDisposable
             var wave = (byte)(128 + 127 * Math.Sin(x / 3.0) * Math.Cos(y / 5.0));
             bitmap.SetPixel(x, y, new SKColor(wave, (byte)(255 - wave), (byte)(x % 256), byte.MaxValue));
         }
-        return Write(fileName, bitmap, SKEncodedImageFormat.Png, 100);
+        return Write(fileName, bitmap, format, 92);
     }
 
     /// <summary>Logo plano de cuatro colores, con o sin un cuadrante transparente.</summary>
@@ -81,45 +83,46 @@ public class BrandLogoServiceTests : IDisposable
         return bitmap.Info;
     }
 
+    /// <summary>El contrato central: lo que se guarda es el archivo elegido, byte a byte. Ni un píxel
+    /// menos ni una recodificación por el camino.</summary>
     [Fact]
-    public void Import_ScalesAnOversizedImageDownToTheMaximumSide()
+    public void Import_StoresTheChosenFileUntouched()
     {
         var service = CreateService();
+        var source = WritePhoto("grande.png", 1200, 800);
 
-        var result = service.Import(WritePhoto("grande.png", 1200, 800));
+        var result = service.Import(source);
 
         Assert.True(result.Success);
+        Assert.Equal(File.ReadAllBytes(source), File.ReadAllBytes(service.LogoPath!));
         var info = Describe(service.LogoPath!);
-        Assert.Equal(BrandLogoService.MaxDimensionPixels, info.Width);
-        // 800 × (256 / 1200), redondeado: la proporción original se mantiene.
-        Assert.Equal(171, info.Height);
+        Assert.Equal(1200, info.Width);
+        Assert.Equal(800, info.Height);
     }
 
     [Fact]
-    public void Import_LeavesAnImageThatAlreadyFitsAtItsOwnSize()
+    public void Import_ReportsWhatWasStoredAndItsRealPixelSize()
     {
         var service = CreateService();
+        var source = WritePhoto("grande.png", 1200, 800);
 
-        Assert.True(service.Import(WriteFlatLogo("pequeno.png", 64, 64, transparentCorner: false)).Success);
+        var stored = service.Import(source).Logo;
 
-        var info = Describe(service.LogoPath!);
-        Assert.Equal(64, info.Width);
-        Assert.Equal(64, info.Height);
+        Assert.NotNull(stored);
+        Assert.Equal(new FileInfo(source).Length, stored.Bytes);
+        Assert.Equal(1200, stored.PixelWidth);
+        Assert.Equal(800, stored.PixelHeight);
+        Assert.Equal(stored, service.Describe());
     }
 
     [Fact]
-    public void Import_StoresFewerBytesThanTheOriginal()
+    public void Describe_ReturnsNullWhenThereIsNoLogo()
     {
-        var service = CreateService();
-
-        var result = service.Import(WritePhoto("grande.png", 1200, 800));
-
-        Assert.True(result.StoredBytes < result.OriginalBytes);
-        Assert.Equal(result.StoredBytes, new FileInfo(service.LogoPath!).Length);
+        Assert.Null(CreateService().Describe());
     }
 
     [Fact]
-    public void Import_KeepsTransparencyByStoringAPng()
+    public void Import_KeepsTransparencyBecauseNothingIsReencoded()
     {
         var service = CreateService();
 
@@ -130,18 +133,16 @@ public class BrandLogoServiceTests : IDisposable
         Assert.Equal(0, stored.GetPixel(10, 10).Alpha);
     }
 
-    /// <summary>Una foto opaca solo se guarda como JPEG porque ahí el ahorro es de otro orden de magnitud;
-    /// un logo plano, donde los dos candidatos rondan el mismo tamaño, se queda en el PNG sin pérdida.</summary>
+    /// <summary>La extensión con la que se guarda sale de la cabecera, no del nombre: un JPEG llamado
+    /// ".png" no puede acabar en <c>%AppData%</c> mintiendo sobre lo que lleva dentro.</summary>
     [Fact]
-    public void Import_OnlyGivesUpLosslessPngWhenJpegSavesRealSpace()
+    public void Import_NamesTheFileAfterItsRealFormat()
     {
-        var photoService = CreateService();
-        Assert.True(photoService.Import(WritePhoto("foto.png", 600, 600)).Success);
-        Assert.Equal(".jpg", Path.GetExtension(photoService.LogoPath));
+        var service = CreateService();
 
-        var logoService = CreateService();
-        Assert.True(logoService.Import(WriteFlatLogo("plano.png", 600, 600, transparentCorner: false)).Success);
-        Assert.Equal(".png", Path.GetExtension(logoService.LogoPath));
+        Assert.True(service.Import(WritePhoto("disfrazada.png", 300, 300, SKEncodedImageFormat.Jpeg)).Success);
+
+        Assert.Equal(".jpg", Path.GetExtension(service.LogoPath));
     }
 
     [Fact]
@@ -149,7 +150,7 @@ public class BrandLogoServiceTests : IDisposable
     {
         var service = CreateService();
 
-        Assert.True(service.Import(WritePhoto("foto.png", 600, 600)).Success);
+        Assert.True(service.Import(WritePhoto("foto.jpg", 600, 600, SKEncodedImageFormat.Jpeg)).Success);
         Assert.Equal(".jpg", Path.GetExtension(service.LogoPath));
 
         Assert.True(service.Import(WriteFlatLogo("plano.png", 600, 600, transparentCorner: true)).Success);
@@ -202,6 +203,22 @@ public class BrandLogoServiceTests : IDisposable
 
         Assert.False(result.Success);
         Assert.Equal(BrandLogoImportFailure.TooLarge, result.Failure);
+    }
+
+    /// <summary>El diálogo puede navegar hasta la propia carpeta de Enki y volver a elegir el logo que ya
+    /// está puesto: eso no puede acabar en un error ni, mucho menos, borrando el archivo.</summary>
+    [Fact]
+    public void Import_AcceptsTheStoredLogoItselfAsSource()
+    {
+        var service = CreateService();
+        Assert.True(service.Import(WriteFlatLogo("plano.png", 64, 64, transparentCorner: false)).Success);
+        var stored = service.LogoPath!;
+
+        var result = service.Import(stored);
+
+        Assert.True(result.Success);
+        Assert.Equal(stored, service.LogoPath);
+        Assert.True(File.Exists(stored));
     }
 
     [Fact]
