@@ -4854,4 +4854,73 @@ Bonne rédaction.</value>
   <data name="Settings_Search_NoResults" xml:space="preserve">
     <value>Aucun paramètre trouvé. Essayez d’autres mots.</value>
   </data>
+  <data name="Settings_Appearance_BrandLogo_Title" xml:space="preserve">
+    <value>Logo de la barre latérale</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_Description" xml:space="preserve">
+    <value>Remplacez le badge Enki en haut de la barre latérale par une image de votre choix.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceLabel" xml:space="preserve">
+    <value>Image affichée</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceDefault" xml:space="preserve">
+    <value>Par défaut</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceCustom" xml:space="preserve">
+    <value>Personnalisée</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_Empty" xml:space="preserve">
+    <value>Choisissez une image pour pouvoir l'activer.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ChooseButton" xml:space="preserve">
+    <value>Choisir une image</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_RemoveButton" xml:space="preserve">
+    <value>Retirer</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_OptimizedHint" xml:space="preserve">
+    <value>À l'import, l'image est réduite à 256 px et ré-encodée : elle reste identique à la taille où elle s'affiche et n'occupe qu'une fraction de l'espace disque.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeLabel" xml:space="preserve">
+    <value>Forme</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeDescription" xml:space="preserve">
+    <value>Circulaire découpe l'image en cercle, la seule forme ronde d'Enki. Carrée l'affiche en entier.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeSquare" xml:space="preserve">
+    <value>Carrée</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeCircle" xml:space="preserve">
+    <value>Circulaire</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_PickerTitle" xml:space="preserve">
+    <value>Choisir le logo de la barre latérale</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ImageFileType" xml:space="preserve">
+    <value>Images</value>
+  </data>
+  <data name="Notification_BrandLogoImported_Title" xml:space="preserve">
+    <value>Logo mis à jour</value>
+  </data>
+  <data name="Notification_BrandLogoImported_Message" xml:space="preserve">
+    <value>L'image a été optimisée de {0} à {1}.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_Title" xml:space="preserve">
+    <value>Impossible de changer le logo</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_NotFound" xml:space="preserve">
+    <value>Le fichier choisi n'est plus à sa place.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_TooLarge" xml:space="preserve">
+    <value>L'image dépasse {0}.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_Format" xml:space="preserve">
+    <value>Ce fichier n'a pas pu être lu comme une image.</value>
+  </data>
+  <data name="Notification_BrandLogoRemoved_Title" xml:space="preserve">
+    <value>Logo retiré</value>
+  </data>
+  <data name="Notification_BrandLogoRemoved_Message" xml:space="preserve">
+    <value>La barre latérale affiche de nouveau l'icône Enki.</value>
+  </data>
 </root>

@@ -941,6 +941,91 @@
          </Border>
             </controls:SettingsSearchOption>
 
+            <!-- Logo del sidebar: por defecto el icono de Enki (adaptativo al tema), o una imagen del
+                 usuario que BrandLogoService reescala y recodifica al importarla. La forma circular solo
+                 se ofrece con imagen personalizada — el icono por defecto ya es una insignia cuadrada y
+                 recortarlo le comería las esquinas. Ver docs/agent-docs/logo-personalizado.md. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Appearance_BrandLogo_Title Settings_Appearance_BrandLogo_Description
+                              Settings_Appearance_BrandLogo_SourceLabel Settings_Appearance_BrandLogo_SourceDefault
+                              Settings_Appearance_BrandLogo_SourceCustom Settings_Appearance_BrandLogo_Empty
+                              Settings_Appearance_BrandLogo_ChooseButton Settings_Appearance_BrandLogo_RemoveButton
+                              Settings_Appearance_BrandLogo_OptimizedHint Settings_Appearance_BrandLogo_ShapeLabel
+                              Settings_Appearance_BrandLogo_ShapeDescription Settings_Appearance_BrandLogo_ShapeSquare
+                              Settings_Appearance_BrandLogo_ShapeCircle Settings_Nav_Appearance">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="ImageOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_SourceLabel}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_Empty}" Classes="muted" FontSize="11.5"
+                                 TextWrapping="Wrap" IsVisible="{Binding !HasCustomBrandLogo}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                      <RadioButton Classes="segment" GroupName="BrandLogoSource"
+                                   Content="{loc:Tr Settings_Appearance_BrandLogo_SourceDefault, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding !UseCustomBrandLogo}" />
+                      <RadioButton Classes="segment" GroupName="BrandLogoSource"
+                                   Content="{loc:Tr Settings_Appearance_BrandLogo_SourceCustom, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding UseCustomBrandLogo}" IsEnabled="{Binding HasCustomBrandLogo}" />
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- Vista previa a 44 px con el mismo recorte y encaje que tendrá en el sidebar, para que
+                       elegir "circular" se vea aquí mismo sin tener que salir de Ajustes a comprobarlo. -->
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Grid.Column="0" Width="44" Height="44" ClipToBounds="True"
+                            CornerRadius="{Binding BrandLogoPreviewCornerRadius}"
+                            Background="{DynamicResource Ink10}"
+                            IsVisible="{Binding HasCustomBrandLogo}">
+                      <Image Source="{Binding BrandLogoPreview}" Stretch="{Binding BrandLogoStretch}" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding BrandLogoSizeLabel}" FontSize="12.5"
+                                 IsVisible="{Binding HasCustomBrandLogo}" />
+                      <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_OptimizedHint}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <Button Classes="ghost" Command="{Binding ChooseBrandLogoCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <mi:MaterialIcon Kind="FolderImage" Width="13" Height="13" />
+                          <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_ChooseButton, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="ghost" Command="{Binding RemoveBrandLogoCommand}"
+                              IsVisible="{Binding HasCustomBrandLogo}">
+                        <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_RemoveButton, Converter={StaticResource UpperCaseConverter}}" />
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding HasCustomBrandLogo}">
+                    <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_ShapeLabel}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Appearance_BrandLogo_ShapeDescription}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                      <RadioButton Classes="segment" GroupName="BrandLogoShape"
+                                   Content="{loc:Tr Settings_Appearance_BrandLogo_ShapeSquare, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding !IsBrandLogoCircular}" />
+                      <RadioButton Classes="segment" GroupName="BrandLogoShape"
+                                   Content="{loc:Tr Settings_Appearance_BrandLogo_ShapeCircle, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding IsBrandLogoCircular}" />
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Appearance_KanbanOrientation_Title Settings_Appearance_KanbanOrientation_Label
                               Settings_Appearance_KanbanOrientation_Description

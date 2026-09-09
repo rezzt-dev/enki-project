@@ -149,6 +149,7 @@ En vez de sombras/tarjetas con fondo distinto, se usan **rejillas de bordes de 1
 | Badges/tags | `0` |
 | Toast, modal, dropdown | `0` |
 | Punto de timeline / pulse dot / thumb de toggle | `9999px` (circular) |
+| Logo del brand header con imagen personalizada | `0` por defecto; circular solo si el usuario lo elige en Ajustes › Apariencia › Logo (`docs/agent-docs/logo-personalizado.md`) — única forma redonda elegible de la app, y nunca para el icono de Enki, que es una insignia cuadrada |
 
 ---
 

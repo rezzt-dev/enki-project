@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -17,8 +19,8 @@ using enki.Services;
 namespace enki.ViewModels;
 
 /// <summary>Ajustes › Apariencia: tema claro/oscuro, título de ventana personalizado, fuente de interfaz,
-/// zoom de interfaz y el sistema completo de temas personalizados (crear/editar/duplicar/activar/eliminar/
-/// importar/exportar) — split out of <c>SettingsViewModel.cs</c> to keep every "how the app looks" setting
+/// zoom de interfaz, logo del sidebar y el sistema completo de temas personalizados (crear/editar/duplicar/
+/// activar/eliminar/importar/exportar) — split out of <c>SettingsViewModel.cs</c> to keep every "how the app looks" setting
 /// in one file instead of interleaved with Editor/Notificaciones/Calendario. Still the very same
 /// <see cref="SettingsViewModel"/> class — partial types share every field/property regardless of which
 /// file declares them — so no behavior change.</summary>
@@ -174,6 +176,190 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.KanbanBoardOrientation = orientation;
         _settingsService.Save();
         _onKanbanBoardOrientationChanged(orientation);
+    }
+
+    // ===================== Logo del sidebar (Ajustes › Apariencia) =====================
+    // El brand header de MainWindow.axaml puede llevar el icono de Enki (adaptativo al tema) o una imagen
+    // del usuario. La imagen la guarda y optimiza BrandLogoService; aquí solo está la elección y el
+    // diálogo. Ver docs/agent-docs/logo-personalizado.md.
+
+    /// <summary>Segmento "Por defecto" / "Personalizada". Solo puede valer <c>true</c> mientras exista una
+    /// imagen importada: la vista deshabilita "Personalizada" sin ella, el constructor lo arranca apagado
+    /// si el ajuste guardado dice que sí pero el archivo ya no está (borrado desde fuera de Enki, unos
+    /// ajustes editados a mano), y <see cref="OnUseCustomBrandLogoChanged"/> lo vuelve a apagar si aun así
+    /// alguien lo enciende. El sidebar aplica la misma regla por su cuenta
+    /// (<c>MainWindowViewModel.ApplyBrandLogo</c>), así que ninguno de los dos depende de que el otro
+    /// corrija el ajuste en disco.</summary>
+    [ObservableProperty]
+    private bool _useCustomBrandLogo;
+
+    /// <summary>Segmento "Cuadrada" / "Circular". La forma circular es la única excepción admitida al
+    /// <c>CornerRadius="0"</c> del sistema de diseño, y solo llega a aplicarse al logo personalizado —
+    /// el icono por defecto se dibuja siempre cuadrado (ver <see cref="Models.AppSettings.BrandLogoShape"/>).</summary>
+    [ObservableProperty]
+    private bool _isBrandLogoCircular;
+
+    /// <summary>La imagen importada, ya optimizada, tal y como se verá en el sidebar — o <c>null</c> si
+    /// todavía no hay ninguna. Se decodifica desde bytes en memoria (no desde la ruta) para no dejar el
+    /// archivo abierto mientras Ajustes lo enseña, que es justo cuando el usuario puede reemplazarlo.</summary>
+    [ObservableProperty]
+    private Bitmap? _brandLogoPreview;
+
+    /// <summary>"18 KB" bajo la vista previa — lo que ocupa ya optimizada, no el original.</summary>
+    [ObservableProperty]
+    private string? _brandLogoSizeLabel;
+
+    /// <summary>Gobierna si el segmento "Personalizada" y el de forma están habilitados. Notificado a mano
+    /// desde <see cref="RefreshBrandLogoPreview"/> porque se deriva del sistema de archivos, no de una
+    /// propiedad observable.</summary>
+    public bool HasCustomBrandLogo => _brandLogoService.HasLogo;
+
+    /// <summary>Radio con el que se recorta la vista previa: la mitad de su lado (44 px) es un círculo
+    /// exacto. Mismo criterio que <c>MainWindowViewModel.BrandLogoCornerRadius</c>, con su propio tamaño.</summary>
+    public CornerRadius BrandLogoPreviewCornerRadius => new(IsBrandLogoCircular ? BrandLogoPreviewSize / 2 : 0);
+
+    /// <summary>Una imagen que no sea cuadrada se enseña entera dentro del cuadro (<c>Uniform</c>), pero
+    /// dentro de un círculo eso dejaría huecos arriba y abajo en vez de un logo redondo, así que ahí se
+    /// recorta al llenarlo (<c>UniformToFill</c>) — el comportamiento de cualquier avatar. Misma regla que
+    /// en el sidebar, para que la vista previa no mienta sobre lo que se va a ver.</summary>
+    public Stretch BrandLogoStretch => IsBrandLogoCircular ? Stretch.UniformToFill : Stretch.Uniform;
+
+    private const double BrandLogoPreviewSize = 44;
+
+    partial void OnUseCustomBrandLogoChanged(bool value)
+    {
+        if (value && !HasCustomBrandLogo)
+        {
+            UseCustomBrandLogo = false;
+            return;
+        }
+
+        _settingsService.Settings.UseCustomBrandLogo = value;
+        _settingsService.Save();
+    }
+
+    partial void OnIsBrandLogoCircularChanged(bool value)
+    {
+        _settingsService.Settings.BrandLogoShape = value ? "Circle" : "Square";
+        _settingsService.Save();
+        OnPropertyChanged(nameof(BrandLogoPreviewCornerRadius));
+        OnPropertyChanged(nameof(BrandLogoStretch));
+    }
+
+    /// <summary>"Elegir imagen…" — pide un archivo, lo optimiza y lo deja como logo activo. Elegir una
+    /// imagen implica quererla puesta, así que activa también el modo personalizado en vez de dejar al
+    /// usuario delante de una vista previa que no se ve en ningún sitio.</summary>
+    [RelayCommand]
+    private async Task ChooseBrandLogo()
+    {
+        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
+        if (topLevel?.StorageProvider is null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = LocalizationService.Instance["Settings_Appearance_BrandLogo_PickerTitle"],
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType(LocalizationService.Instance["Settings_Appearance_BrandLogo_ImageFileType"])
+                {
+                    Patterns = BrandLogoService.PickerPatterns
+                }
+            ]
+        });
+
+        var source = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        if (string.IsNullOrWhiteSpace(source)) return;
+
+        ImportBrandLogo(source);
+    }
+
+    /// <summary>Todo lo que pasa con la imagen ya elegida — separado de <see cref="ChooseBrandLogo"/>, que
+    /// es solo el diálogo del sistema, para que las pruebas de UI puedan recorrer el camino real (importar,
+    /// refrescar la vista previa, activar el modo personalizado y notificar) sin un diálogo de archivos, que
+    /// en un host headless no existe.</summary>
+    internal void ImportBrandLogo(string sourcePath)
+    {
+        var result = _brandLogoService.Import(sourcePath);
+        if (!result.Success)
+        {
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_BrandLogoImportFailed_Title"),
+                DescribeBrandLogoFailure(result.Failure),
+                Models.NotificationSeverity.Error);
+            return;
+        }
+
+        RefreshBrandLogoPreview();
+        UseCustomBrandLogo = true;
+
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_BrandLogoImported_Title"),
+            LocalizedTextFormatter.Format("Notification_BrandLogoImported_Message",
+                FileSizeFormatter.Format(result.OriginalBytes), FileSizeFormatter.Format(result.StoredBytes)),
+            Models.NotificationSeverity.Success);
+    }
+
+    /// <summary>"Quitar imagen" — borra el archivo y vuelve al icono de Enki. La forma elegida se conserva
+    /// en los ajustes: si el usuario importa otra imagen después, la recupera tal cual la dejó.</summary>
+    [RelayCommand]
+    private void RemoveBrandLogo()
+    {
+        if (!_brandLogoService.Remove()) return;
+
+        UseCustomBrandLogo = false;
+        RefreshBrandLogoPreview();
+
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_BrandLogoRemoved_Title"),
+            LocalizedTextFormatter.Format("Notification_BrandLogoRemoved_Message"),
+            Models.NotificationSeverity.Info);
+    }
+
+    private static LocalizedText DescribeBrandLogoFailure(BrandLogoImportFailure failure) => failure switch
+    {
+        BrandLogoImportFailure.FileNotFound => LocalizedTextFormatter.Format("Notification_BrandLogoImportFailed_NotFound"),
+        BrandLogoImportFailure.TooLarge => LocalizedTextFormatter.Format("Notification_BrandLogoImportFailed_TooLarge",
+            FileSizeFormatter.Format(BrandLogoService.MaxSourceBytes)),
+        BrandLogoImportFailure.UnsupportedFormat => LocalizedTextFormatter.Format("Notification_BrandLogoImportFailed_Format"),
+        _ => LocalizedTextFormatter.Format("Common_Error_IOFailure")
+    };
+
+    /// <summary>Relee del disco la imagen guardada y actualiza vista previa, tamaño y estado de los
+    /// controles. Llamado al construir el viewmodel y después de cada importación/borrado.</summary>
+    private void RefreshBrandLogoPreview()
+    {
+        // El <see cref="Bitmap"/> anterior no se libera a mano: el compositor de Avalonia todavía puede
+        // tener referenciado el que acaba de salir de pantalla, y liberar por debajo lo que el hilo de
+        // render está a punto de dibujar es un fallo mucho peor que dejar que lo recoja el GC — son 256 px
+        // como mucho, y esto solo corre al importar o quitar el logo.
+        var bytes = _brandLogoService.ReadLogoBytes();
+        if (bytes is null)
+        {
+            BrandLogoPreview = null;
+            BrandLogoSizeLabel = null;
+        }
+        else
+        {
+            try
+            {
+                using var stream = new MemoryStream(bytes);
+                BrandLogoPreview = new Bitmap(stream);
+                BrandLogoSizeLabel = FileSizeFormatter.Format(bytes.LongLength);
+            }
+            catch (Exception ex)
+            {
+                // Un archivo que Skia escribió y ya no decodifica solo puede venir de una corrupción en
+                // disco; se trata como "no hay logo" en vez de dejar Ajustes a medias.
+                LogService.Warning("No se pudo decodificar el logo personalizado guardado", ex);
+                BrandLogoPreview = null;
+                BrandLogoSizeLabel = null;
+            }
+        }
+
+        OnPropertyChanged(nameof(HasCustomBrandLogo));
+        OnPropertyChanged(nameof(BrandLogoPreviewCornerRadius));
+        OnPropertyChanged(nameof(BrandLogoStretch));
     }
 
     /// <summary>Slider "Zoom de interfaz" en Ajustes › Apariencia, además del punto de entrada

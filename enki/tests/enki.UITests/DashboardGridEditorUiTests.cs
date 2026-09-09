@@ -47,9 +47,10 @@ public class DashboardGridEditorUiTests : IDisposable
         var syncService = new PolarSyncService(authService, restClient, taskService, reminderService, settingsService);
         var notificationService = new NotificationService(settingsService, _tempDir);
         var customThemeService = new CustomThemeService(settingsService);
+        var brandLogoService = new BrandLogoService(_tempDir);
 
         var vm = new SettingsViewModel(
-            settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         // Igual que el usuario: primero una plantilla, y desde ella a personalizado.

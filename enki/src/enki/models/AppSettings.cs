@@ -47,6 +47,20 @@ public sealed class AppSettings
     /// plain string for the same reason as <see cref="Theme"/>/<see cref="EditorColumnPosition"/>.</summary>
     public string KanbanBoardOrientation { get; set; } = "Vertical";
 
+    /// <summary>Ajustes › Apariencia › Logo — <c>true</c> pinta en el brand header del sidebar la imagen
+    /// que el usuario importó (<see cref="Services.BrandLogoService"/>), <c>false</c> (por defecto) el
+    /// icono de Enki adaptativo al tema. Solo el interruptor vive aquí: la imagen en sí es un archivo
+    /// aparte en <c>%AppData%/Enki/</c>, así que apagar esto vuelve al icono por defecto sin perder la
+    /// imagen importada, y volver a encenderlo la recupera tal cual.</summary>
+    public bool UseCustomBrandLogo { get; set; }
+
+    /// <summary>"Square" o "Circle" — con qué forma se recorta el logo del sidebar. La circular es la
+    /// única excepción admitida al <c>CornerRadius="0"</c> del sistema de diseño
+    /// (docs/agent-docs/sistema-diseno-web.md), y solo se aplica al logo personalizado: el icono por
+    /// defecto se dibuja siempre cuadrado. Stored as a plain string for the same reason as
+    /// <see cref="Theme"/>/<see cref="EditorColumnPosition"/>.</summary>
+    public string BrandLogoShape { get; set; } = "Square";
+
     /// <summary>System font family name for the app UI. Null/empty means the bundled Space Grotesk.</summary>
     public string? InterfaceFontFamily { get; set; }
 

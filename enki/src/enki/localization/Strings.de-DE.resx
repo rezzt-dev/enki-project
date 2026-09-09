@@ -4854,4 +4854,73 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Search_NoResults" xml:space="preserve">
     <value>Keine passenden Einstellungen gefunden. Versuchen Sie andere Wörter.</value>
   </data>
+  <data name="Settings_Appearance_BrandLogo_Title" xml:space="preserve">
+    <value>Logo der Seitenleiste</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_Description" xml:space="preserve">
+    <value>Ersetze das Enki-Abzeichen oben in der Seitenleiste durch ein eigenes Bild.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceLabel" xml:space="preserve">
+    <value>Angezeigtes Bild</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceDefault" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceCustom" xml:space="preserve">
+    <value>Eigenes</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_Empty" xml:space="preserve">
+    <value>Wähle ein Bild, um dies zu aktivieren.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ChooseButton" xml:space="preserve">
+    <value>Bild wählen</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_RemoveButton" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_OptimizedHint" xml:space="preserve">
+    <value>Beim Import wird das Bild auf 256 px verkleinert und neu codiert: In der dargestellten Größe sieht es unverändert aus und belegt nur einen Bruchteil des Speicherplatzes.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeLabel" xml:space="preserve">
+    <value>Form</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeDescription" xml:space="preserve">
+    <value>Rund beschneidet das Bild zu einem Kreis — die einzige runde Form in Enki. Quadratisch zeigt es vollständig.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeSquare" xml:space="preserve">
+    <value>Quadratisch</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeCircle" xml:space="preserve">
+    <value>Rund</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_PickerTitle" xml:space="preserve">
+    <value>Logo der Seitenleiste wählen</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ImageFileType" xml:space="preserve">
+    <value>Bilder</value>
+  </data>
+  <data name="Notification_BrandLogoImported_Title" xml:space="preserve">
+    <value>Logo aktualisiert</value>
+  </data>
+  <data name="Notification_BrandLogoImported_Message" xml:space="preserve">
+    <value>Das Bild wurde von {0} auf {1} optimiert.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_Title" xml:space="preserve">
+    <value>Das Logo konnte nicht geändert werden</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_NotFound" xml:space="preserve">
+    <value>Die gewählte Datei liegt nicht mehr an ihrem Ort.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_TooLarge" xml:space="preserve">
+    <value>Das Bild ist größer als {0}.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_Format" xml:space="preserve">
+    <value>Diese Datei konnte nicht als Bild gelesen werden.</value>
+  </data>
+  <data name="Notification_BrandLogoRemoved_Title" xml:space="preserve">
+    <value>Logo entfernt</value>
+  </data>
+  <data name="Notification_BrandLogoRemoved_Message" xml:space="preserve">
+    <value>Die Seitenleiste zeigt wieder das Enki-Symbol.</value>
+  </data>
 </root>

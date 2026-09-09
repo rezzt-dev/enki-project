@@ -7,6 +7,20 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Logo propio en la barra lateral**. El cuadro de la esquina superior izquierda llevaba siempre el icono de
+Enki. Ahora Ajustes › Apariencia › "Logo de la barra lateral" permite poner ahí una imagen del sistema.
+
+- **Elegir entre el icono por defecto y una imagen propia**, con vista previa en los propios ajustes. Volver
+  al icono por defecto no borra la imagen importada: sigue ahí para reactivarla cuando se quiera, y hay un
+  botón aparte para quitarla del todo.
+- **Forma cuadrada o circular**, la única forma redonda de toda la app. Solo se ofrece con imagen propia; el
+  icono de Enki, que ya es una insignia cuadrada, se sigue dibujando cuadrado.
+- **La imagen se optimiza al importarla**: se reduce a 256 px de lado mayor —holgura de sobra para el cuadro
+  de 32 px en pantallas HiDPI y con el zoom de interfaz al 200 %— y se recodifica quedándose con el formato
+  que menos ocupe, sin cambiar un PNG sin pérdida por un JPEG que apenas ahorre. Una foto de varios megas
+  acaba en unas decenas de kilobytes, y los ajustes dicen cuánto ocupa ya guardada.
+- El cambio se ve en la barra lateral al momento, sin reiniciar.
+
 **Kanban: archivar tareas completadas**. La columna "Hecho" solo crecía, y la única forma de vaciarla era
 borrar sus tarjetas —lo que las manda a la papelera, las saca del calendario y las purga a los 30 días—.
 Archivar es la vía intermedia que faltaba: la tarea sale del tablero pero no desaparece de la app.

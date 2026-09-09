@@ -2,6 +2,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using Avalonia;
+using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,6 +18,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly SettingsService _settingsService;
     private readonly CustomThemeService _customThemeService;
+    private readonly BrandLogoService _brandLogoService;
     private readonly VaultService _vaultService;
     private readonly NoteSearchService _noteSearchService;
     private readonly VaultBackupService _vaultBackupService;
@@ -157,6 +160,71 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _useCustomTitleBar;
+
+    // ===================== Logo del brand header (Ajustes › Apariencia) =====================
+    // El cuadro de 32×32 de la esquina superior izquierda del sidebar lleva el icono de Enki adaptativo al
+    // tema o la imagen que el usuario haya importado. Lo que decide cuál es esto; quien lo pinta es
+    // MainWindow.axaml.cs, que ya resolvía el icono por defecto contra el tema activo y sigue siendo el
+    // único sitio que lo hace. Ver docs/agent-docs/logo-personalizado.md.
+
+    /// <summary>Lado del cuadro del logo en el sidebar, en px — el mismo valor que
+    /// <c>MainWindow.axaml</c>, aquí porque la mitad es el radio que lo vuelve un círculo exacto.</summary>
+    private const double BrandLogoSize = 32;
+
+    /// <summary>Bytes de la imagen personalizada, o <c>null</c> para usar el icono de Enki. Se pasan como
+    /// bytes y no como ruta para que la vista no mantenga abierto el archivo que Ajustes puede estar a
+    /// punto de reemplazar.</summary>
+    public byte[]? CustomBrandLogoBytes { get; private set; }
+
+    /// <summary>Avisa a <c>MainWindow</c> de que vuelva a pintar el logo. Un evento y no una propiedad
+    /// <c>Bitmap</c> observable porque el icono por defecto solo se sabe resolver en la vista (depende del
+    /// tema activo de Avalonia), así que la decisión vive aquí pero la decodificación allí.</summary>
+    public event Action? BrandLogoChanged;
+
+    /// <summary>Radio de recorte del cuadro del logo: 0 (cuadrado, como todo lo demás en el sistema de
+    /// diseño) o la mitad del lado, el único círculo admitido. Solo puede ser circular con una imagen
+    /// personalizada puesta — recortar el icono de Enki, que ya es una insignia cuadrada, le comería las
+    /// esquinas.</summary>
+    [ObservableProperty]
+    private CornerRadius _brandLogoCornerRadius;
+
+    /// <summary>Cómo se encaja la imagen en el cuadro: entera dentro de él si es cuadrada
+    /// (<c>Uniform</c>), o recortada hasta llenarlo si el recorte es circular (<c>UniformToFill</c>, el
+    /// comportamiento de cualquier avatar — con <c>Uniform</c> una imagen apaisada dejaría el círculo con
+    /// huecos arriba y abajo).</summary>
+    [ObservableProperty]
+    private Stretch _brandLogoStretch = Stretch.Uniform;
+
+    /// <summary>Lo último aplicado, para no releer la imagen del disco ni repintar el logo en cada
+    /// <see cref="SettingsService.SettingsChanged"/> — que se dispara al guardar cualquier preferencia de
+    /// la app, no solo estas dos.</summary>
+    private string _brandLogoSignature = string.Empty;
+
+    /// <summary>Reacción a <see cref="SettingsService.SettingsChanged"/>: solo repinta si cambió algo del
+    /// logo.</summary>
+    private void RefreshBrandLogo() => ApplyBrandLogo(force: false);
+
+    /// <summary>Reacción a <see cref="BrandLogoService.LogoChanged"/>: la imagen cambió aunque los ajustes
+    /// digan lo mismo que antes, así que hay que releerla sí o sí.</summary>
+    private void ReloadBrandLogo() => ApplyBrandLogo(force: true);
+
+    private void ApplyBrandLogo(bool force)
+    {
+        var settings = _settingsService.Settings;
+        // Un ajuste encendido cuya imagen ya no está (borrada desde fuera de Enki) cae al icono por
+        // defecto en vez de dejar el hueco vacío; Ajustes lo apaga solo la próxima vez que se abre.
+        var useCustom = settings.UseCustomBrandLogo && _brandLogoService.HasLogo;
+        var isCircular = useCustom && settings.BrandLogoShape == "Circle";
+
+        var signature = $"{useCustom}|{isCircular}";
+        if (!force && signature == _brandLogoSignature) return;
+        _brandLogoSignature = signature;
+
+        CustomBrandLogoBytes = useCustom ? _brandLogoService.ReadLogoBytes() : null;
+        BrandLogoCornerRadius = new CornerRadius(isCircular ? BrandLogoSize / 2 : 0);
+        BrandLogoStretch = isCircular ? Stretch.UniformToFill : Stretch.Uniform;
+        BrandLogoChanged?.Invoke();
+    }
 
     [ObservableProperty]
     private bool _notificationsPanelEnabled;

@@ -4854,4 +4854,73 @@ Happy writing.</value>
   <data name="Settings_Search_NoResults" xml:space="preserve">
     <value>No matching settings. Try other words.</value>
   </data>
+  <data name="Settings_Appearance_BrandLogo_Title" xml:space="preserve">
+    <value>Sidebar logo</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_Description" xml:space="preserve">
+    <value>Swap the Enki badge at the top of the sidebar for an image of your own.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceLabel" xml:space="preserve">
+    <value>Image shown</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_SourceCustom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_Empty" xml:space="preserve">
+    <value>Choose an image to turn this on.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ChooseButton" xml:space="preserve">
+    <value>Choose image</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_RemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_OptimizedHint" xml:space="preserve">
+    <value>On import the image is scaled down to 256 px and re-encoded, so it looks identical at the size it is drawn and takes up a fraction of the disk space.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeLabel" xml:space="preserve">
+    <value>Shape</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeDescription" xml:space="preserve">
+    <value>Circular crops the image into a circle, the only round shape in Enki. Square shows it whole.</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeSquare" xml:space="preserve">
+    <value>Square</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ShapeCircle" xml:space="preserve">
+    <value>Circular</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_PickerTitle" xml:space="preserve">
+    <value>Choose the sidebar logo</value>
+  </data>
+  <data name="Settings_Appearance_BrandLogo_ImageFileType" xml:space="preserve">
+    <value>Images</value>
+  </data>
+  <data name="Notification_BrandLogoImported_Title" xml:space="preserve">
+    <value>Logo updated</value>
+  </data>
+  <data name="Notification_BrandLogoImported_Message" xml:space="preserve">
+    <value>The image was optimized from {0} to {1}.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_Title" xml:space="preserve">
+    <value>The logo could not be changed</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_NotFound" xml:space="preserve">
+    <value>The chosen file is no longer where it was.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_TooLarge" xml:space="preserve">
+    <value>The image is bigger than {0}.</value>
+  </data>
+  <data name="Notification_BrandLogoImportFailed_Format" xml:space="preserve">
+    <value>That file could not be read as an image.</value>
+  </data>
+  <data name="Notification_BrandLogoRemoved_Title" xml:space="preserve">
+    <value>Logo removed</value>
+  </data>
+  <data name="Notification_BrandLogoRemoved_Message" xml:space="preserve">
+    <value>The sidebar is showing the Enki icon again.</value>
+  </data>
 </root>

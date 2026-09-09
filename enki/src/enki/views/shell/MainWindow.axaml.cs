@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -32,7 +33,6 @@ public partial class MainWindow : Window
         // claro con E oscura en tema oscuro, para mantener contraste en la barra de
         // título/taskbar del SO y en el brand del sidebar (docs/project-icons/).
         UpdateWindowIcon();
-        UpdateBrandIcon();
         if (Application.Current is not null)
             Application.Current.ActualThemeVariantChanged += (_, _) =>
             {
@@ -42,6 +42,11 @@ public partial class MainWindow : Window
 
         var viewModel = new MainWindowViewModel();
         DataContext = viewModel;
+
+        // Después de fijar el DataContext, no antes: el logo puede ser la imagen personalizada del
+        // usuario, y quien sabe si lo es y con qué bytes es el viewmodel (Ajustes › Apariencia › Logo).
+        UpdateBrandIcon();
+        viewModel.BrandLogoChanged += UpdateBrandIcon;
 
         // Atajos globales del shell (propuesta 29, docs/propuesta-nuevas-funcionalidades.md): ya no son
         // literales en MainWindow.axaml — se construyen aquí a partir de ShortcutRegistry y se reconstruyen
@@ -178,10 +183,30 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Actualiza el logo del brand header del sidebar con la misma versión
-    /// adaptativa del icono (PNG 1024×1024 escalado a 32×32).</summary>
+    /// <summary>Repinta el logo del brand header del sidebar: la imagen que el usuario haya importado
+    /// (Ajustes › Apariencia › Logo) si la tiene puesta, y si no la misma versión adaptativa al tema del
+    /// icono de Enki (PNG 1024×1024 escalado a 32×32). El recorte —cuadrado o circular— y el encaje los
+    /// pone el XAML enlazando <c>BrandLogoCornerRadius</c>/<c>BrandLogoStretch</c>, así que aquí solo se
+    /// decide la fuente. Se llama al arrancar, en cada cambio de tema y cada vez que el viewmodel avisa
+    /// de que el logo cambió.</summary>
     private void UpdateBrandIcon()
     {
+        var customBytes = (DataContext as MainWindowViewModel)?.CustomBrandLogoBytes;
+        if (customBytes is not null)
+        {
+            try
+            {
+                using var customStream = new MemoryStream(customBytes);
+                BrandIcon.Source = new Bitmap(customStream);
+                return;
+            }
+            catch (Exception)
+            {
+                // Imagen ilegible (corrupción en disco): cae al icono de Enki de aquí abajo en vez de
+                // dejar el sidebar sin logo.
+            }
+        }
+
         var resourceName = IsDarkTheme() ? "enki-light-1024.png" : "enki-1024.png";
         var uri = new Uri($"avares://enki/assets/icon/{resourceName}");
         try

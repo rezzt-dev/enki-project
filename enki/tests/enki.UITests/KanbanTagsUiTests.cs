@@ -45,11 +45,11 @@ public sealed class KanbanTagsUiTests
             window.UpdateLayout();
             var tags = view.GetVisualDescendants().OfType<KanbanTags>().Single(t => t.Tags?.Contains("etiqueta-12") == true);
             Assert.True(tags.IsVisible);
-            settings.Settings.KanbanShowCardTags = false;
+            settings.Settings.KanbanShowTagFilter = false;
             settings.Save();
             Assert.False(tags.IsVisible);
             Assert.Equal(12, model.Tags.Count);
-            settings.Settings.KanbanShowCardTags = true;
+            settings.Settings.KanbanShowTagFilter = true;
             settings.Save();
             window.UpdateLayout();
             var expand = tags.FindControl<Button>("ExpandButton")!;

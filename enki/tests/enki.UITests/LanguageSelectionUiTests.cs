@@ -82,7 +82,7 @@ public sealed class LanguageSelectionUiTests
             var notifications = new NotificationService(settings, directory);
             var sync = new PolarSyncService(auth, new SupabaseRestClient(auth),
                 new PolarTaskService(directory), new ReminderService(directory), settings);
-            vm = new SettingsViewModel(settings, new CustomThemeService(settings), new VaultSettingsService(vault),
+            vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(directory), new VaultSettingsService(vault),
                 vault, new VaultBackupService(vault, directory), auth, sync, notifications,
                 () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
                 _ => { }, _ => { }, _ => { }, _ => { }, () => vm!.RefreshLocalizedLabels());

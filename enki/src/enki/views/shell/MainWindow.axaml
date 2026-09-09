@@ -92,12 +92,18 @@
 
   <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsVaultReady}">
 
-    <!-- ===================== Sidebar (glass, flotante — §5.3/§9.5) =====================
+    <!-- ===================== Sidebar =====================
          Oculto por completo en modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) —
          IsZenMode mirrors whichever note is currently focused (ver MainWindowViewModel.OnNotesPropertyChanged),
          y solo se activa desde dentro de una nota, así que fuera del editor de Notas siempre queda en
-         false y el sidebar se comporta exactamente igual que hoy. -->
-    <Border Grid.Column="0" Margin="10,10,0,10" IsVisible="{Binding !IsZenMode}">
+         false y el sidebar se comporta exactamente igual que hoy.
+
+         Sin margen: el sidebar va pegado a los bordes de la ventana. El "flotante" de 10px que llevaba
+         (Margin="10,10,0,10") nunca se llegó a rematar como panel flotante real —ni sombra, ni radio, ni
+         borde en los lados libres, solo un hueco— así que con un tema de alto contraste (p. ej. dark-dev,
+         app-background #000 contra sidebar #050505) ese hueco se leía como una costura de píxeles a la
+         izquierda en vez de como un panel despegado. -->
+    <Border Grid.Column="0" IsVisible="{Binding !IsZenMode}">
       <Border Width="{Binding SidebarWidth}" CornerRadius="0"
               Background="{DynamicResource SidebarBackgroundBrush}">
         <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0">
@@ -117,12 +123,18 @@
                  so centering the Grid makes the logo sit with equal margins on both sides instead of
                  flush left. The logo is sized to 32x32 so its solid fill reads at the same visual weight
                  as the borderless 20px icons in the rail below it, instead of looking undersized next to
-                 them. -->
+                 them.
+
+                 El Border es también el recorte del logo: con una imagen personalizada circular
+                 (Ajustes › Apariencia › Logo) BrandLogoCornerRadius pasa a 16 y ClipToBounds la redondea.
+                 Es la única forma circular del sistema de diseño; con el icono por defecto, o con una
+                 imagen cuadrada, el radio vuelve a 0 como todo lo demás. -->
             <Grid Grid.Row="0" Classes="brand-header" Classes.collapsed="{Binding !IsSidebarExpanded}"
                   ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,14"
                   Background="Transparent" PointerPressed="TitleBar_PointerPressed">
-              <Border Grid.Column="0" Width="32" Height="32" CornerRadius="0">
-                <Image Name="BrandIcon" Width="32" Height="32" />
+              <Border Grid.Column="0" Width="32" Height="32"
+                      CornerRadius="{Binding BrandLogoCornerRadius}" ClipToBounds="True">
+                <Image Name="BrandIcon" Width="32" Height="32" Stretch="{Binding BrandLogoStretch}" />
               </Border>
 
               <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center"

@@ -30,7 +30,7 @@ public class SettingsViewModelTests : IDisposable
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
-    private static (VaultBackupService BackupService, PolarSyncService SyncService, NotificationService NotificationService, CustomThemeService CustomThemeService)
+    private static (VaultBackupService BackupService, PolarSyncService SyncService, NotificationService NotificationService, CustomThemeService CustomThemeService, BrandLogoService BrandLogoService)
         CreateExtraDependencies(SettingsService settingsService, VaultService vault, PolarAuthService authService, string storageDirectory)
     {
         var backupService = new VaultBackupService(vault, storageDirectory);
@@ -40,7 +40,8 @@ public class SettingsViewModelTests : IDisposable
         var syncService = new PolarSyncService(authService, restClient, taskService, reminderService, settingsService);
         var notificationService = new NotificationService(settingsService, storageDirectory);
         var customThemeService = new CustomThemeService(settingsService);
-        return (backupService, syncService, notificationService, customThemeService);
+        var brandLogoService = new BrandLogoService(storageDirectory);
+        return (backupService, syncService, notificationService, customThemeService, brandLogoService);
     }
 
     private (SettingsViewModel Settings, SettingsService SettingsService, VaultService Vault, VaultSettingsService VaultSettingsService) CreateViewModel()
@@ -50,11 +51,11 @@ public class SettingsViewModelTests : IDisposable
         vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
         var vaultSettingsService = new VaultSettingsService(vault);
         var authService = new PolarAuthService(settingsService);
-        var (backupService, syncService, notificationService, customThemeService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
 
         SettingsViewModel? vm = null;
         vm = new SettingsViewModel(
-            settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
@@ -69,14 +70,14 @@ public class SettingsViewModelTests : IDisposable
     public void KanbanTags_PersistsVisibility_AndNotifiesListeners()
     {
         var (vm, service, _, _) = CreateViewModel();
-        Assert.True(vm.KanbanShowCardTags);
+        Assert.True(vm.KanbanShowTagFilter);
         var changes = 0;
         service.SettingsChanged += () => changes++;
-        vm.KanbanShowCardTags = false;
-        Assert.False(new SettingsService(_storageDirectory).Settings.KanbanShowCardTags);
+        vm.KanbanShowTagFilter = false;
+        Assert.False(new SettingsService(_storageDirectory).Settings.KanbanShowTagFilter);
         Assert.Equal(1, changes);
-        vm.KanbanShowCardTags = true;
-        Assert.True(new SettingsService(_storageDirectory).Settings.KanbanShowCardTags);
+        vm.KanbanShowTagFilter = true;
+        Assert.True(new SettingsService(_storageDirectory).Settings.KanbanShowTagFilter);
     }
 
     [Fact]
@@ -154,10 +155,10 @@ public class SettingsViewModelTests : IDisposable
         vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
         var vaultSettingsService = new VaultSettingsService(vault);
         var authService = new PolarAuthService(settingsService);
-        var (backupService, syncService, notificationService, customThemeService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
 
         var vm = new SettingsViewModel(
-            settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         Assert.Equal(16, vm.EditorFontSize);
@@ -233,11 +234,11 @@ public class SettingsViewModelTests : IDisposable
         vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
         var vaultSettingsService = new VaultSettingsService(vault);
         var authService = new PolarAuthService(settingsService);
-        var (backupService, syncService, notificationService, customThemeService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
         bool? notified = null;
 
         var vm = new SettingsViewModel(
-            settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             () => { }, _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         vm.NotificationsPanelEnabled = false;
@@ -340,11 +341,11 @@ public class SettingsViewModelTests : IDisposable
         vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
         var vaultSettingsService = new VaultSettingsService(vault);
         var authService = new PolarAuthService(settingsService);
-        var (backupService, syncService, notificationService, customThemeService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
         int? notified = null;
 
         var vm = new SettingsViewModel(
-            settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, v => notified = v, () => { });
 
         vm.UiZoomPercent = 150;

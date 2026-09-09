@@ -30,6 +30,13 @@ public sealed partial class MainWindowViewModel
         // criterio de orden que ShortcutRegistry.Initialize justo arriba.
         _customThemeService = new CustomThemeService(_settingsService);
         _customThemeService.ApplyActiveOnStartup();
+        // Logo del sidebar (Ajustes › Apariencia): solo toca su propio archivo en %AppData%/Enki, así que
+        // no depende de nada de lo de arriba; se construye aquí para que el logo esté resuelto antes
+        // de que MainWindow pinte el brand header por primera vez.
+        _brandLogoService = new BrandLogoService();
+        _brandLogoService.LogoChanged += ReloadBrandLogo;
+        _settingsService.SettingsChanged += RefreshBrandLogo;
+        ReloadBrandLogo();
         // Fase 0 del roadmap de deficiencias: Program.Main ya inicializó LogService con el nivel Warning
         // por defecto antes de que este ajuste (persistido en settings.json) exista siquiera — aquí es
         // donde se sube a Debug si el usuario lo activó en una sesión anterior. OnDebugLoggingEnabledChanged
@@ -369,7 +376,7 @@ public sealed partial class MainWindowViewModel
         {
             if (e.PropertyName == nameof(TrashViewModel.TotalCount)) UpdateTrashBadge();
         };
-        Settings = new SettingsViewModel(_settingsService, _customThemeService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
+        Settings = new SettingsViewModel(_settingsService, _customThemeService, _brandLogoService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,

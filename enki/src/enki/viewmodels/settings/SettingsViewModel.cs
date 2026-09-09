@@ -32,6 +32,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     private readonly SettingsService _settingsService;
     private readonly CustomThemeService _customThemeService;
+    private readonly BrandLogoService _brandLogoService;
     private readonly VaultSettingsService _vaultSettingsService;
     private readonly VaultService _vaultService;
     private readonly VaultBackupService _vaultBackupService;
@@ -139,6 +140,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public SettingsViewModel(
         SettingsService settingsService,
         CustomThemeService customThemeService,
+        BrandLogoService brandLogoService,
         VaultSettingsService vaultSettingsService,
         VaultService vaultService,
         VaultBackupService vaultBackupService,
@@ -161,6 +163,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         _settingsService = settingsService;
         _customThemeService = customThemeService;
+        _brandLogoService = brandLogoService;
         _vaultSettingsService = vaultSettingsService;
         _vaultService = vaultService;
         _vaultBackupService = vaultBackupService;
@@ -231,6 +234,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
         _kanbanShowTagFilter = settingsService.Settings.KanbanShowTagFilter;
         _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";
+        _useCustomBrandLogo = settingsService.Settings.UseCustomBrandLogo && brandLogoService.HasLogo;
+        _isBrandLogoCircular = settingsService.Settings.BrandLogoShape == "Circle";
         _isBuiltInDarkThemesCollapsed = settingsService.Settings.BuiltInDarkThemesCollapsed;
         _isBuiltInLightThemesCollapsed = settingsService.Settings.BuiltInLightThemesCollapsed;
         _confirmBeforeDelete = settingsService.Settings.ConfirmBeforeDelete;
@@ -328,6 +333,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         BuiltInDarkThemes = new ObservableCollection<CustomThemeRowViewModel>();
         BuiltInLightThemes = new ObservableCollection<CustomThemeRowViewModel>();
         RefreshCustomThemes();
+        RefreshBrandLogoPreview();
 
         BuildDashboardLayoutOptions();
         BuildDashboardSections();

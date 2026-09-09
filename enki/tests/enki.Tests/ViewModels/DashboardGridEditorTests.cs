@@ -39,9 +39,10 @@ public class DashboardGridEditorTests : IDisposable
         var syncService = new PolarSyncService(authService, restClient, taskService, reminderService, settingsService);
         var notificationService = new NotificationService(settingsService, _storageDirectory);
         var customThemeService = new CustomThemeService(settingsService);
+        var brandLogoService = new BrandLogoService(_storageDirectory);
 
         var vm = new SettingsViewModel(
-            settingsService, customThemeService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
             onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },

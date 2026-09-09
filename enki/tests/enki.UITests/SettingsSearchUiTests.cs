@@ -41,7 +41,7 @@ public sealed class SettingsSearchUiTests : IDisposable
         var auth = new PolarAuthService(settings);
         var sync = new PolarSyncService(auth, new SupabaseRestClient(auth), new PolarTaskService(_directory),
             new ReminderService(_directory), settings);
-        var vm = new SettingsViewModel(settings, new CustomThemeService(settings), vaultSettings, vault,
+        var vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(_directory), vaultSettings, vault,
             new VaultBackupService(vault, _directory), auth, sync, new NotificationService(settings, _directory),
             () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
             _ => { }, _ => { }, _ => { }, _ => { }, () => { });

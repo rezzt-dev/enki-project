@@ -71,7 +71,7 @@ normalices a un solo idioma.
 - `docs/calendar-feature/`, `docs/supabase-sync/`, `docs/ajustes-docs/`,
   `docs/ia-skills/especificacion-desarrollo.md`, `docs/seccion-archivos.md`,
   `docs/vista-simplificada-notas.md`, `docs/imagenes-en-notas.md`, `docs/tablas-en-notas.md`,
-  `docs/agent-docs/busqueda-texto-completo.md`,
+  `docs/agent-docs/busqueda-texto-completo.md`, `docs/agent-docs/logo-personalizado.md`,
   `docs/funcionalidad-zoom-interfaz.md`, `docs/notificaciones-y-recordatorios.md`,
   `docs/sistema-diseno-web.md` — documentación específica por módulo/tema; complementa (no reemplaza) el
   análisis anterior.
