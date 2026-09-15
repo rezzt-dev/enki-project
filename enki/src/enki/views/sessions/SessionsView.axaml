@@ -167,16 +167,28 @@
                  and only after confirming the platform's WebView runtime is actually installed. -->
             <ContentControl x:Name="GraphContentHost" />
 
-            <!-- Skeleton shown from the moment the graph document is handed to the WebView until it
+            <!-- Loading screen shown from the moment the graph document is handed to the WebView until it
                  reports its nodes/edges are actually painted (Fase 4 §"Sesiones y grafo", gap 23) — a
                  vault with hundreds of notes could otherwise sit on a blank panel for a beat with no
-                 indication anything is happening. -->
-            <StackPanel x:Name="GraphLoadingOverlay" IsVisible="False" HorizontalAlignment="Center"
-                        VerticalAlignment="Center" Spacing="12" IsHitTestVisible="False">
-              <mi:MaterialIcon Classes="spin" Kind="Loading" Width="26" Height="26"
-                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-              <TextBlock Text="{loc:Tr Sessions_Graph_LoadingLabel}" Classes="muted" HorizontalAlignment="Center" />
-            </StackPanel>
+                 indication anything is happening. It covers the whole panel with the graph's own backdrop
+                 (GraphBackdrop* brushes, aligned with the WebView's) so a half-laid-out graph never shows
+                 through, and fades in/out via the Opacity transition driven from SessionsView.axaml.cs. -->
+            <Grid x:Name="GraphLoadingOverlay" IsVisible="False" Opacity="0" IsHitTestVisible="False">
+              <Grid.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="0:0:0.36" Easing="CubicEaseOut" />
+                </Transitions>
+              </Grid.Transitions>
+              <Border Background="{DynamicResource AppBackgroundAltBrush}" />
+              <Border Background="{DynamicResource GraphBackdropDotsBrush}" />
+              <Border Background="{DynamicResource GraphBackdropBloomBrush}" />
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="22">
+                <controls:GraphLoadingIndicator x:Name="GraphLoadingAnimation" Width="200" Height="176"
+                                                Ink="{DynamicResource InkBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_LoadingLabel, Converter={StaticResource UpperCaseConverter}}"
+                           Classes="eyebrow" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
 
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left" VerticalAlignment="Top"
                         Margin="16" IsHitTestVisible="False">

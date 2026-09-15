@@ -145,6 +145,29 @@
   <!-- Chips flotantes del grafo de sesiones: superficie semi-transparente. -->
   <SolidColorBrush x:Key="GraphChipBackgroundBrush" Color="{DynamicResource PanelBackgroundColor}" Opacity="0.80" />
 
+  <!-- Fondo del grafo de sesiones replicado en nativo para su pantalla de carga (SessionsView.axaml): la
+       misma rejilla de puntos cada 26px y el mismo halo superior que SessionGraphRenderer.BuildPremiumBackground
+       pone en el documento del WebView, alineados píxel a píxel, para que el fundido de salida de la carga
+       descubra el grafo sin costura visible. -->
+  <DrawingBrush x:Key="GraphBackdropDotsBrush"
+                TileMode="Tile"
+                Stretch="None"
+                SourceRect="0,0,26,26"
+                DestinationRect="0,0,26,26">
+    <DrawingBrush.Drawing>
+      <GeometryDrawing Brush="{DynamicResource Ink05}">
+        <GeometryDrawing.Geometry>
+          <EllipseGeometry Center="1,1" RadiusX="1" RadiusY="1" />
+        </GeometryDrawing.Geometry>
+      </GeometryDrawing>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+  <RadialGradientBrush x:Key="GraphBackdropBloomBrush" Center="50%,28%" GradientOrigin="50%,28%"
+                       RadiusX="70%" RadiusY="55%" Opacity="0.05">
+    <GradientStop Offset="0" Color="{DynamicResource InkColor}" />
+    <GradientStop Offset="0.72" Color="Transparent" />
+  </RadialGradientBrush>
+
   <!-- Botón/elemento activo: inversión total (fondo tinta, texto fondo) -->
   <SolidColorBrush x:Key="ActivePillBackgroundBrush" Color="{DynamicResource InkColor}" />
   <SolidColorBrush x:Key="ActivePillForegroundBrush" Color="{DynamicResource InkOnColor}" />
