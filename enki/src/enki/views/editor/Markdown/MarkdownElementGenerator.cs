@@ -96,6 +96,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     public override void StartGeneration(ITextRunConstructionContext context)
     {
         base.StartGeneration(context);
+        MarkdownListTextFormatter.Register(context, _state);
         _cachedLineNumber = -1;
     }
 
@@ -544,8 +545,8 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         if (content <= 0) return 0;
 
         // A line too long for the column keeps its left edge: the reserved space only ever moves the
-        // first visual row, so pushing it across would leave the continuation rows behind it (the same
-        // limitation the wrap indentation runs into - see WhitespaceFormattedElement).
+        // first visual row. La sangría de las listas se resuelve por separado en
+        // MarkdownListTextFormatter, usando las medidas finales de sus elementos.
         var free = available - content;
         if (free <= 1) return 0;
         return align == MdAlign.Center ? free / 2 : free;

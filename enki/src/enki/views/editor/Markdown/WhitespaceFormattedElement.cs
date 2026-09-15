@@ -29,14 +29,9 @@ namespace enki.Views.Editor.Markdown;
 /// to what's left from <c>startVisualColumn</c> keeps every probe correctly sized without
 /// re-emitting the glyph itself past its first column.
 ///
-/// Note: this reserved width only ever affects the FIRST visual row of a wrapped line. AvaloniaEdit
-/// computes an adaptive per-paragraph wrap indent (<c>TextEditorOptions.InheritWordWrapIndentation</c>)
-/// meant to keep continuation rows aligned under it, but Avalonia's own text formatter never reads
-/// <c>Avalonia.Media.TextFormatting.TextParagraphProperties.Indent</c> — that option is a silent
-/// no-op on this stack, so a long wrapped bullet's continuation rows render flush left regardless
-/// of what's reserved here. The blockquote rail sidesteps this entirely by living in
-/// <see cref="QuoteRailMargin"/>'s own gutter column instead of reserving inline width at all - see
-/// that class's doc comment for the full explanation.
+/// La sangría de las filas continuadas la aplica <see cref="MarkdownListTextFormatter"/>:
+/// mide este elemento dentro de la primera fila y reserva ese ancho en el formateo posterior.
+/// Avalonia 12.1 no aplica TextParagraphProperties.Indent por sí mismo.
 /// </summary>
 /// <summary>Lo que un espaciador le impone al alto de su línea. <see cref="FixedHeight"/> fija el alto
 /// entero (la fila separadora de una tabla, que se encoge a una banda fina), y

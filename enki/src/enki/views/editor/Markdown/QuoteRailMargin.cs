@@ -17,8 +17,9 @@ namespace enki.Views.Editor.Markdown;
 /// visual row of a wrapped line; every continuation row renders flush left regardless, which made
 /// the rail collide with text on every row after the first. A margin's width is constant for the
 /// whole viewport - the same gap applies to a wrapped line's first row and every continuation row
-/// alike, with zero dependency on text-flow indentation - so it's the only way to get Obsidian-style
-/// consistent separation between the rail and the quoted text.
+/// alike, with zero dependency on text-flow indentation.
+/// Las listas resuelven ahora su sangría en <see cref="MarkdownListTextFormatter"/>; las citas
+/// conservan este margen para separar la barra del texto en todas las filas.
 ///
 /// <see cref="GutterWidth"/> se suma al padding izquierdo de 20px de EditorView.axaml. Ese primer tramo
 /// mantiene la barra dentro del margen visual de la columna; el gutter desplaza la cita hacia dentro,
