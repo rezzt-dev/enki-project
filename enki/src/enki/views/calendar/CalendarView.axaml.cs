@@ -1,9 +1,11 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.ViewModels;
 
@@ -45,12 +47,61 @@ public partial class CalendarView : UserControl
     /// either type needing to know about the other.</summary>
     private (CalendarItemSourceType SourceType, string SourceId)? _dragSource;
 
+    private CalendarViewModel? _subscribedVm;
+
     public CalendarView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += (_, _) => Unsubscribe();
     }
 
     private CalendarViewModel? Vm => DataContext as CalendarViewModel;
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        Unsubscribe();
+        _subscribedVm = Vm;
+        if (_subscribedVm is null) return;
+        _subscribedVm.PropertyChanged += OnVmPropertyChanged;
+    }
+
+    private void Unsubscribe()
+    {
+        if (_subscribedVm is null) return;
+        _subscribedVm.PropertyChanged -= OnVmPropertyChanged;
+        _subscribedVm = null;
+    }
+
+    /// <summary>Foco automático en el título al abrir el popover de creación rápida (doc 06 §1, punto 1)
+    /// — mismo patrón que <c>KanbanView</c> con su editor de tarjeta y <c>SessionsView</c> con su diálogo
+    /// de sesión nueva: sin esto el foco se quedaba en la página de detrás, así que "creación rápida"
+    /// empezaba con un clic obligatorio en el campo y, de paso, las teclas sueltas de la página (T, M,
+    /// S, D, A, N) seguían llegando al calendario con el modal delante.</summary>
+    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CalendarViewModel.QuickCreate)) return;
+        if (Vm is not { QuickCreate: not null }) return;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            QuickCreateTitleBox.Focus();
+            QuickCreateTitleBox.SelectAll();
+        });
+    }
+
+    /// <summary>Enter crea directamente desde el campo de título: el caso de uso entero del popover es
+    /// "escribo un título y confirmo", así que obligar a saltar al botón con el ratón o con Tab sobra.</summary>
+    private void QuickCreateTitleBox_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { QuickCreate: { } draft } vm) return;
+
+        // Escape no se trata aquí a propósito: lo resuelve CalendarView_KeyDown, que es quien sabe si
+        // hay una capa intermedia (el selector de fecha) que cerrar antes que el popover entero.
+        if (e.Key != Key.Enter || !draft.CanSave) return;
+        vm.SaveQuickCreateCommand.Execute(null);
+        e.Handled = true;
+    }
 
     // ===================== Fase 5: atajos de teclado (docs/calendar-feature/04-vistas-y-navegacion.md
     // §10) — bubble up to the root UserControl from whatever inner control happens to have focus, so no
@@ -64,9 +115,32 @@ public partial class CalendarView : UserControl
     private void CalendarView_KeyDown(object? sender, KeyEventArgs e)
     {
         if (Vm is not { } vm) return;
-        // Don't hijack the quick-create/search text fields — Escape still closes the popover below, but
-        // every other shortcut only applies when the user isn't actively typing.
-        if (e.Source is TextBox or NumericUpDown) { if (e.Key != Key.Escape) return; }
+
+        // Con un overlay propio abierto (creación rápida o confirmar-borrado) el teclado es suyo: solo
+        // Escape lo cierra. Antes las teclas sueltas de página seguían pasando — pulsar "D" con el
+        // popover delante cambiaba la vista del calendario de detrás mientras el usuario creía estar
+        // rellenando un formulario — porque el filtro de abajo solo excluye los campos de texto, y los
+        // botones/ComboBox del propio popover no lo son.
+        if (vm.QuickCreate is { } quickCreate)
+        {
+            if (e.Key != Key.Escape) return;
+            // Escape cierra una capa cada vez: el selector de fecha del propio popover es un Popup con
+            // light-dismiss, pero su Escape no se marca como manejado y llegaba hasta aquí, así que
+            // desplegar el calendario y arrepentirse tiraba el formulario entero con lo ya escrito.
+            if (quickCreate.IsCalendarOpen) quickCreate.IsCalendarOpen = false;
+            else vm.CancelQuickCreateCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+        if (vm.ItemPendingDelete is not null)
+        {
+            if (e.Key == Key.Escape) { vm.CancelDeleteItemCommand.Execute(null); e.Handled = true; }
+            return;
+        }
+
+        // Don't hijack the search text fields — every shortcut only applies when the user isn't actively
+        // typing.
+        if (e.Source is TextBox or NumericUpDown) return;
 
         switch (e.Key)
         {
@@ -101,14 +175,6 @@ public partial class CalendarView : UserControl
             case Key.N:
                 vm.OpenQuickCreateForReferenceDateCommand.Execute(null);
                 e.Handled = true;
-                break;
-            case Key.Escape:
-                // Popup-based overlays ("+N más", el popover de detalle) ya se cierran solas al pulsar
-                // Escape (light-dismiss nativo de Avalonia) — solo el popover de creación rápida y el
-                // diálogo de confirmar-eliminar son overlays propios (IsVisible, no Popup) que necesitan
-                // este cierre explícito.
-                if (vm.QuickCreate is not null) { vm.CancelQuickCreateCommand.Execute(null); e.Handled = true; }
-                else if (vm.ItemPendingDelete is not null) { vm.CancelDeleteItemCommand.Execute(null); e.Handled = true; }
                 break;
         }
     }

@@ -7,6 +7,25 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**La creación rápida del calendario, arreglada y puesta a punto**. El desplegable de fecha del popover
+"Creación rápida" no pintaba los días del mes: en su lugar salían seis filas de texto interno repetido, así
+que elegir otra fecha era imposible y había que crear el elemento y corregirlo después en su editor.
+
+- **El calendario vuelve a verse**: la rejilla muestra los días del mes, atenúa los del mes anterior y el
+  siguiente, marca hoy y resalta la fecha elegida, igual que el selector de fecha de Kanban y
+  Recordatorios. Se puede navegar entre meses y pulsar cualquier día.
+- **Botones del pie con jerarquía**: "Más opciones" era texto suelto sin caja propia, flotando a otra
+  altura que sus vecinos y con un recuadro pegado a las letras al pasar el ratón. Ahora es un botón de
+  contorno a la izquierda —el camino alternativo— frente al par "Cancelar / Crear" de la derecha, y los
+  tres miden lo mismo. Una línea fina separa las acciones del formulario.
+- **Se escribe y se confirma sin tocar el ratón**: el cursor entra solo en el título al abrir el popover e
+  Intro crea el elemento. Escape cierra primero el calendario desplegado, si está abierto, y solo después
+  el formulario: antes tiraba todo lo escrito de una vez.
+- **El formulario ya no deja pasar los atajos de la página**: con el popover delante, pulsar D, S, M, A o
+  T cambiaba la vista del calendario de detrás.
+- El selector de tipo (Kanban / Tarea de Polar / Recordatorio) envuelve a la línea siguiente en vez de
+  salirse del popover cuando las etiquetas del idioma activo son largas.
+
 **Un color para cada origen en el calendario**. Hasta ahora el calendario pintaba todas las tareas del
 mismo color y solo los recordatorios se distinguían, así que no había forma de ver de un vistazo si algo
 venía de Kanban o de qué lista de Polar. Ahora cada origen tiene el suyo.

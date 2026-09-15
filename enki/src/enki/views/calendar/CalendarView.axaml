@@ -1047,23 +1047,29 @@
               <StackPanel Spacing="6">
                 <TextBlock Text="{loc:Tr Calendar_QuickCreate_TitleFieldLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
                 <TextBox Name="QuickCreateTitleBox" Classes="search" Text="{Binding Title}"
+                          KeyDown="QuickCreateTitleBox_KeyDown"
                           PlaceholderText="{loc:Tr Calendar_QuickCreate_TitlePlaceholder}" />
               </StackPanel>
 
               <!-- Selector de tipo — doc 06 §1, punto 2. -->
               <StackPanel Spacing="6">
                 <TextBlock Text="{loc:Tr Calendar_QuickCreate_TypeLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <RadioButton Classes="segment" GroupName="QuickCreateType" Content="{loc:Tr Calendar_Label_Kanban, Converter={StaticResource UpperCaseConverter}}"
+                <!-- WrapPanel y no un StackPanel horizontal, por el mismo motivo documentado en el
+                     selector de recurrencia de KanbanView: un StackPanel horizontal mide a sus hijos con
+                     ancho infinito, así que las tres opciones nunca envuelven y la última se sale del
+                     modal en cuanto el idioma activo alarga las etiquetas (el popover está acotado a
+                     MaxWidth="420"). -->
+                <WrapPanel>
+                  <RadioButton Classes="segment" GroupName="QuickCreateType" Content="{loc:Tr Calendar_Label_Kanban, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
                                IsChecked="{Binding SelectedType, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Kanban, Mode=OneWay}"
                                Command="{Binding SelectTypeCommand}" CommandParameter="Kanban" />
-                  <RadioButton Classes="segment" GroupName="QuickCreateType" Content="{loc:Tr Calendar_Source_PolarTask, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsPolarAvailable}"
+                  <RadioButton Classes="segment" GroupName="QuickCreateType" Content="{loc:Tr Calendar_Source_PolarTask, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsPolarAvailable}" Margin="0,0,8,8"
                                IsChecked="{Binding SelectedType, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=PolarTask, Mode=OneWay}"
                                Command="{Binding SelectTypeCommand}" CommandParameter="PolarTask" />
-                  <RadioButton Classes="segment" GroupName="QuickCreateType" Content="{loc:Tr Calendar_Label_Reminder, Converter={StaticResource UpperCaseConverter}}"
+                  <RadioButton Classes="segment" GroupName="QuickCreateType" Content="{loc:Tr Calendar_Label_Reminder, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
                                IsChecked="{Binding SelectedType, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Reminder, Mode=OneWay}"
                                Command="{Binding SelectTypeCommand}" CommandParameter="Reminder" />
-                </StackPanel>
+                </WrapPanel>
                 <TextBlock Text="{loc:Tr Calendar_QuickCreate_TypeHint}" Classes="body-small" Foreground="{DynamicResource Ink40}" TextWrapping="Wrap" />
               </StackPanel>
 
@@ -1141,12 +1147,30 @@
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
 
+                      <!-- Plantilla explícita, y no una DataTemplate implícita como la que KanbanView/
+                           RemindersView declaran en su UserControl.DataTemplates: esas dos son locales a
+                           su vista y no alcanzan a esta, así que sin esto la rejilla caía en el ToString()
+                           por defecto de KanbanCalendarDayViewModel y pintaba 42 veces
+                           "enki.ViewModels.KanbanCalendarDayViewModel" en lugar de los días del mes.
+                           El comando vive en el propio CalendarQuickCreateViewModel (el DataContext de
+                           este ItemsControl), no en la página, a diferencia de los botones del pie. -->
                       <ItemsControl ItemsSource="{Binding CalendarDays}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
                             <UniformGrid Columns="7" />
                           </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:KanbanCalendarDayViewModel">
+                            <Button Classes="calendar-day" Classes.outside="{Binding !IsCurrentMonth}"
+                                    Classes.today="{Binding IsToday}" Classes.selected="{Binding IsSelected}"
+                                    Command="{Binding $parent[ItemsControl].((vm:CalendarQuickCreateViewModel)DataContext).SelectCalendarDayCommand}"
+                                    CommandParameter="{Binding}"
+                                    AutomationProperties.Name="{Binding Date, StringFormat={}{0:D}}">
+                              <TextBlock Text="{Binding DayLabel}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
                       </ItemsControl>
 
                       <StackPanel Spacing="8">
@@ -1197,24 +1221,34 @@
             </StackPanel>
           </ScrollViewer>
 
-          <!-- Acciones — doc 06 §1, punto 6: "Más opciones" nunca es un techo. -->
-          <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,18,0,0">
-            <Button Grid.Column="1" Classes="ghost modal-cancel"
-                    Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).CancelQuickCreateCommand}"
-                    Margin="0,0,14,0">
-              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
-            </Button>
-            <Button Grid.Column="2" Classes="ghost" Margin="0,0,14,0"
-                    Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SaveQuickCreateAndEditMoreCommand}"
-                    IsEnabled="{Binding CanSave}">
-              <TextBlock Text="{loc:Tr Calendar_QuickCreate_MoreOptionsButton, Converter={StaticResource UpperCaseConverter}}" />
-            </Button>
-            <Button Grid.Column="3" Classes="pill-primary"
-                    Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SaveQuickCreateCommand}"
-                    IsEnabled="{Binding CanSave}">
-              <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
-            </Button>
-          </Grid>
+          <!-- Acciones — doc 06 §1, punto 6: "Más opciones" nunca es un techo, así que deja de ser un
+               Button.ghost (Padding="0", sin caja propia) perdido entre "Cancelar" y "Crear": es el
+               secundario real del pie, con el outline de Button.pill, a la izquierda como camino
+               alternativo, frente al par "descartar / confirmar" de la derecha. Los tres comparten ahora
+               alto y línea base — el ghost sin relleno flotaba a una altura distinta y cualquier estado
+               (hover, foco) le dibujaba un recuadro pegado a las letras en vez de al botón. El filete de
+               1px separa las acciones del cuerpo desplazable, igual que dentro del propio popover de
+               fecha. -->
+          <StackPanel Grid.Row="2" Spacing="16" Margin="0,16,0,0">
+            <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+              <Button Grid.Column="0" Classes="pill"
+                      Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SaveQuickCreateAndEditMoreCommand}"
+                      IsEnabled="{Binding CanSave}">
+                <TextBlock Text="{loc:Tr Calendar_QuickCreate_MoreOptionsButton, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="ghost modal-cancel"
+                      Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).CancelQuickCreateCommand}"
+                      Margin="0,0,12,0">
+                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="3" Classes="pill-primary"
+                      Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SaveQuickCreateCommand}"
+                      IsEnabled="{Binding CanSave}">
+                <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
         </Grid>
       </Border>
     </controls:ModalOverlayHost>

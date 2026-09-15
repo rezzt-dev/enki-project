@@ -43,6 +43,17 @@ Contenido mínimo:
    guarda con los datos mínimos ya introducidos y abre inmediatamente el editor completo para completar
    el resto (descripción, prioridad, subtareas, recurrencia, etiquetas…) — así el popover rápido nunca es
    un techo, siempre hay un camino a las opciones completas sin perder lo ya escrito.
+   Los tres botones del pie tienen pesos distintos y deliberados: "Más opciones" es un `Button.pill`
+   (contorno) alineado a la izquierda, porque es un camino alternativo y no la decisión principal;
+   "Cancelar" (`Button.ghost.modal-cancel`) y "Crear" (`Button.pill-primary`) forman el par
+   descartar/confirmar a la derecha. No debe volver a ser un `Button.ghost` pelado: con `Padding="0"` no
+   comparte alto con sus vecinos y sus estados (hover/foco) se dibujan pegados a las letras en vez de
+   alrededor del botón.
+7. **Teclado**: el foco entra solo en el campo de título al abrir; `Intro` desde ahí equivale a "Crear"
+   (si el borrador es válido); `Escape` cierra una capa cada vez — primero el desplegable de fecha si
+   está abierto, y solo después el popover entero. Mientras el popover está abierto, los atajos de una
+   sola tecla del calendario (`T`, `M`, `S`, `D`, `A`, `N`, flechas) quedan desactivados: el teclado es
+   del formulario. Ver `CalendarView.axaml.cs`.
 
 ## 2. Qué campos NO expone el popover rápido (y por qué)
 

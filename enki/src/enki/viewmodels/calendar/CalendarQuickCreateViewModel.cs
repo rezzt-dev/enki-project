@@ -65,11 +65,12 @@ public sealed partial class CalendarQuickCreateViewModel : ObservableObject
     [ObservableProperty]
     private decimal _minute;
 
-    /// <summary>Opt-in franja horaria (docs/calendar-feature/04-vistas-y-navegacion.md §5) — Kanban-only,
-    /// mirrors <c>KanbanCardEditorViewModel.HasDuration</c>. Forced back off whenever <see cref="HasTime"/>
-    /// turns off or the type stops being Kanban (see <see cref="OnHasTimeChanged"/>/
-    /// <see cref="OnSelectedTypeChanged"/>), so the quick-create popover never carries stale duration
-    /// state into a save path that would silently ignore it.</summary>
+    /// <summary>Opt-in franja horaria (docs/agent-docs/calendar-feature/04-vistas-y-navegacion.md §5) —
+    /// mirrors <c>KanbanCardEditorViewModel.HasDuration</c>, pero aquí vale para los tres tipos: los tres
+    /// servicios de destino aceptan un <c>DurationMinutes</c> local (ver
+    /// <c>CalendarViewModel.CreateFromQuickCreate</c>), así que lo único que la condiciona es
+    /// <see cref="HasTime"/> — una franja sin punto de partida no significa nada, y por eso
+    /// <see cref="OnHasTimeChanged"/> la fuerza a apagarse cuando se quita la hora.</summary>
     [ObservableProperty]
     private bool _hasDuration;
 
