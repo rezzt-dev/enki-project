@@ -763,7 +763,7 @@
     <value>Supprimer le dossier</value>
   </data>
   <data name="Files_DeleteFile_Message" xml:space="preserve">
-    <value>Supprimer ce fichier ? Cette action ne peut pas être annulée.</value>
+    <value>Le fichier sera déplacé dans la corbeille. Vous pourrez le restaurer depuis la section Corbeille.</value>
   </data>
   <data name="Files_DeleteFile_Title" xml:space="preserve">
     <value>SUPPRIMER LE FICHIER</value>
@@ -4922,5 +4922,146 @@ Bonne rédaction.</value>
   </data>
   <data name="Notification_BrandLogoRemoved_Message" xml:space="preserve">
     <value>La barre latérale affiche de nouveau l'icône Enki.</value>
+  </data>
+  <data name="Files_DeleteFolder_Title" xml:space="preserve">
+    <value>Supprimer le dossier</value>
+  </data>
+  <data name="Files_DeleteFolder_Message" xml:space="preserve">
+    <value>Le dossier et tout son contenu seront déplacés dans le dossier .trash du coffre.</value>
+  </data>
+  <data name="Files_DeleteFolder_Hint" xml:space="preserve">
+    <value>La section Corbeille n'affiche que des fichiers isolés : pour récupérer le dossier, sortez-le de .trash.</value>
+  </data>
+  <data name="Files_Notify_FolderDeleteFailed_Title" xml:space="preserve">
+    <value>Impossible de supprimer le dossier</value>
+  </data>
+  <data name="Files_Notify_FileRenameFailed_Title" xml:space="preserve">
+    <value>Impossible de renommer le fichier</value>
+  </data>
+  <data name="Files_Notify_DeleteFailed_Title" xml:space="preserve">
+    <value>Impossible de supprimer le fichier</value>
+  </data>
+  <data name="Files_Notify_PathCopied_Title" xml:space="preserve">
+    <value>Chemin copié</value>
+  </data>
+  <data name="Files_CopyPathMenuItem" xml:space="preserve">
+    <value>Copier le chemin</value>
+  </data>
+  <data name="Files_ImportHereMenuItem" xml:space="preserve">
+    <value>Importer ici…</value>
+  </data>
+  <data name="Files_OpenFolderMenuItem" xml:space="preserve">
+    <value>Ouvrir</value>
+  </data>
+  <data name="Files_UpOneLevel" xml:space="preserve">
+    <value>Remonter d'un niveau</value>
+  </data>
+  <data name="Files_FolderEntries_one" xml:space="preserve">
+    <value>{0} élément</value>
+  </data>
+  <data name="Files_FolderEntries_other" xml:space="preserve">
+    <value>{0} éléments</value>
+  </data>
+  <data name="Files_Sort_Modified" xml:space="preserve">
+    <value>Plus récents</value>
+  </data>
+  <data name="Files_Sort_Name" xml:space="preserve">
+    <value>Nom</value>
+  </data>
+  <data name="Files_Sort_Size" xml:space="preserve">
+    <value>Plus volumineux</value>
+  </data>
+  <data name="Files_Sort_Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="A11y_Files_SortSelector" xml:space="preserve">
+    <value>Trier les fichiers</value>
+  </data>
+  <data name="Files_SearchEmpty_Title" xml:space="preserve">
+    <value>Aucun résultat</value>
+  </data>
+  <data name="Files_SearchEmpty_Message" xml:space="preserve">
+    <value>Aucun fichier de ce dossier ou de ses sous-dossiers ne correspond à « {0} ».</value>
+  </data>
+  <data name="Files_SearchingIn" xml:space="preserve">
+    <value>Recherche dans</value>
+  </data>
+  <data name="Files_FolderEmpty_Title" xml:space="preserve">
+    <value>Ce dossier est vide</value>
+  </data>
+  <data name="Files_FolderEmpty_Hint" xml:space="preserve">
+    <value>Faites glisser des fichiers ici ou importez-les pour les ajouter à ce dossier.</value>
+  </data>
+  <data name="Files_ClosePreviewTooltip" xml:space="preserve">
+    <value>Fermer l'aperçu (Échap)</value>
+  </data>
+  <data name="Files_PreviousFileTooltip" xml:space="preserve">
+    <value>Fichier précédent (Alt+←)</value>
+  </data>
+  <data name="Files_NextFileTooltip" xml:space="preserve">
+    <value>Fichier suivant (Alt+→)</value>
+  </data>
+  <data name="Files_MoreActionsTooltip" xml:space="preserve">
+    <value>Plus d'actions</value>
+  </data>
+  <data name="Files_FitWidthTooltip" xml:space="preserve">
+    <value>Ajuster à la largeur (Ctrl+0)</value>
+  </data>
+  <data name="Files_ActualSizeTooltip" xml:space="preserve">
+    <value>Taille réelle (100 %)</value>
+  </data>
+  <data name="Files_ImageActualSizeTooltip" xml:space="preserve">
+    <value>Basculer entre l'ajustement à la fenêtre et la taille réelle</value>
+  </data>
+  <data name="Files_WordWrapTooltip" xml:space="preserve">
+    <value>Renvoyer les lignes longues à la ligne</value>
+  </data>
+  <data name="Files_CopyContentTooltip" xml:space="preserve">
+    <value>Copier le contenu</value>
+  </data>
+  <data name="Files_CodeTruncatedNotice" xml:space="preserve">
+    <value>Ce fichier est trop long pour être affiché en entier : l'aperçu n'en montre que le début.</value>
+  </data>
+  <data name="Files_CodeReadErrorHint" xml:space="preserve">
+    <value>Impossible de lire le contenu de ce fichier.</value>
+  </data>
+  <data name="Files_BinaryPreviewHint" xml:space="preserve">
+    <value>Ce fichier ne contient pas de texte lisible : il ne peut pas être prévisualisé comme du code.</value>
+  </data>
+  <data name="Files_TooLargePreviewHint" xml:space="preserve">
+    <value>Ce fichier est trop volumineux pour être prévisualisé dans l'application.</value>
+  </data>
+  <data name="Files_ImagePreviewErrorHint" xml:space="preserve">
+    <value>Impossible d'ouvrir cette image. Elle est peut-être endommagée ou dans un format que l'application ne sait pas afficher.</value>
+  </data>
+  <data name="Files_CodeLines_one" xml:space="preserve">
+    <value>{0} ligne</value>
+  </data>
+  <data name="Files_CodeLines_other" xml:space="preserve">
+    <value>{0} lignes</value>
+  </data>
+  <data name="Files_Kind_Image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="Files_Kind_Pdf" xml:space="preserve">
+    <value>Document PDF</value>
+  </data>
+  <data name="Files_Kind_Audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="Files_Kind_Video" xml:space="preserve">
+    <value>Vidéo</value>
+  </data>
+  <data name="Files_Kind_Code" xml:space="preserve">
+    <value>Texte ou code</value>
+  </data>
+  <data name="Files_Kind_Other" xml:space="preserve">
+    <value>Fichier</value>
+  </data>
+  <data name="Files_RevealShortButton" xml:space="preserve">
+    <value>Afficher dans le dossier</value>
+  </data>
+  <data name="Files_Tree_DropHint" xml:space="preserve">
+    <value>Vous pouvez aussi faire glisser des fichiers depuis votre gestionnaire de fichiers et les déposer ici.</value>
   </data>
 </root>

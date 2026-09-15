@@ -763,7 +763,7 @@
     <value>Delete folder</value>
   </data>
   <data name="Files_DeleteFile_Message" xml:space="preserve">
-    <value>Delete this file? This action cannot be undone.</value>
+    <value>The file will be moved to the trash. You can restore it from the Trash section.</value>
   </data>
   <data name="Files_DeleteFile_Title" xml:space="preserve">
     <value>DELETE FILE</value>
@@ -4922,5 +4922,146 @@ Happy writing.</value>
   </data>
   <data name="Notification_BrandLogoRemoved_Message" xml:space="preserve">
     <value>The sidebar is showing the Enki icon again.</value>
+  </data>
+  <data name="Files_DeleteFolder_Title" xml:space="preserve">
+    <value>Delete folder</value>
+  </data>
+  <data name="Files_DeleteFolder_Message" xml:space="preserve">
+    <value>The folder and everything inside it will be moved to the vault's .trash folder.</value>
+  </data>
+  <data name="Files_DeleteFolder_Hint" xml:space="preserve">
+    <value>The Trash section only lists individual files: to recover the folder, move it back out of .trash.</value>
+  </data>
+  <data name="Files_Notify_FolderDeleteFailed_Title" xml:space="preserve">
+    <value>Couldn't delete the folder</value>
+  </data>
+  <data name="Files_Notify_FileRenameFailed_Title" xml:space="preserve">
+    <value>Couldn't rename the file</value>
+  </data>
+  <data name="Files_Notify_DeleteFailed_Title" xml:space="preserve">
+    <value>Couldn't delete the file</value>
+  </data>
+  <data name="Files_Notify_PathCopied_Title" xml:space="preserve">
+    <value>Path copied</value>
+  </data>
+  <data name="Files_CopyPathMenuItem" xml:space="preserve">
+    <value>Copy path</value>
+  </data>
+  <data name="Files_ImportHereMenuItem" xml:space="preserve">
+    <value>Import here…</value>
+  </data>
+  <data name="Files_OpenFolderMenuItem" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Files_UpOneLevel" xml:space="preserve">
+    <value>Up one level</value>
+  </data>
+  <data name="Files_FolderEntries_one" xml:space="preserve">
+    <value>{0} item</value>
+  </data>
+  <data name="Files_FolderEntries_other" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="Files_Sort_Modified" xml:space="preserve">
+    <value>Most recent</value>
+  </data>
+  <data name="Files_Sort_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Files_Sort_Size" xml:space="preserve">
+    <value>Largest first</value>
+  </data>
+  <data name="Files_Sort_Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="A11y_Files_SortSelector" xml:space="preserve">
+    <value>Sort files</value>
+  </data>
+  <data name="Files_SearchEmpty_Title" xml:space="preserve">
+    <value>No results</value>
+  </data>
+  <data name="Files_SearchEmpty_Message" xml:space="preserve">
+    <value>No file in this folder or its subfolders matches “{0}”.</value>
+  </data>
+  <data name="Files_SearchingIn" xml:space="preserve">
+    <value>Searching in</value>
+  </data>
+  <data name="Files_FolderEmpty_Title" xml:space="preserve">
+    <value>This folder is empty</value>
+  </data>
+  <data name="Files_FolderEmpty_Hint" xml:space="preserve">
+    <value>Drag files here or import them to add them to this folder.</value>
+  </data>
+  <data name="Files_ClosePreviewTooltip" xml:space="preserve">
+    <value>Close preview (Esc)</value>
+  </data>
+  <data name="Files_PreviousFileTooltip" xml:space="preserve">
+    <value>Previous file (Alt+←)</value>
+  </data>
+  <data name="Files_NextFileTooltip" xml:space="preserve">
+    <value>Next file (Alt+→)</value>
+  </data>
+  <data name="Files_MoreActionsTooltip" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="Files_FitWidthTooltip" xml:space="preserve">
+    <value>Fit to width (Ctrl+0)</value>
+  </data>
+  <data name="Files_ActualSizeTooltip" xml:space="preserve">
+    <value>Actual size (100%)</value>
+  </data>
+  <data name="Files_ImageActualSizeTooltip" xml:space="preserve">
+    <value>Switch between fit to window and actual size</value>
+  </data>
+  <data name="Files_WordWrapTooltip" xml:space="preserve">
+    <value>Wrap long lines</value>
+  </data>
+  <data name="Files_CopyContentTooltip" xml:space="preserve">
+    <value>Copy contents</value>
+  </data>
+  <data name="Files_CodeTruncatedNotice" xml:space="preserve">
+    <value>This file is too long to show in full: the preview only shows its beginning.</value>
+  </data>
+  <data name="Files_CodeReadErrorHint" xml:space="preserve">
+    <value>This file's contents couldn't be read.</value>
+  </data>
+  <data name="Files_BinaryPreviewHint" xml:space="preserve">
+    <value>This file doesn't contain readable text, so it can't be previewed as code.</value>
+  </data>
+  <data name="Files_TooLargePreviewHint" xml:space="preserve">
+    <value>This file is too large to preview in the app.</value>
+  </data>
+  <data name="Files_ImagePreviewErrorHint" xml:space="preserve">
+    <value>This image couldn't be opened. It may be damaged or use a format the app can't display.</value>
+  </data>
+  <data name="Files_CodeLines_one" xml:space="preserve">
+    <value>{0} line</value>
+  </data>
+  <data name="Files_CodeLines_other" xml:space="preserve">
+    <value>{0} lines</value>
+  </data>
+  <data name="Files_Kind_Image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="Files_Kind_Pdf" xml:space="preserve">
+    <value>PDF document</value>
+  </data>
+  <data name="Files_Kind_Audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="Files_Kind_Video" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="Files_Kind_Code" xml:space="preserve">
+    <value>Text or code</value>
+  </data>
+  <data name="Files_Kind_Other" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Files_RevealShortButton" xml:space="preserve">
+    <value>Show in folder</value>
+  </data>
+  <data name="Files_Tree_DropHint" xml:space="preserve">
+    <value>You can also drag files from your file manager and drop them here.</value>
   </data>
 </root>

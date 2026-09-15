@@ -18,27 +18,24 @@
 
        Pensado para vaults ya organizados en carpetas, donde lo que se quiere es saltar de un archivo a
        otro sin perder de vista dónde está cada cosa — y por eso deja fuera a propósito lo que la portada
-       del explorador aporta al principio y estorba después: la franja de encabezado y el filtro por tipo
-       de archivo. Ese filtro se queda en el otro modo por un motivo concreto, no por olvido: se reconstruye
-       a partir de los archivos de la carpeta actual, mientras que este árbol enseña la raíz efectiva
-       entera, y podarlo por extensión dejaría carpetas aparentemente vacías — la jerarquía mentiría sobre
-       lo que hay en disco. La búsqueda del panel, en cambio, sí está aquí, acotada a la raíz efectiva.
+       del explorador aporta al principio y estorba después: la franja de encabezado, el filtro por tipo y el
+       orden. El árbol enseña la raíz efectiva entera, por nombre: podarlo por extensión dejaría carpetas
+       aparentemente vacías. La búsqueda del panel, en cambio, sí está aquí, acotada a la raíz efectiva.
 
-       El selector de sesión vive en el pie del panel, siguiendo el precedente de la vista simplificada de
-       Notas: acota todo lo que se ve encima, así que estar abajo del todo lo deja fuera del camino sin
-       esconderlo. Una sesión protegida y bloqueada no lista ni nombres de archivo, igual que la rejilla.
+       Se navega también con el teclado cuando el árbol tiene el foco: flechas para moverse, plegar y
+       desplegar; Intro para abrir; F2 para renombrar; Supr para borrar.
 
        El DataContext es el mismo FilesViewModel: cambiar de modo no reinicia nada. -->
 
   <UserControl.DataTemplates>
     <!-- Plantilla recursiva de fila: carpetas y archivos comparten fila (mismo alto, misma columna de
          flechita, misma sangría por nivel) para que el árbol se lea como una sola lista jerárquica y no
-         como dos listas apiladas. El ItemsControl de los hijos reutiliza esta misma plantilla implícita
-         por DataType, a cualquier profundidad. -->
+         como dos listas apiladas. -->
     <DataTemplate DataType="vm:FileTreeItemViewModel">
       <StackPanel>
         <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource TreeIndentConverter}}"
+                ToolTip.Tip="{Binding Name}" ToolTip.ShowDelay="700"
                 DragDrop.AllowDrop="True"
                 PointerPressed="TreeRow_PointerPressed"
                 PointerMoved="TreeRow_PointerMoved"
@@ -47,25 +44,9 @@
                 DragDrop.DragLeave="TreeRow_DragLeave"
                 DragDrop.Drop="TreeRow_Drop">
           <Border.ContextMenu>
+            <!-- Un menú para los dos tipos de nodo, con lo que tiene sentido en cada uno: "crear subcarpeta"
+                 sobre un archivo creaba una carpeta hermana sin decirlo. -->
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}">
-                <MenuItem.Icon>
-                  <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
-                </MenuItem.Icon>
-              </MenuItem>
-              <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem}"
-                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateTreeSubfolderCommand}"
-                        CommandParameter="{Binding}">
-                <MenuItem.Icon>
-                  <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
-                </MenuItem.Icon>
-              </MenuItem>
-              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" IsVisible="{Binding IsFile}"
-                        Command="{Binding Card.RevealInSystemCommand}">
-                <MenuItem.Icon>
-                  <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
-                </MenuItem.Icon>
-              </MenuItem>
               <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}" IsVisible="{Binding IsFile}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
                         CommandParameter="{Binding Card}">
@@ -73,7 +54,48 @@
                   <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Common_Delete}"
+              <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem}" IsVisible="{Binding IsFolder}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateTreeSubfolderCommand}"
+                        CommandParameter="{Binding}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Files_ImportHereMenuItem}" IsVisible="{Binding IsFolder}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ImportCommand}"
+                        CommandParameter="{Binding FullPath}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator />
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" IsVisible="{Binding IsFile}"
+                        Command="{Binding Card.RevealInSystemCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" IsVisible="{Binding IsFolder}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RevealFolderCommand}"
+                        CommandParameter="{Binding FullPath}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
+                        CommandParameter="{Binding FullPath}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator />
+              <MenuItem Header="{loc:Tr Common_Delete}" InputGesture="Delete"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).DeleteTreeItemCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
@@ -87,7 +109,7 @@
                carpetas vacías, donde el botón no se dibuja — si no, sus iconos se desplazarían a la
                izquierda y dejarían de alinearse con los de sus hermanos. -->
           <Grid ColumnDefinitions="20,Auto,*" Height="30">
-            <Button Grid.Column="0" Classes="icon-btn" Width="20" Height="20"
+            <Button Grid.Column="0" Classes="icon-btn" Width="20" Height="20" Focusable="False"
                     IsVisible="{Binding HasChildren}"
                     Command="{Binding ToggleExpandCommand}"
                     AutomationProperties.Name="{loc:Tr A11y_Files_ToggleFolder}">
@@ -99,10 +121,8 @@
                              IsVisible="{Binding IsFolder}"
                              Kind="{Binding IsExpanded, Converter={StaticResource FolderStateIconConverter}}"
                              Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
-            <!-- Icono por tipo de archivo (FileCardViewModel.IconKind sobre VaultFileKind), no miniatura:
-                 el árbol es una lista densa de filas de 30px, donde decodificar una imagen o rasterizar la
-                 primera página de un PDF por fila no cabría ni aportaría. Las miniaturas siguen siendo
-                 cosa de las tarjetas del modo explorador. -->
+            <!-- Icono por tipo de archivo, no miniatura: el árbol es una lista densa de filas de 30px, donde
+                 decodificar una imagen o rasterizar un PDF por fila no cabría ni aportaría. -->
             <mi:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="15" Height="15" Margin="2,0,8,0"
                              IsVisible="{Binding IsFile}"
                              Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
@@ -132,9 +152,8 @@
   <!-- La vista entera es destino de los arrastres entrantes del explorador del sistema, y no solo el
        fondo del árbol: aquí la previsualización ocupa la mayor parte de la ventana, así que dejarla muerta
        hacía parecer que soltar archivos en esta disposición no funcionaba. Lo que se suelte fuera del árbol
-       —la previsualización, el modo búsqueda, el pie del panel o el raíl del panel contraído— se importa en
-       la raíz efectiva. Los destinos de dentro (filas de carpeta y fondo del árbol) marcan el evento como
-       manejado, de modo que este de fuera solo ve lo que ninguno de ellos ha recogido. -->
+       se importa en la raíz efectiva. Los destinos de dentro (filas de carpeta y fondo del árbol) marcan el
+       evento como manejado, de modo que este de fuera solo ve lo que ninguno de ellos ha recogido. -->
   <Grid ColumnDefinitions="Auto,Auto,*"
         DragDrop.AllowDrop="True"
         DragDrop.DragEnter="TreeView_DragEnter"
@@ -143,8 +162,6 @@
         DragDrop.Drop="TreeView_Drop">
 
     <!-- ===================== Panel lateral ===================== -->
-    <!-- Panel desplegado y raíl contraído son dos hijos del mismo Panel, no dos ramas de layout distintas:
-         así la columna Auto se ajusta sola a cualquiera de los dos. -->
     <Panel Grid.Column="0" x:Name="SidebarHost">
 
       <!-- · Desplegado · -->
@@ -153,7 +170,7 @@
             Background="{DynamicResource AppBackgroundAltBrush}">
 
         <!-- Barra superior: modo árbol / modo búsqueda a la izquierda, ocultar el panel a la derecha.
-             Alto fijo de 58 para casar al píxel con la cabecera del panel derecho. -->
+             Alto fijo de 58 para casar al píxel con la barra de la previsualización. -->
         <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
                 Background="{DynamicResource AppBackgroundBrush}" Padding="8,0">
           <Grid ColumnDefinitions="Auto,Auto,*,Auto">
@@ -180,11 +197,9 @@
 
         <!-- · Cuerpo: árbol · -->
         <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding !IsTreeSearchMode}">
-          <!-- Fila de acciones. "Nueva carpeta" e "importar" trabajan siempre sobre la raíz efectiva (el
-               vault, o la carpeta de la sesión elegida): en esta vista no existe el concepto visible de
-               "carpeta actual" de la rejilla, y un destino que dependiera de dónde se navegó por última vez
-               en la otra disposición sería invisible desde aquí. Para crear dentro de una carpeta concreta
-               está su menú contextual en el árbol. -->
+          <!-- Fila de acciones. "Nueva carpeta" e "importar" trabajan sobre la raíz efectiva (el vault, o la
+               carpeta de la sesión elegida); para crear o importar dentro de una carpeta concreta está su menú
+               contextual en el árbol. -->
           <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" Margin="8,8,8,4"
                       HorizontalAlignment="Center">
             <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewTreeFolderAtRootCommand}"
@@ -205,10 +220,12 @@
             </Button>
           </StackPanel>
 
-          <!-- La raíz efectiva también es destino de arrastre: soltar un archivo sobre el fondo vacío lo
-               saca de su carpeta, que es el equivalente de la fila "TODOS" del panel del explorador. Y un
-               arrastre entrante desde el explorador del sistema importa aquí, igual que sobre la rejilla. -->
-          <Grid Grid.Row="1" Background="Transparent"
+          <!-- Cuerpo del árbol: recibe el foco del teclado (TreeBody_KeyDown) y es destino de arrastre. Soltar
+               un archivo sobre el fondo vacío lo saca de su carpeta —el equivalente de la fila "TODOS" del
+               explorador—, y un arrastre entrante del sistema importa aquí, igual que sobre la rejilla. -->
+          <Grid Grid.Row="1" x:Name="TreeBody" Background="Transparent" Focusable="True"
+                FocusAdorner="{x:Null}"
+                KeyDown="TreeBody_KeyDown"
                 DragDrop.AllowDrop="True"
                 DragDrop.DragEnter="TreeBackground_DragOver"
                 DragDrop.DragOver="TreeBackground_DragOver"
@@ -228,8 +245,8 @@
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        IsVisible="{Binding ShowTreeEmptyState}" />
 
-            <!-- Sesión protegida y bloqueada: ni siquiera los nombres de los adjuntos se listan
-                 (docs/agent-docs/seccion-archivos.md §6) — hay que desbloquearla desde Sesiones primero. -->
+            <!-- Sesión protegida y bloqueada: ni siquiera los nombres de los adjuntos se listan — hay que
+                 desbloquearla desde Sesiones primero. -->
             <StackPanel IsVisible="{Binding IsSelectedSessionLocked}" HorizontalAlignment="Center"
                         VerticalAlignment="Center" Spacing="12" Margin="18,0" MaxWidth="240">
               <mi:MaterialIcon Kind="LockOutline" Width="32" Height="32" Foreground="{DynamicResource TextMutedBrush}"
@@ -244,6 +261,7 @@
         <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding IsTreeSearchMode}">
           <TextBox Grid.Row="0" x:Name="TreeSearchBox" Classes="search" Margin="10,10,10,6" Height="34"
                    Text="{Binding TreeSearchText}"
+                   KeyDown="TreeSearchBox_KeyDown"
                    PlaceholderText="{loc:Tr Files_Tree_SearchPlaceholder}"
                    AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
             <TextBox.InnerLeftContent>
@@ -264,7 +282,8 @@
                    la sangría del árbol contaba y aquí se pierde. -->
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="vm:FileTreeItemViewModel">
-                  <Border Classes="folder-row" Padding="6,0,10,0" PointerPressed="SearchResult_PointerPressed">
+                  <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Padding="6,0,10,0"
+                          PointerPressed="SearchResult_PointerPressed">
                     <Grid ColumnDefinitions="Auto,*" Height="38">
                       <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="15" Height="15"
                                        Margin="6,0,8,0" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
@@ -281,12 +300,13 @@
           </ScrollViewer>
 
           <TextBlock Grid.Row="1" Text="{loc:Tr Files_Tree_SearchEmpty}" Classes="muted" FontSize="12"
-                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"
+                     TextAlignment="Center" Margin="24,0"
                      IsVisible="{Binding ShowTreeSearchEmptyState}" />
         </Grid>
 
-        <!-- · Pie: selector de sesión y contador. El selector vive aquí, y no en la cabecera, porque acota
-             todo lo que se ve encima: mismo sitio que en la vista simplificada de Notas. -->
+        <!-- · Pie: selector de sesión y contador de todo el árbol. El selector vive aquí, y no en la
+             cabecera, porque acota todo lo que se ve encima: mismo sitio que en la vista simplificada de Notas. -->
         <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10,8">
           <StackPanel Spacing="6">
             <ComboBox Height="32" HorizontalAlignment="Stretch"
@@ -302,7 +322,7 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <TextBlock Text="{Binding FilesCountLabel}" Classes="faint" FontSize="10.5" Margin="4,0,0,0" />
+            <TextBlock Text="{Binding TreeFilesCountLabel}" Classes="faint" FontSize="10.5" Margin="4,0,0,0" />
           </StackPanel>
         </Border>
       </Grid>
@@ -352,12 +372,12 @@
     <!-- ===================== Panel derecho: previsualización ===================== -->
     <Grid Grid.Column="2" RowDefinitions="Auto,*">
 
-      <!-- Cabecera: nombre de la sección + conmutador de navegación. Mismo alto que la barra superior del
-           panel lateral, para que la costura no quede cortada a media ventana. El nombre del archivo, los
-           controles de página del PDF y "abrir con el sistema" no se repiten aquí: los trae la propia
-           FilePreviewView en su barra, igual en las dos disposiciones. -->
+      <!-- Cabecera sin nada abierto: nombre de la sección + conmutador de navegación. Con un archivo abierto
+           desaparece, porque la barra de la propia previsualización ya trae nombre, acciones y conmutador:
+           tener las dos apiladas gastaba una franja entera de la ventana en repetir lo mismo. -->
       <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
-              Background="{DynamicResource AppBackgroundBrush}" Padding="18,0">
+              Background="{DynamicResource AppBackgroundBrush}" Padding="18,0"
+              IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Grid.Column="0" Text="{loc:Tr Files_PageTitle, Converter={StaticResource UpperCaseConverter}}"
                      Classes="eyebrow" FontSize="10" VerticalAlignment="Center" />
@@ -380,13 +400,16 @@
         </Grid>
       </Border>
 
-      <views:FilePreviewView Grid.Row="1"
+      <views:FilePreviewView Grid.Row="0" Grid.RowSpan="2"
                              IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
-      <StackPanel Grid.Row="1" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360"
+      <StackPanel Grid.Row="1" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="380"
+                  Margin="24"
                   IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
-        <mi:MaterialIcon Kind="FileOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
+        <Border Width="72" Height="72" Background="{DynamicResource Ink05}" HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="FileEyeOutline" Width="36" Height="36" Foreground="{DynamicResource Ink40}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
         <TextBlock Text="{loc:Tr Files_Tree_NoSelection}" Classes="muted" HorizontalAlignment="Center"
                    TextAlignment="Center" TextWrapping="Wrap" />
         <Button Classes="pill" HorizontalAlignment="Center" Command="{Binding ImportCommand}"
@@ -396,14 +419,15 @@
             <TextBlock Text="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
           </StackPanel>
         </Button>
+        <TextBlock Text="{loc:Tr Files_Tree_DropHint}" Classes="faint" FontSize="11.5" HorizontalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" />
       </StackPanel>
     </Grid>
 
     <!-- Realce mientras un arrastre válido del explorador del sistema sobrevuela la vista: un recuadro por
          encima de todo —IsHitTestVisible="False" para no interponerse en el propio arrastre—, con el mismo
          lenguaje "borde InkBrush" que Border.files-grid-panel.drag-over en el modo explorador. Se apaga
-         cuando el destino es una fila de carpeta concreta, que ya se resalta ella sola: encender los dos a
-         la vez no diría en cuál de los dos sitios va a caer el archivo. -->
+         cuando el destino es una fila de carpeta concreta, que ya se resalta ella sola. -->
     <Border Grid.Column="0" Grid.ColumnSpan="3" IsHitTestVisible="False"
             IsVisible="{Binding IsGridDropTarget}"
             BorderBrush="{DynamicResource InkBrush}" BorderThickness="2" />

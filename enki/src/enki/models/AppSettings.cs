@@ -431,6 +431,11 @@ public sealed class AppSettings
     /// <summary>"Browser" o "Tree" — qué disposición usa la sección Archivos.</summary>
     public string FilesViewMode { get; set; } = "Browser";
 
+    /// <summary>Orden de los archivos en la rejilla del modo explorador: "Modified", "Name", "Size" o "Type"
+    /// (<c>FileSortMode</c>). Mismo criterio de string plano que <see cref="FilesViewMode"/>; un valor
+    /// desconocido —editado a mano, o de una versión futura— cae al orden por fecha de siempre.</summary>
+    public string FilesSortMode { get; set; } = "Modified";
+
     /// <summary>Rutas de carpeta expandidas en el árbol del modo árbol. Deliberadamente separado de
     /// <see cref="FilesExpandedFolderPaths"/> (el panel de carpetas del modo explorador), por el mismo
     /// motivo que <see cref="SkillsTreeExpandedFolderPaths"/> lo está de

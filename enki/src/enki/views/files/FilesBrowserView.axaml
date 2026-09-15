@@ -7,20 +7,22 @@
              xmlns:views="clr-namespace:enki.Views"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
-             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.FilesBrowserView"
              x:Name="Root"
              x:DataType="vm:FilesViewModel">
 
-  <!-- Modo "explorador" de la sección Archivos, la disposición de siempre: encabezado, barra de
-       herramientas (importar, sesión, filtro por tipo, búsqueda, contador y conmutador de navegación),
-       panel de carpetas a la izquierda y rejilla de tarjetas a la derecha. Abrir un archivo sustituye la
-       pantalla entera por la previsualización compartida (FilePreviewView).
+  <!-- Modo "explorador" de la sección Archivos: encabezado, barra de herramientas (importar, sesión, filtro
+       por tipo, orden, búsqueda, contador y conmutador de navegación), panel de carpetas a la izquierda y
+       rejilla de tarjetas a la derecha, con su miga de pan. Abrir un archivo sustituye la pantalla entera
+       por la previsualización compartida (FilePreviewView).
 
        El DataContext es el mismo FilesViewModel que usa el modo árbol: cambiar de modo no reinicia nada. -->
 
   <UserControl.DataTemplates>
-    <!-- Misma plantilla recursiva que NotesView.axaml, apuntando a FileFolderViewModel. -->
+    <!-- Fila del panel de carpetas: misma plantilla recursiva que NotesView.axaml. Renombrar y borrar solo
+         aparecen al pasar el cursor por la fila (o en la seleccionada): con los dos iconos fijos en cada fila,
+         un panel con veinte carpetas eran cuarenta iconos compitiendo con los nombres. -->
     <DataTemplate DataType="vm:FileFolderViewModel">
       <StackPanel>
         <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
@@ -33,7 +35,7 @@
                 DragDrop.Drop="FolderRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}">
+              <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
@@ -45,8 +47,31 @@
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
+              <MenuItem Header="{loc:Tr Files_ImportHereMenuItem}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ImportCommand}"
+                        CommandParameter="{Binding FullPath}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator />
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RevealFolderCommand}"
+                        CommandParameter="{Binding FullPath}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
+                        CommandParameter="{Binding FullPath}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator />
               <MenuItem Header="{loc:Tr Common_Delete}"
-                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).DeleteFolderCommand}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RequestDeleteFolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
@@ -62,24 +87,27 @@
               <mi:MaterialIcon Kind="{Binding IsExpanded, Converter={StaticResource ExpandChevronConverter}}"
                                 Width="16" Height="16" />
             </Button>
-            <mi:MaterialIcon Grid.Column="1" Kind="FolderOutline" Width="15" Height="15" Margin="2,0,8,0"
-                              Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Grid.Column="1" Width="15" Height="15" Margin="2,0,8,0"
+                             Kind="{Binding IsExpanded, Converter={StaticResource FolderStateIconConverter}}"
+                             Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
             <TextBlock Grid.Column="2" Text="{Binding Name}" VerticalAlignment="Center" FontSize="13.5"
-                       TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsRenaming}" />
+                       TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsRenaming}" ToolTip.Tip="{Binding Name}" />
             <TextBox Grid.Column="2" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
-                      AutomationProperties.Name="{loc:Tr A11y_Files_FolderNameField}"
-                      VerticalAlignment="Center" FontSize="13.5" Padding="4,2"
-                      KeyDown="FolderNameEdit_KeyDown" LostFocus="FolderNameEdit_LostFocus"
-                      Initialized="FolderNameEdit_Initialized"
-                      PropertyChanged="FolderNameEdit_PropertyChanged" />
-            <Button Grid.Column="3" Classes="icon-btn" Width="20" Height="20" Command="{Binding BeginRenameCommand}"
+                     AutomationProperties.Name="{loc:Tr A11y_Files_FolderNameField}"
+                     VerticalAlignment="Center" FontSize="13.5" Padding="4,2" Margin="0,0,6,0"
+                     KeyDown="FolderNameEdit_KeyDown" LostFocus="FolderNameEdit_LostFocus"
+                     Initialized="RenameBox_Initialized"
+                     PropertyChanged="RenameBox_PropertyChanged" />
+            <Button Grid.Column="3" Classes="icon-btn row-action" Width="22" Height="22" Command="{Binding BeginRenameCommand}"
+                    IsVisible="{Binding !IsRenaming}"
                     ToolTip.Tip="{loc:Tr Files_RenameAction}" AutomationProperties.Name="{loc:Tr Files_RenameAction}">
-              <mi:MaterialIcon Kind="FolderEditOutline" Width="14" Height="14" />
+              <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
             </Button>
-            <Button Grid.Column="4" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
-                    Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).DeleteFolderCommand}"
+            <Button Grid.Column="4" Classes="icon-btn icon-btn-danger row-action" Width="22" Height="22" Margin="0,0,4,0"
+                    IsVisible="{Binding !IsRenaming}"
+                    Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RequestDeleteFolderCommand}"
                     CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Files_DeleteFolderTooltip}" AutomationProperties.Name="{loc:Tr Files_DeleteFolderTooltip}">
-              <mi:MaterialIcon Kind="FolderRemoveOutline" Width="14" Height="14" />
+              <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
             </Button>
           </Grid>
         </Border>
@@ -94,15 +122,168 @@
       </StackPanel>
     </DataTemplate>
 
+    <!-- Tarjeta de carpeta (incluida la ".." de subir un nivel). Es destino de arrastre como la fila del
+         panel —mover ahí una tarjeta, o importar ahí lo que venga del sistema—, y se renombra en línea. -->
     <DataTemplate DataType="vm:FileFolderCardViewModel">
-      <Button Classes="file-card" Margin="0,0,16,16" Width="180" Height="180"
-              Command="{Binding $parent[ItemsControl].((vm:FilesViewModel)DataContext).OpenFolderCardCommand}"
-              CommandParameter="{Binding}">
-        <Grid RowDefinitions="*,Auto">
-          <mi:MaterialIcon Grid.Row="0" Kind="FolderOutline" Width="48" Height="48"
-                            Foreground="{DynamicResource Ink40}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      <Button Classes="file-card" Classes.drag-over="{Binding IsDropTarget}" Margin="0,0,16,16" Width="184" Height="204"
+              Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenFolderCardCommand}"
+              CommandParameter="{Binding}"
+              ToolTip.Tip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
+              DragDrop.AllowDrop="True"
+              DragDrop.DragEnter="FolderCard_DragEnter"
+              DragDrop.DragOver="FolderCard_DragOver"
+              DragDrop.DragLeave="FolderCard_DragLeave"
+              DragDrop.Drop="FolderCard_Drop"
+              KeyDown="FolderCard_KeyDown">
+        <Button.ContextMenu>
+          <ContextMenu Opening="FolderCardMenu_Opening">
+            <MenuItem Header="{loc:Tr Files_OpenFolderMenuItem}"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenFolderCardCommand}"
+                      CommandParameter="{Binding}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{loc:Tr Files_ImportHereMenuItem}"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ImportCommand}"
+                      CommandParameter="{Binding FullPath}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RevealFolderCommand}"
+                      CommandParameter="{Binding FullPath}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
+                      CommandParameter="{Binding FullPath}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="{loc:Tr Common_Delete}" InputGesture="Delete"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RequestDeleteFolderCommand}"
+                      CommandParameter="{Binding}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+          </ContextMenu>
+        </Button.ContextMenu>
+        <Grid RowDefinitions="*,Auto,Auto">
+          <Border Grid.Row="0" Background="{DynamicResource Ink05}" Margin="0,0,0,10">
+            <mi:MaterialIcon Width="44" Height="44" Foreground="{DynamicResource Ink40}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             Kind="{Binding IsParent, Converter={StaticResource ParentFolderIconConverter}}" />
+          </Border>
           <TextBlock Grid.Row="1" Text="{Binding Name}" FontWeight="Bold" FontSize="13" LetterSpacing="0.2"
-                     TextTrimming="CharacterEllipsis" MaxLines="1" HorizontalAlignment="Center" Margin="0,10,0,0" />
+                     TextTrimming="CharacterEllipsis" MaxLines="1" IsVisible="{Binding !IsRenaming}" />
+          <TextBox Grid.Row="1" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
+                   AutomationProperties.Name="{loc:Tr A11y_Files_FolderNameField}"
+                   FontSize="12.5" Padding="4,2"
+                   KeyDown="FolderCardNameEdit_KeyDown" LostFocus="FolderCardNameEdit_LostFocus"
+                   Initialized="RenameBox_Initialized"
+                   PropertyChanged="RenameBox_PropertyChanged" />
+          <TextBlock Grid.Row="2" Text="{Binding CountLabel}" Classes="faint" FontSize="10.5" Margin="0,4,0,0"
+                     TextTrimming="CharacterEllipsis" MaxLines="1" />
+        </Grid>
+      </Button>
+    </DataTemplate>
+
+    <!-- Tarjeta de archivo: miniatura (o icono por tipo) con la extensión encima, nombre, carpeta —solo en
+         resultados de búsqueda, que bajan a las subcarpetas— y tamaño · fecha. -->
+    <DataTemplate DataType="vm:FileCardViewModel">
+      <Button Classes="file-card" Margin="0,0,16,16" Width="184" Height="204"
+              Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenCardCommand}"
+              CommandParameter="{Binding}"
+              ToolTip.Tip="{Binding FileName}" AutomationProperties.Name="{Binding FileName}"
+              Initialized="FileCard_Initialized"
+              KeyDown="FileCard_KeyDown">
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
+                      CommandParameter="{Binding}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" Command="{Binding RevealInSystemCommand}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
+                      CommandParameter="{Binding File.FullPath}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="{loc:Tr Common_Delete}" InputGesture="Delete"
+                      Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RequestDeleteFileCommand}"
+                      CommandParameter="{Binding}">
+              <MenuItem.Icon>
+                <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+              </MenuItem.Icon>
+            </MenuItem>
+          </ContextMenu>
+        </Button.ContextMenu>
+        <Grid RowDefinitions="*,Auto,Auto,Auto">
+          <!-- Miniatura decodificada (imágenes y primera página de PDFs) o icono por tipo — ver
+               FileCardViewModel.EnsureThumbnailLoaded. -->
+          <Border Grid.Row="0" Background="{DynamicResource Ink05}" Margin="0,0,0,10" ClipToBounds="True">
+            <Panel>
+              <Image Source="{Binding Thumbnail}" Stretch="Uniform" Margin="6"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     IsVisible="{Binding Thumbnail, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+              <mi:MaterialIcon Kind="{Binding IconKind}" Width="40" Height="40"
+                               Foreground="{DynamicResource Ink40}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding Thumbnail, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+              <Border Classes="file-ext-badge" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6"
+                      IsVisible="{Binding HasExtension}">
+                <TextBlock Text="{Binding ExtensionLabel}" />
+              </Border>
+            </Panel>
+          </Border>
+          <TextBlock Grid.Row="1" Text="{Binding FileName}"
+                     FontWeight="Bold" FontSize="13" LetterSpacing="0.2"
+                     TextTrimming="CharacterEllipsis" MaxLines="1"
+                     IsVisible="{Binding !IsRenaming}" />
+          <TextBox Grid.Row="1" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
+                   AutomationProperties.Name="{loc:Tr A11y_Files_FileNameField}"
+                   FontSize="12.5" Padding="4,2"
+                   KeyDown="FileNameEdit_KeyDown" LostFocus="FileNameEdit_LostFocus"
+                   Initialized="RenameBox_Initialized"
+                   PropertyChanged="RenameBox_PropertyChanged" />
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="5" Margin="0,3,0,0" ClipToBounds="True"
+                      IsVisible="{Binding HasLocation}">
+            <mi:MaterialIcon Kind="FolderOutline" Width="11" Height="11" Foreground="{DynamicResource Ink40}"
+                             VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LocationLabel}" Classes="faint" FontSize="10.5" MaxWidth="134"
+                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Grid.Row="3" Text="{Binding MetaLabel}" Classes="faint" FontSize="10.5" Margin="0,4,0,0"
+                     TextTrimming="CharacterEllipsis" MaxLines="1" />
         </Grid>
       </Button>
     </DataTemplate>
@@ -119,7 +300,19 @@
                    Classes="page-subtitle" />
       </StackPanel>
 
-      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="36,0,36,18">
+      <Grid Grid.Row="1" Margin="36,0,36,18">
+        <!-- La búsqueda crece hasta 360 px y el hueco sobrante va a la columna vacía de detrás: así queda pegada a
+             los selectores, y el contador y el conmutador siguen alineados a la derecha. -->
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="3*" MaxWidth="360" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
         <Button Grid.Column="0" Classes="pill" Height="36" Command="{Binding ImportCommand}" Margin="0,0,14,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" />
@@ -128,8 +321,8 @@
         </Button>
 
         <!-- Workspace selector: mismas sesiones que ya ve Notas — un archivo soltado en la sesión "X" es
-             visible desde Notas y Archivos sin ningún concepto nuevo (docs/seccion-archivos.md §5). -->
-        <ComboBox Grid.Column="1" Height="36" Margin="0,0,14,0" MinWidth="190"
+             visible desde Notas y Archivos sin ningún concepto nuevo (docs/agent-docs/seccion-archivos.md §3). -->
+        <ComboBox Grid.Column="1" Height="36" Margin="0,0,10,0" MinWidth="180"
                   ItemsSource="{Binding SessionOptions}" SelectedItem="{Binding SelectedSessionOption}"
                   AutomationProperties.Name="{loc:Tr A11y_Files_SessionSelector}">
           <ComboBox.ItemTemplate>
@@ -143,33 +336,51 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
 
-        <!-- Filtro por tipo de archivo: extensión — mismo tratamiento visual que el selector de sesión. -->
-        <ComboBox Grid.Column="2" Height="36" Margin="0,0,14,0" MinWidth="150"
+        <!-- Filtro por tipo de archivo — mismo tratamiento visual que el selector de sesión. -->
+        <ComboBox Grid.Column="2" Height="36" Margin="0,0,10,0" MinWidth="150"
                   ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding SelectedFilterOption}"
                   AutomationProperties.Name="{loc:Tr A11y_Files_FilterSelector}">
           <ComboBox.ItemTemplate>
             <DataTemplate DataType="vm:FileKindFilterOption">
-              <TextBlock Text="{Binding Label}" FontSize="12" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="FilterVariant" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{Binding Label}" FontSize="12" />
+              </StackPanel>
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
 
-        <TextBox Grid.Column="3" Classes="search" Height="36" PlaceholderText="{loc:Tr Files_SearchPlaceholder}" AutomationProperties.Name="{loc:Tr Files_SearchPlaceholder}" Text="{Binding SearchText}"
-                  MaxWidth="360" HorizontalAlignment="Left" VerticalAlignment="Center">
+        <ComboBox Grid.Column="3" Height="36" Margin="0,0,14,0" MinWidth="150"
+                  ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSortOption}"
+                  ToolTip.Tip="{loc:Tr A11y_Files_SortSelector}"
+                  AutomationProperties.Name="{loc:Tr A11y_Files_SortSelector}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate DataType="vm:FileSortOption">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="SortVariant" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{Binding Label}" FontSize="12" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBox Grid.Column="4" Classes="search" Height="36" PlaceholderText="{loc:Tr Files_SearchPlaceholder}"
+                 AutomationProperties.Name="{loc:Tr Files_SearchPlaceholder}" Text="{Binding SearchText}"
+                 HorizontalAlignment="Stretch" VerticalAlignment="Center">
           <TextBox.InnerLeftContent>
             <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}"
                     Margin="10,0,0,0" />
           </TextBox.InnerLeftContent>
         </TextBox>
 
-        <Border Grid.Column="4" Classes="card" Padding="14,9" VerticalAlignment="Center">
+        <Border Grid.Column="6" Classes="card" Padding="14,9" Margin="14,0,0,0" VerticalAlignment="Center">
           <TextBlock Text="{Binding FilesCountLabel}" Classes="faint" FontSize="10.5" />
         </Border>
 
         <!-- Conmutador de navegación: explorador (esta vista) o árbol. Vive aquí, en la sección, y no en
              Ajustes, porque es una decisión de *cómo navegar* que se toma mientras se navega y cuyo efecto
              se ve al instante — mismo criterio que el de IA Skills. -->
-        <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+        <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
                     Margin="14,0,0,0" ToolTip.Tip="{loc:Tr Files_Nav_Tooltip}">
           <Button Classes="icon-btn active" Width="34" Height="34"
                   Command="{Binding ShowBrowserViewCommand}"
@@ -241,7 +452,7 @@
                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
         <!-- ===================== Rejilla de archivos ===================== -->
-        <!-- Objetivo del arrastre-y-soltar desde el explorador del SO (docs/seccion-archivos.md §5/§7):
+        <!-- Objetivo del arrastre-y-soltar desde el explorador del SO (docs/agent-docs/seccion-archivos.md §8):
              DragDrop.AllowDrop + los cuatro handlers, resueltos vía e.DataTransfer.TryGetFiles(). -->
         <Border Grid.Column="2" ClipToBounds="True" Classes="files-grid-panel"
                 Classes.drag-over="{Binding IsGridDropTarget}"
@@ -268,104 +479,120 @@
           </Border.ContextMenu>
           <Grid RowDefinitions="Auto,*">
 
-            <TextBlock Grid.Row="0" Text="{Binding CurrentFolderLabel}"
-                       Classes="eyebrow" Margin="24,16,24,0" />
+            <!-- Miga de pan: dónde se está y cómo volver a cualquier nivel de un clic. Con una búsqueda activa
+                 dice además que los resultados salen de esa carpeta y de sus subcarpetas. -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="18,12,18,0" IsVisible="{Binding !IsSelectedSessionLocked}">
+              <Button Grid.Column="0" Classes="icon-btn" Width="26" Height="26" Margin="0,0,8,0"
+                      Command="{Binding NavigateUpCommand}"
+                      IsEnabled="{Binding CurrentFolder, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                      ToolTip.Tip="{loc:Tr Files_UpOneLevel}" AutomationProperties.Name="{loc:Tr Files_UpOneLevel}">
+                <mi:MaterialIcon Kind="ArrowUp" Width="15" Height="15" />
+              </Button>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True">
+                <TextBlock Text="{loc:Tr Files_SearchingIn, Converter={StaticResource UpperCaseConverter}}" Classes="faint"
+                           FontSize="10" LetterSpacing="0.6" Margin="0,0,8,0" VerticalAlignment="Center"
+                           IsVisible="{Binding IsSearchActive}" />
+                <ItemsControl ItemsSource="{Binding Breadcrumbs}" VerticalAlignment="Center">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:FileBreadcrumbViewModel">
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="›" Classes="faint" Margin="4,0" VerticalAlignment="Center"
+                                   IsVisible="{Binding ShowsSeparator}" />
+                        <Button Classes="breadcrumb" Classes.current="{Binding IsLast}"
+                                Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).NavigateToBreadcrumbCommand}"
+                                CommandParameter="{Binding}"
+                                AutomationProperties.Name="{Binding Name}">
+                          <TextBlock Text="{Binding Name, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Grid>
 
-            <Grid Grid.Row="1">
+            <Panel Grid.Row="1">
               <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding BrowserItems}" Margin="24">
+                <ItemsControl ItemsSource="{Binding BrowserItems}" Margin="18,14,2,18">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                       <WrapPanel Orientation="Horizontal" />
                     </ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:FileCardViewModel">
-                      <Button Classes="file-card" Margin="0,0,16,16" Width="180" Height="180"
-                              Command="{Binding $parent[ItemsControl].((vm:FilesViewModel)DataContext).OpenCardCommand}"
-                              CommandParameter="{Binding}" AutomationProperties.Name="{Binding FileName}"
-                              Initialized="FileCard_Initialized">
-                        <Button.ContextMenu>
-                          <ContextMenu>
-                            <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}">
-                              <MenuItem.Icon>
-                                <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
-                              </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" Command="{Binding RevealInSystemCommand}">
-                              <MenuItem.Icon>
-                                <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
-                              </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}"
-                                      Command="{Binding #Root.((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
-                                      CommandParameter="{Binding}">
-                              <MenuItem.Icon>
-                                <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
-                              </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="{loc:Tr Common_Delete}"
-                                      Command="{Binding #Root.((vm:FilesViewModel)DataContext).RequestDeleteFileCommand}"
-                                      CommandParameter="{Binding}">
-                              <MenuItem.Icon>
-                                <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
-                              </MenuItem.Icon>
-                            </MenuItem>
-                          </ContextMenu>
-                        </Button.ContextMenu>
-                        <Grid RowDefinitions="*,Auto,Auto">
-                          <!-- Thumbnail decodificado (imágenes) o icono fijo por tipo (PDF/otros) —
-                               ver FileCardViewModel.EnsureThumbnailLoaded. -->
-                          <Panel Grid.Row="0" Margin="0,0,0,10">
-                            <Image Source="{Binding Thumbnail}" Stretch="Uniform"
-                                   RenderOptions.BitmapInterpolationMode="HighQuality"
-                                   IsVisible="{Binding Thumbnail, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-                            <mi:MaterialIcon Kind="{Binding IconKind}" Width="40" Height="40"
-                                              Foreground="{DynamicResource Ink40}"
-                                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                                              IsVisible="{Binding Thumbnail, Converter={x:Static conv:ObjectConverters.IsNull}}" />
-                          </Panel>
-                          <TextBlock Grid.Row="1" Text="{Binding FileName}"
-                                     FontWeight="Bold" FontSize="13" LetterSpacing="0.2"
-                                     TextTrimming="CharacterEllipsis" MaxLines="1"
-                                     IsVisible="{Binding !IsRenaming}" />
-                          <TextBox Grid.Row="1" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
-                                    AutomationProperties.Name="{loc:Tr A11y_Files_FileNameField}"
-                                    FontSize="12.5" Padding="4,2"
-                                    KeyDown="FileNameEdit_KeyDown" LostFocus="FileNameEdit_LostFocus"
-                                    Initialized="FileNameEdit_Initialized"
-                                    PropertyChanged="FileNameEdit_PropertyChanged" />
-                          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                            <TextBlock Text="{Binding SizeLabel}" Classes="faint" />
-                            <TextBlock Text="·" Classes="faint" />
-                            <TextBlock Text="{Binding ModifiedLabel}" Classes="faint" />
-                          </StackPanel>
-                        </Grid>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
                 </ItemsControl>
               </ScrollViewer>
 
+              <!-- Almacén (o sesión) sin nada todavía: las dos formas de empezar, a un clic. -->
               <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                          Spacing="12">
-                <mi:MaterialIcon Kind="FileOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
-                        HorizontalAlignment="Center" />
-                <TextBlock Text="{loc:Tr Files_EmptyTitle}" Classes="muted" HorizontalAlignment="Center" />
-                <TextBlock Text="{loc:Tr Files_EmptyHint}" Classes="faint"
-                           HorizontalAlignment="Center" />
+                          Spacing="14" MaxWidth="400" Margin="24">
+                <Border Width="72" Height="72" Background="{DynamicResource Ink05}" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="FileUploadOutline" Width="36" Height="36" Foreground="{DynamicResource Ink40}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Text="{loc:Tr Files_EmptyTitle}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Files_EmptyHint}" Classes="muted" HorizontalAlignment="Center"
+                           TextAlignment="Center" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,6,0,0">
+                  <Button Classes="pill" Command="{Binding ImportCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="pill" Command="{Binding NewFolderCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Tr Files_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
               </StackPanel>
 
-              <!-- Sesión protegida y bloqueada: ni siquiera los nombres de los adjuntos se listan (§6,
-                   "Sesiones protegidas con contraseña") — hay que desbloquearla desde Sesiones primero. -->
+              <StackPanel IsVisible="{Binding ShowFolderEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Spacing="14" MaxWidth="380" Margin="24">
+                <Border Width="72" Height="72" Background="{DynamicResource Ink05}" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="FolderOpenOutline" Width="36" Height="36" Foreground="{DynamicResource Ink40}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Text="{loc:Tr Files_FolderEmpty_Title}" FontWeight="Bold" FontSize="15" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Files_FolderEmpty_Hint}" Classes="muted" HorizontalAlignment="Center"
+                           TextAlignment="Center" TextWrapping="Wrap" />
+                <Button Classes="pill" Command="{Binding ImportCommand}" HorizontalAlignment="Center" Margin="0,6,0,0">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
+                    <TextBlock Text="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+
+              <StackPanel IsVisible="{Binding ShowSearchEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Spacing="14" MaxWidth="420" Margin="24">
+                <Border Width="72" Height="72" Background="{DynamicResource Ink05}" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Magnify" Width="36" Height="36" Foreground="{DynamicResource Ink40}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Text="{loc:Tr Files_SearchEmpty_Title}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding SearchEmptyMessage}" Classes="muted" HorizontalAlignment="Center"
+                           TextAlignment="Center" TextWrapping="Wrap" />
+              </StackPanel>
+
+              <!-- Sesión protegida y bloqueada: ni siquiera los nombres de los adjuntos se listan — hay que
+                   desbloquearla desde Sesiones primero. -->
               <StackPanel IsVisible="{Binding IsSelectedSessionLocked}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                          Spacing="12" MaxWidth="280">
-                <mi:MaterialIcon Kind="LockOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
-                        HorizontalAlignment="Center" />
+                          Spacing="14" MaxWidth="320" Margin="24">
+                <Border Width="72" Height="72" Background="{DynamicResource Ink05}" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="LockOutline" Width="36" Height="36" Foreground="{DynamicResource Ink40}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
                 <TextBlock Text="{loc:Tr Files_LockedSession_Message}" Classes="muted" HorizontalAlignment="Center"
                            TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
-            </Grid>
+            </Panel>
           </Grid>
         </Border>
       </Grid>

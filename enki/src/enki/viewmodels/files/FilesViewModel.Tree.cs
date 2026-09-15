@@ -17,19 +17,18 @@ namespace enki.ViewModels;
 ///
 /// No hay un segundo modelo de datos detrás: es el mismo <see cref="FilesViewModel"/>, las mismas
 /// <see cref="FileCardViewModel"/> que abre la rejilla del modo explorador y los mismos comandos de
-/// importar/renombrar/mover/borrar. Lo único propio de este modo es la forma del árbol, su búsqueda y el
-/// estado del panel lateral — por eso vive en un parcial aparte y no en un viewmodel nuevo, igual que
-/// <c>SkillsViewModel.Tree.cs</c> y <c>NotesViewModel.SimpleView.cs</c>.
+/// importar/renombrar/mover/borrar. Lo único propio de este modo es la forma del árbol, su búsqueda, su
+/// selección con el teclado y el estado del panel lateral — por eso vive en un parcial aparte y no en un
+/// viewmodel nuevo, igual que <c>SkillsViewModel.Tree.cs</c> y <c>NotesViewModel.SimpleView.cs</c>.
 ///
 /// Dos cosas que Archivos tiene y Skills no, y que este árbol trata explícitamente:
 /// <list type="bullet">
 /// <item>El árbol cuelga de <see cref="EffectiveRootPath"/> —la sesión elegida—, no del vault entero, y
 /// una sesión protegida y bloqueada no lista ni nombres de archivo, igual que la rejilla.</item>
-/// <item>El filtro por tipo de archivo (<see cref="SelectedFilterOption"/>) se queda deliberadamente en el
-/// modo explorador: se reconstruye a partir de los archivos de la carpeta actual, mientras que el árbol es
-/// el navegador de toda la raíz efectiva, y podarlo por extensión dejaría carpetas aparentemente vacías —
-/// la jerarquía mentiría sobre lo que hay en disco. Mismo criterio que el filtro de etiquetas de Skills,
-/// que tampoco entra en su árbol.</item>
+/// <item>El filtro por tipo de archivo (<see cref="SelectedFilterOption"/>) y el orden
+/// (<see cref="SelectedSortOption"/>) se quedan deliberadamente en el modo explorador: el árbol es el mapa de
+/// toda la raíz efectiva, ordenado por nombre, y podarlo por extensión dejaría carpetas aparentemente vacías —
+/// la jerarquía mentiría sobre lo que hay en disco. Mismo criterio que el filtro de etiquetas de Skills.</item>
 /// </list></summary>
 public sealed partial class FilesViewModel
 {
@@ -45,16 +44,20 @@ public sealed partial class FilesViewModel
     /// vive cada uno, que es la primera pregunta que se hace sobre un resultado.</summary>
     public ObservableCollection<FileTreeItemViewModel> TreeSearchResults { get; } = [];
 
-    /// <summary>Todas las tarjetas montadas en el árbol, en orden de recorrido — fuente de la búsqueda del
-    /// panel y de la búsqueda de una tarjeta por ruta al soltar un arrastre.</summary>
+    /// <summary>Todas las tarjetas montadas en el árbol, en el orden en que se leen de arriba abajo — fuente
+    /// de la búsqueda del panel, del contador, de "anterior/siguiente" en la previsualización y de la búsqueda
+    /// de una tarjeta por ruta al soltar un arrastre.</summary>
     private readonly List<FileCardViewModel> _treeCards = [];
+
+    /// <summary>Ruta del nodo seleccionado en el árbol: el archivo abierto o la última carpeta pulsada.</summary>
+    private string? _treeSelectionPath;
 
     [ObservableProperty]
     private bool _hasTreeItems;
 
     /// <summary>Qué disposición dibuja la sección. Se elige con el conmutador de la barra de herramientas
-    /// (y de la cabecera del panel derecho en el modo árbol) y se guarda como el string "Tree"/"Browser"
-    /// en <see cref="AppSettings.FilesViewMode"/> —mismo criterio que <see cref="AppSettings.NotesViewMode"/>
+    /// (y de la barra de la previsualización) y se guarda como el string "Tree"/"Browser" en
+    /// <see cref="AppSettings.FilesViewMode"/> —mismo criterio que <see cref="AppSettings.NotesViewMode"/>
     /// y <see cref="AppSettings.SkillsViewMode"/> de no acoplar <c>Models</c> a un enum de UI.</summary>
     [ObservableProperty]
     private bool _isTreeView;
@@ -78,6 +81,11 @@ public sealed partial class FilesViewModel
     /// <summary>El árbol está vacío por serlo de verdad, no porque la sesión esté bloqueada — ésta última
     /// tiene su propio aviso, igual que en la rejilla del explorador.</summary>
     public bool ShowTreeEmptyState => !HasTreeItems && !IsSelectedSessionLocked;
+
+    /// <summary>Cuántos archivos hay en todo el árbol. Antes el pie del panel enseñaba <see cref="FilesCountLabel"/>,
+    /// que cuenta los de la carpeta abierta en el otro modo con su búsqueda y su filtro: un número que no tenía
+    /// nada que ver con lo que se veía encima.</summary>
+    public string TreeFilesCountLabel => Plural.Get("Files_CountLabel", _treeCards.Count, _treeCards.Count);
 
     /// <summary>Silencia el guardado en Ajustes mientras se leen de allí los valores iniciales — si no,
     /// cada asignación del arranque escribiría de vuelta en el JSON lo que se acaba de leer de él.</summary>
@@ -113,6 +121,7 @@ public sealed partial class FilesViewModel
         // o borrar desde el explorador, por ejemplo—. Reconstruir no reinicia nada: conserva qué carpetas
         // estaban abiertas y reutiliza la tarjeta de la previsualización que hubiera abierta.
         if (value) RebuildTree();
+        RefreshPreviewNavigation();
 
         if (_settingsService is null) return;
         _settingsService.Settings.FilesViewMode = value ? "Tree" : "Browser";
@@ -137,8 +146,14 @@ public sealed partial class FilesViewModel
     partial void OnHasTreeItemsChanged(bool value) => OnPropertyChanged(nameof(ShowTreeEmptyState));
 
     /// <summary>Mantiene marcado en el árbol el archivo que se está previsualizando, venga de donde venga
-    /// la orden de abrirlo (el propio árbol, la rejilla del otro modo o un resultado de búsqueda).</summary>
-    partial void OnActivePreviewChanged(FileCardViewModel? value) => SyncTreeSelection();
+    /// la orden de abrirlo (el propio árbol, la rejilla del otro modo, un resultado de búsqueda o los botones
+    /// de anterior/siguiente), y al día esos mismos botones.</summary>
+    partial void OnActivePreviewChanged(FileCardViewModel? value)
+    {
+        _treeSelectionPath = value?.File.FullPath;
+        SyncTreeSelection();
+        RefreshPreviewNavigation();
+    }
 
     [RelayCommand]
     private void ShowBrowserView() => IsTreeView = false;
@@ -175,9 +190,11 @@ public sealed partial class FilesViewModel
     /// carpeta del árbol ya construido en vez de inventar una enumeración recursiva paralela.</summary>
     private void RebuildTree()
     {
-        var expandedPaths = FileTreeRoots.Count > 0
-            ? CollectExpandedTreePaths(FileTreeRoots).ToHashSet(StringComparer.OrdinalIgnoreCase)
-            : new HashSet<string>(_settingsService?.Settings.FilesTreeExpandedFolderPaths ?? [], StringComparer.OrdinalIgnoreCase);
+        var expandedPaths = (FileTreeRoots.Count > 0
+                ? CollectExpandedTreePaths(FileTreeRoots)
+                : _settingsService?.Settings.FilesTreeExpandedFolderPaths ?? [])
+            .Select(RemapPath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // Mismo motivo que el bucle equivalente de Reload(): las copias temporales descifradas de los PDF
         // que sujetaban las tarjetas salientes se liberan aquí, o quedarían vivas hasta cerrar la app. La
@@ -189,20 +206,20 @@ public sealed partial class FilesViewModel
         _treeCards.Clear();
         FileTreeRoots.Clear();
 
-        if (IsSelectedSessionLocked)
+        if (!IsSelectedSessionLocked)
         {
-            HasTreeItems = false;
-            ApplyTreeSearch();
-            return;
+            foreach (var node in BuildTreeNodes(RootFolders, 0, expandedPaths)) FileTreeRoots.Add(node);
+            foreach (var card in TreeCardsIn(EffectiveRootPath))
+                FileTreeRoots.Add(FileTreeItemViewModel.ForFile(card, EffectiveRootPath, 0));
         }
-
-        foreach (var node in BuildTreeNodes(RootFolders, 0, expandedPaths)) FileTreeRoots.Add(node);
-        foreach (var card in TreeCardsIn(EffectiveRootPath))
-            FileTreeRoots.Add(FileTreeItemViewModel.ForFile(card, EffectiveRootPath, 0));
 
         HasTreeItems = FileTreeRoots.Count > 0;
         ApplyTreeSearch();
         SyncTreeSelection();
+        OnPropertyChanged(nameof(TreeFilesCountLabel));
+        RefreshPreviewNavigation();
+
+        if (_folderRemap is not null) PersistTreeExpandedFolders();
     }
 
     private IEnumerable<FileTreeItemViewModel> BuildTreeNodes(IEnumerable<FileFolderViewModel> folders, int depth,
@@ -226,14 +243,14 @@ public sealed partial class FilesViewModel
     }
 
     /// <summary>Tarjetas de los archivos de una carpeta, en orden alfabético — el árbol es un mapa de
-    /// dónde está cada cosa, así que se ordena por nombre y no por fecha de modificación como la rejilla,
-    /// donde lo reciente sí es lo relevante. La tarjeta que se está previsualizando se reutiliza tal cual
-    /// en vez de recrearse, para que recargar (renombrar, mover, importar) no cierre lo que hay abierto.
-    /// No se llama a <c>EnsureThumbnailLoaded</c>: el árbol enseña iconos por tipo, no miniaturas, así que
-    /// decodificar imágenes o rasterizar PDFs aquí sería trabajo tirado.</summary>
+    /// dónde está cada cosa, así que se ordena por nombre y no por el orden elegido en la rejilla. La tarjeta
+    /// que se está previsualizando se reutiliza tal cual en vez de recrearse, para que recargar (renombrar,
+    /// mover, importar) no cierre lo que hay abierto. No se llama a <c>EnsureThumbnailLoaded</c>: el árbol
+    /// enseña iconos por tipo, no miniaturas, así que decodificar imágenes o rasterizar PDFs aquí sería
+    /// trabajo tirado.</summary>
     private IEnumerable<FileCardViewModel> TreeCardsIn(string folderPath)
     {
-        foreach (var file in _vaultService.GetFiles(folderPath).OrderBy(f => f.FileName, StringComparer.OrdinalIgnoreCase))
+        foreach (var file in _vaultService.GetFiles(folderPath).OrderBy(f => f.FileName, StringComparer.CurrentCultureIgnoreCase))
         {
             var card = ActivePreview is { } preview && PathsEqual(preview.File.FullPath, file.FullPath)
                 ? preview
@@ -292,15 +309,33 @@ public sealed partial class FilesViewModel
         }
     }
 
-    /// <summary>Marca en el árbol el archivo que se está previsualizando y abre las carpetas que lo
-    /// contienen, para que abrirlo desde cualquier otro sitio lo deje visible y resaltado aquí también.</summary>
+    /// <summary>Los nodos que se ven ahora mismo, en el orden en que se leen: no se baja a las carpetas
+    /// plegadas. Es el recorrido de las flechas arriba/abajo.</summary>
+    private static IEnumerable<FileTreeItemViewModel> VisibleTreeNodes(IEnumerable<FileTreeItemViewModel> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            if (!node.IsFolder || !node.IsExpanded) continue;
+            foreach (var child in VisibleTreeNodes(node.Children)) yield return child;
+        }
+    }
+
+    /// <summary>Marca en el árbol el nodo seleccionado y abre las carpetas que lo contienen, para que abrir
+    /// un archivo desde cualquier otro sitio lo deje visible y resaltado aquí también.</summary>
     private void SyncTreeSelection()
     {
-        var selectedPath = ActivePreview?.File.FullPath;
-        foreach (var node in Flatten(FileTreeRoots))
-            node.IsSelected = node.IsFile && selectedPath is not null && PathsEqual(node.FullPath, selectedPath);
+        var selectedPath = _treeSelectionPath;
+        foreach (var node in Flatten(FileTreeRoots).Concat(TreeSearchResults))
+            node.IsSelected = selectedPath is not null && PathsEqual(node.FullPath, selectedPath);
 
         if (selectedPath is not null) ExpandTreeAncestorsOf(selectedPath);
+    }
+
+    /// <summary>Tras renombrar una carpeta, la selección del árbol sigue al nodo a su ruta nueva.</summary>
+    private void RemapTreeSelection()
+    {
+        if (_treeSelectionPath is not null) _treeSelectionPath = RemapPath(_treeSelectionPath);
     }
 
     /// <summary>Abre en el árbol las carpetas que llevan hasta <paramref name="path"/>. El panel del modo
@@ -358,13 +393,14 @@ public sealed partial class FilesViewModel
         {
             var matches = _treeCards
                 .Where(card => card.FileName.Contains(query, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(card => card.FileName, StringComparer.OrdinalIgnoreCase);
+                .OrderBy(card => card.FileName, StringComparer.CurrentCultureIgnoreCase);
 
             foreach (var card in matches)
             {
                 var containerPath = Path.GetDirectoryName(card.File.FullPath) ?? EffectiveRootPath;
-                TreeSearchResults.Add(FileTreeItemViewModel.ForFile(card, containerPath, 0,
-                    RelativeLocationOf(containerPath)));
+                var result = FileTreeItemViewModel.ForFile(card, containerPath, 0, RelativeLocationOf(containerPath));
+                result.IsSelected = _treeSelectionPath is not null && PathsEqual(card.File.FullPath, _treeSelectionPath);
+                TreeSearchResults.Add(result);
             }
         }
 
@@ -373,20 +409,20 @@ public sealed partial class FilesViewModel
 
     /// <summary>Carpeta de un resultado de búsqueda, relativa a la raíz efectiva — cadena vacía para los
     /// archivos que ya están en la raíz, que no necesitan que se les diga dónde viven.</summary>
-    private string RelativeLocationOf(string folderPath)
-    {
-        var root = EffectiveRootPath;
-        if (string.IsNullOrEmpty(root) || PathsEqual(folderPath, root)) return string.Empty;
+    private string RelativeLocationOf(string folderPath) => RelativeLocation(EffectiveRootPath, folderPath);
 
-        var relative = Path.GetRelativePath(root, folderPath);
-        return relative == "." ? string.Empty : relative;
+    /// <summary>Intro en el cuadro de búsqueda del panel abre el primer resultado.</summary>
+    public void OpenFirstTreeSearchResult()
+    {
+        if (TreeSearchResults.Count > 0) SelectTreeItem(TreeSearchResults[0]);
     }
 
     // ===================== Acciones sobre el árbol =====================
 
     /// <summary>Pulsar un nodo: un archivo se abre en la previsualización de la derecha, una carpeta se
-    /// pliega o despliega. A diferencia de Skills —donde seleccionar y editar son dos gestos distintos—
-    /// aquí un clic basta: los archivos solo se visualizan, así que no hay un segundo paso que reservar.
+    /// pliega o despliega y queda seleccionada. A diferencia de Skills —donde seleccionar y editar son dos
+    /// gestos distintos— aquí un clic basta: los archivos solo se visualizan, así que no hay un segundo paso
+    /// que reservar.
     ///
     /// No se toca <see cref="CurrentFolder"/> al abrir un archivo: cambiarla dispararía un
     /// <see cref="Reload"/> —y con él una reconstrucción entera del árbol— en cada clic, y la carpeta
@@ -398,12 +434,103 @@ public sealed partial class FilesViewModel
 
         if (node.Card is { } card)
         {
-            OpenCardCommand.Execute(card);
+            OpenCard(card);
             return;
         }
 
         node.ToggleExpandCommand.Execute(null);
+        SelectTreeFolder(node);
     }
+
+    private void SelectTreeFolder(FileTreeItemViewModel folderNode)
+    {
+        _treeSelectionPath = folderNode.FullPath;
+        SyncTreeSelection();
+    }
+
+    // ===================== Teclado =====================
+    // Lo invoca el code-behind del árbol (FilesTreeView) mientras el panel tiene el foco. Cada método devuelve
+    // el nodo que queda seleccionado para que la vista lo lleve a la zona visible; la selección en sí vive aquí.
+
+    /// <summary>El nodo seleccionado, si sigue montado en el árbol.</summary>
+    public FileTreeItemViewModel? SelectedTreeNode => _treeSelectionPath is null
+        ? null
+        : Flatten(FileTreeRoots).FirstOrDefault(n => PathsEqual(n.FullPath, _treeSelectionPath));
+
+    /// <summary>Flecha arriba/abajo (y Inicio/Fin con un salto que se sale del árbol): mueve la selección entre
+    /// los nodos visibles. Un archivo se abre al llegar a él, como en el explorador de un editor de código;
+    /// una carpeta solo se selecciona, sin plegarla ni desplegarla.</summary>
+    public FileTreeItemViewModel? MoveTreeSelection(int delta)
+    {
+        var visible = VisibleTreeNodes(FileTreeRoots).ToList();
+        if (visible.Count == 0) return null;
+
+        var index = _treeSelectionPath is null ? -1 : visible.FindIndex(n => PathsEqual(n.FullPath, _treeSelectionPath));
+        var target = index < 0
+            ? (delta >= 0 ? 0 : visible.Count - 1)
+            : Math.Clamp(index + delta, 0, visible.Count - 1);
+        return SelectTreeNodeFromKeyboard(visible[target]);
+    }
+
+    /// <summary>Flecha derecha: despliega la carpeta seleccionada o, si ya lo está, baja a su primer hijo.</summary>
+    public FileTreeItemViewModel? ExpandTreeSelection()
+    {
+        if (SelectedTreeNode is not { IsFolder: true } node) return null;
+
+        if (!node.IsExpanded)
+        {
+            if (node.HasChildren) node.IsExpanded = true;
+            return node;
+        }
+        return node.Children.Count > 0 ? SelectTreeNodeFromKeyboard(node.Children[0]) : node;
+    }
+
+    /// <summary>Flecha izquierda: pliega la carpeta seleccionada o, si no hay nada que plegar, sube a la carpeta
+    /// que la contiene.</summary>
+    public FileTreeItemViewModel? CollapseTreeSelection()
+    {
+        if (SelectedTreeNode is not { } node) return null;
+
+        if (node.IsFolder && node.IsExpanded)
+        {
+            node.IsExpanded = false;
+            return node;
+        }
+        return FindTreeParent(FileTreeRoots, node) is { } parent ? SelectTreeNodeFromKeyboard(parent) : node;
+    }
+
+    /// <summary>Intro: abre el archivo seleccionado, o pliega/despliega la carpeta seleccionada.</summary>
+    public void ActivateTreeSelection()
+    {
+        switch (SelectedTreeNode)
+        {
+            case { Card: { } card }:
+                OpenCard(card);
+                break;
+            case { IsFolder: true } folder:
+                folder.ToggleExpandCommand.Execute(null);
+                break;
+        }
+    }
+
+    private FileTreeItemViewModel SelectTreeNodeFromKeyboard(FileTreeItemViewModel node)
+    {
+        if (node.Card is { } card) OpenCard(card);
+        else SelectTreeFolder(node);
+        return node;
+    }
+
+    private static FileTreeItemViewModel? FindTreeParent(IEnumerable<FileTreeItemViewModel> nodes, FileTreeItemViewModel target)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Children.Contains(target)) return node;
+            if (FindTreeParent(node.Children, target) is { } found) return found;
+        }
+        return null;
+    }
+
+    // ===================== Crear, renombrar, borrar, mover =====================
 
     [RelayCommand]
     private void NewTreeFolderAtRoot() => CreateFolderInTree(EffectiveRootPath);
@@ -417,28 +544,21 @@ public sealed partial class FilesViewModel
 
     private void CreateFolderInTree(string parentPath)
     {
-        try
-        {
-            var created = VaultService.CreateFolder(parentPath);
-            ReloadFolders();
-            Reload();
-            ExpandTreeAncestorsOf(created.FullPath);
+        if (TryCreateFolder(parentPath) is not { } created) return;
+        Refresh();
+        ExpandTreeAncestorsOf(created.FullPath);
 
-            var node = Flatten(FileTreeRoots).FirstOrDefault(n => n.IsFolder && PathsEqual(n.FullPath, created.FullPath));
-            if (node is null) return;
-            node.EditingName = node.Name;
-            node.IsRenaming = true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            NotifyFilesFailure("Files_Notify_FolderCreateFailed_Title", ex);
-        }
+        var node = Flatten(FileTreeRoots).FirstOrDefault(n => n.IsFolder && PathsEqual(n.FullPath, created.FullPath));
+        if (node is null) return;
+        SelectTreeFolder(node);
+        node.EditingName = node.Name;
+        node.IsRenaming = true;
     }
 
     /// <summary>Confirma el renombrado en línea de un nodo. Carpetas y archivos se renombran los dos, cada
-    /// uno por el camino que ya existía (<see cref="CommitRenameFolderCommand"/> /
-    /// <see cref="CommitRenameFileCommand"/>), que son los que aplican la política de colisión del vault y
-    /// recargan la pantalla — el árbol solo traslada el nombre editado a la entidad real.</summary>
+    /// uno por el camino que ya existía (<see cref="RenameFolderAt"/> / <see cref="CommitRenameFileCommand"/>),
+    /// que son los que aplican la política de colisión del vault, llevan a la ruta nueva lo que apuntaba a la
+    /// vieja y recargan la pantalla — el árbol solo traslada el nombre editado a la entidad real.</summary>
     [RelayCommand]
     private void CommitRenameTreeItem(FileTreeItemViewModel? node)
     {
@@ -455,37 +575,19 @@ public sealed partial class FilesViewModel
             return;
         }
 
-        var folder = FindFolder(RootFolders, node.FullPath);
-        if (folder is null || newName.Length == 0 || newName == folder.Name) return;
-        try
-        {
-            folder.EditingName = newName;
-            CommitRenameFolderCommand.Execute(folder);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            NotifyFilesFailure("Files_Notify_FolderRenameFailed_Title", ex);
-        }
+        if (newName.Length == 0 || newName == node.Name) return;
+        RenameFolderAt(FindFolder(RootFolders, node.FullPath)?.Folder ?? new NoteFolder { FullPath = node.FullPath }, newName);
     }
 
-    /// <summary>Borrar desde el árbol pasa por los mismos comandos que la rejilla: un archivo pide
-    /// confirmación (si <c>ConfirmBeforeDelete</c> está activo) y va a la papelera del vault; una carpeta
-    /// se borra por el mismo camino que su fila del panel del explorador. Aquí no se replica la regla de
-    /// Skills —"no hay papelera, así que siempre se avisa"— porque en Archivos todo lo borrado es
-    /// recuperable desde la sección Papelera.</summary>
+    /// <summary>Borrar desde el árbol pasa por los mismos comandos que la rejilla: un archivo o una carpeta
+    /// piden confirmación (si <c>ConfirmBeforeDelete</c> está activo) y van a la papelera del vault.</summary>
     [RelayCommand]
     private void DeleteTreeItem(FileTreeItemViewModel? node)
     {
         if (node is null) return;
 
-        if (node.Card is { } card)
-        {
-            RequestDeleteFileCommand.Execute(card);
-            return;
-        }
-
-        var folder = FindFolder(RootFolders, node.FullPath);
-        if (folder is not null) DeleteFolderCommand.Execute(folder);
+        if (node.Card is { } card) RequestDeleteFileCommand.Execute(card);
+        else RequestDeleteFolderCommand.Execute(node);
     }
 
     /// <summary>Soltar un archivo sobre un nodo del árbol lo mueve a esa carpeta (o a la carpeta que
@@ -500,18 +602,10 @@ public sealed partial class FilesViewModel
 
     private void MoveTreeFileTo(string sourceFilePath, string destinationFolderPath)
     {
-        var card = FindTreeCardByPath(sourceFilePath);
-        if (card is null) return;
+        if (FindTreeCardByPath(sourceFilePath) is not { } card) return;
 
-        try
-        {
-            MoveFileToFolder(card, destinationFolderPath);
-            ExpandTreeAncestorsOf(Path.Combine(destinationFolderPath, card.FileName));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            NotifyFilesFailure("Files_Notify_MoveFailed_Title", ex);
-        }
+        MoveFileToFolder(card, destinationFolderPath);
+        ExpandTreeAncestorsOf(card.File.FullPath);
     }
 
     /// <summary>Busca una tarjeta del árbol por su ruta — lo usan los <c>Drop</c> de las vistas, que solo
@@ -521,19 +615,4 @@ public sealed partial class FilesViewModel
     public FileCardViewModel? FindTreeCardByPath(string filePath) =>
         _treeCards.FirstOrDefault(card => PathsEqual(card.File.FullPath, filePath))
         ?? Files.FirstOrDefault(card => PathsEqual(card.File.FullPath, filePath));
-
-    /// <summary>Aviso de "esto no se ha podido hacer" para toda la sección —el árbol y la rejilla—, con la
-    /// razón traducida que <see cref="VaultFailureReasons"/> ya reparte por igual en Notas y el editor.</summary>
-    private void NotifyFilesFailure(string titleKey, Exception ex)
-    {
-        LogService.Error("Operación de carpeta de Archivos fallida", ex);
-        _notificationService.PushLocalized(
-            LocalizedTextFormatter.Format(titleKey),
-            VaultFailureReasons.DescribeLocalized(ex),
-            NotificationSeverity.Error);
-    }
-
-    private static bool PathsEqual(string a, string b) =>
-        string.Equals(Path.TrimEndingDirectorySeparator(a), Path.TrimEndingDirectorySeparator(b),
-            StringComparison.OrdinalIgnoreCase);
 }

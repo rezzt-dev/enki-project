@@ -13,10 +13,10 @@
              x:DataType="vm:FilesViewModel">
 
   <!-- Contenedor de la sección Archivos. No dibuja la sección: elige entre sus dos disposiciones
-       —FilesBrowserView (panel de carpetas + rejilla de tarjetas, la de siempre) y FilesTreeView (árbol de
-       carpetas y archivos + previsualización a la derecha, al estilo de la vista simplificada de Notas)— y
-       aloja lo que es común a las dos: el modal de confirmación de borrado, que se dispara igual desde la
-       rejilla de una que desde el árbol de la otra.
+       —FilesBrowserView (panel de carpetas + rejilla de tarjetas) y FilesTreeView (árbol de carpetas y
+       archivos + previsualización a la derecha, al estilo de la vista simplificada de Notas)— y aloja lo que
+       es común a las dos: los modales de confirmación de borrado, que se disparan igual desde la rejilla de
+       una que desde el árbol de la otra.
 
        Se monta una sola disposición, no las dos con IsVisible, y aquí el motivo es aún más fuerte que en
        IA Skills: la previsualización instala TextMate sobre un AvaloniaEdit y rasteriza PDFs con PDFium,
@@ -48,6 +48,42 @@
             </Button>
             <Button Grid.Column="2" Classes="pill-primary-danger"
                     Command="{Binding #Root.((vm:FilesViewModel)DataContext).ConfirmDeleteFileCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: eliminar carpeta ===================== -->
+    <!-- Modal propio y no el de arriba: una carpeta arrastra consigo todo lo que contiene, y la sección
+         Papelera solo lista archivos sueltos, así que el aviso tiene que decir dónde acaba y cómo recuperarla. -->
+    <controls:ModalOverlayHost IsOpen="{Binding FolderPendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding FolderPendingDelete}" x:DataType="vm:FileFolderCardViewModel">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Files_DeleteFolder_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Files_DeleteFolder_Message}" FontSize="14" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="FolderOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+              <TextBlock Text="{Binding Name}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+            </StackPanel>
+            <TextBlock Text="{loc:Tr Files_DeleteFolder_Hint}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel"
+                    Command="{Binding #Root.((vm:FilesViewModel)DataContext).CancelDeleteFolderCommand}"
+                    Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger"
+                    Command="{Binding #Root.((vm:FilesViewModel)DataContext).ConfirmDeleteFolderCommand}">
               <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>

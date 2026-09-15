@@ -341,7 +341,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         AnimatePageReveal();
 
         if (page == AppPage.Dashboard) Dashboard!.Reload();
-        if (page == AppPage.Files) Files!.Reload();
+        if (page == AppPage.Files) Files!.Refresh();
         if (page == AppPage.Skills) Skills!.Reload();
         if (page == AppPage.Sessions) Sessions!.Reload();
         if (page == AppPage.Kanban) Kanban!.Reload();

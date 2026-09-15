@@ -63,10 +63,11 @@ public sealed partial class FileTreeItemViewModel : ObservableObject
     [ObservableProperty]
     private bool _isExpanded;
 
-    /// <summary>Este archivo es el que se está previsualizando — lo pinta la clase <c>active</c> de
-    /// <c>Border.folder-row</c>. Solo lo llevan los archivos (ver <c>FilesViewModel.SyncTreeSelection</c>):
-    /// una carpeta no se "selecciona", se abre o se cierra, y resaltar también la que contiene al archivo
-    /// abierto competiría visualmente con él.</summary>
+    /// <summary>El nodo seleccionado del árbol — lo pinta la clase <c>active</c> de <c>Border.folder-row</c>.
+    /// Es el archivo que se está previsualizando o, si el usuario acaba de pulsar una carpeta (con el ratón o
+    /// moviéndose con el teclado), esa carpeta: un único nodo a la vez (ver
+    /// <c>FilesViewModel.SyncTreeSelection</c>). La carpeta que contiene al archivo abierto no se resalta,
+    /// porque competiría visualmente con él.</summary>
     [ObservableProperty]
     private bool _isSelected;
 

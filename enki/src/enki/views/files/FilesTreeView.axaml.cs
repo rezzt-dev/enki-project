@@ -1,21 +1,21 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.ViewModels;
 
 namespace enki.Views;
 
-/// <summary>Code-behind del modo árbol de Archivos: selección y renombrado en línea de las filas, arrastrar
-/// un archivo a otra carpeta, importar lo que se suelte desde el explorador del sistema y el separador que
-/// ajusta el ancho del panel lateral. Mismo reparto que <see cref="SkillsTreeView"/> y
+/// <summary>Code-behind del modo árbol de Archivos: selección, teclado y renombrado en línea de las filas,
+/// arrastrar un archivo a otra carpeta, importar lo que se suelte desde el explorador del sistema y el separador
+/// que ajusta el ancho del panel lateral. Mismo reparto que <see cref="SkillsTreeView"/> y
 /// <see cref="SimpleNotesView"/>, de los que esta vista es la adaptación: solo mecánica de vista — todo lo
-/// que toca el vault vive en <see cref="FilesViewModel"/>.</summary>
+/// que toca el vault, y la propia selección, vive en <see cref="FilesViewModel"/>.</summary>
 public partial class FilesTreeView : UserControl
 {
     private PointerPressedEventArgs? _dragPressArgs;
@@ -33,6 +33,8 @@ public partial class FilesTreeView : UserControl
     /// la vista simplificada de Notas y en el árbol de Skills.</summary>
     private bool _keepRenamingThroughLostFocus;
 
+    private FilesViewModel? _subscribedViewModel;
+
     public FilesTreeView()
     {
         InitializeComponent();
@@ -43,7 +45,8 @@ public partial class FilesTreeView : UserControl
         Loaded += (_, _) => SubscribeToViewModel();
         Unloaded += (_, _) =>
         {
-            if (Vm is { } vm) vm.PropertyChanged -= OnViewModelPropertyChanged;
+            if (_subscribedViewModel is not null) _subscribedViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _subscribedViewModel = null;
         };
     }
 
@@ -51,24 +54,43 @@ public partial class FilesTreeView : UserControl
 
     private void SubscribeToViewModel()
     {
-        if (Vm is not { } vm) return;
-        vm.PropertyChanged -= OnViewModelPropertyChanged;
-        vm.PropertyChanged += OnViewModelPropertyChanged;
+        if (ReferenceEquals(_subscribedViewModel, Vm)) return;
+        if (_subscribedViewModel is not null) _subscribedViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
+        _subscribedViewModel = Vm;
+        if (_subscribedViewModel is not null) _subscribedViewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
-    /// <summary>Entrar en modo búsqueda pone el cursor en el cuadro: pulsar la lupa es inequívocamente
-    /// "quiero escribir una búsqueda", y obligar a un segundo clic para empezar a teclear sería fricción
-    /// gratuita.</summary>
-    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(FilesViewModel.IsTreeSearchMode)) return;
-        if (Vm is not { IsTreeSearchMode: true }) return;
+        if (Vm is not { } vm) return;
 
-        Dispatcher.UIThread.Post(() =>
+        switch (e.PropertyName)
         {
-            TreeSearchBox.Focus();
-            TreeSearchBox.SelectAll();
-        }, DispatcherPriority.Input);
+            // Entrar en modo búsqueda pone el cursor en el cuadro: pulsar la lupa es inequívocamente "quiero
+            // escribir una búsqueda", y obligar a un segundo clic para empezar a teclear sería fricción gratuita.
+            // Salir devuelve el foco al árbol, para seguir con el teclado donde se estaba.
+            case nameof(FilesViewModel.IsTreeSearchMode):
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (vm.IsTreeSearchMode)
+                    {
+                        TreeSearchBox.Focus();
+                        TreeSearchBox.SelectAll();
+                    }
+                    else
+                    {
+                        TreeBody.Focus();
+                    }
+                }, DispatcherPriority.Input);
+                break;
+
+            // Abrir un archivo desde fuera del árbol (anterior/siguiente en la previsualización, importar) lo
+            // deja seleccionado aquí; se trae a la vista para que el árbol no señale algo fuera de pantalla.
+            case nameof(FilesViewModel.ActivePreview):
+                if (!vm.IsTreeSearchMode && vm.SelectedTreeNode is { } node) BringNodeIntoView(node);
+                break;
+        }
     }
 
     // ===================== Filas del árbol =====================
@@ -91,27 +113,25 @@ public partial class FilesTreeView : UserControl
 
     private void TreeRow_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Border { DataContext: FileTreeItemViewModel node } || Vm is not { } vm) return;
-        if (e.GetCurrentPoint(sender as Control).Properties.IsRightButtonPressed) return;
+        if (sender is not Border { DataContext: FileTreeItemViewModel node } row || Vm is not { } vm) return;
+        if (e.GetCurrentPoint(row).Properties.IsRightButtonPressed) return;
 
         // Mientras la fila está en modo renombrar es una superficie de edición, no un objetivo de clic: el
         // cuadro de texto solo ocupa una franja estrecha de una fila ancha, así que casi cualquier clic
         // para colocar el cursor cae en el Border, no en el TextBox.
         if (node.IsRenaming)
         {
-            foreach (var descendant in ((Visual)sender).GetVisualDescendants())
-            {
-                if (descendant is TextBox { IsVisible: true } renameBox)
-                {
-                    FocusRenameBox(renameBox);
-                    break;
-                }
-            }
+            if (row.GetVisualDescendants().OfType<TextBox>().FirstOrDefault(b => b.IsVisible) is { } renameBox)
+                RefocusRenameBox(renameBox);
             e.Handled = true;
             return;
         }
 
         vm.SelectTreeItemCommand.Execute(node);
+
+        // El foco pasa al cuerpo del árbol, que es quien atiende las flechas, Intro, F2 y Supr: sin esto, tras
+        // pulsar una fila el teclado seguía en lo último que tuvo el foco.
+        TreeBody.Focus();
 
         // Solo los archivos se arrastran: mover una carpeta entera arrastra consigo todo su contenido y
         // aquí no hay ninguna confirmación de por medio.
@@ -148,6 +168,85 @@ public partial class FilesTreeView : UserControl
         }
     }
 
+    // ===================== Teclado =====================
+
+    /// <summary>Navegación del árbol con el teclado mientras su cuerpo tiene el foco. La selección y lo que
+    /// significa cada tecla viven en el viewmodel; aquí solo se traduce la tecla y se lleva a la vista la fila
+    /// que queda seleccionada.</summary>
+    private void TreeBody_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Handled || e.Source is TextBox || Vm is not { } vm || e.KeyModifiers != KeyModifiers.None) return;
+
+        FileTreeItemViewModel? selected = null;
+        switch (e.Key)
+        {
+            case Key.Down:
+                selected = vm.MoveTreeSelection(1);
+                break;
+            case Key.Up:
+                selected = vm.MoveTreeSelection(-1);
+                break;
+            case Key.PageDown:
+                selected = vm.MoveTreeSelection(10);
+                break;
+            case Key.PageUp:
+                selected = vm.MoveTreeSelection(-10);
+                break;
+            case Key.Home:
+                selected = vm.MoveTreeSelection(int.MinValue / 2);
+                break;
+            case Key.End:
+                selected = vm.MoveTreeSelection(int.MaxValue / 2);
+                break;
+            case Key.Right:
+                selected = vm.ExpandTreeSelection();
+                break;
+            case Key.Left:
+                selected = vm.CollapseTreeSelection();
+                break;
+            case Key.Enter:
+                vm.ActivateTreeSelection();
+                break;
+            case Key.F2:
+                vm.SelectedTreeNode?.BeginRenameCommand.Execute(null);
+                break;
+            case Key.Delete:
+                if (vm.SelectedTreeNode is { } node) vm.DeleteTreeItemCommand.Execute(node);
+                break;
+            default:
+                return;
+        }
+
+        e.Handled = true;
+        if (selected is not null) BringNodeIntoView(selected);
+    }
+
+    private void BringNodeIntoView(FileTreeItemViewModel node) => Dispatcher.UIThread.Post(() =>
+    {
+        var row = TreeBody.GetVisualDescendants()
+            .OfType<Border>()
+            .FirstOrDefault(b => b.Classes.Contains("folder-row") && ReferenceEquals(b.DataContext, node));
+        row?.BringIntoView();
+    }, DispatcherPriority.Loaded);
+
+    private void TreeSearchBox_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { } vm) return;
+
+        if (e.Key == Key.Enter)
+        {
+            vm.OpenFirstTreeSearchResult();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            vm.ShowTreeBrowseCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    // ===================== Destinos de arrastre: filas =====================
+
     private void TreeRow_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
     private void TreeRow_DragOver(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
     private void TreeRow_DragLeave(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, false);
@@ -177,7 +276,7 @@ public partial class FilesTreeView : UserControl
     {
         if (sender is not Border { DataContext: FileTreeItemViewModel node }) return;
         node.IsDropTarget = false;
-        if (!node.IsFolder || Vm is not { } vm) return;
+        if (!node.IsFolder || Vm is not { } vm || EffectsFor(e) == DragDropEffects.None) return;
 
         if (e.DataTransfer.TryGetValue(FilesBrowserView.FileDragFormat) is { } sourcePath)
         {
@@ -186,7 +285,7 @@ public partial class FilesTreeView : UserControl
             return;
         }
 
-        if (TryGetDroppedPaths(e) is not { } paths) return;
+        if (FilesBrowserView.TryGetDroppedPaths(e) is not { } paths) return;
         vm.ImportPaths(paths, node.FullPath);
         e.Handled = true;
     }
@@ -212,6 +311,7 @@ public partial class FilesTreeView : UserControl
     {
         if (Vm is not { } vm) return;
         vm.IsGridDropTarget = false;
+        if (EffectsFor(e) == DragDropEffects.None) return;
 
         if (e.DataTransfer.TryGetValue(FilesBrowserView.FileDragFormat) is { } sourcePath)
         {
@@ -220,7 +320,7 @@ public partial class FilesTreeView : UserControl
             return;
         }
 
-        if (TryGetDroppedPaths(e) is not { } paths) return;
+        if (FilesBrowserView.TryGetDroppedPaths(e) is not { } paths) return;
         vm.ImportPaths(paths, vm.EffectiveRootPath);
         e.Handled = true;
     }
@@ -230,8 +330,7 @@ public partial class FilesTreeView : UserControl
     /// <summary>Todo lo que las filas y el fondo del árbol no recogen acaba aquí: la previsualización de la
     /// derecha, el modo búsqueda del panel, su pie y el raíl del panel contraído. Un arrastre entrante del
     /// explorador del sistema se importa en la raíz efectiva se suelte donde se suelte, porque en esta
-    /// disposición el árbol ocupa una franja estrecha y la previsualización casi toda la ventana: con solo
-    /// el árbol como destino, soltar archivos aquí parecía sencillamente no funcionar.
+    /// disposición el árbol ocupa una franja estrecha y la previsualización casi toda la ventana.
     ///
     /// El arrastre interno de una fila no se acepta fuera del árbol —soltar un archivo del vault sobre su
     /// propia previsualización no significa nada—, y por eso este destino mira solo el
@@ -251,8 +350,9 @@ public partial class FilesTreeView : UserControl
     {
         if (Vm is not { } vm) return;
         vm.IsGridDropTarget = false;
+        if (EffectsFor(e) != DragDropEffects.Copy) return;
 
-        if (TryGetDroppedPaths(e) is { } paths) vm.ImportPaths(paths, vm.EffectiveRootPath);
+        if (FilesBrowserView.TryGetDroppedPaths(e) is { } paths) vm.ImportPaths(paths, vm.EffectiveRootPath);
     }
 
     /// <summary>Qué significa el arrastre que pasa por encima: mover un archivo del propio árbol, copiar
@@ -265,18 +365,6 @@ public partial class FilesTreeView : UserControl
         if (e.DataTransfer.Contains(FilesBrowserView.FileDragFormat)) return DragDropEffects.Move;
         if (e.DataTransfer.Contains(DataFormat.File)) return DragDropEffects.Copy;
         return DragDropEffects.None;
-    }
-
-    /// <summary>Las rutas locales de un arrastre entrante del explorador del sistema, o null si no trae
-    /// archivos o ninguno de ellos vive en disco (un adjunto remoto arrastrado desde el navegador, por
-    /// ejemplo, no tiene ruta que importar).</summary>
-    private static string[]? TryGetDroppedPaths(DragEventArgs e)
-    {
-        var files = e.DataTransfer.TryGetFiles();
-        if (files is null || files.Length == 0) return null;
-
-        var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Select(p => p!).ToArray();
-        return paths.Length > 0 ? paths : null;
     }
 
     // ===================== Resultados de búsqueda =====================
@@ -296,11 +384,13 @@ public partial class FilesTreeView : UserControl
         {
             Vm?.CommitRenameTreeItemCommand.Execute(node);
             e.Handled = true;
+            TreeBody.Focus();
         }
         else if (e.Key == Key.Escape)
         {
             node.CancelRenameCommand.Execute(null);
             e.Handled = true;
+            TreeBody.Focus();
         }
     }
 
@@ -310,7 +400,7 @@ public partial class FilesTreeView : UserControl
 
         if (_keepRenamingThroughLostFocus)
         {
-            FocusRenameBox(box);
+            RefocusRenameBox(box);
             return;
         }
 
@@ -319,7 +409,7 @@ public partial class FilesTreeView : UserControl
 
     private void TreeNameEdit_Initialized(object? sender, EventArgs e)
     {
-        if (sender is TextBox box) FocusRenameBox(box);
+        if (sender is TextBox box) FilesBrowserView.FocusRenameBox(box);
     }
 
     /// <summary>El TextBox de renombrar ya está en el árbol cuando <c>IsRenaming</c> pasa a true (solo
@@ -328,18 +418,13 @@ public partial class FilesTreeView : UserControl
     private void TreeNameEdit_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.Property != IsVisibleProperty || sender is not TextBox box) return;
-        if (e.GetNewValue<bool>()) FocusRenameBox(box);
+        if (e.GetNewValue<bool>()) FilesBrowserView.FocusRenameBox(box);
     }
 
-    private static void FocusRenameBox(TextBox box)
-    {
-        if (!box.IsVisible) return;
-        Dispatcher.UIThread.Post(() =>
-        {
-            box.Focus();
-            box.SelectAll();
-        }, DispatcherPriority.Input);
-    }
+    /// <summary>Devuelve el foco al cuadro sin tocar la selección: el clic que lo quitó era para colocar el
+    /// cursor, y volver a seleccionarlo todo deshacía justo eso.</summary>
+    private static void RefocusRenameBox(TextBox box) =>
+        Dispatcher.UIThread.Post(() => box.Focus(), DispatcherPriority.Input);
 
     // ===================== Separador del panel lateral =====================
 

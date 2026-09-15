@@ -7,6 +7,36 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Archivos, pulida en sus dos vistas**. La sección tenía partes a medio hacer y fallos que dejaban la pantalla
+apuntando a archivos que ya no estaban donde decía; ahora el explorador, el árbol y la previsualización están
+terminados.
+
+- **Explorador**: miga de pan para volver a cualquier nivel de un clic, la carpeta actual resaltada en el
+  panel, tarjetas de carpeta con el número de elementos (y que aceptan archivos arrastrados encima), orden
+  por fecha, nombre, tamaño o tipo que se recuerda, y la búsqueda baja a las subcarpetas diciendo dónde está
+  cada resultado. Una búsqueda sin resultados, una carpeta vacía y un almacén vacío ya no enseñan el mismo
+  mensaje. Renombrar y borrar en el panel aparecen al pasar el cursor.
+- **Árbol**: se recorre con el teclado (flechas, Intro, F2, Supr), el menú contextual depende de si es una
+  carpeta o un archivo, el pie cuenta los archivos de todo el árbol, e importar un solo archivo lo abre.
+- **Previsualización**: archivo anterior y siguiente (Alt + ← / →), Esc para cerrar, una barra con tipo,
+  tamaño, fecha, dimensiones o líneas, y un menú con mostrar en el explorador, copiar ruta y eliminar. Borrar
+  el archivo abierto pasa al siguiente en vez de cerrar.
+- **PDF**: se abre ajustado al ancho, se ve nítido en pantallas HiDPI, el zoom va por escalones (Ctrl + rueda,
+  Ctrl + 0 para volver a ajustar) y pasar de página vuelve arriba.
+- **Imágenes**: las miniaturas se reducen al cargarlas, así que una carpeta de fotos ya no ocupa cientos de MB;
+  la previsualización carga la imagen completa (los SVG ya no se ven borrosos), sin ampliar las pequeñas, y
+  alterna entre ajustada y tamaño real.
+- **Código y texto**: el visor ya no dibuja el archivo entero de golpe, sigue el tema claro u oscuro de la app,
+  ajusta líneas largas y copia el contenido. Un archivo binario con extensión de texto ya no se vuelca como
+  basura, se respeta UTF-16 y el aviso de archivo truncado ya no se cuela dentro del texto.
+- **Audio, vídeo y demás tipos sin visor**: una ficha con el motivo y dos salidas, abrir con la aplicación del
+  sistema o mostrar el archivo en su carpeta.
+- **Carpetas**: borrar una carpeta pide confirmación y avisa de que va a `.trash`; renombrar la carpeta en la
+  que se está ya no devuelve a la raíz, y renombrar o mover lo que está abierto no deja la previsualización
+  leyendo de una ruta vieja. Nuevas acciones "Copiar ruta" e "Importar aquí…".
+- **Errores de disco** al crear, renombrar, mover o borrar se avisan con una notificación en vez de
+  interrumpir la sección. El aviso de borrar un archivo ya no dice que no se puede deshacer: va a la papelera.
+
 **La fuente de la interfaz llega ahora a toda la app**. Ajustes › Apariencia › "Fuente de la interfaz" solo
 cambiaba los títulos y el texto principal; el resto seguía con la fuente de siempre.
 

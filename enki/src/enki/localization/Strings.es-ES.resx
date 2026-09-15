@@ -832,13 +832,13 @@
     <value>Eliminar carpeta</value>
   </data>
   <data name="Files_DeleteFile_Message" xml:space="preserve">
-    <value>¿Eliminar este archivo? Esta acción no se puede deshacer.</value>
+    <value>El archivo se moverá a la papelera. Podrás restaurarlo desde la sección Papelera.</value>
   </data>
   <data name="Files_DeleteFile_Title" xml:space="preserve">
     <value>ELIMINAR ARCHIVO</value>
   </data>
   <data name="Files_EmptyHint" xml:space="preserve">
-    <value>Importad un archivo o arrastrad uno para empezar.</value>
+    <value>Importa un archivo o arrástralo aquí para empezar.</value>
   </data>
   <data name="Files_EmptyTitle" xml:space="preserve">
     <value>No hay archivos aquí</value>
@@ -883,7 +883,7 @@
     <value>No se pudo abrir el archivo</value>
   </data>
   <data name="Files_PageSubtitle" xml:space="preserve">
-    <value>Imágenes, PDF y otros archivos de vuestro almacén</value>
+    <value>Imágenes, PDF y otros archivos de tu almacén</value>
   </data>
   <data name="Files_PageTitle" xml:space="preserve">
     <value>Archivos</value>
@@ -934,10 +934,10 @@
     <value>Otros</value>
   </data>
   <data name="Files_AudioPreviewHint" xml:space="preserve">
-    <value>La previsualización de audio no está disponible en la app. Usad el botón de abajo para reproducir este archivo con vuestro reproductor del sistema.</value>
+    <value>La app no puede reproducir audio. Usa el botón de abajo para abrir este archivo con el reproductor del sistema.</value>
   </data>
   <data name="Files_VideoPreviewHint" xml:space="preserve">
-    <value>La previsualización de vídeo no está disponible en la app. Usad el botón de abajo para reproducir este archivo con vuestro reproductor del sistema.</value>
+    <value>La app no puede reproducir vídeo. Usa el botón de abajo para abrir este archivo con el reproductor del sistema.</value>
   </data>
   <data name="Files_PlayWithSystemButton" xml:space="preserve">
     <value>Reproducir con el reproductor del sistema</value>
@@ -4922,5 +4922,146 @@ Disfrutad escribiendo.</value>
   </data>
   <data name="Notification_BrandLogoRemoved_Message" xml:space="preserve">
     <value>La barra lateral vuelve a mostrar el icono de Enki.</value>
+  </data>
+  <data name="Files_DeleteFolder_Title" xml:space="preserve">
+    <value>Eliminar carpeta</value>
+  </data>
+  <data name="Files_DeleteFolder_Message" xml:space="preserve">
+    <value>La carpeta y todo lo que contiene se moverán a la carpeta .trash del almacén.</value>
+  </data>
+  <data name="Files_DeleteFolder_Hint" xml:space="preserve">
+    <value>La sección Papelera solo muestra archivos sueltos: para recuperar la carpeta, sácala de .trash.</value>
+  </data>
+  <data name="Files_Notify_FolderDeleteFailed_Title" xml:space="preserve">
+    <value>No se pudo eliminar la carpeta</value>
+  </data>
+  <data name="Files_Notify_FileRenameFailed_Title" xml:space="preserve">
+    <value>No se pudo renombrar el archivo</value>
+  </data>
+  <data name="Files_Notify_DeleteFailed_Title" xml:space="preserve">
+    <value>No se pudo eliminar el archivo</value>
+  </data>
+  <data name="Files_Notify_PathCopied_Title" xml:space="preserve">
+    <value>Ruta copiada</value>
+  </data>
+  <data name="Files_CopyPathMenuItem" xml:space="preserve">
+    <value>Copiar ruta</value>
+  </data>
+  <data name="Files_ImportHereMenuItem" xml:space="preserve">
+    <value>Importar aquí…</value>
+  </data>
+  <data name="Files_OpenFolderMenuItem" xml:space="preserve">
+    <value>Abrir</value>
+  </data>
+  <data name="Files_UpOneLevel" xml:space="preserve">
+    <value>Subir un nivel</value>
+  </data>
+  <data name="Files_FolderEntries_one" xml:space="preserve">
+    <value>{0} elemento</value>
+  </data>
+  <data name="Files_FolderEntries_other" xml:space="preserve">
+    <value>{0} elementos</value>
+  </data>
+  <data name="Files_Sort_Modified" xml:space="preserve">
+    <value>Más recientes</value>
+  </data>
+  <data name="Files_Sort_Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Files_Sort_Size" xml:space="preserve">
+    <value>Más grandes</value>
+  </data>
+  <data name="Files_Sort_Type" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="A11y_Files_SortSelector" xml:space="preserve">
+    <value>Ordenar archivos</value>
+  </data>
+  <data name="Files_SearchEmpty_Title" xml:space="preserve">
+    <value>Sin resultados</value>
+  </data>
+  <data name="Files_SearchEmpty_Message" xml:space="preserve">
+    <value>Ningún archivo de esta carpeta ni de sus subcarpetas coincide con «{0}».</value>
+  </data>
+  <data name="Files_SearchingIn" xml:space="preserve">
+    <value>Buscando en</value>
+  </data>
+  <data name="Files_FolderEmpty_Title" xml:space="preserve">
+    <value>Esta carpeta está vacía</value>
+  </data>
+  <data name="Files_FolderEmpty_Hint" xml:space="preserve">
+    <value>Arrastra archivos aquí o impórtalos para añadirlos a esta carpeta.</value>
+  </data>
+  <data name="Files_ClosePreviewTooltip" xml:space="preserve">
+    <value>Cerrar la vista previa (Esc)</value>
+  </data>
+  <data name="Files_PreviousFileTooltip" xml:space="preserve">
+    <value>Archivo anterior (Alt+←)</value>
+  </data>
+  <data name="Files_NextFileTooltip" xml:space="preserve">
+    <value>Archivo siguiente (Alt+→)</value>
+  </data>
+  <data name="Files_MoreActionsTooltip" xml:space="preserve">
+    <value>Más acciones</value>
+  </data>
+  <data name="Files_FitWidthTooltip" xml:space="preserve">
+    <value>Ajustar al ancho (Ctrl+0)</value>
+  </data>
+  <data name="Files_ActualSizeTooltip" xml:space="preserve">
+    <value>Tamaño real (100 %)</value>
+  </data>
+  <data name="Files_ImageActualSizeTooltip" xml:space="preserve">
+    <value>Alternar entre ajustar a la ventana y tamaño real</value>
+  </data>
+  <data name="Files_WordWrapTooltip" xml:space="preserve">
+    <value>Ajustar líneas largas</value>
+  </data>
+  <data name="Files_CopyContentTooltip" xml:space="preserve">
+    <value>Copiar contenido</value>
+  </data>
+  <data name="Files_CodeTruncatedNotice" xml:space="preserve">
+    <value>Este archivo es demasiado largo para mostrarlo entero: la vista previa solo enseña el principio.</value>
+  </data>
+  <data name="Files_CodeReadErrorHint" xml:space="preserve">
+    <value>No se ha podido leer el contenido de este archivo.</value>
+  </data>
+  <data name="Files_BinaryPreviewHint" xml:space="preserve">
+    <value>Este archivo no contiene texto legible, así que no se puede previsualizar como código.</value>
+  </data>
+  <data name="Files_TooLargePreviewHint" xml:space="preserve">
+    <value>Este archivo es demasiado grande para previsualizarlo en la app.</value>
+  </data>
+  <data name="Files_ImagePreviewErrorHint" xml:space="preserve">
+    <value>No se ha podido abrir esta imagen. Puede estar dañada o usar un formato que la app no sabe mostrar.</value>
+  </data>
+  <data name="Files_CodeLines_one" xml:space="preserve">
+    <value>{0} línea</value>
+  </data>
+  <data name="Files_CodeLines_other" xml:space="preserve">
+    <value>{0} líneas</value>
+  </data>
+  <data name="Files_Kind_Image" xml:space="preserve">
+    <value>Imagen</value>
+  </data>
+  <data name="Files_Kind_Pdf" xml:space="preserve">
+    <value>Documento PDF</value>
+  </data>
+  <data name="Files_Kind_Audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="Files_Kind_Video" xml:space="preserve">
+    <value>Vídeo</value>
+  </data>
+  <data name="Files_Kind_Code" xml:space="preserve">
+    <value>Texto o código</value>
+  </data>
+  <data name="Files_Kind_Other" xml:space="preserve">
+    <value>Archivo</value>
+  </data>
+  <data name="Files_RevealShortButton" xml:space="preserve">
+    <value>Mostrar en carpeta</value>
+  </data>
+  <data name="Files_Tree_DropHint" xml:space="preserve">
+    <value>También puedes arrastrar archivos desde el explorador del sistema y soltarlos aquí.</value>
   </data>
 </root>

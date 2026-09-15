@@ -1365,6 +1365,47 @@ public sealed class VaultService
             .ToList();
     }
 
+    /// <summary>Todos los archivos bajo <paramref name="root"/>, a cualquier profundidad — lo que recorre la
+    /// búsqueda de la rejilla de Archivos para encontrar un archivo aunque viva en una subcarpeta. Se compone de
+    /// <see cref="GetFiles"/> carpeta a carpeta sobre el mismo recorrido de <see cref="GetFolderTree"/> en vez de
+    /// un <c>SearchOption.AllDirectories</c> propio, así que excluye exactamente lo mismo que la navegación:
+    /// notas, archivos ocultos y carpetas que empiezan por punto (<c>.trash</c>, <c>.sessions</c>).</summary>
+    public List<VaultFile> GetFilesRecursive(string root)
+    {
+        var result = GetFiles(root);
+        foreach (var folder in GetFolderTree(root)) CollectFilesRecursive(folder, result);
+        return result;
+    }
+
+    private void CollectFilesRecursive(NoteFolder folder, List<VaultFile> result)
+    {
+        result.AddRange(GetFiles(folder.FullPath));
+        foreach (var child in folder.Children) CollectFilesRecursive(child, result);
+    }
+
+    /// <summary>Cuántos elementos enseña Archivos al entrar en <paramref name="folderPath"/>: sus subcarpetas
+    /// visibles más sus archivos que no son notas. Cuenta entradas del directorio sin leer los metadatos de
+    /// ninguna, que es todo lo que necesita el contador de una tarjeta de carpeta; una carpeta que desaparece o
+    /// no se puede leer cuenta cero en vez de tumbar la rejilla entera.</summary>
+    public static int CountFolderEntries(string folderPath)
+    {
+        try
+        {
+            if (!Directory.Exists(folderPath)) return 0;
+
+            var folders = Directory.EnumerateDirectories(folderPath)
+                .Count(path => !Path.GetFileName(path).StartsWith('.'));
+            var files = Directory.EnumerateFiles(folderPath)
+                .Count(path => !Path.GetFileName(path).StartsWith('.') &&
+                               !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase));
+            return folders + files;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return 0;
+        }
+    }
+
     private static VaultFile ReadFileMetadata(string fullPath)
     {
         var info = new FileInfo(fullPath);

@@ -1,293 +1,339 @@
 # Sección Archivos
 
-Referencia técnica de la pantalla "Archivos" (`AppPage.Files`): navegación, tarjetas de archivo,
-visor de PDF y su relación con el resto del vault. Documenta el comportamiento tal y como está
-implementado hoy, no un plan futuro.
+Referencia técnica de la pantalla "Archivos" (`AppPage.Files`): las dos disposiciones, navegación,
+tarjetas, previsualización (imágenes, PDF, código y panel de información) y su relación con el resto del
+vault. Documenta el comportamiento tal y como está implementado hoy, no un plan futuro.
 
 ## 1. Qué es y qué no es
 
-"Archivos" es la sección del vault para navegar, importar y previsualizar cualquier archivo que
-**no** sea una nota Markdown (`.md`). Vive junto a "Documentos" (Notas) como una segunda vista sobre
-el mismo almacén: mismo sistema de carpetas en disco, misma papelera, mismo selector de sesión — solo
-cambia qué extensión de archivo enumera cada una.
+"Archivos" es la sección del vault para navegar, importar, organizar y previsualizar cualquier archivo que
+**no** sea una nota Markdown (`.md`). Vive junto a "Documentos" (Notas) como una segunda vista sobre el
+mismo almacén: mismo sistema de carpetas en disco, misma papelera, mismo selector de sesión — solo cambia
+qué extensión de archivo enumera cada una.
 
 Piezas principales:
 
-- `enki/src/enki/viewmodels/files/FilesViewModel.cs` — estado de la pantalla (carpeta actual,
-  búsqueda, sesión activa, colección de tarjetas, previsualización activa).
-- `enki/src/enki/viewmodels/files/FileCardViewModel.cs` — una tarjeta de archivo en la rejilla
-  (miniatura, icono, metadatos, rename inline).
-- `enki/src/enki/viewmodels/files/FileFolderViewModel.cs` — una fila del árbol de carpetas.
-- `enki/src/enki/viewmodels/files/PdfDocumentViewModel.cs` — estado del visor de PDF multipágina
-  (página actual, zoom, rail de miniaturas de página).
-- `enki/src/enki/viewmodels/files/PdfPageThumbnailViewModel.cs` — una miniatura de página dentro del
-  rail del visor.
-- `enki/src/enki/viewmodels/files/PdfRenderHelper.cs` — envoltorio sobre PDFtoImage/PDFium que
-  rasteriza páginas de PDF a `Bitmap` de Avalonia.
-- `enki/src/enki/views/files/FilesView.axaml` / `.axaml.cs` — la vista: rejilla de tarjetas, árbol de
-  carpetas, modo previsualización, arrastrar-y-soltar.
-- `enki/src/enki/services/VaultService.cs`, región "Archivos (binarios no-.md)" (línea ~714 en
-  adelante) — el almacén real: enumerar, importar, renombrar, mover y borrar archivos sobre el
-  sistema de archivos del vault.
-- `enki/src/enki/models/VaultFile.cs` — el modelo POCO de un archivo (ruta, tamaño, fecha de
-  modificación, tipo detectado por extensión).
+- `viewmodels/files/FilesViewModel.cs` — estado de la sección: sesión, carpeta actual, miga de pan,
+  búsqueda, filtro, orden, tarjetas, previsualización activa, anterior/siguiente y todas las operaciones de
+  escritura (importar, crear, renombrar, mover, borrar, copiar ruta).
+- `viewmodels/files/FilesViewModel.Tree.cs` — parcial del modo árbol: forma del árbol, selección, teclado,
+  búsqueda del panel y estado del panel lateral.
+- `viewmodels/files/FileCardViewModel.cs` — un archivo: metadatos, miniatura, y lo que la previsualización
+  carga bajo demanda (imagen completa, PDF, texto).
+- `viewmodels/files/FileFolderViewModel.cs` — una fila del panel de carpetas del modo explorador.
+- `viewmodels/files/FileFolderCardViewModel.cs` — una carpeta dibujada como tarjeta en la rejilla (incluida
+  la ".."); también es la carga del modal de borrar carpeta.
+- `viewmodels/files/FileTreeItemViewModel.cs` — un nodo del modo árbol (carpeta o archivo).
+- `viewmodels/files/FileBreadcrumbViewModel.cs`, `FileSortOption.cs`, `FileKindFilterOption.cs` — miga de
+  pan, opciones de orden y de filtro.
+- `viewmodels/files/PdfDocumentViewModel.cs`, `PdfPageThumbnailViewModel.cs`, `PdfRenderHelper.cs`,
+  `SvgRenderHelper.cs` — visor de PDF y rasterización de PDF/SVG.
+- `views/files/FilesView.axaml` — contenedor: monta una de las dos disposiciones y aloja los modales de
+  borrado (archivo y carpeta).
+- `views/files/FilesBrowserView.axaml` — modo explorador (panel de carpetas + rejilla).
+- `views/files/FilesTreeView.axaml` — modo árbol (árbol de carpetas y archivos + previsualización).
+- `views/files/FilePreviewView.axaml` — la previsualización, compartida por las dos disposiciones.
+- `services/VaultService.cs`, región "Archivos (binarios no-.md)" — el almacén real: enumerar (un nivel,
+  `GetFiles`, o recursivo, `GetFilesRecursive`), contar entradas de una carpeta (`CountFolderEntries`),
+  importar, renombrar, mover y borrar.
+- `models/VaultFile.cs` — el modelo POCO de un archivo (ruta, tamaño, fecha, tipo por extensión).
 
-No hay un `FilesService` separado: los métodos sobre archivos binarios viven en el mismo
-`VaultService` que ya gestiona notas y carpetas, porque el almacén real es el propio sistema de
-archivos del vault y gran parte de la infraestructura (`VaultPath`, `TrashPath`, `SanitizeFileName`,
-`GetFolderTree`, `ImportFile`) ya era genérica pese a vivir junto a los métodos de notas. Solo la
-lectura de metadatos difiere: `ReadFileMetadata` es `FileInfo` puro, sin parsear contenido como hace
-`ReadNoteMetadata`.
+No hay un `FilesService` separado: los métodos sobre archivos binarios viven en el mismo `VaultService`
+que ya gestiona notas y carpetas, porque el almacén real es el propio sistema de archivos del vault y gran
+parte de la infraestructura (`VaultPath`, `TrashPath`, `SanitizeFileName`, `GetFolderTree`, `ImportFile`)
+ya era genérica.
 
 ## 2. Detección de tipo
 
-`VaultFile.KindFromExtension` clasifica cada archivo en uno de tres `VaultFileKind`, por extensión
-(case-insensitive, sin sniffing de magic bytes):
+`VaultFile.KindFromExtension` clasifica cada archivo por extensión (sin distinguir mayúsculas, sin mirar el
+contenido) en un `VaultFileKind`:
 
-- **Image**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp`.
+- **Image**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp`, `.ico`, `.tiff`, `.tif` y `.svg` (este último
+  rasterizado con `SvgRenderHelper`).
 - **Pdf**: `.pdf`.
-- **Other**: cualquier otra extensión — incluido `.svg` deliberadamente, porque el `Bitmap` de
-  Avalonia no decodifica vectorial sin sumar una dependencia de renderizado SVG nueva.
+- **Audio** y **Video**: las extensiones habituales (`.mp3`, `.flac`, `.mp4`, `.mkv`…).
+- **Code**: código y texto plano (`.cs`, `.py`, `.json`, `.yaml`, `.txt`, `.log`, `.csv`…).
+- **Other**: todo lo demás.
 
-`FileCardViewModel.IconKind` usa este tipo para elegir un icono fijo (`FilePdfBox` para PDF,
-`FileOutline` para el resto) cuando no hay miniatura decodificada.
+`FileCardViewModel.IconKind` da un icono de archivo distinto por tipo (`FileImageOutline`, `FilePdfBox`,
+`FileMusicOutline`, `FileVideoOutline`, `FileCodeOutline`, `FileOutline`), y `ExtensionLabel` la extensión en
+mayúsculas que se pinta como etiqueta sobre la miniatura.
 
-## 3. Navegación por carpetas y sesiones
+Que la extensión diga "texto" no garantiza que lo sea: el visor de código comprueba el contenido antes de
+enseñarlo (§6.3).
 
-El árbol de carpetas (`FilesViewModel.RootFolders`) es la **misma jerarquía de carpetas en disco**
-que usa "Documentos": `FileFolderViewModel` envuelve el mismo modelo `NoteFolder` que
-`NoteFolderViewModel`, no un concepto propio. Es una clase separada solo porque sus `[RelayCommand]`
-y los bindings de la vista alrededor están acoplados por tipo a `FilesViewModel`, no porque el
-concepto de carpeta difiera entre ambas pantallas.
+## 3. Las dos disposiciones
 
-El selector de sesión (`SessionOptions`, arriba de la rejilla) es el mismo que usa "Documentos": la
-primera entrada es el vault completo (`SessionOptionViewModel(null)`), y cada sesión adicional acota
-la vista a su propia carpeta raíz (`Session.RootPath`). Un archivo soltado dentro de una sesión "X" es
-visible tanto desde Documentos como desde Archivos sin ningún concepto nuevo — comparten carpetas
-físicas en disco.
+La sección se navega de dos formas, elegidas con el conmutador (rejilla / árbol) y guardadas en
+`AppSettings.FilesViewMode`:
 
-`EffectiveRootPath` resuelve a `SelectedSessionOption.Session.RootPath` si hay una sesión elegida, o
-al `VaultService.VaultPath` si la selección es "vault completo". `CurrentFolderPath` resuelve además
-sobre `CurrentFolder`, que puede ser `null` (equivalente a "TODOS", la raíz efectiva).
+- **Explorador** (`FilesBrowserView`): encabezado, barra de herramientas (importar, sesión, filtro por tipo,
+  orden, búsqueda, contador, conmutador), panel de carpetas a la izquierda y rejilla de tarjetas con miga de
+  pan. Abrir un archivo sustituye la pantalla entera por la previsualización.
+- **Árbol** (`FilesTreeView`), la disposición "simplificada": un panel lateral que entremezcla carpetas y
+  archivos, y la previsualización a la derecha, siempre al lado del árbol.
 
-La elección **se recuerda entre arranques** (`AppSettings.FilesSessionId`): `PersistSelectedSession` la
-escribe en cada cambio del selector y `ReloadSessions` la relee al construir el viewmodel, de modo que la
-app reabre Archivos en el espacio de trabajo en el que se cerró en vez de volver siempre al vault. Es el
-mismo mecanismo que `NotesSessionId` en Documentos, con **clave propia**: son dos selectores
-independientes, y compartir una sola haría que cambiar de espacio en una sección moviera la otra a la
-espalda del usuario. Una sesión guardada que ya no exista —borrada, o de otro vault— cae al vault en
-silencio; una cifrada se vuelve a elegir aunque arranque bloqueada, porque la sección ya sabe enseñar ese
-estado y devolver al usuario al vault sería perder justo la elección que se quería recordar. Ver
-`docs/agent-docs/ajustes-docs/02-productividad-como-app-de-escritorio.md` §2.
+`FilesView` monta **una sola** de las dos (no las dos con `IsVisible`): cada una lleva la previsualización,
+que instala TextMate y abre PDFium, y dos vivas duplicarían ambas cosas. El viewmodel es el mismo, así que
+cambiar de modo no reinicia nada: la sesión, la carpeta actual y el archivo abierto siguen ahí.
 
-Cambiar de sesión, de carpeta o de texto de búsqueda dispara `Reload()`, que llama a
-`VaultService.GetFiles(carpetaActual)` — enumeración de un único nivel (`SearchOption.TopDirectoryOnly`),
-no recursiva — y filtra en memoria por `FileName.Contains(SearchText, OrdinalIgnoreCase)`. `GetFiles`
-excluye explícitamente cualquier archivo `.md`: esa es la frontera entre lo que ve "Documentos" y lo
-que ve "Archivos" sobre el mismo directorio.
+El conmutador está en la barra del explorador, en la cabecera del panel derecho del árbol (sin archivo
+abierto), en la barra de la previsualización (en las dos disposiciones) y en el raíl del panel contraído,
+para que ningún estado de la pantalla se quede sin salida.
 
-El texto de búsqueda usa un debounce de 200 ms (`_searchDebounceTimer`) antes de recargar, igual que
-el resto de pantallas con búsqueda del proyecto.
+## 4. Navegación en el modo explorador
 
-## 4. Sin sistema de pestañas
+### 4.1 Sesiones
 
-A diferencia de "Documentos" (que mantiene varias notas abiertas en pestañas simultáneas), "Archivos"
-no tiene tira de pestañas. Abrir un archivo (`OpenCard`) simplemente reemplaza
-`FilesViewModel.ActivePreview` por la tarjeta elegida — un único slot de previsualización, no una
-colección. La razón documentada en el propio código: los archivos aquí solo se **visualizan**, nunca
-se editan, así que no existe "trabajo en curso" que preservar al cambiar de uno a otro, a diferencia
-del editor de notas.
+El selector de sesión es el mismo que usa "Documentos": la primera entrada es el vault completo
+(`SessionOptionViewModel(null)`) y cada sesión acota la vista a su carpeta raíz. `EffectiveRootPath`
+resuelve a la raíz de la sesión elegida o al vault; `CurrentFolderPath`, además, sobre `CurrentFolder`
+(`null` equivale a la raíz efectiva).
 
-`ActivePreview == null` selecciona el modo "rejilla" (navegación); `ActivePreview != null` selecciona
-el modo "previsualización" (`FilesView.axaml` alterna entre dos `Grid` raíz con
-`IsVisible={Binding ActivePreview, Converter=...IsNull/IsNotNull}`).
+La elección **se recuerda entre arranques** (`AppSettings.FilesSessionId`), con clave propia e independiente
+de la de Notas. Una sesión guardada que ya no exista cae al vault en silencio; una cifrada se vuelve a elegir
+aunque arranque bloqueada. Con una sesión protegida y bloqueada elegida la sección no lista ni nombres de
+archivo, en ninguna de las dos disposiciones.
 
-## 5. Tarjetas de archivo y miniaturas
+### 4.2 Carpetas, miga de pan y panel
 
-Cada `FileCardViewModel` envuelve un `VaultFile` y expone:
+- El **panel de carpetas** (`RootFolders`) es la misma jerarquía en disco que usa Documentos. La fila de la
+  carpeta actual se marca (`FileFolderViewModel.IsSelected`) y las carpetas que llevan hasta ella se
+  despliegan, venga de donde venga la navegación. Renombrar y borrar aparecen al pasar el cursor por la fila.
+- La **miga de pan** (`Breadcrumbs`) enseña la raíz efectiva (el nombre de la sesión, o "Todos los
+  archivos") y cada carpeta hasta la actual; cualquier tramo que no sea el último navega hasta él. El botón
+  de subir un nivel (y Retroceso) llama a `NavigateUpCommand`.
+- La **rejilla** (`BrowserItems`) enseña la tarjeta "..", las subcarpetas —cada una con cuántos elementos
+  contiene (`VaultService.CountFolderEntries`: subcarpetas visibles más archivos que no son notas)— y los
+  archivos.
+- Al entrar en la sección, el shell llama a `FilesViewModel.Refresh()` (panel y rejilla), para que una
+  carpeta creada desde Notas o desde el explorador del sistema aparezca también en el panel.
 
-- `FileName`, `SizeLabel`, `ModifiedLabel` — metadatos formateados (tamaño humano, fecha relativa).
-- `IsImage` / `IsPdf` / `IsOther` — atajos sobre `VaultFile.Kind`.
-- `IconKind` — icono Material fijo cuando no hay miniatura.
-- `Thumbnail` (`Bitmap?`) — la miniatura decodificada, `null` hasta que se carga.
-- `PdfDocument` (`PdfDocumentViewModel?`) — solo para PDFs, `null` hasta que se abre la
-  previsualización por primera vez.
+### 4.3 Búsqueda, filtro y orden
 
-**Carga perezosa, no eager**: `EnsureThumbnailLoaded()` se llama desde el evento `Initialized` de cada
-tarjeta en `FilesView.axaml.cs` (`FileCard_Initialized`), es decir, la primera vez que la tarjeta se
-realiza visualmente en pantalla — no para las cientos de tarjetas que podría haber en una carpeta
-grande. Guardada por `_thumbnailLoadAttempted` para no repetir el intento.
+- **Búsqueda** (debounce de 200 ms): busca por nombre en la carpeta actual **y en todas sus subcarpetas**
+  (`VaultService.GetFilesRecursive`, que excluye lo mismo que la navegación: notas, ocultos, `.trash`,
+  `.sessions`). Cada resultado dice en qué subcarpeta vive (`FileCardViewModel.LocationLabel`) y la miga de
+  pan se antecede de "Buscando en". Con búsqueda activa no hay tarjetas de carpeta.
+- **Filtro por tipo**: sus opciones se reconstruyen con los tipos presentes en lo que se está viendo.
+- **Orden** (`SortOptions`, guardado en `AppSettings.FilesSortMode`): más recientes (el de siempre),
+  nombre, tamaño (más grandes primero) o tipo. Las carpetas van siempre delante y por nombre.
 
-La decodificación corre en un `Task.Run` fuera del hilo de UI: para imágenes es un `Bitmap` directo
-desde el `FileStream`; para PDFs es la primera página rasterizada vía `PdfRenderHelper.RenderPageByWidth`
-a un ancho fijo de 200px (`GridThumbnailWidth`), así que la rejilla de "Archivos" muestra una vista
-real de la primera página en vez de un icono genérico también para PDFs. Cualquier excepción durante
-la decodificación dejo la miniatura en `null` (vuelve a mostrarse el icono fijo), sin propagar el
-error.
+### 4.4 Estados vacíos
 
-**Sin caché en disco**: cada apertura de carpeta vuelve a decodificar sus miniaturas desde cero — no
-hay ningún archivo de caché de thumbnails persistido. Es una decisión deliberada documentada en el
-código: decodificar al vuelo es barato mientras el número de archivos por carpeta se mantenga
-razonable, y añadir una caché antes de que eso sea un problema real sería complejidad sin uso.
+Cuatro, que no se confunden entre sí: vault o sesión sin nada (`ShowEmptyState`, con botones de importar y
+de nueva carpeta), subcarpeta vacía (`ShowFolderEmptyState`), búsqueda sin resultados
+(`ShowSearchEmptyState`, con el texto buscado) y sesión bloqueada (`IsSelectedSessionLocked`).
 
-## 6. Visor de PDF
+## 5. Tarjetas y miniaturas
 
-Abrir la previsualización de un PDF (`OpenCard` → `EnsurePdfDocumentLoaded`) crea un
-`PdfDocumentViewModel` una única vez por tarjeta (se conserva mientras dure la sesión de la app, así
-que reabrir el mismo PDF no vuelve a renderizarlo desde cero) y arranca `LoadAsync()`.
+Cada `FileCardViewModel` expone `FileName`, `ExtensionLabel`, `MetaLabel` (tamaño · fecha relativa),
+`LocationLabel`, `KindLabel`, `IconKind` y `Thumbnail`.
 
-`LoadAsync`:
+**Carga perezosa**: `EnsureThumbnailLoaded()` se llama cuando la tarjeta se realiza en pantalla
+(`FileCard_Initialized`) —nunca para todos los archivos de golpe— y corre fuera del hilo de UI, con como
+mucho 2–4 decodificaciones a la vez (`ThumbnailGate`). Las imágenes rasterizadas se **reducen al
+decodificar** a 320 px de ancho (`Bitmap.DecodeToWidth`, tras leer el tamaño de la cabecera con `SKCodec`):
+decodificarlas a tamaño completo retenía cientos de MB en una carpeta de fotos. Los SVG pasan por
+`SvgRenderHelper` y los PDF enseñan su primera página. Cualquier fallo deja el icono por tipo.
 
-1. Obtiene el número de páginas vía `PdfRenderHelper.GetPageCount`.
-2. Crea un `PdfPageThumbnailViewModel` por página (rail lateral).
-3. Marca la primera página como actual y renderiza su imagen a tamaño completo.
-4. Si algo falla en el camino (incluido un PDF con 0 páginas), marca `IsFaulted = true` en vez de
-   propagar la excepción; la vista muestra entonces un estado de error con un botón para abrir el
-   archivo con la aplicación del sistema.
+`UpdateFile` (renombrar, mover) incrementa una generación que descarta las decodificaciones en curso del
+archivo anterior. No hay caché de miniaturas en disco: se recalculan en cada visita a la carpeta.
 
-**Render de la página actual** (`RenderCurrentPageAsync`): usa `PdfRenderHelper.RenderPageByDpi`, con
-un DPI calculado como `130 (BaseDpi) * ZoomFactor`. El zoom real (0.5×–3.0×, pasos de 0.25) por tanto
-no es un escalado de un bitmap ya renderizado — cada cambio de zoom vuelve a pedirle a PDFium más (o
-menos) detalle, así que ampliar nunca produce una imagen borrosa por reescalado.
+## 6. Previsualización
 
-Cada render lleva un token incremental (`_renderToken`): si una página o zoom más reciente ya se
-solicitó antes de que termine un render anterior, ese resultado obsoleto se descarta en vez de
-parpadear brevemente en pantalla.
+`OpenCard` reemplaza `ActivePreview` —un único hueco, sin pestañas: los archivos se visualizan, no se
+editan— y carga bajo demanda lo que haga falta (`LoadPreviewContent`). La tarjeta abierta se **reutiliza**
+en cada recarga de la rejilla y del árbol, para que importar, mover o cambiar el orden no cierre lo que hay
+abierto.
 
-**Rail de miniaturas de página**: cada `PdfPageThumbnailViewModel` se renderiza también de forma
-perezosa (`EnsurePageThumbnailLoaded`, llamado desde `PdfPageThumb_Initialized` en el code-behind), a
-un ancho fijo de 120px. El `ItemsControl` del rail usa un `VirtualizingStackPanel`, así que un PDF de
-cientos de páginas nunca renderiza más de un puñado de miniaturas a la vez — solo las que caen cerca
-del viewport.
+**Barra** (58 px, alineada con la del panel del árbol): cerrar, archivo anterior/siguiente
+(`PreviewPreviousCommand`/`PreviewNextCommand`, sobre los archivos de la rejilla con su orden y filtro, o
+sobre los del árbol en orden de lectura), nombre y una línea de datos (tipo · tamaño · fecha, dimensiones de
+la imagen o líneas del texto, y "3 / 12"), herramientas del tipo de archivo, "abrir con el visor del
+sistema", un menú de más acciones (mostrar en el explorador, copiar ruta, eliminar) y el conmutador de
+navegación.
 
-**Motor de renderizado**: `PdfRenderHelper` es un envoltorio fino sobre el paquete NuGet
-`PDFtoImage` (PDFium + SkiaSharp; referenciado en `enki.csproj`). El propio código documenta por qué
-no se usó la ruta `NativeWebView` de Avalonia como visor alternativo: el backend WebView de
-Linux/WPE es software-only y propenso a fallos según la documentación de `SessionGraphRenderer.cs`
-del propio proyecto, mientras que PDFium da un render determinista dentro de la app en todas las
-plataformas que Enki soporta, sin necesitar comprobar disponibilidad de motor. Cada llamada
-(`GetPageCount`, `RenderPageByWidth`, `RenderPageByDpi`) abre su propio `FileStream` de corta vida en
-vez de cachear los bytes del PDF en memoria: PDFium serializa sus llamadas internamente (no soporta
-paralelización según su propia documentación), así que no se gana nada manteniendo el archivo abierto
-o sus bytes residentes, y un PDF escaneado grande nunca tiene que cargarse entero en memoria solo
-para renderizar una página.
+**Foco**: en el modo explorador la previsualización toma el foco al abrirse, para que sus atajos funcionen
+sin pulsar antes dentro; en el modo árbol el foco se queda en el árbol, que se recorre con las mismas
+flechas (§8).
 
-**Atajos de teclado del visor**: flechas izquierda/derecha y RePág/AvPág cambian de página
-(`Grid.KeyBindings` en `FilesView.axaml`, atados a `PreviousPageCommand`/`NextPageCommand`); sin
-efecto fuera del visor de PDF porque `PdfDocument` es `null` en cualquier otro caso y Avalonia trata
-un `Command` nulo como deshabilitado.
+### 6.1 Imágenes
 
-**Fallback universal**: cualquier archivo que no sea imagen ni PDF (`IsOther`, además del propio PDF
-si `IsFaulted`) muestra un icono, el nombre del archivo y un botón "abrir con la aplicación del
-sistema" — nunca un error duro sin salida.
+`EnsurePreviewImageLoaded` decodifica la imagen fuera del hilo de UI, con un tope de 4096 px de ancho (los
+SVG, a 1600 px); mientras tanto se enseña la miniatura (`DisplayImage`). Se ajusta a la ventana **sin
+ampliar** por encima de su tamaño (`StretchDirection="DownOnly"`), o a tamaño real con desplazamiento
+(`IsImageActualSize`). Una imagen que no se puede decodificar va al panel de información.
 
-## 7. Estilos visuales
+### 6.2 PDF
 
-`enki/src/enki/styles/Styles.axaml` define las clases visuales de esta sección:
+Ver §7.
 
-- `Button.file-card` — copia exacta de las reglas de `Button.note-card`, misma familia visual que las
-  tarjetas de nota; solo cambia el contenido (miniatura/icono + nombre + tamaño + fecha en vez de
-  título/preview/palabras). `CornerRadius="0"` como el resto del sistema de diseño.
-- `Border.files-grid-panel.drag-over` — resalta el borde de la rejilla completa con `InkBrush` durante
-  un arrastre de archivos válido desde el explorador del SO; mismo lenguaje visual que
-  `Border.folder-row.drag-over`.
-- `Button.pdf-page-thumb` — miniatura de página en el rail del visor; mismo lenguaje de "borde que se
-  resalta al activarse" que `Border.folder-row.active`, sobre un `Button` (no un `Border`) porque cada
-  miniatura es clicable.
+### 6.3 Código y texto
 
-## 8. Importar archivos
+`EnsureCodeContentLoaded` lee el archivo y, antes de dárselo al editor:
 
-Hay dos caminos de entrada, ambos convergen en el mismo método:
+- descarta los de más de 32 MB (panel de información, "demasiado grande");
+- detecta binarios con extensión de texto (`LooksBinary`: un byte nulo en los primeros 8000 bytes, salvo
+  con marca de orden de bytes UTF-16) — panel de información;
+- decodifica respetando la marca de orden de bytes (UTF-8/UTF-16);
+- trunca a 512 000 caracteres (`IsCodeTruncated`), avisándolo en una franja sobre el editor — antes se
+  añadía una línea inventada al final del propio texto, que se copiaba con él.
 
-- **Botón "IMPORTAR"** (`FilesViewModel.Import`, `[RelayCommand]`): abre un selector de archivos del
-  sistema (`IStorageProvider.OpenFilePickerAsync`, multi-selección) y pasa las rutas locales
-  resueltas a `ImportPaths`.
-- **Arrastrar y soltar desde el explorador del SO**, usando el formato `DataFormat.File` que expone
-  `DataTransfer` de Avalonia para ítems soltados desde fuera de la app (a diferencia del formato interno
-  usado para mover archivos ya presentes en la sección — ver §9). No hay precedente de este patrón en
-  ninguna otra pantalla: Notas/Kanban/Calendario solo manejan arrastre *interno*. En el **modo explorador**
-  (`FilesBrowserView.axaml.cs`) hay tres destinos, y los tres importan en el sitio sobre el que se suelta:
-  - La **rejilla de tarjetas** (`FilesGrid_DragEnter/DragOver/DragLeave/Drop`) importa en la carpeta que se
-    está navegando.
-  - Una **fila de carpeta** del panel lateral (`FolderRow_*`) importa dentro de esa carpeta.
-  - La **fila "TODOS"** (`RootFolderRow_*`) importa en la raíz efectiva.
+El editor (AvaloniaEdit + TextMate, solo lectura, con números de línea) va **sin** `ScrollViewer`
+alrededor: trae el suyo y virtualiza las líneas. El tema de resaltado sigue al de la app (LightPlus o
+DarkPlus, también al cambiarlo en caliente) y la gramática se resuelve por extensión, también cuando un
+renombrado cambia la extensión del archivo abierto; una extensión sin gramática queda sin resaltado. La barra
+trae el lenguaje, ajuste de líneas largas y copiar el contenido (el icono pasa a un check un momento).
 
-  Las filas aceptaron durante un tiempo solo el arrastre interno, y con el modo árbol importando a la
-  carpeta soltada la asimetría no se sostenía: la misma carpeta, arrastrada lo mismo desde el mismo sitio,
-  aceptaba o rechazaba según la disposición desde la que se estuviera mirando.
+### 6.4 Panel de información
 
-En el **modo árbol** (la disposición "simplificada" de la sección) los destinos son otros, porque ahí la
-rejilla no existe y el árbol ocupa solo la franja del panel lateral:
+Audio, vídeo, tipos sin visor, texto binario/ilegible e imágenes que no se pueden decodificar enseñan una
+ficha (`ShowsInfoPanel`): icono y extensión, nombre, tipo y datos, el motivo (`PreviewHint`) y dos salidas —
+reproducir/abrir con la aplicación del sistema y mostrar en la carpeta. Nunca un error sin salida.
 
-- La **vista entera** acepta el arrastre entrante del SO (`TreeView_DragEnter/DragOver/DragLeave/Drop` en
-  `FilesTreeView.axaml.cs`) e importa en la raíz efectiva. Sin esto, la previsualización de la derecha —que
-  es la mayor parte de la ventana— quedaba muerta al arrastre y soltar archivos parecía no funcionar.
-- El **fondo del árbol** importa también en la raíz efectiva, y además acepta el arrastre interno (mover a
-  la raíz, el equivalente de la fila "TODOS" del modo explorador).
-- Una **fila de carpeta** importa dentro de esa carpeta, y acepta igualmente el arrastre interno. Las filas
-  de archivo no son destino: dejan burbujear el arrastre hasta el fondo.
+"Abrir con el sistema" (`OpenWithSystem`) entrega una copia descifrada temporal cuando el archivo vive en una
+sesión protegida, y avisa si el sistema no tiene aplicación asociada.
 
-Los tres se encadenan por burbujeo: el destino más específico que acepta el arrastre marca el evento como
-manejado, así que solo uno actúa. El realce sigue el mismo criterio: la carpeta destino se resalta ella sola
-(`Border.folder-row.drag-over`) y apaga el recuadro de la vista entera (`IsGridDropTarget`), que es el que se
-enciende cuando el destino es la raíz efectiva.
+## 7. Visor de PDF
 
-`ImportPaths` (punto de entrada compartido) llama a `VaultService.ImportFile(ruta, carpetaActual)`
-por cada archivo, y recarga la rejilla si al menos uno se importó. Cada archivo va en su propio
-`try`/`catch` (`IOException`, `UnauthorizedAccessException`, `SessionLockedException`): importar dentro de
-una sesión protegida y bloqueada cifra con una clave que no está en memoria, y esa excepción salía desde
-dentro del manejador del "soltar" a la cara del usuario. Se guarda solo la primera y se avisa una vez por
-gesto (`Files_Notify_ImportFailed_Title` + `VaultFailureReasons.Describe`), sin dejar de intentar el resto
-del lote. Además, con una sesión bloqueada elegida los destinos de arrastre ni siquiera aceptan el gesto —
-en las dos disposiciones—, para no ofrecer algo que solo puede terminar en aviso de error. `VaultService.ImportFile` copia el
-archivo (no lo mueve) a la carpeta destino, resolviendo colisiones de nombre con un sufijo numérico
-(`nombre 2.ext`, `nombre 3.ext`, ...).
+`EnsurePdfDocumentLoaded` crea un `PdfDocumentViewModel` por tarjeta y arranca `LoadAsync()`, que resuelve
+una sola vez la ruta legible (copia descifrada si hace falta), lee el número de páginas y **el tamaño de cada
+página** (`PdfRenderHelper.GetPageSizes`, en puntos) y renderiza la primera. Cualquier fallo marca
+`IsFaulted` y la vista ofrece abrir el archivo con el sistema.
 
-## 9. Organizar: carpetas, mover, renombrar, borrar
+**Zoom**: se mide contra el tamaño físico de la página (100 % = tamaño en papel a 96 DIP por pulgada). El
+documento se abre **ajustado al ancho** del panel (`IsFitWidth`), que la vista informa con
+`SetViewport(ancho, escala)` —con un debounce de 120 ms al redimensionar— y que se recalcula por página (un
+anexo apaisado se ajusta a su propio ancho). Elegir un zoom concreto apaga el ajuste; los escalones son fijos
+(25 %–400 %), así que desde un ajuste de 83 % se llega a un valor redondo. Ctrl + rueda, Ctrl + +/−, el
+botón del porcentaje (100 %) y el de ajustar al ancho (Ctrl + 0).
 
-Todas las operaciones de escritura viven en `FilesViewModel` como `[RelayCommand]` que delegan en
-`VaultService` y luego recargan el estado local:
+**Render**: cada cambio de página o de zoom pide a PDFium la página al DPI que corresponde **multiplicado
+por la escala de la pantalla**, así que en HiDPI no se ve borrosa. El tamaño con que se dibuja
+(`CurrentPageDisplayWidth/Height`) es independiente de los píxeles del bitmap: mientras llega el render nuevo
+se estira el anterior, y el lado largo de un render se limita a 6000 px para no reservar cientos de MB en
+aumentos extremos. Un token (`_renderToken`) descarta renders adelantados por otro cambio.
 
-- `NewFolder` → `VaultService.CreateFolder`, entra directamente en modo renombrar sobre la carpeta
-  recién creada.
-- `CommitRenameFolder` / `CommitRenameFile` → `VaultService.RenameFolder` / `RenameFile`; ambos
-  añaden un sufijo numérico si el nombre destino ya existe, igual que el resto de operaciones de
-  renombrado del vault (notas incluidas) — nunca hacen un "ghost rename" silencioso.
-- `DeleteFolder` / `DeleteFile` → mueven a la papelera del vault (`VaultService.TrashPath`,
-  `<vault>/.trash`), la misma papelera que usan las notas. Si la carpeta/archivo borrado afectaba a la
-  carpeta o previsualización actualmente activa, ambas se limpian antes de recargar.
-- `MoveFileToFolder` (llamado desde el drop de un archivo sobre una fila de carpeta o sobre "TODOS")
-  → `VaultService.MoveFile`.
+**Página**: al cambiar de página el visor vuelve arriba y la miniatura actual del raíl se trae a la vista
+(`CurrentPageChanged`). El raíl usa `VirtualizingStackPanel` y renderiza cada miniatura perezosamente a 220 px.
 
-**Arrastrar para mover** (`FileCard_PointerPressed`/`PointerMoved` en `FilesBrowserView.axaml.cs`,
-`TreeRow_*` en `FilesTreeView.axaml.cs`): un arrastre interno de una tarjeta o fila usa un formato de datos
-propio (`com.enki.file-path`, `DataFormat.CreateStringApplicationFormat`) para transportar la ruta completa
-del archivo, distinto del `DataFormat.File` usado para arrastres entrantes desde el SO (§8). Ser el **mismo
-formato en las dos disposiciones** es lo que hace que un arrastre valga igual en cualquiera de ellas. El
-umbral de inicio de arrastre es de ~4px de movimiento tras pulsar.
+Cada llamada a `PdfRenderHelper` abre su propio `FileStream` de corta vida: PDFium serializa sus llamadas, así
+que no se gana nada manteniendo el archivo abierto, y un PDF escaneado grande nunca se carga entero en memoria.
+No se usa `NativeWebView`: su backend en Linux es software-only y propenso a fallos.
 
-Las filas de carpeta y la fila raíz "TODOS" aceptan **las dos clases de arrastre** y las distinguen por su
-formato: el interno mueve (`MoveFileToFolder`), el del SO importa (`ImportPaths`). Quien decide es
-`EffectsFor`, uno por disposición (`FilesBrowserView`/`FilesTreeView`) pero con el mismo criterio, incluido
-el de no aceptar nada con una sesión protegida y bloqueada elegida (§8).
+## 8. Modo árbol
 
-Este reparto —qué destino acepta qué y a dónde va a parar lo soltado— vive entero en el code-behind de las
-vistas, así que un test de solo viewmodel no lo ve: lo cubre `FilesDropTargetUiTests`, que levanta el XAML
-compilado de verdad y lanza `DragOver`/`Drop` reales sobre las filas en las dos disposiciones.
+- **Forma**: carpetas y archivos en una sola lista jerárquica, subcarpetas primero y archivos por nombre.
+  Cuelga de la raíz efectiva entera; ni el filtro, ni el orden, ni la carpeta actual del explorador lo podan.
+  Solo se mantiene al día mientras el modo está activo y se reconstruye al entrar.
+- **Selección**: un único nodo seleccionado (`FileTreeItemViewModel.IsSelected`) — el archivo abierto o la
+  última carpeta pulsada. Abrir un archivo desde cualquier sitio lo selecciona y despliega sus carpetas.
+- **Teclado** (con el foco en el cuerpo del árbol): ↑/↓, RePág/AvPág, Inicio/Fin mueven la selección entre
+  los nodos visibles —un archivo se abre al llegar a él—; → despliega o baja al primer hijo; ← pliega o sube
+  a la carpeta padre; Intro abre o pliega; F2 renombra; Supr borra. Pulsar una fila le da el foco al árbol.
+- **Búsqueda del panel**: filtra en memoria lo ya montado, con la carpeta de cada resultado; Intro abre el
+  primero y Esc vuelve al árbol.
+- **Pie**: selector de sesión y el número de archivos de **todo el árbol** (`TreeFilesCountLabel`).
+- **Menú contextual por tipo de nodo**: en archivos, abrir con el sistema, renombrar, mostrar en el
+  explorador, copiar ruta y eliminar; en carpetas, crear subcarpeta, importar aquí, renombrar, mostrar en el
+  explorador, copiar ruta y eliminar.
+- **Panel lateral**: plegable (`AppSettings.FilesTreeSidebarVisible`), redimensionable
+  (`FilesTreeSidebarWidth`) y con su propio estado de carpetas expandidas (`FilesTreeExpandedFolderPaths`),
+  independiente del panel del explorador.
 
-Los archivos borrados van a la misma papelera del vault que usa `TrashViewModel`
-(`VaultService.GetTrashedFiles`), junto a notas y otros elementos borrables — no hay una papelera
-separada por tipo de contenido.
+## 9. Importar archivos
 
-## 10. Qué NO hace esta sección
+Todo converge en `FilesViewModel.ImportPaths(rutas, destino)`, que llama a `VaultService.ImportFile` por
+archivo (copia, no mueve; colisiones con sufijo numérico; cifra si el destino es una sesión protegida). Cada
+archivo va en su propio `try`/`catch` y se avisa una vez por gesto si alguno falla, sin dejar de intentar el
+resto. En el modo árbol, importar un único archivo lo abre directamente en la previsualización.
 
-Por completitud, verificado leyendo el código:
+Entradas:
 
-- **No hay edición de archivos.** La sección es de solo lectura/visualización sobre el archivo (salvo
-  el nombre, que sí es editable). No hay editor de imágenes ni anotación de PDF.
-- **No hay integración con wikilinks.** A diferencia de las notas (que sí resuelven `[[enlaces]]`
-  entre sí vía `WikiLinkParser`), no se encontró ningún mecanismo que enlace una nota a un archivo
-  binario del vault ni viceversa (ni incrustación de imágenes en notas, ni referencia inversa desde un
-  archivo a las notas que lo mencionan). La única relación entre "Documentos" y "Archivos" es
-  estructural: comparten el mismo árbol de carpetas en disco y el mismo selector de sesión (§3).
-- **No hay caché de miniaturas persistente** (§5): se recalculan en cada visita a la carpeta.
+- **Botón o menú "Importar"** (`ImportCommand`), con destino la carpeta actual o la carpeta del menú
+  ("Importar aquí…" en filas, tarjetas de carpeta y nodos del árbol).
+- **Arrastrar desde el explorador del SO** (`DataFormat.File`). En el modo explorador: la rejilla importa en la
+  carpeta que se ve; una fila de carpeta, una tarjeta de carpeta (incluida la "..") o la fila "TODOS", ahí
+  dentro. En el modo árbol: una fila de carpeta, ahí dentro; el fondo del árbol y el resto de la vista
+  (incluida la previsualización), en la raíz efectiva.
+
+Los destinos se encadenan por burbujeo —el más específico que acepta marca el evento como manejado— y el
+realce sigue el mismo criterio. Con una sesión bloqueada elegida ningún destino acepta el gesto.
+
+## 10. Organizar: carpetas y archivos
+
+Todas las escrituras pasan por `TryVaultOperation`: un fallo de disco (permisos, archivo en uso, sesión
+bloqueada, vault desaparecido) se avisa con `NotifyFilesFailure` en vez de escapar como excepción desde un
+comando o un manejador de arrastre.
+
+- **Crear carpeta**: "Nueva carpeta" del explorador crea en la carpeta actual y abre el renombrado en su
+  tarjeta; "Crear subcarpeta" de una fila despliega la fila padre para que el cuadro de renombrar sea visible.
+- **Renombrar** (en línea en filas, tarjetas y nodos; F2): colisiones con sufijo numérico. Al renombrar un
+  archivo se selecciona solo el nombre, sin la extensión. `RenameFolderAt` traslada a la ruta nueva todo lo
+  que apuntaba a la vieja (`_folderRemap`): la carpeta actual, las carpetas expandidas de los dos árboles, la
+  selección del árbol y el archivo abierto, que se recarga desde su ruta nueva.
+- **Borrar carpeta**: siempre pasa por `RequestDeleteFolder` (fila, tarjeta o nodo), que pide confirmación si
+  `ConfirmBeforeDelete` está activo. La carpeta se mueve a `<vault>/.trash`; como la sección Papelera solo
+  lista archivos sueltos, el modal lo dice. Si contenía el archivo abierto o la carpeta actual, se cierran.
+- **Borrar archivo**: confirmación igual, a la papelera del vault (restaurable desde Papelera). Si era el
+  archivo abierto, se abre el siguiente (o el anterior) en su lugar.
+- **Mover** (arrastrar una tarjeta o fila sobre una carpeta; formato interno `com.enki.file-path`, el mismo
+  en las dos disposiciones): `MoveFileToFolder`. Si el archivo movido es el que está abierto, la
+  previsualización se recarga desde la ruta nueva — antes el visor de PDF seguía leyendo la vieja y las
+  páginas dejaban de pasar.
+- **Copiar ruta** (archivos y carpetas) y **mostrar en el explorador del sistema**.
+
+Qué destino acepta qué vive en el code-behind de las vistas; lo cubre `FilesDropTargetUiTests`.
+
+## 11. Atajos de teclado
+
+| Dónde | Tecla | Acción |
+| --- | --- | --- |
+| Rejilla | Retroceso | Subir un nivel |
+| Tarjeta con foco | F2 / Supr | Renombrar / eliminar |
+| Árbol con foco | ↑ ↓ RePág AvPág Inicio Fin | Mover la selección |
+| Árbol con foco | → / ← | Desplegar o bajar / plegar o subir |
+| Árbol con foco | Intro / F2 / Supr | Abrir o plegar / renombrar / eliminar |
+| Búsqueda del árbol | Intro / Esc | Abrir el primer resultado / volver al árbol |
+| Previsualización | Esc | Cerrar |
+| Previsualización | Alt + ← / Alt + → | Archivo anterior / siguiente |
+| PDF | ← → RePág AvPág / Inicio Fin | Página anterior o siguiente / primera o última |
+| PDF | Ctrl + + / Ctrl + − / Ctrl + 0 / Ctrl + rueda | Acercar / alejar / ajustar al ancho / zoom |
+
+## 12. Estilos visuales
+
+En `styles/Styles.axaml`:
+
+- `Button.file-card` — misma familia visual que `Button.note-card`; con `:focus-visible` y `.drag-over`
+  (tarjeta de carpeta bajo un arrastre válido) el borde pasa a `InkBrush`.
+- `Border.file-ext-badge` — etiqueta monoespaciada de extensión (tarjetas, ficha, lenguaje del visor).
+- `Border.folder-row Button.row-action` — acciones de fila visibles al pasar el cursor, en la fila activa o
+  con el foco.
+- `Button.breadcrumb` (y `.current`) — tramos de la miga de pan.
+- `Border.files-grid-panel.drag-over` y `Button.pdf-page-thumb` — rejilla bajo un arrastre del SO y
+  miniaturas del raíl del PDF.
+
+Todo con `CornerRadius="0"`, según `docs/sistema-diseno-web.md`.
+
+## 13. Tests
+
+- `enki.Tests/ViewModels/FilesViewModelBrowserTests.cs` — miga de pan y panel, búsqueda recursiva, orden,
+  estados vacíos, crear/renombrar/borrar carpetas, mover y borrar con la previsualización abierta,
+  anterior/siguiente, contador y teclado del árbol.
+- `enki.Tests/ViewModels/FilesViewModelTreeTests.cs` — forma del árbol, búsqueda del panel, estado persistido.
+- `enki.Tests/ViewModels/FileCardViewModelTests.cs` — binarios, codificación, truncado, panel de información.
+- `enki.Tests/ViewModels/FilesViewModel{DeleteConfirmation,Encryption,SessionPersistence}Tests.cs`.
+- `enki.Tests/Services/VaultServiceFilesTests.cs` — enumeración recursiva y contador de carpeta.
+- `enki.UITests/Files{View,TreeView,DropTarget,SectionPolish}UiTests.cs` — XAML compilado de verdad: las dos
+  disposiciones, destinos de arrastre, miga de pan, modal de carpeta y visores.
+
+## 14. Qué NO hace esta sección
+
+- **No edita archivos**: solo el nombre. No hay editor de imágenes ni anotación de PDF.
+- **No reproduce audio ni vídeo** dentro de la app: los entrega al reproductor del sistema.
+- **No hay selección múltiple**: cada operación actúa sobre un archivo o una carpeta.
+- **No enlaza notas con archivos** vía wikilinks; la relación con Documentos es estructural (mismas carpetas,
+  mismo selector de sesión).
+- **No hay caché de miniaturas persistente** (§5).
+- **La sección Papelera no lista carpetas borradas**: quedan en `<vault>/.trash` y se recuperan a mano (§10).

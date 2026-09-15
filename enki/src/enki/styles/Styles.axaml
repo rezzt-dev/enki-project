@@ -893,6 +893,15 @@
   <Style Selector="Button.icon-btn.active mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
+  <!-- Deshabilitado (p. ej. "archivo siguiente" en el último archivo, o subir un nivel en la raíz): sin el cuadro
+       gris que el tema Fluent pone de fondo a un botón deshabilitado —el mismo fallo que ya se corrigió para
+       :pointerover y :pressed—, solo el icono atenuado. -->
+  <Style Selector="Button.icon-btn:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.icon-btn:disabled mi|MaterialIcon">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
 
   <!-- Per-group collapse chevron in the note editor's formatting toolbar (Fase 4 §"Editor de notas") —
        deliberately dimmer than a real formatting action so it reads as toolbar chrome, not one more
@@ -1514,6 +1523,91 @@
        encima (docs/seccion-archivos.md §5/§7) — mismo lenguaje "borde InkBrush" que Border.folder-row.drag-over. -->
   <Style Selector="Border.files-grid-panel.drag-over">
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Tarjeta de Archivos con el foco del teclado (Tab entre tarjetas; F2 renombra, Supr borra), y tarjeta de
+       carpeta mientras un arrastre válido pasa por encima — mismo lenguaje "borde InkBrush" que la fila de
+       carpeta en drag-over. -->
+  <Style Selector="Button.file-card:focus-visible /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.file-card.drag-over /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- Extensión del archivo ("PDF", "PNG") sobre la miniatura de una tarjeta, en la ficha de la previsualización
+       y como lenguaje del visor de código: una etiqueta monoespaciada con borde fino, sin esquinas redondeadas. -->
+  <Style Selector="Border.file-ext-badge">
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="5,1" />
+  </Style>
+  <Style Selector="Border.file-ext-badge TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontSize" Value="9.5" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="0.4" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+
+  <!-- Acciones de fila del panel de carpetas de Archivos (renombrar, borrar): solo se ven al pasar el cursor por
+       la fila, en la fila seleccionada o con el foco del teclado. Siguen ahí y siguen siendo pulsables; lo que
+       desaparece es el ruido de dos iconos fijos repetidos en cada fila del panel. -->
+  <Style Selector="Border.folder-row Button.row-action">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.folder-row:pointerover Button.row-action, Border.folder-row.active Button.row-action, Button.row-action:focus-visible">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- Tramo de la miga de pan de la rejilla de Archivos: texto en versalitas que se tiñe al pasar el cursor, como
+       un icon-btn sin icono. El último tramo es la carpeta actual: en tinta plena y sin reaccionar al cursor. -->
+  <Style Selector="Button.breadcrumb">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="5,3" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.breadcrumb /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.breadcrumb TextBlock">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.2" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.breadcrumb:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
+  <Style Selector="Button.breadcrumb:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink20}" />
+  </Style>
+  <Style Selector="Button.breadcrumb:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.breadcrumb.current">
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.breadcrumb.current TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.breadcrumb.current:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
   </Style>
 
   <!-- Miniatura de página en el rail del visor de PDF (docs/seccion-archivos.md §6) — mismo lenguaje

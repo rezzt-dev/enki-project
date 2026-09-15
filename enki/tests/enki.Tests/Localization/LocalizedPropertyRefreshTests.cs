@@ -34,6 +34,7 @@ public class LocalizedPropertyRefreshTests
     private static readonly Dictionary<string, string> RecreatedByParent = new()
     {
         ["CalendarMonthDayViewModel"] = "CalendarViewModel.Rebuild → RebuildMonth",
+        ["FileFolderCardViewModel"] = "FilesViewModel.Reload",
         ["HabitItemViewModel"] = "HabitsViewModel.Reload",
         ["KanbanCardViewModel"] = "KanbanViewModel.Reload → AddColumnViewModel",
         ["NoteCardViewModel"] = "NotesViewModel.Reload",
