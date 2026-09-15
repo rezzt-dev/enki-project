@@ -220,6 +220,24 @@
   <data name="Calendar_Sidebar_LayersHeader" xml:space="preserve">
     <value>Calques</value>
   </data>
+  <data name="Calendar_Sidebar_LayerKanban" xml:space="preserve">
+    <value>Kanban</value>
+  </data>
+  <data name="Calendar_Sidebar_LayerReminders" xml:space="preserve">
+    <value>Rappels</value>
+  </data>
+  <data name="Calendar_Layers_ColorTitle" xml:space="preserve">
+    <value>Couleur du calendrier</value>
+  </data>
+  <data name="Calendar_Layers_ColorHint" xml:space="preserve">
+    <value>Ne change que l'affichage dans le calendrier.</value>
+  </data>
+  <data name="Calendar_Layers_ColorAutomatic" xml:space="preserve">
+    <value>Automatique</value>
+  </data>
+  <data name="Calendar_Layers_EditColor" xml:space="preserve">
+    <value>Changer la couleur</value>
+  </data>
   <data name="Calendar_Sidebar_PriorityHeader" xml:space="preserve">
     <value>Priorité</value>
   </data>

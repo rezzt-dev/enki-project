@@ -144,6 +144,17 @@ public sealed class AppSettings
     /// see <c>CalendarViewModel.Layers</c>.</summary>
     public List<string> CalendarHiddenLayerKeys { get; set; } = [];
 
+    /// <summary>Colores con los que el Calendario identifica cada origen, elegidos a mano por el usuario
+    /// (docs/calendar-feature/07-filtros-busqueda-y-capas.md §1b) — clave de color ("kanban",
+    /// "kanban:&lt;id de columna&gt;", "reminder" o un <c>PolarTaskList.Id</c>) → HEX de 6 dígitos.
+    ///
+    /// Solo guarda las capas cuyo color se cambió: lo que no está aquí lo reparte
+    /// <see cref="Services.CalendarLayerPalette"/> de forma determinista, así que una columna o lista
+    /// nueva ya nace con color propio sin migración. Vive en los ajustes y no en <c>KanbanColumn</c>/
+    /// <c>PolarTaskList</c> porque es una preferencia de esta pantalla: el color no se ve en Kanban ni en
+    /// "Gestión de tareas", y <c>PolarTaskList.Color</c> además se sincroniza con Supabase.</summary>
+    public Dictionary<string, string> CalendarLayerColors { get; set; } = [];
+
     /// <summary>"Ocultar completadas" filter (doc 07 §3) — defaults to off (completed items stay visible,
     /// dimmed) because seeing "hoy completé esto" is more useful in a calendar than hiding it outright.</summary>
     public bool CalendarHideCompletedItems { get; set; }

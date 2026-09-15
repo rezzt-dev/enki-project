@@ -460,14 +460,89 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarLayerViewModel">
+                    <!-- Fila de capa: punto de color (pulsable salvo en la fila madre de Kanban),
+                         etiqueta e interruptor. Las sub-filas de columnas de Kanban van indentadas y sin
+                         interruptor — ver CalendarViewModel.RebuildLayers. -->
                     <Border Background="{DynamicResource PanelBackgroundBrush}" Padding="7,6">
                       <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center"
-                                 Fill="{Binding ColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+                        <!-- Ancho fijo para que las etiquetas queden alineadas tenga o no punto la fila
+                             (la fila madre KANBAN no lo tiene: es solo el encabezado del grupo). -->
+                        <Panel Grid.Column="0" Width="14" VerticalAlignment="Center"
+                               Margin="{Binding IndentMargin}">
+                          <ToggleButton x:Name="LayerColorToggle" Classes="calendar-layer-color"
+                                        IsVisible="{Binding CanEditColor}"
+                                        IsChecked="{Binding IsColorPickerOpen, Mode=TwoWay}"
+                                        AutomationProperties.Name="{loc:Tr Calendar_Layers_EditColor}"
+                                        ToolTip.Tip="{loc:Tr Calendar_Layers_EditColor}">
+                            <Ellipse Width="8" Height="8"
+                                     Fill="{Binding ColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+                          </ToggleButton>
+                        </Panel>
                         <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="10.5" Margin="8,0,6,0"
-                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Opacity="{Binding LabelOpacity}" />
                         <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                      IsVisible="{Binding ShowToggle}"
                                       AutomationProperties.Name="{Binding Label}" />
+
+                        <!-- Selector de color: rejilla de sugerencias + hex libre + "automático".
+                             Emergente anclado (no modal) porque es un ajuste de una sola propiedad y el
+                             usuario quiere ver el calendario detrás mientras compara colores. -->
+                        <Popup PlacementTarget="{Binding #LayerColorToggle}" Placement="RightEdgeAlignedTop"
+                               HorizontalOffset="8" IsLightDismissEnabled="True"
+                               OverlayInputPassThroughElement="{Binding #LayerColorToggle}"
+                               IsOpen="{Binding IsColorPickerOpen, Mode=TwoWay}">
+                          <Border Classes="calendar-popover" Width="198" Padding="14">
+                            <StackPanel Spacing="10">
+                              <StackPanel Spacing="3">
+                                <TextBlock Text="{loc:Tr Calendar_Layers_ColorTitle, Converter={StaticResource UpperCaseConverter}}"
+                                           Classes="eyebrow" FontSize="9" />
+                                <TextBlock Text="{Binding Label}" FontSize="11" FontWeight="Bold"
+                                           TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+
+                              <ItemsControl ItemsSource="{Binding PaletteSwatches}">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                  </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate>
+                                    <Button Classes="calendar-layer-swatch" AutomationProperties.Name="{Binding}"
+                                            ToolTip.Tip="{Binding}"
+                                            Background="{Binding Converter={StaticResource HexColorToBrushConverter}}"
+                                            Command="{Binding $parent[ItemsControl].((vm:CalendarLayerViewModel)DataContext).SelectSwatchCommand}"
+                                            CommandParameter="{Binding}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+
+                              <TextBox Text="{Binding ColorDraftHex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                       Classes="search" FontFamily="{StaticResource MonoFontFamily}" FontSize="11"
+                                       AutomationProperties.Name="{loc:Tr ColorPicker_Hex}">
+                                <TextBox.KeyBindings>
+                                  <KeyBinding Gesture="Enter" Command="{Binding ApplyDraftColorCommand}" />
+                                </TextBox.KeyBindings>
+                              </TextBox>
+
+                              <!-- "Automático" solo aparece cuando hay un color elegido a mano que
+                                   deshacer; si no, no hay nada que restablecer. -->
+                              <Button Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                                      IsVisible="{Binding HasCustomColor}"
+                                      Command="{Binding UseAutomaticColorCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                  <mi:MaterialIcon Kind="AutoFix" Width="12" Height="12" />
+                                  <TextBlock Text="{loc:Tr Calendar_Layers_ColorAutomatic, Converter={StaticResource UpperCaseConverter}}"
+                                             FontSize="9.5" />
+                                </StackPanel>
+                              </Button>
+
+                              <TextBlock Text="{loc:Tr Calendar_Layers_ColorHint}" Classes="faint" FontSize="9"
+                                         TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                        </Popup>
                       </Grid>
                     </Border>
                   </DataTemplate>
@@ -599,7 +674,7 @@
                       <Grid ColumnDefinitions="Auto,*">
                         <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="10" Height="10"
                                           Margin="0,2,6,0" VerticalAlignment="Top"
-                                          Foreground="{Binding LayerColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+                                          Foreground="{Binding EffectiveCalendarColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
                         <StackPanel Grid.Column="1" Spacing="1">
                           <TextBlock Text="{Binding Title}" FontSize="11" TextWrapping="Wrap" />
                           <TextBlock Text="{Binding ParentContextLabel}" Classes="faint" FontSize="9"

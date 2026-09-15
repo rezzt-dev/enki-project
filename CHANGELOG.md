@@ -7,6 +7,22 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Un color para cada origen en el calendario**. Hasta ahora el calendario pintaba todas las tareas del
+mismo color y solo los recordatorios se distinguían, así que no había forma de ver de un vistazo si algo
+venía de Kanban o de qué lista de Polar. Ahora cada origen tiene el suyo.
+
+- **Columnas de Kanban**: "pendientes" en rojo, "en proceso" en ámbar y "realizadas" en verde. Las
+  columnas que crees tú reciben un color propio automáticamente.
+- **Listas de Polar**: cada lista estrena un color distinto, elegido entre azules, cianes, violetas y
+  magentas — los rojos, amarillos y verdes quedan reservados para los estados de Kanban, para que no se
+  confundan.
+- **Cambiarlos**: en el panel "Capas" del calendario, la fila de Kanban despliega ahora una línea por
+  columna. Pulsa el punto de color de cualquier capa y elige otro de la rejilla, escribe un hex, o vuelve
+  al automático. Los colores se calculan para leerse bien tanto en el tema claro como en el oscuro.
+- Es una personalización **solo del calendario**: no cambia cómo se ven Kanban ni "Gestión de tareas", y
+  el color de una lista de Polar no se toca (ni se sincroniza), así que no afecta a tus otros
+  dispositivos.
+
 **Archivos, pulida en sus dos vistas**. La sección tenía partes a medio hacer y fallos que dejaban la pantalla
 apuntando a archivos que ya no estaban donde decía; ahora el explorador, el árbol y la previsualización están
 terminados.

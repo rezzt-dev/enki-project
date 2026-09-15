@@ -41,6 +41,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private const int AgendaWindowDays = 30;
 
     private readonly CalendarAggregationService _aggregationService;
+    private readonly CalendarLayerColorService _layerColorService;
     private readonly KanbanService _kanbanService;
     private readonly PolarTaskService _polarTaskService;
     private readonly ReminderService _reminderService;
@@ -372,6 +373,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
 
     public CalendarViewModel(
         CalendarAggregationService aggregationService,
+        CalendarLayerColorService layerColorService,
         KanbanService kanbanService,
         PolarTaskService polarTaskService,
         ReminderService reminderService,
@@ -381,6 +383,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         Action<CalendarItemViewModel> openItemEditor)
     {
         _aggregationService = aggregationService;
+        _layerColorService = layerColorService;
         _kanbanService = kanbanService;
         _polarTaskService = polarTaskService;
         _reminderService = reminderService;
@@ -415,6 +418,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         // call needed from MainWindowViewModel.Navigate (docs/calendar-feature/11-arquitectura-tecnica.md
         // §6). Also reacts to linking/unlinking Polar, since that flips which items are even eligible.
         _kanbanService.BoardChanged += Rebuild;
+        _layerColorService.ColorsChanged += Rebuild;
         _polarTaskService.DataChanged += Rebuild;
         _reminderService.RemindersChanged += Rebuild;
         _polarAuthService.LinkStateChanged += HandlePolarLinkChanged;
@@ -678,7 +682,8 @@ public sealed partial class CalendarViewModel : ViewModelBase
 
     // ===================== Fase 4: capas, filtros, "sin programadas" (doc 07) =====================
 
-    private HashSet<string> ActiveLayerKeys => Layers.Where(l => l.IsActive).Select(l => l.Key).ToHashSet();
+    private HashSet<string> ActiveLayerKeys =>
+        Layers.Where(l => l.IsToggleable && l.IsActive).Select(l => l.Key).ToHashSet();
 
     private HashSet<CalendarItemPriority> ActivePriorityFilters
     {
@@ -695,32 +700,90 @@ public sealed partial class CalendarViewModel : ViewModelBase
 
     private HashSet<string> ActiveTagFilters => TagFilters.Where(t => t.IsActive).Select(t => t.Tag).ToHashSet();
 
+    /// <summary>Una fila del panel "capas" antes de existir como <see cref="CalendarLayerViewModel"/> —
+    /// ver <see cref="RebuildLayers"/>, que la usa para decidir si basta con refrescar las filas que ya
+    /// hay o hay que rehacer la colección entera.</summary>
+    private readonly record struct LayerRow(
+        string Key, string ColorKey, string Label, string ColorHex,
+        bool CanEditColor, bool HasCustomColor, bool IsChildRow);
+
     /// <summary>Rebuilds the Kanban/Recordatorios/per-list toggles — but only replaces the collection
     /// (and thus every <see cref="CalendarLayerViewModel"/> instance in it, dropping any open popup bound
-    /// to one) when the *set of keys* actually changed, e.g. a Polar list was created/deleted/Polar just
-    /// got linked. A plain data change (a card's title edited) calls this just as often as everything else
-    /// in <see cref="Rebuild"/>, so this guard is what keeps the sidebar from flickering on every
-    /// unrelated edit.</summary>
+    /// to one) when the *set of rows* actually changed, e.g. a Polar list or a Kanban column was
+    /// created/deleted, or Polar just got linked. A plain data change (a card's title edited) calls this
+    /// just as often as everything else in <see cref="Rebuild"/>, so this guard is what keeps the sidebar
+    /// from flickering on every unrelated edit. Cuando la estructura no cambia pero sí el texto o el
+    /// color (renombrar una columna, elegir un color), las filas se actualizan en sitio: así el emergente
+    /// del color no se cierra solo en cuanto se pulsa un color.
+    ///
+    /// Bajo la fila KANBAN cuelga una sub-fila por columna del tablero (doc §1b). Son solo color: la
+    /// visibilidad sigue siendo de todo Kanban a la vez, que es lo que esta sección hacía hasta ahora.</summary>
     private void RebuildLayers()
     {
-        var desired = new List<(string Key, string Label, string ColorHex)>
+        var hidden = _settingsService.Settings.CalendarHiddenLayerKeys;
+        var colors = _layerColorService.BuildMap();
+        var desired = new List<LayerRow>
         {
-            (CalendarAggregationService.KanbanLayerKey, "KANBAN", CalendarItemViewModel.KanbanLayerColorHex),
-            (CalendarAggregationService.ReminderLayerKey, "RECORDATORIOS", CalendarItemViewModel.ReminderLayerColorHex)
+            new(CalendarAggregationService.KanbanLayerKey, string.Empty,
+                UpperLayerLabel("Calendar_Sidebar_LayerKanban"),
+                CalendarItemViewModel.KanbanLayerColorHex, false, false, false)
         };
+
+        // Las columnas van en el orden del tablero, el mismo que ve el usuario en Kanban.
+        desired.AddRange(_kanbanService.Board.Columns.Select(column =>
+        {
+            var colorKey = CalendarLayerColorService.KanbanColumnColorKey(column.Id);
+            return new LayerRow(
+                CalendarAggregationService.KanbanLayerKey, colorKey, column.Title,
+                CalendarLayerColorService.Resolve(colors, colorKey),
+                CanEditColor: true, _layerColorService.HasCustomColor(colorKey), IsChildRow: true);
+        }));
+
+        desired.Add(new LayerRow(
+            CalendarAggregationService.ReminderLayerKey, CalendarAggregationService.ReminderLayerKey,
+            UpperLayerLabel("Calendar_Sidebar_LayerReminders"),
+            CalendarLayerColorService.Resolve(colors, CalendarAggregationService.ReminderLayerKey),
+            CanEditColor: true, _layerColorService.HasCustomColor(CalendarAggregationService.ReminderLayerKey), IsChildRow: false));
+
         if (_polarAuthService.IsLinked)
         {
             desired.AddRange(_polarTaskService.Store.Lists.Where(l => !l.IsDeleted).OrderBy(l => l.OrderIndex)
-                .Select(l => (l.Id, l.Title, l.Color)));
+                .Select(l => new LayerRow(
+                    l.Id, l.Id, l.Title, CalendarLayerColorService.Resolve(colors, l.Id),
+                    CanEditColor: true, _layerColorService.HasCustomColor(l.Id), IsChildRow: false)));
         }
 
-        if (Layers.Select(l => l.Key).SequenceEqual(desired.Select(d => d.Key))) return;
+        // La identidad de una fila es su clave de color (única por fila, a diferencia de Key, que las
+        // sub-filas de Kanban comparten con su fila madre) más si es sub-fila o no.
+        if (Layers.Count == desired.Count &&
+            Layers.Select(l => (l.ColorKey, l.IsChildRow)).SequenceEqual(desired.Select(d => (d.ColorKey, d.IsChildRow))))
+        {
+            for (var i = 0; i < desired.Count; i++)
+            {
+                var row = desired[i];
+                Layers[i].Label = row.Label;
+                Layers[i].ColorHex = row.ColorHex;
+                Layers[i].CanEditColor = row.CanEditColor;
+                Layers[i].HasCustomColor = row.HasCustomColor;
+                if (Layers[i].IsToggleable) Layers[i].IsActive = !hidden.Contains(row.Key);
+            }
+            return;
+        }
 
-        var hidden = _settingsService.Settings.CalendarHiddenLayerKeys;
         Layers.Clear();
-        foreach (var (key, label, colorHex) in desired)
-            Layers.Add(new CalendarLayerViewModel(key, label, colorHex, !hidden.Contains(key), HandleLayerToggled));
+        foreach (var row in desired)
+        {
+            Layers.Add(new CalendarLayerViewModel(
+                row.Key, row.Label, row.ColorHex, !hidden.Contains(row.Key),
+                row.IsChildRow ? null : HandleLayerToggled,
+                row.ColorKey, HandleLayerColorChanged, row.CanEditColor, row.HasCustomColor, row.IsChildRow));
+        }
     }
+
+    /// <summary>Las dos capas fijas van en mayúsculas (como el resto de encabezados de la barra
+    /// lateral); los títulos de columnas y listas se muestran tal cual los escribió el usuario.</summary>
+    private static string UpperLayerLabel(string key) =>
+        LocalizationService.Instance[key].ToUpper(CultureInfo.CurrentCulture);
 
     private void HandleLayerToggled(CalendarLayerViewModel layer)
     {
@@ -729,6 +792,17 @@ public sealed partial class CalendarViewModel : ViewModelBase
         else if (!hidden.Contains(layer.Key)) hidden.Add(layer.Key);
         _settingsService.Save();
         Rebuild();
+    }
+
+    /// <summary>Guarda (o quita, con <paramref name="hex"/> a <c>null</c>) el color de calendario de una
+    /// capa. No reconstruye nada aquí: el servicio dispara <c>ColorsChanged</c> y de ahí sale el
+    /// <see cref="Rebuild"/>, igual que con cualquier otro cambio de datos del calendario.</summary>
+    private void HandleLayerColorChanged(CalendarLayerViewModel layer, string? hex)
+    {
+        if (string.IsNullOrEmpty(layer.ColorKey)) return;
+
+        if (hex is null) _layerColorService.ResetColor(layer.ColorKey);
+        else _layerColorService.SetColor(layer.ColorKey, hex);
     }
 
     /// <summary>Same "only rebuild on an actual key-set change" guard as <see cref="RebuildLayers"/> —
@@ -846,6 +920,12 @@ public sealed partial class CalendarViewModel : ViewModelBase
         if (created is not null) _openItemEditor(created);
     }
 
+    /// <summary>Color de calendario de una sola capa — solo lo usa
+    /// <see cref="CreateFromQuickCreate"/>, que construye un item suelto fuera del recorrido normal de
+    /// <see cref="CalendarAggregationService.BuildItems"/> (donde el mapa se construye una única vez).</summary>
+    private string ResolveLayerColor(string colorKey) =>
+        CalendarLayerColorService.Resolve(_layerColorService.BuildMap(), colorKey);
+
     private CalendarItemViewModel? CreateFromQuickCreate(CalendarQuickCreateViewModel draft)
     {
         var title = draft.Title.Trim();
@@ -874,6 +954,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
                     MomentUtc = dueUtc, IsAllDay = isAllDay, IsCompleted = false,
                     DurationMinutes = isAllDay ? null : durationMinutes,
                     LayerColorHex = CalendarItemViewModel.KanbanLayerColorHex,
+                    CalendarColorHex = ResolveLayerColor(CalendarLayerColorService.KanbanColumnColorKey(column.Id)),
                     LayerKey = CalendarAggregationService.KanbanLayerKey, IconKind = MaterialIconKind.ViewColumnOutline
                 };
             }
@@ -890,7 +971,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
                     SourceId = task.Id, SourceType = CalendarItemSourceType.PolarTask, Title = title,
                     MomentUtc = dueUtc, IsAllDay = isAllDay, IsCompleted = false,
                     DurationMinutes = isAllDay ? null : task.DurationMinutes,
-                    LayerColorHex = list.Color, LayerKey = list.Id,
+                    LayerColorHex = list.Color, CalendarColorHex = ResolveLayerColor(list.Id), LayerKey = list.Id,
                     IconKind = MaterialIconKind.CheckboxMarkedOutline, ParentContextLabel = list.Title
                 };
             }
@@ -908,6 +989,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
                     MomentUtc = dueUtc, IsAllDay = isAllDay, IsCompleted = false,
                     DurationMinutes = isAllDay ? null : reminder.DurationMinutes,
                     LayerColorHex = CalendarItemViewModel.ReminderLayerColorHex,
+                    CalendarColorHex = ResolveLayerColor(CalendarAggregationService.ReminderLayerKey),
                     LayerKey = CalendarAggregationService.ReminderLayerKey, IconKind = MaterialIconKind.BellRingOutline
                 };
             }

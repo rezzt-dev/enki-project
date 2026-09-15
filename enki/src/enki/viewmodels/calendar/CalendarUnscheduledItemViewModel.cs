@@ -17,6 +17,14 @@ public sealed record CalendarUnscheduledItemViewModel
     public required CalendarItemSourceType SourceType { get; init; }
     public required string Title { get; init; }
     public required string LayerColorHex { get; init; }
+
+    /// <summary>Mismo papel que <see cref="CalendarItemViewModel.CalendarColorHex"/> — el color de
+    /// calendario de su columna/lista, resuelto por <see cref="Services.CalendarLayerColorService"/>.
+    /// Este panel vive dentro del Calendario, así que sí lo usa (a diferencia del Dashboard).</summary>
+    public string? CalendarColorHex { get; init; }
+
+    public string EffectiveCalendarColorHex => CalendarColorHex ?? LayerColorHex;
+
     public required MaterialIconKind IconKind { get; init; }
 
     /// <summary>Same layer key as <see cref="CalendarItemViewModel.LayerKey"/> — the panel respects the

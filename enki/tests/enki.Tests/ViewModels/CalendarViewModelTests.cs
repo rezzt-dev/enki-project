@@ -245,11 +245,130 @@ public class CalendarViewModelTests
         var taskService = new PolarTaskService(storageDirectory);
         var reminderService = new ReminderService(storageDirectory);
         var notificationService = new NotificationService(settingsService, storageDirectory);
-        var aggregationService = new CalendarAggregationService(kanbanService, taskService, reminderService, authService);
+        var layerColorService = new CalendarLayerColorService(kanbanService, taskService, authService, settingsService);
+        var aggregationService = new CalendarAggregationService(kanbanService, taskService, reminderService, authService, layerColorService);
         var vm = new CalendarViewModel(
-            aggregationService, kanbanService, taskService, reminderService, authService,
+            aggregationService, layerColorService, kanbanService, taskService, reminderService, authService,
             settingsService, notificationService, _ => { });
         return (vm, kanbanService, taskService, reminderService);
+    }
+
+    // ===================== Capas: colores por origen (doc 07 §1b) =====================
+
+    [Fact]
+    public void Layers_HangsOneColorRowPerKanbanColumnUnderTheKanbanRow()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanbanService, _, _) = CreateViewModel(out dir);
+
+            var kanbanRow = vm.Layers[0];
+            var childRows = vm.Layers.Where(l => l.IsChildRow).ToList();
+
+            Assert.False(kanbanRow.IsChildRow);
+            Assert.True(kanbanRow.ShowToggle);
+            // La fila madre solo marca el grupo: el color real vive en cada columna.
+            Assert.False(kanbanRow.CanEditColor);
+            Assert.Equal(kanbanService.Board.Columns.Select(c => c.Title), childRows.Select(l => l.Label));
+            Assert.All(childRows, row =>
+            {
+                Assert.True(row.CanEditColor);
+                Assert.False(row.ShowToggle);
+                Assert.Equal(CalendarAggregationService.KanbanLayerKey, row.Key);
+            });
+        }
+        finally
+        {
+            DeleteDirectory(dir);
+        }
+    }
+
+    [Fact]
+    public void Layers_KanbanChildRowsAreNotFiltersOfTheirOwn()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanbanService, _, _) = CreateViewModel(out dir);
+            var column = kanbanService.Board.Columns[0];
+            column.Cards.Clear();
+            var localMoment = new DateTime(2026, 3, 10, 10, 0, 0, DateTimeKind.Local);
+            column.Cards.Add(new KanbanCard { Id = "card-1", Title = "Tarjeta", DueDateUtc = localMoment.ToUniversalTime() });
+            kanbanService.Save();
+            vm.ReferenceDate = new DateTime(2026, 3, 10);
+            vm.SetViewCommand.Execute(CalendarViewMode.Day);
+
+            Assert.Contains(vm.WeekColumns[0].TimedItems, i => i.Item.SourceId == "card-1");
+
+            // Apagar la fila madre apaga todas las columnas a la vez — la visibilidad sigue siendo de
+            // Kanban entero, como antes de que las columnas tuvieran color propio.
+            vm.Layers.First(l => l is { IsChildRow: false, Key: CalendarAggregationService.KanbanLayerKey }).IsActive = false;
+
+            Assert.DoesNotContain(vm.WeekColumns[0].TimedItems, i => i.Item.SourceId == "card-1");
+        }
+        finally
+        {
+            DeleteDirectory(dir);
+        }
+    }
+
+    [Fact]
+    public void Layers_SelectingASwatchRepaintsTheItemsWithoutReplacingTheRow()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanbanService, _, _) = CreateViewModel(out dir);
+            var column = kanbanService.Board.Columns[0];
+            column.Cards.Clear();
+            var localMoment = new DateTime(2026, 3, 10, 10, 0, 0, DateTimeKind.Local);
+            column.Cards.Add(new KanbanCard { Id = "card-1", Title = "Tarjeta", DueDateUtc = localMoment.ToUniversalTime() });
+            kanbanService.Save();
+            vm.ReferenceDate = new DateTime(2026, 3, 10);
+            vm.SetViewCommand.Execute(CalendarViewMode.Day);
+
+            var row = vm.Layers.First(l => l.IsChildRow && l.Label == column.Title);
+            row.SelectSwatchCommand.Execute("#123ABC");
+
+            // La misma instancia de fila sobrevive al repintado: si se reconstruyera la colección, el
+            // emergente abierto se cerraría en cuanto se pulsa un color.
+            Assert.Same(row, vm.Layers.First(l => l.IsChildRow && l.Label == column.Title));
+            Assert.Equal("#123ABC", row.ColorHex);
+            Assert.True(row.HasCustomColor);
+            Assert.Equal("#123ABC", vm.WeekColumns[0].TimedItems.Single(i => i.Item.SourceId == "card-1").Item.EffectiveCalendarColorHex);
+
+            row.UseAutomaticColorCommand.Execute(null);
+
+            Assert.Equal(CalendarLayerPalette.BacklogColorHex, row.ColorHex);
+            Assert.False(row.HasCustomColor);
+        }
+        finally
+        {
+            DeleteDirectory(dir);
+        }
+    }
+
+    [Fact]
+    public void Layers_RenamingAKanbanColumnUpdatesItsRowLabelInPlace()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanbanService, _, _) = CreateViewModel(out dir);
+            var column = kanbanService.Board.Columns[0];
+            var row = vm.Layers.First(l => l.IsChildRow && l.Label == column.Title);
+
+            column.Title = "Rebautizada";
+            kanbanService.Save();
+
+            Assert.Same(row, vm.Layers.First(l => l.IsChildRow && l.ColorKey == CalendarLayerColorService.KanbanColumnColorKey(column.Id)));
+            Assert.Equal("Rebautizada", row.Label);
+        }
+        finally
+        {
+            DeleteDirectory(dir);
+        }
     }
 
     private static void DeleteDirectory(string path)

@@ -77,6 +77,22 @@ public sealed record CalendarItemViewModel
 
     public required bool IsCompleted { get; init; }
     public required string LayerColorHex { get; init; }
+
+    /// <summary>Color con el que el Calendario pinta este item — el de su columna de Kanban, su lista de
+    /// Polar o el de recordatorios, resuelto por <see cref="Services.CalendarLayerColorService"/>
+    /// (docs/calendar-feature/07-filtros-busqueda-y-capas.md §1b).
+    ///
+    /// Va aparte de <see cref="LayerColorHex"/> a propósito: el color solo existe dentro del Calendario
+    /// ("la funcionalidad solo es visible en la sección de calendario"), así que la barra de origen de la
+    /// lista "HOY" del Dashboard —el otro consumidor de esta proyección— sigue leyendo
+    /// <see cref="LayerColorHex"/> y no cambia de aspecto. <c>null</c> significa "sin resolver" y cae en
+    /// <see cref="LayerColorHex"/>, que es lo que ven los tests y cualquier construcción directa de este
+    /// record.</summary>
+    public string? CalendarColorHex { get; init; }
+
+    /// <summary>El color que realmente usan las vistas del Calendario — ver <see cref="CalendarColorHex"/>.</summary>
+    public string EffectiveCalendarColorHex => CalendarColorHex ?? LayerColorHex;
+
     public required MaterialIconKind IconKind { get; init; }
     public bool HasSubtasksOrChildren { get; init; }
 
@@ -147,11 +163,11 @@ public sealed record CalendarItemViewModel
     /// via its source service (Kanban/Polar/Reminder). All-day and ghost occurrences never show the handle.</summary>
     public bool CanResize => SourceType != CalendarItemSourceType.PolarSubtask && !IsGhostOccurrence && !IsAllDay;
 
-    /// <summary>Transparent regardless of <see cref="LayerColorHex"/> for a ghost occurrence (docs/
+    /// <summary>Transparent regardless of <see cref="EffectiveCalendarColorHex"/> for a ghost occurrence (docs/
     /// calendar-feature/10-diseno-visual-y-componentes.md §4: "sin fondo relleno" — the alpha-zero hex
     /// stays zero through <c>HexColorToBrushConverter</c>'s opacity multiplication no matter what
     /// <c>ConverterParameter</c> the chip binds with).</summary>
-    public string ChipBackgroundColorHex => IsGhostOccurrence ? "#00000000" : LayerColorHex;
+    public string ChipBackgroundColorHex => IsGhostOccurrence ? "#00000000" : EffectiveCalendarColorHex;
 
     /// <summary>Shown instead of the usual complete/delete actions in the detail popover for a ghost
     /// occurrence (docs/calendar-feature/03-glosario-y-modelo-de-datos.md §4: "al hacer clic... con una
@@ -177,8 +193,9 @@ public sealed record CalendarItemViewModel
 
     /// <summary>"Vencido siempre gana visualmente sobre el color de origen" (docs/calendar-feature/
     /// 10-diseno-visual-y-componentes.md §4) — only the chip's border switches to the danger color; the
-    /// low-opacity fill keeps using <see cref="LayerColorHex"/> so the origin is still identifiable.</summary>
-    public string EffectiveBorderColorHex => IsPastDue ? DangerColorHex : LayerColorHex;
+    /// low-opacity fill keeps using <see cref="EffectiveCalendarColorHex"/> so the origin is still
+    /// identifiable.</summary>
+    public string EffectiveBorderColorHex => IsPastDue ? DangerColorHex : EffectiveCalendarColorHex;
 
     /// <summary>"HH:mm" for a plain point-in-time item, "HH:mm–HH:mm" once <see cref="DurationMinutes"/>
     /// gives it a real franja horaria — used by Mes/Agenda/the detail popover, where there's no vertical

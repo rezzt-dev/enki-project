@@ -2298,6 +2298,60 @@
     <Setter Property="Padding" Value="18" />
   </Style>
 
+  <!-- Punto de color de una capa del calendario: el propio punto es el disparador del selector, así que
+       es un ToggleButton sin cromo (ni fondo ni borde) con un aro sutil en hover/abierto que avisa de que
+       se puede pulsar. CornerRadius circular por la misma excepción que el resto de indicadores redondos
+       del sistema de diseño. -->
+  <Style Selector="ToggleButton.calendar-layer-color">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="3" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="ToggleButton.calendar-layer-color:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+
+  <Style Selector="ToggleButton.calendar-layer-color:checked /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+  </Style>
+
+  <!-- Muestra de la rejilla del selector: cuadrado de color puro, cero radio. El color lo pone la
+       plantilla (Background enlazado al hex), así que aquí solo van tamaño y el aro de hover. -->
+  <Style Selector="Button.calendar-layer-swatch">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Margin" Value="0,0,4,4" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+
+  <Style Selector="Button.calendar-layer-swatch /template/ ContentPresenter">
+    <Setter Property="Background" Value="{Binding $parent[Button].Background}" />
+    <Setter Property="BorderBrush" Value="{Binding $parent[Button].BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+
+  <Style Selector="Button.calendar-layer-swatch:pointerover /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
   <Style Selector="Button.icon-btn.calendar-nav">
     <Setter Property="Width" Value="26" />
     <Setter Property="Height" Value="26" />
