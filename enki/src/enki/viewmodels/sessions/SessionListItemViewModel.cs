@@ -72,6 +72,7 @@ public sealed partial class SessionListItemViewModel : ObservableObject
         OnPropertyChanged(nameof(NoteCountLabel));
         OnPropertyChanged(nameof(IsDefault));
         OnPropertyChanged(nameof(IsEncrypted));
+        OnPropertyChanged(nameof(SessionColorBrush));
         OnPropertyChanged(nameof(ShowLockedIndicator));
         OnPropertyChanged(nameof(ShowUnlockedIndicator));
     }

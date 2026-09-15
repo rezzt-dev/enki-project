@@ -87,7 +87,10 @@ public static class SessionGraphRenderer
                 <style>
                   @font-face { font-family: 'Space Grotesk'; src: url("{{spaceGroteskUri}}") format('truetype'); font-weight: 700; font-style: normal; }
                   html, body { margin: 0; padding: 0; overflow: hidden; background: {{theme.Background}}; }
-                  #graph { position: relative; width: 100vw; height: 100vh; }
+                  #graph { position: relative; width: 100vw; height: 100vh; cursor: grab; }
+                  #graph.node-hover { cursor: pointer; }
+                  #graph.pointer-active,
+                  #graph.dragging-node { cursor: grabbing; }
                   #graph canvas, #graph > div { position: absolute; inset: 0; width: 100%; height: 100%; }
                   #graph-overlay { pointer-events: none; }
                   .enki-graph-tooltip {
@@ -134,9 +137,10 @@ public static class SessionGraphRenderer
                   // for the pulse via __enkiSetPendingLink so the click logic never has to trust that a
                   // fire-and-forget InvokeScript call actually landed.
                   let pendingLinkNode = null;
+                  let hoverNode = null;
                   let rejectFlash = null; // { from, to, until, duration } — brief error pulse when a link is refused
 
-                  const NODE_REL_SIZE = 4.6;
+                  const NODE_REL_SIZE = 5;
                   const PENDING_VAL = 2.6;
                   // How much bigger a node's *clickable* area is than its drawn radius, and (see below) the
                   // radius used for hover/tooltip lookups too. Both click and drag resolution here work by
@@ -145,7 +149,11 @@ public static class SessionGraphRenderer
                   // why, and HIT_AREA_MULTIPLIER just keeps that generous instead of pixel-exact so a
                   // slightly-off click still lands.
                   const HIT_AREA_MULTIPLIER = 3.5;
-                  const CLICK_RADIUS = NODE_REL_SIZE * HIT_AREA_MULTIPLIER;
+                  const MIN_HIT_RADIUS_PX = 11;
+                  // En una vista global el encuadre puede reducir mucho los radios de mundo. Este suelo
+                  // conserva la lectura de los nodos como puntos de color y no altera sus coordenadas ni el
+                  // entramado que da forma al grupo.
+                  const MIN_NODE_SCREEN_RADIUS = 2.4;
 
                   // Session-name cards: every session graph (LABEL_MIN_NOTES+ notes, linked or not) gets a
                   // proper card above its cluster, styled after the app's own UI language
@@ -237,155 +245,52 @@ public static class SessionGraphRenderer
                   sizeOverlayCanvases();
                   window.addEventListener('resize', sizeOverlayCanvases);
 
-                  // ===================== Custom node/edge renderers (glow + sphere shading) =====================
-                  // A soft bloom drawn straight into the canvas 2D context via ctx.shadowColor/shadowBlur,
-                  // set once per shape right before it's painted — the fix confirmed by an A/B comparison
-                  // against the production bug this migration exists to fix: a CSS `filter: drop-shadow(...)` applied to
-                  // the *whole* canvas element forces the software (Shm-only, no GPU under this app's Linux
-                  // WebView backend) compositor to recomposite the entire canvas every repainted frame,
-                  // forever (the ambient rotation below never stops), and that's what produced the
-                  // line/node desync artifact reported in the original bug. Setting the shadow directly on
-                  // the drawing context instead reaches every shape drawn through it with no extra
-                  // compositor pass at all — sigma v1's per-type custom renderer hooks
-                  // (sigma.canvas.nodes.<type> / sigma.canvas.edges.<type>, selected via defaultNodeType /
-                  // defaultEdgeType below) are the supported way to add this without forking the bundle.
-                  //
-                  // Nodes are drawn as *spheres*, not flat discs: on top of the bloom each sprite bakes a
-                  // radial-gradient shading pass whose focal point sits offset toward the upper-left (the
-                  // scene's "light source"), so every note reads as a lit, glossy sphere — bright specular
-                  // spot, its own body color/alpha, then a falloff into a darker rim on the far side. It's
-                  // purely Canvas 2D (a radial gradient), deliberately not WebGL/three.js: this app's Linux
-                  // WebView backend (WPE) only implements software (Shm) compositing, and GPU rendering
-                  // modes throw NotImplementedException — the same reason the WebGL-based 3d-force-graph
-                  // was replaced in the first place (see the file-scoped doc comment).
-                  //
-                  // Glow is node-only, deliberately: edges stay crisp, unblurred lines (see the edge
-                  // renderer below) so the graph doesn't read as a hazy blob once dozens of links overlap —
-                  // the bloom is reserved for drawing the eye to notes (spheres), not the connections
-                  // between them.
-                  const GLOW_COLOR = 'rgba(255,255,255,0.4)';
-                  const GLOW_BLUR = 12;
-                  // Sphere shading constants. Highlight offset/radius are fractions of the node radius so
-                  // the shading scales exactly with zoom, same as the node itself.
-                  const SPHERE_HIGHLIGHT_OFFSET = 0.38; // focal point shift toward upper-left, × radius
-                  const SPHERE_HIGHLIGHT_RADIUS = 0.15; // size of the specular spot, × radius
-                  const SPHERE_HIGHLIGHT_BOOST = 0.3;   // alpha added to the specular spot over the body
-                  const SPHERE_BODY_STOP = 0.35;        // gradient position where the node's own color takes over
-                  const SPHERE_RIM_RGB = '110,110,125'; // darker neutral-gray rim (the unlit side)
-                  const SPHERE_RIM_ALPHA = 0.85;        // rim alpha, × the node's own alpha
-
-                  // context.shadowBlur is by far the single most expensive thing this page draws: every
-                  // browser's Canvas2D backend has to run an actual blur convolution over the shape's
-                  // bounding box, and under this app's software-only (Shm, no GPU) WebView backend that cost
-                  // is paid on the CPU, per node, every single animation frame, forever (the main loop below
-                  // never stops — ambient rotation, particles and the pending-link pulse all need to keep
-                  // animating even once the layout itself has settled). With shadowBlur set the naive way
-                  // (right on the live context, as the original implementation above did), frame time scales
-                  // with node count directly through that convolution — the first thing to fall over as a
-                  // vault's note count grows.
-                  //
-                  // Every node's sprite (glow *and* sphere shading) is *identical* except for its screen
-                  // radius (which only changes on zoom/pending-state) and fill alpha (one of a small, fixed
-                  // set of per-session values from NodeBrightness) — GLOW_COLOR/GLOW_BLUR and the sphere
-                  // shading constants themselves never vary. That means the actual *blurred* pixels only
-                  // ever take a handful of distinct shapes at once, so the expensive part — running
-                  // shadowBlur once to produce that shape — can be done a single time per shape and reused:
-                  // rendered once into a small offscreen canvas (a "sprite"), cached by (rounded radius,
-                  // fill color), and every subsequent frame just blits the already-blurred bitmap via
-                  // drawImage — one of the cheapest calls a Canvas2D context has, since there's no
-                  // convolution left to run, just a pixel copy. Visually identical output, far less work.
-                  const sphereSprites = new Map();
-                  // Screen radius changes continuously while the camera is zooming (mouse wheel, pinch, the
-                  // zoomToFit tween), so new (radius, color) keys keep appearing and old ones stop being
-                  // reused — capped here so a long session of zooming in and out doesn't grow this into an
-                  // unbounded pile of small canvases. Clearing the whole cache is fine, not just cheap: the
-                  // handful of sizes/colors actually on screen at any moment get re-cached again within a
-                  // frame or two, same as a cold start.
-                  const SPHERE_SPRITE_CACHE_LIMIT = 300;
-
-                  // Pulls the alpha out of the rgba() strings this page builds (NodeBrightness's
-                  // per-session whites, THEME.nodeActive's pure white) so the sphere shading can derive its
-                  // highlight/rim alphas from the node's own.
-                  function rgbaAlpha(cssColor) {
-                    const match = /rgba?\(([^)]+)\)/.exec(cssColor);
-                    if (!match) return 1;
-                    const parts = match[1].split(',');
-                    const alpha = parseFloat(parts[parts.length - 1].trim());
-                    return isNaN(alpha) ? 1 : alpha;
+                  // ===================== Renderizadores de nodos y aristas =====================
+                  // Las notas son discos planos: un solo relleno con el color asignado a su sesión, sin
+                  // degradado, volumen, brillo ni sombra. Además de responder a la petición visual, evita
+                  // crear sprites y ejecutar desenfoques en el WebView por software de Linux. La sensación
+                  // esférica del conjunto no depende del material del nodo: la conservan el layout de
+                  // fuerzas y la malla Delaunay dibujada detrás de las relaciones reales.
+                  function renderedNodeRadius(node, prefix) {
+                    return Math.max(MIN_NODE_SCREEN_RADIUS, node[prefix + 'size'] || 0);
                   }
 
-                  function getSphereSprite(radius, fillStyle) {
-                    const r = Math.max(1, Math.round(radius));
-                    const key = r + '|' + fillStyle;
-                    const cached = sphereSprites.get(key);
-                    if (cached) return cached;
-
-                    if (sphereSprites.size >= SPHERE_SPRITE_CACHE_LIMIT) sphereSprites.clear();
-
-                    // Padding gives the blur room to fall off before it hits the sprite canvas's own edge —
-                    // too little and the glow reads as a hard-clipped square halo instead of a soft falloff.
-                    const padding = GLOW_BLUR * 3;
-                    const size = r * 2 + padding * 2;
-                    const spriteCanvas = document.createElement('canvas');
-                    spriteCanvas.width = size;
-                    spriteCanvas.height = size;
-                    const spriteCtx = spriteCanvas.getContext('2d');
-                    const cx = size / 2, cy = size / 2;
-
-                    // First the bloom: one blurred fill in the node's own color, exactly as before.
-                    spriteCtx.shadowColor = GLOW_COLOR;
-                    spriteCtx.shadowBlur = GLOW_BLUR;
-                    spriteCtx.fillStyle = fillStyle;
-                    spriteCtx.beginPath();
-                    spriteCtx.arc(cx, cy, r, 0, Math.PI * 2, true);
-                    spriteCtx.closePath();
-                    spriteCtx.fill();
-                    spriteCtx.shadowBlur = 0;
-
-                    // Then the sphere itself on top: a radial gradient from the offset specular spot
-                    // (upper-left "light"), through the node's own color, out to the darkened rim. The
-                    // sprite's outer glow is untouched because the sphere only covers the circle itself.
-                    const alpha = rgbaAlpha(fillStyle);
-                    const grad = spriteCtx.createRadialGradient(
-                      cx - r * SPHERE_HIGHLIGHT_OFFSET, cy - r * SPHERE_HIGHLIGHT_OFFSET, r * SPHERE_HIGHLIGHT_RADIUS,
-                      cx, cy, r);
-                    grad.addColorStop(0, 'rgba(255,255,255,' + Math.min(1, alpha + SPHERE_HIGHLIGHT_BOOST).toFixed(3) + ')');
-                    grad.addColorStop(SPHERE_BODY_STOP, fillStyle);
-                    grad.addColorStop(1, 'rgba(' + SPHERE_RIM_RGB + ',' + (alpha * SPHERE_RIM_ALPHA).toFixed(3) + ')');
-                    spriteCtx.fillStyle = grad;
-                    spriteCtx.beginPath();
-                    spriteCtx.arc(cx, cy, r, 0, Math.PI * 2, true);
-                    spriteCtx.closePath();
-                    spriteCtx.fill();
-
-                    const sprite = { canvas: spriteCanvas, half: size / 2 };
-                    sphereSprites.set(key, sprite);
-                    return sprite;
-                  }
-
-                  sigma.canvas.nodes.enkiSphere = function (node, context, settings) {
+                  sigma.canvas.nodes.enkiCircle = function (node, context, settings) {
                     const prefix = settings('prefix') || '';
-                    const sprite = getSphereSprite(node[prefix + 'size'], node.color || settings('defaultNodeColor'));
-                    context.drawImage(sprite.canvas, node[prefix + 'x'] - sprite.half, node[prefix + 'y'] - sprite.half);
+                    const x = node[prefix + 'x'], y = node[prefix + 'y'];
+                    const radius = renderedNodeRadius(node, prefix);
+
+                    context.save();
+                    context.fillStyle = node.color || settings('defaultNodeColor');
+                    context.beginPath();
+                    context.arc(x, y, radius, 0, Math.PI * 2, true);
+                    context.fill();
+
+                    // El aro aparece solo al apuntar: hace inequívoco qué nota se va a abrir o arrastrar sin
+                    // convertir todos los nodos en botones ornamentados.
+                    if (hoverNode && hoverNode.id === node.id) {
+                      context.strokeStyle = THEME.ink;
+                      context.globalAlpha = 0.9;
+                      context.lineWidth = 1.25;
+                      context.beginPath();
+                      context.arc(x, y, radius + 2.25, 0, Math.PI * 2, true);
+                      context.stroke();
+                    }
+                    context.restore();
                   };
 
-                  // Straight line, deliberately — no curvature. The original force-graph implementation set
-                  // linkCurvature(0.18); that's an explicit hard requirement *not* to carry over here.
-                  // No shadow here — glow is reserved for nodes only (see GLOW_COLOR/GLOW_BLUR above).
+                  // Línea recta, deliberadamente sin curvatura ni sombra. Así el vínculo llega limpio al
+                  // borde del disco y la malla conserva su silueta esférica incluso con muchos nodos.
                   //
-                  // Trimmed to stop exactly at each endpoint's node radius rather than running from center
-                  // to center: the node itself is a semi-transparent fill (see NodeBrightness — alpha
-                  // 0.60-1.00, never fully opaque) with a soft shadowBlur glow around its edge, so a
-                  // full-length line drawn underneath (sigma's canvas renderer paints edges before nodes)
-                  // was visible bleeding through the circle's fill and glow all the way to its center.
-                  // Shortening the segment itself is robust regardless of paint order or node opacity,
-                  // unlike clipping/masking tricks against the node's own draw call.
-                  sigma.canvas.edges.enkiGlow = function (edge, source, target, context, settings) {
+                  // Se recorta al radio visual real de ambos extremos en vez de unir centro con centro. Esto
+                  // evita que la línea atraviese el relleno, también cuando el suelo de tamaño mantiene un
+                  // nodo visible en un encuadre lejano.
+                  sigma.canvas.edges.enkiLine = function (edge, source, target, context, settings) {
                     const prefix = settings('prefix') || '';
                     const sx = source[prefix + 'x'], sy = source[prefix + 'y'];
                     const tx = target[prefix + 'x'], ty = target[prefix + 'y'];
-                    const sr = source[prefix + 'size'] || 0;
-                    const tr = target[prefix + 'size'] || 0;
+                    const sr = renderedNodeRadius(source, prefix);
+                    const tr = renderedNodeRadius(target, prefix);
                     const dx = tx - sx, dy = ty - sy;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     // Nodes close enough (or overlapping) that trimming both radii would flip the segment's
@@ -394,8 +299,12 @@ public static class SessionGraphRenderer
                     const ux = dx / dist, uy = dy / dist;
 
                     context.save();
-                    context.strokeStyle = edge.color || settings('defaultEdgeColor');
-                    context.lineWidth = edge[prefix + 'size'] || 1;
+                    const isHoveredEdge = hoverNode && (edge.source === hoverNode.id || edge.target === hoverNode.id);
+                    context.strokeStyle = isHoveredEdge ? THEME.ink70 : (edge.color || settings('defaultEdgeColor'));
+                    // Suelo en píxeles: al encuadrar varias sesiones las uniones continúan visibles, sin
+                    // hacerse dominantes al acercar la cámara.
+                    const minWidth = edge.manual ? 1.15 : 0.6;
+                    context.lineWidth = Math.max(minWidth, edge[prefix + 'size'] || 0);
                     context.beginPath();
                     context.moveTo(sx + ux * sr, sy + uy * sr);
                     context.lineTo(tx - ux * tr, ty - uy * tr);
@@ -433,8 +342,8 @@ public static class SessionGraphRenderer
                       maxNodeSize: 0,
                       minEdgeSize: 0,
                       maxEdgeSize: 0,
-                      defaultNodeType: 'enkiSphere',
-                      defaultEdgeType: 'enkiGlow',
+                      defaultNodeType: 'enkiCircle',
+                      defaultEdgeType: 'enkiLine',
                       defaultNodeColor: THEME.link,
                       defaultEdgeColor: THEME.link,
                       // No permanent on-canvas node text — matches the original, which only ever showed a
@@ -481,6 +390,7 @@ public static class SessionGraphRenderer
                       return {
                         id: n.id,
                         label: n.name,
+                        sessionId: n.sessionId,
                         session: n.session,
                         baseColor: n.color,
                         color: n.color,
@@ -585,7 +495,6 @@ public static class SessionGraphRenderer
                   let pointerDownAt = null; // { x, y, t } in canvas-local pixels
                   let dragCandidate = null;
                   let dragConfirmed = false;
-                  let hoverNode = null;
                   let lastHoverCheckTs = 0;
                   const HOVER_THROTTLE_MS = 40;
 
@@ -638,12 +547,17 @@ public static class SessionGraphRenderer
                     return 1 / s.camera.ratio;
                   }
 
-                  function nearestNodeWithin(worldPoint, maxDistance) {
-                    let closest = null, closestDistSq = maxDistance * maxDistance;
+                  function nearestNodeWithin(worldPoint) {
+                    let closest = null, closestDistSq = Infinity;
+                    const minHitRadiusWorld = MIN_HIT_RADIUS_PX / screenScale();
                     for (const n of nodes) {
                       const dx = n.x - worldPoint.x, dy = n.y - worldPoint.y;
                       const distSq = dx * dx + dy * dy;
-                      if (distSq <= closestDistSq) { closest = n; closestDistSq = distSq; }
+                      const hitRadius = Math.max(n.size * HIT_AREA_MULTIPLIER, minHitRadiusWorld);
+                      if (distSq <= hitRadius * hitRadius && distSq < closestDistSq) {
+                        closest = n;
+                        closestDistSq = distSq;
+                      }
                     }
                     return closest;
                   }
@@ -652,8 +566,9 @@ public static class SessionGraphRenderer
                     if (e.button !== 0) return;
                     const p = screenPoint(e);
                     pointerDownAt = { x: p.x, y: p.y, t: Date.now() };
-                    dragCandidate = nearestNodeWithin(screenToWorld(p), CLICK_RADIUS);
+                    dragCandidate = nearestNodeWithin(screenToWorld(p));
                     dragConfirmed = false;
+                    el.classList.add('pointer-active');
                   }, { capture: true });
 
                   el.addEventListener('pointermove', function (e) {
@@ -664,6 +579,7 @@ public static class SessionGraphRenderer
                       if (!dragConfirmed && movedPx > 6) {
                         dragConfirmed = true;
                         isDraggingNode = true;
+                        el.classList.add('dragging-node');
                         // Pausing sigma's own camera-drag captor while a node is actively being dragged
                         // keeps the cursor "stuck" to the node the user is holding — without this, the
                         // background pan captor (which listens on the same mousedown/mousemove) would also
@@ -692,8 +608,9 @@ public static class SessionGraphRenderer
                     if (now - lastHoverCheckTs < HOVER_THROTTLE_MS) return;
                     lastHoverCheckTs = now;
 
-                    const node = nearestNodeWithin(screenToWorld(p), CLICK_RADIUS);
+                    const node = nearestNodeWithin(screenToWorld(p));
                     hoverNode = node;
+                    el.classList.toggle('node-hover', !!node);
                     if (node) {
                       tooltipEl.textContent = node.label + ' — ' + node.session;
                       tooltipEl.style.left = (e.clientX + 14) + 'px';
@@ -706,11 +623,24 @@ public static class SessionGraphRenderer
 
                   el.addEventListener('pointerleave', function () {
                     hoverNode = null;
+                    el.classList.remove('node-hover');
                     tooltipEl.style.display = 'none';
+                  });
+
+                  el.addEventListener('pointercancel', function () {
+                    pointerDownAt = null;
+                    if (dragCandidate) { dragCandidate.fx = null; dragCandidate.fy = null; }
+                    dragCandidate = null;
+                    dragConfirmed = false;
+                    isDraggingNode = false;
+                    simulation.alphaTarget(0);
+                    s.settings('mouseEnabled', true);
+                    el.classList.remove('pointer-active', 'dragging-node');
                   });
 
                   el.addEventListener('pointerup', function (e) {
                     if (e.button !== 0 || !pointerDownAt) return;
+                    el.classList.remove('pointer-active');
                     const down = pointerDownAt;
                     const candidate = dragCandidate;
                     pointerDownAt = null;
@@ -719,6 +649,7 @@ public static class SessionGraphRenderer
                     if (dragConfirmed) {
                       dragConfirmed = false;
                       isDraggingNode = false;
+                      el.classList.remove('dragging-node');
                       candidate.fx = null;
                       candidate.fy = null;
                       simulation.alphaTarget(0);
@@ -732,20 +663,19 @@ public static class SessionGraphRenderer
                     // on release, and a long press-and-hold isn't a click either.
                     if (movedPx > 6 || Date.now() - down.t > 800) return;
 
-                    const node = nearestNodeWithin(screenToWorld(p), CLICK_RADIUS);
+                    const node = nearestNodeWithin(screenToWorld(p));
                     if (!node) return;
-
-                    handleNodeClick(node);
 
                     const now = Date.now();
                     if (lastClickNodeId === node.id && now - lastClickAt <= DOUBLE_CLICK_MS) {
                       handleNodeDoubleClick(node);
-                      // Reset rather than let this click seed a new pair — otherwise three quick clicks on
-                      // the same node would fire a second double-click off the 2nd+3rd instead of requiring
-                      // a fresh pair.
+                      // El segundo clic pertenece exclusivamente al gesto de apertura. No se publica además
+                      // como nodeClick: en modo enlace podría completar o iniciar una pareja justo antes de
+                      // abandonar el grafo.
                       lastClickNodeId = null;
                       lastClickAt = 0;
                     } else {
+                      handleNodeClick(node);
                       lastClickNodeId = node.id;
                       lastClickAt = now;
                     }
@@ -763,8 +693,8 @@ public static class SessionGraphRenderer
                     post({ type: 'nodeClick', path: node.id });
                   }
 
-                  // Reported alongside (never instead of) the plain nodeClick above — the host always opens
-                  // the note on a double click, in any mode (see SessionsViewModel.HandleNodeDoubleClicked).
+                  // La segunda pulsación de un doble clic se publica solo como activación: el host abre la
+                  // nota en su sesión y el clic simple previo no se repite como una acción de enlace.
                   function handleNodeDoubleClick(node) {
                     post({ type: 'nodeDoubleClick', path: node.id });
                   }
@@ -882,7 +812,7 @@ public static class SessionGraphRenderer
                       // the session id by NodeBrightness, or an explicit hex override), so reading it from
                       // the first node is cheap and deterministic.
                       const members = allSessionMembers.get(session);
-                      const sessionColor = members && members.length > 0 ? members[0].color : THEME.ink;
+                      const sessionColor = members && members.length > 0 ? members[0].baseColor : THEME.ink;
                       sessionAnchors.set(session, {
                         x: Math.cos(angle) * ringRadius + ringCenter.x,
                         y: Math.sin(angle) * ringRadius + ringCenter.y,
@@ -1114,6 +1044,7 @@ public static class SessionGraphRenderer
                   // real nodes/links always paint over these mesh lines without needing any pre-render hook
                   // into sigma itself.
                   const AFFINITY_ALPHA = 0.2;
+                  const AFFINITY_MIN_WIDTH_PX = 0.55;
 
                   function drawSessionAffinity() {
                     if (sessionMeshPairs.length === 0) return;
@@ -1122,7 +1053,7 @@ public static class SessionGraphRenderer
                     affinityCtx.save();
                     affinityCtx.strokeStyle = THEME.ink80;
                     affinityCtx.globalAlpha = AFFINITY_ALPHA;
-                    affinityCtx.lineWidth = 0.45 * scale;
+                    affinityCtx.lineWidth = Math.max(AFFINITY_MIN_WIDTH_PX, Math.min(1.1, 0.45 * scale));
                     affinityCtx.beginPath();
                     sessionMeshPairs.forEach(function (pair) {
                       const a = worldToScreen(pair[0].x, pair[0].y);
@@ -1131,6 +1062,23 @@ public static class SessionGraphRenderer
                       affinityCtx.lineTo(b.x, b.y);
                     });
                     affinityCtx.stroke();
+
+                    // Al apuntar una nota se refuerzan únicamente sus vecinos espaciales. Es una ayuda de
+                    // lectura transitoria: no cambia ni confunde la malla de afinidad con enlaces reales.
+                    if (hoverNode) {
+                      affinityCtx.strokeStyle = THEME.ink70;
+                      affinityCtx.globalAlpha = 0.72;
+                      affinityCtx.lineWidth = 1;
+                      affinityCtx.beginPath();
+                      sessionMeshPairs.forEach(function (pair) {
+                        if (pair[0] !== hoverNode && pair[1] !== hoverNode) return;
+                        const a = worldToScreen(pair[0].x, pair[0].y);
+                        const b = worldToScreen(pair[1].x, pair[1].y);
+                        affinityCtx.moveTo(a.x, a.y);
+                        affinityCtx.lineTo(b.x, b.y);
+                      });
+                      affinityCtx.stroke();
+                    }
                     affinityCtx.restore();
                   }
 
@@ -1239,7 +1187,7 @@ public static class SessionGraphRenderer
                         const wy = source.y + (target.y - source.y) * t;
                         const p = worldToScreen(wx, wy);
                         overlayCtx.beginPath();
-                        overlayCtx.arc(p.x, p.y, (state.width / 2) * scale, 0, Math.PI * 2, false);
+                        overlayCtx.arc(p.x, p.y, Math.max(0.7, (state.width / 2) * scale), 0, Math.PI * 2, false);
                         overlayCtx.fill();
                       });
                     });
@@ -1273,7 +1221,9 @@ public static class SessionGraphRenderer
                     const t = (Date.now() % 1200) / 1200;
                     const pulse = 1 + 0.25 * Math.sin(t * Math.PI * 2);
                     const fade = fadeOverride === undefined ? 1 : fadeOverride;
-                    const baseR = NODE_REL_SIZE * Math.sqrt(PENDING_VAL) * screenScale();
+                    const baseR = Math.max(
+                      MIN_NODE_SCREEN_RADIUS * Math.sqrt(PENDING_VAL),
+                      NODE_REL_SIZE * Math.sqrt(PENDING_VAL) * screenScale());
                     overlayCtx.save();
                     overlayCtx.beginPath();
                     overlayCtx.arc(p.x, p.y, baseR * 1.55 * pulse, 0, 2 * Math.PI, false);
@@ -1291,6 +1241,17 @@ public static class SessionGraphRenderer
                     applyNodeVisualState();
                   };
 
+                  // Recolorea un grupo sin reemplazar el grafo: las posiciones, la temperatura de la
+                  // simulación y la cámara permanecen exactamente donde el usuario las dejó.
+                  window.__enkiSetSessionColor = function (sessionId, color) {
+                    nodes.forEach(function (n) {
+                      if (n.sessionId !== sessionId) return;
+                      n.baseColor = color;
+                    });
+                    applyNodeVisualState();
+                    invalidateGroupings();
+                  };
+
                   window.__enkiSetGraphData = function (json) {
                     const data = JSON.parse(json);
                     pendingLinkNode = null;
@@ -1304,6 +1265,7 @@ public static class SessionGraphRenderer
                       return {
                         id: n.id,
                         label: n.name,
+                        sessionId: n.sessionId,
                         session: n.session,
                         baseColor: n.color,
                         color: n.color,
@@ -1458,6 +1420,15 @@ public static class SessionGraphRenderer
         return $"window.__enkiSetPendingLink && window.__enkiSetPendingLink({literal});";
     }
 
+    /// <summary>Actualiza solo el color de los nodos de una sesión en el documento ya cargado, sin tocar
+    /// layout ni cámara.</summary>
+    public static string BuildSetSessionColorScript(string sessionId, string color)
+    {
+        var sessionLiteral = JsonSerializer.Serialize(sessionId);
+        var colorLiteral = JsonSerializer.Serialize(color);
+        return $"window.__enkiSetSessionColor && window.__enkiSetSessionColor({sessionLiteral}, {colorLiteral});";
+    }
+
     /// <summary>Tells the already-loaded document a manual link attempt was refused host-side (e.g. the two
     /// notes live in different sessions — <c>SessionsViewModel.HandleLinkToggled</c> never crosses that
     /// boundary) so the click that triggered it still gets a visible reaction instead of silently doing
@@ -1473,7 +1444,7 @@ public static class SessionGraphRenderer
     {
         nodes = graph.Nodes.Select(n => new
         {
-            id = n.GlobalId, name = n.Title, session = n.SessionName,
+            id = n.GlobalId, name = n.Title, sessionId = n.SessionId, session = n.SessionName,
             color = NodeBrightness.ColorFor(n.SessionId, n.SessionColor), x = n.X, y = n.Y
         }),
         links = graph.Edges.Select(e => new { source = e.FromGlobalId, target = e.ToGlobalId, manual = e.IsManual })

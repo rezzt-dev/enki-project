@@ -219,6 +219,23 @@ public sealed class SessionService
         return session;
     }
 
+    /// <summary>Guarda el color explícito de una sesión en su manifiesto. Un valor nulo o vacío restaura
+    /// el color estable generado a partir del id; cualquier valor explícito se normaliza a
+    /// <c>#RRGGBB</c> para que listado, etiquetas y nodos consuman una única representación.</summary>
+    public Session SetColor(Session session, string? color)
+    {
+        var normalized = string.IsNullOrWhiteSpace(color) ? null : HexColorUtility.NormalizeHex(color);
+        if (!string.IsNullOrWhiteSpace(color) && normalized is null)
+            throw new ArgumentException("El color de la sesión debe ser un valor hexadecimal RGB válido.", nameof(color));
+
+        var manifest = ReadManifest(session.RootPath) ?? EmptyManifestFor(session);
+        manifest.Color = normalized;
+        WriteManifest(session.RootPath, manifest);
+
+        session.Color = normalized;
+        return session;
+    }
+
     /// <summary>Soft-deletes a session by moving its folder to the vault's trash. No-ops on the default
     /// session — the UI is expected to hide the delete action for it in the first place, but this guard
     /// keeps that invariant even if some other call path is added later. Returns whether it actually deleted.</summary>

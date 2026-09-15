@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -89,6 +90,20 @@ public sealed partial class SessionsViewModel : ViewModelBase
     [ObservableProperty]
     private SessionListItemViewModel? _sessionPendingDelete;
 
+    /// <summary>Sesión cuyo color se está editando. El borrador permanece separado de la entidad real hasta
+    /// confirmar, de modo que cerrar el diálogo no escriba el manifiesto ni altere el grafo.</summary>
+    [ObservableProperty]
+    private SessionListItemViewModel? _sessionPendingColor;
+
+    [ObservableProperty]
+    private Color _sessionColorDraft = Colors.White;
+
+    [ObservableProperty]
+    private string _sessionColorHex = "#FFFFFF";
+
+    public bool CanConfirmSessionColor =>
+        SessionPendingColor is not null && HexColorUtility.NormalizeHex(SessionColorHex) is not null;
+
     /// <summary>Cuerpo del diálogo de confirmación de borrado de sesión, con el recuento de notas ya
     /// pluralizado por idioma — calculado aquí y no en XAML porque el orden de las palabras alrededor de
     /// los placeholders no es fijo entre idiomas (docs/agent-docs/internacionalizacion-i18n.md §1.3).</summary>
@@ -104,6 +119,24 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     partial void OnSessionPendingDeleteChanged(SessionListItemViewModel? value) =>
         OnPropertyChanged(nameof(PendingDeleteSessionMessage));
+
+    partial void OnSessionPendingColorChanged(SessionListItemViewModel? value) =>
+        OnPropertyChanged(nameof(CanConfirmSessionColor));
+
+    partial void OnSessionColorDraftChanged(Color value)
+    {
+        var hex = HexColorUtility.ColorToHex(value);
+        if (SessionColorHex != hex) SessionColorHex = hex;
+    }
+
+    partial void OnSessionColorHexChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanConfirmSessionColor));
+        if (HexColorUtility.NormalizeHex(value) is not { } normalized) return;
+
+        var parsed = Color.Parse(normalized);
+        if (SessionColorDraft != parsed) SessionColorDraft = parsed;
+    }
 
     [ObservableProperty]
     private string _newSessionName = string.Empty;
@@ -188,6 +221,11 @@ public sealed partial class SessionsViewModel : ViewModelBase
     /// <summary>Raised when the graph changed in a way that should be pushed into the already-loaded
     /// document in place, so the camera and running simulation aren't disturbed.</summary>
     public event Action<SessionGraph>? GraphUpdated;
+
+    /// <summary>Actualización puramente visual del color de una sesión. Se separa de
+    /// <see cref="GraphUpdated"/> porque no cambia nodos ni aristas y, por tanto, no debe recalentar la
+    /// simulación ni reencuadrar la cámara.</summary>
+    public event Action<string, string>? SessionColorChanged;
 
     /// <summary>Raised when a manual-link click pair was refused (currently: the two notes belong to
     /// different sessions — see <see cref="HandleLinkToggled"/>), so the WebView can flash the two nodes
@@ -764,6 +802,54 @@ public sealed partial class SessionsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void BeginChangeSessionColor(SessionListItemViewModel item)
+    {
+        SessionColorDraft = item.SessionColorBrush.Color;
+        SessionColorHex = HexColorUtility.ColorToHex(SessionColorDraft);
+        SessionPendingColor = item;
+    }
+
+    [RelayCommand]
+    private void ConfirmSessionColor()
+    {
+        if (SessionPendingColor is not { } item ||
+            HexColorUtility.NormalizeHex(SessionColorHex) is not { } normalized) return;
+
+        ApplySessionColor(item, normalized);
+        SessionPendingColor = null;
+    }
+
+    [RelayCommand]
+    private void UseAutomaticSessionColor()
+    {
+        if (SessionPendingColor is not { } item) return;
+
+        ApplySessionColor(item, null);
+        SessionPendingColor = null;
+    }
+
+    [RelayCommand]
+    private void CancelSessionColor() => SessionPendingColor = null;
+
+    /// <summary>Persiste el color sobre la sesión real y actualiza tanto el grafo cacheado como su vista
+    /// viva. El evento especializado evita recolocar nodos o alterar la cámara por un cambio cosmético.</summary>
+    private void ApplySessionColor(SessionListItemViewModel item, string? color)
+    {
+        var updated = _sessionService.SetColor(item.Session, color);
+        item.UpdateSession(updated);
+
+        if (LastGraph is not null)
+        {
+            foreach (var node in LastGraph.Nodes.Where(n => n.SessionId == updated.Id))
+                node.SessionColor = updated.Color;
+        }
+
+        SessionColorChanged?.Invoke(updated.Id, HexColorUtility.ColorToHex(item.SessionColorBrush.Color));
+
+        _onSessionsChanged();
+    }
+
+    [RelayCommand]
     private void RequestDeleteSession(SessionListItemViewModel item)
     {
         // The UI already hides the delete action for the default session — this guard just keeps the
@@ -832,12 +918,14 @@ public sealed partial class SessionsViewModel : ViewModelBase
         HandleLinkToggled(fromGlobalId, globalId);
     }
 
-    /// <summary>A node was double-clicked — always opens that note in the Notes section, regardless of link
-    /// mode, matching the double-click-to-open convention used elsewhere in the app (note cards, dashboard).
-    /// Reported by the WebView alongside (not instead of) the plain click that starts the pair (see
-    /// handleNodeDoubleClick in SessionGraphRenderer), so this doesn't interfere with an in-progress link
-    /// pick — it just also opens the note.</summary>
-    public void HandleNodeDoubleClicked(string globalId) => HandleNodeOpened(globalId);
+    /// <summary>Abre en Notas el nodo activado con doble clic, seleccionando primero su sesión y después su
+    /// archivo en el editor. La activación cancela cualquier extremo pendiente del modo enlace: ese estado
+    /// pertenece al grafo que se está abandonando y no debe reaparecer al volver.</summary>
+    public void HandleNodeDoubleClicked(string globalId)
+    {
+        SetPendingLink(null);
+        HandleNodeOpened(globalId);
+    }
 
     private void SetPendingLink(string? globalId)
     {

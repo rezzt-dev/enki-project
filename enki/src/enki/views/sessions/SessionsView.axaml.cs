@@ -57,7 +57,7 @@ public partial class SessionsView : UserControl
 
     private void SessionsView_Loaded(object? sender, RoutedEventArgs e) => Focus();
 
-    // Escape closes whichever of the four session dialogs (delete confirmation, unlock/forgot-password,
+    // Escape closes whichever session dialog (color, delete confirmation, unlock/forgot-password,
     // recovery codes, create session) is currently on top — same priority-order pattern as
     // KanbanView_KeyDown, since these dialogs can't stack but a consistent "most specific first" order
     // keeps this handler correct if that ever changes. Unlike Kanban's handler, this one only ever acts on
@@ -67,7 +67,12 @@ public partial class SessionsView : UserControl
         if (Vm is not { } vm) return;
         if (e.Key != Key.Escape) return;
 
-        if (vm.SessionPendingDelete is not null)
+        if (vm.SessionPendingColor is not null)
+        {
+            vm.CancelSessionColorCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.SessionPendingDelete is not null)
         {
             vm.CancelDeleteSessionCommand.Execute(null);
             e.Handled = true;
@@ -98,6 +103,7 @@ public partial class SessionsView : UserControl
 
         _subscribedVm.GraphReady += OnGraphReady;
         _subscribedVm.GraphUpdated += OnGraphUpdated;
+        _subscribedVm.SessionColorChanged += OnSessionColorChanged;
         _subscribedVm.LinkRejected += OnLinkRejected;
         _subscribedVm.PendingLinkChanged += OnPendingLinkChanged;
         _subscribedVm.PropertyChanged += OnVmPropertyChanged;
@@ -113,6 +119,7 @@ public partial class SessionsView : UserControl
         if (_subscribedVm is null) return;
         _subscribedVm.GraphReady -= OnGraphReady;
         _subscribedVm.GraphUpdated -= OnGraphUpdated;
+        _subscribedVm.SessionColorChanged -= OnSessionColorChanged;
         _subscribedVm.LinkRejected -= OnLinkRejected;
         _subscribedVm.PendingLinkChanged -= OnPendingLinkChanged;
         _subscribedVm.PropertyChanged -= OnVmPropertyChanged;
@@ -330,6 +337,12 @@ public partial class SessionsView : UserControl
         _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildLinkRejectedScript(fromGlobalId, toGlobalId));
     }
 
+    private void OnSessionColorChanged(string sessionId, string color)
+    {
+        if (_graphWebView is null) return;
+        _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildSetSessionColorScript(sessionId, color));
+    }
+
     private void OnWebMessageReceived(object? sender, WebMessageReceivedEventArgs e)
     {
         var body = e.Body;
@@ -366,8 +379,8 @@ public partial class SessionsView : UserControl
                         vm.HandleNodeClicked(path);
                     break;
 
-                // Sent alongside (never instead of) "nodeClick" for the second click of a double click —
-                // see handleNodeDoubleClick in SessionGraphRenderer.
+                // Activación exclusiva de la segunda pulsación del doble clic — no llega además como otro
+                // "nodeClick", para que el modo enlace no cambie justo antes de abrir la nota.
                 case "nodeDoubleClick":
                     if (document.RootElement.TryGetProperty("path", out var dblPathProp) && dblPathProp.GetString() is { } dblPath)
                         vm.HandleNodeDoubleClicked(dblPath);

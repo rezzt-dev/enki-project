@@ -2220,6 +2220,15 @@
   <data name="Sessions_RenameTooltip" xml:space="preserve">
     <value>Rename</value>
   </data>
+  <data name="Sessions_Color_Tooltip" xml:space="preserve">
+    <value>Change session color</value>
+  </data>
+  <data name="Sessions_Color_Eyebrow" xml:space="preserve">
+    <value>Session color</value>
+  </data>
+  <data name="Sessions_Color_Automatic" xml:space="preserve">
+    <value>Use automatic color</value>
+  </data>
   <data name="Sessions_Title" xml:space="preserve">
     <value>Sessions</value>
   </data>

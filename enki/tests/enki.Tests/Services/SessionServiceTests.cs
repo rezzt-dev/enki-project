@@ -93,6 +93,44 @@ public class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public void SetColor_NormalizesAndPersistsTheExplicitColor()
+    {
+        var service = CreateService();
+        var session = service.Create("Proyecto");
+
+        var updated = service.SetColor(session, "#3af");
+
+        Assert.Equal("#33AAFF", updated.Color);
+        Assert.Equal("#33AAFF", service.List().Single().Color);
+    }
+
+    [Fact]
+    public void SetColor_WithNull_RestoresTheAutomaticColor()
+    {
+        var service = CreateService();
+        var session = service.Create("Proyecto");
+        service.SetColor(session, "#33AAFF");
+
+        service.SetColor(session, null);
+
+        Assert.Null(session.Color);
+        Assert.Null(service.List().Single().Color);
+    }
+
+    [Fact]
+    public void SetColor_WithInvalidHex_DoesNotOverwriteTheManifest()
+    {
+        var service = CreateService();
+        var session = service.Create("Proyecto");
+        service.SetColor(session, "#33AAFF");
+
+        Assert.Throws<ArgumentException>(() => service.SetColor(session, "azul"));
+
+        Assert.Equal("#33AAFF", session.Color);
+        Assert.Equal("#33AAFF", service.List().Single().Color);
+    }
+
+    [Fact]
     public void Delete_OnDefaultSession_IsNoOp()
     {
         var service = CreateService();

@@ -80,6 +80,16 @@ public class SessionGraphRendererTests
     }
 
     [Fact]
+    public void BuildSetSessionColorScript_EmbedsSessionAndColorAsQuotedLiterals()
+    {
+        var script = SessionGraphRenderer.BuildSetSessionColorScript("s1", "#2F80ED");
+
+        Assert.Equal(
+            "window.__enkiSetSessionColor && window.__enkiSetSessionColor(\"s1\", \"#2F80ED\");",
+            script);
+    }
+
+    [Fact]
     public void BuildLinkRejectedScript_EmbedsBothGlobalIds()
     {
         var script = SessionGraphRenderer.BuildLinkRejectedScript("s1::A.md", "s2::B.md");
