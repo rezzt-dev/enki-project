@@ -158,7 +158,7 @@
     <value>Calendario</value>
   </data>
   <data name="Calendar_PageSubtitle" xml:space="preserve">
-    <value>Planifique su agenda</value>
+    <value>Planificar mi agenda</value>
   </data>
   <data name="Calendar_PageTitle" xml:space="preserve">
     <value>Calendario</value>
@@ -311,10 +311,10 @@
     <value>Editar</value>
   </data>
   <data name="Common_Error_AccessDenied" xml:space="preserve">
-    <value>No tienen permiso para hacer eso.</value>
+    <value>No tienes permiso para hacer eso.</value>
   </data>
   <data name="Common_Error_IOFailure" xml:space="preserve">
-    <value>No se pudo completar la operación. Verifiquen que haya espacio libre en el disco y que el archivo no esté en uso en otro lugar.</value>
+    <value>No se pudo completar la operación. Verificar que haya espacio libre en el disco y que el archivo no esté en uso en otro lugar.</value>
   </data>
   <data name="Common_Never" xml:space="preserve">
     <value>Nunca</value>
@@ -419,19 +419,19 @@
     <value>Nota nueva</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Subtitle" xml:space="preserve">
-    <value>Vean su calendario</value>
+    <value>Ver mi agenda</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Title" xml:space="preserve">
     <value>Calendario</value>
   </data>
   <data name="Dashboard_QuickAccess_Notifications_Subtitle" xml:space="preserve">
-    <value>Vean la actividad reciente</value>
+    <value>Ver la actividad reciente</value>
   </data>
   <data name="Dashboard_QuickAccess_Notifications_Title" xml:space="preserve">
     <value>Notificaciones</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Subtitle" xml:space="preserve">
-    <value>Administren sus recordatorios</value>
+    <value>Gestionar mis recordatorios</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Title" xml:space="preserve">
     <value>Recordatorios</value>
@@ -446,7 +446,7 @@
     <value>ACCESO RÁPIDO</value>
   </data>
   <data name="Dashboard_RecentNotes_CreateFirstNote" xml:space="preserve">
-    <value>Creen su primera nota</value>
+    <value>Crear mi primera nota</value>
   </data>
   <data name="Dashboard_RecentNotes_EmptyOthers" xml:space="preserve">
     <value>Aún no hay nada más aquí</value>
@@ -482,13 +482,13 @@
     <value>Cargando…</value>
   </data>
   <data name="Dashboard_Sessions_Subtitle" xml:space="preserve">
-    <value>Grafo visual de cómo se conectan sus notas</value>
+    <value>Grafo visual de cómo se conectan mis notas</value>
   </data>
   <data name="Dashboard_Sessions_Title" xml:space="preserve">
     <value>SESIONES</value>
   </data>
   <data name="Dashboard_Subtitle" xml:space="preserve">
-    <value>Un resumen de sus notas, tareas y actividad</value>
+    <value>Un resumen de mis notas, tareas y actividad</value>
   </data>
   <data name="Dashboard_Title" xml:space="preserve">
     <value>Dashboard</value>
@@ -832,7 +832,7 @@
     <value>No se pudo abrir el archivo</value>
   </data>
   <data name="Files_PageSubtitle" xml:space="preserve">
-    <value>Imágenes, PDF y otros archivos en su bóveda</value>
+    <value>Imágenes, PDF y otros archivos en mi bóveda</value>
   </data>
   <data name="Files_PageTitle" xml:space="preserve">
     <value>Archivos</value>
@@ -895,7 +895,7 @@
     <value>Filtro de tipo de archivo</value>
   </data>
   <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
-    <value>Siguen en el calendario y en las estadísticas, y cualquiera de ellas se puede recuperar desde la ventana de archivadas.</value>
+    <value>Siguen en el calendario y en mis estadísticas, y cualquiera de ellas se puede recuperar desde la ventana de archivadas.</value>
   </data>
   <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
     <value>Se archivará {0} tarea completada, que saldrá del tablero.</value>
@@ -952,7 +952,7 @@
     <value>Columna nueva</value>
   </data>
   <data name="Kanban_Board_EmptyHint" xml:space="preserve">
-    <value>Aquí todavía no hay nada. Agreguen una tarjeta a cualquier columna, o creen una columna nueva para darle forma a su flujo de trabajo.</value>
+    <value>Aquí todavía no hay nada. Agregar una tarjeta a cualquier columna, o crear una columna nueva para darle forma a mi flujo de trabajo.</value>
   </data>
   <data name="Kanban_Board_AddColumnTooltip" xml:space="preserve">
     <value>Crear una columna nueva (C)</value>
@@ -967,7 +967,7 @@
     <value>Ninguna tarjeta coincide con los filtros activos.</value>
   </data>
   <data name="Kanban_Board_Subtitle" xml:space="preserve">
-    <value>Organicen su trabajo en columnas y muevan las tarjetas hacia adelante a medida que avanzan.</value>
+    <value>Organizar mi trabajo en columnas y mover las tarjetas hacia adelante a medida que avanzan.</value>
   </data>
   <data name="Kanban_Board_TabKanban" xml:space="preserve">
     <value>KANBAN</value>
@@ -1168,7 +1168,7 @@
     <value>LIMPIAR</value>
   </data>
   <data name="Kanban_Home_EmptyTitle" xml:space="preserve">
-    <value>No tienen tareas pendientes</value>
+    <value>No tengo tareas pendientes</value>
   </data>
   <data name="Kanban_LinkedNote_RemoveTooltip" xml:space="preserve">
     <value>Eliminar vínculo</value>
@@ -1198,7 +1198,7 @@
     <value>Aún no hay listas</value>
   </data>
   <data name="Kanban_Lists_SelectPrompt" xml:space="preserve">
-    <value>Creen una lista para empezar</value>
+    <value>Crear una lista para empezar</value>
   </data>
   <data name="Kanban_NotePicker_NoResults" xml:space="preserve">
     <value>Sin resultados</value>
@@ -1255,7 +1255,7 @@
     <value>Tablero principal</value>
   </data>
   <data name="Kanban_Seed_Card1_Description" xml:space="preserve">
-    <value>Anoten las columnas y campos esenciales para la primera versión.</value>
+    <value>Anotar las columnas y campos esenciales para la primera versión.</value>
   </data>
   <data name="Kanban_Seed_Card1_Title" xml:space="preserve">
     <value>Definir alcance del tablero</value>
@@ -1363,7 +1363,7 @@
     <value>Detalle breve (opcional)…</value>
   </data>
   <data name="Kanban_TaskEditor_SaveToAddSubtasksHint" xml:space="preserve">
-    <value>Guarden la tarea para agregar subtareas.</value>
+    <value>Guardar la tarea para agregar subtareas.</value>
   </data>
   <data name="Kanban_TaskEditor_TimeEstimateLabel" xml:space="preserve">
     <value>ESTIMADO (MINUTOS)</value>
@@ -1390,7 +1390,7 @@
     <value>ÚLTIMA SINCRONIZACIÓN: {0}</value>
   </data>
   <data name="Kanban_TaskMgmt_LockedHint" xml:space="preserve">
-    <value>Vinculen su cuenta de Polar en Configuración › Cuenta para desbloquear esta vista.</value>
+    <value>Vincular mi cuenta de Polar en Configuración › Cuenta para desbloquear esta vista.</value>
   </data>
   <data name="Kanban_TaskMgmt_NewListButton" xml:space="preserve">
     <value>Lista nueva</value>
@@ -1567,7 +1567,7 @@
     <value>Nueva pestaña</value>
   </data>
   <data name="Notes_PageSubtitle" xml:space="preserve">
-    <value>Organice sus notas e ideas</value>
+    <value>Organizar mis notas e ideas</value>
   </data>
   <data name="Notes_PageTitle" xml:space="preserve">
     <value>Notas</value>
@@ -1603,7 +1603,7 @@
     <value>Sin notificaciones</value>
   </data>
   <data name="Notification_KanbanCorrupt_Message" xml:space="preserve">
-    <value>kanban.json estaba corrupto, así que se creó un tablero vacío nuevo. Sus datos anteriores siguen en el disco.</value>
+    <value>kanban.json estaba corrupto, así que se creó un tablero vacío nuevo. Mis datos anteriores siguen en el disco.</value>
   </data>
   <data name="Notification_KanbanCorrupt_Title" xml:space="preserve">
     <value>No se pudo leer el tablero Kanban</value>
@@ -1633,10 +1633,10 @@
     <value>NOTIFICACIONES</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_one" xml:space="preserve">
-    <value>Tu edición de «{0}»</value>
+    <value>Mi edición de «{0}»</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_other" xml:space="preserve">
-    <value>{0} de tus ediciones locales</value>
+    <value>{0} de mis ediciones locales</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Message" xml:space="preserve">
     <value>{0} — una versión más reciente sincronizada desde otro dispositivo tuvo prioridad.</value>
@@ -1645,7 +1645,7 @@
     <value>Edición local sobrescrita por la sincronización</value>
   </data>
   <data name="Notification_PolarSessionExpired_Message" xml:space="preserve">
-    <value>Inicien sesión de nuevo desde Configuración › Cuenta para seguir sincronizando con Polar.</value>
+    <value>Iniciar sesión de nuevo desde Configuración › Cuenta para seguir sincronizando con Polar.</value>
   </data>
   <data name="Notification_PolarSessionExpired_Title" xml:space="preserve">
     <value>Sesión de Polar expirada</value>
@@ -1654,7 +1654,7 @@
     <value>Sincronización con Polar fallida</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Message" xml:space="preserve">
-    <value>Se desvinculó la cuenta, así que se eliminó la copia local de tus listas, tareas y subtareas de Polar para evitar mezclar datos entre cuentas.</value>
+    <value>Se desvinculó la cuenta, así que se eliminó la copia local de mis listas, tareas y subtareas de Polar para evitar mezclar datos entre cuentas.</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Title" xml:space="preserve">
     <value>Tareas de Polar eliminadas</value>
@@ -1714,7 +1714,7 @@
     <value>Marcar todo como leído</value>
   </data>
   <data name="Notifications_Subtitle" xml:space="preserve">
-    <value>Eventos recientes y alertas de su espacio de trabajo.</value>
+    <value>Eventos recientes y alertas de mi espacio de trabajo.</value>
   </data>
   <data name="Notifications_Title" xml:space="preserve">
     <value>Notificaciones</value>
@@ -1723,10 +1723,10 @@
     <value>No se pudo conectar con Supabase: {0}</value>
   </data>
   <data name="Polar_Auth_Error_InvalidCredentials" xml:space="preserve">
-    <value>No se pudo iniciar sesión. Verifiquen el correo y la contraseña.</value>
+    <value>No se pudo iniciar sesión. Verificar el correo y la contraseña.</value>
   </data>
   <data name="Polar_Auth_Error_MissingCredentials" xml:space="preserve">
-    <value>Ingresen su correo y contraseña.</value>
+    <value>Ingresar el correo y la contraseña.</value>
   </data>
   <data name="Polar_Auth_Error_NoConfig" xml:space="preserve">
     <value>No se encontró la configuración de Supabase (local.properties) en este equipo.</value>
@@ -1789,7 +1789,7 @@
     <value>No tienen permiso para acceder a este recurso de Polar.</value>
   </data>
   <data name="Polar_Sync_Error_NoConnection" xml:space="preserve">
-    <value>No se pudo conectar con Polar. Verifiquen su conexión a internet.</value>
+    <value>No se pudo conectar con Polar. Verificar mi conexión a internet.</value>
   </data>
   <data name="Polar_Sync_Error_ServerError" xml:space="preserve">
     <value>El servidor de Polar tuvo un problema. Inténtenlo de nuevo más tarde.</value>
@@ -1801,7 +1801,7 @@
     <value>Demasiadas solicitudes — inténtenlo de nuevo en un momento.</value>
   </data>
   <data name="Polar_Sync_Error_Unauthorized" xml:space="preserve">
-    <value>Su sesión de Polar expiró. Inicien sesión de nuevo.</value>
+    <value>Mi sesión de Polar expiró. Iniciar sesión de nuevo.</value>
   </data>
   <data name="Polar_Sync_NextRetryLabel" xml:space="preserve">
     <value>Reintentando {0}</value>
@@ -1867,7 +1867,7 @@
     <value>Borrar todo</value>
   </data>
   <data name="Reminders_ClearAllModal_Message" xml:space="preserve">
-    <value>¿Está seguro de que desea borrar todos los recordatorios? Esta acción no se puede deshacer.</value>
+    <value>¿Estás seguro de que quieres borrar todos los recordatorios? Esta acción no se puede deshacer.</value>
   </data>
   <data name="Reminders_ClearAllModal_Title" xml:space="preserve">
     <value>Borrar todos los recordatorios</value>
@@ -1885,7 +1885,7 @@
     <value>Cambiar estado completado</value>
   </data>
   <data name="Reminders_Editor_DescriptionPlaceholder" xml:space="preserve">
-    <value>Agregue una descripción...</value>
+    <value>Añadir una descripción...</value>
   </data>
   <data name="Reminders_Editor_Eyebrow" xml:space="preserve">
     <value>Recordatorio</value>
@@ -2026,7 +2026,7 @@
     <value>Crear sesión</value>
   </data>
   <data name="Sessions_EmptyState_Description" xml:space="preserve">
-    <value>Organice sus notas y enlaces en sesiones enfocadas.</value>
+    <value>Organizar mis notas y enlaces en sesiones enfocadas.</value>
   </data>
   <data name="Sessions_Eyebrow" xml:space="preserve">
     <value>Sesiones</value>
@@ -2113,7 +2113,7 @@
     <value>Códigos de recuperación</value>
   </data>
   <data name="Sessions_RecoveryCodes_Heading" xml:space="preserve">
-    <value>Guarda tus códigos de recuperación</value>
+    <value>Guarda mis códigos de recuperación</value>
   </data>
   <data name="Sessions_RecoveryCodes_TextFileType" xml:space="preserve">
     <value>Archivo de texto</value>
@@ -2137,7 +2137,7 @@
     <value>Abrir en notas</value>
   </data>
   <data name="Sessions_PageSubtitle" xml:space="preserve">
-    <value>Organice notas, enlaces y tareas en sesiones estructuradas.</value>
+    <value>Organizar notas, enlaces y tareas en sesiones estructuradas.</value>
   </data>
   <data name="Sessions_PageTitle" xml:space="preserve">
     <value>Sesiones</value>
@@ -2278,7 +2278,7 @@
     <value>Módulos</value>
   </data>
   <data name="Settings_About_Privacy_Description" xml:space="preserve">
-    <value>Enki almacena sus datos de forma local de manera predeterminada. Vincule una cuenta Polar solo si desea sincronizar tareas entre dispositivos.</value>
+    <value>Enki almacena mis datos de forma local de manera predeterminada. Vincular una cuenta Polar solo si se desea sincronizar tareas entre dispositivos.</value>
   </data>
   <data name="Settings_About_Privacy_Title" xml:space="preserve">
     <value>Privacidad</value>
@@ -2305,19 +2305,19 @@
     <value>¿Qué es Enki?</value>
   </data>
   <data name="Settings_Account_Description" xml:space="preserve">
-    <value>Administre el vínculo de su cuenta Polar y las preferencias de sincronización.</value>
+    <value>Administrar el vínculo de mi cuenta Polar y las preferencias de sincronización.</value>
   </data>
   <data name="Settings_Account_EmailLabel" xml:space="preserve">
     <value>Correo electrónico</value>
   </data>
   <data name="Settings_Account_EmailPlaceholder" xml:space="preserve">
-    <value>su@correo.com</value>
+    <value>nombre@ejemplo.com</value>
   </data>
   <data name="Settings_Account_LastSynced_Label" xml:space="preserve">
     <value>Última sincronización</value>
   </data>
   <data name="Settings_Account_LinkForm_Description" xml:space="preserve">
-    <value>Ingrese sus credenciales de Polar para habilitar la sincronización en la nube.</value>
+    <value>Ingresar mis credenciales de Polar para habilitar la sincronización en la nube.</value>
   </data>
   <data name="Settings_Account_LinkPolar_Title" xml:space="preserve">
     <value>Vincular cuenta Polar</value>
@@ -2329,13 +2329,13 @@
     <value>VINCULADA</value>
   </data>
   <data name="Settings_Account_LinkedDescription" xml:space="preserve">
-    <value>Su cuenta Polar está conectada. Las tareas se sincronizarán automáticamente cuando Enki esté en línea.</value>
+    <value>Mi cuenta Polar está conectada. Las tareas se sincronizarán automáticamente cuando Enki esté en línea.</value>
   </data>
   <data name="Settings_Account_LinkingButton" xml:space="preserve">
     <value>Vinculando...</value>
   </data>
   <data name="Settings_Account_Management_Description" xml:space="preserve">
-    <value>Revise o elimine su cuenta vinculada y los datos locales de sincronización.</value>
+    <value>Revisar o eliminar mi cuenta vinculada y los datos locales de sincronización.</value>
   </data>
   <data name="Settings_Account_Management_Title" xml:space="preserve">
     <value>Administración de cuenta</value>
@@ -2518,7 +2518,7 @@
     <value>Horario laboral</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Message" xml:space="preserve">
-    <value>Esto restablecerá toda la configuración a sus valores predeterminados. Sus notas, tareas y datos de la bóveda no se eliminarán.</value>
+    <value>Esto restablecerá toda la configuración a sus valores predeterminados. Mis notas, tareas y datos de la bóveda no se eliminarán.</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Title" xml:space="preserve">
     <value>¿Restablecer configuración?</value>
@@ -2551,7 +2551,7 @@
     <value>Atajos del editor</value>
   </data>
   <data name="Settings_Editor_Autosave_Description" xml:space="preserve">
-    <value>Las notas se guardan automáticamente mientras escriben.</value>
+    <value>Las notas se guardan automáticamente mientras se escribe.</value>
   </data>
   <data name="Settings_Editor_Autosave_Title" xml:space="preserve">
     <value>Guardado automático</value>
@@ -2644,7 +2644,7 @@
     <value>Error al crear la copia de seguridad</value>
   </data>
   <data name="Settings_General_DangerZone_BackupHint" xml:space="preserve">
-    <value>Guarda una copia comprimida de toda su bóveda.</value>
+    <value>Guarda una copia comprimida de toda mi bóveda.</value>
   </data>
   <data name="Settings_General_DangerZone_ConfirmBeforeDelete_Description" xml:space="preserve">
     <value>Solicitar confirmación antes de eliminar elementos permanentemente.</value>
@@ -2710,7 +2710,7 @@
     <value>Los elementos de la Papelera se eliminan permanentemente después de 30 días.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Description" xml:space="preserve">
-    <value>Tamaño total de todo lo guardado en la carpeta de la bóveda.</value>
+    <value>Tamaño total de todo lo guardado en mi carpeta de la bóveda.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Label" xml:space="preserve">
     <value>TAMAÑO DE LA BÓVEDA</value>
@@ -2803,7 +2803,7 @@
     <value>DASHBOARD</value>
   </data>
   <data name="Settings_General_Startup_Description" xml:space="preserve">
-    <value>Elijan la página en la que abre Enki.</value>
+    <value>Elegir la página en la que abre Enki.</value>
   </data>
   <data name="Settings_General_Startup_Files" xml:space="preserve">
     <value>ARCHIVOS</value>
@@ -2827,7 +2827,7 @@
     <value>Cambiar</value>
   </data>
   <data name="Settings_General_VaultFolder_Description" xml:space="preserve">
-    <value>La carpeta donde se guardan sus notas y archivos.</value>
+    <value>La carpeta donde se guardan mis notas y archivos.</value>
   </data>
   <data name="Settings_General_VaultFolder_Title" xml:space="preserve">
     <value>Carpeta de la bóveda</value>
@@ -3109,7 +3109,7 @@
     <value>Seleccionar para exportar</value>
   </data>
   <data name="Skills_Community_Description" xml:space="preserve">
-    <value>Naveguen el catálogo de habilidades de la comunidad y descarguen las que necesiten.</value>
+    <value>Navegar el catálogo de habilidades de la comunidad y descargar las que hagan falta.</value>
   </data>
   <data name="Skills_Community_Title" xml:space="preserve">
     <value>Comunidad</value>
@@ -3172,7 +3172,7 @@
     <value>Cambios sin guardar</value>
   </data>
   <data name="Skills_Empty_Description" xml:space="preserve">
-    <value>Importen una habilidad para empezar.</value>
+    <value>Importar una habilidad para empezar.</value>
   </data>
   <data name="Skills_Empty_ImportButton" xml:space="preserve">
     <value>Importar habilidad</value>
@@ -3241,7 +3241,7 @@
     <value>Editar habilidad predeterminada</value>
   </data>
   <data name="Skills_NamePrompt_EmptyNameError" xml:space="preserve">
-    <value>Ingresen un nombre.</value>
+    <value>Ingresar un nombre.</value>
   </data>
   <data name="Skills_NoDescription" xml:space="preserve">
     <value>Sin descripción</value>
@@ -3295,7 +3295,7 @@
     <value>Importación completa</value>
   </data>
   <data name="Skills_Notify_NothingToExport_Message" xml:space="preserve">
-    <value>Seleccionen al menos una habilidad para exportar.</value>
+    <value>Seleccionar al menos una habilidad para exportar.</value>
   </data>
   <data name="Skills_Notify_NothingToExport_Title" xml:space="preserve">
     <value>Nada para exportar</value>
@@ -3313,7 +3313,7 @@
     <value>Son plantillas de prompt estáticas para usar con un asistente de IA externo — Enki no incluye ni se conecta a ningún motor de IA por sí misma.</value>
   </data>
   <data name="Skills_Page_Subtitle" xml:space="preserve">
-    <value>Administren las habilidades disponibles para su asistente</value>
+    <value>Administrar las habilidades disponibles para mi asistente</value>
   </data>
   <data name="Skills_Page_Title" xml:space="preserve">
     <value>Habilidades</value>
@@ -3541,10 +3541,10 @@
     <value>Sin título</value>
   </data>
   <data name="VaultSetup_AnotherInstance_Info" xml:space="preserve">
-    <value>Enki ya está en ejecución. Usen la ventana existente.</value>
+    <value>Enki ya está en ejecución. Usar la ventana existente.</value>
   </data>
   <data name="VaultSetup_CreateFolderPickerTitle" xml:space="preserve">
-    <value>Elijan una carpeta para su bóveda nueva</value>
+    <value>Elegir una carpeta para mi bóveda nueva</value>
   </data>
   <data name="VaultSetup_CreateNewButton" xml:space="preserve">
     <value>Crear bóveda nueva</value>
@@ -3556,7 +3556,7 @@
     <value>No se pudo usar esa carpeta: {0}</value>
   </data>
   <data name="VaultSetup_Error_IOFailure" xml:space="preserve">
-    <value>No se pudo leer ni escribir en esa carpeta. Verifiquen que la unidad esté conectada y tenga espacio libre.</value>
+    <value>No se pudo leer ni escribir en esa carpeta. Verificar que la unidad esté conectada y tenga espacio libre.</value>
   </data>
   <data name="VaultSetup_Error_InvalidPath" xml:space="preserve">
     <value>Esa no es una ruta de carpeta válida.</value>
@@ -3568,32 +3568,32 @@
     <value>Abrir bóveda existente</value>
   </data>
   <data name="VaultSetup_OpenFolderPickerTitle" xml:space="preserve">
-    <value>Elijan la carpeta de su bóveda</value>
+    <value>Elegir la carpeta de mi bóveda</value>
   </data>
   <data name="VaultSetup_Subtitle" xml:space="preserve">
-    <value>Elijan una carpeta para guardar sus notas o abran una que hayan usado antes.</value>
+    <value>Elegir una carpeta para guardar mis notas o abrir una que haya usado antes.</value>
   </data>
   <data name="VaultSetup_Title" xml:space="preserve">
-    <value>Bienvenidos a Enki</value>
+    <value>Bienvenido a Enki</value>
   </data>
   <data name="VaultSetup_VaultMissing_Info" xml:space="preserve">
-    <value>No se encontró la carpeta de la bóveda guardada la última vez. Elijan una carpeta para continuar.</value>
+    <value>No se encontró la carpeta de la bóveda guardada la última vez. Elegir una carpeta para continuar.</value>
   </data>
   <data name="WebView_Unavailable_Generic" xml:space="preserve">
     <value>No se encontró ningún motor WebView compatible en este sistema.</value>
   </data>
   <data name="WebView_Unavailable_Linux" xml:space="preserve">
-    <value>Falta el motor WebView del sistema. Instalen 'wpewebkit' (o 'webkit2gtk-4.1') y reinicien Enki.</value>
+    <value>Falta el motor WebView del sistema. Instalar 'wpewebkit' (o 'webkit2gtk-4.1') y reiniciar Enki.</value>
   </data>
   <data name="WelcomeNote_Content" xml:space="preserve">
     <value># Bienvenido a Enki
 
-Este es su espacio personal de conocimiento. Puede escribir notas en Markdown, organizar tareas con tableros Kanban, administrar recordatorios y conectar ideas en sesiones.
+Este es mi espacio personal de conocimiento. Puedo escribir notas en Markdown, organizar tareas con tableros Kanban, administrar recordatorios y conectar ideas en sesiones.
 
 **Primeros pasos:**
-- Cree una nota desde la vista de Notas.
-- Agregue una tarea en la vista de Polar.
-- Cambie entre sesiones desde la vista de Sesiones.
+- Crear una nota desde la vista de Notas.
+- Agregar una tarea en la vista de Polar.
+- Cambiar entre sesiones desde la vista de Sesiones.
 
 Feliz escritura.</value>
   </data>
@@ -3601,7 +3601,7 @@ Feliz escritura.</value>
     <value>Bienvenido.md</value>
   </data>
   <data name="Notification_VaultUnavailable_Reason" xml:space="preserve">
-    <value>Su bóveda no está disponible en este momento: verifiquen que la unidad esté conectada.</value>
+    <value>Mi bóveda no está disponible en este momento: verificar que la unidad esté conectada.</value>
   </data>
   <data name="Notification_SessionLocked_Reason" xml:space="preserve">
     <value>Esta sesión está bloqueada — desbloquéala desde Sesiones e inténtalo de nuevo.</value>
@@ -3634,7 +3634,7 @@ Feliz escritura.</value>
     <value>No se pudieron leer los ajustes</value>
   </data>
   <data name="Notification_SettingsCorrupt_Message" xml:space="preserve">
-    <value>settings.json estaba corrupto, así que Enki restableció sus ajustes a los valores por defecto, incluido el vínculo con la cuenta Polar si estaba vinculada. Sus ajustes anteriores siguen en el disco.</value>
+    <value>settings.json estaba corrupto, así que Enki restableció mis ajustes a los valores por defecto, incluido el vínculo con la cuenta Polar si estaba vinculada. Mis ajustes anteriores siguen en el disco.</value>
   </data>
   <data name="Notification_NotificationsCorrupt_Title" xml:space="preserve">
     <value>No se pudo leer el registro de notificaciones</value>
@@ -3646,7 +3646,7 @@ Feliz escritura.</value>
     <value>No se pudo leer el archivo de recordatorios</value>
   </data>
   <data name="Notification_RemindersCorrupt_Message" xml:space="preserve">
-    <value>reminders.json estaba corrupto, así que su lista de recordatorios se restableció. El archivo anterior sigue en el disco.</value>
+    <value>reminders.json estaba corrupto, así que mi lista de recordatorios se restableció. El archivo anterior sigue en el disco.</value>
   </data>
   <data name="Settings_General_DangerZone_BackupIncompleteTitle" xml:space="preserve">
     <value>Copia de seguridad creada con archivos faltantes</value>
@@ -3847,7 +3847,7 @@ Feliz escritura.</value>
     <value>Sin comandos coincidentes</value>
   </data>
   <data name="CommandPalette_SearchPlaceholder" xml:space="preserve">
-    <value>Escribid un comando…</value>
+    <value>Escribir un comando…</value>
   </data>
   <data name="Editor_Toolbar_ToggleZenMode_Tooltip" xml:space="preserve">
     <value>Activar/desactivar modo enfoque</value>
@@ -3874,7 +3874,7 @@ Feliz escritura.</value>
     <value>Tema personalizado</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Description" xml:space="preserve">
-    <value>Descargad la plantilla CSS por defecto, cambiad solo sus valores de color y volved a importarla. Solo los colores son personalizables — la estructura de la plantilla no puede cambiar, así que un archivo con variables distintas se rechaza.</value>
+    <value>Descargar la plantilla CSS por defecto, cambiar solo sus valores de color y volver a importarla. Solo los colores son personalizables — la estructura de la plantilla no puede cambiar, así que un archivo con variables distintas se rechaza.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_DownloadTemplateButton" xml:space="preserve">
     <value>Descargar plantilla</value>
@@ -3883,7 +3883,7 @@ Feliz escritura.</value>
     <value>Importar tema</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_Empty" xml:space="preserve">
-    <value>Importad un tema para verlo aquí.</value>
+    <value>Importar un tema para verlo aquí.</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_ActiveLabel" xml:space="preserve">
     <value>Activo</value>
@@ -4030,7 +4030,7 @@ Feliz escritura.</value>
     <value>Expandir</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_YourThemesTitle" xml:space="preserve">
-    <value>Tus temas</value>
+    <value>Mis temas</value>
   </data>
   <data name="Settings_Nav_Dashboard" xml:space="preserve">
     <value>Dashboard</value>
@@ -4039,7 +4039,7 @@ Feliz escritura.</value>
     <value>Diseño del panel</value>
   </data>
   <data name="Settings_Dashboard_Description" xml:space="preserve">
-    <value>Elegid qué secciones del panel aparecen y en qué orden.</value>
+    <value>Elegir qué secciones del panel aparecen y en qué orden.</value>
   </data>
   <data name="Settings_Dashboard_SectionList_Title" xml:space="preserve">
     <value>Secciones</value>
@@ -4096,7 +4096,7 @@ Feliz escritura.</value>
     <value>Vista previa</value>
   </data>
   <data name="Settings_Dashboard_Preview_Subtitle" xml:space="preserve">
-    <value>Vista previa en vivo de tu panel, en este orden</value>
+    <value>Vista previa en vivo de mi panel, en este orden</value>
   </data>
   <data name="Settings_Dashboard_Hidden_Label" xml:space="preserve">
     <value>Oculta</value>
@@ -4111,7 +4111,7 @@ Feliz escritura.</value>
     <value>Notas, sesiones y tamaño en disco del almacén actual</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
-    <value>Notificaciones recientes y el resumen de tus tareas de Polar</value>
+    <value>Notificaciones recientes y el resumen de mis tareas de Polar</value>
   </data>
   <data name="DashboardSection_Sessions_Description" xml:space="preserve">
     <value>Número de notas y enlaces del grafo combinado de sesiones</value>
@@ -4198,7 +4198,7 @@ Feliz escritura.</value>
     <value>Hábitos</value>
   </data>
   <data name="Habits_Subtitle" xml:space="preserve">
-    <value>Un registro discreto de lo que haces cada día</value>
+    <value>Un registro discreto de lo que hago cada día</value>
   </data>
   <data name="Habits_NewButton" xml:space="preserve">
     <value>Nuevo hábito</value>
@@ -4252,7 +4252,7 @@ Feliz escritura.</value>
     <value>Hábitos</value>
   </data>
   <data name="DashboardSection_Habits_Description" xml:space="preserve">
-    <value>Los hábitos de hoy y tu constancia de un vistazo.</value>
+    <value>Los hábitos de hoy y mi constancia de un vistazo.</value>
   </data>
   <data name="Dashboard_Habits_GoLabel" xml:space="preserve">
     <value>Ir a hábitos</value>
@@ -4339,7 +4339,7 @@ Feliz escritura.</value>
     <value>Consistencia de hábitos</value>
   </data>
   <data name="Statistics_Heatmap_Empty" xml:space="preserve">
-    <value>No hay hábitos registrados — agrega uno en Hábitos para empezar a ver tu consistencia.</value>
+    <value>No hay hábitos registrados — agrega uno en Hábitos para empezar a ver mi consistencia.</value>
   </data>
   <data name="Settings_Dashboard_Grid_Hint" xml:space="preserve">
     <value>Arrastra una ficha para moverla, o tira de su esquina inferior derecha para cambiar su tamaño. Con una ficha seleccionada: las flechas la mueven, Mayús + flechas la redimensionan y Supr la saca de la cuadrícula.</value>
@@ -4474,7 +4474,7 @@ Feliz escritura.</value>
     <value>Notas tocadas y tareas completadas, día a día</value>
   </data>
   <data name="Statistics_Caption_PunchCard" xml:space="preserve">
-    <value>Cuándo trabajas de verdad, por día y hora</value>
+    <value>Cuándo trabajo de verdad, por día y hora</value>
   </data>
   <data name="Statistics_Caption_YearHeatmap" xml:space="preserve">
     <value>Cada día de los últimos doce meses</value>
@@ -4576,13 +4576,13 @@ Feliz escritura.</value>
     <value>Todavía no hay nada que mostrar aquí</value>
   </data>
   <data name="Statistics_Empty_Tags" xml:space="preserve">
-    <value>Etiqueta tus notas para ver en qué temas te apoyas más.</value>
+    <value>Etiqueta mis notas para ver en qué temas me apoyo más.</value>
   </data>
   <data name="Statistics_Empty_Files" xml:space="preserve">
-    <value>Añade archivos al vault para ver cómo se reparte tu almacén.</value>
+    <value>Añade archivos al vault para ver cómo se reparte mi almacén.</value>
   </data>
   <data name="Statistics_Empty_PunchCard" xml:space="preserve">
-    <value>Todavía no hay marcas de tiempo suficientes para dibujar tu ritmo.</value>
+    <value>Todavía no hay marcas de tiempo suficientes para dibujar mi ritmo.</value>
   </data>
   <data name="Statistics_Footnote" xml:space="preserve">
     <value>La actividad sale de las fechas de creación y modificación de las notas, del momento en que se completó cada tarea y de las marcas de hábitos — el vault no guarda un historial de ediciones aparte.</value>

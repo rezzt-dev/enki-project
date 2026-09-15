@@ -158,7 +158,7 @@
     <value>Calendar</value>
   </data>
   <data name="Calendar_PageSubtitle" xml:space="preserve">
-    <value>Plan your schedule</value>
+    <value>Plan my schedule</value>
   </data>
   <data name="Calendar_PageTitle" xml:space="preserve">
     <value>Calendar</value>
@@ -419,7 +419,7 @@
     <value>New note</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Subtitle" xml:space="preserve">
-    <value>View your schedule</value>
+    <value>View my schedule</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Title" xml:space="preserve">
     <value>Calendar</value>
@@ -431,7 +431,7 @@
     <value>Notifications</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Subtitle" xml:space="preserve">
-    <value>Manage your reminders</value>
+    <value>Manage my reminders</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Title" xml:space="preserve">
     <value>Reminders</value>
@@ -446,7 +446,7 @@
     <value>QUICK ACCESS</value>
   </data>
   <data name="Dashboard_RecentNotes_CreateFirstNote" xml:space="preserve">
-    <value>Create your first note</value>
+    <value>Create my first note</value>
   </data>
   <data name="Dashboard_RecentNotes_EmptyOthers" xml:space="preserve">
     <value>Nothing else here yet</value>
@@ -482,13 +482,13 @@
     <value>Loading…</value>
   </data>
   <data name="Dashboard_Sessions_Subtitle" xml:space="preserve">
-    <value>Visual graph of how your notes connect</value>
+    <value>Visual graph of how my notes connect</value>
   </data>
   <data name="Dashboard_Sessions_Title" xml:space="preserve">
     <value>SESSIONS</value>
   </data>
   <data name="Dashboard_Subtitle" xml:space="preserve">
-    <value>An overview of your notes, tasks and activity</value>
+    <value>An overview of my notes, tasks and activity</value>
   </data>
   <data name="Dashboard_Title" xml:space="preserve">
     <value>Dashboard</value>
@@ -832,7 +832,7 @@
     <value>Couldn't open the file</value>
   </data>
   <data name="Files_PageSubtitle" xml:space="preserve">
-    <value>Images, PDFs and other files in your vault</value>
+    <value>Images, PDFs and other files in my vault</value>
   </data>
   <data name="Files_PageTitle" xml:space="preserve">
     <value>Files</value>
@@ -895,7 +895,7 @@
     <value>File type filter</value>
   </data>
   <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
-    <value>They stay in the calendar and in your statistics, and any of them can be brought back from the archived window.</value>
+    <value>They stay in the calendar and in my statistics, and any of them can be brought back from the archived window.</value>
   </data>
   <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
     <value>{0} completed task will leave the board and move to the archive.</value>
@@ -952,7 +952,7 @@
     <value>New column</value>
   </data>
   <data name="Kanban_Board_EmptyHint" xml:space="preserve">
-    <value>Nothing here yet. Add a card to any column, or create a new column to shape your workflow.</value>
+    <value>Nothing here yet. Add a card to any column, or create a new column to shape my workflow.</value>
   </data>
   <data name="Kanban_Board_AddColumnTooltip" xml:space="preserve">
     <value>Create a new column (C)</value>
@@ -967,7 +967,7 @@
     <value>No card matches the active filters.</value>
   </data>
   <data name="Kanban_Board_Subtitle" xml:space="preserve">
-    <value>Organise your work into columns and move cards forward as they progress.</value>
+    <value>Organise my work into columns and move cards forward as they progress.</value>
   </data>
   <data name="Kanban_Board_TabKanban" xml:space="preserve">
     <value>KANBAN</value>
@@ -1168,7 +1168,7 @@
     <value>CLEAR</value>
   </data>
   <data name="Kanban_Home_EmptyTitle" xml:space="preserve">
-    <value>You have no pending tasks</value>
+    <value>I have no pending tasks</value>
   </data>
   <data name="Kanban_LinkedNote_RemoveTooltip" xml:space="preserve">
     <value>Remove link</value>
@@ -1567,7 +1567,7 @@
     <value>New tab</value>
   </data>
   <data name="Notes_PageSubtitle" xml:space="preserve">
-    <value>Organise your notes and ideas</value>
+    <value>Organise my notes and ideas</value>
   </data>
   <data name="Notes_PageTitle" xml:space="preserve">
     <value>Notes</value>
@@ -1603,7 +1603,7 @@
     <value>No notifications</value>
   </data>
   <data name="Notification_KanbanCorrupt_Message" xml:space="preserve">
-    <value>kanban.json was corrupted, so a new empty board was created. Your previous data is still on disk.</value>
+    <value>kanban.json was corrupted, so a new empty board was created. My previous data is still on disk.</value>
   </data>
   <data name="Notification_KanbanCorrupt_Title" xml:space="preserve">
     <value>Kanban board couldn't be read</value>
@@ -1633,10 +1633,10 @@
     <value>NOTIFICATIONS</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_one" xml:space="preserve">
-    <value>Your edit to "{0}"</value>
+    <value>My edit to "{0}"</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_other" xml:space="preserve">
-    <value>{0} of your local edits</value>
+    <value>{0} of my local edits</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Message" xml:space="preserve">
     <value>{0} — a newer version synced from another device took priority.</value>
@@ -1654,7 +1654,7 @@
     <value>Polar sync failed</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Message" xml:space="preserve">
-    <value>The linked account was removed, so the local copy of your Polar lists, tasks and subtasks was cleared to avoid mixing data between accounts.</value>
+    <value>The linked account was removed, so the local copy of my Polar lists, tasks and subtasks was cleared to avoid mixing data between accounts.</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Title" xml:space="preserve">
     <value>Local Polar tasks cleared</value>
@@ -1714,7 +1714,7 @@
     <value>Mark all read</value>
   </data>
   <data name="Notifications_Subtitle" xml:space="preserve">
-    <value>Recent events and alerts from your workspace.</value>
+    <value>Recent events and alerts from my workspace.</value>
   </data>
   <data name="Notifications_Title" xml:space="preserve">
     <value>Notifications</value>
@@ -2026,7 +2026,7 @@
     <value>Create session</value>
   </data>
   <data name="Sessions_EmptyState_Description" xml:space="preserve">
-    <value>Organise your notes and links into focused sessions.</value>
+    <value>Organise my notes and links into focused sessions.</value>
   </data>
   <data name="Sessions_Eyebrow" xml:space="preserve">
     <value>Sessions</value>
@@ -2113,7 +2113,7 @@
     <value>Recovery codes</value>
   </data>
   <data name="Sessions_RecoveryCodes_Heading" xml:space="preserve">
-    <value>Save your recovery codes</value>
+    <value>Save my recovery codes</value>
   </data>
   <data name="Sessions_RecoveryCodes_TextFileType" xml:space="preserve">
     <value>Text file</value>
@@ -2278,7 +2278,7 @@
     <value>Modules</value>
   </data>
   <data name="Settings_About_Privacy_Description" xml:space="preserve">
-    <value>Enki stores your data locally by default. Link a Polar account only if you want to sync tasks across devices.</value>
+    <value>Enki stores my data locally by default. Link a Polar account only if you want to sync tasks across devices.</value>
   </data>
   <data name="Settings_About_Privacy_Title" xml:space="preserve">
     <value>Privacy</value>
@@ -2305,13 +2305,13 @@
     <value>What is Enki?</value>
   </data>
   <data name="Settings_Account_Description" xml:space="preserve">
-    <value>Manage your Polar account link and sync preferences.</value>
+    <value>Manage my Polar account link and sync preferences.</value>
   </data>
   <data name="Settings_Account_EmailLabel" xml:space="preserve">
     <value>Email</value>
   </data>
   <data name="Settings_Account_EmailPlaceholder" xml:space="preserve">
-    <value>your@email.com</value>
+    <value>name@example.com</value>
   </data>
   <data name="Settings_Account_LastSynced_Label" xml:space="preserve">
     <value>Last synced</value>
@@ -2329,13 +2329,13 @@
     <value>LINKED</value>
   </data>
   <data name="Settings_Account_LinkedDescription" xml:space="preserve">
-    <value>Your Polar account is connected. Tasks will sync automatically when Enki is online.</value>
+    <value>My Polar account is connected. Tasks will sync automatically when Enki is online.</value>
   </data>
   <data name="Settings_Account_LinkingButton" xml:space="preserve">
     <value>Linking...</value>
   </data>
   <data name="Settings_Account_Management_Description" xml:space="preserve">
-    <value>Review or remove your linked account and local sync data.</value>
+    <value>Review or remove my linked account and local sync data.</value>
   </data>
   <data name="Settings_Account_Management_Title" xml:space="preserve">
     <value>Account Management</value>
@@ -2518,7 +2518,7 @@
     <value>Working hours</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Message" xml:space="preserve">
-    <value>This will reset all settings to their default values. Your notes, tasks, and vault data will not be deleted.</value>
+    <value>This will reset all settings to their default values. My notes, tasks, and vault data will not be deleted.</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Title" xml:space="preserve">
     <value>Reset Settings?</value>
@@ -2644,7 +2644,7 @@
     <value>Backup Failed</value>
   </data>
   <data name="Settings_General_DangerZone_BackupHint" xml:space="preserve">
-    <value>Saves a compressed copy of your entire vault.</value>
+    <value>Saves a compressed copy of my entire vault.</value>
   </data>
   <data name="Settings_General_DangerZone_ConfirmBeforeDelete_Description" xml:space="preserve">
     <value>Ask for confirmation before permanently deleting items.</value>
@@ -2710,7 +2710,7 @@
     <value>Items in Trash are permanently deleted after 30 days.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Description" xml:space="preserve">
-    <value>Total size of everything stored in your vault folder.</value>
+    <value>Total size of everything stored in my vault folder.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Label" xml:space="preserve">
     <value>VAULT SIZE</value>
@@ -2827,7 +2827,7 @@
     <value>Change</value>
   </data>
   <data name="Settings_General_VaultFolder_Description" xml:space="preserve">
-    <value>The folder where your notes and files are stored.</value>
+    <value>The folder where my notes and files are stored.</value>
   </data>
   <data name="Settings_General_VaultFolder_Title" xml:space="preserve">
     <value>Vault folder</value>
@@ -3313,7 +3313,7 @@
     <value>These are static prompt templates for use with an external AI assistant — Enki doesn't include or connect to any AI engine itself.</value>
   </data>
   <data name="Skills_Page_Subtitle" xml:space="preserve">
-    <value>Manage the skills available to your assistant</value>
+    <value>Manage the skills available to my assistant</value>
   </data>
   <data name="Skills_Page_Title" xml:space="preserve">
     <value>Skills</value>
@@ -3544,7 +3544,7 @@
     <value>Enki is already running. Please use the existing window.</value>
   </data>
   <data name="VaultSetup_CreateFolderPickerTitle" xml:space="preserve">
-    <value>Choose a folder for your new vault</value>
+    <value>Choose a folder for my new vault</value>
   </data>
   <data name="VaultSetup_CreateNewButton" xml:space="preserve">
     <value>Create new vault</value>
@@ -3568,10 +3568,10 @@
     <value>Open existing vault</value>
   </data>
   <data name="VaultSetup_OpenFolderPickerTitle" xml:space="preserve">
-    <value>Choose your vault folder</value>
+    <value>Choose my vault folder</value>
   </data>
   <data name="VaultSetup_Subtitle" xml:space="preserve">
-    <value>Choose a folder to store your notes, or open one you've used before.</value>
+    <value>Choose a folder to store my notes, or open one I've used before.</value>
   </data>
   <data name="VaultSetup_Title" xml:space="preserve">
     <value>Welcome to Enki</value>
@@ -3588,7 +3588,7 @@
   <data name="WelcomeNote_Content" xml:space="preserve">
     <value># Welcome to Enki
 
-This is your personal knowledge workspace. You can write notes in Markdown, organise tasks with Kanban boards, manage reminders, and connect ideas together in sessions.
+This is my personal knowledge workspace. I can write notes in Markdown, organise tasks with Kanban boards, manage reminders, and connect ideas together in sessions.
 
 **Get started:**
 - Create a note from the Notes view.
@@ -3601,7 +3601,7 @@ Happy writing.</value>
     <value>Welcome.md</value>
   </data>
   <data name="Notification_VaultUnavailable_Reason" xml:space="preserve">
-    <value>Your vault isn't available right now — check that the drive is connected.</value>
+    <value>My vault isn't available right now — check that the drive is connected.</value>
   </data>
   <data name="Notification_SessionLocked_Reason" xml:space="preserve">
     <value>This session is locked — unlock it from Sessions and try again.</value>
@@ -3634,7 +3634,7 @@ Happy writing.</value>
     <value>Settings couldn't be read</value>
   </data>
   <data name="Notification_SettingsCorrupt_Message" xml:space="preserve">
-    <value>settings.json was corrupted, so Enki reset your settings to their defaults — including the Polar account link, if one was linked. Your previous settings are still on disk.</value>
+    <value>settings.json was corrupted, so Enki reset my settings to their defaults — including the Polar account link, if one was linked. My previous settings are still on disk.</value>
   </data>
   <data name="Notification_NotificationsCorrupt_Title" xml:space="preserve">
     <value>Notification log couldn't be read</value>
@@ -3646,7 +3646,7 @@ Happy writing.</value>
     <value>Reminders file couldn't be read</value>
   </data>
   <data name="Notification_RemindersCorrupt_Message" xml:space="preserve">
-    <value>reminders.json was corrupted, so your reminders list was reset. The previous file is still on disk.</value>
+    <value>reminders.json was corrupted, so my reminders list was reset. The previous file is still on disk.</value>
   </data>
   <data name="Settings_General_DangerZone_BackupIncompleteTitle" xml:space="preserve">
     <value>Backup created with some files missing</value>
@@ -4030,7 +4030,7 @@ Happy writing.</value>
     <value>Expand</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_YourThemesTitle" xml:space="preserve">
-    <value>Your themes</value>
+    <value>My themes</value>
   </data>
   <data name="Settings_Nav_Dashboard" xml:space="preserve">
     <value>Dashboard</value>
@@ -4096,7 +4096,7 @@ Happy writing.</value>
     <value>Preview</value>
   </data>
   <data name="Settings_Dashboard_Preview_Subtitle" xml:space="preserve">
-    <value>A live preview of your dashboard, in this order</value>
+    <value>A live preview of my dashboard, in this order</value>
   </data>
   <data name="Settings_Dashboard_Hidden_Label" xml:space="preserve">
     <value>Hidden</value>
@@ -4111,7 +4111,7 @@ Happy writing.</value>
     <value>Notes, sessions and disk size for the current vault</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
-    <value>Recent notifications and your Polar task summary</value>
+    <value>Recent notifications and my Polar task summary</value>
   </data>
   <data name="DashboardSection_Sessions_Description" xml:space="preserve">
     <value>Note and link counts from the combined sessions graph</value>
@@ -4198,7 +4198,7 @@ Happy writing.</value>
     <value>Habits</value>
   </data>
   <data name="Habits_Subtitle" xml:space="preserve">
-    <value>A quiet log of what you do each day</value>
+    <value>A quiet log of what I do each day</value>
   </data>
   <data name="Habits_NewButton" xml:space="preserve">
     <value>New habit</value>
@@ -4252,7 +4252,7 @@ Happy writing.</value>
     <value>Habits</value>
   </data>
   <data name="DashboardSection_Habits_Description" xml:space="preserve">
-    <value>Today's habits and your consistency at a glance.</value>
+    <value>Today's habits and my consistency at a glance.</value>
   </data>
   <data name="Dashboard_Habits_GoLabel" xml:space="preserve">
     <value>Go to habits</value>
@@ -4339,7 +4339,7 @@ Happy writing.</value>
     <value>Habit consistency</value>
   </data>
   <data name="Statistics_Heatmap_Empty" xml:space="preserve">
-    <value>No habits tracked — add one in Habits to start seeing your consistency.</value>
+    <value>No habits tracked — add one in Habits to start seeing my consistency.</value>
   </data>
   <data name="Settings_Dashboard_Grid_Hint" xml:space="preserve">
     <value>Drag a tile to move it, or pull its bottom-right corner to resize it. With a tile selected: arrow keys move it, Shift + arrows resize it, and Delete takes it out of the grid.</value>
@@ -4474,7 +4474,7 @@ Happy writing.</value>
     <value>Notes touched and tasks completed, day by day</value>
   </data>
   <data name="Statistics_Caption_PunchCard" xml:space="preserve">
-    <value>When you actually work, by weekday and hour</value>
+    <value>When I actually work, by weekday and hour</value>
   </data>
   <data name="Statistics_Caption_YearHeatmap" xml:space="preserve">
     <value>Every day of the last twelve months</value>
@@ -4576,13 +4576,13 @@ Happy writing.</value>
     <value>Nothing to show here yet</value>
   </data>
   <data name="Statistics_Empty_Tags" xml:space="preserve">
-    <value>Tag your notes to see which topics you lean on most.</value>
+    <value>Tag my notes to see which topics I lean on most.</value>
   </data>
   <data name="Statistics_Empty_Files" xml:space="preserve">
-    <value>Add files to the vault to see how your storage breaks down.</value>
+    <value>Add files to the vault to see how my storage breaks down.</value>
   </data>
   <data name="Statistics_Empty_PunchCard" xml:space="preserve">
-    <value>Not enough timestamps yet to draw your rhythm.</value>
+    <value>Not enough timestamps yet to draw my rhythm.</value>
   </data>
   <data name="Statistics_Footnote" xml:space="preserve">
     <value>Activity comes from note creation and modification times, task completion times and habit marks — the vault stores no separate edit history.</value>

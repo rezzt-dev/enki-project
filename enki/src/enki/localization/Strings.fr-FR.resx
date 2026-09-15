@@ -158,7 +158,7 @@
     <value>Calendrier</value>
   </data>
   <data name="Calendar_PageSubtitle" xml:space="preserve">
-    <value>Planifiez votre emploi du temps</value>
+    <value>Planifier mon emploi du temps</value>
   </data>
   <data name="Calendar_PageTitle" xml:space="preserve">
     <value>Calendrier</value>
@@ -419,7 +419,7 @@
     <value>Nouvelle note</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Subtitle" xml:space="preserve">
-    <value>Voir votre planning</value>
+    <value>Voir mon planning</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Title" xml:space="preserve">
     <value>Calendrier</value>
@@ -431,7 +431,7 @@
     <value>Notifications</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Subtitle" xml:space="preserve">
-    <value>Gérer vos rappels</value>
+    <value>Gérer mes rappels</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Title" xml:space="preserve">
     <value>Rappels</value>
@@ -446,7 +446,7 @@
     <value>ACCÈS RAPIDE</value>
   </data>
   <data name="Dashboard_RecentNotes_CreateFirstNote" xml:space="preserve">
-    <value>Créer votre première note</value>
+    <value>Créer ma première note</value>
   </data>
   <data name="Dashboard_RecentNotes_EmptyOthers" xml:space="preserve">
     <value>Rien d'autre ici pour l'instant</value>
@@ -482,13 +482,13 @@
     <value>Chargement…</value>
   </data>
   <data name="Dashboard_Sessions_Subtitle" xml:space="preserve">
-    <value>Graphique visuel des connexions entre vos notes</value>
+    <value>Graphique visuel des connexions entre mes notes</value>
   </data>
   <data name="Dashboard_Sessions_Title" xml:space="preserve">
     <value>SESSIONS</value>
   </data>
   <data name="Dashboard_Subtitle" xml:space="preserve">
-    <value>Vue d'ensemble de vos notes, tâches et activité</value>
+    <value>Vue d'ensemble de mes notes, tâches et activité</value>
   </data>
   <data name="Dashboard_Title" xml:space="preserve">
     <value>Tableau de bord</value>
@@ -832,7 +832,7 @@
     <value>Impossible d'ouvrir le fichier</value>
   </data>
   <data name="Files_PageSubtitle" xml:space="preserve">
-    <value>Images, PDF et autres fichiers dans votre coffre</value>
+    <value>Images, PDF et autres fichiers dans mon coffre</value>
   </data>
   <data name="Files_PageTitle" xml:space="preserve">
     <value>Fichiers</value>
@@ -895,7 +895,7 @@
     <value>Filtre par type de fichier</value>
   </data>
   <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
-    <value>Elles restent dans le calendrier et dans les statistiques, et chacune peut être récupérée depuis la fenêtre des archives.</value>
+    <value>Elles restent dans le calendrier et dans mes statistiques, et chacune peut être récupérée depuis la fenêtre des archives.</value>
   </data>
   <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
     <value>{0} tâche terminée quittera le tableau et rejoindra les archives.</value>
@@ -952,7 +952,7 @@
     <value>Nouvelle colonne</value>
   </data>
   <data name="Kanban_Board_EmptyHint" xml:space="preserve">
-    <value>Rien ici pour l'instant. Ajoutez une carte à n'importe quelle colonne, ou créez une nouvelle colonne pour structurer votre flux.</value>
+    <value>Rien ici pour l'instant. Ajoutez une carte à n'importe quelle colonne, ou créez une nouvelle colonne pour structurer mon flux.</value>
   </data>
   <data name="Kanban_Board_AddColumnTooltip" xml:space="preserve">
     <value>Créer une nouvelle colonne (C)</value>
@@ -967,7 +967,7 @@
     <value>Aucune carte ne correspond aux filtres actifs.</value>
   </data>
   <data name="Kanban_Board_Subtitle" xml:space="preserve">
-    <value>Organisez votre travail en colonnes et faites avancer les cartes au fur et à mesure.</value>
+    <value>Organiser mon travail en colonnes et faire avancer les cartes au fur et à mesure.</value>
   </data>
   <data name="Kanban_Board_TabKanban" xml:space="preserve">
     <value>KANBAN</value>
@@ -1168,7 +1168,7 @@
     <value>EFFACER</value>
   </data>
   <data name="Kanban_Home_EmptyTitle" xml:space="preserve">
-    <value>Vous n'avez aucune tâche en attente</value>
+    <value>Je n'ai aucune tâche en attente</value>
   </data>
   <data name="Kanban_LinkedNote_RemoveTooltip" xml:space="preserve">
     <value>Supprimer le lien</value>
@@ -1390,7 +1390,7 @@
     <value>DERNIÈRE SYNC : {0}</value>
   </data>
   <data name="Kanban_TaskMgmt_LockedHint" xml:space="preserve">
-    <value>Liez votre compte Polar dans Paramètres › Compte pour débloquer cette vue.</value>
+    <value>Lier mon compte Polar dans Paramètres › Compte pour débloquer cette vue.</value>
   </data>
   <data name="Kanban_TaskMgmt_NewListButton" xml:space="preserve">
     <value>Nouvelle liste</value>
@@ -1567,7 +1567,7 @@
     <value>Nouvel onglet</value>
   </data>
   <data name="Notes_PageSubtitle" xml:space="preserve">
-    <value>Organisez vos notes et idées</value>
+    <value>Organiser mes notes et idées</value>
   </data>
   <data name="Notes_PageTitle" xml:space="preserve">
     <value>Notes</value>
@@ -1603,7 +1603,7 @@
     <value>Aucune notification</value>
   </data>
   <data name="Notification_KanbanCorrupt_Message" xml:space="preserve">
-    <value>kanban.json était corrompu, un nouveau tableau vide a été créé. Vos données précédentes sont toujours sur le disque.</value>
+    <value>kanban.json était corrompu, un nouveau tableau vide a été créé. Mes données précédentes sont toujours sur le disque.</value>
   </data>
   <data name="Notification_KanbanCorrupt_Title" xml:space="preserve">
     <value>Impossible de lire le tableau Kanban</value>
@@ -1633,10 +1633,10 @@
     <value>NOTIFICATIONS</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_one" xml:space="preserve">
-    <value>Votre modification de « {0} »</value>
+    <value>Ma modification de « {0} »</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_other" xml:space="preserve">
-    <value>{0} de vos modifications locales</value>
+    <value>{0} de mes modifications locales</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Message" xml:space="preserve">
     <value>{0} — une version plus récente synchronisée depuis un autre appareil a été retenue.</value>
@@ -1654,7 +1654,7 @@
     <value>Échec de la synchronisation Polar</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Message" xml:space="preserve">
-    <value>Le compte lié a été dissocié, la copie locale de vos listes, tâches et sous-tâches Polar a donc été effacée pour éviter tout mélange de données entre comptes.</value>
+    <value>Le compte lié a été dissocié, la copie locale de mes listes, tâches et sous-tâches Polar a donc été effacée pour éviter tout mélange de données entre comptes.</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Title" xml:space="preserve">
     <value>Tâches Polar locales effacées</value>
@@ -1714,7 +1714,7 @@
     <value>Tout marquer comme lu</value>
   </data>
   <data name="Notifications_Subtitle" xml:space="preserve">
-    <value>Événements récents et alertes de votre espace de travail.</value>
+    <value>Événements récents et alertes de mon espace de travail.</value>
   </data>
   <data name="Notifications_Title" xml:space="preserve">
     <value>Notifications</value>
@@ -1789,7 +1789,7 @@
     <value>Vous n'avez pas la permission d'accéder à cette ressource Polar.</value>
   </data>
   <data name="Polar_Sync_Error_NoConnection" xml:space="preserve">
-    <value>Impossible de joindre Polar. Vérifiez votre connexion internet.</value>
+    <value>Impossible de joindre Polar. Vérifier ma connexion internet.</value>
   </data>
   <data name="Polar_Sync_Error_ServerError" xml:space="preserve">
     <value>Le serveur Polar a rencontré un problème. Veuillez réessayer plus tard.</value>
@@ -1801,7 +1801,7 @@
     <value>Trop de requêtes — veuillez réessayer dans un instant.</value>
   </data>
   <data name="Polar_Sync_Error_Unauthorized" xml:space="preserve">
-    <value>Votre session Polar a expiré. Veuillez vous reconnecter.</value>
+    <value>Ma session Polar a expiré. Veuillez vous reconnecter.</value>
   </data>
   <data name="Polar_Sync_NextRetryLabel" xml:space="preserve">
     <value>Nouvelle tentative {0}</value>
@@ -2026,7 +2026,7 @@
     <value>Créer une session</value>
   </data>
   <data name="Sessions_EmptyState_Description" xml:space="preserve">
-    <value>Organisez vos notes et liens en sessions concentrées.</value>
+    <value>Organiser mes notes et liens en sessions concentrées.</value>
   </data>
   <data name="Sessions_Eyebrow" xml:space="preserve">
     <value>Sessions</value>
@@ -2113,7 +2113,7 @@
     <value>Codes de récupération</value>
   </data>
   <data name="Sessions_RecoveryCodes_Heading" xml:space="preserve">
-    <value>Enregistrez vos codes de récupération</value>
+    <value>Enregistrer mes codes de récupération</value>
   </data>
   <data name="Sessions_RecoveryCodes_TextFileType" xml:space="preserve">
     <value>Fichier texte</value>
@@ -2137,7 +2137,7 @@
     <value>Ouvrir dans Notes</value>
   </data>
   <data name="Sessions_PageSubtitle" xml:space="preserve">
-    <value>Organisez vos notes, liens et tâches en sessions structurées.</value>
+    <value>Organiser mes notes, liens et tâches en sessions structurées.</value>
   </data>
   <data name="Sessions_PageTitle" xml:space="preserve">
     <value>Sessions</value>
@@ -2278,7 +2278,7 @@
     <value>Modules</value>
   </data>
   <data name="Settings_About_Privacy_Description" xml:space="preserve">
-    <value>Enki stocke vos données localement par défaut. Liez un compte Polar uniquement si vous souhaitez synchroniser les tâches entre vos appareils.</value>
+    <value>Enki stocke mes données localement par défaut. Liez un compte Polar uniquement si vous souhaitez synchroniser les tâches entre vos appareils.</value>
   </data>
   <data name="Settings_About_Privacy_Title" xml:space="preserve">
     <value>Confidentialité</value>
@@ -2305,19 +2305,19 @@
     <value>Qu'est-ce qu'Enki ?</value>
   </data>
   <data name="Settings_Account_Description" xml:space="preserve">
-    <value>Gérez votre compte Polar et vos préférences de synchronisation.</value>
+    <value>Gérer mon compte Polar et mes préférences de synchronisation.</value>
   </data>
   <data name="Settings_Account_EmailLabel" xml:space="preserve">
     <value>E-mail</value>
   </data>
   <data name="Settings_Account_EmailPlaceholder" xml:space="preserve">
-    <value>votre@email.com</value>
+    <value>nom@exemple.fr</value>
   </data>
   <data name="Settings_Account_LastSynced_Label" xml:space="preserve">
     <value>Dernière synchronisation</value>
   </data>
   <data name="Settings_Account_LinkForm_Description" xml:space="preserve">
-    <value>Saisissez vos identifiants Polar pour activer la synchronisation cloud.</value>
+    <value>Saisir mes identifiants Polar pour activer la synchronisation cloud.</value>
   </data>
   <data name="Settings_Account_LinkPolar_Title" xml:space="preserve">
     <value>Lier un compte Polar</value>
@@ -2329,13 +2329,13 @@
     <value>LIÉ</value>
   </data>
   <data name="Settings_Account_LinkedDescription" xml:space="preserve">
-    <value>Votre compte Polar est connecté. Les tâches se synchroniseront automatiquement lorsque Enki est en ligne.</value>
+    <value>Mon compte Polar est connecté. Les tâches se synchroniseront automatiquement lorsque Enki est en ligne.</value>
   </data>
   <data name="Settings_Account_LinkingButton" xml:space="preserve">
     <value>Liaison en cours...</value>
   </data>
   <data name="Settings_Account_Management_Description" xml:space="preserve">
-    <value>Consultez ou supprimez votre compte lié et les données de synchronisation locales.</value>
+    <value>Consulter ou supprimer mon compte lié et mes données de synchronisation locales.</value>
   </data>
   <data name="Settings_Account_Management_Title" xml:space="preserve">
     <value>Gestion du compte</value>
@@ -2518,7 +2518,7 @@
     <value>Heures de travail</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Message" xml:space="preserve">
-    <value>Cela réinitialisera tous les paramètres à leurs valeurs par défaut. Vos notes, tâches et données du coffre ne seront pas supprimées.</value>
+    <value>Cela réinitialisera tous les paramètres à leurs valeurs par défaut. Mes notes, tâches et données du coffre ne seront pas supprimées.</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Title" xml:space="preserve">
     <value>Réinitialiser les paramètres ?</value>
@@ -2644,7 +2644,7 @@
     <value>Échec de la sauvegarde</value>
   </data>
   <data name="Settings_General_DangerZone_BackupHint" xml:space="preserve">
-    <value>Enregistre une copie compressée de l'intégralité du coffre.</value>
+    <value>Enregistre une copie compressée de l'intégralité de mon coffre.</value>
   </data>
   <data name="Settings_General_DangerZone_ConfirmBeforeDelete_Description" xml:space="preserve">
     <value>Demander confirmation avant la suppression définitive des éléments.</value>
@@ -2665,7 +2665,7 @@
     <value>Exporter les paramètres</value>
   </data>
   <data name="Settings_General_DangerZone_ExportHint" xml:space="preserve">
-    <value>Le fichier exporté n'inclut pas votre session Polar — vous devrez vous reconnecter après l'avoir importé ailleurs.</value>
+    <value>Le fichier exporté n'inclut pas ma session Polar — vous devrez vous reconnecter après l'avoir importé ailleurs.</value>
   </data>
   <data name="Settings_General_DangerZone_ExportedMessage" xml:space="preserve">
     <value>Paramètres exportés vers {0}. Votre session Polar n'a pas été incluse.</value>
@@ -2710,7 +2710,7 @@
     <value>Les éléments de la corbeille sont supprimés définitivement au bout de 30 jours.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Description" xml:space="preserve">
-    <value>Taille totale de tout ce qui est stocké dans le dossier du coffre.</value>
+    <value>Taille totale de tout ce qui est stocké dans mon dossier du coffre.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Label" xml:space="preserve">
     <value>TAILLE DU COFFRE</value>
@@ -2827,7 +2827,7 @@
     <value>Modifier</value>
   </data>
   <data name="Settings_General_VaultFolder_Description" xml:space="preserve">
-    <value>Le dossier où vos notes et fichiers sont stockés.</value>
+    <value>Le dossier où mes notes et fichiers sont stockés.</value>
   </data>
   <data name="Settings_General_VaultFolder_Title" xml:space="preserve">
     <value>Dossier du coffre</value>
@@ -3313,7 +3313,7 @@
     <value>Ce sont des modèles de prompt statiques destinés à être utilisés avec un assistant IA externe — Enki n'intègre ni ne se connecte à aucun moteur d'IA.</value>
   </data>
   <data name="Skills_Page_Subtitle" xml:space="preserve">
-    <value>Gérer les compétences disponibles pour votre assistant</value>
+    <value>Gérer les compétences disponibles pour mon assistant</value>
   </data>
   <data name="Skills_Page_Title" xml:space="preserve">
     <value>Compétences</value>
@@ -3544,7 +3544,7 @@
     <value>Enki est déjà en cours d'exécution. Veuillez utiliser la fenêtre existante.</value>
   </data>
   <data name="VaultSetup_CreateFolderPickerTitle" xml:space="preserve">
-    <value>Choisir un dossier pour le nouveau coffre</value>
+    <value>Choisir un dossier pour mon nouveau coffre</value>
   </data>
   <data name="VaultSetup_CreateNewButton" xml:space="preserve">
     <value>Créer un coffre</value>
@@ -3568,10 +3568,10 @@
     <value>Ouvrir un coffre existant</value>
   </data>
   <data name="VaultSetup_OpenFolderPickerTitle" xml:space="preserve">
-    <value>Choisir le dossier du coffre</value>
+    <value>Choisir mon dossier du coffre</value>
   </data>
   <data name="VaultSetup_Subtitle" xml:space="preserve">
-    <value>Choisissez un dossier pour stocker vos notes, ou ouvrez un coffre déjà utilisé.</value>
+    <value>Choisir un dossier pour stocker mes notes, ou ouvrir un coffre déjà utilisé.</value>
   </data>
   <data name="VaultSetup_Title" xml:space="preserve">
     <value>Bienvenue dans Enki</value>
@@ -3588,12 +3588,12 @@
   <data name="WelcomeNote_Content" xml:space="preserve">
     <value># Bienvenue dans Enki
 
-Ceci est votre espace de connaissance personnel. Vous pouvez rédiger des notes en Markdown, organiser des tâches avec des tableaux Kanban, gérer des rappels et connecter des idées entre elles dans des sessions.
+Ceci est mon espace de connaissance personnel. Je peux rédiger des notes en Markdown, organiser des tâches avec des tableaux Kanban, gérer des rappels et connecter des idées entre elles dans des sessions.
 
 **Pour commencer :**
-- Créez une note depuis la vue Notes.
-- Ajoutez une tâche dans la vue Polar.
-- Passez d'une session à l'autre depuis la vue Sessions.
+- Créer une note depuis la vue Notes.
+- Ajouter une tâche dans la vue Polar.
+- Passer d'une session à l'autre depuis la vue Sessions.
 
 Bonne rédaction.</value>
   </data>
@@ -3601,7 +3601,7 @@ Bonne rédaction.</value>
     <value>Bienvenue.md</value>
   </data>
   <data name="Notification_VaultUnavailable_Reason" xml:space="preserve">
-    <value>Votre coffre n'est pas disponible pour le moment — vérifiez que le lecteur est connecté.</value>
+    <value>Mon coffre n'est pas disponible pour le moment — vérifiez que le lecteur est connecté.</value>
   </data>
   <data name="Notification_SessionLocked_Reason" xml:space="preserve">
     <value>Cette session est verrouillée — déverrouillez-la depuis Sessions et réessayez.</value>
@@ -3634,7 +3634,7 @@ Bonne rédaction.</value>
     <value>Impossible de lire les paramètres</value>
   </data>
   <data name="Notification_SettingsCorrupt_Message" xml:space="preserve">
-    <value>settings.json était corrompu, Enki a donc réinitialisé vos paramètres par défaut — y compris la liaison au compte Polar, si elle existait. Vos paramètres précédents sont toujours sur le disque.</value>
+    <value>settings.json était corrompu, Enki a donc réinitialisé mes paramètres par défaut — y compris la liaison au compte Polar, si elle existait. Mes paramètres précédents sont toujours sur le disque.</value>
   </data>
   <data name="Notification_NotificationsCorrupt_Title" xml:space="preserve">
     <value>Impossible de lire le journal des notifications</value>
@@ -3646,7 +3646,7 @@ Bonne rédaction.</value>
     <value>Impossible de lire le fichier des rappels</value>
   </data>
   <data name="Notification_RemindersCorrupt_Message" xml:space="preserve">
-    <value>reminders.json était corrompu, votre liste de rappels a donc été réinitialisée. Le fichier précédent est toujours sur le disque.</value>
+    <value>reminders.json était corrompu, ma liste de rappels a donc été réinitialisée. Le fichier précédent est toujours sur le disque.</value>
   </data>
   <data name="Settings_General_DangerZone_BackupIncompleteTitle" xml:space="preserve">
     <value>Sauvegarde créée avec des fichiers manquants</value>
@@ -4030,7 +4030,7 @@ Bonne rédaction.</value>
     <value>Développer</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_YourThemesTitle" xml:space="preserve">
-    <value>Vos thèmes</value>
+    <value>Mes thèmes</value>
   </data>
   <data name="Settings_Nav_Dashboard" xml:space="preserve">
     <value>Tableau de bord</value>
@@ -4096,7 +4096,7 @@ Bonne rédaction.</value>
     <value>Aperçu</value>
   </data>
   <data name="Settings_Dashboard_Preview_Subtitle" xml:space="preserve">
-    <value>Aperçu en direct de votre tableau de bord, dans cet ordre</value>
+    <value>Aperçu en direct de mon tableau de bord, dans cet ordre</value>
   </data>
   <data name="Settings_Dashboard_Hidden_Label" xml:space="preserve">
     <value>Masquée</value>
@@ -4111,7 +4111,7 @@ Bonne rédaction.</value>
     <value>Notes, sessions et taille sur le disque du coffre actuel</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
-    <value>Notifications récentes et le récapitulatif de vos tâches Polar</value>
+    <value>Notifications récentes et le récapitulatif de mes tâches Polar</value>
   </data>
   <data name="DashboardSection_Sessions_Description" xml:space="preserve">
     <value>Nombre de notes et de liens du graphe combiné des sessions</value>
@@ -4198,7 +4198,7 @@ Bonne rédaction.</value>
     <value>Habitudes</value>
   </data>
   <data name="Habits_Subtitle" xml:space="preserve">
-    <value>Un suivi discret de ce que vous faites chaque jour</value>
+    <value>Un suivi discret de ce que je fais chaque jour</value>
   </data>
   <data name="Habits_NewButton" xml:space="preserve">
     <value>Nouvelle habitude</value>
@@ -4252,7 +4252,7 @@ Bonne rédaction.</value>
     <value>Habitudes</value>
   </data>
   <data name="DashboardSection_Habits_Description" xml:space="preserve">
-    <value>Les habitudes du jour et votre constance en un coup d'œil.</value>
+    <value>Les habitudes du jour et ma constance en un coup d'œil.</value>
   </data>
   <data name="Dashboard_Habits_GoLabel" xml:space="preserve">
     <value>Aller aux habitudes</value>
@@ -4309,7 +4309,7 @@ Bonne rédaction.</value>
     <value>Constance des habitudes par semaine</value>
   </data>
   <data name="Statistics_PolarNotLinkedNotice" xml:space="preserve">
-    <value>Associez votre compte Polar dans les Paramètres pour inclure ses tâches ici.</value>
+    <value>Associer mon compte Polar dans les Paramètres pour inclure ses tâches ici.</value>
   </data>
   <data name="Statistics_Tile_TotalNotes" xml:space="preserve">
     <value>Notes totales</value>
@@ -4339,7 +4339,7 @@ Bonne rédaction.</value>
     <value>Régularité des habitudes</value>
   </data>
   <data name="Statistics_Heatmap_Empty" xml:space="preserve">
-    <value>Aucune habitude suivie — ajoutez-en une dans Habitudes pour commencer à voir votre régularité.</value>
+    <value>Aucune habitude suivie — ajoutez-en une dans Habitudes pour commencer à voir ma régularité.</value>
   </data>
   <data name="Settings_Dashboard_Grid_Hint" xml:space="preserve">
     <value>Faites glisser une tuile pour la déplacer, ou tirez son coin inférieur droit pour la redimensionner. Avec une tuile sélectionnée : les flèches la déplacent, Maj + flèches la redimensionnent et Suppr la retire de la grille.</value>
@@ -4474,7 +4474,7 @@ Bonne rédaction.</value>
     <value>Notes touchées et tâches terminées, jour après jour</value>
   </data>
   <data name="Statistics_Caption_PunchCard" xml:space="preserve">
-    <value>Quand tu travailles vraiment, par jour et par heure</value>
+    <value>Quand je travaille vraiment, par jour et par heure</value>
   </data>
   <data name="Statistics_Caption_YearHeatmap" xml:space="preserve">
     <value>Chaque jour des douze derniers mois</value>
@@ -4576,13 +4576,13 @@ Bonne rédaction.</value>
     <value>Rien à afficher ici pour l'instant</value>
   </data>
   <data name="Statistics_Empty_Tags" xml:space="preserve">
-    <value>Étiquette tes notes pour voir sur quels sujets tu t'appuies le plus.</value>
+    <value>Étiquette mes notes pour voir sur quels sujets je m'appuie le plus.</value>
   </data>
   <data name="Statistics_Empty_Files" xml:space="preserve">
-    <value>Ajoute des fichiers au coffre pour voir la répartition de ton stockage.</value>
+    <value>Ajoute des fichiers au coffre pour voir la répartition de mon stockage.</value>
   </data>
   <data name="Statistics_Empty_PunchCard" xml:space="preserve">
-    <value>Pas encore assez d'horodatages pour dessiner ton rythme.</value>
+    <value>Pas encore assez d'horodatages pour dessiner mon rythme.</value>
   </data>
   <data name="Statistics_Footnote" xml:space="preserve">
     <value>L'activité provient des dates de création et de modification des notes, du moment où chaque tâche a été terminée et des marques d'habitudes — le coffre ne conserve pas d'historique d'édition séparé.</value>

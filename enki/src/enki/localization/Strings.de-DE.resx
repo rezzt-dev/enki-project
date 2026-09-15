@@ -158,7 +158,7 @@
     <value>KALENDER</value>
   </data>
   <data name="Calendar_PageSubtitle" xml:space="preserve">
-    <value>Plane deinen Zeitplan</value>
+    <value>Meinen Zeitplan planen</value>
   </data>
   <data name="Calendar_PageTitle" xml:space="preserve">
     <value>Kalender</value>
@@ -419,7 +419,7 @@
     <value>Neue Notiz</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Subtitle" xml:space="preserve">
-    <value>Deinen Zeitplan anzeigen</value>
+    <value>Meinen Zeitplan anzeigen</value>
   </data>
   <data name="Dashboard_QuickAccess_Calendar_Title" xml:space="preserve">
     <value>Kalender</value>
@@ -431,7 +431,7 @@
     <value>Benachrichtigungen</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Subtitle" xml:space="preserve">
-    <value>Deine Erinnerungen verwalten</value>
+    <value>Meine Erinnerungen verwalten</value>
   </data>
   <data name="Dashboard_QuickAccess_Reminders_Title" xml:space="preserve">
     <value>Erinnerungen</value>
@@ -446,7 +446,7 @@
     <value>SCHNELLZUGRIFF</value>
   </data>
   <data name="Dashboard_RecentNotes_CreateFirstNote" xml:space="preserve">
-    <value>Erstelle deine erste Notiz</value>
+    <value>Meine erste Notiz erstellen</value>
   </data>
   <data name="Dashboard_RecentNotes_EmptyOthers" xml:space="preserve">
     <value>Hier ist noch nichts weiter</value>
@@ -482,13 +482,13 @@
     <value>Laden…</value>
   </data>
   <data name="Dashboard_Sessions_Subtitle" xml:space="preserve">
-    <value>Visueller Graph, wie deine Notizen verbunden sind</value>
+    <value>Visueller Graph, wie meine Notizen verbunden sind</value>
   </data>
   <data name="Dashboard_Sessions_Title" xml:space="preserve">
     <value>SITZUNGEN</value>
   </data>
   <data name="Dashboard_Subtitle" xml:space="preserve">
-    <value>Eine Übersicht über deine Notizen, Aufgaben und Aktivitäten</value>
+    <value>Eine Übersicht über meine Notizen, Aufgaben und Aktivitäten</value>
   </data>
   <data name="Dashboard_Title" xml:space="preserve">
     <value>Dashboard</value>
@@ -832,7 +832,7 @@
     <value>Datei konnte nicht geöffnet werden</value>
   </data>
   <data name="Files_PageSubtitle" xml:space="preserve">
-    <value>Bilder, PDFs und andere Dateien in deinem Tresor</value>
+    <value>Bilder, PDFs und andere Dateien in meinem Tresor</value>
   </data>
   <data name="Files_PageTitle" xml:space="preserve">
     <value>Dateien</value>
@@ -883,10 +883,10 @@
     <value>Andere</value>
   </data>
   <data name="Files_AudioPreviewHint" xml:space="preserve">
-    <value>Audio-Vorschau ist in der App nicht verfügbar. Verwenden Sie die Schaltfläche unten, um diese Datei mit Ihrem System-Player abzuspielen.</value>
+    <value>Audio-Vorschau ist in der App nicht verfügbar. Verwende die Schaltfläche unten, um diese Datei mit deinem System-Player abzuspielen.</value>
   </data>
   <data name="Files_VideoPreviewHint" xml:space="preserve">
-    <value>Video-Vorschau ist in der App nicht verfügbar. Verwenden Sie die Schaltfläche unten, um diese Datei mit Ihrem System-Player abzuspielen.</value>
+    <value>Video-Vorschau ist in der App nicht verfügbar. Verwende die Schaltfläche unten, um diese Datei mit deinem System-Player abzuspielen.</value>
   </data>
   <data name="Files_PlayWithSystemButton" xml:space="preserve">
     <value>Mit System-Player abspielen</value>
@@ -895,7 +895,7 @@
     <value>Dateityp-Filter</value>
   </data>
   <data name="Kanban_ArchiveAll_Hint" xml:space="preserve">
-    <value>Sie bleiben im Kalender und in den Statistiken, und jede lässt sich aus dem Archivfenster zurückholen.</value>
+    <value>Sie bleiben im Kalender und in meinen Statistiken, und jede lässt sich aus dem Archivfenster zurückholen.</value>
   </data>
   <data name="Kanban_ArchiveAll_Message_one" xml:space="preserve">
     <value>{0} erledigte Aufgabe verlässt das Board und wandert ins Archiv.</value>
@@ -952,7 +952,7 @@
     <value>Neue Spalte</value>
   </data>
   <data name="Kanban_Board_EmptyHint" xml:space="preserve">
-    <value>Hier ist noch nichts. Füge einer beliebigen Spalte eine Karte hinzu oder erstelle eine neue Spalte für deinen Ablauf.</value>
+    <value>Hier ist noch nichts. Füge einer beliebigen Spalte eine Karte hinzu oder erstelle eine neue Spalte für meinen Ablauf.</value>
   </data>
   <data name="Kanban_Board_AddColumnTooltip" xml:space="preserve">
     <value>Neue Spalte erstellen (C)</value>
@@ -967,7 +967,7 @@
     <value>Keine Karte entspricht den aktiven Filtern.</value>
   </data>
   <data name="Kanban_Board_Subtitle" xml:space="preserve">
-    <value>Organisiere deine Arbeit in Spalten und verschiebe Karten nach vorne, während sie voranschreiten.</value>
+    <value>Meine Arbeit in Spalten organisieren und Karten nach vorne verschieben, während sie voranschreiten.</value>
   </data>
   <data name="Kanban_Board_TabKanban" xml:space="preserve">
     <value>KANBAN</value>
@@ -1168,7 +1168,7 @@
     <value>ZURÜCKSETZEN</value>
   </data>
   <data name="Kanban_Home_EmptyTitle" xml:space="preserve">
-    <value>Du hast keine ausstehenden Aufgaben</value>
+    <value>Ich habe keine ausstehenden Aufgaben</value>
   </data>
   <data name="Kanban_LinkedNote_RemoveTooltip" xml:space="preserve">
     <value>Verknüpfung entfernen</value>
@@ -1567,7 +1567,7 @@
     <value>Neuer Tab</value>
   </data>
   <data name="Notes_PageSubtitle" xml:space="preserve">
-    <value>Organisiere deine Notizen und Ideen</value>
+    <value>Meine Notizen und Ideen organisieren</value>
   </data>
   <data name="Notes_PageTitle" xml:space="preserve">
     <value>Notizen</value>
@@ -1603,7 +1603,7 @@
     <value>Keine Benachrichtigungen</value>
   </data>
   <data name="Notification_KanbanCorrupt_Message" xml:space="preserve">
-    <value>kanban.json war beschädigt, daher wurde ein neues leeres Board erstellt. Deine vorherigen Daten sind noch auf der Festplatte.</value>
+    <value>kanban.json war beschädigt, daher wurde ein neues leeres Board erstellt. Meine vorherigen Daten sind noch auf der Festplatte.</value>
   </data>
   <data name="Notification_KanbanCorrupt_Title" xml:space="preserve">
     <value>Kanban-Board konnte nicht gelesen werden</value>
@@ -1633,10 +1633,10 @@
     <value>BENACHRICHTIGUNGEN</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_one" xml:space="preserve">
-    <value>Deine Änderung an „{0}“</value>
+    <value>Meine Änderung an „{0}“</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Items_other" xml:space="preserve">
-    <value>{0} deiner lokalen Änderungen</value>
+    <value>{0} meiner lokalen Änderungen</value>
   </data>
   <data name="Notification_PolarConflictOverwritten_Message" xml:space="preserve">
     <value>{0} — eine neuere, von einem anderen Gerät synchronisierte Version wurde übernommen.</value>
@@ -1654,7 +1654,7 @@
     <value>Polar-Sync fehlgeschlagen</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Message" xml:space="preserve">
-    <value>Das verknüpfte Konto wurde entfernt, daher wurde die lokale Kopie deiner Polar-Listen, -Aufgaben und -Unteraufgaben gelöscht, um eine Vermischung der Daten zwischen Konten zu vermeiden.</value>
+    <value>Das verknüpfte Konto wurde entfernt, daher wurde die lokale Kopie meiner Polar-Listen, -Aufgaben und -Unteraufgaben gelöscht, um eine Vermischung der Daten zwischen Konten zu vermeiden.</value>
   </data>
   <data name="Notification_PolarUnlinked_TasksCleared_Title" xml:space="preserve">
     <value>Lokale Polar-Aufgaben gelöscht</value>
@@ -1714,7 +1714,7 @@
     <value>Alle als gelesen markieren</value>
   </data>
   <data name="Notifications_Subtitle" xml:space="preserve">
-    <value>Aktuelle Ereignisse und Hinweise aus deinem Arbeitsbereich.</value>
+    <value>Aktuelle Ereignisse und Hinweise aus meinem Arbeitsbereich.</value>
   </data>
   <data name="Notifications_Title" xml:space="preserve">
     <value>Benachrichtigungen</value>
@@ -2026,7 +2026,7 @@
     <value>Sitzung erstellen</value>
   </data>
   <data name="Sessions_EmptyState_Description" xml:space="preserve">
-    <value>Organisiere deine Notizen und Links in fokussierte Sitzungen.</value>
+    <value>Meine Notizen und Links in fokussierte Sitzungen organisieren.</value>
   </data>
   <data name="Sessions_Eyebrow" xml:space="preserve">
     <value>SITZUNGEN</value>
@@ -2113,7 +2113,7 @@
     <value>Wiederherstellungscodes</value>
   </data>
   <data name="Sessions_RecoveryCodes_Heading" xml:space="preserve">
-    <value>Speichere deine Wiederherstellungscodes</value>
+    <value>Meine Wiederherstellungscodes speichern</value>
   </data>
   <data name="Sessions_RecoveryCodes_TextFileType" xml:space="preserve">
     <value>Textdatei</value>
@@ -2137,7 +2137,7 @@
     <value>In Notizen öffnen</value>
   </data>
   <data name="Sessions_PageSubtitle" xml:space="preserve">
-    <value>Ordne Notizen, Links und Aufgaben in strukturierte Sitzungen zu.</value>
+    <value>Notizen, Links und Aufgaben in strukturierte Sitzungen ordnen.</value>
   </data>
   <data name="Sessions_PageTitle" xml:space="preserve">
     <value>Sitzungen</value>
@@ -2278,7 +2278,7 @@
     <value>Module</value>
   </data>
   <data name="Settings_About_Privacy_Description" xml:space="preserve">
-    <value>Enki speichert deine Daten standardmäßig lokal. Verknüpfe ein Polar-Konto nur, wenn du Aufgaben geräteübergreifend synchronisieren möchtest.</value>
+    <value>Enki speichert meine Daten standardmäßig lokal. Verknüpfe ein Polar-Konto nur, wenn du Aufgaben geräteübergreifend synchronisieren möchtest.</value>
   </data>
   <data name="Settings_About_Privacy_Title" xml:space="preserve">
     <value>Datenschutz</value>
@@ -2305,13 +2305,13 @@
     <value>Was ist Enki?</value>
   </data>
   <data name="Settings_Account_Description" xml:space="preserve">
-    <value>Verwalte die Verknüpfung deines Polar-Kontos und Synchronisierungseinstellungen.</value>
+    <value>Die Verknüpfung meines Polar-Kontos und Synchronisierungseinstellungen verwalten.</value>
   </data>
   <data name="Settings_Account_EmailLabel" xml:space="preserve">
     <value>E-Mail</value>
   </data>
   <data name="Settings_Account_EmailPlaceholder" xml:space="preserve">
-    <value>deine@email.com</value>
+    <value>name@beispiel.de</value>
   </data>
   <data name="Settings_Account_LastSynced_Label" xml:space="preserve">
     <value>Zuletzt synchronisiert</value>
@@ -2329,13 +2329,13 @@
     <value>VERKNÜPFT</value>
   </data>
   <data name="Settings_Account_LinkedDescription" xml:space="preserve">
-    <value>Dein Polar-Konto ist verbunden. Aufgaben werden automatisch synchronisiert, wenn Enki online ist.</value>
+    <value>Mein Polar-Konto ist verbunden. Aufgaben werden automatisch synchronisiert, wenn Enki online ist.</value>
   </data>
   <data name="Settings_Account_LinkingButton" xml:space="preserve">
     <value>Wird verknüpft...</value>
   </data>
   <data name="Settings_Account_Management_Description" xml:space="preserve">
-    <value>Überprüfe oder entferne dein verknüpftes Konto und lokale Synchronisationsdaten.</value>
+    <value>Mein verknüpftes Konto und lokale Synchronisationsdaten überprüfen oder entfernen.</value>
   </data>
   <data name="Settings_Account_Management_Title" xml:space="preserve">
     <value>Kontoverwaltung</value>
@@ -2518,7 +2518,7 @@
     <value>Arbeitszeiten</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Message" xml:space="preserve">
-    <value>Dies setzt alle Einstellungen auf ihre Standardwerte zurück. Deine Notizen, Aufgaben und Tresor-Daten werden nicht gelöscht.</value>
+    <value>Dies setzt alle Einstellungen auf ihre Standardwerte zurück. Meine Notizen, Aufgaben und Tresor-Daten werden nicht gelöscht.</value>
   </data>
   <data name="Settings_DangerZone_ResetDialog_Title" xml:space="preserve">
     <value>Einstellungen zurücksetzen?</value>
@@ -2644,7 +2644,7 @@
     <value>Sicherung fehlgeschlagen</value>
   </data>
   <data name="Settings_General_DangerZone_BackupHint" xml:space="preserve">
-    <value>Speichert eine komprimierte Kopie deines gesamten Tresors.</value>
+    <value>Speichert eine komprimierte Kopie meines gesamten Tresors.</value>
   </data>
   <data name="Settings_General_DangerZone_ConfirmBeforeDelete_Description" xml:space="preserve">
     <value>Vor dem endgültigen Löschen von Elementen nachfragen.</value>
@@ -2710,7 +2710,7 @@
     <value>Elemente im Papierkorb werden nach 30 Tagen dauerhaft gelöscht.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Description" xml:space="preserve">
-    <value>Gesamtgröße aller Dateien in deinem Tresor-Ordner.</value>
+    <value>Gesamtgröße aller Dateien in meinem Tresor-Ordner.</value>
   </data>
   <data name="Settings_General_DangerZone_VaultSize_Label" xml:space="preserve">
     <value>TRESOR-GRÖSSE</value>
@@ -2827,7 +2827,7 @@
     <value>Ändern</value>
   </data>
   <data name="Settings_General_VaultFolder_Description" xml:space="preserve">
-    <value>Der Ordner, in dem deine Notizen und Dateien gespeichert sind.</value>
+    <value>Der Ordner, in dem meine Notizen und Dateien gespeichert sind.</value>
   </data>
   <data name="Settings_General_VaultFolder_Title" xml:space="preserve">
     <value>Tresor-Ordner</value>
@@ -3313,7 +3313,7 @@
     <value>Das sind statische Prompt-Vorlagen für die Verwendung mit einem externen KI-Assistenten – Enki enthält selbst keine KI-Engine und verbindet sich auch nicht mit einer.</value>
   </data>
   <data name="Skills_Page_Subtitle" xml:space="preserve">
-    <value>Verwalte die Skills, die deinem Assistenten zur Verfügung stehen</value>
+    <value>Die Skills verwalten, die meinem Assistenten zur Verfügung stehen</value>
   </data>
   <data name="Skills_Page_Title" xml:space="preserve">
     <value>Skills</value>
@@ -3544,7 +3544,7 @@
     <value>Enki läuft bereits. Bitte verwende das bestehende Fenster.</value>
   </data>
   <data name="VaultSetup_CreateFolderPickerTitle" xml:space="preserve">
-    <value>Ordner für den neuen Tresor auswählen</value>
+    <value>Ordner für meinen neuen Tresor auswählen</value>
   </data>
   <data name="VaultSetup_CreateNewButton" xml:space="preserve">
     <value>Neuen Tresor erstellen</value>
@@ -3568,10 +3568,10 @@
     <value>Bestehenden Tresor öffnen</value>
   </data>
   <data name="VaultSetup_OpenFolderPickerTitle" xml:space="preserve">
-    <value>Tresor-Ordner auswählen</value>
+    <value>Meinen Tresor-Ordner auswählen</value>
   </data>
   <data name="VaultSetup_Subtitle" xml:space="preserve">
-    <value>Wähle einen Ordner für deine Notizen oder öffne einen, den du bereits verwendet hast.</value>
+    <value>Einen Ordner für meine Notizen wählen oder einen bereits verwendeten öffnen.</value>
   </data>
   <data name="VaultSetup_Title" xml:space="preserve">
     <value>Willkommen bei Enki</value>
@@ -3588,7 +3588,7 @@
   <data name="WelcomeNote_Content" xml:space="preserve">
     <value># Willkommen bei Enki
 
-Dies ist dein persönlicher Wissensarbeitsbereich. Du kannst Notizen in Markdown verfassen, Aufgaben mit Kanban-Boards organisieren, Erinnerungen verwalten und Ideen in Sitzungen miteinander verknüpfen.
+Dies ist mein persönlicher Wissensarbeitsbereich. Ich kann Notizen in Markdown verfassen, Aufgaben mit Kanban-Boards organisieren, Erinnerungen verwalten und Ideen in Sitzungen miteinander verknüpfen.
 
 **Leg los:**
 - Erstelle eine Notiz in der Notizen-Ansicht.
@@ -3601,7 +3601,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Willkommen.md</value>
   </data>
   <data name="Notification_VaultUnavailable_Reason" xml:space="preserve">
-    <value>Dein Tresor ist gerade nicht verfügbar — prüfe, ob das Laufwerk verbunden ist.</value>
+    <value>Mein Tresor ist gerade nicht verfügbar — prüfe, ob das Laufwerk verbunden ist.</value>
   </data>
   <data name="Notification_SessionLocked_Reason" xml:space="preserve">
     <value>Diese Sitzung ist gesperrt — entsperre sie unter „Sitzungen“ und versuche es erneut.</value>
@@ -3634,7 +3634,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Einstellungen konnten nicht gelesen werden</value>
   </data>
   <data name="Notification_SettingsCorrupt_Message" xml:space="preserve">
-    <value>settings.json war beschädigt, daher hat Enki deine Einstellungen auf die Standardwerte zurückgesetzt — einschließlich der Polar-Kontoverknüpfung, falls eine bestand. Deine vorherigen Einstellungen sind noch auf der Festplatte.</value>
+    <value>settings.json war beschädigt, daher hat Enki meine Einstellungen auf die Standardwerte zurückgesetzt — einschließlich der Polar-Kontoverknüpfung, falls eine bestand. Meine vorherigen Einstellungen sind noch auf der Festplatte.</value>
   </data>
   <data name="Notification_NotificationsCorrupt_Title" xml:space="preserve">
     <value>Benachrichtigungsprotokoll konnte nicht gelesen werden</value>
@@ -3646,7 +3646,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Erinnerungsdatei konnte nicht gelesen werden</value>
   </data>
   <data name="Notification_RemindersCorrupt_Message" xml:space="preserve">
-    <value>reminders.json war beschädigt, daher wurde deine Erinnerungsliste zurückgesetzt. Die vorherige Datei ist noch auf der Festplatte.</value>
+    <value>reminders.json war beschädigt, daher wurde meine Erinnerungsliste zurückgesetzt. Die vorherige Datei ist noch auf der Festplatte.</value>
   </data>
   <data name="Settings_General_DangerZone_BackupIncompleteTitle" xml:space="preserve">
     <value>Backup mit fehlenden Dateien erstellt</value>
@@ -4030,7 +4030,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Ausklappen</value>
   </data>
   <data name="Settings_Appearance_CustomTheme_YourThemesTitle" xml:space="preserve">
-    <value>Deine Designs</value>
+    <value>Meine Designs</value>
   </data>
   <data name="Settings_Nav_Dashboard" xml:space="preserve">
     <value>Dashboard</value>
@@ -4096,7 +4096,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Vorschau</value>
   </data>
   <data name="Settings_Dashboard_Preview_Subtitle" xml:space="preserve">
-    <value>Live-Vorschau deines Dashboards in dieser Reihenfolge</value>
+    <value>Live-Vorschau meines Dashboards in dieser Reihenfolge</value>
   </data>
   <data name="Settings_Dashboard_Hidden_Label" xml:space="preserve">
     <value>Ausgeblendet</value>
@@ -4111,7 +4111,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Notizen, Sitzungen und Speichergröße des aktuellen Tresors</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
-    <value>Letzte Benachrichtigungen und deine Polar-Aufgabenübersicht</value>
+    <value>Letzte Benachrichtigungen und meine Polar-Aufgabenübersicht</value>
   </data>
   <data name="DashboardSection_Sessions_Description" xml:space="preserve">
     <value>Notiz- und Verknüpfungsanzahl aus dem kombinierten Sitzungsgraphen</value>
@@ -4198,7 +4198,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Gewohnheiten</value>
   </data>
   <data name="Habits_Subtitle" xml:space="preserve">
-    <value>Ein stilles Protokoll dessen, was du jeden Tag tust</value>
+    <value>Ein stilles Protokoll dessen, was ich jeden Tag tue</value>
   </data>
   <data name="Habits_NewButton" xml:space="preserve">
     <value>Neue Gewohnheit</value>
@@ -4252,7 +4252,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Gewohnheiten</value>
   </data>
   <data name="DashboardSection_Habits_Description" xml:space="preserve">
-    <value>Die heutigen Gewohnheiten und deine Konstanz auf einen Blick.</value>
+    <value>Die heutigen Gewohnheiten und meine Konstanz auf einen Blick.</value>
   </data>
   <data name="Dashboard_Habits_GoLabel" xml:space="preserve">
     <value>Zu Gewohnheiten</value>
@@ -4339,7 +4339,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Gewohnheits-Konsistenz</value>
   </data>
   <data name="Statistics_Heatmap_Empty" xml:space="preserve">
-    <value>Keine Gewohnheiten verfolgt — füge eine in Gewohnheiten hinzu, um deine Konsistenz zu sehen.</value>
+    <value>Keine Gewohnheiten verfolgt — füge eine in Gewohnheiten hinzu, um meine Konsistenz zu sehen.</value>
   </data>
   <data name="Settings_Dashboard_Grid_Hint" xml:space="preserve">
     <value>Ziehe eine Kachel, um sie zu verschieben, oder ziehe an ihrer rechten unteren Ecke, um ihre Größe zu ändern. Bei ausgewählter Kachel: Pfeiltasten verschieben sie, Umschalt + Pfeile ändern ihre Größe, Entf nimmt sie aus dem Raster.</value>
@@ -4474,7 +4474,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Bearbeitete Notizen und erledigte Aufgaben, Tag für Tag</value>
   </data>
   <data name="Statistics_Caption_PunchCard" xml:space="preserve">
-    <value>Wann du wirklich arbeitest, nach Wochentag und Stunde</value>
+    <value>Wann ich wirklich arbeite, nach Wochentag und Stunde</value>
   </data>
   <data name="Statistics_Caption_YearHeatmap" xml:space="preserve">
     <value>Jeder Tag der letzten zwölf Monate</value>
@@ -4576,13 +4576,13 @@ Viel Erfolg beim Schreiben.</value>
     <value>Hier gibt es noch nichts zu zeigen</value>
   </data>
   <data name="Statistics_Empty_Tags" xml:space="preserve">
-    <value>Versieh deine Notizen mit Tags, um zu sehen, welche Themen du am meisten nutzt.</value>
+    <value>Versieh meine Notizen mit Tags, um zu sehen, welche Themen ich am meisten nutze.</value>
   </data>
   <data name="Statistics_Empty_Files" xml:space="preserve">
-    <value>Füge Dateien zum Vault hinzu, um die Aufteilung deines Speichers zu sehen.</value>
+    <value>Füge Dateien zum Vault hinzu, um die Aufteilung meines Speichers zu sehen.</value>
   </data>
   <data name="Statistics_Empty_PunchCard" xml:space="preserve">
-    <value>Noch nicht genug Zeitstempel, um deinen Rhythmus zu zeichnen.</value>
+    <value>Noch nicht genug Zeitstempel, um meinen Rhythmus zu zeichnen.</value>
   </data>
   <data name="Statistics_Footnote" xml:space="preserve">
     <value>Die Aktivität stammt aus den Erstellungs- und Änderungszeiten der Notizen, den Abschlusszeiten der Aufgaben und den Gewohnheitsmarkierungen — der Vault speichert keinen separaten Bearbeitungsverlauf.</value>
@@ -4864,7 +4864,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Schlagwortfilter anzeigen</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
-    <value>Blenden Sie die Schlagwortzeile des Boards für mehr Übersicht aus. Bei mehr als einer Zeile bleiben bis zu fünf sichtbar, den Rest können Sie aufklappen.</value>
+    <value>Blende die Schlagwortzeile des Boards für mehr Übersicht aus. Bei mehr als einer Zeile bleiben bis zu fünf sichtbar, den Rest kannst du aufklappen.</value>
   </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Alle anzeigen</value>
@@ -4879,7 +4879,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Suche löschen</value>
   </data>
   <data name="Settings_Search_NoResults" xml:space="preserve">
-    <value>Keine passenden Einstellungen gefunden. Versuchen Sie andere Wörter.</value>
+    <value>Keine passenden Einstellungen gefunden. Versuche andere Wörter.</value>
   </data>
   <data name="Settings_Appearance_BrandLogo_Title" xml:space="preserve">
     <value>Logo der Seitenleiste</value>
