@@ -142,9 +142,16 @@ public static class MarkdownLineParser
         // Blockquote.
         if (indent <= 3 && indent < n && text[indent] == '>')
         {
-            var j = indent + 1;
-            if (j < n && text[j] == ' ') j++;
+            var j = indent;
+            var depth = 0;
+            while (j < n && text[j] == '>')
+            {
+                depth++;
+                j++;
+                if (j < n && text[j] == ' ') j++;
+            }
             model.Kind = MdBlockKind.Blockquote;
+            model.QuoteDepth = depth;
             model.MarkerStart = lineOffset + indent;
             model.MarkerEnd = lineOffset + j;
             model.ContentStart = lineOffset + j;

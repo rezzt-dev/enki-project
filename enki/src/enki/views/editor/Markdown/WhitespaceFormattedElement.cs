@@ -29,7 +29,7 @@ namespace enki.Views.Editor.Markdown;
 /// to what's left from <c>startVisualColumn</c> keeps every probe correctly sized without
 /// re-emitting the glyph itself past its first column.
 ///
-/// La sangría de las filas continuadas la aplica <see cref="MarkdownListTextFormatter"/>:
+/// La sangría de las filas continuadas la aplica <see cref="MarkdownBlockTextFormatter"/>:
 /// mide este elemento dentro de la primera fila y reserva ese ancho en el formateo posterior.
 /// Avalonia 12.1 no aplica TextParagraphProperties.Indent por sí mismo.
 /// </summary>

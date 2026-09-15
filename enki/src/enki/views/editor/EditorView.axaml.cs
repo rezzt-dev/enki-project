@@ -114,10 +114,6 @@ public partial class EditorView : UserControl
         ApplyLineNumbers();
         ApplyWordWrap();
 
-        // Added after ApplyLineNumbers() so it lands to the right of AvaloniaEdit's own line-number
-        // margin (when shown) in TextArea.LeftMargins, i.e. closest to the text.
-        textArea.LeftMargins.Add(new QuoteRailMargin(_livePreviewState, _style));
-
         // Ctrl+F / Ctrl+H abren el buscador/reemplazo propio del editor en lugar del integrado de
         // AvaloniaEdit, para unificar estilo y añadir contador de coincidencias.
 
@@ -162,8 +158,7 @@ public partial class EditorView : UserControl
     /// is bounded at the TextArea itself so nothing above the editor is ever touched.
     ///
     /// The room the box bleeds into is real, reserved space on both sides, not other content:
-    /// <see cref="Markdown.QuoteRailMargin"/>'s 24px gutter plus the editor's 20px inset on the left,
-    /// and the 20px right padding EditorView.axaml puts on the &lt;ae:TextEditor&gt; on the right.</summary>
+    /// the editor's 20px inset on both sides.</summary>
     private static void UpdateCodeBlockBleed(AvaloniaEdit.Editing.TextArea textArea, AvaloniaEdit.Rendering.TextView textView)
     {
         var pad = MarkdownStyle.CodeBlockHorizontalPadding;

@@ -79,6 +79,9 @@ public sealed class MdLine
     public MdBlockKind Kind { get; set; } = MdBlockKind.Paragraph;
     public int HeadingLevel { get; set; }
 
+    /// <summary>Número de marcadores de cita consecutivos al inicio de la línea.</summary>
+    public int QuoteDepth { get; set; }
+
     /// <summary>Block-level marker range (e.g. "# ", "&gt; ", "- ", "1. ", "- [x] "), hideable/replaceable.</summary>
     public int MarkerStart { get; set; }
     public int MarkerEnd { get; set; }

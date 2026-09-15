@@ -96,7 +96,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     public override void StartGeneration(ITextRunConstructionContext context)
     {
         base.StartGeneration(context);
-        MarkdownListTextFormatter.Register(context, _state);
+        MarkdownBlockTextFormatter.Register(context, _state);
         _cachedLineNumber = -1;
     }
 
@@ -151,9 +151,8 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                     });
                 break;
             case MdBlockKind.Blockquote:
-                // No reserved-width concern here: the quote rail lives in QuoteRailMargin's own
-                // gutter column now, not inline before the text, so the '>' marker can collapse to
-                // zero width exactly like the other Hide zones below.
+                // El formateador reserva el ancho de cada nivel para todas las filas visuales; el
+                // marcador puede ocultarse sin alterar el documento ni falsear el hit testing.
                 if (model.MarkerStart < model.MarkerEnd)
                     zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0));
                 break;
@@ -546,7 +545,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
 
         // A line too long for the column keeps its left edge: the reserved space only ever moves the
         // first visual row. La sangría de las listas se resuelve por separado en
-        // MarkdownListTextFormatter, usando las medidas finales de sus elementos.
+        // MarkdownBlockTextFormatter, usando las medidas finales de sus elementos.
         var free = available - content;
         if (free <= 1) return 0;
         return align == MdAlign.Center ? free / 2 : free;

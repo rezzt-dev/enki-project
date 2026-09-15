@@ -400,13 +400,9 @@
                no caiga en un botón atraviesa el lienzo y llega al editor. -->
           <Grid x:Name="CodeBlockInputHost" Grid.Row="1">
             <Border x:Name="EditorColumnHost" Margin="8">
-              <!-- El padding izquierdo conserva 20px antes del canal de QuoteRailMargin. De este modo la
-                   barra de una cita queda dentro del margen visual del texto, en vez de pegada al borde
-                   izquierdo de la tarjeta. El canal añade otros 24px antes del contenido editable y
-                   reserva 5px exactos entre la barra y el texto citado.
-                   Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
+              <!-- Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
                    code block's box is painted that far outside the text column on each side, into the left
-                   gutter and into this right padding, so the code text inside it clears the border on every
+                   and right padding, so the code text inside it clears the border on every
                    row - see EditorView.axaml.cs's UpdateCodeBlockBleed(). -->
               <ae:TextEditor x:Name="Editor"
                              Background="Transparent"

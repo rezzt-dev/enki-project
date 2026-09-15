@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Media.TextFormatting;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 
@@ -37,14 +38,14 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
         // past the wrap boundary. That's what guarantees "every glyph is inside the box", including the
         // continuation rows of a wrapped code line - those always start flush left at x=0 and always run
         // to the full wrap width, because Avalonia's text formatter ignores the wrap indentation
-        // AvaloniaEdit computes for them (see QuoteRailMargin's doc comment for the full story). Any box
+        // AvaloniaEdit computes for them (see MarkdownBlockTextFormatter). Any box
         // inset into [0, width] would therefore be overrun on both edges by every wrapped code line,
         // which is exactly the bug this replaced: an inset left edge with an inline spacer padding only
         // the FIRST row, and a right edge sitting exactly on the wrap boundary.
         //
         // Painting past TextView's own bounds needs its clipping relaxed by the same padding - see
         // EditorView.axaml.cs's UpdateCodeBlockBleed(), which also documents where that space comes from
-        // (QuoteRailMargin's gutter on the left, TextEditor.Padding on the right). If a future Avalonia
+        // (TextEditor.Padding on both sides). If a future Avalonia
         // version clips it anyway the block degrades to a full-width shaded band rather than breaking.
         // Medio píxel hacia DENTRO en cada lado, no el ajuste al medio píxel más cercano de Snap(): el
         // recorte que UpdateCodeBlockBleed() abre para el recuadro es exactamente [-pad, width+pad], así
@@ -90,9 +91,9 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
                     codeBlockTop ??= top;
                     codeBlockBottom = top + visualLine.Height;
                     break;
-                // The blockquote rail is drawn by QuoteRailMargin instead, in its own left-gutter
-                // column - see that class's doc comment for why it can't live here as inline
-                // background painting the way the code-fence/rule decorations above do.
+                case MdBlockKind.Blockquote:
+                    DrawQuoteRails(textView, drawingContext, visualLine, model, top);
+                    break;
                 case MdBlockKind.HorizontalRule when !_state.Intersects(docLine.Offset, docLine.EndOffset):
                 {
                     var y = top + visualLine.Height / 2;
@@ -107,6 +108,23 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
 
         DrawTables(textView, drawingContext);
         DrawSearchHighlights(textView, drawingContext);
+    }
+
+    private void DrawQuoteRails(TextView textView, DrawingContext drawingContext, VisualLine visualLine,
+        MdLine model, double top)
+    {
+        if (model.QuoteDepth <= 0 || visualLine.TextLines.Count == 0) return;
+
+        var markerColumn = visualLine.GetVisualColumn(model.MarkerStart - visualLine.FirstDocumentLine.Offset);
+        var firstRow = visualLine.TextLines[0];
+        var baseX = firstRow.GetDistanceFromCharacterHit(new CharacterHit(markerColumn, 0))
+                    - MarkdownQuoteLayout.ContentIndent(model.QuoteDepth) - textView.HorizontalOffset;
+        for (var level = 0; level < model.QuoteDepth; level++)
+        {
+            var x = Math.Round(baseX + MarkdownQuoteLayout.RailX(level));
+            drawingContext.FillRectangle(_style.QuoteBar,
+                new Rect(x, top, MarkdownQuoteLayout.RailThickness, visualLine.Height));
+        }
     }
 
     /// <summary>Dibuja la rejilla de las tablas visibles: el fondo de la fila de encabezados, las líneas

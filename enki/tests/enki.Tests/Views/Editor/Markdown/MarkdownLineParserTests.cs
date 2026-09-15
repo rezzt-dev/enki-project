@@ -99,6 +99,22 @@ public class MarkdownLineParserTests
         Assert.Equal(contentStart, model.ContentStart);
     }
 
+    [Theory]
+    [InlineData("> cita", 1, 0, 2)]
+    [InlineData(">> cita", 2, 0, 3)]
+    [InlineData("> > cita", 2, 0, 4)]
+    [InlineData("  >> cita", 2, 2, 5)]
+    public void Parse_Blockquote_ReportsEveryNestedLevel(string text, int depth, int markerStart, int contentStart)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(MdBlockKind.Blockquote, model.Kind);
+        Assert.Equal(depth, model.QuoteDepth);
+        Assert.Equal(markerStart, model.MarkerStart);
+        Assert.Equal(contentStart, model.MarkerEnd);
+        Assert.Equal(contentStart, model.ContentStart);
+    }
+
     /// <summary>A diferencia de encabezados y citas, la viñeta se traga los espacios extra: la "• " que
     /// se pinta en su lugar ya reserva su propia separación, así que conservarlos visibles duplicaría el
     /// hueco entre el marcador y el texto.</summary>
@@ -420,4 +436,3 @@ public class MarkdownLineParserTests
     public void LooksLikeImage_JudgesByExtension(string target, bool expected) =>
         Assert.Equal(expected, MarkdownLineParser.LooksLikeImage(target));
 }
-
