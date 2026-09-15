@@ -36,6 +36,8 @@ Thumbs.db
 
 # Documentación privada (no se sube al repositorio)
 docs/
+# …salvo la de la landing, que viaja con su código (enki-webpage/docs/roadmap/00-GUIA-MAESTRA.md, D13)
+!enki-webpage/docs/
 
 # Logs
 *.log

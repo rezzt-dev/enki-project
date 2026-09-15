@@ -48,7 +48,7 @@
 
   <Style Selector="TextBlock.faint">
     <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="10.5" />
   </Style>
 
@@ -67,7 +67,7 @@
 
   <!-- "Eyebrow": el micro-label más distintivo del sistema (§2.2) -->
   <Style Selector="TextBlock.eyebrow">
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="10.5" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="LetterSpacing" Value="4" />
@@ -1250,7 +1250,7 @@
        filas del Grid sumen exactamente el alto de la tarjeta y el cuerpo no se coma la fila de
        acciones cuando el título ocupa dos líneas. -->
   <Style Selector="TextBlock.trash-card-meta">
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="10" />
     <Setter Property="LineHeight" Value="16" />
     <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
@@ -1300,7 +1300,7 @@
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <Style Selector="Border.trash-count-badge TextBlock">
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="10" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="LineHeight" Value="16" />
@@ -1672,7 +1672,7 @@
     <Setter Property="GridLine" Value="{DynamicResource Ink10}" />
     <Setter Property="LabelInk" Value="{DynamicResource Ink40}" />
     <Setter Property="Surface" Value="{DynamicResource PanelBackgroundBrush}" />
-    <Setter Property="LabelFontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="LabelFontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="LabelFontSize" Value="9" />
   </Style>
 
@@ -1815,7 +1815,7 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="Padding" Value="10,6" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Transitions">
@@ -2081,7 +2081,7 @@
        coincidencias" (el filtro las esconde todas). Centrado y en tinta muy baja: informa sin pedir
        atención, y sobre todo distingue las dos situaciones, que a ojo se veían idénticas. -->
   <Style Selector="TextBlock.column-hint">
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="10.5" />
     <Setter Property="LetterSpacing" Value="1" />
     <Setter Property="Foreground" Value="{DynamicResource Ink30}" />
@@ -2186,7 +2186,7 @@
     <Setter Property="Height" Value="32" />
   </Style>
   <Style Selector="TextBlock.time-stepper-value">
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="HorizontalAlignment" Value="Center" />
@@ -2310,7 +2310,7 @@
     <Setter Property="Background" Value="{DynamicResource InkBrush}" />
   </Style>
   <Style Selector="TextBlock.calendar-day-number">
-    <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+    <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="11" />
     <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     <Setter Property="HorizontalAlignment" Value="Center" />

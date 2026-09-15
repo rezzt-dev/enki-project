@@ -122,7 +122,7 @@
           <ItemsControl ItemsSource="{Binding ImportConflictFileNames}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <TextBlock Text="{Binding}" Classes="muted" FontFamily="{StaticResource MonoFontFamily}" FontSize="11.5" />
+                <TextBlock Text="{Binding}" Classes="muted" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="11.5" />
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

@@ -70,7 +70,7 @@
                       ToolTip.Tip="{loc:Tr Editor_LinkedCards_Label}">
           <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
             <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding LinkedCards.Count}" FontSize="11" FontFamily="{StaticResource MonoFontFamily}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LinkedCards.Count}" FontSize="11" FontFamily="{DynamicResource InterfaceLabelFontFamily}" VerticalAlignment="Center" />
             <mi:MaterialIcon Kind="ChevronDown" Width="12" Height="12" VerticalAlignment="Center" IsVisible="{Binding !IsLinkedCardsExpanded}" />
             <mi:MaterialIcon Kind="ChevronUp" Width="12" Height="12" VerticalAlignment="Center" IsVisible="{Binding IsLinkedCardsExpanded}" />
           </StackPanel>

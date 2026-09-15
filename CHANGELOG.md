@@ -7,6 +7,18 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**La fuente de la interfaz llega ahora a toda la app**. Ajustes › Apariencia › "Fuente de la interfaz" solo
+cambiaba los títulos y el texto principal; el resto seguía con la fuente de siempre.
+
+- **Micro-etiquetas**: subtítulos de accesos rápidos, fechas ("hace 5 días"), cabeceras espaciadas
+  ("PENDIENTES", "NOTIFICACIONES"), contadores, ejes de las gráficas de Estadísticas, números del
+  calendario, atajos de teclado y rutas del vault. Siguen en JetBrains Mono con la fuente por defecto.
+- **Campos de texto y sus placeholders** (p. ej. "Buscar en todo…"), que salían en Inter, la fuente
+  interna del framework, con cualquier ajuste. Con la fuente por defecto ahora usan Space Grotesk, como el
+  resto de la app.
+- El texto que necesita monoespaciado de verdad no cambia: la vista de código de "Archivos", los códigos de
+  recuperación y el contenido en crudo de una skill.
+
 **Logo propio en la barra lateral**. El cuadro de la esquina superior izquierda llevaba siempre el icono de
 Enki. Ahora Ajustes › Apariencia › "Logo de la barra lateral" permite poner ahí una imagen del sistema.
 

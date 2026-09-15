@@ -143,7 +143,7 @@
                              Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
                   <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
                           BorderThickness="1" Padding="12,10">
-                    <TextBlock Text="{Binding VaultPath}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
+                    <TextBlock Text="{Binding VaultPath}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12"
                                TextTrimming="CharacterEllipsis" />
              </Border>
                   <Button Classes="pill" Command="{Binding ChangeVaultFolderCommand}" HorizontalAlignment="Left">
@@ -1967,7 +1967,7 @@
                                               KeyDown="ShortcutCapture_KeyDown"
                                               LostFocus="ShortcutCapture_LostFocus"
                                               ToolTip.Tip="{loc:Tr Settings_Shortcuts_CaptureHint}">
-                                        <TextBlock Text="{Binding GestureDisplay}" FontFamily="{StaticResource MonoFontFamily}"
+                                        <TextBlock Text="{Binding GestureDisplay}" FontFamily="{DynamicResource InterfaceLabelFontFamily}"
                                                    FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" />
                                  </Border>
 
@@ -2036,13 +2036,13 @@
                     <TextBlock Text="{loc:Tr Settings_KanbanSection_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="9">
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+F" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+F" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12.5" FontWeight="Bold" />
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_SearchBoard}" Classes="muted" FontSize="12" />
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="N" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="N" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12.5" FontWeight="Bold" />
                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_NewCard}" Classes="muted" FontSize="12" />
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr Settings_KanbanSection_DeleteKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr Settings_KanbanSection_DeleteKey}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12.5" FontWeight="Bold" />
                     <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_DeleteCard}" Classes="muted" FontSize="12" />
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Esc" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" />
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Esc" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12.5" FontWeight="Bold" />
                     <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_KanbanSection_CloseDialog}" Classes="muted" FontSize="12" />
                   </Grid>
                 </StackPanel>
@@ -2059,7 +2059,7 @@
                     <TextBlock Text="{loc:Tr Settings_PdfViewer_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <Grid ColumnDefinitions="140,*" RowDefinitions="Auto" RowSpacing="9">
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr Settings_PdfViewer_NavKey}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12" FontWeight="Bold" TextWrapping="Wrap" />
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr Settings_PdfViewer_NavKey}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12" FontWeight="Bold" TextWrapping="Wrap" />
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_PdfViewer_PrevNextPage}" Classes="muted" FontSize="12" />
                   </Grid>
                 </StackPanel>
@@ -2190,7 +2190,7 @@
                              Text="{loc:Tr Settings_About_Privacy_Description}" />
                   <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
                           BorderThickness="1" Padding="12,10">
-                    <TextBlock Text="{Binding VaultPath}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
+                    <TextBlock Text="{Binding VaultPath}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12"
                                TextTrimming="CharacterEllipsis" />
              </Border>
                 </StackPanel>

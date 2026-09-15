@@ -179,7 +179,7 @@
                          TextTrimming="CharacterEllipsis" IsVisible="{Binding HasFolder}" />
             </StackPanel>
             <Border Background="{DynamicResource Ink10}" Padding="6,3" HorizontalAlignment="Left" IsVisible="{Binding IsDefault}">
-              <TextBlock Text="{loc:Tr Skills_Badge_Default, Converter={StaticResource UpperCaseConverter}}" FontFamily="{DynamicResource MonoFontFamily}" FontSize="9" FontWeight="Bold"
+              <TextBlock Text="{loc:Tr Skills_Badge_Default, Converter={StaticResource UpperCaseConverter}}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="9" FontWeight="Bold"
                          LetterSpacing="1" Foreground="{DynamicResource TextSecondaryBrush}" />
             </Border>
             <TextBlock Text="{Binding Description}" Classes="muted" FontSize="12"

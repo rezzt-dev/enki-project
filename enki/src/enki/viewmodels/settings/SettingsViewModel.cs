@@ -412,17 +412,25 @@ public sealed partial class SettingsViewModel : ViewModelBase
         return list;
     }
 
+    /// <summary>Claves de <c>Colors.axaml</c> que la fuente de la interfaz sustituye: la fuente de texto, la
+    /// de micro-labels y la que usa FluentTheme en sus controles. <c>MonoFontFamily</c> queda fuera a
+    /// propósito (código y texto que necesita monoespaciado).</summary>
+    private static readonly string[] InterfaceFontResourceKeys =
+        ["DisplayFontFamily", "InterfaceLabelFontFamily", "ContentControlThemeFontFamily"];
+
     private static void ApplyInterfaceFont(string? fontFamily)
     {
         if (Avalonia.Application.Current is not { } app) return;
 
         if (string.IsNullOrWhiteSpace(fontFamily))
         {
-            app.Resources.Remove("DisplayFontFamily");
+            // Quitar la clave de nivel superior deja ver la de Colors.axaml (diccionario fusionado).
+            foreach (var key in InterfaceFontResourceKeys) app.Resources.Remove(key);
         }
         else
         {
-            app.Resources["DisplayFontFamily"] = new FontFamily(fontFamily);
+            var family = new FontFamily(fontFamily);
+            foreach (var key in InterfaceFontResourceKeys) app.Resources[key] = family;
         }
     }
 

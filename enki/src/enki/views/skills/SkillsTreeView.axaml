@@ -117,7 +117,7 @@
             <Border Grid.Column="3" Background="{DynamicResource Ink10}" Padding="5,2" Margin="0,0,8,0"
                     VerticalAlignment="Center" IsVisible="{Binding IsDefault}">
               <TextBlock Text="{loc:Tr Skills_Badge_Default, Converter={StaticResource UpperCaseConverter}}"
-                         FontFamily="{DynamicResource MonoFontFamily}" FontSize="8" FontWeight="Bold"
+                         FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="8" FontWeight="Bold"
                          LetterSpacing="0.8" Foreground="{DynamicResource TextSecondaryBrush}" />
             </Border>
           </Grid>

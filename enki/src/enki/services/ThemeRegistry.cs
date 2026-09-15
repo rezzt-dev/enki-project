@@ -7,7 +7,7 @@ namespace enki.Services;
 
 /// <summary>Applies/reverts a custom theme's colors at runtime by writing directly into
 /// <c>Application.Current.Resources</c> — the exact same technique
-/// <c>SettingsViewModel.ApplyInterfaceFont</c> already uses to override <c>DisplayFontFamily</c> live
+/// <c>SettingsViewModel.ApplyInterfaceFont</c> already uses to override the interface font keys live
 /// (indexer assignment on the top-level resource dictionary, no rebuild of
 /// <c>Application.Styles</c>/<c>MergedDictionaries</c>). A key set directly on <c>Application.Resources</c>
 /// is resolved before Avalonia falls back to <c>Colors.axaml</c>'s <c>Dark</c>/<c>Light</c>

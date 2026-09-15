@@ -30,7 +30,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="17" TextWrapping="Wrap" />
               <Border Background="{DynamicResource Ink10}" Padding="6,3" HorizontalAlignment="Left" IsVisible="{Binding IsDefault}">
-                <TextBlock Text="{loc:Tr Skills_Badge_DefaultReadOnly, Converter={StaticResource UpperCaseConverter}}" FontFamily="{DynamicResource MonoFontFamily}" FontSize="9"
+                <TextBlock Text="{loc:Tr Skills_Badge_DefaultReadOnly, Converter={StaticResource UpperCaseConverter}}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="9"
                            FontWeight="Bold" LetterSpacing="0.8" Foreground="{DynamicResource TextSecondaryBrush}" />
               </Border>
             </StackPanel>

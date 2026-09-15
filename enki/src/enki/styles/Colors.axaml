@@ -154,8 +154,18 @@
   <SolidColorBrush x:Key="SelectionForegroundBrush" Color="{DynamicResource InkOnColor}" />
 
   <!-- ===================== Tipografía ===================== -->
+  <!-- DisplayFontFamily, InterfaceLabelFontFamily y ContentControlThemeFontFamily son las tres claves que
+       Ajustes › Apariencia › "Fuente de la interfaz" sustituye en vivo (SettingsViewModel.ApplyInterfaceFont);
+       MonoFontFamily no la toca nadie y queda reservada a texto que necesita monoespaciado de verdad
+       (código, códigos de recuperación, contenido en crudo). -->
   <FontFamily x:Key="DisplayFontFamily">avares://enki/assets/fonts#Space Grotesk</FontFamily>
   <FontFamily x:Key="MonoFontFamily">avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono</FontFamily>
+  <!-- Micro-labels de la interfaz (eyebrows, metadatos, contadores, ejes de gráficas): JetBrains Mono por
+       defecto, pero siguen a la fuente de la interfaz cuando el usuario elige una. -->
+  <FontFamily x:Key="InterfaceLabelFontFamily">avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono</FontFamily>
+  <!-- Clave con la que FluentTheme pinta TextBox (y su placeholder), ToolTip, etc.; sin esto esos controles
+       salían en Inter, ignorando tanto Space Grotesk como la fuente elegida. -->
+  <FontFamily x:Key="ContentControlThemeFontFamily">avares://enki/assets/fonts#Space Grotesk</FontFamily>
 
   <!-- ===================== Texturas ===================== -->
 
