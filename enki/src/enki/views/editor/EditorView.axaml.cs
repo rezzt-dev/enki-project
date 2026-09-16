@@ -261,6 +261,7 @@ public partial class EditorView : UserControl
     private void ApplyWordWrap()
     {
         Editor.WordWrap = EditorPreferences.WordWrap;
+        _livePreviewState.JustifyParagraphs = EditorPreferences.JustifyParagraphs;
     }
 
     private void OnCaretOrSelectionChanged()

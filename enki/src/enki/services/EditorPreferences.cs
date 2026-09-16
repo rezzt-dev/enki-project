@@ -100,6 +100,19 @@ public static class EditorPreferences
         }
     }
 
+    private static bool _justifyParagraphs = true;
+    /// <summary>Justifica suavemente los párrafos; preparada para un futuro control en Ajustes.</summary>
+    public static bool JustifyParagraphs
+    {
+        get => _justifyParagraphs;
+        set
+        {
+            if (_justifyParagraphs == value) return;
+            _justifyParagraphs = value;
+            Changed?.Invoke();
+        }
+    }
+
     private static bool _wordWrap = true;
     public static bool WordWrap
     {

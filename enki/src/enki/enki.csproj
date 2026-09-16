@@ -47,7 +47,7 @@
        ejecutable para que SkillService.EnsureDefaultSkills las encuentre en runtime vía
        Path.Combine(AppContext.BaseDirectory, "default-skills"). -->
   <ItemGroup>
-    <Content Include="../../../docs/agent-docs/ia-skills/default-skills/*.md" CopyToOutputDirectory="PreserveNewest" TargetPath="default-skills/%(Filename)%(Extension)" />
+    <Content Include="../../../.docs/project-info/ia-skills/default-skills/*.md" CopyToOutputDirectory="PreserveNewest" TargetPath="default-skills/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

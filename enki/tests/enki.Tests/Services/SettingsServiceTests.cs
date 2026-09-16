@@ -36,6 +36,18 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void ParagraphJustification_OldSettingsEnableIt_AndExplicitChoicePersists()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        File.WriteAllText(Path.Combine(_storageDirectory, "settings.json"), "{\"EditorWordWrap\":true}");
+        var service = new SettingsService(_storageDirectory);
+        Assert.True(service.Settings.EditorJustifyParagraphs);
+        service.Settings.EditorJustifyParagraphs = false;
+        service.Save();
+        Assert.False(new SettingsService(_storageDirectory).Settings.EditorJustifyParagraphs);
+    }
+
+    [Fact]
     public void Load_MissingFile_FallsBackToDefaults()
     {
         var service = new SettingsService(_storageDirectory);

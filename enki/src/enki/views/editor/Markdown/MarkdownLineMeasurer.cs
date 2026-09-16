@@ -178,7 +178,7 @@ internal static class MarkdownLineMeasurer
             style.BodyFontFamily, FontStyle.Normal,
             model.HeadingLevel <= 2 ? FontWeight.Bold : FontWeight.SemiBold,
             style.BaseFontSize * MarkdownStyle.HeadingScale(model.HeadingLevel)),
-        MdBlockKind.Blockquote => new Run(style.BodyFontFamily, FontStyle.Italic, FontWeight.Normal, style.BaseFontSize),
+        MdBlockKind.Blockquote => new Run(style.BodyFontFamily, FontStyle.Normal, FontWeight.Normal, style.BaseFontSize),
         MdBlockKind.CodeFence => new Run(style.MonoFontFamily, FontStyle.Normal, FontWeight.Normal, style.BaseFontSize),
         _ => new Run(style.BodyFontFamily, FontStyle.Normal, FontWeight.Normal, style.BaseFontSize)
     };

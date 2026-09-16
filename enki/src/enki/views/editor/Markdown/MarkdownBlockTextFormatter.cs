@@ -13,7 +13,7 @@ namespace enki.Views.Editor.Markdown;
 /// Sangría de listas y citas dentro del formateo real. Avalonia 12.1 ignora Indent: se calcula el salto
 /// con el ancho restante y se alinea esa fila nativa en una caja de su ancho más la sangría.
 /// Así Draw, GetTextBounds y ambos sentidos del hit-testing comparten las mismas métricas.
-/// Solo interviene en las líneas de lista o cita registradas por el generador Markdown.
+/// También justifica suavemente los párrafos registrados, conservando sus saltos nativos.
 /// </summary>
 internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextFormatter
 {
@@ -25,6 +25,7 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
     }
 
     private static readonly ConditionalWeakTable<VisualLine, BlockLayout> Blocks = new();
+    private static readonly ConditionalWeakTable<VisualLine, MdLine> Paragraphs = new();
 
     // AvaloniaEdit 12.0 no expone un setter para el formateador. El único acceso privado queda
     // aislado aquí, por TextView; no sustituimos el formateador global de la aplicación.
@@ -38,7 +39,14 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
         if (FormatterField.GetValue(context.TextView) is TextFormatter formatter and not MarkdownBlockTextFormatter)
             FormatterField.SetValue(context.TextView, new MarkdownBlockTextFormatter(formatter));
         var line = context.VisualLine.FirstDocumentLine;
-        var model = MarkdownLineParser.Parse(context.Document.GetText(line), line.Offset, state.GetFence(line.LineNumber));
+        var text = context.Document.GetText(line);
+        var model = MarkdownLineParser.Parse(text, line.Offset, state.GetFence(line.LineNumber));
+        if (state.JustifyParagraphs && model.Kind == MdBlockKind.Paragraph &&
+            state.GetAlignment(line.LineNumber) == MdAlign.None &&
+            state.Tables.GetRow(line.LineNumber) is null &&
+            text.Length > 0 && !char.IsWhiteSpace(text[0]) && !text.Contains('\t') &&
+            !model.Spans.Exists(span => span.Kind == MdSpanKind.Image))
+            Paragraphs.Add(context.VisualLine, model);
         if (model.Kind is MdBlockKind.BulletList or MdBlockKind.OrderedList or MdBlockKind.TaskList)
             Blocks.Add(context.VisualLine, new BlockLayout(model.ContentStart - line.Offset, 0));
         else if (model.Kind == MdBlockKind.Blockquote)
@@ -53,9 +61,18 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
     public override TextLine? FormatLine(ITextSource textSource, int firstTextSourceIndex, double paragraphWidth,
         TextParagraphProperties paragraphProperties, TextLineBreak? previousLineBreak, TextRunCache? textRunCache)
     {
-        if (textSource is not ITextRunConstructionContext context ||
-            !Blocks.TryGetValue(context.VisualLine, out var layout))
+        if (textSource is not ITextRunConstructionContext context)
             return inner.FormatLine(textSource, firstTextSourceIndex, paragraphWidth, paragraphProperties, previousLineBreak, textRunCache);
+
+        if (!Blocks.TryGetValue(context.VisualLine, out var layout))
+        {
+            var natural = inner.FormatLine(textSource, firstTextSourceIndex, paragraphWidth,
+                paragraphProperties, previousLineBreak, textRunCache);
+            if (natural is null || !Paragraphs.TryGetValue(context.VisualLine, out var paragraph)) return natural;
+            var justified = MarkdownParagraphJustification.Format(inner, natural, context, paragraph,
+                paragraphWidth, paragraphProperties);
+            return justified is null ? natural : new WrappedRow(justified, natural);
+        }
 
         if (paragraphProperties.TextWrapping == TextWrapping.NoWrap || !double.IsFinite(paragraphWidth))
         {
@@ -130,7 +147,7 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
         }
     }
 
-    private sealed class RowProperties(TextParagraphProperties source, TextAlignment alignment) : TextParagraphProperties
+    internal sealed class RowProperties(TextParagraphProperties source, TextAlignment alignment) : TextParagraphProperties
     {
         public override FlowDirection FlowDirection => source.FlowDirection;
         public override TextAlignment TextAlignment => alignment;

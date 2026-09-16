@@ -274,6 +274,8 @@ public sealed class AppSettings
 
     /// <summary>Enables word wrap in the note editor — Ajustes › Editor.</summary>
     public bool EditorWordWrap { get; set; } = true;
+    /// <summary>Justificación visual de párrafos; activa también en ajustes anteriores sin esta clave.</summary>
+    public bool EditorJustifyParagraphs { get; set; } = true;
 
     /// <summary>Si el editor descarga y dibuja las imágenes escritas con una URL http(s) — Ajustes ›
     /// Editor. Las imágenes del propio vault y las <c>data:</c> incrustadas se dibujan siempre; estas

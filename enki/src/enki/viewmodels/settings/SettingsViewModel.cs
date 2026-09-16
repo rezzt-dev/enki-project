@@ -291,6 +291,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.TabSize = settingsService.Settings.EditorTabSize;
         EditorPreferences.LineNumbers = _editorLineNumbers;
         EditorPreferences.WordWrap = _editorWordWrap;
+        EditorPreferences.JustifyParagraphs = settingsService.Settings.EditorJustifyParagraphs;
         EditorPreferences.RemoteImages = _editorRemoteImages;
         EditorPreferences.SidePanelVisible = _editorSidePanelVisible;
         EditorPreferences.ToolbarVisible = settingsService.Settings.EditorToolbarVisible;

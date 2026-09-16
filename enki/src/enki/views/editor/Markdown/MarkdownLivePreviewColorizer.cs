@@ -66,7 +66,7 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
             }
             case MdBlockKind.Blockquote:
                 Safe(model.ContentStart, line.EndOffset, el =>
-                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic)));
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal)));
                 SetForeground(model.ContentStart, line.EndOffset, _style.TextSecondary);
                 break;
             case MdBlockKind.BulletList:

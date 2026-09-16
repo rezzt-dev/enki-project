@@ -15,6 +15,8 @@ public sealed class LivePreviewState
     private static readonly List<(int Start, int End)> Empty = new();
 
     public int CaretOffset { get; set; }
+    /// <summary>Justificación visual suave; el propietario redibuja al cambiar esta preferencia.</summary>
+    public bool JustifyParagraphs { get; set; } = true;
     public List<(int Start, int End)> Selections { get; set; } = Empty;
     public Dictionary<int, FenceInfo> Fences { get; set; } = new();
 
