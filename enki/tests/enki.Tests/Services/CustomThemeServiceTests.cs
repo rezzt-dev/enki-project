@@ -171,6 +171,51 @@ public class CustomThemeServiceTests : IDisposable
     }
 
     [Fact]
+    public void DuplicateBuiltIn_SaveRegistersTheme_AndReloadsAfterRestart()
+    {
+        var (service, settingsService) = CreateService();
+        var builtIn = service.Load(BuiltInThemeCatalog.All[0].Id)!;
+        var copy = builtIn.Clone();
+        copy.Name = "Copia personalizada";
+
+        service.Save(copy);
+        service.Save(copy);
+
+        Assert.False(copy.IsBuiltIn);
+        var registered = Assert.Single(settingsService.Settings.CustomThemes);
+        Assert.Equal(copy.Id, registered.Id);
+        Assert.Equal(copy.Name, registered.Name);
+
+        var reloaded = new CustomThemeService(new SettingsService(_storageDirectory)).Load(copy.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal(copy.Colors.Count, reloaded!.Colors.Count);
+        foreach (var (key, value) in copy.Colors)
+            Assert.Equal(value, reloaded.Colors[key]);
+    }
+
+    [Fact]
+    public void Export_DuplicatedTheme_UsesCurrentColorsWithoutSavingDraft()
+    {
+        var (service, _) = CreateService();
+        var copy = service.Load(BuiltInThemeCatalog.All[0].Id)!.Clone();
+        service.Save(copy);
+        var originalColor = copy.Colors["AppBackgroundColor"];
+        copy.Colors["AppBackgroundColor"] = "#123456";
+        var destination = Path.Combine(_sourceDirectory, "exported.css");
+
+        CustomThemeService.Export(copy, destination);
+
+        var parsed = ThemeCssParser.Parse(File.ReadAllText(destination));
+        Assert.True(parsed.Success);
+        Assert.Equal("#123456", HexColorUtility.ColorToHex(parsed.Colors["AppBackgroundColor"]));
+        Assert.Equal(originalColor, service.Load(copy.Id)!.Colors["AppBackgroundColor"]);
+
+        var imported = service.Import(destination);
+        Assert.True(imported.Success);
+        Assert.Equal("#123456", service.Load(imported.ThemeId!)!.Colors["AppBackgroundColor"]);
+    }
+
+    [Fact]
     public void Save_WritesModifiedColors_AndLoadReadsThemBack()
     {
         var (service, _) = CreateService();

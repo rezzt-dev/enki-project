@@ -200,7 +200,7 @@ public sealed partial class ThemeEditorViewModel : ObservableObject
 
         try
         {
-            _customThemeService.Export(_theme.Id, destination);
+            CustomThemeService.Export(_theme, destination);
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Notification_ThemeTemplateExported_Title"),
                 LocalizedTextFormatter.Format("Notification_ThemeTemplateExported_Message", destination),
@@ -218,6 +218,14 @@ public sealed partial class ThemeEditorViewModel : ObservableObject
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Notification_ThemeTemplateExportFailed_Title"),
                 LocalizedTextFormatter.Format("Common_Error_IOFailure"),
+                NotificationSeverity.Error);
+        }
+        catch (Exception ex)
+        {
+            LogService.Error($"No se pudo exportar el tema '{_theme.Id}'", ex);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_ThemeTemplateExportFailed_Title"),
+                LocalizedTextFormatter.Format("Common_Error_Unexpected"),
                 NotificationSeverity.Error);
         }
     }

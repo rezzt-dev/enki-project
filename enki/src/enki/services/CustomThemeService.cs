@@ -45,8 +45,6 @@ public sealed class CustomThemeService
             Colors = ThemeCatalog.All.ToDictionary(d => d.ResourceKey, d => d.DefaultHex, StringComparer.Ordinal)
         };
         Save(theme);
-        _settingsService.Settings.CustomThemes.Add(new CustomThemeInfo { Id = theme.Id, Name = theme.Name });
-        _settingsService.Save();
         return theme;
     }
 
@@ -91,10 +89,9 @@ public sealed class CustomThemeService
         };
     }
 
-    /// <summary>Persists a theme's metadata and its CSS file. Renames are reflected in
-    /// <see cref="AppSettings.CustomThemes"/>. Does not activate the theme automatically. No-ops for a
-    /// <see cref="BuiltInThemeCatalog"/> id — those are compiled in and never editable; the UI already hides
-    /// the actions that would reach this, this is just the last line of defense.</summary>
+    /// <summary>Guarda el CSS del tema y registra o actualiza sus metadatos en
+    /// <see cref="AppSettings.CustomThemes"/>. No lo activa automáticamente. Ignora los identificadores
+    /// de <see cref="BuiltInThemeCatalog"/>, cuyos temas no se pueden modificar.</summary>
     public void Save(CustomTheme theme)
     {
         if (BuiltInThemeCatalog.TryGet(theme.Id, out _)) return;
@@ -106,14 +103,16 @@ public sealed class CustomThemeService
         File.Move(tempPath, path, overwrite: true);
 
         var info = _settingsService.Settings.CustomThemes.FirstOrDefault(t => t.Id == theme.Id);
-        if (info is not null) info.Name = theme.Name;
+        if (info is null)
+            _settingsService.Settings.CustomThemes.Add(new CustomThemeInfo { Id = theme.Id, Name = theme.Name });
+        else
+            info.Name = theme.Name;
         _settingsService.Save();
     }
 
-    /// <summary>Serializes a theme's colors to the same validated <c>.css</c> format
-    /// <see cref="ThemeCssParser"/> reads back, one <c>:root</c> block grouped by
-    /// <see cref="ThemeColorDefinition.CategoryKey"/>. Shared by <see cref="Save"/> and by
-    /// <see cref="Export"/> for a built-in theme, which has no file on disk to copy from.</summary>
+    /// <summary>Serializa los colores al formato CSS que lee <see cref="ThemeCssParser"/>,
+    /// agrupados por <see cref="ThemeColorDefinition.CategoryKey"/>. Lo usan tanto
+    /// <see cref="Save"/> como <see cref="Export"/>.</summary>
     private static string BuildCss(CustomTheme theme)
     {
         var sb = new System.Text.StringBuilder();
@@ -241,23 +240,9 @@ public sealed class CustomThemeService
         }
     }
 
-    /// <summary>Writes a theme's current colors to a user-chosen <c>.css</c> file. A built-in theme has no
-    /// file on disk to copy — its CSS is serialized on the spot instead.</summary>
-    public void Export(string themeId, string destinationPath)
-    {
-        var theme = Load(themeId);
-        if (theme is null) throw new InvalidOperationException("Theme not found.");
-
-        if (theme.IsBuiltIn)
-        {
-            File.WriteAllText(destinationPath, BuildCss(theme));
-            return;
-        }
-
-        Save(theme); // ensure the CSS file on disk is up to date
-        var sourcePath = Path.Combine(_themesDirectory, $"{themeId}.css");
-        File.Copy(sourcePath, destinationPath, overwrite: true);
-    }
+    /// <summary>Exporta los colores actuales del editor a un archivo CSS sin guardar ni activar el tema.</summary>
+    public static void Export(CustomTheme theme, string destinationPath) =>
+        File.WriteAllText(destinationPath, BuildCss(theme));
 
     public sealed record ImportResult(bool Success, string? ThemeId, IReadOnlyList<LocalizedText> LocalizedErrors)
     {
