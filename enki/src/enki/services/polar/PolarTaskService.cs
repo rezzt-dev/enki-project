@@ -8,12 +8,16 @@ namespace enki.Services;
 /// <summary>Local persistence + CRUD for the Polar-compatible "Gestión de tareas" domain
 /// (<see cref="PolarTaskList"/>/<see cref="PolarTask"/>/<see cref="PolarSubtask"/>) — same
 /// load/save-a-single-JSON-file pattern as <see cref="KanbanService"/>, stored separately at
-/// <c>%AppData%/Enki/polar-tasks.json</c> since this is an entirely separate data domain from the local
+/// <c>&lt;vault&gt;/.tasks/polar-tasks.json</c> since this is an entirely separate data domain from the local
 /// Kanban board (docs/supabase-sync/). Every mutation here marks the row <c>Dirty</c> and stamps
 /// <c>UpdatedAtUtc</c> so <c>PolarSyncService</c> knows what to push next.</summary>
 public sealed class PolarTaskService
 {
-    private readonly string _path;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _path => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "polar-tasks.json")
+        : Path.Combine(_storageDirectory!, "polar-tasks.json");
     private readonly Func<string?> _currentUserIdProvider;
 
     public PolarTaskStore Store { get; private set; }
@@ -34,12 +38,27 @@ public sealed class PolarTaskService
     /// keep working unchanged.</param>
     public PolarTaskService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null)
     {
-        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
-        Directory.CreateDirectory(configDir);
-        _path = Path.Combine(configDir, "polar-tasks.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);
         Store = Load();
         PurgeOldTombstones();
+    }
+
+    public PolarTaskService(VaultService vaultService, Func<string?>? currentUserIdProvider = null)
+    {
+        _vaultService = vaultService;
+        _currentUserIdProvider = currentUserIdProvider ?? (() => null);
+        Store = Load();
+        PurgeOldTombstones();
+    }
+
+    /// <summary>Recarga las listas y tareas del vault activo.</summary>
+    public void Reload()
+    {
+        Store = Load();
+        PurgeOldTombstones();
+        DataChanged?.Invoke();
     }
 
     private PolarTaskStore Load() =>
@@ -47,6 +66,7 @@ public sealed class PolarTaskService
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         JsonFileStore.Save(_path, Store);
         DataChanged?.Invoke();
     }

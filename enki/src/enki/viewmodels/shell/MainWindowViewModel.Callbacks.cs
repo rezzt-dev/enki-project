@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using enki.Localization;
 using enki.Models;
+using enki.Services;
 
 namespace enki.ViewModels;
 
@@ -310,6 +311,9 @@ public sealed partial class MainWindowViewModel
 
     private void OnVaultChanged()
     {
+        Kanban?.CloseForVaultChange();
+        Reminders?.CloseForVaultChange();
+        ReloadVaultData();
         // Settings' "change vault folder" can point at any folder, old-version vault included — same
         // guarantee as a fresh app startup.
         _sessionService.EnsureDefaultSession();
@@ -326,6 +330,9 @@ public sealed partial class MainWindowViewModel
         Notes!.Reload();
         Notes!.ReloadSessions();
         Kanban!.Reload();
+        Kanban.TaskManagement.Reload();
+        Reminders?.Reload();
+        Notifications?.Reload();
         Files!.Reload();
         Files!.ReloadSessions();
         Skills!.Reload();
@@ -339,6 +346,17 @@ public sealed partial class MainWindowViewModel
             LocalizedTextFormatter.Format("Notification_VaultChanged_Title"),
             LocalizedTextFormatter.Format("Notification_VaultChanged_Message"),
             NotificationSeverity.Success);
+    }
+
+    /// <summary>Carga los datos propios del vault antes de refrescar sus vistas.</summary>
+    private void ReloadVaultData()
+    {
+        VaultDataStorage.MigrateLegacyFiles(_vaultService);
+        _kanbanService.Reload();
+        _polarTaskService.Reload();
+        _reminderService.Reload();
+        _dismissedReminderService.Reload();
+        _notificationService.Reload();
     }
 
     /// <summary>Pops every reminder whose scheduled time has arrived and turns each into a real

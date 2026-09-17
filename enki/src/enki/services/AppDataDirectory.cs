@@ -4,8 +4,8 @@ using System.Linq;
 
 namespace enki.Services;
 
-/// <summary>Resuelve la carpeta base donde Enki persiste su estado (<c>settings.json</c>, <c>kanban.json</c>,
-/// <c>polar-tasks.json</c>, etc. — ver <see cref="SettingsService"/> y el resto de servicios que aceptan un
+/// <summary>Resuelve la carpeta base donde Enki persiste la configuración del equipo (<c>settings.json</c>)
+/// y los archivos heredados pendientes de migrar — ver <see cref="SettingsService"/> y los servicios que aceptan un
 /// <c>storageDirectory</c> opcional). En un build de Debug compilado desde el código fuente (<c>dotnet run</c>,
 /// F5 del IDE) usa una carpeta dentro del propio proyecto (<c>src/enki/.devdata/</c>, en <c>.gitignore</c>)
 /// en vez de <c>%AppData%/Enki</c> — así una copia recién clonada arranca siempre en blanco (sin vault, sin

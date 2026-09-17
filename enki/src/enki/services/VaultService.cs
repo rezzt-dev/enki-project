@@ -200,6 +200,7 @@ public sealed class VaultService
     {
         var name = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         if (string.Equals(name, VaultSubfolderName, StringComparison.OrdinalIgnoreCase)) return true;
+        if (Directory.Exists(Path.Combine(folder, ".tasks"))) return true;
 
         if (!Directory.Exists(folder)) return false;
         if (Directory.Exists(Path.Combine(folder, ".sessions")) || Directory.Exists(Path.Combine(folder, ".trash")))

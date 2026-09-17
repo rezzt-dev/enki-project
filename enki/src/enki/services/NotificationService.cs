@@ -6,13 +6,17 @@ using enki.Models;
 namespace enki.Services;
 
 /// <summary>Persists the app's own event log (vault switched, sync errors, etc.) to
-/// <c>%AppData%/Enki/notifications.json</c> — same load/save shape as <see cref="SettingsService"/> and
+/// <c>&lt;vault&gt;/.enki/notifications.json</c> — same load/save shape as <see cref="SettingsService"/> and
 /// <see cref="KanbanService"/>. Capped at <see cref="MaxItems"/> so the file can't grow forever.</summary>
 public sealed class NotificationService
 {
     private const int MaxItems = 50;
 
-    private readonly string _path;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _path => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "notifications.json")
+        : Path.Combine(_storageDirectory!, "notifications.json");
     private readonly SettingsService _settingsService;
 
     public List<AppNotification> Notifications { get; private set; }
@@ -39,10 +43,24 @@ public sealed class NotificationService
     {
         _settingsService = settingsService;
 
-        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
-        Directory.CreateDirectory(configDir);
-        _path = Path.Combine(configDir, "notifications.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
         Notifications = Load();
+    }
+
+    public NotificationService(SettingsService settingsService, VaultService vaultService)
+    {
+        _settingsService = settingsService;
+        _vaultService = vaultService;
+        Notifications = Load();
+    }
+
+    /// <summary>Recarga el historial de avisos del vault activo.</summary>
+    public void Reload()
+    {
+        LoadedFromCorruptData = false;
+        Notifications = Load();
+        NotificationsChanged?.Invoke();
     }
 
     private List<AppNotification> Load()
@@ -53,7 +71,11 @@ public sealed class NotificationService
         return [];
     }
 
-    public void Save() => JsonFileStore.Save(_path, Notifications);
+    public void Save()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        JsonFileStore.Save(_path, Notifications);
+    }
 
     /// <summary>Inserts, persists and broadcasts a new notification — unless its severity is muted in
     /// Ajustes › Notificaciones (see docs/notificaciones-y-recordatorios.md), in which case the object is

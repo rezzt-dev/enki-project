@@ -8,9 +8,9 @@ using enki.Models;
 
 namespace enki.Services;
 
-/// <summary>Crea una copia de seguridad completa de Enki en un único .zip — no solo el vault (notas), sino
-/// también los ficheros de estado que viven aparte en <c>%AppData%/Enki/*.json</c> (kanban, ajustes,
-/// notificaciones, recordatorios, tareas Polar). Ver docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md:
+/// <summary>Crea una copia de seguridad completa de Enki en un único .zip: el vault (notas,
+/// tareas y avisos) y la configuración del equipo en <c>%AppData%/Enki</c>.
+/// Ver docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md:
 /// Enki es "notas en Markdown en tu disco, sin nube", lo que hace la copia de seguridad más crítica que en
 /// una app con backend — hasta esta funcionalidad no existía ninguna vía de respaldo.</summary>
 public sealed class VaultBackupService
@@ -30,8 +30,7 @@ public sealed class VaultBackupService
     }
 
     /// <summary>Empaqueta el vault activo bajo <c>vault/</c> y los ficheros de estado de
-    /// <c>%AppData%/Enki</c> (kanban.json, settings.json, notifications.json, reminders.json,
-    /// polar-tasks.json, dismissed-reminders.json…) bajo <c>app-data/</c> en un único .zip en
+    /// <c>%AppData%/Enki</c> (settings.json y posibles ficheros heredados) bajo <c>app-data/</c> en
     /// <paramref name="destinationZipPath"/>. Sobrescribe si ya existe un fichero con ese nombre. Un fichero
     /// individual bloqueado o ilegible no aborta el resto de la copia — mismo criterio tolerante que
     /// <see cref="VaultService.GetVaultSizeBytes"/> — pero, a diferencia de antes, la ruta relativa de cada

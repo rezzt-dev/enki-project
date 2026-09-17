@@ -117,9 +117,8 @@ public sealed class AppSettings
     public string? PolarRefreshToken { get; set; }
     public long PolarAccessTokenExpiresAtUtcMs { get; set; }
 
-    /// <summary>Sync cursor (epoch millis) — see <c>PolarSyncService</c>. A single global cursor is
-    /// enough per docs/supabase-sync/04-estrategia-sincronizacion.md ("un global es suficiente si se usa
-    /// el mínimo updated_at de las 4 consultas").</summary>
+    /// <summary>Cursor heredado de instalaciones anteriores. Los vaults actuales guardan su propio
+    /// cursor en <see cref="VaultSettings.PolarLastSyncAtUtcMs"/>.</summary>
     public long PolarLastSyncAtUtcMs { get; set; }
 
     /// <summary>Shows/hides the tag-chip filter row in Kanban → "Gestión de tareas" (Ajustes › Cuenta).

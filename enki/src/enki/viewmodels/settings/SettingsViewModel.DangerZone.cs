@@ -92,10 +92,13 @@ public sealed partial class SettingsViewModel
         // VaultService.ResolveVaultFolder.
         var folder = VaultService.ResolveVaultFolder(pickedFolder);
 
-        _vaultService.SetVaultPath(folder);
-        VaultPath = folder;
-        RefreshVaultSizeLabel();
-        _onVaultChanged();
+        await _polarSyncService.RunWithSyncPausedAsync(() =>
+        {
+            _vaultService.SetVaultPath(folder);
+            VaultPath = folder;
+            RefreshVaultSizeLabel();
+            _onVaultChanged();
+        });
     }
 
     // ===================== Zona de peligro (Ajustes › General) =====================

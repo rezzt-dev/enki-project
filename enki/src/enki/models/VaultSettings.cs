@@ -36,6 +36,10 @@ public sealed class VaultSettings
     /// already shipped at.</summary>
     public int UiZoomPercent { get; set; } = 100;
 
+    /// <summary>Último instante sincronizado con Polar para este vault. Cada vault necesita su
+    /// propio cursor para descargar los cambios que aún no tiene.</summary>
+    public long PolarLastSyncAtUtcMs { get; set; }
+
     // ===================== Dashboard configurable (propuesta 27) =====================
 
     /// <summary>Ordered list of dashboard section keys (e.g. "QuickAccess", "Today", "Vault",

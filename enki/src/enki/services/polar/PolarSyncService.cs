@@ -65,7 +65,11 @@ public sealed class PolarSyncService
     private readonly PolarTaskService _taskService;
     private readonly ReminderService _reminderService;
     private readonly SettingsService _settingsService;
+    private readonly VaultSettingsService? _vaultSettingsService;
     private readonly SemaphoreSlim _gate = new(1, 1);
+
+    private long SyncCursor => _vaultSettingsService?.Settings.PolarLastSyncAtUtcMs
+        ?? _settingsService.Settings.PolarLastSyncAtUtcMs;
 
     public bool IsSyncing { get; private set; }
     public LocalizedText? LocalizedError { get; private set; }
@@ -92,8 +96,8 @@ public sealed class PolarSyncService
     /// fallo (03-problemas-y-deuda-tecnica.md §4).</summary>
     public bool LastErrorWasNetwork { get; private set; }
 
-    public DateTime? LastSyncedUtc => _settingsService.Settings.PolarLastSyncAtUtcMs > 0
-        ? PolarWire.FromEpochMs(_settingsService.Settings.PolarLastSyncAtUtcMs)
+    public DateTime? LastSyncedUtc => SyncCursor > 0
+        ? PolarWire.FromEpochMs(SyncCursor)
         : null;
 
     /// <summary>Raised after every sync attempt (success or failure) — the Kanban task-management view and
@@ -114,13 +118,24 @@ public sealed class PolarSyncService
 
     public PolarSyncService(
         PolarAuthService auth, SupabaseRestClient rest, PolarTaskService taskService,
-        ReminderService reminderService, SettingsService settingsService)
+        ReminderService reminderService, SettingsService settingsService,
+        VaultSettingsService? vaultSettingsService = null)
     {
         _auth = auth;
         _rest = rest;
         _taskService = taskService;
         _reminderService = reminderService;
         _settingsService = settingsService;
+        _vaultSettingsService = vaultSettingsService;
+    }
+
+    /// <summary>Espera a que termine la sincronización actual y bloquea nuevos ciclos mientras
+    /// cambia el vault y se recargan sus almacenes.</summary>
+    public async Task RunWithSyncPausedAsync(Action changeVault)
+    {
+        await _gate.WaitAsync();
+        try { changeVault(); }
+        finally { _gate.Release(); }
     }
 
     public async Task<PolarSyncOutcome> SyncNowAsync(CancellationToken ct = default)
@@ -137,7 +152,7 @@ public sealed class PolarSyncService
         try
         {
             var userId = _auth.UserId!;
-            var cursor = _settingsService.Settings.PolarLastSyncAtUtcMs;
+            var cursor = SyncCursor;
 
             tasksChanged |= await PushTaskListsAsync(userId, overwrittenTitles, ct);
             tasksChanged |= await PushTasksAsync(userId, overwrittenTitles, ct);
@@ -158,8 +173,17 @@ public sealed class PolarSyncService
             // common case, not an edge case.
             if (_taskService.RollRecurringTasks()) tasksChanged = true;
 
-            _settingsService.Settings.PolarLastSyncAtUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            _settingsService.Save();
+            var syncedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (_vaultSettingsService is not null)
+            {
+                _vaultSettingsService.Settings.PolarLastSyncAtUtcMs = syncedAt;
+                _vaultSettingsService.Save();
+            }
+            else
+            {
+                _settingsService.Settings.PolarLastSyncAtUtcMs = syncedAt;
+                _settingsService.Save();
+            }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -178,9 +202,15 @@ public sealed class PolarSyncService
         finally
         {
             IsSyncing = false;
-            _gate.Release();
-            SyncCompleted?.Invoke(tasksChanged, remindersChanged);
-            if (overwrittenTitles.Count > 0) LocalEditsOverwritten?.Invoke(overwrittenTitles);
+            try
+            {
+                SyncCompleted?.Invoke(tasksChanged, remindersChanged);
+                if (overwrittenTitles.Count > 0) LocalEditsOverwritten?.Invoke(overwrittenTitles);
+            }
+            finally
+            {
+                _gate.Release();
+            }
         }
 
         return PolarSyncOutcome.Completed;

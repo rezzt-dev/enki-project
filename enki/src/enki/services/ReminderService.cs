@@ -6,7 +6,7 @@ using enki.Models;
 
 namespace enki.Services;
 
-/// <summary>Persists user-created reminders to <c>%AppData%/Enki/reminders.json</c> — same load/save shape
+/// <summary>Persists user-created reminders to <c>&lt;vault&gt;/.tasks/reminders.json</c> — same load/save shape
 /// as <see cref="NotificationService"/>. Kept deliberately "dumb": it doesn't know about
 /// <see cref="NotificationService"/> or toasts, it just tracks which reminders exist and which of them have
 /// come due (see <see cref="PopDueReminders"/>) — the shell (<c>MainWindowViewModel</c>) is the one that
@@ -14,7 +14,11 @@ namespace enki.Services;
 /// cross-service interaction in the app.</summary>
 public sealed class ReminderService
 {
-    private readonly string _path;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _path => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "reminders.json")
+        : Path.Combine(_storageDirectory!, "reminders.json");
     private readonly Func<string?> _currentUserIdProvider;
 
     public List<Reminder> Reminders { get; private set; }
@@ -38,12 +42,28 @@ public sealed class ReminderService
     /// (docs/analisis-proyecto/roadmap.md, Fase 4); defaults to "always null" for callers that don't care.</param>
     public ReminderService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null)
     {
-        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
-        Directory.CreateDirectory(configDir);
-        _path = Path.Combine(configDir, "reminders.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);
         Reminders = Load();
         PurgeOldTombstones();
+    }
+
+    public ReminderService(VaultService vaultService, Func<string?>? currentUserIdProvider = null)
+    {
+        _vaultService = vaultService;
+        _currentUserIdProvider = currentUserIdProvider ?? (() => null);
+        Reminders = Load();
+        PurgeOldTombstones();
+    }
+
+    /// <summary>Recarga los recordatorios del vault activo.</summary>
+    public void Reload()
+    {
+        LoadedFromCorruptData = false;
+        Reminders = Load();
+        PurgeOldTombstones();
+        RemindersChanged?.Invoke();
     }
 
     /// <summary>Non-deleted reminders — every UI consumer (the Recordatorios page, the due-reminder
@@ -66,6 +86,7 @@ public sealed class ReminderService
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         JsonFileStore.Save(_path, Reminders);
         RemindersChanged?.Invoke();
     }

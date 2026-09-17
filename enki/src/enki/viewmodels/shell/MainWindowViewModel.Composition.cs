@@ -43,6 +43,7 @@ public sealed partial class MainWindowViewModel
         // en SettingsViewModel hace lo mismo en caliente si lo cambia desde Ajustes.
         LogService.SetDebugEnabled(_settingsService.Settings.DebugLoggingEnabled);
         _vaultService = new VaultService(_settingsService);
+        VaultDataStorage.MigrateLegacyFiles(_vaultService);
         // Búsqueda de texto completo sobre el contenido real de las notas (búsqueda global, quick switcher
         // y los dos filtros de la vista de Notas). Sin estado propio ni persistencia: lee a través de la
         // caché de notas del vault, así que puede construirse aquí sin orden particular.
@@ -51,9 +52,9 @@ public sealed partial class MainWindowViewModel
         _vaultSettingsService = new VaultSettingsService(_vaultService);
         _habitService = new HabitService(_vaultService);
         _sessionService = new SessionService(_vaultService);
-        _kanbanService = new KanbanService(deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
-        _notificationService = new NotificationService(_settingsService);
-        _dismissedReminderService = new DismissedReminderService();
+        _kanbanService = new KanbanService(_vaultService, deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
+        _notificationService = new NotificationService(_settingsService, _vaultService);
+        _dismissedReminderService = new DismissedReminderService(_vaultService);
         // Fase 10 (docs/analisis-proyecto/roadmap.md): una tarjeta borrada para siempre no debe dejar un
         // descarte de recordatorio huérfano apuntando a un id que ya no existe.
         _kanbanService.CardPermanentlyDeleted += _dismissedReminderService.RemoveForCard;
@@ -61,10 +62,10 @@ public sealed partial class MainWindowViewModel
         // currentUserIdProvider stamps which Polar account was linked at the moment each row first became
         // dirty, so PolarSyncService can later refuse to push it under a different account
         // (docs/analisis-proyecto/roadmap.md, Fase 4).
-        _reminderService = new ReminderService(currentUserIdProvider: () => _polarAuthService.UserId);
+        _reminderService = new ReminderService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
         _supabaseRestClient = new SupabaseRestClient(_polarAuthService);
-        _polarTaskService = new PolarTaskService(currentUserIdProvider: () => _polarAuthService.UserId);
-        _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService);
+        _polarTaskService = new PolarTaskService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
+        _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService, _vaultSettingsService);
         _polarRealtimeService = new PolarRealtimeService(_polarAuthService, _polarSyncService);
 
         // Fase 1 (docs/analisis-proyecto/roadmap.md): extiende el patrón de KanbanService.LoadedFromCorruptData
@@ -320,6 +321,7 @@ public sealed partial class MainWindowViewModel
 
     private void InitializeShell()
     {
+        ReloadVaultData();
         _kanbanService.EnsureSeedBoard();
         // Guarantees every vault this shell ever opens has a "default" session — a brand-new vault, one
         // just pointed at for the first time, or one created by an older Enki build that predates

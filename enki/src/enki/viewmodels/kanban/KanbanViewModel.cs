@@ -359,6 +359,15 @@ public sealed partial class KanbanViewModel : ViewModelBase
         ReloadArchive();
     }
 
+    /// <summary>Cierra editores que aún apuntan a entidades del vault anterior.</summary>
+    public void CloseForVaultChange()
+    {
+        CardEditor = null;
+        CardDetail = null;
+        IsArchiveOpen = false;
+        TaskManagement.CloseForVaultChange();
+    }
+
     private void ApplyFilters()
     {
         var selectedTags = TagFilter.SelectedTags.ToList();

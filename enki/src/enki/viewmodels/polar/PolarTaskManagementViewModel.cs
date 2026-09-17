@@ -200,6 +200,14 @@ public sealed partial class PolarTaskManagementViewModel : ViewModelBase
         SelectList(reselect ?? Lists.FirstOrDefault());
     }
 
+    /// <summary>Descarta los diálogos vinculados a tareas del vault anterior.</summary>
+    public void CloseForVaultChange()
+    {
+        TaskEditor = null;
+        ListEditor = null;
+        TaskDetail = null;
+    }
+
     private void RefreshStats()
     {
         var activeTasks = _taskService.Store.Tasks.Where(t => !t.IsDeleted).ToList();

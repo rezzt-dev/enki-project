@@ -199,6 +199,13 @@ public sealed partial class RemindersViewModel : ViewModelBase
     [RelayCommand]
     private void CancelEditor() => Editor = null;
 
+    /// <summary>Cierra el formulario y el detalle del vault anterior.</summary>
+    public void CloseForVaultChange()
+    {
+        Editor = null;
+        Detail = null;
+    }
+
     [RelayCommand]
     private void SaveEditor()
     {

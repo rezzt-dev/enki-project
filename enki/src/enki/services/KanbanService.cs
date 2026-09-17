@@ -8,7 +8,11 @@ namespace enki.Services;
 
 public sealed class KanbanService
 {
-    private readonly string _boardPath;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _boardPath => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "kanban.json")
+        : Path.Combine(_storageDirectory!, "kanban.json");
     private bool _seedPending;
     public KanbanBoard Board { get; private set; }
 
@@ -38,12 +42,28 @@ public sealed class KanbanService
     /// real kanban file.</param>
     public KanbanService(string? storageDirectory = null, bool deferSeedCreation = false)
     {
-        var configDir = storageDirectory ?? AppDataDirectory.Resolve();
-        Directory.CreateDirectory(configDir);
-        _boardPath = Path.Combine(configDir, "kanban.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
         _seedPending = deferSeedCreation;
         Board = Load();
         PurgeOldTrashedCards();
+    }
+
+    public KanbanService(VaultService vaultService, bool deferSeedCreation = false)
+    {
+        _vaultService = vaultService;
+        _seedPending = deferSeedCreation;
+        Board = Load();
+        PurgeOldTrashedCards();
+    }
+
+    /// <summary>Lee el tablero del vault activo después de cambiar de carpeta.</summary>
+    public void Reload()
+    {
+        LoadedFromCorruptData = false;
+        Board = Load();
+        PurgeOldTrashedCards();
+        BoardChanged?.Invoke();
     }
 
     /// <summary>Purga automática de la papelera del tablero (Fase 3 de docs/analisis-proyecto/roadmap.md):
@@ -120,6 +140,7 @@ public sealed class KanbanService
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(_boardPath)!);
         JsonFileStore.Save(_boardPath, Board);
         BoardChanged?.Invoke();
     }
