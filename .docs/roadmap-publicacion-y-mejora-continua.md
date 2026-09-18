@@ -41,6 +41,7 @@ superficie de producto sin cerrar lo existente.
 - pasar de la documentacion de `dotnet publish` a paquetes instalables reales para Windows, Linux y macOS.
 - completar iconos por plataforma, integracion `.desktop` en Linux, paquete `.app` o `.dmg` en macOS y MSI, Inno Setup o MSIX en Windows.
 - documentar el flujo minimo de release para que compilar, empaquetar y publicar no dependa de memoria manual.
+- implementado: scripts de empaquetado por plataforma en `enki/packaging/` (`.deb`+`.tar.gz` con integracion `.desktop`/hicolor en Linux, instalador Inno Setup en Windows, bundle `.app`+`.dmg` firmado ad-hoc en macOS) y pipeline de release en `.github/workflows/release.yml` (tag `v*.*.*` -> compila, empaqueta y publica los cinco paquetes en una GitHub Release sin pasos manuales). ver [`empaquetado-y-distribucion.md`](project-info/empaquetado-y-distribucion.md) para el detalle, lo verificado y lo pendiente (firma de codigo real, verificacion en Windows/macOS real).
 
 ### 1.3 qa manual documentada
 

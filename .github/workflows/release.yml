@@ -1,0 +1,165 @@
+name: Release
+
+# Compila, empaqueta y publica los instaladores de Enki para Windows, Linux y macOS.
+#
+# - `git push` de un tag `vX.Y.Z` compila las tres plataformas y publica una GitHub Release con
+#   todos los paquetes adjuntos. Es el único paso manual del flujo de release — ver
+#   .docs/project-info/empaquetado-y-distribucion.md para el resto (qué bump hacer antes de taguear).
+# - `workflow_dispatch` (botón "Run workflow" en la pestaña Actions, o `gh workflow run release.yml`)
+#   ejecuta exactamente el mismo pipeline de compilación/empaquetado como prueba, sin crear ninguna
+#   release — útil para verificar que el empaquetado sigue funcionando sin tener que cortar una
+#   versión real.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Versión a empaquetar (ej. 0.2.0). Vacío = usa <Version> de enki/Directory.Build.props.
+          Solo afecta a esta ejecución de prueba, no crea ninguna release de GitHub.
+        required: false
+
+jobs:
+  linux:
+    name: Linux (.deb + .tar.gz)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Resolver versión
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.version }}" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' enki/Directory.Build.props | head -1)"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "==> versión resuelta: $VERSION"
+
+      - name: Empaquetar (linux-x64)
+        run: enki/packaging/linux/build-linux-package.sh --rid linux-x64 --version "$VERSION"
+
+      - name: Subir artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: enki-linux-x64
+          path: dist/linux/*
+          if-no-files-found: error
+
+  windows:
+    name: Windows (instalador .exe)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Resolver versión
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.version }}" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' enki/Directory.Build.props | head -1)"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "==> versión resuelta: $VERSION"
+
+      - name: Empaquetar (win-x64)
+        shell: pwsh
+        run: enki/packaging/windows/build-windows-package.ps1 -Rid win-x64 -Version $env:VERSION
+
+      - name: Subir artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: enki-windows-x64
+          path: dist/windows/*
+          if-no-files-found: error
+
+  macos:
+    name: macOS (${{ matrix.rid }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [osx-arm64, osx-x64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Resolver versión
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.version }}" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' enki/Directory.Build.props | head -1)"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "==> versión resuelta: $VERSION"
+
+      - name: Empaquetar (${{ matrix.rid }})
+        run: enki/packaging/macos/build-macos-package.sh --rid ${{ matrix.rid }} --version "$VERSION"
+
+      - name: Subir artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: enki-${{ matrix.rid }}
+          path: dist/macos/*
+          if-no-files-found: error
+
+  publish-release:
+    name: Publicar GitHub Release
+    needs: [linux, windows, macos]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Descargar todos los artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Crear la release y adjuntar los paquetes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Enki $VERSION" \
+            --notes "Paquetes generados automáticamente por .github/workflows/release.yml. Ver CHANGELOG.md para el detalle de cambios de esta versión." \
+            dist-artifacts/*/*

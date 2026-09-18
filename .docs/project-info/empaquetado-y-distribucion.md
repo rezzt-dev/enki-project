@@ -1,9 +1,11 @@
 # Empaquetado y distribución para usuarios no técnicos
 
-> **Estado**: primer borrador, verificado ejecutando los comandos reales contra este repo (no solo
-> documentado de memoria). Cubre el mínimo viable — `dotnet publish` autocontenido por plataforma — que
-> pedía la Fase 8 de `docs/analisis-proyecto/roadmap.md`. El instalador nativo por SO (MSI/`.deb`/`.dmg`)
-> queda fuera de este borrador; ver "Siguiente paso: instaladores nativos" al final.
+> **Estado**: implementado y verificado en la medida en que este entorno lo permite (ver el detalle de
+> qué se ha podido ejecutar de verdad en cada sección). Cubre el punto 1.2 de
+> [`roadmap-publicacion-y-mejora-continua.md`](../roadmap-publicacion-y-mejora-continua.md): paquetes
+> instalables reales para Windows, Linux y macOS — no solo la documentación de `dotnet publish` — más el
+> flujo de release automatizado que los genera sin depender de memoria manual
+> (`.github/workflows/release.yml`).
 
 ## Por qué hace falta esto
 
@@ -82,53 +84,170 @@ Resultado: build correcto, sin warnings ni errores. La carpeta de salida contien
   quedan como ficheros sueltos junto al ejecutable**, no dentro del single-file. Son dependencias
   transitivas de Avalonia (renderizado, HarfBuzz para shaping de texto), `TextMateSharp.Grammars`
   (resaltado de sintaxis) y `PDFtoImage`/PDFium (visor de PDF de la sección Archivos). **Hay que
-  distribuir la carpeta completa, nunca solo el ejecutable suelto** — hoy no hay ningún mecanismo de
-  empaquetado (instalador, `.tar.gz`, `.zip`) que garantice esto; queda como trabajo pendiente explícito
-  del "siguiente paso" más abajo.
+  distribuir la carpeta completa, nunca solo el ejecutable suelto** — los tres scripts de empaquetado de
+  la sección siguiente lo garantizan copiando siempre el árbol completo del publish, nunca solo el
+  ejecutable.
 
-No se ha podido verificar `win-x64`/`osx-x64`/`osx-arm64` en esta sesión (entorno Linux sin acceso a
-Windows/macOS) — la compilación cross-platform con `--runtime` debería funcionar igual (es una capacidad
-estándar del SDK de .NET, no específica de este proyecto), pero queda sin confirmar hasta probarse en la
-plataforma real o en CI (ver siguiente sección).
+Cross-compilar `osx-arm64` desde este entorno Linux (sin ningún SDK ni herramienta de macOS instalada)
+también se ha verificado en esta sesión — es una capacidad estándar del SDK de .NET, no específica de
+Enki — y sirvió para probar de extremo a extremo el script de empaquetado de macOS (ver más abajo). `win-x64`
+y `osx-x64` no se han podido probar en esta sesión por falta de tiempo de build, pero usan exactamente el
+mismo comando con otro `--runtime`.
 
-## Automatizarlo en CI (opcional, no implementado en esta fase)
+## Empaquetado real por plataforma
 
-`.github/workflows/ci.yml` (Fase 8) hoy solo compila y testea — no publica binarios. Si se quiere que
-cada tag de versión genere automáticamente los ejecutables de las tres plataformas, el patrón estándar es
-un job de GitHub Actions con matriz `runs-on` (`windows-latest`/`ubuntu-latest`/`macos-latest`) disparado
-por `on: push: tags: ['v*']`, cada uno ejecutando el `dotnet publish` de arriba con el RID correspondiente
-y subiendo el resultado como `actions/upload-release-asset` o similar. No se implementa en esta fase por
-alcance — el roadmap solo pide el "camino" documentado, no el pipeline completo — pero el comando base ya
-verificado arriba es exactamente el que iría dentro de ese job.
+Cada plataforma tiene un script en `enki/packaging/<plataforma>/` que hace el `dotnet publish`
+autocontenido de arriba y lo envuelve en el paquete final. Los tres siguen el mismo contrato: aceptan
+`--rid`/`-Rid`, `--version`/`-Version` (por defecto, `<Version>` de `enki/Directory.Build.props`) y
+`--skip-publish`/`-SkipPublish` (para reempaquetar sin recompilar), y excluyen explícitamente
+`local.properties` — las credenciales locales de Supabase de quien compila (ver
+`enki.csproj`) — para que nunca viajen dentro de un paquete distribuido.
 
-## Siguiente paso: instaladores nativos
+### Linux — `enki/packaging/linux/build-linux-package.sh`
 
-Un ejecutable + carpeta de `.so`/`.dll` sueltos sigue siendo más fricción de la que espera un usuario no
-técnico (nada de icono en el menú de aplicaciones, nada de desinstalador, hay que recordar no separar el
-ejecutable del resto de ficheros). El camino natural para cada plataforma, en orden de esfuerzo creciente:
+```bash
+enki/packaging/linux/build-linux-package.sh --rid linux-x64 --version 0.2.0
+```
 
-- **Windows**: [MSIX](https://learn.microsoft.com/windows/msix/) o un instalador clásico con
-  [Inno Setup](https://jrsoftware.org/isinfo.php)/[WiX](https://wixtoolset.org/) — cualquiera de los dos
-  envuelve el resultado de `dotnet publish -r win-x64` de arriba sin cambios adicionales en el código.
-- **Linux**: paquete `.deb`/`.rpm` (p. ej. con [`dotnet-deb`](https://github.com/quamotion/dotnet-packaging)
-  o un `AppImage`, que además evita el problema de dependencias del sistema al ser autocontenido igual
-  que el publish de arriba).
-- **macOS**: bundle `.app` (estructura `Contents/MacOS/`, `Contents/Info.plist`) + `.dmg` para
-  distribución — Avalonia tiene soporte de primera clase para generar el `.app` a partir de un publish
-  self-contained, ver la [documentación oficial de Avalonia sobre despliegue en
-  macOS](https://docs.avaloniaui.net/docs/deployment/macOS).
+Genera en `dist/linux/`:
 
-Ninguno de los tres requiere cambios en el código de la app en sí — son, en los tres casos, una capa de
-empaquetado alrededor del mismo `dotnet publish` ya verificado en este documento. Queda fuera de esta
-fase por ser un esfuerzo notablemente mayor (aprender/configurar la herramienta de cada plataforma, firmar
-el instalador en Windows/macOS si se quiere evitar el aviso de "editor no reconocido"). El icono de app
-real que antes faltaba (ver más abajo) ya no es uno de esos huecos.
+- **`enki_<version>_<arch>.deb`** — solo si `dpkg-deb` está instalado (Debian/Ubuntu y derivados; siempre
+  presente en el runner `ubuntu-latest` de CI). Instala en `/usr/lib/enki/` (el árbol completo del
+  publish), con un wrapper en `/usr/bin/enki`, el `.desktop` en `/usr/share/applications/enki.desktop` y
+  los iconos en `/usr/share/icons/hicolor/{256x256,512x512}/apps/enki.png` — integración estándar de menú
+  de aplicaciones Linux (GNOME, KDE, XFCE...) vía el tema de iconos `hicolor` y la especificación
+  freedesktop.org de `.desktop`.
+- **`enki-<version>-linux-<arch>.tar.gz`** — se genera siempre, con `install.sh`/`uninstall.sh` que copian
+  ese mismo árbol a `/usr` con `sudo`. Es la vía para distros sin `dpkg-deb`, incluida **Arch Linux**, que
+  es donde se desarrolla este repo hoy y donde no hay forma de instalar el `.deb` directamente.
+
+Verificado en esta sesión contra este repo: el `.tar.gz` completo (extracción, layout, exclusión de
+`local.properties`, `enki.desktop` validado con `desktop-file-validate`). El `.deb` no se ha podido
+verificar aquí porque este entorno Arch no tiene `dpkg-deb` instalado (`sudo pacman -S dpkg` lo añadiría);
+sí se genera en cada release real porque el job de Linux de la CI corre en `ubuntu-latest`, que lo trae de
+serie.
+
+### Windows — `enki/packaging/windows/build-windows-package.ps1`
+
+```powershell
+enki\packaging\windows\build-windows-package.ps1 -Rid win-x64 -Version 0.2.0
+```
+
+Envuelve el publish con [Inno Setup](https://jrsoftware.org/isinfo.php) (`installer.iss`) y genera
+`dist\windows\enki-setup-<version>-win-x64.exe`: instalador con asistente en español/inglés, acceso
+directo de menú inicio (y de escritorio, opcional), desinstalador registrado en "Aplicaciones y
+características", instalación por usuario sin requerir privilegios de administrador
+(`PrivilegesRequired=lowest`) y el icono de `enki.exe` (ya embebido vía `<ApplicationIcon>` en
+`enki.csproj`) reutilizado en el instalador y el desinstalador.
+
+`ISCC.exe` (el compilador de línea de comandos de Inno Setup) viene preinstalado en los runners
+`windows-latest` de GitHub Actions — no hace falta ningún paso de instalación adicional en CI. Para
+compilarlo a mano en un PC de desarrollo con Windows hace falta instalar Inno Setup 6 una vez
+(instalador oficial en el enlace de arriba); el script lo busca en el `PATH` y, si no está, en la ruta de
+instalación por defecto.
+
+**No verificado en esta sesión** — este entorno es Linux sin acceso a Windows ni a Wine con Inno Setup
+instalado. El script y el `.iss` siguen la sintaxis estándar documentada de Inno Setup 6 y las rutas
+relativas se han revisado a mano, pero la primera compilación real en CI (o en un PC Windows) es la
+verificación pendiente.
+
+### macOS — `enki/packaging/macos/build-macos-package.sh`
+
+```bash
+enki/packaging/macos/build-macos-package.sh --rid osx-arm64 --version 0.2.0
+```
+
+Arma `Enki.app` (`Contents/MacOS` con el publish completo, `Contents/Resources/enki.icns`,
+`Contents/Info.plist` generado desde `Info.plist.template`) siguiendo la
+[documentación oficial de Avalonia sobre despliegue en macOS](https://docs.avaloniaui.net/docs/deployment/macOS),
+y genera en `dist/macos/`:
+
+- **`Enki-<version>-macos-<arch>.zip`** — siempre; el bundle comprimido con `ditto` (conserva atributos
+  extendidos, incluida la firma) cuando está disponible, o `zip` si no.
+- **`Enki-<version>-macos-<arch>.dmg`** — solo si `hdiutil` está disponible (macOS real; el job de macOS
+  de la CI, en `macos-latest`, lo trae siempre). Incluye un enlace a `/Applications` para el arrastrar-y-soltar
+  habitual de instalación en Mac.
+
+El bundle se firma **ad-hoc** (`codesign --sign -`) cuando `codesign` está disponible, para evitar el
+aviso "Enki.app está dañado" que Gatekeeper muestra hoy en macOS reciente ante bundles totalmente sin
+firmar. Una firma ad-hoc **no** es una firma con certificado de Apple Developer: seguirá apareciendo como
+"desarrollador no identificado" al primer intento de abrirlo (el usuario tiene que pasar por
+Ajustes → Privacidad y seguridad, o clic derecho → Abrir). Firmar de verdad y notarizar requiere una
+cuenta de pago de Apple Developer — fuera de alcance mientras Enki no tenga distribución pública (ver
+`README.md`, "Estado del proyecto").
+
+Verificado en esta sesión: el ensamblado completo del bundle y el `.zip`, cross-compilando `osx-arm64`
+desde este entorno Linux (sin SDK de macOS) y confirmando con `plistlib` de Python que el `Info.plist`
+generado es válido y tiene los valores esperados (`CFBundleVersion`, `CFBundleIdentifier`,
+`NSHumanReadableCopyright`...). El `.dmg` y la firma ad-hoc no se han podido verificar porque `hdiutil` y
+`codesign` no existen fuera de macOS — sí se ejecutan en cada release real porque el job de macOS de la CI
+corre en `macos-latest`.
+
+## Flujo de release automatizado (CI)
+
+`.github/workflows/release.yml` es el pipeline completo — compilar, empaquetar y publicar sin depender de
+memoria manual, que es justo lo que pedía este punto del roadmap:
+
+- **`git push` de un tag `vX.Y.Z`** dispara los tres jobs (`linux`, `windows`, `macos` con matriz
+  `osx-arm64`/`osx-x64`) en paralelo, cada uno ejecutando el script de empaquetado de su plataforma con
+  `--version` resuelto del propio tag (`vX.Y.Z` → `X.Y.Z`, sin el prefijo `v`). Un cuarto job,
+  `publish-release`, espera a que los tres terminen y crea la GitHub Release del tag con **todos** los
+  paquetes adjuntos (`.deb`, `.tar.gz`, `.exe`, `.zip`, `.dmg`) vía `gh release create`.
+- **`workflow_dispatch`** (botón "Run workflow" en la pestaña Actions de GitHub, o
+  `gh workflow run release.yml`) ejecuta el mismo pipeline de compilación/empaquetado como prueba, con una
+  versión opcional a mano — pero **no** crea ninguna release ni publica nada, porque el job
+  `publish-release` solo corre `if: startsWith(github.ref, 'refs/tags/')`. Es la forma de comprobar que el
+  empaquetado de las tres plataformas sigue funcionando sin tener que cortar una versión real.
+
+## Flujo mínimo de release
+
+Los pasos manuales para cortar una versión de Enki, en orden — todo lo demás (compilar, empaquetar,
+adjuntar los binarios) lo hace `release.yml`:
+
+1. Ejecutar la [checklist de QA manual](qa-manual-release-candidate.md) contra un build de Release.
+2. Subir `<Version>` en `enki/Directory.Build.props` a la versión nueva (p. ej. `0.1.0` → `0.2.0`) — es lo
+   que ve el usuario en Ajustes → Acerca de (`SettingsViewModel.AppVersion`), así que tiene que coincidir
+   con el tag del paso 4.
+3. Mover la sección `## [Sin publicar]` de `CHANGELOG.md` a `## [0.2.0] - AAAA-MM-DD` (formato
+   [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) que ya sigue el fichero).
+4. Confirmar (`git commit`) los dos cambios anteriores, y crear el tag anotado:
+   ```bash
+   git tag -a v0.2.0 -m "Enki 0.2.0"
+   git push origin main --follow-tags
+   ```
+5. Esperar a que terminen todos los jobs de `release.yml` en la pestaña Actions del repo (unos minutos —
+   `linux`, `windows` y las dos ejecuciones en paralelo de `macos` por su matriz `osx-arm64`/`osx-x64`,
+   y por último `publish-release`).
+6. Revisar la GitHub Release recién creada en el tag: debe tener 5 ficheros adjuntos (`.deb`, `.tar.gz`,
+   `.exe`, dos `.zip`+`.dmg` de macOS) y, si se quiere pulir antes de anunciarla, editar sus notas a mano
+   (el texto que genera `gh release create` es un placeholder que remite a `CHANGELOG.md`, no un
+   changelog en sí).
+
+Para probar el empaquetado sin cortar una versión real, cualquier paso de este flujo se puede reemplazar
+por un `workflow_dispatch` de `release.yml` (ver sección anterior) o por ejecutar el script de la
+plataforma correspondiente en local.
+
+## Pendiente explícito (fuera de esta fase)
+
+- **Firma de código real**: Authenticode en Windows (evita el aviso de SmartScreen "Windows protegió tu
+  PC") y notarización de Apple en macOS (evita el aviso de Gatekeeper más allá de la firma ad-hoc de
+  arriba). Ambas requieren certificados/cuentas de pago — tiene sentido revisarlo si Enki pasa a tener
+  distribución pública real (ver `README.md`, "Estado del proyecto"), no antes.
+- **MSIX / AppImage / `.rpm`**: formatos alternativos mencionados en el roadmap que no se han
+  implementado — el `.exe` de Inno Setup y el `.deb`/`.tar.gz` de Linux ya cubren el caso de uso actual
+  (instalación de escritorio con desinstalador e icono de menú); añadir más formatos es una extensión
+  natural de los mismos scripts si hiciera falta, no un cambio de arquitectura.
+- **Verificación real en Windows y macOS**: esta sesión ha verificado todo lo que un entorno Linux sin
+  esas plataformas permite verificar (sintaxis, cross-compilación, ensamblado de bundles). La primera
+  ejecución real de `release.yml` en CI —o de los scripts en un PC Windows/Mac— es la verificación que
+  falta, y es automática en cuanto se empuje el primer tag `v*.*.*`.
 
 ## Icono de la aplicación (Fase 10, docs/analisis-proyecto/roadmap.md) ✅ resuelto
 
 Cerrado el hueco que este documento señalaba: `enki/src/enki/assets/icon/` contiene ahora
 `enki.ico` (Windows, multi-resolución 16/32/48/64/128/256), `enki.icns` (macOS, familia completa
-16–1024 incluidos los `@2x`) y PNGs sueltos de 256/512/1024 para un futuro `.desktop` de Linux —
+16–1024 incluidos los `@2x`) y PNGs sueltos de 256/512/1024 que usan hoy el `.desktop`/`.deb`/`.tar.gz` de
+Linux (sección "Empaquetado real por plataforma" de arriba) —
 monograma "E" (`#EAEAEA`) sobre fondo oscuro (`#121212`) en un cuadrado con esquinas rectas, siguiendo
 al pie de la letra "nada de color de marca", "sharp corners" y la paleta monocroma de
 [sistema-diseno-web.md §1.3](sistema-diseno-web.md).
@@ -156,5 +275,6 @@ los dos contrastes:
   verificado con `file`/Pillow. Sigue siendo recomendable regenerarlos con `iconutil -c icns` desde un
   `.iconset` en una máquina macOS real antes de un instalador `.dmg` de producción, como verificación
   cruzada — pero los ficheros actuales ya son válidos y suficientes para publicar.
-- Los PNGs de 256/512/1024 son salidas independientes del maestro 1024×1024 para facilitar un futuro
-  `.desktop` de Linux o cualquier otra integración con el SO que pida un PNG concreto.
+- Los PNGs de 256/512/1024 son salidas independientes del maestro 1024×1024; `build-linux-package.sh` usa
+  hoy los de 256 y 512 para el tema de iconos `hicolor` (ver arriba). El de 1024 queda disponible para
+  cualquier otra integración con el SO que pida un PNG más grande.

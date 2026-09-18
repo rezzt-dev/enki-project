@@ -12,6 +12,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 #### CAMBIOS
 - establecer `.docs/project-info/` como ruta versionada de la documentacion del proyecto y aclarar en `README.md`, `README.en.md`, `AGENTS.md` y `.gitignore` que `docs/` no forma parte del checkout.
 - anadir `.docs/project-info/qa-manual-release-candidate.md`, la checklist de qa manual de release candidate que consolida las verificaciones de lector de pantalla, render de wikilinks/enlaces rotos, reconexion de polar realtime y selector de recurrencia que los tests automaticos no cubren.
+- anadir empaquetado real por sistema en `enki/packaging/`: paquete `.deb` y `.tar.gz` con integracion `.desktop`/iconos hicolor en Linux, instalador Inno Setup en Windows y bundle `.app`/`.dmg` firmado ad-hoc en macOS, todos generados a partir del mismo publish self-contained y sin arrastrar `local.properties` al paquete final.
+- anadir `.github/workflows/release.yml`: al empujar un tag `v*.*.*` compila, empaqueta y publica los cinco paquetes de las tres plataformas como una GitHub Release, sin pasos manuales; tambien disponible como `workflow_dispatch` para probar el empaquetado sin cortar una version real.
+- anadir el job `lint-packaging` a `.github/workflows/ci.yml`, que valida en cada push/pr la sintaxis de los scripts de `enki/packaging/` (`bash -n`, `shellcheck`), el `enki.desktop` de linux y el yaml de `release.yml`, para detectar errores de empaquetado antes de cortar una release real.
 
 #### CORREGIDO
 - corregir los enlaces de documentacion y los iconos de ambos README, ademas de las referencias y enlaces relativos de `AGENTS.md` y `.docs/project-info/`, para que apunten a archivos existentes.
@@ -26,6 +29,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 #### CHANGED
 - establish `.docs/project-info/` as the versioned project documentation path and clarify in `README.md`, `README.en.md`, `AGENTS.md`, and `.gitignore` that `docs/` is not part of the checkout.
 - add `.docs/project-info/qa-manual-release-candidate.md`, the release-candidate manual qa checklist covering screen reader, wikilink/broken-link rendering, polar realtime reconnection and recurrence selector checks that automated tests don't cover.
+- add real per-platform packaging under `enki/packaging/`: a `.deb` and `.tar.gz` with `.desktop`/hicolor icon integration on Linux, an Inno Setup installer on Windows, and an ad-hoc signed `.app`/`.dmg` bundle on macOS, all built from the same self-contained publish and never carrying `local.properties` into the final package.
+- add `.github/workflows/release.yml`: pushing a `v*.*.*` tag builds, packages and publishes all five packages across the three platforms as a GitHub Release with no manual steps; also available as a `workflow_dispatch` to test packaging without cutting a real release.
+- add a `lint-packaging` job to `.github/workflows/ci.yml` that validates `enki/packaging/` scripts on every push/pr (`bash -n`, `shellcheck`), the linux `enki.desktop` file and `release.yml`'s yaml, to catch packaging errors before cutting a real release.
 
 #### FIXED
 - fix documentation links and icons in both README files, along with references and relative links in `AGENTS.md` and `.docs/project-info/`, so they point to existing files.
