@@ -50,6 +50,7 @@ public sealed partial class MainWindowViewModel
         _noteSearchService = new NoteSearchService(_vaultService);
         _vaultBackupService = new VaultBackupService(_vaultService);
         _vaultSettingsService = new VaultSettingsService(_vaultService);
+        _noteTemplateService = new NoteTemplateService(_vaultService);
         _habitService = new HabitService(_vaultService);
         _sessionService = new SessionService(_vaultService);
         _kanbanService = new KanbanService(_vaultService, deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
@@ -333,6 +334,11 @@ public sealed partial class MainWindowViewModel
         // just pointed at for the first time, or one created by an older Enki build that predates
         // sessions entirely. EnsureDefaultSession is idempotent, so this is a no-op once it already exists.
         _sessionService.EnsureDefaultSession();
+        // Siembra la carpeta de plantillas con sus dos ejemplos la primera vez que se abre cada vault —
+        // aquí y no en el constructor porque el idioma de la interfaz ya está decidido a estas alturas
+        // (mismo motivo por el que EnsureSeedBoard se llama justo arriba en vez de al construir
+        // KanbanService), y las plantillas de ejemplo nacen traducidas.
+        _noteTemplateService.EnsureInitialized();
 
         // Picks up this vault's own zoom level — needed here (not just the constructor) because this
         // method also runs after VaultSetupViewModel just pointed _vaultService at a brand-new vault,
@@ -355,7 +361,7 @@ public sealed partial class MainWindowViewModel
         var calendarLayerColorService = new CalendarLayerColorService(_kanbanService, _polarTaskService, _polarAuthService, _settingsService);
         var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService);
         Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
-        Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService);
+        Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService);
         Notes.PropertyChanged += OnNotesPropertyChanged;
         // Restaurar pestañas abiertas al reiniciar (docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §2) —
         // después de construir Notes pero antes de que la ventana quede lista, para que las pestañas ya
@@ -390,7 +396,7 @@ public sealed partial class MainWindowViewModel
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnKanbanBoardOrientationChanged,
-            OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels);
+            OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

@@ -9,6 +9,12 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ### CASTELLANO
 
+#### ANADIDO
+- plantillas de notas reutilizables en `<vault>/.enki/templates/`: cada plantilla es un archivo markdown con frontmatter opcional (`name`, `description`, `title`) y un cuerpo con variables `{{title}}`, `{{date}}`, `{{time}}`, `{{datetime}}`, `{{weekday}}`, `{{month}}`, `{{year}}`, `{{uuid}}` y `{{cursor}}`, con formato (`{{date:dd/MM/yyyy}}`) y desplazamiento (`{{date+1d}}`) opcionales; lo que no se reconoce se deja intacto en la nota.
+- flujo "desde plantilla" en documentos —boton de la vista completa, fila de acciones de la vista simplificada, menu contextual de la rejilla y paleta de comandos— con selector para crear la nota, editar la plantilla en una pestana del editor, crear una plantilla nueva ya rellena con la sintaxis, abrir su carpeta y eliminarla respetando "preguntar antes de borrar".
+- ajuste "plantilla de la nota diaria" en ajustes > editor > plantillas, guardado por vault en `<vault>/.enki/settings.json`: la plantilla decide el contenido y, si declara `title`, tambien el nombre de la nota; solo se aplica al crearla, nunca sobre la nota del dia que ya existe.
+- siembra de dos plantillas de ejemplo traducidas (nota diaria y reunion) la primera vez que se abre cada vault, sin volver a reponerlas si el usuario las borra.
+
 #### CAMBIOS
 - establecer `.docs/project-info/` como ruta versionada de la documentacion del proyecto y aclarar en `README.md`, `README.en.md`, `AGENTS.md` y `.gitignore` que `docs/` no forma parte del checkout.
 - anadir `.docs/project-info/qa-manual-release-candidate.md`, la checklist de qa manual de release candidate que consolida las verificaciones de lector de pantalla, render de wikilinks/enlaces rotos, reconexion de polar realtime y selector de recurrencia que los tests automaticos no cubren.
@@ -25,6 +31,12 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - mantener la redaccion de tokens en la exportacion de ajustes y los backups de `settings.json` global y del vault, incluidos los archivos heredados.
 
 ### ENGLISH
+
+#### ADDED
+- reusable note templates in `<vault>/.enki/templates/`: each template is a markdown file with optional front matter (`name`, `description`, `title`) and a body with `{{title}}`, `{{date}}`, `{{time}}`, `{{datetime}}`, `{{weekday}}`, `{{month}}`, `{{year}}`, `{{uuid}}` and `{{cursor}}` variables, with optional format (`{{date:dd/MM/yyyy}}`) and offset (`{{date+1d}}`); anything unrecognised is left untouched in the note.
+- a "from template" flow in documents — full-view button, simplified-view action row, note grid context menu and command palette — with a picker to create the note, edit the template in an editor tab, create a new template pre-filled with the syntax, open its folder and delete it honouring "ask before deleting".
+- a "daily note template" setting under settings > editor > templates, stored per vault in `<vault>/.enki/settings.json`: the template decides the content and, when it declares `title`, the note's name too; it only applies on creation, never over the day's existing note.
+- two translated example templates (daily note and meeting) seeded the first time each vault is opened, never restored again if the user deletes them.
 
 #### CHANGED
 - establish `.docs/project-info/` as the versioned project documentation path and clarify in `README.md`, `README.en.md`, `AGENTS.md`, and `.gitignore` that `docs/` is not part of the checkout.

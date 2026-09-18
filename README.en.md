@@ -29,7 +29,7 @@ It was born out of the frustration of having to open five different apps to know
   <tr>
     <td width="50%" valign="top">
       <h3>📝 Notes</h3>
-      <p>A Markdown vault that lives on your disk. No lock-in, no proprietary formats. Create folders, drag notes around, tag them with <code>tags</code>, and link notes to each other using <code>[[wikilinks]]</code>.</p>
+      <p>A Markdown vault that lives on your disk. No lock-in, no proprietary formats. Create folders, drag notes around, tag them with <code>tags</code>, and link notes to each other using <code>[[wikilinks]]</code>. Structures you repeat can be saved as reusable <b>templates</b>, with date and title variables.</p>
     </td>
     <td width="50%" valign="top">
       <h3>🗂️ Kanban</h3>

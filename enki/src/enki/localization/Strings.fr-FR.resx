@@ -82,6 +82,9 @@
   <data name="A11y_Notes_SessionSelector" xml:space="preserve">
     <value>Sélecteur de session</value>
   </data>
+  <data name="A11y_Notes_TemplatePicker" xml:space="preserve">
+    <value>Liste des modèles</value>
+  </data>
   <data name="A11y_Notes_ToggleFolder" xml:space="preserve">
     <value>Développer ou réduire le dossier</value>
   </data>
@@ -288,6 +291,9 @@
   </data>
   <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve">
     <value>Toute la journée</value>
+  </data>
+  <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
+    <value>Nouvelle note à partir d'un modèle</value>
   </data>
   <data name="Common_Back" xml:space="preserve">
     <value>Retour</value>
@@ -1587,6 +1593,45 @@
   <data name="Notes_SearchPlaceholder" xml:space="preserve">
     <value>Rechercher des notes</value>
   </data>
+  <data name="Notes_Templates_Button" xml:space="preserve">
+    <value>À partir d'un modèle</value>
+  </data>
+  <data name="Notes_Templates_DailyBadge" xml:space="preserve">
+    <value>QUOTIDIENNE</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Message" xml:space="preserve">
+    <value>Supprimer ce modèle ? Les notes déjà créées à partir de lui ne sont pas touchées.</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Title" xml:space="preserve">
+    <value>SUPPRIMER LE MODÈLE</value>
+  </data>
+  <data name="Notes_Templates_DeleteTooltip" xml:space="preserve">
+    <value>Supprimer le modèle</value>
+  </data>
+  <data name="Notes_Templates_EditTooltip" xml:space="preserve">
+    <value>Modifier le modèle</value>
+  </data>
+  <data name="Notes_Templates_Empty_Message" xml:space="preserve">
+    <value>Un modèle est un fichier Markdown de .enki/templates, dans le coffre. Crées-en un pour réutiliser la même structure dans plusieurs notes.</value>
+  </data>
+  <data name="Notes_Templates_Empty_Title" xml:space="preserve">
+    <value>Aucun modèle pour l'instant</value>
+  </data>
+  <data name="Notes_Templates_NewTemplate" xml:space="preserve">
+    <value>Nouveau modèle</value>
+  </data>
+  <data name="Notes_Templates_OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="Notes_Templates_PickerDescription" xml:space="preserve">
+    <value>Choisis le modèle de départ. Ses variables sont résolues au moment de créer la note.</value>
+  </data>
+  <data name="Notes_Templates_PickerTitle" xml:space="preserve">
+    <value>NOUVELLE NOTE À PARTIR D'UN MODÈLE</value>
+  </data>
+  <data name="Notes_Templates_Tooltip" xml:space="preserve">
+    <value>Nouvelle note à partir d'un modèle</value>
+  </data>
   <data name="Notes_UnsavedTooltip" xml:space="preserve">
     <value>Modifications non enregistrées</value>
   </data>
@@ -2637,6 +2682,27 @@
   <data name="Settings_Editor_TabSize_Label" xml:space="preserve">
     <value>Taille de tabulation</value>
   </data>
+  <data name="Settings_Editor_Templates_DailyNote_Description" xml:space="preserve">
+    <value>Appliqué seulement quand la note du jour n'existe pas encore ; si le modèle déclare un titre, il décide aussi du nom de la note.</value>
+  </data>
+  <data name="Settings_Editor_Templates_DailyNote_Label" xml:space="preserve">
+    <value>Modèle de la note quotidienne</value>
+  </data>
+  <data name="Settings_Editor_Templates_Description" xml:space="preserve">
+    <value>Les modèles vivent dans .enki/templates, dans le coffre : chaque fichier Markdown y est une structure réutilisable pour de nouvelles notes.</value>
+  </data>
+  <data name="Settings_Editor_Templates_None" xml:space="preserve">
+    <value>Sans modèle</value>
+  </data>
+  <data name="Settings_Editor_Templates_OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier des modèles</value>
+  </data>
+  <data name="Settings_Editor_Templates_Title" xml:space="preserve">
+    <value>MODÈLES</value>
+  </data>
+  <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
+    <value>Variables : {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} et {{cursor}}. Elles acceptent un format ({{date:dd/MM/yyyy}}) et un décalage ({{date+1d}}).</value>
+  </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>ÉDITEUR</value>
   </data>
@@ -3350,6 +3416,59 @@
   </data>
   <data name="TagFilter_ShowAll" xml:space="preserve">
     <value>Tout afficher</value>
+  </data>
+  <data name="Templates_NewTemplate_Body" xml:space="preserve">
+    <value># {{title}}
+
+Écris ici ce par quoi doit commencer chaque note créée à partir de ce modèle.
+
+Variables : {{date}} et {{time}} pour le moment de la création, {{weekday}}, {{month}}, {{year}} et {{title}} pour le nom de la note elle-même. Elles acceptent un format ({{date:dd/MM/yyyy}}) et un décalage ({{date+1d}}, c'est demain).
+
+{{cursor}}</value>
+  </data>
+  <data name="Templates_NewTemplate_Description" xml:space="preserve">
+    <value>Décris ici à quoi sert ce modèle.</value>
+  </data>
+  <data name="Templates_NewTemplate_Name" xml:space="preserve">
+    <value>Nouveau modèle</value>
+  </data>
+  <data name="Templates_Seed_Daily_Body" xml:space="preserve">
+    <value># {{date}} · {{weekday}}
+
+## Priorité du jour
+- {{cursor}}
+
+## Notes
+
+## Bilan
+- A bien marché :
+- À améliorer :</value>
+  </data>
+  <data name="Templates_Seed_Daily_Description" xml:space="preserve">
+    <value>Structure de la journée : priorité, notes et bilan.</value>
+  </data>
+  <data name="Templates_Seed_Daily_Name" xml:space="preserve">
+    <value>Note quotidienne</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Date :** {{date}} {{time}}
+- **Participants :**
+
+## Ordre du jour
+- {{cursor}}
+
+## Décisions
+
+## Prochaines étapes
+- [ ]</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Description" xml:space="preserve">
+    <value>Participants, ordre du jour et décisions d'une réunion.</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Name" xml:space="preserve">
+    <value>Réunion</value>
   </data>
   <data name="Trash_DeleteForeverButton" xml:space="preserve">
     <value>Supprimer définitivement</value>

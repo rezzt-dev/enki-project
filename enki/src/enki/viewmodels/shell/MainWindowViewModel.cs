@@ -23,6 +23,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly NoteSearchService _noteSearchService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly VaultSettingsService _vaultSettingsService;
+
+    /// <summary>Plantillas de notas de <c>&lt;vault&gt;/.enki/templates/</c>. Se comparte instancia entre
+    /// Documentos (que las aplica) y Ajustes (que elige la de la nota diaria) para que crear una plantilla
+    /// desde el selector aparezca en el desplegable de Ajustes sin recargar nada, a través de
+    /// <see cref="NoteTemplateService.TemplatesChanged"/>.</summary>
+    private readonly NoteTemplateService _noteTemplateService;
     private readonly HabitService _habitService;
     private readonly SessionService _sessionService;
     private readonly KanbanService _kanbanService;

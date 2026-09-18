@@ -71,6 +71,7 @@ normalices a un solo idioma.
 - `.docs/project-info/calendar-feature/`, `.docs/project-info/supabase-sync/`,
   `.docs/project-info/ajustes-docs/`, `.docs/project-info/ia-skills/especificacion-desarrollo.md`,
   `.docs/project-info/seccion-archivos.md`, `.docs/project-info/vista-simplificada-notas.md`,
+  `.docs/project-info/plantillas-de-notas.md`,
   `.docs/project-info/imagenes-en-notas.md`, `.docs/project-info/tablas-en-notas.md`,
   `.docs/project-info/busqueda-texto-completo.md`, `.docs/project-info/logo-personalizado.md`,
   `.docs/project-info/funcionalidad-zoom-interfaz.md`,

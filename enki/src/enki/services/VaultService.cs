@@ -982,7 +982,12 @@ public sealed class VaultService
         CacheAfterWrite(note.FullPath, content);
     }
 
-    public NoteFile CreateNote(string? desiredTitle = null, string? folderPath = null)
+    /// <param name="initialContent">Contenido con el que nace la nota. Null —lo habitual— produce el
+    /// encabezado de siempre con el título; lo pasa con valor el flujo de plantillas
+    /// (<see cref="NoteTemplateService"/>), que ya trae el Markdown expandido y no quiere que se le
+    /// anteponga nada. Cadena vacía es una elección legítima (una plantilla deliberadamente en blanco) y
+    /// se respeta tal cual.</param>
+    public NoteFile CreateNote(string? desiredTitle = null, string? folderPath = null, string? initialContent = null)
     {
         EnsureVaultAvailable();
 
@@ -997,7 +1002,7 @@ public sealed class VaultService
             suffix++;
         }
 
-        var content = $"# {desiredTitle}\n\n";
+        var content = initialContent ?? $"# {desiredTitle}\n\n";
         WriteFileAtomic(path, content);
         return CacheAfterWrite(path, content);
     }

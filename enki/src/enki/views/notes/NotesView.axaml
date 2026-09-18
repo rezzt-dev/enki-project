@@ -57,5 +57,132 @@
       </Border>
     </controls:ModalOverlayHost>
 
+    <!-- ===================== Selector: nueva nota desde plantilla =====================
+         Vive aquí, junto al diálogo de borrado de arriba, por el mismo motivo: las dos disposiciones de
+         Documentos (FullNotesView y SimpleNotesView) lo abren desde sus propios botones y ninguna de las
+         dos debería llevar una copia del mismo diálogo. -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsTemplatePickerOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
+        <StackPanel Spacing="18" MinWidth="460">
+
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+              <TextBlock Text="{loc:Tr Notes_Templates_PickerTitle, Converter={StaticResource UpperCaseConverter}}"
+                         Classes="eyebrow" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{loc:Tr Notes_Templates_PickerDescription}" Classes="muted" FontSize="12.5"
+                       TextWrapping="Wrap" IsVisible="{Binding HasTemplates}" />
+          </StackPanel>
+
+          <ScrollViewer MaxHeight="320" IsVisible="{Binding HasTemplates}"
+                        AutomationProperties.Name="{loc:Tr A11y_Notes_TemplatePicker}">
+            <ItemsControl ItemsSource="{Binding Templates}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="2" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:NoteTemplateItemViewModel">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+                    <Button Grid.Column="0" Classes="dropdown-item" HorizontalAlignment="Stretch"
+                            Command="{Binding #Root.((vm:NotesViewModel)DataContext).CreateNoteFromTemplateCommand}"
+                            CommandParameter="{Binding}"
+                            AutomationProperties.Name="{Binding Name}">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <mi:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="16" Height="16"
+                                         Margin="0,2,10,0" VerticalAlignment="Top" />
+                        <StackPanel Grid.Column="1" Spacing="2">
+                          <TextBlock Text="{Binding Name}" FontWeight="Bold" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Description}" Classes="faint" FontSize="11"
+                                     TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                        </StackPanel>
+                        <Border Grid.Column="2" Background="{DynamicResource Ink10}" Padding="7,3"
+                                VerticalAlignment="Center" Margin="10,0,0,0"
+                                IsVisible="{Binding IsDailyTemplate}">
+                          <TextBlock Text="{loc:Tr Notes_Templates_DailyBadge, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
+                        </Border>
+                      </Grid>
+                    </Button>
+
+                    <Button Grid.Column="1" Classes="icon-btn" Width="30" Height="30" Margin="4,0,0,0"
+                            Command="{Binding #Root.((vm:NotesViewModel)DataContext).EditTemplateCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="{loc:Tr Notes_Templates_EditTooltip}"
+                            AutomationProperties.Name="{loc:Tr Notes_Templates_EditTooltip}">
+                      <mi:MaterialIcon Kind="PencilOutline" Width="15" Height="15" />
+                    </Button>
+
+                    <Button Grid.Column="2" Classes="icon-btn" Width="30" Height="30" Margin="2,0,0,0"
+                            Command="{Binding #Root.((vm:NotesViewModel)DataContext).RequestDeleteTemplateCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="{loc:Tr Notes_Templates_DeleteTooltip}"
+                            AutomationProperties.Name="{loc:Tr Notes_Templates_DeleteTooltip}">
+                      <mi:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" />
+                    </Button>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <!-- Sin plantillas todavía: en vez de una lista vacía, qué es una plantilla y dónde viven. -->
+          <StackPanel Spacing="8" IsVisible="{Binding !HasTemplates}">
+            <TextBlock Text="{loc:Tr Notes_Templates_Empty_Title}" FontSize="14" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Notes_Templates_Empty_Message}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+            <Button Grid.Column="0" Classes="pill" Command="{Binding CreateTemplateCommand}" Margin="0,0,8,0">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="FilePlusOutline" Width="15" Height="15" />
+                <TextBlock Text="{loc:Tr Notes_Templates_NewTemplate, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="1" Classes="pill" Command="{Binding OpenTemplatesFolderCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15" />
+                <TextBlock Text="{loc:Tr Notes_Templates_OpenFolder, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="3" Classes="ghost modal-cancel" Command="{Binding CloseTemplatePickerCommand}">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: eliminar plantilla =====================
+         Declarado después del selector para que se dibuje por encima de él: la confirmación llega desde
+         una fila de esa misma lista, que sigue abierta detrás. -->
+    <controls:ModalOverlayHost IsOpen="{Binding TemplatePendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Notes_Templates_DeleteConfirm_Title, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Notes_Templates_DeleteConfirm_Message}" FontSize="14" TextWrapping="Wrap" MaxWidth="320" />
+            <TextBlock Text="{Binding TemplatePendingDelete.Name}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelDeleteTemplateCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmDeleteTemplateCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
   </Grid>
 </UserControl>

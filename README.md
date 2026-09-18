@@ -29,7 +29,7 @@ Nació de la frustración de tener que abrir cinco aplicaciones distintas para s
   <tr>
     <td width="50%" valign="top">
       <h3>📝 Notas</h3>
-      <p>Un vault de notas en Markdown que vive en tu disco. Sin bloqueos, sin formatos propietarios. Puedes crear carpetas, arrastrar notas, etiquetar con <code>tags</code> y enlazar unas con otras usando <code>[[wikilinks]]</code>.</p>
+      <p>Un vault de notas en Markdown que vive en tu disco. Sin bloqueos, sin formatos propietarios. Puedes crear carpetas, arrastrar notas, etiquetar con <code>tags</code> y enlazar unas con otras usando <code>[[wikilinks]]</code>. Las estructuras que repites se guardan como <b>plantillas</b> reutilizables, con variables de fecha y título.</p>
     </td>
     <td width="50%" valign="top">
       <h3>🗂️ Kanban</h3>

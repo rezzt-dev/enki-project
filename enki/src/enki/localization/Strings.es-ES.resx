@@ -82,6 +82,9 @@
   <data name="A11y_Notes_SessionSelector" xml:space="preserve">
     <value>Selector de sesión</value>
   </data>
+  <data name="A11y_Notes_TemplatePicker" xml:space="preserve">
+    <value>Lista de plantillas</value>
+  </data>
   <data name="A11y_Notes_ToggleFolder" xml:space="preserve">
     <value>Expandir o contraer carpeta</value>
   </data>
@@ -294,6 +297,9 @@
   </data>
   <data name="CommandPalette_Action_ImportNotes" xml:space="preserve">
     <value>Importar notas</value>
+  </data>
+  <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
+    <value>Nueva nota desde plantilla</value>
   </data>
   <data name="CommandPalette_Action_OpenCommunitySkills" xml:space="preserve">
     <value>Abrir Skills de la comunidad</value>
@@ -1659,6 +1665,45 @@
   <data name="Notes_SearchPlaceholder" xml:space="preserve">
     <value>Buscar notas</value>
   </data>
+  <data name="Notes_Templates_Button" xml:space="preserve">
+    <value>Desde plantilla</value>
+  </data>
+  <data name="Notes_Templates_DailyBadge" xml:space="preserve">
+    <value>DIARIA</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Message" xml:space="preserve">
+    <value>¿Eliminar esta plantilla? Las notas ya creadas a partir de ella no se ven afectadas.</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Title" xml:space="preserve">
+    <value>ELIMINAR PLANTILLA</value>
+  </data>
+  <data name="Notes_Templates_DeleteTooltip" xml:space="preserve">
+    <value>Eliminar plantilla</value>
+  </data>
+  <data name="Notes_Templates_EditTooltip" xml:space="preserve">
+    <value>Editar plantilla</value>
+  </data>
+  <data name="Notes_Templates_Empty_Message" xml:space="preserve">
+    <value>Una plantilla es un archivo Markdown de .enki/templates, dentro del vault. Crea una para reutilizar la misma estructura en varias notas.</value>
+  </data>
+  <data name="Notes_Templates_Empty_Title" xml:space="preserve">
+    <value>Aún no hay plantillas</value>
+  </data>
+  <data name="Notes_Templates_NewTemplate" xml:space="preserve">
+    <value>Nueva plantilla</value>
+  </data>
+  <data name="Notes_Templates_OpenFolder" xml:space="preserve">
+    <value>Abrir carpeta</value>
+  </data>
+  <data name="Notes_Templates_PickerDescription" xml:space="preserve">
+    <value>Elige la plantilla de la que partir. Sus variables se resuelven al crear la nota.</value>
+  </data>
+  <data name="Notes_Templates_PickerTitle" xml:space="preserve">
+    <value>NUEVA NOTA DESDE PLANTILLA</value>
+  </data>
+  <data name="Notes_Templates_Tooltip" xml:space="preserve">
+    <value>Nueva nota desde plantilla</value>
+  </data>
   <data name="Notes_UnsavedTooltip" xml:space="preserve">
     <value>Cambios sin guardar</value>
   </data>
@@ -2871,6 +2916,27 @@
   <data name="Settings_Editor_TabSize_Label" xml:space="preserve">
     <value>Tamaño de tabulación</value>
   </data>
+  <data name="Settings_Editor_Templates_DailyNote_Description" xml:space="preserve">
+    <value>Se aplica solo cuando la nota del día todavía no existe; si la plantilla declara un título, decide también el nombre de la nota.</value>
+  </data>
+  <data name="Settings_Editor_Templates_DailyNote_Label" xml:space="preserve">
+    <value>Plantilla de la nota diaria</value>
+  </data>
+  <data name="Settings_Editor_Templates_Description" xml:space="preserve">
+    <value>Las plantillas viven en .enki/templates, dentro del vault: cada archivo Markdown de ahí es una estructura reutilizable para notas nuevas.</value>
+  </data>
+  <data name="Settings_Editor_Templates_None" xml:space="preserve">
+    <value>Sin plantilla</value>
+  </data>
+  <data name="Settings_Editor_Templates_OpenFolder" xml:space="preserve">
+    <value>Abrir carpeta de plantillas</value>
+  </data>
+  <data name="Settings_Editor_Templates_Title" xml:space="preserve">
+    <value>PLANTILLAS</value>
+  </data>
+  <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
+    <value>Variables: {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} y {{cursor}}. Admiten formato ({{date:dd/MM/yyyy}}) y desplazamiento ({{date+1d}}).</value>
+  </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>EDITOR</value>
   </data>
@@ -3644,6 +3710,59 @@
   </data>
   <data name="TagFilter_ShowAll" xml:space="preserve">
     <value>Mostrar todas</value>
+  </data>
+  <data name="Templates_NewTemplate_Body" xml:space="preserve">
+    <value># {{title}}
+
+Escribe aquí el contenido con el que debe nacer cada nota creada desde esta plantilla.
+
+Variables: {{date}} y {{time}} para el momento de creación, {{weekday}}, {{month}}, {{year}} y {{title}} para el nombre de la propia nota. Admiten formato ({{date:dd/MM/yyyy}}) y desplazamiento ({{date+1d}} es mañana).
+
+{{cursor}}</value>
+  </data>
+  <data name="Templates_NewTemplate_Description" xml:space="preserve">
+    <value>Describe aquí para qué sirve esta plantilla.</value>
+  </data>
+  <data name="Templates_NewTemplate_Name" xml:space="preserve">
+    <value>Plantilla nueva</value>
+  </data>
+  <data name="Templates_Seed_Daily_Body" xml:space="preserve">
+    <value># {{date}} · {{weekday}}
+
+## Foco de hoy
+- {{cursor}}
+
+## Notas
+
+## Cierre
+- Ha ido bien:
+- A mejorar:</value>
+  </data>
+  <data name="Templates_Seed_Daily_Description" xml:space="preserve">
+    <value>Estructura del día: foco, notas y cierre.</value>
+  </data>
+  <data name="Templates_Seed_Daily_Name" xml:space="preserve">
+    <value>Nota diaria</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Fecha:** {{date}} {{time}}
+- **Asistentes:**
+
+## Orden del día
+- {{cursor}}
+
+## Acuerdos
+
+## Próximos pasos
+- [ ]</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Description" xml:space="preserve">
+    <value>Asistentes, orden del día y acuerdos de una reunión.</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Name" xml:space="preserve">
+    <value>Reunión</value>
   </data>
   <data name="Trash_DeleteForeverButton" xml:space="preserve">
     <value>Eliminar para siempre</value>

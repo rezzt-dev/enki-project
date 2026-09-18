@@ -37,6 +37,9 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(SidebarSearchText));
         OnPropertyChanged(nameof(DashboardSearchText));
         OnPropertyChanged(nameof(ThemeSearchText));
+        // Las plantillas no son texto traducible (son archivos del usuario), pero su desplegable sí
+        // incluye la opción "sin plantilla", que cambia con el idioma.
+        ReloadDailyNoteTemplates();
     }
 
     [RelayCommand]

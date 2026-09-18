@@ -34,6 +34,16 @@ public sealed class VaultSettings
     /// already shipped at.</summary>
     public int UiZoomPercent { get; set; } = 100;
 
+    /// <summary>Plantilla que se aplica al crear la nota diaria, como
+    /// <see cref="NoteTemplate.RelativePath"/> dentro de <c>&lt;vault&gt;/.enki/templates/</c>
+    /// (p. ej. <c>daily.md</c>). Null o vacío —el valor de salida— mantiene el comportamiento de siempre:
+    /// la nota diaria nace con un encabezado con la fecha y nada más.
+    ///
+    /// <para>Vive aquí y no en <see cref="AppSettings"/> porque apunta a un archivo <b>de este vault</b>:
+    /// el mismo ajuste en la configuración global señalaría a una plantilla inexistente en cuanto el
+    /// usuario cambiara de vault.</para></summary>
+    public string? DailyNoteTemplate { get; set; }
+
     /// <summary>Último instante sincronizado con Polar para este vault. Cada vault necesita su
     /// propio cursor para descargar los cambios que aún no tiene.</summary>
     public long PolarLastSyncAtUtcMs { get; set; }

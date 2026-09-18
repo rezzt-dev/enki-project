@@ -82,6 +82,9 @@
   <data name="A11y_Notes_SessionSelector" xml:space="preserve">
     <value>Sitzungsauswahl</value>
   </data>
+  <data name="A11y_Notes_TemplatePicker" xml:space="preserve">
+    <value>Vorlagenliste</value>
+  </data>
   <data name="A11y_Notes_ToggleFolder" xml:space="preserve">
     <value>Ordner erweitern oder einklappen</value>
   </data>
@@ -288,6 +291,9 @@
   </data>
   <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve">
     <value>Ganztägig</value>
+  </data>
+  <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
+    <value>Neue Notiz aus Vorlage</value>
   </data>
   <data name="Common_Back" xml:space="preserve">
     <value>Zurück</value>
@@ -1587,6 +1593,45 @@
   <data name="Notes_SearchPlaceholder" xml:space="preserve">
     <value>Notizen suchen</value>
   </data>
+  <data name="Notes_Templates_Button" xml:space="preserve">
+    <value>Aus Vorlage</value>
+  </data>
+  <data name="Notes_Templates_DailyBadge" xml:space="preserve">
+    <value>TÄGLICH</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Message" xml:space="preserve">
+    <value>Diese Vorlage löschen? Die daraus bereits erstellten Notizen bleiben unberührt.</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Title" xml:space="preserve">
+    <value>VORLAGE LÖSCHEN</value>
+  </data>
+  <data name="Notes_Templates_DeleteTooltip" xml:space="preserve">
+    <value>Vorlage löschen</value>
+  </data>
+  <data name="Notes_Templates_EditTooltip" xml:space="preserve">
+    <value>Vorlage bearbeiten</value>
+  </data>
+  <data name="Notes_Templates_Empty_Message" xml:space="preserve">
+    <value>Eine Vorlage ist eine Markdown-Datei in .enki/templates im Tresor. Erstelle eine, um dieselbe Struktur in mehreren Notizen wiederzuverwenden.</value>
+  </data>
+  <data name="Notes_Templates_Empty_Title" xml:space="preserve">
+    <value>Noch keine Vorlagen</value>
+  </data>
+  <data name="Notes_Templates_NewTemplate" xml:space="preserve">
+    <value>Neue Vorlage</value>
+  </data>
+  <data name="Notes_Templates_OpenFolder" xml:space="preserve">
+    <value>Ordner öffnen</value>
+  </data>
+  <data name="Notes_Templates_PickerDescription" xml:space="preserve">
+    <value>Wähle die Vorlage, von der du ausgehst. Ihre Variablen werden beim Erstellen der Notiz aufgelöst.</value>
+  </data>
+  <data name="Notes_Templates_PickerTitle" xml:space="preserve">
+    <value>NEUE NOTIZ AUS VORLAGE</value>
+  </data>
+  <data name="Notes_Templates_Tooltip" xml:space="preserve">
+    <value>Neue Notiz aus Vorlage</value>
+  </data>
   <data name="Notes_UnsavedTooltip" xml:space="preserve">
     <value>Ungespeicherte Änderungen</value>
   </data>
@@ -2637,6 +2682,27 @@
   <data name="Settings_Editor_TabSize_Label" xml:space="preserve">
     <value>Tab-Größe</value>
   </data>
+  <data name="Settings_Editor_Templates_DailyNote_Description" xml:space="preserve">
+    <value>Wird nur angewendet, wenn die Notiz des Tages noch nicht existiert; deklariert die Vorlage einen Titel, bestimmt sie auch den Namen der Notiz.</value>
+  </data>
+  <data name="Settings_Editor_Templates_DailyNote_Label" xml:space="preserve">
+    <value>Vorlage der Tagesnotiz</value>
+  </data>
+  <data name="Settings_Editor_Templates_Description" xml:space="preserve">
+    <value>Vorlagen liegen in .enki/templates im Tresor: Jede Markdown-Datei dort ist eine wiederverwendbare Struktur für neue Notizen.</value>
+  </data>
+  <data name="Settings_Editor_Templates_None" xml:space="preserve">
+    <value>Ohne Vorlage</value>
+  </data>
+  <data name="Settings_Editor_Templates_OpenFolder" xml:space="preserve">
+    <value>Vorlagenordner öffnen</value>
+  </data>
+  <data name="Settings_Editor_Templates_Title" xml:space="preserve">
+    <value>VORLAGEN</value>
+  </data>
+  <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
+    <value>Variablen: {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} und {{cursor}}. Sie akzeptieren ein Format ({{date:dd/MM/yyyy}}) und einen Versatz ({{date+1d}}).</value>
+  </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>EDITOR</value>
   </data>
@@ -3350,6 +3416,59 @@
   </data>
   <data name="TagFilter_ShowAll" xml:space="preserve">
     <value>Alle anzeigen</value>
+  </data>
+  <data name="Templates_NewTemplate_Body" xml:space="preserve">
+    <value># {{title}}
+
+Schreibe hier, womit jede aus dieser Vorlage erstellte Notiz beginnen soll.
+
+Variablen: {{date}} und {{time}} für den Zeitpunkt der Erstellung, {{weekday}}, {{month}}, {{year}} und {{title}} für den Namen der Notiz selbst. Sie akzeptieren ein Format ({{date:dd/MM/yyyy}}) und einen Versatz ({{date+1d}} ist morgen).
+
+{{cursor}}</value>
+  </data>
+  <data name="Templates_NewTemplate_Description" xml:space="preserve">
+    <value>Beschreibe hier, wofür diese Vorlage gedacht ist.</value>
+  </data>
+  <data name="Templates_NewTemplate_Name" xml:space="preserve">
+    <value>Neue Vorlage</value>
+  </data>
+  <data name="Templates_Seed_Daily_Body" xml:space="preserve">
+    <value># {{date}} · {{weekday}}
+
+## Fokus heute
+- {{cursor}}
+
+## Notizen
+
+## Abschluss
+- Lief gut:
+- Zu verbessern:</value>
+  </data>
+  <data name="Templates_Seed_Daily_Description" xml:space="preserve">
+    <value>Aufbau des Tages: Fokus, Notizen und Abschluss.</value>
+  </data>
+  <data name="Templates_Seed_Daily_Name" xml:space="preserve">
+    <value>Tagesnotiz</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Datum:** {{date}} {{time}}
+- **Teilnehmende:**
+
+## Tagesordnung
+- {{cursor}}
+
+## Beschlüsse
+
+## Nächste Schritte
+- [ ]</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Description" xml:space="preserve">
+    <value>Teilnehmende, Tagesordnung und Beschlüsse einer Besprechung.</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Name" xml:space="preserve">
+    <value>Besprechung</value>
   </data>
   <data name="Trash_DeleteForeverButton" xml:space="preserve">
     <value>Dauerhaft löschen</value>

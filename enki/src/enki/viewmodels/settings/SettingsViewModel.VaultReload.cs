@@ -169,6 +169,7 @@ public sealed partial class SettingsViewModel
         BuildDashboardLayoutOptions();
         BuildDashboardSections();
         BuildSidebarSections();
+        ReloadDailyNoteTemplates();
         ApplyInterfaceFont(_settingsService.Settings.InterfaceFontFamily);
         ApplyCodeFont(_settingsService.Settings.CodeFontFamily);
     }

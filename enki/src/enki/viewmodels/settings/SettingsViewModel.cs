@@ -36,6 +36,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly BrandLogoService _brandLogoService;
     private readonly VaultSettingsService _vaultSettingsService;
     private readonly VaultService _vaultService;
+
+    /// <summary>Plantillas de notas del vault activo: aquí solo se leen —para el desplegable de la nota
+    /// diaria— y se abre su carpeta; quien las crea y las aplica es Documentos
+    /// (<c>NotesViewModel.Templates.cs</c>).</summary>
+    private readonly NoteTemplateService _noteTemplateService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly PolarAuthService _polarAuthService;
     private readonly PolarSyncService _polarSyncService;
@@ -161,13 +166,19 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action<string> onKanbanBoardOrientationChanged,
         Action<bool> onPolarShowTaskTagsChanged,
         Action<int> onUiZoomChanged,
-        Action onLanguageChanged)
+        Action onLanguageChanged,
+        NoteTemplateService? noteTemplateService = null)
     {
         _settingsService = settingsService;
         _customThemeService = customThemeService;
         _brandLogoService = brandLogoService;
         _vaultSettingsService = vaultSettingsService;
         _vaultService = vaultService;
+        // Opcional y derivado del vault cuando no se pasa, como en NotesViewModel: el servicio no tiene
+        // estado propio. La app sí pasa el que compone MainWindowViewModel, para que crear una plantilla
+        // desde Documentos refresque este desplegable por TemplatesChanged sin más cableado.
+        _noteTemplateService = noteTemplateService ?? new NoteTemplateService(vaultService);
+        _noteTemplateService.TemplatesChanged += ReloadDailyNoteTemplates;
         _vaultBackupService = vaultBackupService;
         _polarAuthService = polarAuthService;
         _polarSyncService = polarSyncService;
@@ -344,6 +355,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         BuildDashboardLayoutOptions();
         BuildDashboardSections();
         BuildSidebarSections();
+        ReloadDailyNoteTemplates();
 
         // Only request a built-in variant when no custom theme is active. A custom theme overrides the
         // colors in Application.Resources and must not be clobbered by the dark/light toggle.

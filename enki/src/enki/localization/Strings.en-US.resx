@@ -82,6 +82,9 @@
   <data name="A11y_Notes_SessionSelector" xml:space="preserve">
     <value>Session selector</value>
   </data>
+  <data name="A11y_Notes_TemplatePicker" xml:space="preserve">
+    <value>Template list</value>
+  </data>
   <data name="A11y_Notes_ToggleFolder" xml:space="preserve">
     <value>Expand or collapse folder</value>
   </data>
@@ -288,6 +291,9 @@
   </data>
   <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve">
     <value>All day</value>
+  </data>
+  <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
+    <value>New note from template</value>
   </data>
   <data name="Common_Back" xml:space="preserve">
     <value>Back</value>
@@ -1587,6 +1593,45 @@
   <data name="Notes_SearchPlaceholder" xml:space="preserve">
     <value>Search notes</value>
   </data>
+  <data name="Notes_Templates_Button" xml:space="preserve">
+    <value>From template</value>
+  </data>
+  <data name="Notes_Templates_DailyBadge" xml:space="preserve">
+    <value>DAILY</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Message" xml:space="preserve">
+    <value>Delete this template? The notes already created from it are not affected.</value>
+  </data>
+  <data name="Notes_Templates_DeleteConfirm_Title" xml:space="preserve">
+    <value>DELETE TEMPLATE</value>
+  </data>
+  <data name="Notes_Templates_DeleteTooltip" xml:space="preserve">
+    <value>Delete template</value>
+  </data>
+  <data name="Notes_Templates_EditTooltip" xml:space="preserve">
+    <value>Edit template</value>
+  </data>
+  <data name="Notes_Templates_Empty_Message" xml:space="preserve">
+    <value>A template is a Markdown file in .enki/templates inside the vault. Create one to reuse the same structure across notes.</value>
+  </data>
+  <data name="Notes_Templates_Empty_Title" xml:space="preserve">
+    <value>No templates yet</value>
+  </data>
+  <data name="Notes_Templates_NewTemplate" xml:space="preserve">
+    <value>New template</value>
+  </data>
+  <data name="Notes_Templates_OpenFolder" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="Notes_Templates_PickerDescription" xml:space="preserve">
+    <value>Pick the template to start from. Its variables are resolved as the note is created.</value>
+  </data>
+  <data name="Notes_Templates_PickerTitle" xml:space="preserve">
+    <value>NEW NOTE FROM TEMPLATE</value>
+  </data>
+  <data name="Notes_Templates_Tooltip" xml:space="preserve">
+    <value>New note from template</value>
+  </data>
   <data name="Notes_UnsavedTooltip" xml:space="preserve">
     <value>Unsaved changes</value>
   </data>
@@ -2637,6 +2682,27 @@
   <data name="Settings_Editor_TabSize_Label" xml:space="preserve">
     <value>Tab size</value>
   </data>
+  <data name="Settings_Editor_Templates_DailyNote_Description" xml:space="preserve">
+    <value>Applied only when the note for the day does not exist yet; if the template declares a title, it also decides the note's name.</value>
+  </data>
+  <data name="Settings_Editor_Templates_DailyNote_Label" xml:space="preserve">
+    <value>Daily note template</value>
+  </data>
+  <data name="Settings_Editor_Templates_Description" xml:space="preserve">
+    <value>Templates live in .enki/templates inside the vault: every Markdown file there is a reusable structure for new notes.</value>
+  </data>
+  <data name="Settings_Editor_Templates_None" xml:space="preserve">
+    <value>No template</value>
+  </data>
+  <data name="Settings_Editor_Templates_OpenFolder" xml:space="preserve">
+    <value>Open templates folder</value>
+  </data>
+  <data name="Settings_Editor_Templates_Title" xml:space="preserve">
+    <value>TEMPLATES</value>
+  </data>
+  <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
+    <value>Variables: {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} and {{cursor}}. They accept a format ({{date:dd/MM/yyyy}}) and an offset ({{date+1d}}).</value>
+  </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>EDITOR</value>
   </data>
@@ -3350,6 +3416,59 @@
   </data>
   <data name="TagFilter_ShowAll" xml:space="preserve">
     <value>Show all</value>
+  </data>
+  <data name="Templates_NewTemplate_Body" xml:space="preserve">
+    <value># {{title}}
+
+Write here what every note created from this template should start with.
+
+Variables: {{date}} and {{time}} for the moment of creation, {{weekday}}, {{month}}, {{year}} and {{title}} for the note's own name. They accept a format ({{date:dd/MM/yyyy}}) and an offset ({{date+1d}} is tomorrow).
+
+{{cursor}}</value>
+  </data>
+  <data name="Templates_NewTemplate_Description" xml:space="preserve">
+    <value>Describe here what this template is for.</value>
+  </data>
+  <data name="Templates_NewTemplate_Name" xml:space="preserve">
+    <value>New template</value>
+  </data>
+  <data name="Templates_Seed_Daily_Body" xml:space="preserve">
+    <value># {{date}} · {{weekday}}
+
+## Focus today
+- {{cursor}}
+
+## Notes
+
+## Wrap-up
+- Went well:
+- To improve:</value>
+  </data>
+  <data name="Templates_Seed_Daily_Description" xml:space="preserve">
+    <value>Structure for the day: focus, notes and wrap-up.</value>
+  </data>
+  <data name="Templates_Seed_Daily_Name" xml:space="preserve">
+    <value>Daily note</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Date:** {{date}} {{time}}
+- **Attendees:**
+
+## Agenda
+- {{cursor}}
+
+## Decisions
+
+## Next steps
+- [ ]</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Description" xml:space="preserve">
+    <value>Attendees, agenda and decisions of a meeting.</value>
+  </data>
+  <data name="Templates_Seed_Meeting_Name" xml:space="preserve">
+    <value>Meeting</value>
   </data>
   <data name="Trash_DeleteForeverButton" xml:space="preserve">
     <value>Delete forever</value>

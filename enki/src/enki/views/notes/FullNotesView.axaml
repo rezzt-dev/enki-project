@@ -127,7 +127,7 @@
                    Classes="page-subtitle" />
       </StackPanel>
 
-      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="36,0,36,18">
+      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Margin="36,0,36,18">
         <Button Grid.Column="0" Classes="pill" Height="36" Command="{Binding NewNoteCommand}" Margin="0,0,10,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="NotePlusOutline" Width="15" Height="15" />
@@ -135,14 +135,24 @@
           </StackPanel>
         </Button>
 
-        <Button Grid.Column="1" Classes="pill" Height="36" Command="{Binding ImportCommand}" Margin="0,0,14,0">
+        <!-- Junto a "Nueva nota" y no en un menú: es la misma acción —crear una nota— con un punto de
+             partida distinto, y esconderla la dejaría sin descubrir. -->
+        <Button Grid.Column="1" Classes="pill" Height="36" Command="{Binding ShowTemplatePickerCommand}" Margin="0,0,10,0"
+                ToolTip.Tip="{loc:Tr Notes_Templates_Tooltip}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="15" Height="15" />
+            <TextBlock Text="{loc:Tr Notes_Templates_Button, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+
+        <Button Grid.Column="2" Classes="pill" Height="36" Command="{Binding ImportCommand}" Margin="0,0,14,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" />
             <TextBlock Text="{loc:Tr Notes_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
           </StackPanel>
         </Button>
 
-        <Button Grid.Column="2" Classes="pill" Height="36" Command="{Binding OpenDailyNoteCommand}" Margin="0,0,14,0">
+        <Button Grid.Column="3" Classes="pill" Height="36" Command="{Binding OpenDailyNoteCommand}" Margin="0,0,14,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="CalendarToday" Width="15" Height="15" />
             <TextBlock Text="{loc:Tr Notes_DailyNoteButton, Converter={StaticResource UpperCaseConverter}}" />
@@ -150,7 +160,7 @@
         </Button>
 
         <!-- Workspace selector: the vault itself, o una de sus sesiones aisladas (§ sesiones). -->
-        <ComboBox Grid.Column="3" Height="36" Margin="0,0,14,0" MinWidth="190"
+        <ComboBox Grid.Column="4" Height="36" Margin="0,0,14,0" MinWidth="190"
                   ItemsSource="{Binding SessionOptions}" SelectedItem="{Binding SelectedSessionOption}"
                   AutomationProperties.Name="{loc:Tr A11y_Notes_SessionSelector}">
           <ComboBox.ItemTemplate>
@@ -164,7 +174,7 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
 
-        <TextBox Grid.Column="4" Classes="search" Height="36" PlaceholderText="{loc:Tr Notes_SearchPlaceholder}" Text="{Binding SearchText}"
+        <TextBox Grid.Column="5" Classes="search" Height="36" PlaceholderText="{loc:Tr Notes_SearchPlaceholder}" Text="{Binding SearchText}"
                   MaxWidth="360" HorizontalAlignment="Left" VerticalAlignment="Center">
           <TextBox.InnerLeftContent>
             <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}"
@@ -172,7 +182,7 @@
           </TextBox.InnerLeftContent>
         </TextBox>
 
-        <Border Grid.Column="5" Classes="card" Padding="14,9" VerticalAlignment="Center">
+        <Border Grid.Column="6" Classes="card" Padding="14,9" VerticalAlignment="Center">
           <TextBlock Text="{Binding NotesCountLabel}" Classes="faint" FontSize="10.5" />
         </Border>
       </Grid>
@@ -251,6 +261,11 @@
               <MenuItem Header="{loc:Tr Notes_NewNoteButton}" Command="{Binding NewNoteCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Notes_Templates_Tooltip}" Command="{Binding ShowTemplatePickerCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
               <MenuItem Header="{loc:Tr Notes_NewFolderButton}" Command="{Binding NewFolderCommand}">

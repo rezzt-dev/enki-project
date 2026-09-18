@@ -1168,6 +1168,55 @@
               </Border>
             </controls:SettingsSearchOption>
 
+            <!-- Plantillas de notas: el desplegable elige cuál se aplica a la nota diaria; el resto de
+                 la gestión (crear, editar, borrar) vive en Documentos › "Desde plantilla", que es donde
+                 se usan. Aquí solo lo que es configuración. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Editor_Templates_Title Settings_Editor_Templates_Description
+                              Settings_Editor_Templates_DailyNote_Label Settings_Editor_Templates_DailyNote_Description
+                              Settings_Editor_Templates_None Settings_Editor_Templates_OpenFolder
+                              Settings_Editor_Templates_Variables Settings_Nav_Editor"
+                AdditionalText="{Binding TemplatesSearchText}">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Editor_Templates_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Editor_Templates_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{loc:Tr Settings_Editor_Templates_DailyNote_Label}" FontSize="13" />
+                    <ComboBox ItemsSource="{Binding DailyNoteTemplateOptions}"
+                              SelectedItem="{Binding SelectedDailyNoteTemplate}"
+                              AutomationProperties.Name="{loc:Tr Settings_Editor_Templates_DailyNote_Label}"
+                              HorizontalAlignment="Stretch" MaxDropDownHeight="320">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="vm:NoteTemplateOptionViewModel">
+                          <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{loc:Tr Settings_Editor_Templates_DailyNote_Description}"
+                               Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+                  </StackPanel>
+
+                  <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+
+                  <TextBlock Text="{loc:Tr Settings_Editor_Templates_Variables}"
+                             Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+
+                  <Button Classes="pill" HorizontalAlignment="Left" Command="{Binding OpenTemplatesFolderCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15" />
+                      <TextBlock Text="{loc:Tr Settings_Editor_Templates_OpenFolder, Converter={StaticResource UpperCaseConverter}}" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Editor Settings_Editor_SizeLayout_Title"
                 MatchDescendants="True">

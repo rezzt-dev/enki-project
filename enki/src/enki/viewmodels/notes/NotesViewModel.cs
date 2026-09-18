@@ -35,6 +35,17 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// (docs/analisis-proyecto/roadmap.md, Fase 1).</summary>
     private readonly NotificationService? _notificationService;
 
+    /// <summary>Plantillas de notas (<c>NotesViewModel.Templates.cs</c>). Sin estado ni persistencia
+    /// propia —lee y escribe directamente sobre <c>&lt;vault&gt;/.enki/templates/</c>—, así que como con
+    /// <see cref="_noteSearchService"/> un test que solo quiera un <see cref="NotesViewModel"/> no tiene
+    /// que componerlo a mano: se deriva del propio vault cuando no se pasa.</summary>
+    private readonly NoteTemplateService _templateService;
+
+    /// <summary>Solo para leer <see cref="Models.VaultSettings.DailyNoteTemplate"/>: qué plantilla aplica
+    /// la nota diaria. Null en los tests que no la configuran, y entonces la nota diaria se comporta como
+    /// siempre (un encabezado con la fecha).</summary>
+    private readonly VaultSettingsService? _vaultSettingsService;
+
     // Reloading re-reads and re-parses every note file under the current folder from disk, so a plain
     // per-keystroke call in OnSearchTextChanged would hit the filesystem on every character typed —
     // this collapses a fast burst of keystrokes into a single Reload() once typing pauses.
@@ -120,7 +131,8 @@ public sealed partial class NotesViewModel : ViewModelBase
     public NotesViewModel(VaultService vaultService, SessionService sessionService,
         KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null,
-        NoteSearchService? noteSearchService = null)
+        NoteSearchService? noteSearchService = null, NoteTemplateService? templateService = null,
+        VaultSettingsService? vaultSettingsService = null)
     {
         _vaultService = vaultService;
         // Opcional y con valor por defecto derivado del propio vault: el servicio no tiene estado ni
@@ -133,6 +145,8 @@ public sealed partial class NotesViewModel : ViewModelBase
         _onOpenLinkedCard = onOpenLinkedCard;
         _settingsService = settingsService;
         _notificationService = notificationService;
+        _templateService = templateService ?? new NoteTemplateService(vaultService);
+        _vaultSettingsService = vaultSettingsService;
         _searchDebounceTimer.Tick += (_, _) =>
         {
             _searchDebounceTimer.Stop();
@@ -446,10 +460,20 @@ public sealed partial class NotesViewModel : ViewModelBase
         OpenNote(note);
     }
 
+    /// <summary>Abre la nota de hoy, creándola si aún no existe. Con una plantilla configurada para la
+    /// nota diaria (Ajustes › Editor › Plantillas), es esa plantilla la que decide tanto el nombre de la
+    /// nota —si declara <c>title</c>— como su contenido inicial; sin plantilla, sigue siendo la fecha
+    /// <c>yyyy-MM-dd</c> con un encabezado, exactamente como antes.
+    ///
+    /// <para>La plantilla solo interviene al <b>crear</b>: si la nota del día ya existe se abre tal cual,
+    /// porque volver a aplicarle la plantilla pisaría lo que el usuario lleve escrito hoy.</para></summary>
     [RelayCommand]
     private void OpenDailyNote()
     {
-        var title = DailyNoteTitle;
+        var template = ResolveDailyNoteTemplate();
+        var draft = template is null ? (NoteTemplateDraft?)null : NoteTemplateService.Prepare(template, DailyNoteTitle);
+        var title = draft?.Title ?? DailyNoteTitle;
+
         var all = _vaultService.GetAllNotesRecursive(_vaultService.VaultPath);
         var existing = all.FirstOrDefault(n =>
             string.Equals(n.Title, title, StringComparison.OrdinalIgnoreCase));
@@ -457,7 +481,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         NoteFile note;
         try
         {
-            note = existing ?? _vaultService.CreateNote(title, CurrentFolderPath);
+            note = existing ?? _vaultService.CreateNote(title, CurrentFolderPath, draft?.Content);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -466,7 +490,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         }
 
         Reload();
-        OpenNote(note);
+        OpenNote(note, existing is null ? draft?.CaretOffset : null);
     }
 
     /// <summary>Shared failure reporting for the create/rename/move commands below — a vault write that

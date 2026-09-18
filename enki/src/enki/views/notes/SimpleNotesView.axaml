@@ -165,6 +165,11 @@
                     AutomationProperties.Name="{loc:Tr Notes_SimpleView_NewNote_Tooltip}">
               <mi:MaterialIcon Kind="NotePlusOutline" Width="16" Height="16" />
             </Button>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding ShowTemplatePickerCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_Templates_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_Templates_Tooltip}">
+              <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="16" Height="16" />
+            </Button>
             <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewFolderAtRootCommand}"
                     ToolTip.Tip="{loc:Tr Notes_SimpleView_NewFolder_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Notes_SimpleView_NewFolder_Tooltip}">
