@@ -47,6 +47,7 @@ superficie de producto sin cerrar lo existente.
 - crear una checklist de release candidate con las verificaciones que los tests automaticos no cubren bien.
 - comprobar lector de pantalla real, render visual de wikilinks y links rotos, reconexion real de Polar Realtime y selector de recurrencia.
 - ejecutar la checklist antes de pensar en una version `0.2.0` o equivalente.
+- checklist creada: [`qa-manual-release-candidate.md`](project-info/qa-manual-release-candidate.md). consolida las cuatro notas "verificacion manual pendiente" que quedaron abiertas al cerrar las fases 5, 7, 9 y 10 de `project-info/analisis-proyecto/roadmap.md` — pendiente su primera ejecucion completa contra un build de release.
 
 ### 1.4 credenciales Polar en almacen seguro
 

@@ -11,6 +11,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### CAMBIOS
 - establecer `.docs/project-info/` como ruta versionada de la documentacion del proyecto y aclarar en `README.md`, `README.en.md`, `AGENTS.md` y `.gitignore` que `docs/` no forma parte del checkout.
+- anadir `.docs/project-info/qa-manual-release-candidate.md`, la checklist de qa manual de release candidate que consolida las verificaciones de lector de pantalla, render de wikilinks/enlaces rotos, reconexion de polar realtime y selector de recurrencia que los tests automaticos no cubren.
 
 #### CORREGIDO
 - corregir los enlaces de documentacion y los iconos de ambos README, ademas de las referencias y enlaces relativos de `AGENTS.md` y `.docs/project-info/`, para que apunten a archivos existentes.
@@ -24,6 +25,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### CHANGED
 - establish `.docs/project-info/` as the versioned project documentation path and clarify in `README.md`, `README.en.md`, `AGENTS.md`, and `.gitignore` that `docs/` is not part of the checkout.
+- add `.docs/project-info/qa-manual-release-candidate.md`, the release-candidate manual qa checklist covering screen reader, wikilink/broken-link rendering, polar realtime reconnection and recurrence selector checks that automated tests don't cover.
 
 #### FIXED
 - fix documentation links and icons in both README files, along with references and relative links in `AGENTS.md` and `.docs/project-info/`, so they point to existing files.

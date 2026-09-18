@@ -76,6 +76,9 @@ normalices a un solo idioma.
   `.docs/project-info/funcionalidad-zoom-interfaz.md`,
   `.docs/project-info/notificaciones-y-recordatorios.md`, `.docs/project-info/sistema-diseno-web.md` —
   documentación específica por módulo/tema; complementa (no reemplaza) el análisis anterior.
+- `.docs/project-info/qa-manual-release-candidate.md` — checklist de QA manual (lector de pantalla,
+  render de wikilinks/enlaces rotos, reconexión de Polar Realtime, selector de recurrencia); ejecutar
+  antes de cualquier release candidate.
 - `.docs/project-info/` — notas técnicas puntuales: internacionalización
   (`internacionalizacion-i18n.md`), inventario de funcionalidades y empaquetado/distribución.
 
