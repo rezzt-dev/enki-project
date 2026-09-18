@@ -56,7 +56,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     /// <summary>Whether any group filter is currently narrowing the graph — drives the filter chip's
     /// "active" visual state, same convention as <see cref="IsLinkMode"/>'s toggle button.</summary>
-    public bool IsGraphFiltered => GraphGroupFilters.Any(f => !f.IsActive);
+    public bool IsGraphFiltered => GraphGroupFilters.Any(f => !f.IsActive)
+        || GraphTagFilters.Any(f => f.IsActive) || GraphExplorationIndex != 0
+        || !string.IsNullOrEmpty(SelectedGraphCluster?.Id);
 
     /// <summary>Tarjetas Kanban vinculadas a alguna nota del subárbol de <see cref="SelectedSession"/> —
     /// consecuencia derivada del enlace nota↔tarea, sin almacén propio: se recalcula contra
@@ -288,6 +290,17 @@ public sealed partial class SessionsViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(SessionsCountLabel));
         OnPropertyChanged(nameof(GraphSummaryLabel));
+        var explorationIndex = GraphExplorationIndex;
+        _updatingGraphFilters = true;
+        try
+        {
+            OnPropertyChanged(nameof(GraphExplorationOptions));
+            GraphExplorationIndex = explorationIndex;
+        }
+        finally
+        {
+            _updatingGraphFilters = false;
+        }
         OnPropertyChanged(nameof(PendingDeleteSessionMessage));
         Reload();
     }
@@ -364,7 +377,6 @@ public sealed partial class SessionsViewModel : ViewModelBase
         {
             Sessions.Add(new SessionListItemViewModel(session) { IsUnlocked = _sessionService.IsUnlocked(session) });
         }
-        IsEmpty = Sessions.Count == 0;
 
         SelectedSession = previouslySelectedId is null
             ? Sessions.FirstOrDefault()
@@ -452,11 +464,14 @@ public sealed partial class SessionsViewModel : ViewModelBase
             GraphGroupFilters.Add(new GraphGroupFilterItemViewModel(groupId, name, isActive, OnGraphFilterToggled));
         }
 
+        RebuildGraphDiscoveryFilters(graph);
         OnPropertyChanged(nameof(IsGraphFiltered));
     }
 
     private void OnGraphFilterToggled()
     {
+        if (_updatingGraphFilters) return;
+        SetPendingLink(null);
         OnPropertyChanged(nameof(IsGraphFiltered));
         if (LastGraph is not null) PublishGraph(fullReload: false);
     }
@@ -471,21 +486,13 @@ public sealed partial class SessionsViewModel : ViewModelBase
     {
         if (LastGraph is not { } graph) return;
 
-        var activeGroupIds = GraphGroupFilters.Where(f => f.IsActive).Select(f => f.GroupId).ToHashSet();
-        SessionGraph visible;
-        if (activeGroupIds.Count == GraphGroupFilters.Count)
-        {
-            visible = graph; // nothing filtered out — every group active (including the common "no filters yet" case)
-        }
-        else
-        {
-            visible = new SessionGraph();
-            visible.Nodes.AddRange(graph.Nodes.Where(n => activeGroupIds.Contains(n.SessionId)));
-            visible.Edges.AddRange(graph.Edges.Where(e => activeGroupIds.Contains(e.FromSessionId) && activeGroupIds.Contains(e.ToSessionId)));
-        }
+        var visible = FilterGraph(graph);
+        IsEmpty = Sessions.Count == 0 && graph.Nodes.Count == 0;
 
         NodeCount = visible.Nodes.Count;
         EdgeCount = visible.Edges.Count;
+        OnPropertyChanged(nameof(IsGraphEmpty));
+        OnPropertyChanged(nameof(GraphEmptyMessage));
         if (fullReload) GraphReady?.Invoke(visible);
         else GraphUpdated?.Invoke(visible);
     }

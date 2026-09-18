@@ -2131,10 +2131,10 @@
     <value>Filtrer</value>
   </data>
   <data name="Sessions_Graph_FilterHeading" xml:space="preserve">
-    <value>Groupes visibles</value>
+    <value>Sessions visibles</value>
   </data>
   <data name="Sessions_Graph_FilterTooltip" xml:space="preserve">
-    <value>Filtrer le graphe par groupe</value>
+    <value>Filtrer par session, étiquette et connexions</value>
   </data>
   <data name="Sessions_Graph_LoadingLabel" xml:space="preserve">
     <value>Chargement du graphe…</value>
@@ -5401,5 +5401,53 @@ Bonne rédaction.</value>
   </data>
   <data name="TagManager_NameRules" xml:space="preserve">
     <value>Utilisez un nom sans virgule, crochet ni saut de ligne.</value>
+  </data>
+  <data name="Sessions_Graph_GlobalTitle" xml:space="preserve">
+    <value>Graphe global du coffre</value>
+  </data>
+  <data name="Sessions_Graph_Explore" xml:space="preserve">
+    <value>Explorer</value>
+  </data>
+  <data name="Sessions_Graph_AllNotes" xml:space="preserve">
+    <value>Toutes les notes</value>
+  </data>
+  <data name="Sessions_Graph_Orphans" xml:space="preserve">
+    <value>Notes orphelines</value>
+  </data>
+  <data name="Sessions_Graph_CrossSession" xml:space="preserve">
+    <value>Connexions entre sessions</value>
+  </data>
+  <data name="Sessions_Graph_Tags" xml:space="preserve">
+    <value>Étiquettes</value>
+  </data>
+  <data name="Sessions_Graph_TagsHint" xml:space="preserve">
+    <value>Sans sélection : toutes les notes. Plusieurs étiquettes : au moins une.</value>
+  </data>
+  <data name="Sessions_Graph_NoTags" xml:space="preserve">
+    <value>Aucune étiquette dans les notes accessibles.</value>
+  </data>
+  <data name="Sessions_Graph_Clusters" xml:space="preserve">
+    <value>Groupes connectés</value>
+  </data>
+  <data name="Sessions_Graph_AllClusters" xml:space="preserve">
+    <value>Tous les groupes</value>
+  </data>
+  <data name="Sessions_Graph_ClustersHint" xml:space="preserve">
+    <value>Notes reliées par des liens, y compris entre sessions. Les filtres ne modifient pas les groupes.</value>
+  </data>
+  <data name="Sessions_Graph_ResetFilters" xml:space="preserve">
+    <value>Réinitialiser les filtres</value>
+  </data>
+  <data name="Sessions_Graph_NoMatches" xml:space="preserve">
+    <value>Aucune note ne correspond à ces filtres.</value>
+  </data>
+  <data name="Sessions_Graph_NoNotes" xml:space="preserve">
+    <value>Aucune note accessible. Créez une note ou déverrouillez une session.</value>
+  </data>
+  <data name="Sessions_Graph_DiscoverySummary" xml:space="preserve">
+    <value>Orphelines : {0} · Liens entre sessions : {1} · Groupes : {2}</value>
+  </data>
+  <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
+    <value>Totaux du coffre accessible. Les sessions verrouillées sont exclues.</value>
   </data>
 </root>

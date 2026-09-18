@@ -5,7 +5,7 @@ Todos los cambios notables de Enki se documentan en este fichero. El formato sig
 [SemVer](https://semver.org/lang/es/) (`MAJOR.MINOR.PATCH`) mientras la app se mantenga en `0.x` — es
 decir, cualquier cambio puede romper compatibilidad entre versiones menores hasta llegar a `1.0.0`.
 
-## [Sin publicar]
+## SIN PUBLICAR / UNRELEASED
 
 ### CASTELLANO
 
@@ -17,6 +17,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - historial local de versiones por nota, guardado dentro del propio vault (`<vault>/.enki/history/` o, para una nota de sesion, `.history/` junto a ella, heredando su cifrado si la sesion esta protegida): snapshots automaticos durante el autoguardado (limitados a uno cada 5 minutos y solo si el contenido cambio), pestana "Historial" en el editor para comparar linea a linea con la version actual y restaurar, y un snapshot de seguridad automatico antes de restaurar o antes de que un renombrado reescriba wikilinks en otras notas.
 - anadir la seccion "Etiquetas" a la barra lateral para consultar y buscar en una sola vista las etiquetas activas de notas, tarjetas kanban y tareas polar, con recuentos por modulo y seleccion multiple para fusionarlas.
 - permitir renombrar, fusionar y eliminar etiquetas en los tres modulos sin crear otro almacen: conservar el frontmatter y el historial de las notas, evitar duplicados por entidad, sincronizar los cambios de polar y actualizar las pestanas de notas abiertas.
+- ampliar el grafo global del vault con filtros combinables por sesion y etiquetas para explorar las notas accesibles sin crear otro almacen ni sustituir el renderizador existente.
+- anadir modos para descubrir notas huerfanas, conexiones entre sesiones y grupos de notas conectadas, calculados sobre el vault accesible completo para evitar falsos resultados al filtrar.
 
 #### CAMBIOS
 - establecer `.docs/project-info/` como ruta versionada de la documentacion del proyecto y aclarar en `README.md`, `README.en.md`, `AGENTS.md` y `.gitignore` que `docs/` no forma parte del checkout.
@@ -24,9 +26,13 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - anadir empaquetado real por sistema en `enki/packaging/`: paquete `.deb` y `.tar.gz` con integracion `.desktop`/iconos hicolor en Linux, instalador Inno Setup en Windows y bundle `.app`/`.dmg` firmado ad-hoc en macOS, todos generados a partir del mismo publish self-contained y sin arrastrar `local.properties` al paquete final.
 - anadir `.github/workflows/release.yml`: al empujar un tag `v*.*.*` compila, empaqueta y publica los cinco paquetes de las tres plataformas como una GitHub Release, sin pasos manuales; tambien disponible como `workflow_dispatch` para probar el empaquetado sin cortar una version real.
 - anadir el job `lint-packaging` a `.github/workflows/ci.yml`, que valida en cada push/pr la sintaxis de los scripts de `enki/packaging/` (`bash -n`, `shellcheck`), el `enki.desktop` de linux y el yaml de `release.yml`, para detectar errores de empaquetado antes de cortar una release real.
+- ampliar el panel del grafo con seleccion de grupos conectados, etiquetas al pasar el cursor, recuentos visibles y globales, estados sin resultados y restablecimiento de filtros; conservar las selecciones disponibles al recargar y el modo de exploracion al cambiar de idioma.
 
 #### CORREGIDO
 - corregir los enlaces de documentacion y los iconos de ambos README, ademas de las referencias y enlaces relativos de `AGENTS.md` y `.docs/project-info/`, para que apunten a archivos existentes.
+- mostrar el grafo cuando el vault contiene notas sin ninguna sesion creada y evitar ocultarlo temporalmente durante una recarga.
+- cancelar el extremo pendiente de un enlace manual al cambiar los filtros para impedir conexiones accidentales con notas ocultas.
+- evitar que el recuento del grafo se solape con sus controles en ventanas estrechas y mantener accesible el boton de restablecer al desplazar el panel de filtros.
 
 #### SEGURIDAD
 - proteger los tokens de sesion de polar con dpapi en windows, secret service mediante libsecret en linux y keychain en macos, fuera de `settings.json`.
@@ -43,6 +49,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - local per-note version history, stored inside the vault itself (`<vault>/.enki/history/`, or `.history/` alongside a session note, inheriting its encryption when the session is protected): automatic snapshots during autosave (throttled to one every 5 minutes, and only when the content actually changed), a "History" tab in the editor to diff line-by-line against the current version and restore, and an automatic safety snapshot before restoring or before a rename rewrites wikilinks in other notes.
 - add a "Tags" sidebar section to browse and search active tags from notes, kanban cards and polar tasks in one view, with per-module counts and multi-selection for merging.
 - allow tags to be renamed, merged and removed across all three modules without a separate store: preserve note front matter and version history, remove duplicates within each item, sync polar changes and refresh open note tabs.
+- extend the global vault graph with combined session and tag filters to explore accessible notes without creating another store or replacing the existing renderer.
+- add modes to discover orphan notes, cross-session connections and connected note groups, computed over the entire accessible vault to prevent misleading results when filtering.
 
 #### CHANGED
 - establish `.docs/project-info/` as the versioned project documentation path and clarify in `README.md`, `README.en.md`, `AGENTS.md`, and `.gitignore` that `docs/` is not part of the checkout.
@@ -50,9 +58,13 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add real per-platform packaging under `enki/packaging/`: a `.deb` and `.tar.gz` with `.desktop`/hicolor icon integration on Linux, an Inno Setup installer on Windows, and an ad-hoc signed `.app`/`.dmg` bundle on macOS, all built from the same self-contained publish and never carrying `local.properties` into the final package.
 - add `.github/workflows/release.yml`: pushing a `v*.*.*` tag builds, packages and publishes all five packages across the three platforms as a GitHub Release with no manual steps; also available as a `workflow_dispatch` to test packaging without cutting a real release.
 - add a `lint-packaging` job to `.github/workflows/ci.yml` that validates `enki/packaging/` scripts on every push/pr (`bash -n`, `shellcheck`), the linux `enki.desktop` file and `release.yml`'s yaml, to catch packaging errors before cutting a real release.
+- expand the graph panel with connected group selection, tags on hover, visible and global counts, empty states and filter reset; preserve available selections when reloading and the exploration mode when switching languages.
 
 #### FIXED
 - fix documentation links and icons in both README files, along with references and relative links in `AGENTS.md` and `.docs/project-info/`, so they point to existing files.
+- show the graph when the vault contains notes without any sessions and avoid temporarily hiding it during a reload.
+- clear the pending endpoint of a manual link when filters change to prevent accidental connections to hidden notes.
+- prevent graph counts from overlapping controls in narrow windows and keep the reset button accessible while scrolling the filter panel.
 
 #### SECURITY
 - protect polar session tokens with dpapi on windows, secret service through libsecret on linux, and keychain on macos, outside `settings.json`.

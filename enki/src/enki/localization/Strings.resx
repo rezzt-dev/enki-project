@@ -2218,10 +2218,10 @@
     <value>Filter</value>
   </data>
   <data name="Sessions_Graph_FilterHeading" xml:space="preserve">
-    <value>Visible groups</value>
+    <value>Visible sessions</value>
   </data>
   <data name="Sessions_Graph_FilterTooltip" xml:space="preserve">
-    <value>Filter graph by group</value>
+    <value>Filter by session, tag and connections</value>
   </data>
   <data name="Sessions_Graph_LoadingLabel" xml:space="preserve">
     <value>Loading graph…</value>
@@ -5401,5 +5401,53 @@ Happy writing.</value>
   </data>
   <data name="TagManager_NameRules" xml:space="preserve">
     <value>Use a name without commas, brackets or line breaks.</value>
+  </data>
+  <data name="Sessions_Graph_GlobalTitle" xml:space="preserve">
+    <value>Global vault graph</value>
+  </data>
+  <data name="Sessions_Graph_Explore" xml:space="preserve">
+    <value>Explore</value>
+  </data>
+  <data name="Sessions_Graph_AllNotes" xml:space="preserve">
+    <value>All notes</value>
+  </data>
+  <data name="Sessions_Graph_Orphans" xml:space="preserve">
+    <value>Orphan notes</value>
+  </data>
+  <data name="Sessions_Graph_CrossSession" xml:space="preserve">
+    <value>Cross-session connections</value>
+  </data>
+  <data name="Sessions_Graph_Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Sessions_Graph_TagsHint" xml:space="preserve">
+    <value>No selection: all notes. Multiple tags: match any.</value>
+  </data>
+  <data name="Sessions_Graph_NoTags" xml:space="preserve">
+    <value>No tags in accessible notes.</value>
+  </data>
+  <data name="Sessions_Graph_Clusters" xml:space="preserve">
+    <value>Connected groups</value>
+  </data>
+  <data name="Sessions_Graph_AllClusters" xml:space="preserve">
+    <value>All groups</value>
+  </data>
+  <data name="Sessions_Graph_ClustersHint" xml:space="preserve">
+    <value>Notes connected by links, including across sessions. Filters do not change group membership.</value>
+  </data>
+  <data name="Sessions_Graph_ResetFilters" xml:space="preserve">
+    <value>Reset filters</value>
+  </data>
+  <data name="Sessions_Graph_NoMatches" xml:space="preserve">
+    <value>No notes match these filters.</value>
+  </data>
+  <data name="Sessions_Graph_NoNotes" xml:space="preserve">
+    <value>No accessible notes. Create a note or unlock a session.</value>
+  </data>
+  <data name="Sessions_Graph_DiscoverySummary" xml:space="preserve">
+    <value>Orphans: {0} · Cross-session links: {1} · Groups: {2}</value>
+  </data>
+  <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
+    <value>Accessible vault totals. Locked sessions are excluded.</value>
   </data>
 </root>

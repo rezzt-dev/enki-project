@@ -409,6 +409,7 @@ public sealed class SessionService
 
         if (rootNodesChanged || crossLinksChanged) WriteRootManifest(rootManifest);
 
+        SessionGraphAnalysisService.Analyze(combined);
         return combined;
     }
 
@@ -462,6 +463,7 @@ public sealed class SessionService
                     SessionName = rootGroupName,
                     RelativePath = relativePath,
                     Title = note.Title,
+                    Tags = [..note.Tags],
                     X = stored.X,
                     Y = stored.Y,
                     Z = stored.Z,
@@ -478,6 +480,7 @@ public sealed class SessionService
                     SessionName = rootGroupName,
                     RelativePath = relativePath,
                     Title = note.Title,
+                    Tags = [..note.Tags],
                     X = x,
                     Y = y,
                     Z = z,
@@ -568,6 +571,7 @@ public sealed class SessionService
                     SessionName = session.Name,
                     RelativePath = relativePath,
                     Title = note.Title,
+                    Tags = [..note.Tags],
                     X = stored.X,
                     Y = stored.Y,
                     Z = stored.Z,
@@ -584,6 +588,7 @@ public sealed class SessionService
                     SessionName = session.Name,
                     RelativePath = relativePath,
                     Title = note.Title,
+                    Tags = [..note.Tags],
                     X = x,
                     Y = y,
                     Z = z,

@@ -2218,10 +2218,10 @@
     <value>Filtrar</value>
   </data>
   <data name="Sessions_Graph_FilterHeading" xml:space="preserve">
-    <value>Grupos visibles</value>
+    <value>Sesiones visibles</value>
   </data>
   <data name="Sessions_Graph_FilterTooltip" xml:space="preserve">
-    <value>Filtrar el grafo por grupo</value>
+    <value>Filtrar por sesión, etiqueta y conexiones</value>
   </data>
   <data name="Sessions_Graph_LoadingLabel" xml:space="preserve">
     <value>Cargando el grafo…</value>
@@ -5401,5 +5401,53 @@ A disfrutar escribiendo.</value>
   </data>
   <data name="TagManager_NameRules" xml:space="preserve">
     <value>Usa un nombre sin comas, corchetes ni saltos de línea.</value>
+  </data>
+  <data name="Sessions_Graph_GlobalTitle" xml:space="preserve">
+    <value>Grafo global del vault</value>
+  </data>
+  <data name="Sessions_Graph_Explore" xml:space="preserve">
+    <value>Explorar</value>
+  </data>
+  <data name="Sessions_Graph_AllNotes" xml:space="preserve">
+    <value>Todas las notas</value>
+  </data>
+  <data name="Sessions_Graph_Orphans" xml:space="preserve">
+    <value>Notas huérfanas</value>
+  </data>
+  <data name="Sessions_Graph_CrossSession" xml:space="preserve">
+    <value>Conexiones entre sesiones</value>
+  </data>
+  <data name="Sessions_Graph_Tags" xml:space="preserve">
+    <value>Etiquetas</value>
+  </data>
+  <data name="Sessions_Graph_TagsHint" xml:space="preserve">
+    <value>Sin selección: todas las notas. Varias etiquetas: cualquiera de ellas.</value>
+  </data>
+  <data name="Sessions_Graph_NoTags" xml:space="preserve">
+    <value>No hay etiquetas en las notas accesibles.</value>
+  </data>
+  <data name="Sessions_Graph_Clusters" xml:space="preserve">
+    <value>Grupos conectados</value>
+  </data>
+  <data name="Sessions_Graph_AllClusters" xml:space="preserve">
+    <value>Todos los grupos</value>
+  </data>
+  <data name="Sessions_Graph_ClustersHint" xml:space="preserve">
+    <value>Notas unidas por enlaces, incluso entre sesiones. Los filtros no cambian su pertenencia al grupo.</value>
+  </data>
+  <data name="Sessions_Graph_ResetFilters" xml:space="preserve">
+    <value>Restablecer filtros</value>
+  </data>
+  <data name="Sessions_Graph_NoMatches" xml:space="preserve">
+    <value>Ninguna nota coincide con estos filtros.</value>
+  </data>
+  <data name="Sessions_Graph_NoNotes" xml:space="preserve">
+    <value>No hay notas accesibles. Crea una nota o desbloquea una sesión.</value>
+  </data>
+  <data name="Sessions_Graph_DiscoverySummary" xml:space="preserve">
+    <value>Huérfanas: {0} · Enlaces entre sesiones: {1} · Grupos: {2}</value>
+  </data>
+  <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
+    <value>Totales del vault accesible. Las sesiones bloqueadas no se incluyen.</value>
   </data>
 </root>

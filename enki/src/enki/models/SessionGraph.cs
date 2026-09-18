@@ -33,6 +33,17 @@ public sealed class SessionGraphNode
     /// needing a separate session-color lookup.</summary>
     public string? SessionColor { get; set; }
 
+    /// <summary>Etiquetas del frontmatter de la nota; no se persisten en el manifiesto del grafo.</summary>
+    public List<string> Tags { get; set; } = [];
+
+    /// <summary>Número de notas vecinas distintas en el vault accesible, antes de aplicar filtros.</summary>
+    public int ConnectionCount { get; set; }
+    public bool HasCrossSessionLinks { get; set; }
+
+    /// <summary>Componente conexa del grafo global. El identificador es el menor GlobalId del grupo.</summary>
+    public string ClusterId { get; set; } = string.Empty;
+    public int ClusterSize { get; set; }
+
     public double X { get; set; }
     public double Y { get; set; }
     public double Z { get; set; }

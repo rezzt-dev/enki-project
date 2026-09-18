@@ -97,6 +97,8 @@ public static class SessionGraphRenderer
                     position: fixed;
                     z-index: 20;
                     pointer-events: none;
+                    max-width: min(360px, calc(100vw - 32px));
+                    overflow-wrap: anywhere;
                     font-family: 'JetBrains Mono', ui-monospace, monospace;
                     font-size: 10.5px;
                     text-transform: uppercase;
@@ -392,6 +394,7 @@ public static class SessionGraphRenderer
                         label: n.name,
                         sessionId: n.sessionId,
                         session: n.session,
+                        tags: n.tags || [],
                         baseColor: n.color,
                         color: n.color,
                         x: n.x,
@@ -612,7 +615,8 @@ public static class SessionGraphRenderer
                     hoverNode = node;
                     el.classList.toggle('node-hover', !!node);
                     if (node) {
-                      tooltipEl.textContent = node.label + ' — ' + node.session;
+                      tooltipEl.textContent = node.label + ' — ' + node.session +
+                        (node.tags.length ? ' · ' + node.tags.map(function (tag) { return '#' + tag; }).join(' ') : '');
                       tooltipEl.style.left = (e.clientX + 14) + 'px';
                       tooltipEl.style.top = (e.clientY + 14) + 'px';
                       tooltipEl.style.display = 'block';
@@ -1267,6 +1271,7 @@ public static class SessionGraphRenderer
                         label: n.name,
                         sessionId: n.sessionId,
                         session: n.session,
+                        tags: n.tags || [],
                         baseColor: n.color,
                         color: n.color,
                         x: prev ? prev.x : n.x,
@@ -1444,7 +1449,7 @@ public static class SessionGraphRenderer
     {
         nodes = graph.Nodes.Select(n => new
         {
-            id = n.GlobalId, name = n.Title, sessionId = n.SessionId, session = n.SessionName,
+            id = n.GlobalId, name = n.Title, sessionId = n.SessionId, session = n.SessionName, tags = n.Tags,
             color = NodeBrightness.ColorFor(n.SessionId, n.SessionColor), x = n.X, y = n.Y
         }),
         links = graph.Edges.Select(e => new { source = e.FromGlobalId, target = e.ToGlobalId, manual = e.IsManual })

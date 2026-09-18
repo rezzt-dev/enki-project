@@ -195,53 +195,107 @@
               </StackPanel>
             </Grid>
 
-            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left" VerticalAlignment="Top"
-                        Margin="16" IsHitTestVisible="False">
-              <Border Classes="graph-chip">
-                <TextBlock Text="{Binding GraphSummaryLabel}" Classes="faint" FontSize="10.5" />
-         </Border>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16">
-              <Button Classes="icon-btn" Command="{Binding RefreshGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_RefreshGraphTooltip}"
-                      AutomationProperties.Name="{loc:Tr Sessions_RefreshGraphTooltip}">
-                <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" />
-              </Button>
-              <Button x:Name="GraphFilterTrigger" Classes="link-mode-toggle" Classes.active="{Binding IsGraphFiltered}"
-                      Command="{Binding ToggleGraphFilterPopoverCommand}" ToolTip.Tip="{loc:Tr Sessions_Graph_FilterTooltip}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="FilterVariant" Width="14" Height="14" />
-                  <TextBlock Text="{loc:Tr Sessions_Graph_FilterButton, Converter={StaticResource UpperCaseConverter}}" />
-                </StackPanel>
-              </Button>
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Top" Margin="16">
+              <Border Grid.Column="0" Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,12,0"
+                      ToolTip.Tip="{Binding GraphSummaryLabel}">
+                <TextBlock Text="{Binding GraphSummaryLabel}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" />
+              </Border>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Button Classes="icon-btn" Command="{Binding RefreshGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_RefreshGraphTooltip}"
+                        AutomationProperties.Name="{loc:Tr Sessions_RefreshGraphTooltip}">
+                  <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" />
+                </Button>
+                <Button x:Name="GraphFilterTrigger" Classes="link-mode-toggle" Classes.active="{Binding IsGraphFiltered}"
+                        Command="{Binding ToggleGraphFilterPopoverCommand}" ToolTip.Tip="{loc:Tr Sessions_Graph_FilterTooltip}"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_FilterButton}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="FilterVariant" Width="14" Height="14" />
+                    <TextBlock Text="{loc:Tr Sessions_Graph_FilterButton, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Grid>
 
             <Popup PlacementTarget="{Binding #GraphFilterTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
                    IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #GraphFilterTrigger}"
                    IsOpen="{Binding IsGraphFilterOpen}">
-              <Border Classes="dropdown-popover" Width="240">
-                <StackPanel Spacing="4">
-                  <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
-                             Classes="eyebrow" FontSize="9" Margin="4,0,0,4" />
-                  <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <StackPanel Spacing="2" />
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
-                        <Grid ColumnDefinitions="*,Auto" Margin="4,4">
-                          <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12" VerticalAlignment="Center"
-                                     TextTrimming="CharacterEllipsis" Margin="0,0,10,0" />
-                          <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent="" />
-                        </Grid>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
+              <Border Classes="dropdown-popover" Width="340" CornerRadius="0">
+                <Grid RowDefinitions="Auto,*,Auto" Margin="4" MaxHeight="520">
+                  <TextBlock Grid.Row="0" Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontWeight="Bold" FontSize="15" Margin="0,0,0,14" />
+                  <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Explore}" FontSize="12" FontWeight="Bold" />
+                      <ComboBox ItemsSource="{Binding GraphExplorationOptions}" SelectedIndex="{Binding GraphExplorationIndex}"
+                                HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Sessions_Graph_Explore}" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Clusters}" FontSize="12" FontWeight="Bold" />
+                      <ComboBox ItemsSource="{Binding GraphClusters}" SelectedItem="{Binding SelectedGraphCluster}"
+                                IsEnabled="{Binding HasGraphClusters}" HorizontalAlignment="Stretch"
+                                AutomationProperties.Name="{loc:Tr Sessions_Graph_Clusters}">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate DataType="vm:GraphClusterFilterItemViewModel">
+                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+                      <TextBlock Text="{loc:Tr Sessions_Graph_ClustersHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
+                                 FontSize="12" FontWeight="Bold" />
+                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                              AutomationProperties.Name="{Binding Label}" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Tags}" FontSize="12" FontWeight="Bold" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_TagsHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_NoTags}" Classes="muted" FontSize="12" IsVisible="{Binding !HasGraphTags}" />
+                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGraphTags}">
+                        <ItemsControl ItemsSource="{Binding GraphTagFilters}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                              AutomationProperties.Name="{Binding Label}" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </StackPanel>
+                  </ScrollViewer>
+                  <Button Grid.Row="2" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
+                          Margin="0,14,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                          Content="{loc:Tr Sessions_Graph_ResetFilters}" />
+                </Grid>
               </Border>
             </Popup>
+
+            <Border Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16"
+                    IsHitTestVisible="False" MaxWidth="460">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontSize="12" FontWeight="Bold" />
+                <TextBlock Text="{Binding GraphDiscoverySummary}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_AccessibleScope}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="dropdown-popover" IsVisible="{Binding IsGraphEmpty}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="300" Margin="20" Padding="20">
+              <StackPanel Spacing="12">
+                <TextBlock Text="{Binding GraphEmptyMessage}" TextWrapping="Wrap" TextAlignment="Center" />
+                <Button Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsVisible="{Binding IsGraphFiltered}"
+                        HorizontalAlignment="Center" Content="{loc:Tr Sessions_Graph_ResetFilters}" />
+              </StackPanel>
+            </Border>
           </Grid>
         </Border>
       </Grid>

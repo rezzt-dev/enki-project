@@ -205,4 +205,174 @@ public class SessionsViewModelGraphFilterTests : IDisposable
         Assert.False(filterAAfterReload.IsActive);
         Assert.True(vm.IsGraphFiltered);
     }
+
+    [Fact]
+    public async Task RootOnlyVault_ShowsGraphAndIncludesFrontmatterTags()
+    {
+        var (vm, _, vault) = await CreateViewModelAsync();
+        File.WriteAllText(Path.Combine(vault.VaultPath, "Suelta.md"), "---\ntags: [ideas]\n---\n# Suelta");
+
+        var graph = await LoadGraphAsync(vm);
+
+        Assert.False(vm.IsEmpty);
+        Assert.Equal("ideas", Assert.Single(Assert.Single(graph.Nodes).Tags));
+        Assert.Equal("ideas", Assert.Single(vm.GraphTagFilters).GroupId);
+    }
+
+    [Fact]
+    public async Task Tags_CombineWithSessions_AndNeverPublishDanglingEdges()
+    {
+        var (vm, sessions, vault) = await CreateViewModelAsync();
+        var session = sessions.Create("Trabajo");
+        File.WriteAllText(Path.Combine(session.RootPath, "A.md"), "---\ntags: [ideas, ciencia]\n---\n# A\n[[B]]");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "B.md"), "---\ntags: [IDEAS]\n---\n# B\n[[C]]");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "C.md"), "# C");
+        await LoadGraphAsync(vm);
+
+        var ideas = vm.GraphTagFilters.Single(f => f.GroupId.Equals("ideas", StringComparison.OrdinalIgnoreCase));
+        var filtered = await ToggleFilterAsync(vm, ideas);
+        Assert.Equal(2, filtered.Nodes.Count);
+        Assert.Single(filtered.Edges);
+        Assert.Equal(2, vm.GraphTagFilters.Count);
+
+        filtered = await ToggleFilterAsync(vm, vm.GraphGroupFilters.Single(f => f.GroupId == session.Id));
+        Assert.Equal("B", Assert.Single(filtered.Nodes).Title);
+        Assert.Empty(filtered.Edges);
+        Assert.Equal(2, vm.GraphTagFilters.Count);
+    }
+
+    [Fact]
+    public async Task MultipleTags_MatchAny_AndResetPublishesOnce()
+    {
+        var (vm, _, vault) = await CreateViewModelAsync();
+        File.WriteAllText(Path.Combine(vault.VaultPath, "A.md"), "---\ntags: [uno]\n---\n# A");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "B.md"), "---\ntags: [dos]\n---\n# B");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "C.md"), "# C");
+        await LoadGraphAsync(vm);
+        await ToggleFilterAsync(vm, vm.GraphTagFilters[0]);
+        var graph = await ToggleFilterAsync(vm, vm.GraphTagFilters[1]);
+        Assert.Equal(2, graph.Nodes.Count);
+
+        vm.GraphExplorationIndex = 1;
+        var updates = 0;
+        vm.GraphUpdated += _ => updates++;
+        vm.ResetGraphFiltersCommand.Execute(null);
+        Assert.Equal(1, updates);
+        Assert.Equal(3, vm.NodeCount);
+        Assert.False(vm.IsGraphFiltered);
+    }
+
+    [Fact]
+    public async Task Orphans_UseGlobalConnectivity_NotFilteredConnectivity()
+    {
+        var (vm, sessions, vault) = await CreateViewModelAsync();
+        var session = sessions.Create("Trabajo");
+        File.WriteAllText(Path.Combine(session.RootPath, "A.md"), "# A\n[[B]]");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "B.md"), "# B");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "C.md"), "# C");
+        await LoadGraphAsync(vm);
+        await ToggleFilterAsync(vm, vm.GraphGroupFilters.Single(f => f.GroupId == session.Id));
+        SessionGraph? published = null;
+        vm.GraphUpdated += graph => published = graph;
+
+        vm.GraphExplorationIndex = 1;
+
+        Assert.Equal("C", Assert.Single(published!.Nodes).Title);
+        Assert.Empty(published.Edges);
+    }
+
+    [Fact]
+    public async Task CrossSessionMode_OnlyIncludesVisibleCrossLinksAndTheirEndpoints()
+    {
+        var (vm, sessions, vault) = await CreateViewModelAsync();
+        var session = sessions.Create("Trabajo");
+        File.WriteAllText(Path.Combine(session.RootPath, "A.md"), "# A\n[[B]]\n[[C]]");
+        File.WriteAllText(Path.Combine(session.RootPath, "C.md"), "# C");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "B.md"), "# B");
+        await LoadGraphAsync(vm);
+        SessionGraph? published = null;
+        vm.GraphUpdated += graph => published = graph;
+
+        vm.GraphExplorationIndex = 2;
+        Assert.Equal(2, published!.Nodes.Count);
+        Assert.Single(published.Edges);
+        Assert.DoesNotContain(published.Nodes, n => n.Title == "C");
+
+        await ToggleFilterAsync(vm, vm.GraphGroupFilters.Single(f => f.GroupId == session.Id));
+        Assert.True(vm.IsGraphEmpty);
+        Assert.Empty(published.Nodes);
+        Assert.Empty(published.Edges);
+    }
+
+    [Fact]
+    public async Task Clusters_CrossSessionBoundaries_AndSelectionSurvivesReload()
+    {
+        var (vm, sessions, vault) = await CreateViewModelAsync();
+        var session = sessions.Create("Trabajo");
+        File.WriteAllText(Path.Combine(session.RootPath, "A.md"), "# A\n[[B]]");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "B.md"), "# B");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "C.md"), "# C\n[[D]]");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "D.md"), "# D");
+        File.WriteAllText(Path.Combine(vault.VaultPath, "E.md"), "# E");
+        var all = await LoadGraphAsync(vm);
+        Assert.Equal(3, vm.GraphClusters.Count);
+        var clusterId = all.Nodes.Single(n => n.Title == "A").ClusterId;
+        vm.SelectedGraphCluster = vm.GraphClusters.Single(c => c.Id == clusterId);
+        var filtered = await LoadGraphAsync(vm);
+        Assert.Equal(2, filtered.Nodes.Count);
+        Assert.Contains(filtered.Nodes, n => n.Title == "B");
+        Assert.Equal(clusterId, vm.SelectedGraphCluster!.Id);
+
+        File.Delete(Path.Combine(session.RootPath, "A.md"));
+        await LoadGraphAsync(vm);
+        Assert.Equal(string.Empty, vm.SelectedGraphCluster!.Id);
+        Assert.False(vm.IsGraphFiltered);
+    }
+
+    [Fact]
+    public async Task Tags_PreserveSelectionOnReload_AndDropDeletedTags()
+    {
+        var (vm, _, vault) = await CreateViewModelAsync();
+        var path = Path.Combine(vault.VaultPath, "A.md");
+        File.WriteAllText(path, "---\ntags: [ideas]\n---\n# A");
+        await LoadGraphAsync(vm);
+        await ToggleFilterAsync(vm, vm.GraphTagFilters[0]);
+        await LoadGraphAsync(vm);
+        Assert.True(Assert.Single(vm.GraphTagFilters).IsActive);
+        File.Delete(path);
+        await LoadGraphAsync(vm);
+        Assert.Empty(vm.GraphTagFilters);
+        Assert.False(vm.IsGraphFiltered);
+    }
+
+    [Fact]
+    public async Task Filtering_ClearsPendingManualLink()
+    {
+        var (vm, _, vault) = await CreateViewModelAsync();
+        File.WriteAllText(Path.Combine(vault.VaultPath, "A.md"), "# A");
+        var graph = await LoadGraphAsync(vm);
+        vm.ToggleLinkModeCommand.Execute(null);
+        vm.HandleNodeClicked(graph.Nodes[0].GlobalId);
+        string? pending = "unchanged";
+        vm.PendingLinkChanged += id => pending = id;
+        vm.GraphExplorationIndex = 1;
+        Assert.Null(pending);
+    }
+
+    [Fact]
+    public async Task LockedSession_DoesNotExposeTagsOrClusterOptions()
+    {
+        var (vm, sessions, vault) = await CreateViewModelAsync();
+        var (session, _) = sessions.CreateEncrypted("Privada", "super-secreta-123");
+        var note = vault.CreateNote("Secreta", session.RootPath);
+        vault.WriteContent(note, "---\ntags: [privada]\n---\n# Secreta");
+        await LoadGraphAsync(vm);
+        Assert.Equal("privada", Assert.Single(vm.GraphTagFilters).Label);
+
+        sessions.Lock(session);
+        var graph = await LoadGraphAsync(vm);
+        Assert.Empty(graph.Nodes);
+        Assert.Empty(vm.GraphTagFilters);
+        Assert.False(vm.HasGraphClusters);
+    }
 }

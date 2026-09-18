@@ -2131,10 +2131,10 @@
     <value>Filtern</value>
   </data>
   <data name="Sessions_Graph_FilterHeading" xml:space="preserve">
-    <value>Sichtbare Gruppen</value>
+    <value>Sichtbare Sitzungen</value>
   </data>
   <data name="Sessions_Graph_FilterTooltip" xml:space="preserve">
-    <value>Graph nach Gruppe filtern</value>
+    <value>Nach Sitzung, Tag und Verbindungen filtern</value>
   </data>
   <data name="Sessions_Graph_LoadingLabel" xml:space="preserve">
     <value>Graph wird geladen…</value>
@@ -5401,5 +5401,53 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="TagManager_NameRules" xml:space="preserve">
     <value>Keine Kommas, Klammern oder Zeilenumbrüche im Namen verwenden.</value>
+  </data>
+  <data name="Sessions_Graph_GlobalTitle" xml:space="preserve">
+    <value>Globaler Vault-Graph</value>
+  </data>
+  <data name="Sessions_Graph_Explore" xml:space="preserve">
+    <value>Erkunden</value>
+  </data>
+  <data name="Sessions_Graph_AllNotes" xml:space="preserve">
+    <value>Alle Notizen</value>
+  </data>
+  <data name="Sessions_Graph_Orphans" xml:space="preserve">
+    <value>Verwaiste Notizen</value>
+  </data>
+  <data name="Sessions_Graph_CrossSession" xml:space="preserve">
+    <value>Verbindungen zwischen Sitzungen</value>
+  </data>
+  <data name="Sessions_Graph_Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Sessions_Graph_TagsHint" xml:space="preserve">
+    <value>Keine Auswahl: alle Notizen. Mehrere Tags: mindestens eines.</value>
+  </data>
+  <data name="Sessions_Graph_NoTags" xml:space="preserve">
+    <value>Keine Tags in zugänglichen Notizen.</value>
+  </data>
+  <data name="Sessions_Graph_Clusters" xml:space="preserve">
+    <value>Verbundene Gruppen</value>
+  </data>
+  <data name="Sessions_Graph_AllClusters" xml:space="preserve">
+    <value>Alle Gruppen</value>
+  </data>
+  <data name="Sessions_Graph_ClustersHint" xml:space="preserve">
+    <value>Durch Links verbundene Notizen, auch über Sitzungen hinweg. Filter ändern die Gruppenzugehörigkeit nicht.</value>
+  </data>
+  <data name="Sessions_Graph_ResetFilters" xml:space="preserve">
+    <value>Filter zurücksetzen</value>
+  </data>
+  <data name="Sessions_Graph_NoMatches" xml:space="preserve">
+    <value>Keine Notizen entsprechen diesen Filtern.</value>
+  </data>
+  <data name="Sessions_Graph_NoNotes" xml:space="preserve">
+    <value>Keine zugänglichen Notizen. Erstelle eine Notiz oder entsperre eine Sitzung.</value>
+  </data>
+  <data name="Sessions_Graph_DiscoverySummary" xml:space="preserve">
+    <value>Verwaist: {0} · Sitzungsübergreifende Links: {1} · Gruppen: {2}</value>
+  </data>
+  <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
+    <value>Gesamtzahlen des zugänglichen Vaults. Gesperrte Sitzungen sind ausgeschlossen.</value>
   </data>
 </root>
