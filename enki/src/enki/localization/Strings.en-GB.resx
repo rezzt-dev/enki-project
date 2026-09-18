@@ -2586,6 +2586,15 @@
   <data name="Settings_Editor_Font_Description" xml:space="preserve">
     <value>Font used in the note editor.</value>
   </data>
+  <data name="Settings_Editor_CodeFont_Title" xml:space="preserve">
+    <value>Code font</value>
+  </data>
+  <data name="Settings_Editor_CodeFont_Description" xml:space="preserve">
+    <value>Font used for code blocks, inline code and code viewers.</value>
+  </data>
+  <data name="Settings_Editor_CodeFont_DefaultLabel" xml:space="preserve">
+    <value>Default (JetBrains Mono NF)</value>
+  </data>
   <data name="Settings_Editor_Font_Title" xml:space="preserve">
     <value>Font</value>
   </data>

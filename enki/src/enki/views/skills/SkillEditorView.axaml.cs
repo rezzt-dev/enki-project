@@ -17,6 +17,7 @@ namespace enki.Views;
 public partial class SkillEditorView : UserControl
 {
     private static readonly FontFamily BundledEditorFontFamily = new("avares://enki/assets/fonts#Space Grotesk");
+    private static readonly FontFamily BundledCodeFontFamily = new("avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono");
 
     private readonly LivePreviewState _livePreviewState = new();
     private readonly MarkdownStyle _style;
@@ -26,10 +27,7 @@ public partial class SkillEditorView : UserControl
     {
         InitializeComponent();
 
-        var monoFont = Application.Current is { } app && app.TryFindResource("MonoFontFamily", out var monoRes) && monoRes is FontFamily mf
-            ? mf
-            : FontFamily.Default;
-        _style = MarkdownStyle.FromApp(ResolveEditorFontFamily(), monoFont, EditorPreferences.FontSize);
+        _style = MarkdownStyle.FromApp(ResolveEditorFontFamily(), ResolveCodeFontFamily(), EditorPreferences.FontSize);
 
         var textArea = Editor.TextArea;
         var textView = textArea.TextView;
@@ -66,6 +64,13 @@ public partial class SkillEditorView : UserControl
 
         Editor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
+        AttachedToVisualTree += (_, _) =>
+        {
+            EditorPreferences.Changed -= OnEditorPreferencesChanged;
+            EditorPreferences.Changed += OnEditorPreferencesChanged;
+            OnEditorPreferencesChanged();
+        };
+        DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
     }
 
     private static IBrush ResolveCurrentLineBrush()
@@ -84,6 +89,22 @@ public partial class SkillEditorView : UserControl
     {
         var name = EditorPreferences.FontFamily;
         return string.IsNullOrWhiteSpace(name) ? BundledEditorFontFamily : new FontFamily(name);
+    }
+
+    private static FontFamily ResolveCodeFontFamily()
+    {
+        var name = EditorPreferences.CodeFontFamily;
+        return string.IsNullOrWhiteSpace(name) ? BundledCodeFontFamily : new FontFamily(name);
+    }
+
+    private void OnEditorPreferencesChanged()
+    {
+        Editor.FontFamily = _style.BodyFontFamily = ResolveEditorFontFamily();
+        Editor.FontSize = _style.BaseFontSize = EditorPreferences.FontSize;
+        _style.MonoFontFamily = ResolveCodeFontFamily();
+        _livePreviewState.TableFolding?.Refresh();
+        Editor.TextArea.TextView.InvalidateMeasure();
+        Editor.TextArea.TextView.Redraw();
     }
 
     private void OnCaretOrSelectionChanged()

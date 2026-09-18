@@ -56,6 +56,9 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private string _editorFontFamily;
 
+    [ObservableProperty]
+    private string _codeFontFamily;
+
     /// <summary>Vista simplificada de la página de Notas: árbol de carpetas y notas a la izquierda,
     /// pestañas y editor a la derecha, sin barra de formato ni panel lateral de esquema/enlaces/
     /// estadísticas. False deja la vista completa de siempre. Se guarda como el string
@@ -145,5 +148,14 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.EditorFontFamily = stored;
         _settingsService.Save();
         EditorPreferences.FontFamily = stored;
+    }
+
+    partial void OnCodeFontFamilyChanged(string value)
+    {
+        var stored = FromCodeFontLabel(value);
+        _settingsService.Settings.CodeFontFamily = stored;
+        _settingsService.Save();
+        ApplyCodeFont(stored);
+        EditorPreferences.CodeFontFamily = stored;
     }
 }

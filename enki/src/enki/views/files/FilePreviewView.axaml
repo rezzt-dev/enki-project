@@ -348,7 +348,7 @@
                        WordWrap="{Binding IsCodeWordWrap}"
                        HorizontalScrollBarVisibility="Auto"
                        VerticalScrollBarVisibility="Auto"
-                       FontFamily="{DynamicResource MonoFontFamily}"
+                       FontFamily="{DynamicResource CodeFontFamily}"
                        FontSize="13"
                        Margin="10,8,0,0"
                        Document="{Binding CodeDocument}" />

@@ -26,6 +26,7 @@ public partial class EditorView : UserControl
     /// chosen, kept independent of "DisplayFontFamily" since that resource can be swapped at
     /// runtime by the interface font picker and the editor font must not follow it.</summary>
     private static readonly FontFamily BundledEditorFontFamily = new("avares://enki/assets/fonts#Space Grotesk");
+    private static readonly FontFamily BundledCodeFontFamily = new("avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono");
 
     private readonly LivePreviewState _livePreviewState = new();
     private readonly MarkdownStyle _style;
@@ -51,10 +52,7 @@ public partial class EditorView : UserControl
     {
         InitializeComponent();
 
-        var monoFont = Application.Current is { } app && app.TryFindResource("MonoFontFamily", out var monoRes) && monoRes is FontFamily mf
-            ? mf
-            : FontFamily.Default;
-        _style = MarkdownStyle.FromApp(ResolveEditorFontFamily(), monoFont, EditorPreferences.FontSize);
+        _style = MarkdownStyle.FromApp(ResolveEditorFontFamily(), ResolveCodeFontFamily(), EditorPreferences.FontSize);
 
         var textArea = Editor.TextArea;
         var textView = textArea.TextView;
@@ -141,7 +139,12 @@ public partial class EditorView : UserControl
         DataContextChanged += OnDataContextChanged;
         InitializeImageDropTarget();
 
-        EditorPreferences.Changed += OnEditorPreferencesChanged;
+        AttachedToVisualTree += (_, _) =>
+        {
+            EditorPreferences.Changed -= OnEditorPreferencesChanged;
+            EditorPreferences.Changed += OnEditorPreferencesChanged;
+            OnEditorPreferencesChanged();
+        };
         DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
     }
 
@@ -197,6 +200,12 @@ public partial class EditorView : UserControl
         return string.IsNullOrWhiteSpace(name) ? BundledEditorFontFamily : new FontFamily(name);
     }
 
+    private static FontFamily ResolveCodeFontFamily()
+    {
+        var name = EditorPreferences.CodeFontFamily;
+        return string.IsNullOrWhiteSpace(name) ? BundledCodeFontFamily : new FontFamily(name);
+    }
+
     /// <summary>Reapplies font, column and scrollbar preferences to whichever note is currently open —
     /// fired whenever the Settings page changes one of them, so an already-open note reflects it
     /// immediately instead of only on next open.</summary>
@@ -206,6 +215,7 @@ public partial class EditorView : UserControl
         Editor.FontFamily = fontFamily;
         Editor.FontSize = EditorPreferences.FontSize;
         _style.BodyFontFamily = fontFamily;
+        _style.MonoFontFamily = ResolveCodeFontFamily();
         _style.BaseFontSize = EditorPreferences.FontSize;
         ApplyColumnLayout();
         ApplyScrollbarVisibility();
@@ -221,6 +231,7 @@ public partial class EditorView : UserControl
         // Otro tamaño de letra o de columna puede dejar a una tabla sin sitio (o devolvérselo), y con ello
         // cambia si su fila separadora sigue plegada.
         _livePreviewState.TableFolding?.Refresh();
+        Editor.TextArea.TextView.InvalidateMeasure();
         Editor.TextArea.TextView.Redraw();
     }
 

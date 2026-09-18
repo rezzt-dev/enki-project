@@ -146,7 +146,7 @@
           <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
                   BorderThickness="1" Padding="14,12" MaxHeight="280">
             <ScrollViewer>
-              <TextBlock Text="{Binding Model.Content}" FontFamily="{StaticResource MonoFontFamily}" FontSize="11"
+              <TextBlock Text="{Binding Model.Content}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="11"
                          TextWrapping="Wrap" LineHeight="18" />
             </ScrollViewer>
           </Border>

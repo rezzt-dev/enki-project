@@ -29,6 +29,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     /// tracks the active language, at the cost of no longer being usable in a <c>const</c>/<c>case</c>
     /// context (no callers needed that).</summary>
     public static string DefaultFontLabel => LocalizationService.Instance["Settings_Appearance_Font_DefaultLabel"];
+    public static string DefaultCodeFontLabel => LocalizationService.Instance["Settings_Editor_CodeFont_DefaultLabel"];
 
     private readonly SettingsService _settingsService;
     private readonly CustomThemeService _customThemeService;
@@ -94,6 +95,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<SettingsSectionViewModel> Sections { get; }
     public ObservableCollection<string> AvailableFonts { get; }
+    public ObservableCollection<string> AvailableCodeFonts { get; }
 
     /// <summary>Idiomas disponibles para la UI. La lista es estática, pero el seleccionado se enlaza a
     /// <see cref="SelectedLanguage"/>. CA1822 sugiere marcar el getter <c>static</c> porque no toca estado
@@ -279,6 +281,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _notificationSoundVolume = settingsService.Settings.NotificationSoundVolume;
         _interfaceFontFamily = ToLabel(settingsService.Settings.InterfaceFontFamily);
         _editorFontFamily = ToLabel(settingsService.Settings.EditorFontFamily);
+        _codeFontFamily = ToCodeFontLabel(settingsService.Settings.CodeFontFamily);
         _selectedLanguage = SupportedLanguages.Find(settingsService.Settings.Language)
             ?? SupportedLanguages.Find(LocalizationService.Instance.CurrentCulture.Name)
             ?? SupportedLanguages.All[0];
@@ -288,6 +291,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.ColumnPosition = settingsService.Settings.EditorColumnPosition;
         EditorPreferences.ShowScrollbar = _editorShowScrollbar;
         EditorPreferences.FontFamily = settingsService.Settings.EditorFontFamily;
+        EditorPreferences.CodeFontFamily = settingsService.Settings.CodeFontFamily;
         EditorPreferences.TabSize = settingsService.Settings.EditorTabSize;
         EditorPreferences.LineNumbers = _editorLineNumbers;
         EditorPreferences.WordWrap = _editorWordWrap;
@@ -303,6 +307,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.SimplifiedNotesView = _isSimplifiedNotesView;
 
         AvailableFonts = BuildAvailableFonts();
+        AvailableCodeFonts = BuildAvailableFonts(DefaultCodeFontLabel);
 
         Sections =
         [
@@ -348,6 +353,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         }
 
         ApplyInterfaceFont(settingsService.Settings.InterfaceFontFamily);
+        ApplyCodeFont(settingsService.Settings.CodeFontFamily);
     }
 
     private void DebouncedSave()
@@ -388,15 +394,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private static string? FromLabel(string label) =>
         label == DefaultFontLabel ? null : label;
 
+    private static string ToCodeFontLabel(string? fontFamily) =>
+        string.IsNullOrWhiteSpace(fontFamily) ? DefaultCodeFontLabel : fontFamily;
+
+    private static string? FromCodeFontLabel(string label) =>
+        label == DefaultCodeFontLabel ? null : label;
+
     private static CalendarViewMode ParseCalendarViewMode(string value) =>
         Enum.TryParse<CalendarViewMode>(value, out var mode) ? mode : CalendarViewMode.Month;
 
     private static AppPage ParseAppPage(string value) =>
         Enum.TryParse<AppPage>(value, out var page) ? page : AppPage.Dashboard;
 
-    private static ObservableCollection<string> BuildAvailableFonts()
+    private static ObservableCollection<string> BuildAvailableFonts(string? defaultLabel = null)
     {
-        var list = new ObservableCollection<string> { DefaultFontLabel };
+        var list = new ObservableCollection<string> { defaultLabel ?? DefaultFontLabel };
         try
         {
             var names = FontManager.Current.SystemFonts
@@ -414,8 +426,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>Claves de <c>Colors.axaml</c> que la fuente de la interfaz sustituye: la fuente de texto, la
-    /// de micro-labels y la que usa FluentTheme en sus controles. <c>MonoFontFamily</c> queda fuera a
-    /// propósito (código y texto que necesita monoespaciado).</summary>
+    /// de micro-labels y la que usa FluentTheme en sus controles. <c>MonoFontFamily</c> y
+    /// <c>CodeFontFamily</c> quedan fuera para preservar sus preferencias independientes.</summary>
     private static readonly string[] InterfaceFontResourceKeys =
         ["DisplayFontFamily", "InterfaceLabelFontFamily", "ContentControlThemeFontFamily"];
 
@@ -433,6 +445,13 @@ public sealed partial class SettingsViewModel : ViewModelBase
             var family = new FontFamily(fontFamily);
             foreach (var key in InterfaceFontResourceKeys) app.Resources[key] = family;
         }
+    }
+
+    private static void ApplyCodeFont(string? fontFamily)
+    {
+        if (Avalonia.Application.Current is not { } app) return;
+        if (string.IsNullOrWhiteSpace(fontFamily)) app.Resources.Remove("CodeFontFamily");
+        else app.Resources["CodeFontFamily"] = new FontFamily(fontFamily);
     }
 
     partial void OnSelectedSectionChanged(SettingsSection value)
@@ -564,9 +583,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         var previousDefault = AvailableFonts[0];
         var interfaceWasDefault = InterfaceFontFamily == previousDefault;
         var editorWasDefault = EditorFontFamily == previousDefault;
+        var codeWasDefault = CodeFontFamily == AvailableCodeFonts[0];
         AvailableFonts[0] = DefaultFontLabel;
+        AvailableCodeFonts[0] = DefaultCodeFontLabel;
         if (interfaceWasDefault) InterfaceFontFamily = DefaultFontLabel;
         if (editorWasDefault) EditorFontFamily = DefaultFontLabel;
+        if (codeWasDefault) CodeFontFamily = DefaultCodeFontLabel;
     }
 
     /// <summary>Host legible de <see cref="SkillsViewModel.CommunitySkillsUrl"/> — ver el comentario de

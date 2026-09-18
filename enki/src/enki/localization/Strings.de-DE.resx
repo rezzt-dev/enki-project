@@ -2586,6 +2586,15 @@
   <data name="Settings_Editor_Font_Description" xml:space="preserve">
     <value>Schrift im Notiz-Editor.</value>
   </data>
+  <data name="Settings_Editor_CodeFont_Title" xml:space="preserve">
+    <value>Code-Schriftart</value>
+  </data>
+  <data name="Settings_Editor_CodeFont_Description" xml:space="preserve">
+    <value>Schriftart für Codeblöcke, Inline-Code und Codeansichten.</value>
+  </data>
+  <data name="Settings_Editor_CodeFont_DefaultLabel" xml:space="preserve">
+    <value>Standard (JetBrains Mono NF)</value>
+  </data>
   <data name="Settings_Editor_Font_Title" xml:space="preserve">
     <value>Schrift</value>
   </data>

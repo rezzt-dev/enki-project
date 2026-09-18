@@ -111,8 +111,10 @@ public class SettingsViewModelTests : IDisposable
             Assert.Equal(culture, new SettingsService(_storageDirectory).Settings.Language);
             Assert.Equal(SettingsViewModel.DefaultFontLabel, vm.InterfaceFontFamily);
             Assert.Equal(SettingsViewModel.DefaultFontLabel, vm.EditorFontFamily);
+            Assert.Equal(SettingsViewModel.DefaultCodeFontLabel, vm.CodeFontFamily);
             Assert.Null(settings.Settings.InterfaceFontFamily);
             Assert.Null(settings.Settings.EditorFontFamily);
+            Assert.Null(settings.Settings.CodeFontFamily);
             vm.FlushPendingSave();
         }
         finally
@@ -131,16 +133,44 @@ public class SettingsViewModelTests : IDisposable
             var (vm, settings, _, _) = CreateViewModel();
             vm.InterfaceFontFamily = "Space Grotesk";
             vm.EditorFontFamily = "JetBrains Mono";
+            vm.CodeFontFamily = "Cascadia Code";
             vm.SelectedLanguage = SupportedLanguages.Find("fr-FR");
             Assert.Equal("Space Grotesk", vm.InterfaceFontFamily);
             Assert.Equal("JetBrains Mono", vm.EditorFontFamily);
+            Assert.Equal("Cascadia Code", vm.CodeFontFamily);
             Assert.Equal("Space Grotesk", settings.Settings.InterfaceFontFamily);
             Assert.Equal("JetBrains Mono", settings.Settings.EditorFontFamily);
+            Assert.Equal("Cascadia Code", settings.Settings.CodeFontFamily);
             vm.FlushPendingSave();
         }
         finally
         {
             LocalizationService.Instance.SetLanguage(original);
+        }
+    }
+
+    [Fact]
+    public void CodeFont_PersistsAndUpdatesOpenEditors()
+    {
+        var (vm, _, _, _) = CreateViewModel();
+        var changes = 0;
+        void OnChanged() => changes++;
+        EditorPreferences.Changed += OnChanged;
+        try
+        {
+            vm.CodeFontFamily = "Cascadia Code";
+            Assert.Equal("Cascadia Code", new SettingsService(_storageDirectory).Settings.CodeFontFamily);
+            Assert.Equal("Cascadia Code", EditorPreferences.CodeFontFamily);
+            Assert.Equal(1, changes);
+
+            vm.CodeFontFamily = SettingsViewModel.DefaultCodeFontLabel;
+            Assert.Null(new SettingsService(_storageDirectory).Settings.CodeFontFamily);
+            Assert.Null(EditorPreferences.CodeFontFamily);
+            Assert.Equal(2, changes);
+        }
+        finally
+        {
+            EditorPreferences.Changed -= OnChanged;
         }
     }
 

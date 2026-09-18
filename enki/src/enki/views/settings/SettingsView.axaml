@@ -1153,6 +1153,22 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
+                ResourceKeys="Settings_Editor_CodeFont_Title Settings_Editor_CodeFont_Description Settings_Nav_Editor">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Editor_CodeFont_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Editor_CodeFont_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <ComboBox ItemsSource="{Binding AvailableCodeFonts}" SelectedItem="{Binding CodeFontFamily}" AutomationProperties.Name="{loc:Tr Settings_Editor_CodeFont_Title}"
+                            HorizontalAlignment="Stretch" MaxDropDownHeight="320" />
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Editor Settings_Editor_SizeLayout_Title"
                 MatchDescendants="True">
               <Border Classes="card" Padding="22">

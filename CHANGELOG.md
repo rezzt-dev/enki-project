@@ -127,6 +127,17 @@ cambiaba los títulos y el texto principal; el resto seguía con la fuente de si
 - El texto que necesita monoespaciado de verdad no cambia: la vista de código de "Archivos", los códigos de
   recuperación y el contenido en crudo de una skill.
 
+**Fuente del código a elección del usuario**. Ajustes › Editor › "Fuente del código" permite escoger
+cualquiera de las fuentes instaladas en el sistema, independientemente de las fuentes de la interfaz y del
+texto de las notas. JetBrains Mono NF sigue siendo la opción predeterminada.
+
+- El cambio se aplica a los bloques de código y al código en línea de las notas y las skills, al visor de
+  archivos de código y al contenido en crudo de una skill. Las etiquetas y los códigos de recuperación
+  mantienen su fuente monoespaciada.
+- La fuente elegida se guarda con los ajustes del vault activo y aparece al momento en los editores abiertos;
+  también se recupera al volver a abrir una vista o cambiar de vault. El selector está traducido a todos los
+  idiomas disponibles.
+
 **Logo propio en la barra lateral**. El cuadro de la esquina superior izquierda llevaba siempre el icono de
 Enki. Ahora Ajustes › Apariencia › "Logo de la barra lateral" permite poner ahí una imagen del sistema.
 

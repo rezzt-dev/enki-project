@@ -179,10 +179,12 @@
   <!-- ===================== Tipografía ===================== -->
   <!-- DisplayFontFamily, InterfaceLabelFontFamily y ContentControlThemeFontFamily son las tres claves que
        Ajustes › Apariencia › "Fuente de la interfaz" sustituye en vivo (SettingsViewModel.ApplyInterfaceFont);
-       MonoFontFamily no la toca nadie y queda reservada a texto que necesita monoespaciado de verdad
-       (código, códigos de recuperación, contenido en crudo). -->
+       MonoFontFamily no la toca nadie y queda reservada a etiquetas, códigos de recuperación y cifras
+       que necesitan monoespaciado. CodeFontFamily se cambia desde Ajustes › Editor. -->
   <FontFamily x:Key="DisplayFontFamily">avares://enki/assets/fonts#Space Grotesk</FontFamily>
   <FontFamily x:Key="MonoFontFamily">avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono</FontFamily>
+  <!-- Fuente de código, sustituible desde Ajustes › Editor. MonoFontFamily conserva las etiquetas y cifras. -->
+  <FontFamily x:Key="CodeFontFamily">avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono</FontFamily>
   <!-- Micro-labels de la interfaz (eyebrows, metadatos, contadores, ejes de gráficas): JetBrains Mono por
        defecto, pero siguen a la fuente de la interfaz cuando el usuario elige una. -->
   <FontFamily x:Key="InterfaceLabelFontFamily">avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono</FontFamily>

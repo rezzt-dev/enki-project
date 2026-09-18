@@ -60,6 +60,19 @@ public static class EditorPreferences
         }
     }
 
+    /// <summary>Fuente de los bloques y fragmentos de código. Null usa la fuente incluida.</summary>
+    private static string? _codeFontFamily;
+    public static string? CodeFontFamily
+    {
+        get => _codeFontFamily;
+        set
+        {
+            if (_codeFontFamily == value) return;
+            _codeFontFamily = value;
+            Changed?.Invoke();
+        }
+    }
+
     /// <summary>Whether the editor's (and preview's) scrollbar is visible.</summary>
     private static bool _showScrollbar = true;
     public static bool ShowScrollbar

@@ -67,6 +67,9 @@ public sealed class AppSettings
     /// <summary>System font family name for the markdown editor (edit + preview), independent of <see cref="InterfaceFontFamily"/>. Null/empty means the bundled Space Grotesk.</summary>
     public string? EditorFontFamily { get; set; }
 
+    /// <summary>Fuente del código Markdown y de los visores de código. Null usa JetBrains Mono NF.</summary>
+    public string? CodeFontFamily { get; set; }
+
     /// <summary>Ajustes › Apariencia › Tema personalizado — whether the "Oscuros" built-in theme list is
     /// collapsed.</summary>
     public bool BuiltInDarkThemesCollapsed { get; set; }

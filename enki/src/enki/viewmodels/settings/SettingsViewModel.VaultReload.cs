@@ -72,6 +72,7 @@ public sealed partial class SettingsViewModel
         _notificationSoundVolume = _settingsService.Settings.NotificationSoundVolume;
         _interfaceFontFamily = ToLabel(_settingsService.Settings.InterfaceFontFamily);
         _editorFontFamily = ToLabel(_settingsService.Settings.EditorFontFamily);
+        _codeFontFamily = ToCodeFontLabel(_settingsService.Settings.CodeFontFamily);
         _selectedLanguage = SupportedLanguages.Find(_settingsService.Settings.Language)
             ?? SupportedLanguages.Find(LocalizationService.Instance.CurrentCulture.Name)
             ?? SupportedLanguages.All[0];
@@ -81,6 +82,7 @@ public sealed partial class SettingsViewModel
         EditorPreferences.ColumnPosition = _settingsService.Settings.EditorColumnPosition;
         EditorPreferences.ShowScrollbar = _editorShowScrollbar;
         EditorPreferences.FontFamily = _settingsService.Settings.EditorFontFamily;
+        EditorPreferences.CodeFontFamily = _settingsService.Settings.CodeFontFamily;
         EditorPreferences.TabSize = _settingsService.Settings.EditorTabSize;
         EditorPreferences.LineNumbers = _editorLineNumbers;
         EditorPreferences.WordWrap = _editorWordWrap;
@@ -158,6 +160,7 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(NotificationSoundVolume));
         OnPropertyChanged(nameof(InterfaceFontFamily));
         OnPropertyChanged(nameof(EditorFontFamily));
+        OnPropertyChanged(nameof(CodeFontFamily));
         OnPropertyChanged(nameof(SelectedLanguage));
         OnPropertyChanged(nameof(UiZoomBarFillStar));
         OnPropertyChanged(nameof(UiZoomBarRemainderStar));
@@ -167,6 +170,7 @@ public sealed partial class SettingsViewModel
         BuildDashboardSections();
         BuildSidebarSections();
         ApplyInterfaceFont(_settingsService.Settings.InterfaceFontFamily);
+        ApplyCodeFont(_settingsService.Settings.CodeFontFamily);
     }
 }
 #pragma warning restore MVVMTK0034

@@ -33,7 +33,7 @@ public sealed class MarkdownStyle
     public required IBrush TableHeaderBackground { get; init; }
 
     public required FontFamily BodyFontFamily { get; set; }
-    public required FontFamily MonoFontFamily { get; init; }
+    public required FontFamily MonoFontFamily { get; set; }
     public double BaseFontSize { get; set; } = 14.5;
 
     /// <summary>Horizontal breathing room (px) between a fenced code block's border and the code text
