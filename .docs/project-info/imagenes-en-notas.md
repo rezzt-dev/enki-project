@@ -39,6 +39,11 @@ Una imagen insertada se escribe **en su propia línea, sin crear una línea vac�
 salto existente y solo añade uno detrás si hay texto que separar. Al final de la nota no añade salto.
 El cursor justo después del `)` final mantiene la imagen visible; entrar en su sintaxis permite editarla.
 
+**Pegar sustituye la selección**, como cualquier otro pegado: que pegar una imagen fuera la única forma de
+pegado que deja intacto lo seleccionado sería una excepción que nadie espera. El borrado y la inserción van
+en la misma transacción del documento (`InsertPastedImages`), así que un único `Ctrl+Z` deshace las dos. El
+arrastre no borra nada: inserta en el punto donde se soltó, que es lo que el gesto promete.
+
 ## 2. Dónde se guardan los adjuntos
 
 Una imagen pegada o arrastrada a `Proyecto.md` se guarda en **`Proyecto.attachments/`**, carpeta hermana
@@ -48,6 +53,11 @@ juntas, y el nombre de la carpeta dice a quién pertenecen sin abrir nada.
 - El nombre del archivo es `imagen-AAAAMMDD-HHMMSS.png` para una captura del portapapeles, y el nombre
   original saneado (sin espacios ni caracteres inválidos) para un archivo arrastrado. Una colisión añade
   `-2`, `-3`…
+- Una imagen del portapapeles **de la que no se obtiene un solo byte** —un codificador que falla, una
+  plataforma que anuncia el formato y luego no lo sirve— no se guarda: `EditorViewModel.AttachImageBytes`
+  avisa con la misma notificación que cualquier otro fallo de adjuntado y no inserta nada. Un adjunto de
+  cero bytes con un `![](…)` apuntando a él dejaría en la nota una imagen rota indistinguible de una
+  borrada por error.
 - **Un archivo que ya está dentro del vault se enlaza donde está, no se duplica**: arrastrar a una nota una
   imagen que ya vive en el módulo Archivos debe enlazarla, no dejar dos copias que mantener a la vez.
 - La ruta que se escribe en el Markdown es **relativa a la nota**, con `/` como separador y con los
@@ -159,6 +169,11 @@ como atributos `width`/`height`, de modo que el documento exportado se ve como s
   se lleve sus adjuntos.
 - `enki.UITests/EditorViewImagesUiTests.cs` — lo puramente visual, contra el `EditorView` real: que
   aparece un `Image` del tamaño calculado, que la línea crece para alojarlo, que el cursor encima devuelve
-  el Markdown, y que una imagen que falta deja un hueco visible. La plataforma headless de Avalonia
+  el Markdown, y que una imagen que falta deja un hueco visible. Y el gesto de pegar de punta a punta,
+  contra el portapapeles de verdad del `TopLevel`: que `Ctrl+V` con archivos de imagen los guarda como
+  adjuntos con su nombre saneado e inserta la referencia relativa; que varias entran cada una en su línea;
+  que una que ya vive en el vault se enlaza sin duplicarse; que pegar sobre una selección la sustituye y un
+  solo `Ctrl+Z` lo deshace; y que pegar texto —o un mapa de bits que además trae texto— sigue pegando texto
+  sin crear adjuntos. La plataforma headless de Avalonia
   devuelve bitmaps de 1×1, así que las medidas se comprueban contra el tamaño natural leído de la
   cabecera, no contra los píxeles decodificados.

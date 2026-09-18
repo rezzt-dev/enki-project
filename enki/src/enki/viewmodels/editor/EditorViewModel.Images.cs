@@ -46,8 +46,25 @@ public sealed partial class EditorViewModel
     /// <summary>Guarda como adjunto de esta nota una imagen que llega ya codificada (lo que sale del
     /// portapapeles, siempre PNG) y devuelve la ruta relativa lista para escribir dentro de un
     /// <c>![](…)</c>, o null si no se pudo guardar — en cuyo caso el usuario ya ha visto por qué.</summary>
-    public string? AttachImageBytes(byte[] data, string extension) =>
-        Attach(() => ImageService.SaveBytes(Note, data, extension));
+    public string? AttachImageBytes(byte[] data, string extension)
+    {
+        // Un portapapeles que anuncia una imagen pero no entrega píxeles (un codificador que falla, una
+        // plataforma que ofrece el formato y luego no lo sirve) no puede acabar en un adjunto de cero
+        // bytes con un ![](…) apuntando a él: eso deja en la nota una imagen rota indistinguible de una
+        // borrada por error. Se avisa igual que cualquier otro fallo de adjuntado y no se escribe nada.
+        if (data.Length == 0)
+        {
+            LogService.Warning($"El portapapeles entregó una imagen sin datos al adjuntarla a '{Note.FullPath}'");
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteImageAttachFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteImageAttachFailed_Message",
+                    LocalizedTextFormatter.Format("Common_Error_Unexpected")),
+                NotificationSeverity.Error);
+            return null;
+        }
+
+        return Attach(() => ImageService.SaveBytes(Note, data, extension));
+    }
 
     /// <summary>Adjunta a esta nota un archivo de imagen ya existente en disco (arrastrado desde el
     /// explorador, elegido en el diálogo). Un archivo que ya está dentro del vault se enlaza donde está;

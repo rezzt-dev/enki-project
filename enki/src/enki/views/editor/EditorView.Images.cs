@@ -116,7 +116,7 @@ public partial class EditorView
             var paths = LocalImagePaths(files);
             if (paths.Count > 0)
             {
-                InsertImageReferences(AttachAll(paths), Editor.CaretOffset);
+                InsertPastedImages(AttachAll(paths));
                 return true;
             }
         }
@@ -133,7 +133,7 @@ public partial class EditorView
         var reference = vm.AttachImageBytes(stream.ToArray(), ".png");
         if (reference is null) return true; // Falló el guardado; el usuario ya tiene el aviso.
 
-        InsertImageReferences([reference], Editor.CaretOffset);
+        InsertPastedImages([reference]);
         return true;
     }
 
@@ -225,6 +225,23 @@ public partial class EditorView
             if (vm.AttachImageFile(path) is { } reference) references.Add(reference);
         }
         return references;
+    }
+
+    /// <summary>Inserta en el cursor las imágenes que acaban de pegarse. A diferencia del resto de vías,
+    /// esta tiene que <em>sustituir</em> la selección: pegar sobre un texto seleccionado lo reemplaza, y
+    /// que pegar una imagen fuera la única forma de pegado que deja intacto lo seleccionado sería una
+    /// excepción que el usuario no espera. El borrado y la inserción van en la misma transacción del
+    /// documento para que un solo Ctrl+Z los deshaga juntos.</summary>
+    private void InsertPastedImages(List<string> references)
+    {
+        if (references.Count == 0) return;
+
+        using (Editor.Document.RunUpdate())
+        {
+            var selection = Editor.TextArea.Selection;
+            if (!selection.IsEmpty) selection.ReplaceSelectionWithText(string.Empty);
+            InsertImageReferences(references, Editor.CaretOffset);
+        }
     }
 
     /// <summary>Escribe cada imagen en su propia línea, reutilizando el salto existente y sin añadir

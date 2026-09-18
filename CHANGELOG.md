@@ -27,12 +27,15 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - anadir `.github/workflows/release.yml`: al empujar un tag `v*.*.*` compila, empaqueta y publica los cinco paquetes de las tres plataformas como una GitHub Release, sin pasos manuales; tambien disponible como `workflow_dispatch` para probar el empaquetado sin cortar una version real.
 - anadir el job `lint-packaging` a `.github/workflows/ci.yml`, que valida en cada push/pr la sintaxis de los scripts de `enki/packaging/` (`bash -n`, `shellcheck`), el `enki.desktop` de linux y el yaml de `release.yml`, para detectar errores de empaquetado antes de cortar una release real.
 - ampliar el panel del grafo con seleccion de grupos conectados, etiquetas al pasar el cursor, recuentos visibles y globales, estados sin resultados y restablecimiento de filtros; conservar las selecciones disponibles al recargar y el modo de exploracion al cambiar de idioma.
+- cubrir el pegado de imagenes de punta a punta en `enki.UITests/EditorViewImagesUiTests.cs` contra el portapapeles real del `TopLevel` (adjunto guardado y referencia insertada, varias imagenes, imagen que ya vive en el vault, sustitucion de la seleccion y pegado de texto sin adjuntos), y documentar el comportamiento nuevo en `.docs/project-info/imagenes-en-notas.md`.
 
 #### CORREGIDO
 - corregir los enlaces de documentacion y los iconos de ambos README, ademas de las referencias y enlaces relativos de `AGENTS.md` y `.docs/project-info/`, para que apunten a archivos existentes.
 - mostrar el grafo cuando el vault contiene notas sin ninguna sesion creada y evitar ocultarlo temporalmente durante una recarga.
 - cancelar el extremo pendiente de un enlace manual al cambiar los filtros para impedir conexiones accidentales con notas ocultas.
 - evitar que el recuento del grafo se solape con sus controles en ventanas estrechas y mantener accesible el boton de restablecer al desplazar el panel de filtros.
+- sustituir el texto seleccionado al pegar una imagen en el editor, igual que hace cualquier otro pegado, en una sola operacion deshacible con un unico `ctrl+z`.
+- descartar con aviso una imagen del portapapeles que no entrega ni un byte, en vez de guardar un adjunto vacio e insertar un `![](...)` que apunta a una imagen rota.
 
 #### SEGURIDAD
 - proteger los tokens de sesion de polar con dpapi en windows, secret service mediante libsecret en linux y keychain en macos, fuera de `settings.json`.
@@ -59,12 +62,15 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add `.github/workflows/release.yml`: pushing a `v*.*.*` tag builds, packages and publishes all five packages across the three platforms as a GitHub Release with no manual steps; also available as a `workflow_dispatch` to test packaging without cutting a real release.
 - add a `lint-packaging` job to `.github/workflows/ci.yml` that validates `enki/packaging/` scripts on every push/pr (`bash -n`, `shellcheck`), the linux `enki.desktop` file and `release.yml`'s yaml, to catch packaging errors before cutting a real release.
 - expand the graph panel with connected group selection, tags on hover, visible and global counts, empty states and filter reset; preserve available selections when reloading and the exploration mode when switching languages.
+- cover image pasting end to end in `enki.UITests/EditorViewImagesUiTests.cs` against the `TopLevel`'s real clipboard (saved attachment and inserted reference, several images, an image already living in the vault, selection replacement and text pasting without attachments), and document the new behaviour in `.docs/project-info/imagenes-en-notas.md`.
 
 #### FIXED
 - fix documentation links and icons in both README files, along with references and relative links in `AGENTS.md` and `.docs/project-info/`, so they point to existing files.
 - show the graph when the vault contains notes without any sessions and avoid temporarily hiding it during a reload.
 - clear the pending endpoint of a manual link when filters change to prevent accidental connections to hidden notes.
 - prevent graph counts from overlapping controls in narrow windows and keep the reset button accessible while scrolling the filter panel.
+- replace the selected text when pasting an image into the editor, like any other paste does, as a single operation that one `ctrl+z` undoes.
+- discard a clipboard image that yields no bytes, with a notification, instead of saving an empty attachment and inserting a `![](...)` pointing at a broken image.
 
 #### SECURITY
 - protect polar session tokens with dpapi on windows, secret service through libsecret on linux, and keychain on macos, outside `settings.json`.
