@@ -232,6 +232,7 @@ public sealed class VaultService
         Directory.CreateDirectory(path);
         VaultPath = path;
         _settingsService.Settings.VaultPath = path;
+        _settingsService.SwitchVault(path);
         _settingsService.Save();
 
         if (seedWelcomeNote && !Directory.EnumerateFiles(VaultPath, "*.md").Any())
@@ -246,6 +247,7 @@ public sealed class VaultService
         Directory.CreateDirectory(path);
         VaultPath = path;
         _settingsService.Settings.VaultPath = path;
+        _settingsService.SwitchVault(path);
         _settingsService.Save();
     }
 

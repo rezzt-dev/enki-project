@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using enki.Models;
 
 namespace enki.Services;
@@ -10,6 +12,14 @@ public sealed class SettingsService
     private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
 
     private readonly string _settingsPath;
+    private string? _vaultSettingsPath;
+    private static readonly string[] InstallationKeys =
+    [
+        nameof(AppSettings.VaultPath), nameof(AppSettings.PolarLinked), nameof(AppSettings.PolarUserId),
+        nameof(AppSettings.PolarEmail), nameof(AppSettings.PolarAccessToken),
+        nameof(AppSettings.PolarRefreshToken), nameof(AppSettings.PolarAccessTokenExpiresAtUtcMs),
+        nameof(AppSettings.PolarLastSyncAtUtcMs), nameof(AppSettings.DebugLoggingEnabled)
+    ];
     /// <summary>Notifica un guardado completado para actualizar las preferencias visibles.</summary>
     public event Action? SettingsChanged;
 
@@ -24,10 +34,13 @@ public sealed class SettingsService
     /// para avisar al usuario en vez de resetear los ajustes en silencio.</summary>
     public bool LoadedFromCorruptData { get; private set; }
 
-    /// <summary>Ruta absoluta de <c>settings.json</c> — expuesta para "Exportar/Importar ajustes"
-    /// (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md §1), que copian el fichero tal cual en
-    /// vez de duplicar la serialización aquí.</summary>
+    /// <summary>Ruta del archivo global de instalación y autenticación. Las preferencias activas
+    /// se guardan en <c>&lt;vault&gt;/.enki/settings.json</c>.</summary>
     public string SettingsFilePath => _settingsPath;
+
+    /// <summary>Carpeta de recursos visuales asociada a las preferencias activas.</summary>
+    public string PreferenceDirectory => _vaultSettingsPath is null
+        ? Path.GetDirectoryName(_settingsPath)! : Path.GetDirectoryName(_vaultSettingsPath)!;
 
     /// <summary>VaultPath as last known from disk (at load, or after this instance itself wrote it) —
     /// lets <see cref="Save"/> tell "this process just changed the vault" apart from "some other setting
@@ -45,6 +58,8 @@ public sealed class SettingsService
         _settingsPath = Path.Combine(configDir, "settings.json");
         Settings = Load();
         _lastKnownVaultPath = Settings.VaultPath;
+        if (!string.IsNullOrWhiteSpace(Settings.VaultPath) && Directory.Exists(Settings.VaultPath))
+            SwitchVault(Settings.VaultPath);
     }
 
     private AppSettings Load()
@@ -67,6 +82,17 @@ public sealed class SettingsService
     /// write and get silently overwritten.</summary>
     public void Save()
     {
+        if (_vaultSettingsPath is not null)
+        {
+            var preferences = PreferencesOnly(JsonSerializer.SerializeToNode(Settings)!.AsObject());
+            Directory.CreateDirectory(Path.GetDirectoryName(_vaultSettingsPath)!);
+            JsonFileStore.WithLock(_vaultSettingsPath, () =>
+            {
+                var merged = ReadVaultObject(_vaultSettingsPath);
+                foreach (var entry in preferences) merged[entry.Key] = entry.Value?.DeepClone();
+                JsonFileStore.Save(_vaultSettingsPath, merged);
+            });
+        }
         JsonFileStore.WithLock(_settingsPath, () =>
         {
             if (Settings.VaultPath == _lastKnownVaultPath)
@@ -76,9 +102,109 @@ public sealed class SettingsService
             }
             _lastKnownVaultPath = Settings.VaultPath;
 
-            JsonFileStore.Save(_settingsPath, Settings);
+            var global = JsonSerializer.SerializeToNode(Settings)!.AsObject();
+            if (_vaultSettingsPath is not null)
+                foreach (var key in global.Select(entry => entry.Key).Where(key => !InstallationKeys.Contains(key)).ToArray())
+                    global.Remove(key);
+            JsonFileStore.Save(_settingsPath, global);
         });
         SettingsChanged?.Invoke();
+    }
+
+    /// <summary>Cambia el origen de las preferencias al vault activo y migra las claves antiguas
+    /// una sola vez. Las claves ya presentes en el vault siempre tienen prioridad.</summary>
+    public void SwitchVault(string path)
+    {
+        if (!Directory.Exists(path)) return;
+        var target = Path.Combine(path, ".enki", "settings.json");
+        if (_vaultSettingsPath == target) return;
+        var oldSettings = Settings;
+        var migrateAssets = _vaultSettingsPath is null &&
+            JsonFileStore.TryLoad<JsonObject>(_settingsPath, out var legacy) && legacy is not null &&
+            legacy.ContainsKey(nameof(AppSettings.Theme));
+        var pending = _vaultSettingsPath is null
+            ? PreferencesOnly(JsonSerializer.SerializeToNode(oldSettings)!.AsObject()) : null;
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        JsonFileStore.WithLock(target, () =>
+        {
+            var vault = ReadVaultObject(target);
+            if (pending is not null)
+            {
+                // Incluye elecciones hechas antes de seleccionar el primer vault.
+                foreach (var entry in pending)
+                    if (!vault.ContainsKey(entry.Key)) vault[entry.Key] = entry.Value?.DeepClone();
+                JsonFileStore.Save(target, vault);
+            }
+        });
+        if (migrateAssets)
+        {
+            var legacyDirectory = Path.GetDirectoryName(_settingsPath)!;
+            var targetDirectory = Path.GetDirectoryName(target)!;
+            var oldThemes = Path.Combine(legacyDirectory, "themes");
+            if (Directory.Exists(oldThemes))
+            {
+                var newThemes = Path.Combine(targetDirectory, "themes");
+                Directory.CreateDirectory(newThemes);
+                foreach (var source in Directory.EnumerateFiles(oldThemes, "*.css"))
+                {
+                    var destination = Path.Combine(newThemes, Path.GetFileName(source));
+                    if (!File.Exists(destination)) File.Copy(source, destination);
+                }
+            }
+            foreach (var source in Directory.EnumerateFiles(legacyDirectory, "brand-logo.*"))
+            {
+                var destination = Path.Combine(targetDirectory, Path.GetFileName(source));
+                if (!File.Exists(destination)) File.Copy(source, destination);
+            }
+        }
+        _vaultSettingsPath = target;
+        var global = JsonSerializer.SerializeToNode(new AppSettings())!.AsObject();
+        var previous = JsonSerializer.SerializeToNode(oldSettings)!.AsObject();
+        foreach (var key in InstallationKeys)
+            if (previous.TryGetPropertyValue(key, out var value)) global[key] = value?.DeepClone();
+        var stored = ReadVaultObject(target);
+        foreach (var entry in stored)
+            if (!InstallationKeys.Contains(entry.Key) && global.ContainsKey(entry.Key))
+                global[entry.Key] = entry.Value?.DeepClone();
+        Settings = global.Deserialize<AppSettings>() ?? new AppSettings();
+        Settings.VaultPath = path;
+        Save();
+    }
+
+    private static JsonObject PreferencesOnly(JsonObject source)
+    {
+        foreach (var key in InstallationKeys) source.Remove(key);
+        return source;
+    }
+
+    /// <summary>Importa preferencias sin cambiar la ruta del vault ni la sesión local.</summary>
+    public void ImportPreferences(string json)
+    {
+        var imported = JsonNode.Parse(json) as JsonObject
+            ?? throw new InvalidDataException("Invalid settings JSON");
+        var current = JsonSerializer.SerializeToNode(Settings)!.AsObject();
+        foreach (var entry in PreferencesOnly(imported))
+            if (current.ContainsKey(entry.Key)) current[entry.Key] = entry.Value?.DeepClone();
+        Settings = current.Deserialize<AppSettings>() ?? throw new InvalidDataException("Invalid settings JSON");
+        Save();
+    }
+
+    internal static JsonObject ReadVaultObject(string path)
+    {
+        if (!File.Exists(path)) return new JsonObject();
+        try
+        {
+            return JsonNode.Parse(File.ReadAllText(path)) as JsonObject
+                ?? throw new InvalidDataException($"Invalid vault settings: {path}");
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidDataException)
+        {
+            // Antes de continuar con valores por defecto, conserva los bytes originales.
+            var backup = $"{path}.corrupt-{Guid.NewGuid():N}";
+            File.Copy(path, backup);
+            JsonFileStore.Save(path, new JsonObject());
+            return new JsonObject();
+        }
     }
 
     /// <summary>Only ever called from inside the <see cref="JsonFileStore.WithLock"/> block in

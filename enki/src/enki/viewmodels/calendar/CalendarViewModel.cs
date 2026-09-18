@@ -442,6 +442,28 @@ public sealed partial class CalendarViewModel : ViewModelBase
 
     /// <summary>Refresca las etiquetas localizadas cuando <see cref="MainWindowViewModel"/> coordina
     /// un cambio de idioma en tiempo real (i18n Fase 4).</summary>
+    /// <summary>Recarga las preferencias del calendario al cambiar de vault.</summary>
+    public void ReloadPreferences()
+    {
+        var settings = _settingsService.Settings;
+        IsMiniCalendarExpanded = settings.CalendarMiniCalendarExpanded;
+        IsLayersExpanded = settings.CalendarLayersExpanded;
+        IsSearchExpanded = settings.CalendarSearchExpanded;
+        IsFiltersExpanded = settings.CalendarFiltersExpanded;
+        IsUnscheduledExpanded = settings.CalendarUnscheduledExpanded;
+        IsSidebarCollapsed = settings.CalendarSidebarCollapsed;
+        HideCompletedItems = settings.CalendarHideCompletedItems;
+        HideGhostOccurrences = settings.CalendarHideGhostOccurrences;
+        ShowSidebarScrollbar = settings.CalendarShowSidebarScrollbar;
+        WeekStartsOnMonday = settings.CalendarWeekStartsOnMonday;
+        ShowWeekends = settings.CalendarShowWeekends;
+        WorkingHoursStart = settings.CalendarWorkingHoursStart;
+        WorkingHoursEnd = settings.CalendarWorkingHoursEnd;
+        TimeFormat24h = settings.CalendarTimeFormat24h;
+        ActiveView = ParseViewMode(settings.CalendarDefaultView);
+        Rebuild();
+    }
+
     public void RefreshLocalizedLabels()
     {
         OnPropertyChanged(nameof(PeriodLabel));

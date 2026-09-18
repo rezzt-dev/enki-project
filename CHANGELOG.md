@@ -7,6 +7,20 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Ajustes y preferencias propios de cada vault**. Las elecciones de apariencia, idioma, editor,
+calendario, estadísticas, navegación, atajos y disposición de la interfaz se guardan en
+`<vault>/.enki/settings.json`. Al cambiar de vault, Enki carga sus ajustes y actualiza la interfaz sin
+reiniciar.
+
+- Antes de elegir un vault, los ajustes usan el archivo global de forma temporal. Al seleccionar el
+  primero, se migran junto con el logo y los temas personalizados, sin sobrescribir los valores ni los
+  archivos que ya existan en el vault.
+- `%AppData%/Enki/settings.json` conserva solo la ruta del vault, la sesión de Polar y los datos propios de
+  la instalación; las credenciales y los tokens no viajan con el vault. Importar ajustes respeta estos
+  datos locales y escribe las preferencias en el vault activo.
+- Si el JSON de ajustes del vault está dañado, se conserva una copia `settings.json.corrupt-*` antes de
+  continuar. Se añaden pruebas de carga, guardado, cambio de vault, migración, importación y respaldo.
+
 **Polar: configuración de Supabase lista en este equipo**. Se ha preparado `enki/local.properties` con
 la URL del proyecto y su clave publicable, tomados de `enki/.env`. Se ha comprobado que la configuración
 llega al ejecutable y que los servicios Auth y REST de Supabase responden. Vincular una cuenta sigue

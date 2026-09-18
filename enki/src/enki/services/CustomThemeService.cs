@@ -17,12 +17,11 @@ namespace enki.Services;
 public sealed class CustomThemeService
 {
     private readonly SettingsService _settingsService;
-    private readonly string _themesDirectory;
+    private string _themesDirectory => Path.Combine(_settingsService.PreferenceDirectory, "themes");
 
     public CustomThemeService(SettingsService settingsService)
     {
         _settingsService = settingsService;
-        _themesDirectory = Path.Combine(Path.GetDirectoryName(settingsService.SettingsFilePath)!, "themes");
     }
 
     public IReadOnlyList<CustomThemeInfo> Themes => _settingsService.Settings.CustomThemes;
@@ -230,6 +229,7 @@ public sealed class CustomThemeService
     /// must never be able to block Enki from starting.</summary>
     public void ApplyActiveOnStartup()
     {
+        ThemeRegistry.Clear();
         var themeId = _settingsService.Settings.ActiveCustomThemeId;
         if (themeId is null) return;
 

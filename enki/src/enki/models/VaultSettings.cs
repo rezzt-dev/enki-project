@@ -3,10 +3,8 @@ using System.Collections.Generic;
 namespace enki.Models;
 
 /// <summary>Settings scoped to a single vault, persisted at <c>&lt;vault&gt;/.enki/settings.json</c> —
-/// unlike <see cref="AppSettings"/> (one global file shared by every vault the user ever opens), fields
-/// here travel with the vault itself, so opening a different vault sees its own values instead of
-/// whatever the last-open vault left behind. <see cref="UiZoomPercent"/> is the first field; future
-/// per-vault preferences grow this class the same way <see cref="AppSettings"/> already grows.</summary>
+/// comparte archivo con las preferencias de <see cref="AppSettings"/>. Ambos servicios conservan
+/// las claves ajenas al guardar, para que cada vault mantenga sus elecciones.</summary>
 public sealed class VaultSettings
 {
     /// <summary>Repairs any JSON-default garbage left by System.Text.Json after deserializing a vault

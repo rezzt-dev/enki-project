@@ -94,6 +94,7 @@ public sealed partial class SettingsViewModel
 
         await _polarSyncService.RunWithSyncPausedAsync(() =>
         {
+            FlushPendingSave();
             _vaultService.SetVaultPath(folder);
             VaultPath = folder;
             RefreshVaultSizeLabel();
@@ -258,7 +259,7 @@ public sealed partial class SettingsViewModel
 
         try
         {
-            System.IO.File.Copy(source, _settingsService.SettingsFilePath, overwrite: true);
+            _settingsService.ImportPreferences(System.IO.File.ReadAllText(source));
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Settings_General_DangerZone_ImportedTitle"),
                 LocalizedTextFormatter.Format("Settings_General_DangerZone_ImportedMessage"),

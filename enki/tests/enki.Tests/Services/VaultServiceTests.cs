@@ -327,7 +327,8 @@ public class VaultServiceTests : IDisposable
 
         await vault.RefreshVaultSizeBytesAsync();
 
-        Assert.Equal(150, vault.GetVaultSizeBytes());
+        Assert.Equal(150 + new FileInfo(Path.Combine(_vaultPath, ".enki", "settings.json")).Length,
+            vault.GetVaultSizeBytes());
         Assert.False(vault.LastVaultSizeCalculationIncomplete);
     }
 
@@ -350,7 +351,8 @@ public class VaultServiceTests : IDisposable
         var vault = CreateVault();
         File.WriteAllText(Path.Combine(_vaultPath, "a.md"), new string('a', 100));
         await vault.RefreshVaultSizeBytesAsync();
-        Assert.Equal(100, vault.GetVaultSizeBytes());
+        Assert.Equal(100 + new FileInfo(Path.Combine(_vaultPath, ".enki", "settings.json")).Length,
+            vault.GetVaultSizeBytes());
 
         vault.CreateNote("Otra nota");
 
@@ -371,7 +373,8 @@ public class VaultServiceTests : IDisposable
         await vault.RefreshVaultSizeBytesAsync();
 
         Assert.True(raised);
-        Assert.Equal(100, vault.GetVaultSizeBytes());
+        Assert.Equal(100 + new FileInfo(Path.Combine(_vaultPath, ".enki", "settings.json")).Length,
+            vault.GetVaultSizeBytes());
     }
 
     /// <summary>The vault-wide note-metadata cache backing <see cref="VaultService.GetAllNotesRecursive"/>/

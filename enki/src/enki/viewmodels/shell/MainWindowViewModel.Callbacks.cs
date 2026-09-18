@@ -320,6 +320,7 @@ public sealed partial class MainWindowViewModel
 
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
+        ApplyVaultPreferences();
         _habitService.Reload();
 
         // Any open editor tabs belong to the previous vault; keeping them open would show stale or
@@ -340,12 +341,51 @@ public sealed partial class MainWindowViewModel
         Trash!.Reload();
         Habits!.Reload();
         Statistics!.Reload();
+        Calendar!.ReloadPreferences();
         UpdateTrashBadge();
 
         _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Notification_VaultChanged_Title"),
             LocalizedTextFormatter.Format("Notification_VaultChanged_Message"),
             NotificationSeverity.Success);
+    }
+
+    /// <summary>Aplica las preferencias del vault recién abierto a la shell y a Ajustes.</summary>
+    private void ApplyVaultPreferences()
+    {
+        var settings = _settingsService.Settings;
+        if (!string.IsNullOrWhiteSpace(settings.Language))
+            LocalizationService.Instance.SetLanguage(settings.Language);
+        ShortcutRegistry.Initialize(settings.ShortcutOverrides);
+        _customThemeService.ApplyActiveOnStartup();
+        IsSidebarExpanded = settings.SidebarExpanded;
+        SidebarWidth = IsSidebarExpanded ? 248 : 76;
+        UseCustomTitleBar = settings.UseCustomTitleBar;
+        NotificationsPanelEnabled = settings.NotificationsPanelEnabled;
+        RemindersPanelEnabled = settings.RemindersPanelEnabled;
+        NotificationsSidebarEnabled = settings.NotificationsSidebarEnabled;
+        RemindersSidebarEnabled = settings.RemindersSidebarEnabled;
+        DashboardPanelEnabled = settings.DashboardPanelEnabled;
+        CalendarPanelEnabled = settings.CalendarPanelEnabled;
+        KanbanPanelEnabled = settings.KanbanPanelEnabled;
+        NotesPanelEnabled = settings.NotesPanelEnabled;
+        FilesPanelEnabled = settings.FilesPanelEnabled;
+        SkillsPanelEnabled = settings.SkillsPanelEnabled;
+        SessionsPanelEnabled = settings.SessionsPanelEnabled;
+        TrashPanelEnabled = settings.TrashPanelEnabled;
+        HabitsPanelEnabled = settings.HabitsPanelEnabled;
+        StatisticsPanelEnabled = settings.StatisticsPanelEnabled;
+        Dashboard!.ShowScrollbar = settings.DashboardShowScrollbar;
+        Dashboard.SetCalendarEnabled(settings.CalendarPanelEnabled);
+        OnKanbanBoardOrientationChanged(settings.KanbanBoardOrientation);
+        Kanban!.TaskManagement.ShowTagFilter = settings.PolarShowTaskTags;
+        Settings!.ReloadForVault();
+        if (Avalonia.Application.Current is not null && settings.ActiveCustomThemeId is null)
+            Avalonia.Application.Current.RequestedThemeVariant = settings.Theme == "Light"
+                ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+        ReloadBrandLogo();
+        RefreshAllLocalizedLabels();
+        RebuildNavItems();
     }
 
     /// <summary>Carga los datos propios del vault antes de refrescar sus vistas.</summary>

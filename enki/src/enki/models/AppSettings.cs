@@ -49,8 +49,8 @@ public sealed class AppSettings
 
     /// <summary>Ajustes › Apariencia › Logo — <c>true</c> pinta en el brand header del sidebar la imagen
     /// que el usuario importó (<see cref="Services.BrandLogoService"/>), <c>false</c> (por defecto) el
-    /// icono de Enki adaptativo al tema. Solo el interruptor vive aquí: la imagen en sí es un archivo
-    /// aparte en <c>%AppData%/Enki/</c>, así que apagar esto vuelve al icono por defecto sin perder la
+    /// icono de Enki adaptativo al tema. Solo el interruptor vive aquí: la imagen es un archivo
+    /// aparte en <c>&lt;vault&gt;/.enki/</c>, así que apagar esto vuelve al icono por defecto sin perder la
     /// imagen importada, y volver a encenderlo la recupera tal cual.</summary>
     public bool UseCustomBrandLogo { get; set; }
 
@@ -106,9 +106,7 @@ public sealed class AppSettings
     // ===================== Vínculo con Polar (Ajustes › Cuenta) =====================
     // See docs/supabase-sync/ — enabling this unlocks the "Gestión de tareas" view in Kanban and turns
     // on background sync (task lists/tasks/subtasks/reminders) against the shared Supabase project.
-    // Tokens are persisted here like the rest of Enki's local state (%AppData%/Enki/settings.json) —
-    // this is a single-user desktop app with no other secrets-at-rest story, consistent with how
-    // local.properties already keeps the Supabase anon key in plain text next to the executable.
+    // Los tokens se quedan en el archivo global de instalación; nunca viajan con el vault.
 
     public bool PolarLinked { get; set; }
     public string? PolarUserId { get; set; }

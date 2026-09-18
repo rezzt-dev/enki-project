@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using enki.Models;
 
 namespace enki.Services;
@@ -42,6 +43,12 @@ public sealed class VaultSettingsService
         if (!_vaultService.IsVaultConfigured) return;
 
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-        JsonFileStore.Save(SettingsPath, Settings);
+        JsonFileStore.WithLock(SettingsPath, () =>
+        {
+            var merged = SettingsService.ReadVaultObject(SettingsPath);
+            var own = JsonSerializer.SerializeToNode(Settings)!.AsObject();
+            foreach (var entry in own) merged[entry.Key] = entry.Value?.DeepClone();
+            JsonFileStore.Save(SettingsPath, merged);
+        });
     }
 }

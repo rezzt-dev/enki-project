@@ -33,7 +33,7 @@ public sealed partial class MainWindowViewModel
         // Logo del sidebar (Ajustes › Apariencia): solo toca su propio archivo en %AppData%/Enki, así que
         // no depende de nada de lo de arriba; se construye aquí para que el logo esté resuelto antes
         // de que MainWindow pinte el brand header por primera vez.
-        _brandLogoService = new BrandLogoService();
+        _brandLogoService = new BrandLogoService(_settingsService);
         _brandLogoService.LogoChanged += ReloadBrandLogo;
         _settingsService.SettingsChanged += RefreshBrandLogo;
         ReloadBrandLogo();

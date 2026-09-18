@@ -85,7 +85,7 @@ public class VaultBackupServiceTests : IDisposable
         vault.SetVaultPath(_vaultPath);
         // The folder existed a moment ago (SetVaultPath creates it) but got removed afterwards — e.g. an
         // external drive unplugged — so GetVaultSizeBytes's own Directory.Exists guard must be mirrored here.
-        Directory.Delete(_vaultPath);
+        Directory.Delete(_vaultPath, recursive: true);
         var service = new VaultBackupService(vault, _appDataDirectory);
 
         var destination = Path.Combine(_root, "backup.zip");

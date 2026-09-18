@@ -74,7 +74,9 @@ public sealed class BrandLogoService
     public static readonly string[] PickerPatterns =
         ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp", "*.gif", "*.ico"];
 
-    private readonly string _directory;
+    private readonly string _baseDirectory;
+    private readonly SettingsService? _settingsService;
+    private string _directory => _settingsService?.PreferenceDirectory ?? _baseDirectory;
 
     /// <summary>Se dispara tras importar o quitar el logo, para que el brand header del sidebar lo
     /// recargue en caliente. Mismo patrón de evento que el resto de servicios (<c>KanbanService.BoardChanged</c>,
@@ -86,8 +88,13 @@ public sealed class BrandLogoService
     /// la app real, pero deja que los tests escriban en un directorio desechable.</param>
     public BrandLogoService(string? storageDirectory = null)
     {
-        _directory = storageDirectory ?? AppDataDirectory.Resolve();
-        Directory.CreateDirectory(_directory);
+        _baseDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_baseDirectory);
+    }
+
+    public BrandLogoService(SettingsService settingsService) : this(Path.GetDirectoryName(settingsService.SettingsFilePath))
+    {
+        _settingsService = settingsService;
     }
 
     /// <summary>Ruta del logo importado, o <c>null</c> si el usuario no ha elegido ninguno todavía. Solo
@@ -178,6 +185,7 @@ public sealed class BrandLogoService
         {
             // Primero la copia nueva y después los restos del formato anterior: si el proceso muere entre
             // medias quedan dos archivos, pero nunca ninguno con la casilla de "personalizado" puesta.
+            Directory.CreateDirectory(_directory);
             var destination = Path.Combine(_directory, FileBaseName + extension);
             // Reimportar el propio archivo guardado (el diálogo puede navegar hasta %AppData%) no es un
             // error: ya está donde tiene que estar, y File.Copy sobre sí mismo solo sabe lanzar.
