@@ -7,6 +7,31 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+**Polar: configuración de Supabase lista en este equipo**. Se ha preparado `enki/local.properties` con
+la URL del proyecto y su clave publicable, tomados de `enki/.env`. Se ha comprobado que la configuración
+llega al ejecutable y que los servicios Auth y REST de Supabase responden. Vincular una cuenta sigue
+requiriendo iniciar sesión desde Ajustes.
+
+- `enki/.env` deja de estar versionado, sin borrar la copia local, y pasa a estar ignorado por Git junto
+  con `local.properties`. La clave secreta no se copia a la aplicación.
+- Los README explican cómo trasladar `SUPABASE_PUBLISHABLE_KEY` a `SUPABASE_ANON_KEY` y advierten que
+  `SUPABASE_SECRET_KEY` no debe utilizarse en el cliente.
+
+**Tareas y avisos guardados en el vault activo**. Kanban, las tareas de Polar, los recordatorios y sus
+descartes se guardan ahora en `.tasks/` dentro del vault; las notificaciones se guardan en `.enki/`.
+Cada vault conserva sus propios datos al cambiar de carpeta.
+
+- Los ficheros de instalaciones anteriores se copian una sola vez al primer vault abierto, sin
+  sobrescribir los datos que ya existan allí y conservando los originales como respaldo.
+- Al cambiar de vault, Enki cierra los editores vinculados al anterior y recarga los datos del nuevo.
+  La sincronización de Polar espera a que termine cualquier ciclo en curso y mantiene un cursor propio
+  para cada vault.
+
+**Corregida la exportación de temas duplicados**. Los duplicados quedan registrados al guardarlos, de
+modo que vuelven a cargarse y pueden exportarse después de reiniciar. Exportar desde el editor escribe
+los colores que se ven en ese momento, incluidos los cambios aún sin guardar, y avisa si ocurre un
+error inesperado.
+
 **La creación rápida del calendario, arreglada y puesta a punto**. El desplegable de fecha del popover
 "Creación rápida" no pintaba los días del mes: en su lugar salían seis filas de texto interno repetido, así
 que elegir otra fecha era imposible y había que crear el elemento y corregirlo después en su editor.

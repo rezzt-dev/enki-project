@@ -18,6 +18,7 @@ publish/
 
 # Local secrets / machine-specific config (contains Supabase keys, etc.)
 local.properties
+.env
 
 # JetBrains Rider / IntelliJ
 .idea/

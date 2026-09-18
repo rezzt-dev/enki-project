@@ -105,6 +105,9 @@ SUPABASE_URL=<project-url>
 SUPABASE_ANON_KEY=<anon-key>
 ```
 
+If your `.env` uses `SUPABASE_PUBLISHABLE_KEY`, copy that value to `SUPABASE_ANON_KEY`.
+Do not copy `SUPABASE_SECRET_KEY`: the app only needs the publishable key.
+
 Without that file, Enki still works perfectly in local mode.
 
 ---
