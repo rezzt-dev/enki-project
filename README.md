@@ -1,8 +1,8 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/project-icons/dark-icon/enki-icon-light.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/project-icons/light-icon/enki-icon-dark.png">
-    <img alt="Enki" src="docs/project-icons/dark-icon/enki-icon-light.png" width="96">
+    <source media="(prefers-color-scheme: dark)" srcset=".docs/resources/project-icons/dark-icon/enki-icon-light.png">
+    <source media="(prefers-color-scheme: light)" srcset=".docs/resources/project-icons/light-icon/enki-icon-dark.png">
+    <img alt="Enki" src=".docs/resources/project-icons/dark-icon/enki-icon-light.png" width="96">
   </picture>
 
   <h1>Enki</h1>
@@ -77,7 +77,7 @@ Además, Enki incluye un **dashboard** de inicio que resume el día, una **búsq
 
 Enki ya es funcional para uso diario: notas, Kanban, calendario, recordatorios, búsqueda y papelera están operativos. La sincronización con Polar requiere credenciales de Supabase y, de momento, está pensada solo para el entorno del autor.
 
-Si estás leyendo esto, probablemente eres tú mismo dentro de unos meses. La documentación técnica vive en `docs/`, el historial de cambios en `CHANGELOG.md` y las convenciones del código en `AGENTS.md`.
+Si estás leyendo esto, probablemente eres tú mismo dentro de unos meses. La documentación del proyecto vive en [`.docs/project-info/`](.docs/project-info/), el historial de cambios en [`CHANGELOG.md`](CHANGELOG.md) y las convenciones del código en [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -114,14 +114,14 @@ Sin ese archivo, Enki sigue funcionando perfectamente en modo local.
 
 ## Documentación
 
-La carpeta `docs/` recoge el análisis del producto, el roadmap de mejoras y la especificación de cada módulo. Algunos puntos de entrada útiles:
+La documentación versionada del proyecto está en [`.docs/project-info/`](.docs/project-info/). Incluye el análisis del producto, el roadmap de mejoras y las especificaciones por módulo. `docs/` está ignorada por Git y no forma parte de este checkout. Algunos puntos de entrada útiles:
 
-- [`docs/agent-docs/analisis-proyecto/analisis-deficiencias-proyecto.md`](docs/agent-docs/analisis-proyecto/analisis-deficiencias-proyecto.md) — auditoría del estado actual y prioridades.
-- [`docs/agent-docs/analisis-proyecto/roadmap.md`](docs/agent-docs/analisis-proyecto/roadmap.md) — plan de corrección por fases.
-- [`docs/agent-docs/inventario-funcionalidades-y-mejora-continua.md`](docs/agent-docs/inventario-funcionalidades-y-mejora-continua.md) — inventario completo de funcionalidades.
-- [`docs/agent-docs/calendar-feature/01-contexto-y-vision-de-producto.md`](docs/agent-docs/calendar-feature/01-contexto-y-vision-de-producto.md) — por qué existe el Calendario.
-- [`docs/agent-docs/notificaciones-y-recordatorios.md`](docs/agent-docs/notificaciones-y-recordatorios.md) — cómo funcionan recordatorios y notificaciones.
-- [`docs/agent-docs/sistema-diseno-web.md`](docs/agent-docs/sistema-diseno-web.md) — principios visuales del sistema de diseño.
+- [Análisis del proyecto](.docs/project-info/analisis-proyecto/analisis-deficiencias-proyecto.md) — auditoría del estado actual y prioridades.
+- [Roadmap de mejoras](.docs/project-info/analisis-proyecto/roadmap.md) — plan de corrección por fases.
+- [Inventario de funcionalidades](.docs/project-info/inventario-funcionalidades-y-mejora-continua.md) — funcionalidades existentes y oportunidades de mejora.
+- [Calendario: contexto y visión](.docs/project-info/calendar-feature/01-contexto-y-vision-de-producto.md) — por qué existe el Calendario.
+- [Notificaciones y recordatorios](.docs/project-info/notificaciones-y-recordatorios.md) — cómo funcionan.
+- [Sistema de diseño](.docs/project-info/sistema-diseno-web.md) — principios visuales.
 
 ---
 

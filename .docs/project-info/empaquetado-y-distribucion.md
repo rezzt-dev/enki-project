@@ -131,9 +131,9 @@ Cerrado el hueco que este documento señalaba: `enki/src/enki/assets/icon/` cont
 16–1024 incluidos los `@2x`) y PNGs sueltos de 256/512/1024 para un futuro `.desktop` de Linux —
 monograma "E" (`#EAEAEA`) sobre fondo oscuro (`#121212`) en un cuadrado con esquinas rectas, siguiendo
 al pie de la letra "nada de color de marca", "sharp corners" y la paleta monocroma de
-[docs/sistema-diseno-web.md §1.3](../sistema-diseno-web.md).
+[sistema-diseno-web.md §1.3](sistema-diseno-web.md).
 
-Los iconos maestros se toman de `docs/project-icons/`, que incluye versiones `.png` y `.ico` para
+Los iconos maestros se toman de `.docs/resources/project-icons/`, que incluye versiones `.png` y `.ico` para
 los dos contrastes:
 
 - `assets/icon/enki.ico`, `assets/icon/enki.icns` y `assets/icon/enki-{256,512,1024}.png`: versión

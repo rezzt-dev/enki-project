@@ -7,6 +7,24 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## [Sin publicar]
 
+### CASTELLANO
+
+#### CAMBIOS
+- establecer `.docs/project-info/` como ruta versionada de la documentacion del proyecto y aclarar en `README.md`, `README.en.md`, `AGENTS.md` y `.gitignore` que `docs/` no forma parte del checkout.
+
+#### CORREGIDO
+- corregir los enlaces de documentacion y los iconos de ambos README, ademas de las referencias y enlaces relativos de `AGENTS.md` y `.docs/project-info/`, para que apunten a archivos existentes.
+
+### ENGLISH
+
+#### CHANGED
+- establish `.docs/project-info/` as the versioned project documentation path and clarify in `README.md`, `README.en.md`, `AGENTS.md`, and `.gitignore` that `docs/` is not part of the checkout.
+
+#### FIXED
+- fix documentation links and icons in both README files, along with references and relative links in `AGENTS.md` and `.docs/project-info/`, so they point to existing files.
+
+### ENTRADAS ANTERIORES
+
 **Ajustes y preferencias propios de cada vault**. Las elecciones de apariencia, idioma, editor,
 calendario, estadísticas, navegación, atajos y disposición de la interfaz se guardan en
 `<vault>/.enki/settings.json`. Al cambiar de vault, Enki carga sus ajustes y actualiza la interfaz sin

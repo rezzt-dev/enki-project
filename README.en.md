@@ -1,8 +1,8 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/project-icons/dark-icon/enki-icon-light.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/project-icons/light-icon/enki-icon-dark.png">
-    <img alt="Enki" src="docs/project-icons/dark-icon/enki-icon-light.png" width="96">
+    <source media="(prefers-color-scheme: dark)" srcset=".docs/resources/project-icons/dark-icon/enki-icon-light.png">
+    <source media="(prefers-color-scheme: light)" srcset=".docs/resources/project-icons/light-icon/enki-icon-dark.png">
+    <img alt="Enki" src=".docs/resources/project-icons/dark-icon/enki-icon-light.png" width="96">
   </picture>
 
   <h1>Enki</h1>
@@ -77,7 +77,7 @@ In addition, Enki includes a **dashboard** that summarizes your day, **global se
 
 Enki is already functional for daily use: notes, Kanban, calendar, reminders, search, and trash are operational. Polar sync requires Supabase credentials and is currently intended only for the author's environment.
 
-If you are reading this, it is probably yourself a few months from now. Technical documentation lives in `docs/`, the change history in `CHANGELOG.md`, and code conventions in `AGENTS.md`.
+If you are reading this, it is probably yourself a few months from now. Project documentation lives in [`.docs/project-info/`](.docs/project-info/), the change history in [`CHANGELOG.md`](CHANGELOG.md), and code conventions in [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -114,14 +114,14 @@ Without that file, Enki still works perfectly in local mode.
 
 ## Documentation
 
-The `docs/` folder collects the product analysis, improvement roadmap, and module specifications. Some useful entry points:
+Versioned project documentation lives in [`.docs/project-info/`](.docs/project-info/). It contains the product analysis, improvement roadmap, and module specifications. `docs/` is ignored by Git and is not part of this checkout. Some useful entry points:
 
-- [`docs/agent-docs/analisis-proyecto/analisis-deficiencias-proyecto.md`](docs/agent-docs/analisis-proyecto/analisis-deficiencias-proyecto.md) — audit of the current state and priorities.
-- [`docs/agent-docs/analisis-proyecto/roadmap.md`](docs/agent-docs/analisis-proyecto/roadmap.md) — phased correction plan.
-- [`docs/agent-docs/inventario-funcionalidades-y-mejora-continua.md`](docs/agent-docs/inventario-funcionalidades-y-mejora-continua.md) — full feature inventory.
-- [`docs/agent-docs/calendar-feature/01-contexto-y-vision-de-producto.md`](docs/agent-docs/calendar-feature/01-contexto-y-vision-de-producto.md) — why the Calendar exists.
-- [`docs/agent-docs/notificaciones-y-recordatorios.md`](docs/agent-docs/notificaciones-y-recordatorios.md) — how reminders and notifications work.
-- [`docs/agent-docs/sistema-diseno-web.md`](docs/agent-docs/sistema-diseno-web.md) — visual design system principles.
+- [Project analysis](.docs/project-info/analisis-proyecto/analisis-deficiencias-proyecto.md) — audit of the current state and priorities.
+- [Improvement roadmap](.docs/project-info/analisis-proyecto/roadmap.md) — phased correction plan.
+- [Feature inventory](.docs/project-info/inventario-funcionalidades-y-mejora-continua.md) — existing features and areas for improvement.
+- [Calendar: context and vision](.docs/project-info/calendar-feature/01-contexto-y-vision-de-producto.md) — why the Calendar exists.
+- [Notifications and reminders](.docs/project-info/notificaciones-y-recordatorios.md) — how they work.
+- [Design system](.docs/project-info/sistema-diseno-web.md) — visual principles.
 
 ---
 

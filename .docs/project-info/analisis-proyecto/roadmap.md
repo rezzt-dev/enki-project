@@ -819,8 +819,8 @@ de seguridad — priorizar según feedback de uso real, no por orden fijo.
       servicio ya acepta (Fases 0/1/4) — y el caso de uso que un contenedor resolvería mejor (construir el
       `MainWindowViewModel` completo en un test) no ha aparecido todavía en los 656 tests de la suite.
 - [x] Traducir `README.md` (o añadir una versión en inglés) dado que la app ya soporta 6 idiomas de UI.
-      (análisis §7) — [README.en.md](../../README.en.md) (nuevo), con enlace cruzado "Read in
-      English"/"Leer en español" al principio de ambos ficheros. El resto de `docs/` se deja en español a
+      (análisis §7) — [README.en.md](../../../README.en.md) (nuevo), con enlace cruzado "Read in
+      English"/"Leer en español" al principio de ambos ficheros. El resto de `.docs/project-info/` se deja en español a
       propósito (es el idioma de trabajo del proyecto, ver `AGENTS.md`) — el README es la única puerta de
       entrada que un visitante angloparlante de GitHub ve antes de decidir si le interesa seguir leyendo.
 - [x] Subir `AnalysisLevel` en `Directory.Build.props` a `latest-recommended` y corregir los diagnósticos

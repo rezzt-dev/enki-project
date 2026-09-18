@@ -1,6 +1,6 @@
 # Propuesta de nuevas funcionalidades — Enki
 
-> **Alcance**: a diferencia de [`inventario-funcionalidades-y-mejora-continua.md`](../inventario-funcionalidades-y-mejora-continua.md) y de [`roadmap.md`](roadmap.md) — que documentan explícitamente **solo** lo que ya existe y cómo pulirlo, sin proponer nada nuevo — este documento hace lo contrario: propone **funcionalidad genuinamente nueva** que Enki no tiene hoy, pensada para que el producto se sienta más completo sin traicionar su filosofía (local-first, privado, monocromo, sin gamificación, sin distracciones).
+> **Alcance**: a diferencia de [`inventario-funcionalidades-y-mejora-continua.md`](inventario-funcionalidades-y-mejora-continua.md) y de [`roadmap.md`](analisis-proyecto/roadmap.md) — que documentan explícitamente **solo** lo que ya existe y cómo pulirlo, sin proponer nada nuevo — este documento hace lo contrario: propone **funcionalidad genuinamente nueva** que Enki no tiene hoy, pensada para que el producto se sienta más completo sin traicionar su filosofía (local-first, privado, monocromo, sin gamificación, sin distracciones).
 >
 > **Cómo se organiza cada propuesta**: toda funcionalidad principal se descompone en sub-funcionalidades y detalles concretos, y se analiza desde cuatro ángulos:
 > - **Usuario nuevo** — alguien que acaba de instalar Enki y ve la app por primera vez.
