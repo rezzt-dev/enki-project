@@ -864,7 +864,7 @@
                        Command="{Binding SetDisplayModeCommand}" CommandParameter="Board" />
           <RadioButton Classes="segment" GroupName="KanbanDisplayModeBoardHeader" Content="{loc:Tr Kanban_Board_TabTaskManagement, Converter={StaticResource UpperCaseConverter}}" Height="36"
                        IsChecked="{Binding DisplayMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=TaskManagement, Mode=OneWay}"
-                       IsEnabled="{Binding IsTaskManagementUnlocked}"
+                       IsVisible="{Binding IsTaskManagementUnlocked}"
                        Command="{Binding SetDisplayModeCommand}" CommandParameter="TaskManagement"
                        ToolTip.Tip="{Binding TaskManagementLockedHint}" />
         </StackPanel>

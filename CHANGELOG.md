@@ -31,6 +31,10 @@ requiriendo iniciar sesión desde Ajustes.
 - Los README explican cómo trasladar `SUPABASE_PUBLISHABLE_KEY` a `SUPABASE_ANON_KEY` y advierten que
   `SUPABASE_SECRET_KEY` no debe utilizarse en el cliente.
 
+**Gestión de tareas oculta sin cuenta de Polar vinculada**. El botón del tablero Kanban deja de aparecer
+cuando Polar no está configurado o no se ha iniciado sesión en Enki; vuelve a mostrarse al vincular una
+cuenta y se oculta de nuevo al cerrar sesión o caducar la sesión.
+
 **Tareas y avisos guardados en el vault activo**. Kanban, las tareas de Polar, los recordatorios y sus
 descartes se guardan ahora en `.tasks/` dentro del vault; las notificaciones se guardan en `.enki/`.
 Cada vault conserva sus propios datos al cambiar de carpeta.
