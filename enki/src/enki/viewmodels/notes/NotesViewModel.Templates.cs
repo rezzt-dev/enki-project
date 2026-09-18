@@ -205,9 +205,4 @@ public sealed partial class NotesViewModel
         if (Directory.Exists(_templateService.TemplatesDirectory))
             FolderOpener.Open(_templateService.TemplatesDirectory);
     }
-
-    /// <summary>La plantilla configurada para la nota diaria, o null si no hay ninguna configurada o el
-    /// archivo ya no existe.</summary>
-    private NoteTemplate? ResolveDailyNoteTemplate() =>
-        _templateService.FindTemplate(_vaultSettingsService?.Settings.DailyNoteTemplate);
 }

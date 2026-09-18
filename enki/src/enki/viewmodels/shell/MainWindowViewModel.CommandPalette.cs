@@ -46,6 +46,7 @@ public sealed partial class MainWindowViewModel
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenDailyNote"], MaterialIconKind.CalendarTodayOutline, OpenDailyNoteFromPalette));
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_NewNoteFromTemplate"], MaterialIconKind.FileDocumentMultipleOutline, NewNoteFromTemplateFromPalette));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenDailyConsistency"], MaterialIconKind.CalendarCheckOutline, OpenDailyConsistencyFromPalette));
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ImportNotes"], MaterialIconKind.Import, ImportNotesFromPalette));
 
             // Solo tiene sentido si hay una pestaña de nota activa que enfocar — con ninguna abierta,
@@ -86,6 +87,14 @@ public sealed partial class MainWindowViewModel
     {
         Navigate(AppPage.Notes);
         Notes?.OpenDailyNoteCommand.Execute(null);
+    }
+
+    /// <summary>Abre Documentos con el calendario de constancia desplegado — el equivalente por teclado de
+    /// su botón en la cabecera de la rejilla (propuesta 8).</summary>
+    private void OpenDailyConsistencyFromPalette()
+    {
+        Navigate(AppPage.Notes);
+        if (Notes is { IsConsistencyOpen: false }) Notes.ToggleConsistencyCommand.Execute(null);
     }
 
     /// <summary>Abre Documentos y, encima, el selector de plantillas — el equivalente por teclado del

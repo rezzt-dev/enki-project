@@ -74,6 +74,11 @@ public partial class NotesView : UserControl
         // maneja aparte, en EditorView.axaml.cs (solo mientras el foco está en el propio editor de texto).
         KeyBindings.Add(new KeyBinding { Gesture = ShortcutRegistry.GetGesture(ShortcutIds.NotesToggleZenMode), Command = vm.ToggleZenModeCommand });
 
+        // Nota diaria: día anterior / día siguiente sobre la pestaña activa (no-op si no es una nota
+        // diaria, ver NotesViewModel.Daily.cs).
+        KeyBindings.Add(new KeyBinding { Gesture = ShortcutRegistry.GetGesture(ShortcutIds.NotesDailyPreviousDay), Command = vm.GoToPreviousDayCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = ShortcutRegistry.GetGesture(ShortcutIds.NotesDailyNextDay), Command = vm.GoToNextDayCommand });
+
         // Alias fijos de PageUp/PageDown (no remapeables) junto al gesto remapeable de Tab.
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.PageDown, KeyModifiers.Control), Command = vm.SelectNextEditorCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.PageUp, KeyModifiers.Control), Command = vm.SelectPreviousEditorCommand });

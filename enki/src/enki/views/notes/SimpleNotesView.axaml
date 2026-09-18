@@ -180,6 +180,23 @@
                     AutomationProperties.Name="{loc:Tr Notes_SimpleView_DailyNote_Tooltip}">
               <mi:MaterialIcon Kind="CalendarToday" Width="16" Height="16" />
             </Button>
+            <!-- Mismo calendario de constancia que la vista completa (views/notes/DailyConsistencyView.axaml),
+                 aquí como un icono más de la fila de acciones del árbol. -->
+            <Panel>
+              <Button x:Name="ConsistencyTrigger" Classes="icon-btn" Classes.active="{Binding IsConsistencyOpen}"
+                      Width="30" Height="30" Command="{Binding ToggleConsistencyCommand}"
+                      ToolTip.Tip="{loc:Tr Notes_Consistency_Tooltip}"
+                      AutomationProperties.Name="{loc:Tr Notes_Consistency_Tooltip}">
+                <mi:MaterialIcon Kind="CalendarCheckOutline" Width="16" Height="16" />
+              </Button>
+              <Popup PlacementTarget="{Binding #ConsistencyTrigger}" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
+                     IsLightDismissEnabled="True"
+                     IsOpen="{Binding IsConsistencyOpen, Mode=TwoWay}">
+                <Border Classes="dropdown-popover" MaxHeight="560">
+                  <views:DailyConsistencyView />
+                </Border>
+              </Popup>
+            </Panel>
             <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CollapseSimpleTreeCommand}"
                     ToolTip.Tip="{loc:Tr Notes_SimpleView_Collapse_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Notes_SimpleView_Collapse_Tooltip}">

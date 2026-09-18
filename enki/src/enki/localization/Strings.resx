@@ -304,6 +304,9 @@
   <data name="CommandPalette_Action_OpenCommunitySkills" xml:space="preserve">
     <value>Open community Skills</value>
   </data>
+  <data name="CommandPalette_Action_OpenDailyConsistency" xml:space="preserve">
+    <value>Daily note consistency</value>
+  </data>
   <data name="CommandPalette_Action_OpenDailyNote" xml:space="preserve">
     <value>Open today's daily note</value>
   </data>
@@ -621,6 +624,21 @@
   </data>
   <data name="Editor_CodeBlock_Copy_Tooltip" xml:space="preserve">
     <value>Copy code</value>
+  </data>
+  <data name="Editor_DailyNote_DateTooltip" xml:space="preserve">
+    <value>Date of this daily note</value>
+  </data>
+  <data name="Editor_DailyNote_MergeTemplate_Tooltip" xml:space="preserve">
+    <value>Add the template sections this note is missing: {0}</value>
+  </data>
+  <data name="Editor_DailyNote_NextDay" xml:space="preserve">
+    <value>Next day</value>
+  </data>
+  <data name="Editor_DailyNote_PreviousDay" xml:space="preserve">
+    <value>Previous day</value>
+  </data>
+  <data name="Editor_DailyNote_Today" xml:space="preserve">
+    <value>Go to today</value>
   </data>
   <data name="Editor_FindReplace_MatchStatus" xml:space="preserve">
     <value>Match {0} of {1}</value>
@@ -1629,6 +1647,45 @@
   <data name="Notes_CloseTabTooltip" xml:space="preserve">
     <value>Close tab</value>
   </data>
+  <data name="Notes_Consistency_DayTooltip_Future" xml:space="preserve">
+    <value>{0} · still to come</value>
+  </data>
+  <data name="Notes_Consistency_DayTooltip_WithNote" xml:space="preserve">
+    <value>{0} · has a note</value>
+  </data>
+  <data name="Notes_Consistency_DayTooltip_WithoutNote" xml:space="preserve">
+    <value>{0} · no note yet</value>
+  </data>
+  <data name="Notes_Consistency_Description" xml:space="preserve">
+    <value>Days with a daily note over the last ten weeks.</value>
+  </data>
+  <data name="Notes_Consistency_HabitsSummary" xml:space="preserve">
+    <value>{0} of {1} days with every habit marked</value>
+  </data>
+  <data name="Notes_Consistency_HabitsTitle" xml:space="preserve">
+    <value>Habits</value>
+  </data>
+  <data name="Notes_Consistency_HabitsTooltip" xml:space="preserve">
+    <value>{0} · {1} of {2} habits</value>
+  </data>
+  <data name="Notes_Consistency_HabitsTooltip_NotApplicable" xml:space="preserve">
+    <value>{0} · no habits due</value>
+  </data>
+  <data name="Notes_Consistency_NotesSummary" xml:space="preserve">
+    <value>{0} of {1} days with a note</value>
+  </data>
+  <data name="Notes_Consistency_OpenHabits" xml:space="preserve">
+    <value>Habits</value>
+  </data>
+  <data name="Notes_Consistency_OpenStatistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="Notes_Consistency_Title" xml:space="preserve">
+    <value>Consistency</value>
+  </data>
+  <data name="Notes_Consistency_Tooltip" xml:space="preserve">
+    <value>Daily note consistency</value>
+  </data>
   <data name="Notes_CountLabel_one" xml:space="preserve">
     <value>{0} note</value>
   </data>
@@ -1763,6 +1820,15 @@
   </data>
   <data name="Notification_BellTooltip" xml:space="preserve">
     <value>Notifications</value>
+  </data>
+  <data name="Notification_DailyTemplateMergeFailed_Title" xml:space="preserve">
+    <value>The template could not be applied</value>
+  </data>
+  <data name="Notification_DailyTemplateMerged_Message" xml:space="preserve">
+    <value>Sections added to the daily note: {0}.</value>
+  </data>
+  <data name="Notification_DailyTemplateMerged_Title" xml:space="preserve">
+    <value>Template applied</value>
   </data>
   <data name="Notification_Empty" xml:space="preserve">
     <value>No notifications</value>
@@ -3437,6 +3503,12 @@
   </data>
   <data name="Settings_Shortcuts_ConflictMessage" xml:space="preserve">
     <value>Already used by "{0}". Use it anyway, or press a different combination.</value>
+  </data>
+  <data name="Settings_Shortcuts_DailyNextDay" xml:space="preserve">
+    <value>Daily note: next day</value>
+  </data>
+  <data name="Settings_Shortcuts_DailyPreviousDay" xml:space="preserve">
+    <value>Daily note: previous day</value>
   </data>
   <data name="Settings_Shortcuts_Description" xml:space="preserve">
     <value>Keyboard shortcuts for navigation, view zoom, and the notes editor — click any shortcut to remap it. Kanban and PDF viewer shortcuts stay fixed for now.</value>

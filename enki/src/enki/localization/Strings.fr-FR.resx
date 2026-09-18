@@ -295,6 +295,9 @@
   <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
     <value>Nouvelle note à partir d'un modèle</value>
   </data>
+  <data name="CommandPalette_Action_OpenDailyConsistency" xml:space="preserve">
+    <value>Régularité de la note quotidienne</value>
+  </data>
   <data name="Common_Back" xml:space="preserve">
     <value>Retour</value>
   </data>
@@ -555,6 +558,21 @@
   </data>
   <data name="Editor_CodeBlock_Copy_Tooltip" xml:space="preserve">
     <value>Copier le code</value>
+  </data>
+  <data name="Editor_DailyNote_DateTooltip" xml:space="preserve">
+    <value>Date de cette note quotidienne</value>
+  </data>
+  <data name="Editor_DailyNote_MergeTemplate_Tooltip" xml:space="preserve">
+    <value>Ajouter les sections du modèle qui manquent à cette note : {0}</value>
+  </data>
+  <data name="Editor_DailyNote_NextDay" xml:space="preserve">
+    <value>Jour suivant</value>
+  </data>
+  <data name="Editor_DailyNote_PreviousDay" xml:space="preserve">
+    <value>Jour précédent</value>
+  </data>
+  <data name="Editor_DailyNote_Today" xml:space="preserve">
+    <value>Aller à aujourd'hui</value>
   </data>
   <data name="Editor_FindReplace_MatchStatus" xml:space="preserve">
     <value>Correspondance {0} sur {1}</value>
@@ -1560,6 +1578,45 @@
   <data name="Notes_CloseTabTooltip" xml:space="preserve">
     <value>Fermer l'onglet</value>
   </data>
+  <data name="Notes_Consistency_DayTooltip_Future" xml:space="preserve">
+    <value>{0} · à venir</value>
+  </data>
+  <data name="Notes_Consistency_DayTooltip_WithNote" xml:space="preserve">
+    <value>{0} · avec une note</value>
+  </data>
+  <data name="Notes_Consistency_DayTooltip_WithoutNote" xml:space="preserve">
+    <value>{0} · encore sans note</value>
+  </data>
+  <data name="Notes_Consistency_Description" xml:space="preserve">
+    <value>Jours avec note quotidienne sur les dix dernières semaines.</value>
+  </data>
+  <data name="Notes_Consistency_HabitsSummary" xml:space="preserve">
+    <value>{0} jours sur {1} avec toutes les habitudes cochées</value>
+  </data>
+  <data name="Notes_Consistency_HabitsTitle" xml:space="preserve">
+    <value>Habitudes</value>
+  </data>
+  <data name="Notes_Consistency_HabitsTooltip" xml:space="preserve">
+    <value>{0} · {1} habitudes sur {2}</value>
+  </data>
+  <data name="Notes_Consistency_HabitsTooltip_NotApplicable" xml:space="preserve">
+    <value>{0} · aucune habitude prévue</value>
+  </data>
+  <data name="Notes_Consistency_NotesSummary" xml:space="preserve">
+    <value>{0} jours sur {1} avec une note</value>
+  </data>
+  <data name="Notes_Consistency_OpenHabits" xml:space="preserve">
+    <value>Habitudes</value>
+  </data>
+  <data name="Notes_Consistency_OpenStatistics" xml:space="preserve">
+    <value>Statistiques</value>
+  </data>
+  <data name="Notes_Consistency_Title" xml:space="preserve">
+    <value>Régularité</value>
+  </data>
+  <data name="Notes_Consistency_Tooltip" xml:space="preserve">
+    <value>Régularité de la note quotidienne</value>
+  </data>
   <data name="Notes_CountLabel_one" xml:space="preserve">
     <value>{0} note</value>
   </data>
@@ -1685,6 +1742,15 @@
   </data>
   <data name="Notification_BellTooltip" xml:space="preserve">
     <value>Notifications</value>
+  </data>
+  <data name="Notification_DailyTemplateMergeFailed_Title" xml:space="preserve">
+    <value>Impossible d'appliquer le modèle</value>
+  </data>
+  <data name="Notification_DailyTemplateMerged_Message" xml:space="preserve">
+    <value>Sections ajoutées à la note quotidienne : {0}.</value>
+  </data>
+  <data name="Notification_DailyTemplateMerged_Title" xml:space="preserve">
+    <value>Modèle appliqué</value>
   </data>
   <data name="Notification_Empty" xml:space="preserve">
     <value>Aucune notification</value>
@@ -3152,6 +3218,12 @@
   </data>
   <data name="Settings_PdfViewer_Title" xml:space="preserve">
     <value>Visionneuse PDF</value>
+  </data>
+  <data name="Settings_Shortcuts_DailyNextDay" xml:space="preserve">
+    <value>Note quotidienne : jour suivant</value>
+  </data>
+  <data name="Settings_Shortcuts_DailyPreviousDay" xml:space="preserve">
+    <value>Note quotidienne : jour précédent</value>
   </data>
   <data name="Settings_Shortcuts_Description" xml:space="preserve">
     <value>Raccourcis clavier pour la navigation, l'éditeur, Kanban et le zoom de la vue.</value>

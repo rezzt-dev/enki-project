@@ -278,6 +278,32 @@ roadmap — se listan aquí para no perderlas, se ejecutan si hay tiempo en la m
 
 ---
 
+## 8.1 Notas diarias (propuesta 8)
+
+Lo que los tests automáticos no cubren de [`notas-diarias.md`](notas-diarias.md): que los controles se vean
+donde deben y que el calendario se lea bien en los dos temas y con el zoom aplicado.
+
+- [ ] Con una nota diaria abierta, la cabecera del editor muestra día anterior / fecha / día siguiente, y
+      el botón "ir a hoy" aparece **solo** cuando la nota no es la de hoy. En una nota normal no aparece
+      nada de esto y la cabecera se ve como antes.
+- [ ] `Ctrl+Alt+←` / `Ctrl+Alt+→` navegan con el foco dentro del texto de la nota (no solo con el foco en
+      la cabecera), y no hacen nada con una nota normal abierta.
+- [ ] Con una plantilla de nota diaria configurada, navegar a un día sin nota la crea con la plantilla
+      aplicada y con el nombre que dicta su `title`.
+- [ ] "Combinar con la plantilla" solo aparece cuando falta alguna sección; su tooltip enumera cuáles; tras
+      pulsarlo, lo que estaba escrito sigue intacto y la pestaña "Historial" ofrece la versión anterior.
+- [ ] El calendario de constancia se abre desde la vista completa, la vista simplificada y la paleta de
+      comandos; se cierra al hacer clic fuera y al volver a pulsar su botón (no se reabre en el mismo
+      gesto).
+- [ ] Las celdas se distinguen bien en tema claro y en tema oscuro (rellena / hueca / apagada), el día de
+      hoy se reconoce por su borde y el panel sigue legible con el zoom de interfaz al 150 %.
+- [ ] Con el idioma cambiado en caliente, las iniciales de los días de la semana, el orden de las columnas
+      y los textos del panel quedan en el idioma nuevo sin reiniciar.
+- [ ] Con un lector de pantalla, cada celda anuncia su fecha y su estado, y las de días futuros se anuncian
+      como no disponibles.
+
+---
+
 ## 9. Criterio de salida antes de `0.2.0`
 
 - Todos los puntos de las secciones 4 a 7 están en `OK` o `NO PROBADO` con motivo documentado — ningún

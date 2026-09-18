@@ -128,7 +128,11 @@ plantilla inexistente en cuanto se cambiara de vault.
   con la fecha.
 - Con plantilla, es ella quien decide el contenido y —si declara `title`— también el nombre de la nota.
 - **La plantilla solo interviene al crear.** Si la nota del día ya existe, se abre tal cual: volver a
-  aplicarla pisaría lo que se lleve escrito hoy.
+  aplicarla pisaría lo que se lleve escrito hoy. Para añadirle lo que le falte sin tocar lo escrito está la
+  acción "combinar con la plantilla" de la cabecera del editor — ver `notas-diarias.md` §4.
+- El **nombre** que produce el `title` para la nota diaria lo resuelve `DailyNoteNaming`, no
+  `NoteTemplateService.Prepare`: tiene que poder leerse de vuelta como fecha para que funcionen la
+  navegación por días y el calendario de constancia (`notas-diarias.md` §1).
 - Si el ajuste apunta a una plantilla que ya no existe, la nota diaria vuelve a su comportamiento de
   siempre y el ajuste **no se borra**, para que recuperar el archivo deje la configuración donde estaba.
 

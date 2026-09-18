@@ -364,7 +364,8 @@ public sealed partial class EditorViewModel : ViewModelBase
     public EditorViewModel(VaultService vaultService, NoteFile note, Action onBack, Action onChanged,
         Action<NoteFile>? onOpenNote = null, KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null,
-        Action<NoteFile, string>? onExportHtml = null, SessionService? sessionService = null)
+        Action<NoteFile, string>? onExportHtml = null, SessionService? sessionService = null,
+        DailyNoteService? dailyNoteService = null, Action<DateOnly>? onOpenDailyNoteFor = null)
     {
         _vaultService = vaultService;
         _onBack = onBack;
@@ -376,6 +377,8 @@ public sealed partial class EditorViewModel : ViewModelBase
         _settingsService = settingsService;
         _notificationService = notificationService;
         _onExportHtml = onExportHtml;
+        _dailyNoteService = dailyNoteService;
+        _onOpenDailyNoteFor = onOpenDailyNoteFor;
         Note = note;
         _title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _tagsInput = string.Join(", ", note.Tags);
@@ -398,9 +401,13 @@ public sealed partial class EditorViewModel : ViewModelBase
             _saveTimer.Stop();
             if (_pendingText is { } text) Save(text);
             Backlinks.Refresh(Note);
+            RefreshDailyTemplateState();
         };
 
         RefreshLinkedCards();
+        // Después de Document/Note: decide si esta nota es una nota diaria y, si lo es, qué le falta de su
+        // plantilla — las dos cosas se leen de ahí.
+        RefreshDailyNoteState();
     }
 
     private void RefreshLinkedCards()
@@ -592,6 +599,9 @@ public sealed partial class EditorViewModel : ViewModelBase
         Stats.RefreshLocalizedLabels();
         FindReplace.RefreshLocalizedLabels();
         History.RefreshLocalizedLabels();
+        // La fecha de la nota diaria y el tooltip de "combinar con la plantilla" se formatean con el
+        // idioma activo, así que se rehacen aquí como el resto de textos de la cabecera.
+        RefreshDailyNoteState();
     }
 
     /// <summary>"Saved · HH:mm" (Fase 2 §2) instead of a bare "Saved" — a plain status word gives no
@@ -674,6 +684,9 @@ public sealed partial class EditorViewModel : ViewModelBase
         Backlinks.Refresh(Note);
         Stats.Refresh();
         History.Retarget(Note);
+        // El día de una nota diaria está en el nombre del archivo: este renombrado puede haber convertido
+        // una nota cualquiera en la nota diaria de un día, o al revés.
+        RefreshDailyNoteState();
         _onChanged();
     }
 
@@ -691,6 +704,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         Backlinks.Refresh(Note);
         Stats.Refresh();
         History.Retarget(Note);
+        RefreshDailyNoteState();
     }
 
     [RelayCommand]

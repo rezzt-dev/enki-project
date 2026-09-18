@@ -73,6 +73,7 @@
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center"
                   ClipToBounds="True" Margin="0,0,12,0">
@@ -98,8 +99,50 @@
                  KeyDown="OnTitleKeyDown" GotFocus="OnTitleGotFocus" />
       </StackPanel>
 
+      <!-- ===================== Nota diaria (propuesta 8) =====================
+           Solo aparece cuando la nota abierta es la nota diaria de un día (ver
+           EditorViewModel.DailyNote.cs): día anterior, la fecha escrita para leerse, día siguiente y,
+           cuando toca, volver a hoy y combinar con la plantilla. En cualquier otra nota la columna se
+           colapsa y la cabecera queda exactamente como estaba. -->
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="8,0" VerticalAlignment="Center"
+                  IsVisible="{Binding IsDailyNote}">
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenPreviousDayCommand}"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_PreviousDay}"
+                AutomationProperties.Name="{loc:Tr Editor_DailyNote_PreviousDay}">
+          <mi:MaterialIcon Kind="CalendarArrowLeft" Width="15" Height="15" />
+        </Button>
+
+        <Border Classes="card" Padding="9,5" VerticalAlignment="Center"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_DateTooltip}">
+          <TextBlock Text="{Binding DailyNoteDateLabel}" FontSize="11" FontWeight="Bold"
+                     FontFamily="{DynamicResource InterfaceLabelFontFamily}" VerticalAlignment="Center" />
+        </Border>
+
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenNextDayCommand}"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_NextDay}"
+                AutomationProperties.Name="{loc:Tr Editor_DailyNote_NextDay}">
+          <mi:MaterialIcon Kind="CalendarArrowRight" Width="15" Height="15" />
+        </Button>
+
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenTodayNoteCommand}"
+                IsVisible="{Binding CanReturnToToday}"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_Today}"
+                AutomationProperties.Name="{loc:Tr Editor_DailyNote_Today}">
+          <mi:MaterialIcon Kind="CalendarTodayOutline" Width="15" Height="15" />
+        </Button>
+
+        <!-- Combinar con la plantilla: solo cuando hay algo que añadir, y con el tooltip enumerando qué
+             secciones se van a añadir antes de pulsarlo. -->
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding MergeDailyTemplateCommand}"
+                IsVisible="{Binding HasPendingDailyTemplateSections}"
+                ToolTip.Tip="{Binding PendingDailyTemplateTooltip}"
+                AutomationProperties.Name="{Binding PendingDailyTemplateTooltip}">
+          <mi:MaterialIcon Kind="FileDocumentPlusOutline" Width="15" Height="15" />
+        </Button>
+      </StackPanel>
+
       <!-- Tareas vinculadas en la cabecera; el desplegable no desplaza el editor. -->
-      <Panel Grid.Column="1" Margin="8,0" VerticalAlignment="Center" IsVisible="{Binding ShowLinkedCards}">
+      <Panel Grid.Column="2" Margin="8,0" VerticalAlignment="Center" IsVisible="{Binding ShowLinkedCards}">
         <ToggleButton x:Name="LinkedCardsTrigger" Classes="tag-chip toolbar-chip" Padding="9,5" MinHeight="30" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                       IsChecked="{Binding IsLinkedCardsExpanded, Mode=TwoWay}"
                       AutomationProperties.Name="{loc:Tr Editor_LinkedCards_Label}"
@@ -145,7 +188,7 @@
            siendo una caja en la que se puede escribir por estrecho que vaya el editor, y el MaxWidth que
            no se estire a lo largo de media cabecera en una ventana ancha. Fuera de la vista simplificada
            (ver ShowFullViewChrome): allí la cabecera se queda en el nombre de la nota y las acciones. -->
-      <Border x:Name="TagsBox" Grid.Column="2" Margin="12,0"
+      <Border x:Name="TagsBox" Grid.Column="3" Margin="12,0"
               IsVisible="{Binding ShowFullViewChrome}"
               Classes="card" Padding="8,5" VerticalAlignment="Center" HorizontalAlignment="Left"
               MinWidth="150" MaxWidth="240">
@@ -161,7 +204,7 @@
         </Grid>
       </Border>
 
-      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <!-- Indicador de guardado prominente (Fase 2 §2). En la vista simplificada se queda solo el
              icono: la pestaña ya lleva su propio punto de "sin guardar", y esos ~70px de etiqueta son la
              diferencia entre que la cabecera quepa o no en un panel de editor estrecho. -->

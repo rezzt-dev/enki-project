@@ -152,12 +152,37 @@
           </StackPanel>
         </Button>
 
-        <Button Grid.Column="3" Classes="pill" Height="36" Command="{Binding OpenDailyNoteCommand}" Margin="0,0,14,0">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="CalendarToday" Width="15" Height="15" />
-            <TextBlock Text="{loc:Tr Notes_DailyNoteButton, Converter={StaticResource UpperCaseConverter}}" />
-          </StackPanel>
-        </Button>
+        <!-- Nota diaria y, pegado a ella, el calendario de constancia: son la misma idea vista de dos
+             maneras (la nota de hoy y el rastro de todas las demás), así que comparten sitio en la
+             cabecera en vez de esconder el calendario en un menú. -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" Margin="0,0,14,0">
+          <Button Classes="pill" Height="36" Command="{Binding OpenDailyNoteCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="CalendarToday" Width="15" Height="15" />
+              <TextBlock Text="{loc:Tr Notes_DailyNoteButton, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+
+          <Panel>
+            <Button x:Name="ConsistencyTrigger" Classes="icon-btn" Classes.active="{Binding IsConsistencyOpen}"
+                    Width="34" Height="34" VerticalAlignment="Center"
+                    Command="{Binding ToggleConsistencyCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_Consistency_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_Consistency_Tooltip}">
+              <mi:MaterialIcon Kind="CalendarCheckOutline" Width="16" Height="16" />
+            </Button>
+            <!-- Sin OverlayInputPassThroughElement y con IsOpen en TwoWay: el cierre por clic fuera
+                 devuelve el estado al viewmodel, y un clic sobre el propio botón mientras el panel está
+                 abierto lo cierra (con pass-through volvería a abrirlo en el mismo gesto). -->
+            <Popup PlacementTarget="{Binding #ConsistencyTrigger}" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
+                   IsLightDismissEnabled="True"
+                   IsOpen="{Binding IsConsistencyOpen, Mode=TwoWay}">
+              <Border Classes="dropdown-popover" MaxHeight="560">
+                <views:DailyConsistencyView />
+              </Border>
+            </Popup>
+          </Panel>
+        </StackPanel>
 
         <!-- Workspace selector: the vault itself, o una de sus sesiones aisladas (§ sesiones). -->
         <ComboBox Grid.Column="4" Height="36" Margin="0,0,14,0" MinWidth="190"

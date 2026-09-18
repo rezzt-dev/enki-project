@@ -189,14 +189,23 @@ public sealed class NoteTemplateService
     public static NoteTemplateDraft Prepare(NoteTemplate template, string fallbackTitle, DateTime? now = null)
     {
         var reference = now ?? DateTime.Now;
-
-        var title = template.TitlePattern is null
-            ? fallbackTitle
-            : NoteTemplateRenderer.Render(template.TitlePattern, fallbackTitle, reference).Content.Trim();
-        if (string.IsNullOrWhiteSpace(title)) title = fallbackTitle;
-
+        var title = ResolveTitle(template.TitlePattern, fallbackTitle, reference);
         var rendered = NoteTemplateRenderer.Render(template.Body, title, reference);
         return new NoteTemplateDraft(title, rendered.Content, rendered.CaretOffset);
+    }
+
+    /// <summary>Solo el título que produciría <see cref="Prepare"/> a partir de un patrón, sin expandir
+    /// ningún cuerpo — lo que necesita la nota diaria para saber cómo se llama la nota de un día cualquiera
+    /// (el de ayer, el de mañana, los setenta del calendario de constancia) sin renderizar setenta veces
+    /// una plantilla cuyo cuerpo va a descartar. Toma el patrón y no la <see cref="NoteTemplate"/> entera
+    /// porque <see cref="DailyNoteNaming"/> le pasa una variante del patrón de la plantilla, no el patrón
+    /// tal cual. <see cref="Prepare"/> lo usa a su vez, así que las dos vías no pueden divergir.</summary>
+    public static string ResolveTitle(string? titlePattern, string fallbackTitle, DateTime? now = null)
+    {
+        var title = titlePattern is null
+            ? fallbackTitle
+            : NoteTemplateRenderer.Render(titlePattern, fallbackTitle, now ?? DateTime.Now).Content.Trim();
+        return string.IsNullOrWhiteSpace(title) ? fallbackTitle : title;
     }
 
     // ===================== Escritura =====================

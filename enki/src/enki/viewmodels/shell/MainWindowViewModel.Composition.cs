@@ -362,7 +362,8 @@ public sealed partial class MainWindowViewModel
         var calendarLayerColorService = new CalendarLayerColorService(_kanbanService, _polarTaskService, _polarAuthService, _settingsService);
         var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService);
         Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
-        Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService);
+        Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService,
+            _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics));
         Notes.PropertyChanged += OnNotesPropertyChanged;
         // Restaurar pestañas abiertas al reiniciar (docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §2) —
         // después de construir Notes pero antes de que la ventana quede lista, para que las pestañas ya

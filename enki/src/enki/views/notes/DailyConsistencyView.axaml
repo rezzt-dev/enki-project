@@ -1,0 +1,217 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="320" d:DesignHeight="300"
+             x:Class="enki.Views.DailyConsistencyView"
+             x:Name="Root"
+             x:DataType="vm:NotesViewModel">
+
+  <!-- Calendario de constancia de la nota diaria (propuesta 8): una celda por día, rellena si ese día
+       tiene nota y hueca si no, con las columnas alineadas a semanas naturales. Lo usan las dos
+       disposiciones de Documentos (FullNotesView y SimpleNotesView) dentro de su propio Popup, así que el
+       panel vive aquí una sola vez en lugar de duplicado en las dos.
+
+       Deliberadamente sin rachas, sin porcentajes de cumplimiento y sin escala de color: la única
+       información es qué días tienen nota y cuántos son, con el mismo lenguaje monocromo que la cuadrícula
+       de Hábitos —de la que además se muestra aquí la fila equivalente, para poder leer las dos
+       constancias juntas sin salir de Documentos. -->
+
+  <UserControl.Styles>
+    <!-- Celda de un día: hueca por defecto, rellena cuando ese día tiene nota, con un borde marcado en
+         el día de hoy y apagada en los días que aún no han llegado. Mismos recursos Ink que
+         Border.consistency-cell en HabitsView, para que las dos rejillas se lean como la misma cosa. -->
+    <Style Selector="Button.day-cell">
+      <Setter Property="Width" Value="11" />
+      <Setter Property="Height" Value="11" />
+      <Setter Property="Margin" Value="1" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.day-cell.has-note">
+      <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="Button.day-cell.today">
+      <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.day-cell.future">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+    <!-- El tema Fluent pinta de gris el fondo de un botón deshabilitado o bajo el puntero; aquí el fondo
+         es el propio dato, así que se fija desde el botón en los tres estados. -->
+    <Style Selector="Button.day-cell /template/ ContentPresenter">
+      <Setter Property="Background" Value="{TemplateBinding Background}" />
+      <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+      <Setter Property="BorderThickness" Value="{TemplateBinding BorderThickness}" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Button.day-cell:pointerover /template/ ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- Celda de la fila de hábitos: no se pulsa (los hábitos se marcan en su propia pantalla), así que
+         es un Border y no un Button — mismas tres lecturas que Border.consistency-cell en HabitsView. -->
+    <Style Selector="Border.habit-cell">
+      <Setter Property="Width" Value="11" />
+      <Setter Property="Height" Value="11" />
+      <Setter Property="Margin" Value="1" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Border.habit-cell.done">
+      <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="Border.habit-cell.not-applicable">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="TextBlock.weekday-label">
+      <Setter Property="Height" Value="13" />
+      <Setter Property="Width" Value="14" />
+      <Setter Property="FontSize" Value="8.5" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="14" MinWidth="300">
+
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="4">
+        <TextBlock Text="{loc:Tr Notes_Consistency_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+        <TextBlock Text="{loc:Tr Notes_Consistency_Description}" Classes="faint" FontSize="11"
+                   TextWrapping="Wrap" MaxWidth="260" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="icon-btn" Width="26" Height="26" VerticalAlignment="Top"
+              Command="{Binding CloseConsistencyCommand}"
+              ToolTip.Tip="{loc:Tr Common_Close}"
+              AutomationProperties.Name="{loc:Tr Common_Close}">
+        <mi:MaterialIcon Kind="Close" Width="13" Height="13" />
+      </Button>
+    </Grid>
+
+    <!-- ===================== Notas diarias ===================== -->
+    <StackPanel Spacing="8">
+      <Grid ColumnDefinitions="Auto,*">
+        <!-- Iniciales de los días de la semana: una fila del calendario cada una, en el orden que marque
+             el idioma activo (ver NotesViewModel.ReloadWeekdayLabels). -->
+        <ItemsControl Grid.Column="0" ItemsSource="{Binding ConsistencyWeekdayLabels}" Margin="0,0,6,0">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Classes="weekday-label" Text="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ItemsControl Grid.Column="1" ItemsSource="{Binding ConsistencyDays}"
+                      AutomationProperties.Name="{loc:Tr Notes_Consistency_Title}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <!-- Alto fijo de 7 celdas (11px + 2px de margen cada una): el WrapPanel vertical parte
+                   entonces en columnas de exactamente una semana, y como la ventana empieza en el primer
+                   día de la semana, cada fila es siempre el mismo día de la semana. -->
+              <WrapPanel Orientation="Vertical" Height="91" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:DailyConsistencyDayViewModel">
+              <Button Classes="day-cell"
+                      Classes.has-note="{Binding HasNote}"
+                      Classes.today="{Binding IsToday}"
+                      Classes.future="{Binding IsFuture}"
+                      IsEnabled="{Binding IsInteractive}"
+                      Command="{Binding #Root.((vm:NotesViewModel)DataContext).OpenConsistencyDayCommand}"
+                      CommandParameter="{Binding}"
+                      ToolTip.Tip="{Binding Tooltip}"
+                      AutomationProperties.Name="{Binding Tooltip}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+
+      <TextBlock Text="{Binding ConsistencySummary}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <!-- ===================== Hábitos ===================== -->
+    <StackPanel Spacing="8" IsVisible="{Binding HasHabitConsistency}">
+      <Border Height="1" Background="{DynamicResource Ink10}" />
+
+      <TextBlock Text="{loc:Tr Notes_Consistency_HabitsTitle, Converter={StaticResource UpperCaseConverter}}"
+                 Classes="eyebrow" FontSize="9" />
+
+      <Grid ColumnDefinitions="Auto,*">
+        <ItemsControl Grid.Column="0" ItemsSource="{Binding ConsistencyWeekdayLabels}" Margin="0,0,6,0">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Classes="weekday-label" Text="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ItemsControl Grid.Column="1" ItemsSource="{Binding HabitConsistencyDays}"
+                      AutomationProperties.Name="{loc:Tr Notes_Consistency_HabitsTitle}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Vertical" Height="91" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:ConsistencyDayViewModel">
+              <Border Classes="habit-cell"
+                      Classes.done="{Binding IsDone}"
+                      Classes.not-applicable="{Binding !IsApplicable}"
+                      ToolTip.Tip="{Binding Tooltip}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+
+      <TextBlock Text="{Binding ConsistencyHabitsSummary}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <!-- Dos accesos y no más: la constancia se mira aquí, pero se gestiona en Hábitos y se analiza en
+         Estadísticas — este panel no duplica ninguna de las dos. -->
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Classes="pill" Command="{Binding OpenHabitsFromConsistencyCommand}"
+              IsVisible="{Binding CanOpenHabits}">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <mi:MaterialIcon Kind="CheckboxMarkedCircleOutline" Width="13" Height="13" />
+          <TextBlock Text="{loc:Tr Notes_Consistency_OpenHabits, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
+        </StackPanel>
+      </Button>
+      <Button Classes="pill" Command="{Binding OpenStatisticsFromConsistencyCommand}"
+              IsVisible="{Binding CanOpenStatistics}">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <mi:MaterialIcon Kind="ChartLine" Width="13" Height="13" />
+          <TextBlock Text="{loc:Tr Notes_Consistency_OpenStatistics, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
+        </StackPanel>
+      </Button>
+    </StackPanel>
+
+  </StackPanel>
+</UserControl>

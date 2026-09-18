@@ -44,6 +44,10 @@ public static class ShortcutCatalog
         new(ShortcutIds.NotesNextTab, "Ctrl+Tab", "Settings_EditDocs_Title", "Settings_Shortcuts_NextTab"),
         new(ShortcutIds.NotesPreviousTab, "Ctrl+Shift+Tab", "Settings_EditDocs_Title", "Settings_Shortcuts_PreviousTab"),
         new(ShortcutIds.NotesToggleZenMode, "Ctrl+Shift+Enter", "Settings_EditDocs_Title", "Settings_Shortcuts_ToggleZenMode"),
+        // Nota diaria (propuesta 8): solo hacen algo con una nota diaria abierta, así que comparten
+        // categoría con el resto de atajos del editor en vez de estrenar una propia.
+        new(ShortcutIds.NotesDailyPreviousDay, "Ctrl+Alt+Left", "Settings_EditDocs_Title", "Settings_Shortcuts_DailyPreviousDay"),
+        new(ShortcutIds.NotesDailyNextDay, "Ctrl+Alt+Right", "Settings_EditDocs_Title", "Settings_Shortcuts_DailyNextDay"),
         new(ShortcutIds.EditorBold, "Ctrl+B", "Settings_EditDocs_Title", "Settings_EditDocs_Bold"),
         new(ShortcutIds.EditorItalic, "Ctrl+I", "Settings_EditDocs_Title", "Settings_EditDocs_Italic"),
         new(ShortcutIds.EditorInsertLink, "Ctrl+K", "Settings_EditDocs_Title", "Settings_EditDocs_InsertLink"),

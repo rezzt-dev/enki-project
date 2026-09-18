@@ -28,6 +28,8 @@ public static class ShortcutIds
     public const string NotesNextTab = "notes.nextTab";
     public const string NotesPreviousTab = "notes.previousTab";
     public const string NotesToggleZenMode = "notes.toggleZenMode";
+    public const string NotesDailyPreviousDay = "notes.dailyPreviousDay";
+    public const string NotesDailyNextDay = "notes.dailyNextDay";
 
     public const string EditorBold = "editor.bold";
     public const string EditorItalic = "editor.italic";

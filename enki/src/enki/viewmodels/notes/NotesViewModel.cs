@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,6 +44,23 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// la nota diaria. Null en los tests que no la configuran, y entonces la nota diaria se comporta como
     /// siempre (un encabezado con la fecha).</summary>
     private readonly VaultSettingsService? _vaultSettingsService;
+
+    /// <summary>La nota diaria, entera: qué día es cada nota, cuál es la de hoy, cómo nace de la plantilla
+    /// y qué días del calendario de constancia tienen una (<c>NotesViewModel.Daily.cs</c>). Se deriva del
+    /// vault y del catálogo de plantillas cuando no se pasa, igual que <see cref="_templateService"/>.</summary>
+    private readonly DailyNoteService _dailyNoteService;
+
+    /// <summary>Solo de lectura y solo para la fila de hábitos del calendario de constancia: se leen las
+    /// marcas reales de <see cref="HabitService"/>, nunca se escriben desde aquí (los hábitos se marcan en
+    /// su propia pantalla). Null en los tests y en cualquier composición sin hábitos, y entonces el panel
+    /// se queda solo con las notas diarias.</summary>
+    private readonly HabitService? _habitService;
+
+    /// <summary>Saltos a Hábitos y a Estadísticas desde el calendario de constancia — los pone
+    /// <see cref="MainWindowViewModel"/>, que es quien sabe navegar entre módulos. Null en los tests, y
+    /// entonces esos dos accesos no se muestran.</summary>
+    private readonly Action? _onOpenHabits;
+    private readonly Action? _onOpenStatistics;
 
     // Reloading re-reads and re-parses every note file under the current folder from disk, so a plain
     // per-keystroke call in OnSearchTextChanged would hit the filesystem on every character typed —
@@ -132,7 +148,8 @@ public sealed partial class NotesViewModel : ViewModelBase
         KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null,
         NoteSearchService? noteSearchService = null, NoteTemplateService? templateService = null,
-        VaultSettingsService? vaultSettingsService = null)
+        VaultSettingsService? vaultSettingsService = null, HabitService? habitService = null,
+        Action? onOpenHabits = null, Action? onOpenStatistics = null)
     {
         _vaultService = vaultService;
         // Opcional y con valor por defecto derivado del propio vault: el servicio no tiene estado ni
@@ -147,6 +164,10 @@ public sealed partial class NotesViewModel : ViewModelBase
         _notificationService = notificationService;
         _templateService = templateService ?? new NoteTemplateService(vaultService);
         _vaultSettingsService = vaultSettingsService;
+        _dailyNoteService = new DailyNoteService(vaultService, _templateService, vaultSettingsService);
+        _habitService = habitService;
+        _onOpenHabits = onOpenHabits;
+        _onOpenStatistics = onOpenStatistics;
         _searchDebounceTimer.Tick += (_, _) =>
         {
             _searchDebounceTimer.Stop();
@@ -172,13 +193,11 @@ public sealed partial class NotesViewModel : ViewModelBase
         // idioma: sin esto el tooltip del botón "nueva nota" se quedaba en el idioma anterior.
         OnPropertyChanged(nameof(NewTabTooltip));
         Reload();
+        // El calendario de constancia lleva nombres de día y textos formateados: si está abierto al
+        // cambiar de idioma, se reconstruye en vez de quedarse en el idioma anterior.
+        if (IsConsistencyOpen) ReloadConsistency();
         foreach (var editor in OpenEditors) editor.RefreshLocalizedLabels();
     }
-
-    /// <summary>Devuelve la fecha actual como nombre de nota diaria (YYYY-MM-DD). Invariante a propósito
-    /// (no <see cref="CultureInfo.CurrentCulture"/>): es un nombre de fichero técnico, no texto de UI —
-    /// debe mantenerse estable con independencia del idioma activo.</summary>
-    private static string DailyNoteTitle => DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     partial void OnSearchTextChanged(string value)
     {
@@ -460,39 +479,6 @@ public sealed partial class NotesViewModel : ViewModelBase
         OpenNote(note);
     }
 
-    /// <summary>Abre la nota de hoy, creándola si aún no existe. Con una plantilla configurada para la
-    /// nota diaria (Ajustes › Editor › Plantillas), es esa plantilla la que decide tanto el nombre de la
-    /// nota —si declara <c>title</c>— como su contenido inicial; sin plantilla, sigue siendo la fecha
-    /// <c>yyyy-MM-dd</c> con un encabezado, exactamente como antes.
-    ///
-    /// <para>La plantilla solo interviene al <b>crear</b>: si la nota del día ya existe se abre tal cual,
-    /// porque volver a aplicarle la plantilla pisaría lo que el usuario lleve escrito hoy.</para></summary>
-    [RelayCommand]
-    private void OpenDailyNote()
-    {
-        var template = ResolveDailyNoteTemplate();
-        var draft = template is null ? (NoteTemplateDraft?)null : NoteTemplateService.Prepare(template, DailyNoteTitle);
-        var title = draft?.Title ?? DailyNoteTitle;
-
-        var all = _vaultService.GetAllNotesRecursive(_vaultService.VaultPath);
-        var existing = all.FirstOrDefault(n =>
-            string.Equals(n.Title, title, StringComparison.OrdinalIgnoreCase));
-
-        NoteFile note;
-        try
-        {
-            note = existing ?? _vaultService.CreateNote(title, CurrentFolderPath, draft?.Content);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
-        {
-            NotifyVaultWriteFailed(ex);
-            return;
-        }
-
-        Reload();
-        OpenNote(note, existing is null ? draft?.CaretOffset : null);
-    }
-
     /// <summary>Shared failure reporting for the create/rename/move commands below — a vault write that
     /// fails (unplugged drive, permisos) logs the exception and surfaces a translated notification instead
     /// of leaving the command silently do nothing (docs/analisis-proyecto/roadmap.md, Fase 1).</summary>
@@ -616,7 +602,8 @@ public sealed partial class NotesViewModel : ViewModelBase
         EditorViewModel? editor = null;
         editor = new EditorViewModel(_vaultService, note, () => CloseEditor(editor!), Reload,
             target => OpenNote(target), _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
-            onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService);
+            onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService,
+            dailyNoteService: _dailyNoteService, onOpenDailyNoteFor: OpenDailyNoteFor);
         // Antes de añadir la pestaña: EditorView lee LastCaretOffset al enlazarse con el viewmodel, y ese
         // enlace ocurre como consecuencia de las dos líneas siguientes.
         if (caretOffset is { } newTabOffset) editor.RequestCaretAt(newTabOffset);

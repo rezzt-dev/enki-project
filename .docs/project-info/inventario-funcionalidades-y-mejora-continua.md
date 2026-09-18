@@ -215,7 +215,12 @@ Cada módulo se descompone en **funcionalidad** → **sub-funcionalidad** → **
   - Micro-funcionalidad: hasta 10; se persisten en `RecentNotePaths`.
 - **Sub-funcionalidad**: importar archivos Markdown.
 - **Sub-funcionalidad**: crear nota diaria.
-  - Micro-funcionalidad: nombre fijo `yyyy-MM-dd.md`.
+  - Micro-funcionalidad: nombre `yyyy-MM-dd.md`, o el que dicte el `title` de la plantilla configurada.
+  - Micro-funcionalidad: navegación día anterior / día siguiente desde el editor (`Ctrl+Alt+←/→`), creando
+    la nota del día destino si no existe.
+  - Micro-funcionalidad: combinar la nota diaria con su plantilla añadiendo solo las secciones que faltan.
+  - Micro-funcionalidad: calendario de constancia de diez semanas, con la fila de hábitos y los accesos a
+    Hábitos y Estadísticas (ver `notas-diarias.md`).
 
 #### Funcionalidad: editor de notas
 - **Sub-funcionalidad**: pestañas múltiples.

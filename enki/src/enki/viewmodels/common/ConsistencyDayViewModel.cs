@@ -19,4 +19,10 @@ public sealed class ConsistencyDayViewModel
     /// <c>Services.HabitService.IsApplicable</c>) — <see langword="false"/> renders as a faint, borderless
     /// "not applicable" cell instead of reading as a missed day.</summary>
     public required bool IsApplicable { get; init; }
+
+    /// <summary>Texto del tooltip de la celda cuando quien la construye puede decir algo más útil que la
+    /// fecha a secas —el calendario de constancia de Documentos dice además cuántos hábitos tocaban ese día
+    /// y cuántos se marcaron—. Null deja que cada vista siga mostrando <see cref="Date"/>, que es lo que
+    /// hacen la cuadrícula de Hábitos y la de Estadísticas.</summary>
+    public string? Tooltip { get; init; }
 }
