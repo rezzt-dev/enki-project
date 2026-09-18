@@ -40,5 +40,6 @@ public enum AppPage
     Files,
     Skills,
     Habits,
-    Statistics
+    Statistics,
+    TagManager
 }

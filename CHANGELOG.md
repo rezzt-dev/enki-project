@@ -15,6 +15,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - ajuste "plantilla de la nota diaria" en ajustes > editor > plantillas, guardado por vault en `<vault>/.enki/settings.json`: la plantilla decide el contenido y, si declara `title`, tambien el nombre de la nota; solo se aplica al crearla, nunca sobre la nota del dia que ya existe.
 - siembra de dos plantillas de ejemplo traducidas (nota diaria y reunion) la primera vez que se abre cada vault, sin volver a reponerlas si el usuario las borra.
 - historial local de versiones por nota, guardado dentro del propio vault (`<vault>/.enki/history/` o, para una nota de sesion, `.history/` junto a ella, heredando su cifrado si la sesion esta protegida): snapshots automaticos durante el autoguardado (limitados a uno cada 5 minutos y solo si el contenido cambio), pestana "Historial" en el editor para comparar linea a linea con la version actual y restaurar, y un snapshot de seguridad automatico antes de restaurar o antes de que un renombrado reescriba wikilinks en otras notas.
+- anadir la seccion "Etiquetas" a la barra lateral para consultar y buscar en una sola vista las etiquetas activas de notas, tarjetas kanban y tareas polar, con recuentos por modulo y seleccion multiple para fusionarlas.
+- permitir renombrar, fusionar y eliminar etiquetas en los tres modulos sin crear otro almacen: conservar el frontmatter y el historial de las notas, evitar duplicados por entidad, sincronizar los cambios de polar y actualizar las pestanas de notas abiertas.
 
 #### CAMBIOS
 - establecer `.docs/project-info/` como ruta versionada de la documentacion del proyecto y aclarar en `README.md`, `README.en.md`, `AGENTS.md` y `.gitignore` que `docs/` no forma parte del checkout.
@@ -39,6 +41,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a "daily note template" setting under settings > editor > templates, stored per vault in `<vault>/.enki/settings.json`: the template decides the content and, when it declares `title`, the note's name too; it only applies on creation, never over the day's existing note.
 - two translated example templates (daily note and meeting) seeded the first time each vault is opened, never restored again if the user deletes them.
 - local per-note version history, stored inside the vault itself (`<vault>/.enki/history/`, or `.history/` alongside a session note, inheriting its encryption when the session is protected): automatic snapshots during autosave (throttled to one every 5 minutes, and only when the content actually changed), a "History" tab in the editor to diff line-by-line against the current version and restore, and an automatic safety snapshot before restoring or before a rename rewrites wikilinks in other notes.
+- add a "Tags" sidebar section to browse and search active tags from notes, kanban cards and polar tasks in one view, with per-module counts and multi-selection for merging.
+- allow tags to be renamed, merged and removed across all three modules without a separate store: preserve note front matter and version history, remove duplicates within each item, sync polar changes and refresh open note tabs.
 
 #### CHANGED
 - establish `.docs/project-info/` as the versioned project documentation path and clarify in `README.md`, `README.en.md`, `AGENTS.md`, and `.gitignore` that `docs/` is not part of the checkout.

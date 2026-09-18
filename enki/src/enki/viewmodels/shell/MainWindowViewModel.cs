@@ -98,6 +98,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public SessionsViewModel? Sessions { get; private set; }
     public KanbanViewModel? Kanban { get; private set; }
     public TrashViewModel? Trash { get; private set; }
+    public TagManagerViewModel? TagManager { get; private set; }
     public SettingsViewModel? Settings { get; private set; }
     public RemindersViewModel? Reminders { get; private set; }
     public NotificationsViewModel? Notifications { get; private set; }
@@ -271,6 +272,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _trashPanelEnabled;
 
     [ObservableProperty]
+    private bool _tagManagerPanelEnabled;
+
+    [ObservableProperty]
     private bool _habitsPanelEnabled;
 
     [ObservableProperty]
@@ -337,6 +341,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             AppPage.Sessions => Sessions,
             AppPage.Kanban => Kanban,
             AppPage.Trash => Trash,
+            AppPage.TagManager => TagManager,
             AppPage.Settings => Settings,
             AppPage.Habits => Habits,
             AppPage.Statistics => Statistics,
@@ -360,6 +365,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Trash!.Reload();
             UpdateTrashBadge();
         }
+        if (page == AppPage.TagManager) TagManager!.Reload();
     }
 
     [RelayCommand]

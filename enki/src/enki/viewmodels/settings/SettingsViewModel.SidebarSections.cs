@@ -45,6 +45,9 @@ public sealed partial class SettingsViewModel
     private bool _trashPanelEnabled;
 
     [ObservableProperty]
+    private bool _tagManagerPanelEnabled;
+
+    [ObservableProperty]
     private bool _habitsPanelEnabled;
 
     [ObservableProperty]
@@ -172,6 +175,15 @@ public sealed partial class SettingsViewModel
         SyncSidebarSectionRow("Trash", value);
     }
 
+    partial void OnTagManagerPanelEnabledChanged(bool value)
+    {
+        if (BlockIfLastEnabledSidebarSection("TagManager", value, () => TagManagerPanelEnabled = true)) return;
+        _settingsService.Settings.TagManagerPanelEnabled = value;
+        _settingsService.Save();
+        _onSidebarSectionChanged(AppPage.TagManager, value);
+        SyncSidebarSectionRow("TagManager", value);
+    }
+
     partial void OnHabitsPanelEnabledChanged(bool value)
     {
         if (BlockIfLastEnabledSidebarSection("Habits", value, () => HabitsPanelEnabled = true)) return;
@@ -239,6 +251,7 @@ public sealed partial class SettingsViewModel
         "Files" => FilesPanelEnabled,
         "Sessions" => SessionsPanelEnabled,
         "Trash" => TrashPanelEnabled,
+        "TagManager" => TagManagerPanelEnabled,
         "Habits" => HabitsPanelEnabled,
         "Skills" => SkillsPanelEnabled,
         "Reminders" => RemindersSidebarEnabled,
@@ -262,6 +275,7 @@ public sealed partial class SettingsViewModel
             case "Files": FilesPanelEnabled = value; break;
             case "Sessions": SessionsPanelEnabled = value; break;
             case "Trash": TrashPanelEnabled = value; break;
+            case "TagManager": TagManagerPanelEnabled = value; break;
             case "Habits": HabitsPanelEnabled = value; break;
             case "Skills": SkillsPanelEnabled = value; break;
             case "Reminders": RemindersSidebarEnabled = value; break;

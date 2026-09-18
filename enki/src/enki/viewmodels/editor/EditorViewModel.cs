@@ -552,6 +552,14 @@ public sealed partial class EditorViewModel : ViewModelBase
         _onChanged();
     }
 
+    /// <summary>Reconcilia una pestaña abierta tras una reescritura de etiquetas desde otra vista.
+    /// Evita que su siguiente autoguardado restaure el frontmatter anterior.</summary>
+    public void ReloadAfterTagChange()
+    {
+        var content = _vaultService.ReadContent(Note);
+        if (content != Document.Text) ApplyRestoredContent(content);
+    }
+
     /// <summary>Shared by both the proactive check and the defensive catch in <see cref="Save"/> — leaves
     /// <paramref name="currentText"/> pending and restarts the save timer so the next automatic tick
     /// retries on its own, without requiring another keystroke.</summary>

@@ -5282,4 +5282,124 @@ Bonne rédaction.</value>
   <data name="Files_Tree_DropHint" xml:space="preserve">
     <value>Vous pouvez aussi faire glisser des fichiers depuis votre gestionnaire de fichiers et les déposer ici.</value>
   </data>
+  <data name="TagManager_Title" xml:space="preserve">
+    <value>Étiquettes</value>
+  </data>
+  <data name="Nav_TagManager" xml:space="preserve">
+    <value>Étiquettes</value>
+  </data>
+  <data name="TagManager_Subtitle" xml:space="preserve">
+    <value>Gérez au même endroit les étiquettes des notes, de Kanban et de Polar.</value>
+  </data>
+  <data name="TagManager_Search" xml:space="preserve">
+    <value>Rechercher des étiquettes</value>
+  </data>
+  <data name="TagManager_Merge" xml:space="preserve">
+    <value>Fusionner la sélection</value>
+  </data>
+  <data name="TagManager_Column_Name" xml:space="preserve">
+    <value>Étiquette</value>
+  </data>
+  <data name="TagManager_Column_Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="TagManager_Column_Kanban" xml:space="preserve">
+    <value>Kanban</value>
+  </data>
+  <data name="TagManager_Column_Polar" xml:space="preserve">
+    <value>Polar</value>
+  </data>
+  <data name="TagManager_Rename" xml:space="preserve">
+    <value>Renommer</value>
+  </data>
+  <data name="TagManager_Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="TagManager_Empty" xml:space="preserve">
+    <value>Ce coffre ne contient pas encore d’étiquettes.</value>
+  </data>
+  <data name="TagManager_NoResults" xml:space="preserve">
+    <value>Aucune étiquette ne correspond à la recherche.</value>
+  </data>
+  <data name="TagManager_RenameHint" xml:space="preserve">
+    <value>Le nouveau nom sera appliqué dans tous les modules.</value>
+  </data>
+  <data name="TagManager_NewName" xml:space="preserve">
+    <value>Nouveau nom</value>
+  </data>
+  <data name="TagManager_MergeHint" xml:space="preserve">
+    <value>Les étiquettes sélectionnées seront remplacées par le nom cible dans tous les modules.</value>
+  </data>
+  <data name="TagManager_TargetName" xml:space="preserve">
+    <value>Nom cible</value>
+  </data>
+  <data name="TagManager_DeleteModal_Message" xml:space="preserve">
+    <value>Supprimer « {0} » de toutes les notes, cartes et tâches qui l’utilisent ?</value>
+  </data>
+  <data name="TagManager_SelectedCount_one" xml:space="preserve">
+    <value>{0} sélectionnée</value>
+  </data>
+  <data name="TagManager_SelectedCount_other" xml:space="preserve">
+    <value>{0} sélectionnées</value>
+  </data>
+  <data name="TagManager_Breakdown_Notes_one" xml:space="preserve">
+    <value>{0} note</value>
+  </data>
+  <data name="TagManager_Breakdown_Notes_other" xml:space="preserve">
+    <value>{0} notes</value>
+  </data>
+  <data name="TagManager_Breakdown_Kanban_one" xml:space="preserve">
+    <value>{0} carte</value>
+  </data>
+  <data name="TagManager_Breakdown_Kanban_other" xml:space="preserve">
+    <value>{0} cartes</value>
+  </data>
+  <data name="TagManager_Breakdown_Polar_one" xml:space="preserve">
+    <value>{0} tâche Polar</value>
+  </data>
+  <data name="TagManager_Breakdown_Polar_other" xml:space="preserve">
+    <value>{0} tâches Polar</value>
+  </data>
+  <data name="TagManager_Notify_Renamed_Title" xml:space="preserve">
+    <value>Étiquettes renommées</value>
+  </data>
+  <data name="TagManager_Notify_Merged_Title" xml:space="preserve">
+    <value>Étiquettes fusionnées</value>
+  </data>
+  <data name="TagManager_Notify_Deleted_Title" xml:space="preserve">
+    <value>Étiquette supprimée</value>
+  </data>
+  <data name="TagManager_Notify_Summary_Message" xml:space="preserve">
+    <value>{0} mises à jour.</value>
+  </data>
+  <data name="TagManager_Notify_NotesCount_one" xml:space="preserve">
+    <value>{0} note</value>
+  </data>
+  <data name="TagManager_Notify_NotesCount_other" xml:space="preserve">
+    <value>{0} notes</value>
+  </data>
+  <data name="TagManager_Notify_KanbanCount_one" xml:space="preserve">
+    <value>{0} carte</value>
+  </data>
+  <data name="TagManager_Notify_KanbanCount_other" xml:space="preserve">
+    <value>{0} cartes</value>
+  </data>
+  <data name="TagManager_Notify_PolarCount_one" xml:space="preserve">
+    <value>{0} tâche Polar</value>
+  </data>
+  <data name="TagManager_Notify_PolarCount_other" xml:space="preserve">
+    <value>{0} tâches Polar</value>
+  </data>
+  <data name="TagManager_SaveBlocked" xml:space="preserve">
+    <value>Impossible d’enregistrer les modifications d’une note ouverte.</value>
+  </data>
+  <data name="TagManager_Error_Title" xml:space="preserve">
+    <value>Impossible de mettre à jour les étiquettes</value>
+  </data>
+  <data name="TagManager_Error_Message" xml:space="preserve">
+    <value>Vérifiez que le coffre est accessible en écriture, puis réessayez.</value>
+  </data>
+  <data name="TagManager_NameRules" xml:space="preserve">
+    <value>Utilisez un nom sans virgule, crochet ni saut de ligne.</value>
+  </data>
 </root>

@@ -32,6 +32,7 @@ public sealed partial class MainWindowViewModel
         Kanban?.RefreshLocalizedLabels();
         Kanban?.TaskManagement.RefreshLocalizedLabels();
         Trash?.RefreshLocalizedLabels();
+        TagManager?.RefreshLocalizedLabels();
         Reminders?.RefreshLocalizedLabels();
         Notifications?.RefreshLocalizedLabels();
         Settings?.RefreshLocalizedLabels();
@@ -58,6 +59,7 @@ public sealed partial class MainWindowViewModel
         AppPage.Skills => SkillsPanelEnabled,
         AppPage.Sessions => SessionsPanelEnabled,
         AppPage.Trash => TrashPanelEnabled,
+        AppPage.TagManager => TagManagerPanelEnabled,
         AppPage.Habits => HabitsPanelEnabled,
         AppPage.Reminders => RemindersSidebarEnabled,
         AppPage.Notifications => NotificationsSidebarEnabled,
@@ -171,6 +173,7 @@ public sealed partial class MainWindowViewModel
                 break;
             case AppPage.Sessions: SessionsPanelEnabled = value; break;
             case AppPage.Trash: TrashPanelEnabled = value; break;
+            case AppPage.TagManager: TagManagerPanelEnabled = value; break;
             case AppPage.Habits: HabitsPanelEnabled = value; break;
             case AppPage.Reminders: RemindersSidebarEnabled = value; break;
             case AppPage.Notifications: NotificationsSidebarEnabled = value; break;
@@ -339,6 +342,7 @@ public sealed partial class MainWindowViewModel
         Skills!.Reload();
         Sessions!.Reload();
         Trash!.Reload();
+        TagManager!.Reload();
         Habits!.Reload();
         Statistics!.Reload();
         Calendar!.ReloadPreferences();
@@ -373,6 +377,7 @@ public sealed partial class MainWindowViewModel
         SkillsPanelEnabled = settings.SkillsPanelEnabled;
         SessionsPanelEnabled = settings.SessionsPanelEnabled;
         TrashPanelEnabled = settings.TrashPanelEnabled;
+        TagManagerPanelEnabled = settings.TagManagerPanelEnabled;
         HabitsPanelEnabled = settings.HabitsPanelEnabled;
         StatisticsPanelEnabled = settings.StatisticsPanelEnabled;
         Dashboard!.ShowScrollbar = settings.DashboardShowScrollbar;

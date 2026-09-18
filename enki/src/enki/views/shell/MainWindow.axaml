@@ -45,6 +45,9 @@
     <DataTemplate DataType="{x:Type vm:TrashViewModel}">
       <views:TrashView />
     </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:TagManagerViewModel}">
+      <views:TagManagerView />
+    </DataTemplate>
     <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
       <views:SettingsView />
     </DataTemplate>

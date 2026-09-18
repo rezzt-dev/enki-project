@@ -226,6 +226,7 @@ public class SettingsViewModelTests : IDisposable
         vm.FilesPanelEnabled = false;
         vm.SessionsPanelEnabled = false;
         vm.TrashPanelEnabled = false;
+        vm.TagManagerPanelEnabled = false;
         vm.HabitsPanelEnabled = false;
 
         // Reminders/Notifications/Statistics stay on — under the old (buggy) 12-flag count this alone would

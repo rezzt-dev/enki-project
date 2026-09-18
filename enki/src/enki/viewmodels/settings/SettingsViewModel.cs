@@ -272,6 +272,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _filesPanelEnabled = settingsService.Settings.FilesPanelEnabled;
         _sessionsPanelEnabled = settingsService.Settings.SessionsPanelEnabled;
         _trashPanelEnabled = settingsService.Settings.TrashPanelEnabled;
+        _tagManagerPanelEnabled = settingsService.Settings.TagManagerPanelEnabled;
         _habitsPanelEnabled = settingsService.Settings.HabitsPanelEnabled;
         _statisticsPanelEnabled = settingsService.Settings.StatisticsPanelEnabled;
         _remindersSidebarEnabled = settingsService.Settings.RemindersSidebarEnabled;

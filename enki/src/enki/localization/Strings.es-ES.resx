@@ -5282,4 +5282,124 @@ A disfrutar escribiendo.</value>
   <data name="Files_Tree_DropHint" xml:space="preserve">
     <value>También puedes arrastrar archivos desde el explorador del sistema y soltarlos aquí.</value>
   </data>
+  <data name="TagManager_Title" xml:space="preserve">
+    <value>Etiquetas</value>
+  </data>
+  <data name="Nav_TagManager" xml:space="preserve">
+    <value>Etiquetas</value>
+  </data>
+  <data name="TagManager_Subtitle" xml:space="preserve">
+    <value>Gestiona las etiquetas de Notas, Kanban y Polar desde el mismo lugar.</value>
+  </data>
+  <data name="TagManager_Search" xml:space="preserve">
+    <value>Buscar etiquetas</value>
+  </data>
+  <data name="TagManager_Merge" xml:space="preserve">
+    <value>Fusionar seleccionadas</value>
+  </data>
+  <data name="TagManager_Column_Name" xml:space="preserve">
+    <value>Etiqueta</value>
+  </data>
+  <data name="TagManager_Column_Notes" xml:space="preserve">
+    <value>Notas</value>
+  </data>
+  <data name="TagManager_Column_Kanban" xml:space="preserve">
+    <value>Kanban</value>
+  </data>
+  <data name="TagManager_Column_Polar" xml:space="preserve">
+    <value>Polar</value>
+  </data>
+  <data name="TagManager_Rename" xml:space="preserve">
+    <value>Renombrar</value>
+  </data>
+  <data name="TagManager_Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="TagManager_Empty" xml:space="preserve">
+    <value>Aún no hay etiquetas en este vault.</value>
+  </data>
+  <data name="TagManager_NoResults" xml:space="preserve">
+    <value>No hay etiquetas que coincidan con la búsqueda.</value>
+  </data>
+  <data name="TagManager_RenameHint" xml:space="preserve">
+    <value>El nombre nuevo se aplicará en todos los módulos.</value>
+  </data>
+  <data name="TagManager_NewName" xml:space="preserve">
+    <value>Nombre nuevo</value>
+  </data>
+  <data name="TagManager_MergeHint" xml:space="preserve">
+    <value>Las etiquetas seleccionadas se sustituirán por el nombre de destino en todos los módulos.</value>
+  </data>
+  <data name="TagManager_TargetName" xml:space="preserve">
+    <value>Nombre de destino</value>
+  </data>
+  <data name="TagManager_DeleteModal_Message" xml:space="preserve">
+    <value>¿Eliminar «{0}» de todas las notas, tarjetas y tareas que la usan?</value>
+  </data>
+  <data name="TagManager_SelectedCount_one" xml:space="preserve">
+    <value>{0} seleccionada</value>
+  </data>
+  <data name="TagManager_SelectedCount_other" xml:space="preserve">
+    <value>{0} seleccionadas</value>
+  </data>
+  <data name="TagManager_Breakdown_Notes_one" xml:space="preserve">
+    <value>{0} nota</value>
+  </data>
+  <data name="TagManager_Breakdown_Notes_other" xml:space="preserve">
+    <value>{0} notas</value>
+  </data>
+  <data name="TagManager_Breakdown_Kanban_one" xml:space="preserve">
+    <value>{0} tarjeta</value>
+  </data>
+  <data name="TagManager_Breakdown_Kanban_other" xml:space="preserve">
+    <value>{0} tarjetas</value>
+  </data>
+  <data name="TagManager_Breakdown_Polar_one" xml:space="preserve">
+    <value>{0} tarea Polar</value>
+  </data>
+  <data name="TagManager_Breakdown_Polar_other" xml:space="preserve">
+    <value>{0} tareas Polar</value>
+  </data>
+  <data name="TagManager_Notify_Renamed_Title" xml:space="preserve">
+    <value>Etiquetas renombradas</value>
+  </data>
+  <data name="TagManager_Notify_Merged_Title" xml:space="preserve">
+    <value>Etiquetas fusionadas</value>
+  </data>
+  <data name="TagManager_Notify_Deleted_Title" xml:space="preserve">
+    <value>Etiqueta eliminada</value>
+  </data>
+  <data name="TagManager_Notify_Summary_Message" xml:space="preserve">
+    <value>{0} actualizadas.</value>
+  </data>
+  <data name="TagManager_Notify_NotesCount_one" xml:space="preserve">
+    <value>{0} nota</value>
+  </data>
+  <data name="TagManager_Notify_NotesCount_other" xml:space="preserve">
+    <value>{0} notas</value>
+  </data>
+  <data name="TagManager_Notify_KanbanCount_one" xml:space="preserve">
+    <value>{0} tarjeta</value>
+  </data>
+  <data name="TagManager_Notify_KanbanCount_other" xml:space="preserve">
+    <value>{0} tarjetas</value>
+  </data>
+  <data name="TagManager_Notify_PolarCount_one" xml:space="preserve">
+    <value>{0} tarea Polar</value>
+  </data>
+  <data name="TagManager_Notify_PolarCount_other" xml:space="preserve">
+    <value>{0} tareas Polar</value>
+  </data>
+  <data name="TagManager_SaveBlocked" xml:space="preserve">
+    <value>No se pudieron guardar los cambios de una nota abierta.</value>
+  </data>
+  <data name="TagManager_Error_Title" xml:space="preserve">
+    <value>No se pudieron actualizar las etiquetas</value>
+  </data>
+  <data name="TagManager_Error_Message" xml:space="preserve">
+    <value>Comprueba que el vault se puede escribir y vuelve a intentarlo.</value>
+  </data>
+  <data name="TagManager_NameRules" xml:space="preserve">
+    <value>Usa un nombre sin comas, corchetes ni saltos de línea.</value>
+  </data>
 </root>

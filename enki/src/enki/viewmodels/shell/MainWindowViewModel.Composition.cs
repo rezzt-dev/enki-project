@@ -127,6 +127,7 @@ public sealed partial class MainWindowViewModel
         _filesPanelEnabled = _settingsService.Settings.FilesPanelEnabled;
         _sessionsPanelEnabled = _settingsService.Settings.SessionsPanelEnabled;
         _trashPanelEnabled = _settingsService.Settings.TrashPanelEnabled;
+        _tagManagerPanelEnabled = _settingsService.Settings.TagManagerPanelEnabled;
         _habitsPanelEnabled = _settingsService.Settings.HabitsPanelEnabled;
         _statisticsPanelEnabled = _settingsService.Settings.StatisticsPanelEnabled;
         _uiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
@@ -391,6 +392,26 @@ public sealed partial class MainWindowViewModel
         {
             if (e.PropertyName == nameof(TrashViewModel.TotalCount)) UpdateTrashBadge();
         };
+        var tagManagerService = new TagManagerService(_vaultService, _kanbanService, _polarTaskService);
+        TagManager = new TagManagerViewModel(tagManagerService, _notificationService,
+            () =>
+            {
+                foreach (var editor in Notes.OpenEditors) editor.FlushPendingSave();
+                if (Notes.OpenEditors.All(editor => !editor.IsDirty)) return true;
+                _notificationService.PushLocalized(
+                    LocalizedTextFormatter.Format("TagManager_Error_Title"),
+                    LocalizedTextFormatter.Format("TagManager_SaveBlocked"), Models.NotificationSeverity.Error);
+                return false;
+            },
+            () =>
+            {
+                foreach (var editor in Notes.OpenEditors) editor.ReloadAfterTagChange();
+                Notes.Reload();
+                Kanban.Reload();
+                Kanban.TaskManagement.Reload();
+                Dashboard?.Reload();
+                Statistics?.Reload();
+            });
         Settings = new SettingsViewModel(_settingsService, _customThemeService, _brandLogoService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
@@ -418,6 +439,7 @@ public sealed partial class MainWindowViewModel
             AppPage.Notes => Notes,
             AppPage.Files => Files,
             AppPage.Sessions => Sessions,
+            AppPage.TagManager => TagManager,
             _ => Dashboard
         };
         foreach (var item in NavItems) item.IsActive = item.Page == startupPage;

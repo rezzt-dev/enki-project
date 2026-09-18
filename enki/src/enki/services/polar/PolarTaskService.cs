@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using enki.Models;
@@ -354,6 +355,37 @@ public sealed class PolarTaskService
         subtask.DeletedAtUtc = DateTime.UtcNow;
         Touch(subtask);
         Save();
+    }
+
+    // ===================== Gestor global de etiquetas (renombrar/fusionar/eliminar) =====================
+
+    /// <summary>Renombra, fusiona o elimina una etiqueta en todas las tareas activas (<c>!IsDeleted</c> —
+    /// las de la Papelera quedan fuera, igual que <see cref="VaultService.ReplaceTagAcrossVault"/> excluye
+    /// las notas borradas) para el Gestor global de etiquetas (<see cref="TagManagerService"/>). A
+    /// diferencia de mutar <see cref="PolarTask.Tags"/> directamente desde fuera, esto pasa cada tarea
+    /// tocada por el <see cref="Touch(PolarTask)"/> privado ya existente, así que <c>Dirty</c>/
+    /// <c>UpdatedAtUtc</c>/<c>UserId</c> quedan marcados exactamente igual que en cualquier otra edición y
+    /// <see cref="Services.PolarSyncService"/> empuja el cambio a Supabase sin tocar nada del motor de
+    /// sync.</summary>
+    /// <param name="sourceTags">Etiquetas a sustituir/eliminar — debe construirse con
+    /// <see cref="StringComparer.OrdinalIgnoreCase"/>.</param>
+    /// <param name="targetTag">Nombre destino (renombrar/fusionar), o <see langword="null"/> para eliminar
+    /// la etiqueta sin sustituirla.</param>
+    /// <returns>Número de tareas tocadas.</returns>
+    public int ReplaceTagAcrossTasks(IReadOnlySet<string> sourceTags, string? targetTag)
+    {
+        var touched = 0;
+        foreach (var task in Store.Tasks.Where(t => !t.IsDeleted))
+        {
+            if (!TagListRewriter.Matches(task.Tags, sourceTags)) continue;
+
+            task.Tags = TagListRewriter.Apply(task.Tags, sourceTags, targetTag);
+            Touch(task);
+            touched++;
+        }
+
+        if (touched > 0) Save();
+        return touched;
     }
 
     // ===================== Cadena de dependencias (docs/supabase-sync/02) =====================

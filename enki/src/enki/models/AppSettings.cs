@@ -256,6 +256,9 @@ public sealed class AppSettings
     /// <summary>Shows/hides the "Papelera" entry in the main nav.</summary>
     public bool TrashPanelEnabled { get; set; } = true;
 
+    /// <summary>Shows/hides the "Etiquetas" entry (Gestor global de etiquetas) in the main nav.</summary>
+    public bool TagManagerPanelEnabled { get; set; } = true;
+
     // ===================== Zona de peligro (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md) =====================
 
     /// <summary>Whether the four "RequestDelete*" confirmation dialogs (Kanban card, calendar item, Polar

@@ -52,6 +52,7 @@ public sealed partial class SettingsViewModel
         _filesPanelEnabled = _settingsService.Settings.FilesPanelEnabled;
         _sessionsPanelEnabled = _settingsService.Settings.SessionsPanelEnabled;
         _trashPanelEnabled = _settingsService.Settings.TrashPanelEnabled;
+        _tagManagerPanelEnabled = _settingsService.Settings.TagManagerPanelEnabled;
         _habitsPanelEnabled = _settingsService.Settings.HabitsPanelEnabled;
         _statisticsPanelEnabled = _settingsService.Settings.StatisticsPanelEnabled;
         _remindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
@@ -140,6 +141,7 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(FilesPanelEnabled));
         OnPropertyChanged(nameof(SessionsPanelEnabled));
         OnPropertyChanged(nameof(TrashPanelEnabled));
+        OnPropertyChanged(nameof(TagManagerPanelEnabled));
         OnPropertyChanged(nameof(HabitsPanelEnabled));
         OnPropertyChanged(nameof(StatisticsPanelEnabled));
         OnPropertyChanged(nameof(RemindersSidebarEnabled));

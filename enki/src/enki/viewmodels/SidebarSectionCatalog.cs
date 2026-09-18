@@ -19,7 +19,7 @@ public static class SidebarSectionCatalog
     /// and order the sidebar always used before per-user reordering existed.</summary>
     public static readonly string[] DefaultMainSectionOrder =
     [
-        "Dashboard", "Calendar", "Kanban", "Notes", "Files", "Sessions", "Trash", "Habits", "Skills"
+        "Dashboard", "Calendar", "Kanban", "Notes", "Files", "Sessions", "Trash", "Habits", "Skills", "TagManager"
     ];
 
     /// <summary>Keys that start out pinned to the fixed bottom group, in their default order.</summary>
@@ -47,6 +47,7 @@ public static class SidebarSectionCatalog
             ["Files"] = (MaterialIconKind.FileImageOutline, "Nav_Files"),
             ["Sessions"] = (MaterialIconKind.SitemapOutline, "Nav_Sessions"),
             ["Trash"] = (MaterialIconKind.TrashCanOutline, "Nav_Trash"),
+            ["TagManager"] = (MaterialIconKind.TagMultipleOutline, "Nav_TagManager"),
             ["Habits"] = (MaterialIconKind.ClipboardCheckOutline, "Nav_Habits"),
             ["Skills"] = (MaterialIconKind.Brain, "Nav_Skills"),
             ["Reminders"] = (MaterialIconKind.CalendarClockOutline, "Nav_RemindersLabel"),
