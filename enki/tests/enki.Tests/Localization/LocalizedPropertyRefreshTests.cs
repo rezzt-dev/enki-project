@@ -38,6 +38,7 @@ public class LocalizedPropertyRefreshTests
         ["HabitItemViewModel"] = "HabitsViewModel.Reload",
         ["KanbanCardViewModel"] = "KanbanViewModel.Reload → AddColumnViewModel",
         ["NoteCardViewModel"] = "NotesViewModel.Reload",
+        ["NoteVersionItemViewModel"] = "EditorVersionHistoryViewModel.Reload",
         ["NotificationItemViewModel"] = "NotificationsViewModel.Reload y NotificationCenterViewModel.Reload",
         ["PolarTaskRowViewModel"] = "PolarTaskManagementViewModel.Reload",
         ["ReminderItemViewModel"] = "ReminderInboxViewModel.Reload",
@@ -55,6 +56,7 @@ public class LocalizedPropertyRefreshTests
         // texto contra la cultura activa, y quien los muestra sí está en la cadena de refresco.
         ["CustomThemeService"] = "servicio; el resultado se resuelve al leerse",
         ["NoteFile"] = "modelo; lo consume NoteCardViewModel, recreado en NotesViewModel.Reload",
+        ["NoteVersion"] = "modelo; lo consume NoteVersionItemViewModel, recreado en EditorVersionHistoryViewModel.Reload",
         ["PolarSyncService"] = "servicio; LastError se resuelve al leerse",
         ["SlashCommand"] = "modelo; la paleta se reconstruye en EditorViewModel",
         ["VaultFile"] = "modelo; lo consume FilesViewModel.Reload",

@@ -8,6 +8,7 @@
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              xmlns:loc="clr-namespace:enki.Localization"
              xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:services="clr-namespace:enki.Services"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.EditorView"
              x:DataType="vm:EditorViewModel">
@@ -20,6 +21,41 @@
     <Style Selector="Button.linked-card-row:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource Ink05}" />
       <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- Historial de versiones: líneas del comparador (Editor_History_*) — un acento de color a la
+         izquierda en vez de un fondo teñido, para que el texto siga leyéndose con el mismo contraste
+         que el resto del panel en ambos temas. -->
+    <Style Selector="Border.diff-line">
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="BorderThickness" Value="3,0,0,0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-added">
+      <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-removed">
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-added TextBlock.diff-text">
+      <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-removed TextBlock.diff-text">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="TextDecorations" Value="Strikethrough" />
+    </Style>
+    <Style Selector="TextBlock.diff-marker">
+      <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Width" Value="12" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-added TextBlock.diff-marker">
+      <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-removed TextBlock.diff-marker">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
     </Style>
   </UserControl.Styles>
 
@@ -442,7 +478,7 @@
             <!-- Barra de tabs con acento inferior. Cada opción ocupa un tercio del ancho para evitar
                  que etiquetas largas choquen con el borde; el estilo .side-panel-tab dibuja solo la
                  línea inferior, eliminando los bordes dobles del segmented control genérico. -->
-            <Grid Grid.Row="0" ColumnDefinitions="*,*,*">
+            <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*">
               <RadioButton Grid.Column="0" Classes="side-panel-tab" GroupName="SidePanelTab"
                            IsChecked="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Outline}"
                            Command="{Binding SelectSidePanelTabCommand}" CommandParameter="Outline"
@@ -468,6 +504,15 @@
                 <StackPanel Orientation="Horizontal" Spacing="5">
                   <mi:MaterialIcon Kind="ChartBoxOutline" Width="13" Height="13" />
                   <TextBlock Text="{loc:Tr Editor_Stats_TabLabel, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </RadioButton>
+              <RadioButton Grid.Column="3" Classes="side-panel-tab" GroupName="SidePanelTab"
+                           IsChecked="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=History}"
+                           Command="{Binding SelectSidePanelTabCommand}" CommandParameter="History"
+                           ToolTip.Tip="{loc:Tr Editor_History_Tooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <mi:MaterialIcon Kind="RestoreClock" Width="13" Height="13" />
+                  <TextBlock Text="{loc:Tr Editor_History_TabLabel, Converter={StaticResource UpperCaseConverter}}" />
                 </StackPanel>
               </RadioButton>
             </Grid>
@@ -585,6 +630,52 @@
                         <TextBlock Text="{loc:Tr Editor_Stats_ModifiedLabel}" Classes="muted" FontSize="11" />
                         <TextBlock Text="{Binding Stats.ModifiedLabel}" FontSize="12" />
                       </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+
+                <!-- Historial de versiones -->
+                <StackPanel IsVisible="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=History}" Spacing="8">
+                  <ItemsControl ItemsSource="{Binding History.Items}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Spacing="6" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:NoteVersionItemViewModel">
+                        <Border Classes="card" Padding="10,9">
+                          <Grid ColumnDefinitions="*,Auto,Auto">
+                            <StackPanel Grid.Column="0" Spacing="2">
+                              <TextBlock Text="{Binding CreatedLabel}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding TriggerLabel}" Classes="muted" FontSize="10.5" />
+                                <TextBlock Text="•" Classes="muted" FontSize="10.5" />
+                                <TextBlock Text="{Binding SizeLabel}" Classes="muted" FontSize="10.5" />
+                              </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="icon-btn" Width="26" Height="26"
+                                    ToolTip.Tip="{loc:Tr Editor_History_ViewTooltip}"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).History.OpenPreviewCommand}"
+                                    CommandParameter="{Binding .}">
+                              <mi:MaterialIcon Kind="FileCompare" Width="14" Height="14" />
+                            </Button>
+                            <Button Grid.Column="2" Classes="icon-btn icon-btn-danger" Width="26" Height="26"
+                                    ToolTip.Tip="{loc:Tr Editor_History_DeleteVersionTooltip}"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).History.DeleteVersionCommand}"
+                                    CommandParameter="{Binding .}">
+                              <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                            </Button>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <Border IsVisible="{Binding History.IsEmpty}" Classes="card" Padding="14">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="RestoreClock" Width="22" Height="22" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr Editor_History_Empty}" Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" FontSize="11" />
                     </StackPanel>
                   </Border>
                 </StackPanel>
@@ -720,6 +811,84 @@
             </Button>
           </Grid>
         </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: historial de versiones — comparar y restaurar (historial local
+         de versiones por nota) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding History.IsPreviewOpen}">
+      <Border Classes="modal-card" MaxWidth="720" Width="680" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" MaxHeight="560">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="FileCompare" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Editor_History_CompareTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,10,0,14">
+            <TextBlock Text="{Binding History.SelectedVersion.CreatedLabel}" FontWeight="Bold" FontSize="13" />
+            <TextBlock Text="•" Classes="muted" />
+            <TextBlock Text="{Binding History.SelectedVersion.TriggerLabel}" Classes="muted" FontSize="12" />
+            <TextBlock Text="•" Classes="muted" />
+            <TextBlock Text="{Binding History.SelectedVersion.SizeLabel}" Classes="muted" FontSize="12" />
+          </StackPanel>
+
+          <Border Grid.Row="2" Classes="card" Padding="2" MinHeight="220">
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding History.DiffLines}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="0" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="services:DiffLine">
+                    <Border Classes="diff-line"
+                            Classes.diff-added="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}"
+                            Classes.diff-removed="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="diff-marker" Text="+"
+                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}" />
+                        <TextBlock Classes="diff-marker" Text="−"
+                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}" />
+                        <TextBlock Classes="diff-text" Text="{Binding Text}"
+                                   FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
+
+          <!-- Acciones normales: cerrar o pasar a la confirmación de restaurar -->
+          <Grid Grid.Row="3" Margin="0,16,0,0" ColumnDefinitions="*,Auto,Auto" IsVisible="{Binding !History.IsPendingRestore}">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding History.ClosePreviewCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding History.RequestRestoreCommand}">
+              <TextBlock Text="{loc:Tr Editor_History_RestoreButton, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+
+          <!-- Confirmación de restaurar, dentro del mismo diálogo — restaurar siempre crea antes un
+               snapshot "PreRestore" del contenido actual (VaultService.RestoreVersion), así que esta
+               acción nunca es un callejón sin salida. -->
+          <StackPanel Grid.Row="3" Margin="0,16,0,0" Spacing="14" IsVisible="{Binding History.IsPendingRestore}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DangerBrush}" />
+              <TextBlock Text="{loc:Tr Editor_History_ConfirmRestore_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{Binding History.ConfirmRestoreMessage}" FontSize="13" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding History.CancelRestoreCommand}" Margin="0,0,18,0">
+                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding History.ConfirmRestoreCommand}">
+                <TextBlock Text="{loc:Tr Editor_History_ConfirmRestore_Confirm, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Grid>
       </Border>
     </controls:ModalOverlayHost>
 

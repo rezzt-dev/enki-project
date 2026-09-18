@@ -580,6 +580,48 @@
   <data name="Editor_FindReplace_SearchPlaceholder" xml:space="preserve">
     <value>Buscar…</value>
   </data>
+  <data name="Editor_History_CompareTitle" xml:space="preserve">
+    <value>Comparando con la versión actual</value>
+  </data>
+  <data name="Editor_History_ConfirmRestore_Confirm" xml:space="preserve">
+    <value>Restaurar</value>
+  </data>
+  <data name="Editor_History_ConfirmRestore_Message" xml:space="preserve">
+    <value>El contenido actual se reemplazará por la versión de {0}. Antes, Enki guarda una copia de lo que tienes ahora, así que esto siempre se puede deshacer.</value>
+  </data>
+  <data name="Editor_History_ConfirmRestore_Title" xml:space="preserve">
+    <value>¿Restaurar esta versión?</value>
+  </data>
+  <data name="Editor_History_DeleteVersionTooltip" xml:space="preserve">
+    <value>Eliminar esta versión</value>
+  </data>
+  <data name="Editor_History_Empty" xml:space="preserve">
+    <value>Todavía no hay versiones. Enki guarda una copia cada pocos minutos mientras editas, así que siempre vas a tener algo a lo que volver.</value>
+  </data>
+  <data name="Editor_History_RestoreButton" xml:space="preserve">
+    <value>Restaurar esta versión</value>
+  </data>
+  <data name="Editor_History_TabLabel" xml:space="preserve">
+    <value>Historial</value>
+  </data>
+  <data name="Editor_History_Tooltip" xml:space="preserve">
+    <value>Historial de versiones</value>
+  </data>
+  <data name="Editor_History_Trigger_Autosave" xml:space="preserve">
+    <value>Autoguardado</value>
+  </data>
+  <data name="Editor_History_Trigger_Manual" xml:space="preserve">
+    <value>Guardado manual</value>
+  </data>
+  <data name="Editor_History_Trigger_PreBulkOperation" xml:space="preserve">
+    <value>Antes de una actualización masiva</value>
+  </data>
+  <data name="Editor_History_Trigger_PreRestore" xml:space="preserve">
+    <value>Antes de restaurar</value>
+  </data>
+  <data name="Editor_History_ViewTooltip" xml:space="preserve">
+    <value>Comparar con la versión actual</value>
+  </data>
   <data name="Editor_ImagePicker_DialogTitle" xml:space="preserve">
     <value>Insertar imagen</value>
   </data>
@@ -3823,6 +3865,18 @@ Feliz escritura.</value>
   </data>
   <data name="Notification_NoteRenameCollision_Message" xml:space="preserve">
     <value>Ya existía una nota con ese nombre — se guardó como «{0}» en su lugar.</value>
+  </data>
+  <data name="Notification_NoteVersionRestoreFailed_Title" xml:space="preserve">
+    <value>No se pudo restaurar la versión</value>
+  </data>
+  <data name="Notification_NoteVersionRestoreFailed_Message" xml:space="preserve">
+    <value>"{0}" no se restauró: {1}</value>
+  </data>
+  <data name="Notification_NoteVersionRestored_Title" xml:space="preserve">
+    <value>Versión restaurada</value>
+  </data>
+  <data name="Notification_NoteVersionRestored_Message" xml:space="preserve">
+    <value>Se restauró la versión de {0}.</value>
   </data>
   <data name="Settings_Appearance_Theme_NewThemeButton" xml:space="preserve">
     <value>Nuevo tema</value>

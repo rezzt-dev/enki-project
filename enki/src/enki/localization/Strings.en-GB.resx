@@ -580,6 +580,48 @@
   <data name="Editor_FindReplace_SearchPlaceholder" xml:space="preserve">
     <value>Search…</value>
   </data>
+  <data name="Editor_History_CompareTitle" xml:space="preserve">
+    <value>Comparing with the current version</value>
+  </data>
+  <data name="Editor_History_ConfirmRestore_Confirm" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Editor_History_ConfirmRestore_Message" xml:space="preserve">
+    <value>The current content will be replaced with the version from {0}. Enki saves a snapshot of what you have now first, so this can always be undone.</value>
+  </data>
+  <data name="Editor_History_ConfirmRestore_Title" xml:space="preserve">
+    <value>Restore this version?</value>
+  </data>
+  <data name="Editor_History_DeleteVersionTooltip" xml:space="preserve">
+    <value>Delete this version</value>
+  </data>
+  <data name="Editor_History_Empty" xml:space="preserve">
+    <value>No versions yet. Enki keeps a snapshot every few minutes while you edit, so there's always something to fall back to.</value>
+  </data>
+  <data name="Editor_History_RestoreButton" xml:space="preserve">
+    <value>Restore this version</value>
+  </data>
+  <data name="Editor_History_TabLabel" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="Editor_History_Tooltip" xml:space="preserve">
+    <value>Version history</value>
+  </data>
+  <data name="Editor_History_Trigger_Autosave" xml:space="preserve">
+    <value>Autosave</value>
+  </data>
+  <data name="Editor_History_Trigger_Manual" xml:space="preserve">
+    <value>Manual save</value>
+  </data>
+  <data name="Editor_History_Trigger_PreBulkOperation" xml:space="preserve">
+    <value>Before bulk update</value>
+  </data>
+  <data name="Editor_History_Trigger_PreRestore" xml:space="preserve">
+    <value>Before restoring</value>
+  </data>
+  <data name="Editor_History_ViewTooltip" xml:space="preserve">
+    <value>Compare with current version</value>
+  </data>
   <data name="Editor_ImagePicker_DialogTitle" xml:space="preserve">
     <value>Insert image</value>
   </data>
@@ -3823,6 +3865,18 @@ Happy writing.</value>
   </data>
   <data name="Notification_NoteRenameCollision_Message" xml:space="preserve">
     <value>A note with that name already existed — saved as '{0}' instead.</value>
+  </data>
+  <data name="Notification_NoteVersionRestoreFailed_Title" xml:space="preserve">
+    <value>Couldn't restore version</value>
+  </data>
+  <data name="Notification_NoteVersionRestoreFailed_Message" xml:space="preserve">
+    <value>"{0}" wasn't restored: {1}</value>
+  </data>
+  <data name="Notification_NoteVersionRestored_Title" xml:space="preserve">
+    <value>Version restored</value>
+  </data>
+  <data name="Notification_NoteVersionRestored_Message" xml:space="preserve">
+    <value>Restored the version from {0}.</value>
   </data>
   <data name="Settings_Appearance_Theme_NewThemeButton" xml:space="preserve">
     <value>New theme</value>

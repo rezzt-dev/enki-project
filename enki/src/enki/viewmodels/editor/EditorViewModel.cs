@@ -126,6 +126,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     public EditorOutlineViewModel Outline { get; }
     public EditorBacklinksViewModel Backlinks { get; }
     public EditorStatsViewModel Stats { get; }
+    public EditorVersionHistoryViewModel History { get; }
     public SlashCommandsViewModel SlashCommands { get; } = new SlashCommandsViewModel();
     public NoteLinkPickerViewModel NoteLinkPicker { get; } = new NoteLinkPickerViewModel();
     public FindReplaceViewModel FindReplace { get; } = new FindReplaceViewModel();
@@ -134,7 +135,13 @@ public sealed partial class EditorViewModel : ViewModelBase
     private string _activeSidePanelTab = "Outline";
 
     [RelayCommand]
-    private void SelectSidePanelTab(string tab) => ActiveSidePanelTab = tab;
+    private void SelectSidePanelTab(string tab)
+    {
+        ActiveSidePanelTab = tab;
+        // Picks up any snapshot captured since this tab was last shown — an autosave tick elsewhere in this
+        // same editing session, or a pre-bulk-operation snapshot from a rename that touched this note.
+        if (tab == "History") History.Reload();
+    }
 
     /// <summary>Mirrors <see cref="EditorPreferences.SidePanelVisible"/> (the app-wide, shared toggle the
     /// Settings page also writes to) so the button next to the header can bind its icon/tooltip per tab
@@ -382,6 +389,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         Outline = new EditorOutlineViewModel(Document);
         Backlinks = new EditorBacklinksViewModel(note, vaultService, onOpenNote ?? (_ => { }));
         Stats = new EditorStatsViewModel(Document, note.FullPath);
+        History = new EditorVersionHistoryViewModel(vaultService, note, notificationService, () => Document.Text, ApplyRestoredContent);
         RefreshWikiLinkScopeNotes();
 
         _saveTimer = new DispatcherTimer { Interval = SaveDebounceDelay };
@@ -520,6 +528,30 @@ public sealed partial class EditorViewModel : ViewModelBase
         _onChanged();
     }
 
+    /// <summary>Applies content <see cref="History"/> just restored from an older version straight into this
+    /// tab — the restore itself already wrote the new content to disk (<see cref="VaultService.RestoreVersion"/>),
+    /// so this only has to reconcile the live tab's own state with what's now on disk: the document text,
+    /// the dirty/save-status indicators, and everything derived from content (tags, backlinks, stats,
+    /// wikilink targets) — the same set <see cref="SyncRenamedNote"/> refreshes after a rename, since a
+    /// restore can just as easily have changed the note's frontmatter tags as any other edit would.</summary>
+    private void ApplyRestoredContent(string content)
+    {
+        _saveTimer.Stop();
+        _pendingText = null;
+        Document.Text = content;
+        _lastSavedContent = content;
+        IsDirty = false;
+        _lastSavedUtc = DateTime.UtcNow;
+        SaveStatus = FormatSaveStatus(_lastSavedUtc);
+
+        Note = _vaultService.GetNote(Note.FullPath) ?? Note;
+        TagsInput = string.Join(", ", Note.Tags);
+        RefreshWikiLinkScopeNotes();
+        Backlinks.Refresh(Note);
+        Stats.Refresh();
+        _onChanged();
+    }
+
     /// <summary>Shared by both the proactive check and the defensive catch in <see cref="Save"/> — leaves
     /// <paramref name="currentText"/> pending and restarts the save timer so the next automatic tick
     /// retries on its own, without requiring another keystroke.</summary>
@@ -551,6 +583,7 @@ public sealed partial class EditorViewModel : ViewModelBase
             : FormatSaveStatus(_lastSavedUtc);
         Stats.RefreshLocalizedLabels();
         FindReplace.RefreshLocalizedLabels();
+        History.RefreshLocalizedLabels();
     }
 
     /// <summary>"Saved · HH:mm" (Fase 2 §2) instead of a bare "Saved" — a plain status word gives no
@@ -632,6 +665,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         RefreshWikiLinkScopeNotes();
         Backlinks.Refresh(Note);
         Stats.Refresh();
+        History.Retarget(Note);
         _onChanged();
     }
 
@@ -648,6 +682,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         RefreshWikiLinkScopeNotes();
         Backlinks.Refresh(Note);
         Stats.Refresh();
+        History.Retarget(Note);
     }
 
     [RelayCommand]

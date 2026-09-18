@@ -12,7 +12,7 @@ using enki.Models;
 
 namespace enki.Services;
 
-public sealed class VaultService
+public sealed partial class VaultService
 {
     /// <summary>Filename of a session's manifest, duplicated from <see cref="SessionService"/>'s own
     /// constant — <see cref="ResolveEncryptedSessionRoot"/> reads it directly instead of going through
@@ -698,6 +698,7 @@ public sealed class VaultService
         var oldPath = note.FullPath;
         note.FullPath = MovePreservingEncryption(note.FullPath, destinationFolderPath);
         MoveAttachmentsFolder(oldPath, note.FullPath);
+        MoveVersionHistory(oldPath, note.FullPath);
         _noteCache.Invalidate(oldPath);
         _noteCache.Invalidate(note.FullPath);
         return note;
@@ -978,8 +979,29 @@ public sealed class VaultService
     public void WriteContent(NoteFile note, string content)
     {
         EnsureVaultAvailable();
+        CaptureAutosaveSnapshotBeforeWrite(note);
         WriteFileAtomic(note.FullPath, content);
         CacheAfterWrite(note.FullPath, content);
+    }
+
+    /// <summary>Snapshots whatever <paramref name="note"/> holds on disk right now — the content this write
+    /// is about to replace — before it's gone for good (historial local de versiones, see
+    /// <see cref="CaptureSnapshot"/>/<see cref="MinimumAutosaveInterval"/> for the throttling that keeps this
+    /// from firing on every 600ms autosave tick). Deliberately tolerant of any failure reading the previous
+    /// content (locked session race, transient I/O) — losing one history checkpoint is recoverable; turning a
+    /// working save into a failed one because its safety net stumbled is not.</summary>
+    private void CaptureAutosaveSnapshotBeforeWrite(NoteFile note)
+    {
+        if (!File.Exists(note.FullPath)) return;
+        try
+        {
+            var previous = SafeReadContent(note.FullPath);
+            CaptureSnapshot(note, previous, NoteVersionTrigger.Autosave);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            LogService.Warning($"No se pudo leer el contenido previo de '{note.FullPath}' para el historial de versiones", ex);
+        }
     }
 
     /// <param name="initialContent">Contenido con el que nace la nota. Null —lo habitual— produce el
@@ -1189,6 +1211,7 @@ public sealed class VaultService
         Directory.CreateDirectory(TrashPath);
         var trashPath = MoveWithUniqueSuffix(originalPath, TrashPath);
         if (wasEncrypted) RecordTrashOrigin(trashPath, originalPath);
+        TrashVersionHistory(originalPath, trashPath);
 
         _noteCache.Invalidate(originalPath);
         InvalidateVaultSizeCache();
@@ -1222,6 +1245,7 @@ public sealed class VaultService
 
         note.FullPath = MoveWithUniqueSuffix(trashPath, destinationFolder);
         if (origins.Remove(trashPath)) WriteTrashOrigins(origins);
+        RestoreNoteHistory(trashPath, note.FullPath);
 
         _noteCache.Invalidate(trashPath);
         InvalidateVaultSizeCache();
@@ -1234,6 +1258,7 @@ public sealed class VaultService
         _noteCache.Invalidate(note.FullPath);
         InvalidateVaultSizeCache();
         RemoveTrashOrigin(note.FullPath);
+        PurgeNoteHistory(note.FullPath);
     }
 
     /// <summary>Renames <paramref name="note"/>'s file and, unlike before Fase 5, keeps the rest of the
@@ -1272,6 +1297,7 @@ public sealed class VaultService
 
         note.FullPath = newPath;
         MoveAttachmentsFolder(oldPath, newPath);
+        MoveVersionHistory(oldPath, newPath);
         RewriteWikilinksToRenamedNote(notesBeforeRename, oldPath, Path.GetFileNameWithoutExtension(newPath));
 
         // The rewrite pass above may have touched any note in the pre-rename snapshot (plus the renamed
@@ -1305,6 +1331,14 @@ public sealed class VaultService
 
             // The renamed note itself now lives at its new path on disk; every other note keeps its own.
             var writePath = PathsEqual(noteFile.FullPath, oldPath) ? renamedNotePath : noteFile.FullPath;
+
+            // This rewrite can silently touch every note in the vault that linked to the renamed one — none
+            // of them go through EditorViewModel.Save, so none get the usual autosave-triggered history
+            // checkpoint. Snapshot each one's pre-rewrite content here instead, so a rename's link-fixup
+            // cascade is recoverable the same way a bad restore is (historial local de versiones).
+            var snapshotTarget = noteFile.Clone();
+            snapshotTarget.FullPath = writePath;
+            CaptureSnapshot(snapshotTarget, content, NoteVersionTrigger.PreBulkOperation);
 
             try
             {
