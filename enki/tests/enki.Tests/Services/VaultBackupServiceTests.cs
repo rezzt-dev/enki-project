@@ -14,6 +14,7 @@ namespace enki.Tests.Services;
 /// aborta el resto de la copia.</summary>
 public class VaultBackupServiceTests : IDisposable
 {
+    private readonly TestPolarCredentialStore _credentialStore = new();
     private readonly string _root =
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
 
@@ -135,7 +136,7 @@ public class VaultBackupServiceTests : IDisposable
     [Fact]
     public void CreateBackup_RedactsPolarTokensInsideSettingsJson()
     {
-        var settings = new SettingsService(_appDataDirectory);
+        var settings = new SettingsService(_appDataDirectory, _credentialStore);
         settings.Settings.PolarAccessToken = "super-secret-access-token";
         settings.Settings.PolarRefreshToken = "super-secret-refresh-token";
         settings.Settings.Theme = "Dark";
@@ -155,7 +156,34 @@ public class VaultBackupServiceTests : IDisposable
 
         Assert.DoesNotContain("super-secret-access-token", content);
         Assert.DoesNotContain("super-secret-refresh-token", content);
-        Assert.Contains("\"Dark\"", content);
+        Assert.Contains("\"PolarLinked\"", content);
+        using var vaultReader = new StreamReader(archive.GetEntry("vault/.enki/settings.json")!.Open());
+        Assert.Contains("\"Dark\"", vaultReader.ReadToEnd());
+    }
+
+    [Fact]
+    public void CreateBackup_RedactsLegacyTokensInGlobalAndVaultSettings()
+    {
+        var settings = new SettingsService(_appDataDirectory, _credentialStore);
+        var vault = new VaultService(settings);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        File.WriteAllText(Path.Combine(_appDataDirectory, "settings.json"),
+            "{\"PolarAccessToken\":\"global-secret\",\"Other\":7}");
+        var vaultSettings = Path.Combine(_vaultPath, ".enki", "settings.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(vaultSettings)!);
+        File.WriteAllText(vaultSettings, "{\"PolarRefreshToken\":\"vault-secret\",\"Other\":8}");
+
+        var destination = Path.Combine(_root, "legacy-backup.zip");
+        new VaultBackupService(vault, _appDataDirectory).CreateBackup(destination);
+
+        using var archive = ZipFile.OpenRead(destination);
+        foreach (var entryName in new[] { "app-data/settings.json", "vault/.enki/settings.json" })
+        {
+            using var reader = new StreamReader(archive.GetEntry(entryName)!.Open());
+            var json = reader.ReadToEnd();
+            Assert.DoesNotContain("secret", json);
+            Assert.Contains("Other", json);
+        }
     }
 
     // ===================== Backup automático (Fase 1) =====================

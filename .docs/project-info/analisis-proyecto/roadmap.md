@@ -338,12 +338,9 @@ quedó sin uso tras reordenar `RestoreTask` y se eliminó de los 7 `.resx`. Suit
       `PolarAccessToken`/`PolarRefreshToken` fuera de `settings.json` hacia un almacén seguro del SO
       (DPAPI en Windows, Secret Service/libsecret en Linux vía `Avalonia`/interoperabilidad nativa, Keychain
       en macOS); si no es viable a corto plazo, documentar la decisión y su riesgo aceptado explícitamente
-      en `docs/supabase-sync/`. (análisis §2, §5) — evaluado y **no implementado** esta fase: riesgo
-      aceptado documentado en
-      [decision-almacenamiento-credenciales-polar.md](decision-almacenamiento-credenciales-polar.md). Vive
-      junto a este roadmap (en `docs/analisis-proyecto/`) en vez de en `docs/supabase-sync/`: esa carpeta no
-      existe hoy en el árbol de trabajo (borrada sin commitear, ver Fase 8, "Higiene de documentación") y
-      restaurarla no era parte del alcance de esta fase.
+      en `docs/supabase-sync/`. (análisis §2, §5) — evaluado en esta fase e implementado después con
+      DPAPI, libsecret y Keychain. La migración y sus límites se documentan en
+      [decision-almacenamiento-credenciales-polar.md](decision-almacenamiento-credenciales-polar.md).
 
 **Tests añadidos**: `PolarSyncServiceContractTests` — el escenario completo del hallazgo (fila `Dirty`
 estampada con la cuenta A, se re-vincula como cuenta B, `SyncNowAsync()` no la empuja y no aparece en ningún

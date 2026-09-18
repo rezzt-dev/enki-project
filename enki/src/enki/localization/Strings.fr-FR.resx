@@ -1734,6 +1734,15 @@
   <data name="Polar_Auth_Error_Timeout" xml:space="preserve">
     <value>Le délai de connexion à Supabase a expiré.</value>
   </data>
+  <data name="Notification_PolarCredentialsUnavailable_Title" xml:space="preserve">
+    <value>Stockage sécurisé indisponible</value>
+  </data>
+  <data name="Notification_PolarCredentialsUnavailable_Message" xml:space="preserve">
+    <value>Les jetons Polar n’ont pas pu être protégés ou récupérés. Vérifiez que le trousseau système est disponible ; Enki réessaiera la migration.</value>
+  </data>
+  <data name="Polar_Auth_Error_SecureStorage" xml:space="preserve">
+    <value>La session n’a pas pu être enregistrée dans le stockage sécurisé du système.</value>
+  </data>
   <data name="Polar_Auth_Error_UnexpectedResponse" xml:space="preserve">
     <value>Réponse inattendue du serveur d'authentification.</value>
   </data>

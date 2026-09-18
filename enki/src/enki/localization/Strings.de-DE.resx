@@ -1734,6 +1734,15 @@
   <data name="Polar_Auth_Error_Timeout" xml:space="preserve">
     <value>Zeitüberschreitung beim Verbinden mit Supabase.</value>
   </data>
+  <data name="Notification_PolarCredentialsUnavailable_Title" xml:space="preserve">
+    <value>Sicherer Speicher nicht verfügbar</value>
+  </data>
+  <data name="Notification_PolarCredentialsUnavailable_Message" xml:space="preserve">
+    <value>Polar-Token konnten nicht geschützt oder abgerufen werden. Prüfen Sie, ob der Systemschlüsselbund verfügbar ist; Enki versucht die Migration erneut.</value>
+  </data>
+  <data name="Polar_Auth_Error_SecureStorage" xml:space="preserve">
+    <value>Die Sitzung konnte nicht im sicheren Systemspeicher gespeichert werden.</value>
+  </data>
   <data name="Polar_Auth_Error_UnexpectedResponse" xml:space="preserve">
     <value>Unerwartete Antwort vom Authentifizierungsserver.</value>
   </data>

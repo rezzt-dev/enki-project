@@ -115,7 +115,12 @@ public sealed partial class SettingsViewModel
     [RelayCommand]
     private void UnlinkPolar()
     {
-        _polarAuthService.Unlink();
+        try { _polarAuthService.Unlink(); }
+        catch (System.IO.IOException)
+        {
+            PolarLinkError = LocalizationService.Instance["Polar_Auth_Error_SecureStorage"];
+            return;
+        }
         PolarEmailInput = string.Empty;
         PolarPasswordInput = string.Empty;
         PolarLinkError = null;

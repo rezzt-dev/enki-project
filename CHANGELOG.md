@@ -15,6 +15,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 #### CORREGIDO
 - corregir los enlaces de documentacion y los iconos de ambos README, ademas de las referencias y enlaces relativos de `AGENTS.md` y `.docs/project-info/`, para que apunten a archivos existentes.
 
+#### SEGURIDAD
+- proteger los tokens de sesion de polar con dpapi en windows, secret service mediante libsecret en linux y keychain en macos, fuera de `settings.json`.
+- migrar los tokens heredados solo tras confirmar su escritura segura y avisar de los fallos sin guardar nuevas sesiones en texto plano.
+- mantener la redaccion de tokens en la exportacion de ajustes y los backups de `settings.json` global y del vault, incluidos los archivos heredados.
+
 ### ENGLISH
 
 #### CHANGED
@@ -22,6 +27,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### FIXED
 - fix documentation links and icons in both README files, along with references and relative links in `AGENTS.md` and `.docs/project-info/`, so they point to existing files.
+
+#### SECURITY
+- protect polar session tokens with dpapi on windows, secret service through libsecret on linux, and keychain on macos, outside `settings.json`.
+- migrate legacy tokens only after secure storage succeeds and report failures without saving new sessions in plain text.
+- keep tokens redacted in settings exports and backups of global and vault `settings.json`, including legacy files.
 
 ### ENTRADAS ANTERIORES
 

@@ -23,6 +23,7 @@ public class PolarTaskManagementViewModelTests : IDisposable
     private const string BaseUrl = "https://fake.supabase.test";
     private const string AnonKey = "anon-key-123";
 
+    private readonly TestPolarCredentialStore _credentialStore = new();
     private readonly string _storageDirectory =
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
     private readonly FakeHttpMessageHandler _handler = new();
@@ -35,7 +36,7 @@ public class PolarTaskManagementViewModelTests : IDisposable
     private (PolarTaskManagementViewModel Vm, PolarSyncService Sync, PolarTaskService TaskService) CreateViewModel(
         bool confirmBeforeDelete = true)
     {
-        var settingsService = new SettingsService(_storageDirectory);
+        var settingsService = new SettingsService(_storageDirectory, _credentialStore);
         settingsService.Settings.PolarLinked = true;
         settingsService.Settings.PolarUserId = "user-1";
         settingsService.Settings.PolarAccessToken = "test-access-token";

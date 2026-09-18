@@ -54,6 +54,12 @@ public sealed partial class MainWindowViewModel
         _sessionService = new SessionService(_vaultService);
         _kanbanService = new KanbanService(_vaultService, deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
         _notificationService = new NotificationService(_settingsService, _vaultService);
+        void NotifyCredentialStoreFailure() => _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_PolarCredentialsUnavailable_Title"),
+            LocalizedTextFormatter.Format("Notification_PolarCredentialsUnavailable_Message"),
+            Models.NotificationSeverity.Error);
+        _settingsService.CredentialStoreFailed += NotifyCredentialStoreFailure;
+        if (_settingsService.CredentialStoreUnavailable) NotifyCredentialStoreFailure();
         _dismissedReminderService = new DismissedReminderService(_vaultService);
         // Fase 10 (docs/analisis-proyecto/roadmap.md): una tarjeta borrada para siempre no debe dejar un
         // descarte de recordatorio huérfano apuntando a un id que ya no existe.

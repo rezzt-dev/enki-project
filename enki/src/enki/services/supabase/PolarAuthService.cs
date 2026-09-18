@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.IO;
 using System.Net.Http.Json;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -46,7 +47,9 @@ public sealed class PolarAuthService
     /// keeping a single source of truth.</summary>
     public bool IsConfigured => _isConfigured;
 
-    public bool IsLinked => _isConfigured && _settingsService.Settings.PolarLinked;
+    public bool IsLinked => _isConfigured && _settingsService.Settings.PolarLinked &&
+        !(_settingsService.CredentialStoreUnavailable &&
+          string.IsNullOrEmpty(_settingsService.Settings.PolarAccessToken));
     public string? LinkedEmail => _settingsService.Settings.PolarEmail;
     public string? UserId => _settingsService.Settings.PolarUserId;
     public string? AccessToken => _settingsService.Settings.PolarAccessToken;
@@ -112,11 +115,22 @@ public sealed class PolarAuthService
         {
             return (false, LocalizationService.Instance["Polar_Auth_Error_Timeout"]);
         }
+        catch (IOException ex)
+        {
+            LogService.Warning("No se pudo guardar la sesión Polar", ex);
+            return (false, LocalizationService.Instance["Polar_Auth_Error_SecureStorage"]);
+        }
     }
 
     public void Unlink()
     {
         var settings = _settingsService.Settings;
+        var previous = new PolarCredentials(settings.PolarAccessToken, settings.PolarRefreshToken);
+        var previousLinked = settings.PolarLinked;
+        var previousEmail = settings.PolarEmail;
+        var previousUserId = settings.PolarUserId;
+        var previousExpiry = settings.PolarAccessTokenExpiresAtUtcMs;
+        var previousSync = settings.PolarLastSyncAtUtcMs;
         settings.PolarLinked = false;
         settings.PolarUserId = null;
         settings.PolarEmail = null;
@@ -124,7 +138,18 @@ public sealed class PolarAuthService
         settings.PolarRefreshToken = null;
         settings.PolarAccessTokenExpiresAtUtcMs = 0;
         settings.PolarLastSyncAtUtcMs = 0;
-        _settingsService.Save();
+        try { _settingsService.Save(); }
+        catch (IOException)
+        {
+            settings.PolarLinked = previousLinked;
+            settings.PolarEmail = previousEmail;
+            settings.PolarUserId = previousUserId;
+            settings.PolarAccessToken = previous.AccessToken;
+            settings.PolarRefreshToken = previous.RefreshToken;
+            settings.PolarAccessTokenExpiresAtUtcMs = previousExpiry;
+            settings.PolarLastSyncAtUtcMs = previousSync;
+            throw;
+        }
         LinkStateChanged?.Invoke();
     }
 
@@ -167,7 +192,12 @@ public sealed class PolarAuthService
             settings.PolarAccessToken = body.AccessToken;
             settings.PolarRefreshToken = body.RefreshToken ?? settings.PolarRefreshToken;
             settings.PolarAccessTokenExpiresAtUtcMs = DateTimeOffset.UtcNow.AddSeconds(body.ExpiresIn).ToUnixTimeMilliseconds();
-            _settingsService.Save();
+            try { _settingsService.Save(); }
+            catch (IOException ex)
+            {
+                LogService.Warning("No se pudo actualizar la sesión Polar en el almacén seguro", ex);
+                return;
+            }
         }
         catch (HttpRequestException)
         {
@@ -182,13 +212,28 @@ public sealed class PolarAuthService
     private void ApplySession(string email, AuthTokenDto body)
     {
         var settings = _settingsService.Settings;
+        var previous = new PolarCredentials(settings.PolarAccessToken, settings.PolarRefreshToken);
+        var previousLinked = settings.PolarLinked;
+        var previousEmail = settings.PolarEmail;
+        var previousUserId = settings.PolarUserId;
+        var previousExpiry = settings.PolarAccessTokenExpiresAtUtcMs;
         settings.PolarLinked = true;
         settings.PolarEmail = email;
         settings.PolarUserId = body.User?.Id;
         settings.PolarAccessToken = body.AccessToken;
         settings.PolarRefreshToken = body.RefreshToken;
         settings.PolarAccessTokenExpiresAtUtcMs = DateTimeOffset.UtcNow.AddSeconds(body.ExpiresIn).ToUnixTimeMilliseconds();
-        _settingsService.Save();
+        try { _settingsService.Save(); }
+        catch (IOException)
+        {
+            settings.PolarLinked = previousLinked;
+            settings.PolarEmail = previousEmail;
+            settings.PolarUserId = previousUserId;
+            settings.PolarAccessToken = previous.AccessToken;
+            settings.PolarRefreshToken = previous.RefreshToken;
+            settings.PolarAccessTokenExpiresAtUtcMs = previousExpiry;
+            throw;
+        }
         LinkStateChanged?.Invoke();
     }
 

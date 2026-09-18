@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using enki.Models;
 
 namespace enki.Services;
@@ -50,7 +51,11 @@ public sealed class VaultBackupService
                 {
                     var relative = Path.GetRelativePath(_vaultService.VaultPath, file).Replace(Path.DirectorySeparatorChar, '/');
                     var entryName = "vault/" + relative;
-                    if (!TryAddFile(archive, file, entryName)) failedEntries.Add(entryName);
+                    var isVaultSettings = string.Equals(relative, ".enki/settings.json", StringComparison.OrdinalIgnoreCase);
+                    var added = isVaultSettings
+                        ? TryAddRedactedSettingsFile(archive, file, entryName)
+                        : TryAddFile(archive, file, entryName);
+                    if (!added) failedEntries.Add(entryName);
                 }
             }
 
@@ -59,10 +64,8 @@ public sealed class VaultBackupService
                 foreach (var file in Directory.EnumerateFiles(_appDataDirectory, "*.json", SearchOption.TopDirectoryOnly))
                 {
                     var entryName = "app-data/" + Path.GetFileName(file);
-                    // settings.json holds a live Polar/Supabase session (docs/analisis-proyecto/roadmap.md,
-                    // Fase 4) — the backup must not become an unencrypted copy of a working login sitting in
-                    // a .zip on disk. Every other app-data file (kanban, notifications, reminders,
-                    // polar-tasks...) has no credentials in it and is copied as-is.
+                    // Un settings.json heredado puede conservar una sesión Polar si todavía no se pudo
+                    // migrar. El backup siempre redacta sus tokens, igual que los del vault.
                     var added = string.Equals(Path.GetFileName(file), "settings.json", StringComparison.OrdinalIgnoreCase)
                         ? TryAddRedactedSettingsFile(archive, file, entryName)
                         : TryAddFile(archive, file, entryName);
@@ -151,21 +154,18 @@ public sealed class VaultBackupService
         }
     }
 
-    /// <summary>Same as <see cref="TryAddFile"/> but for <c>settings.json</c> specifically: reads it,
-    /// nulls out <see cref="AppSettings.PolarAccessToken"/>/<see cref="AppSettings.PolarRefreshToken"/>, and
-    /// writes the redacted JSON into the zip entry instead of copying the raw file
-    /// (docs/analisis-proyecto/roadmap.md, Fase 4). A settings.json that fails to parse is skipped (counted
-    /// as a failed entry, same as a locked file) rather than falling back to including it unredacted.</summary>
+    /// <summary>Elimina los tokens de cualquier settings.json incluido en el backup, conservando incluso
+    /// propiedades que una versión futura de Enki todavía no conozca. Si falla el análisis, omite la
+    /// entrada y la registra como fallida; nunca copia el archivo sin redactar.</summary>
     private static bool TryAddRedactedSettingsFile(ZipArchive archive, string sourcePath, string entryName)
     {
         try
         {
-            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(sourcePath));
+            var settings = JsonNode.Parse(File.ReadAllText(sourcePath)) as JsonObject;
             if (settings is null) return false;
-
-            settings.PolarAccessToken = null;
-            settings.PolarRefreshToken = null;
-            var redactedJson = JsonSerializer.Serialize(settings, IndentedJsonOptions);
+            settings.Remove(nameof(AppSettings.PolarAccessToken));
+            settings.Remove(nameof(AppSettings.PolarRefreshToken));
+            var redactedJson = settings.ToJsonString(IndentedJsonOptions);
 
             var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
             using var entryStream = entry.Open();

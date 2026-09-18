@@ -109,7 +109,7 @@ public sealed class AppSettings
     // ===================== Vínculo con Polar (Ajustes › Cuenta) =====================
     // See docs/supabase-sync/ — enabling this unlocks the "Gestión de tareas" view in Kanban and turns
     // on background sync (task lists/tasks/subtasks/reminders) against the shared Supabase project.
-    // Los tokens se quedan en el archivo global de instalación; nunca viajan con el vault.
+    // Los tokens viven en el almacén seguro del usuario; nunca viajan con el vault.
 
     public bool PolarLinked { get; set; }
     public string? PolarUserId { get; set; }

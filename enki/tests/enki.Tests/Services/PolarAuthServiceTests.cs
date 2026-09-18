@@ -21,6 +21,7 @@ public class PolarAuthServiceTests : IDisposable
     private const string BaseUrl = "https://fake.supabase.test";
     private const string AnonKey = "anon-key-123";
 
+    private readonly TestPolarCredentialStore _credentialStore = new();
     private readonly string _storageDirectory =
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
     private readonly FakeHttpMessageHandler _handler = new();
@@ -29,7 +30,7 @@ public class PolarAuthServiceTests : IDisposable
 
     public PolarAuthServiceTests()
     {
-        _settingsService = new SettingsService(_storageDirectory);
+        _settingsService = new SettingsService(_storageDirectory, _credentialStore);
         _auth = new PolarAuthService(_settingsService, _handler, BaseUrl, AnonKey);
     }
 
@@ -97,6 +98,24 @@ public class PolarAuthServiceTests : IDisposable
         var request = Assert.Single(_handler.Requests);
         Assert.Equal($"{BaseUrl}/auth/v1/token?grant_type=password", request.RequestUri!.ToString());
         Assert.Equal(AnonKey, request.Headers.GetValues("apikey").Single());
+    }
+
+    [Fact]
+    public async Task LinkAsync_StorageFailure_LeavesAccountUnlinked()
+    {
+        _credentialStore.FailWrites = true;
+        _handler.Enqueue(JsonResponse(HttpStatusCode.OK, new
+        {
+            access_token = "access-1", refresh_token = "refresh-1", expires_in = 3600,
+            user = new { id = "user-1" }
+        }));
+
+        var (success, error) = await _auth.LinkAsync("user@example.com", "hunter2");
+
+        Assert.False(success);
+        Assert.Equal(LocalizationService.Instance["Polar_Auth_Error_SecureStorage"], error);
+        Assert.False(_auth.IsLinked);
+        Assert.Null(_settingsService.Settings.PolarAccessToken);
     }
 
     [Fact]

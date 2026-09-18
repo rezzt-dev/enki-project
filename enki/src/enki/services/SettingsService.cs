@@ -12,6 +12,9 @@ public sealed class SettingsService
     private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
 
     private readonly string _settingsPath;
+    private readonly IPolarCredentialStore _credentialStore;
+    private PolarCredentials _persistedCredentials = new(null, null);
+    private bool _legacyCredentialsPending;
     private string? _vaultSettingsPath;
     private static readonly string[] InstallationKeys =
     [
@@ -22,6 +25,8 @@ public sealed class SettingsService
     ];
     /// <summary>Notifica un guardado completado para actualizar las preferencias visibles.</summary>
     public event Action? SettingsChanged;
+    /// <summary>Se dispara cuando una escritura de tokens falla por falta de acceso al almacén seguro.</summary>
+    public event Action? CredentialStoreFailed;
 
     public AppSettings Settings { get; private set; }
 
@@ -33,6 +38,10 @@ public sealed class SettingsService
     /// consultado por el compositor (<c>MainWindowViewModel</c>) justo después de construir este servicio
     /// para avisar al usuario en vez de resetear los ajustes en silencio.</summary>
     public bool LoadedFromCorruptData { get; private set; }
+
+    /// <summary>El almacén seguro no estuvo disponible al cargar la sesión. Si había tokens heredados,
+    /// permanecen en settings.json hasta que una migración posterior pueda completarse.</summary>
+    public bool CredentialStoreUnavailable { get; private set; }
 
     /// <summary>Ruta del archivo global de instalación y autenticación. Las preferencias activas
     /// se guardan en <c>&lt;vault&gt;/.enki/settings.json</c>.</summary>
@@ -52,10 +61,14 @@ public sealed class SettingsService
     /// running app, but lets tests point persistence at a throwaway directory instead of the developer's
     /// real settings file (see enki.Tests).</param>
     public SettingsService(string? storageDirectory = null)
+        : this(storageDirectory, null) { }
+
+    internal SettingsService(string? storageDirectory, IPolarCredentialStore? credentialStore)
     {
         var configDir = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(configDir);
         _settingsPath = Path.Combine(configDir, "settings.json");
+        _credentialStore = credentialStore ?? PolarCredentialStore.Create(configDir);
         Settings = Load();
         _lastKnownVaultPath = Settings.VaultPath;
         if (!string.IsNullOrWhiteSpace(Settings.VaultPath) && Directory.Exists(Settings.VaultPath))
@@ -64,7 +77,39 @@ public sealed class SettingsService
 
     private AppSettings Load()
     {
-        if (JsonFileStore.TryLoad<AppSettings>(_settingsPath, out var loaded)) return loaded!;
+        if (JsonFileStore.TryLoad<AppSettings>(_settingsPath, out var loaded))
+        {
+            var legacy = new PolarCredentials(loaded!.PolarAccessToken, loaded.PolarRefreshToken);
+            _legacyCredentialsPending = legacy.AccessToken is not null || legacy.RefreshToken is not null;
+            if (!loaded.PolarLinked && !_legacyCredentialsPending) return loaded;
+            try
+            {
+                var secure = _credentialStore.Read();
+                if (secure is null && _legacyCredentialsPending)
+                {
+                    _credentialStore.Write(legacy);
+                    secure = legacy;
+                }
+                if (secure is not null)
+                {
+                    loaded.PolarAccessToken = secure.AccessToken;
+                    loaded.PolarRefreshToken = secure.RefreshToken;
+                    _persistedCredentials = secure;
+                }
+                if (_legacyCredentialsPending)
+                {
+                    RemoveLegacyCredentialsFromDisk();
+                    _legacyCredentialsPending = false;
+                }
+            }
+            catch (Exception ex) when (IsCredentialStoreFailure(ex))
+            {
+                CredentialStoreUnavailable = true;
+                if (_legacyCredentialsPending) _persistedCredentials = legacy;
+                LogService.Warning("No se pudo acceder al almacén seguro de Polar", ex);
+            }
+            return loaded;
+        }
 
         if (File.Exists(_settingsPath)) LoadedFromCorruptData = true;
         return new AppSettings();
@@ -82,6 +127,29 @@ public sealed class SettingsService
     /// write and get silently overwritten.</summary>
     public void Save()
     {
+        var currentCredentials = new PolarCredentials(Settings.PolarAccessToken, Settings.PolarRefreshToken);
+        if (_legacyCredentialsPending || currentCredentials != _persistedCredentials)
+        {
+            try
+            {
+                if (currentCredentials.AccessToken is null && currentCredentials.RefreshToken is null)
+                    _credentialStore.Delete();
+                else
+                    _credentialStore.Write(currentCredentials);
+                _persistedCredentials = currentCredentials;
+                _legacyCredentialsPending = false;
+                CredentialStoreUnavailable = false;
+            }
+            catch (Exception ex) when (IsCredentialStoreFailure(ex))
+            {
+                var alreadyUnavailable = CredentialStoreUnavailable;
+                CredentialStoreUnavailable = true;
+                if (!alreadyUnavailable) CredentialStoreFailed?.Invoke();
+                if (!_legacyCredentialsPending || currentCredentials != _persistedCredentials)
+                    throw new IOException("No se pudo guardar la sesión Polar en el almacén seguro.", ex);
+                // Conserva los tokens heredados hasta poder completar la migración.
+            }
+        }
         if (_vaultSettingsPath is not null)
         {
             var preferences = PreferencesOnly(JsonSerializer.SerializeToNode(Settings)!.AsObject());
@@ -103,6 +171,11 @@ public sealed class SettingsService
             _lastKnownVaultPath = Settings.VaultPath;
 
             var global = JsonSerializer.SerializeToNode(Settings)!.AsObject();
+            if (!_legacyCredentialsPending)
+            {
+                global.Remove(nameof(AppSettings.PolarAccessToken));
+                global.Remove(nameof(AppSettings.PolarRefreshToken));
+            }
             if (_vaultSettingsPath is not null)
                 foreach (var key in global.Select(entry => entry.Key).Where(key => !InstallationKeys.Contains(key)).ToArray())
                     global.Remove(key);
@@ -110,6 +183,23 @@ public sealed class SettingsService
         });
         SettingsChanged?.Invoke();
     }
+
+    private void RemoveLegacyCredentialsFromDisk()
+    {
+        JsonFileStore.WithLock(_settingsPath, () =>
+        {
+            var json = JsonNode.Parse(File.ReadAllText(_settingsPath)) as JsonObject
+                ?? throw new InvalidDataException("settings.json no contiene un objeto JSON.");
+            json.Remove(nameof(AppSettings.PolarAccessToken));
+            json.Remove(nameof(AppSettings.PolarRefreshToken));
+            JsonFileStore.Save(_settingsPath, json);
+        });
+    }
+
+    private static bool IsCredentialStoreFailure(Exception ex) =>
+        ex is IOException or UnauthorizedAccessException or JsonException or System.Security.Cryptography.CryptographicException
+            or DllNotFoundException or EntryPointNotFoundException or BadImageFormatException
+        || ex is TypeInitializationException { InnerException: { } inner } && IsCredentialStoreFailure(inner);
 
     /// <summary>Cambia el origen de las preferencias al vault activo y migra las claves antiguas
     /// una sola vez. Las claves ya presentes en el vault siempre tienen prioridad.</summary>
@@ -244,8 +334,8 @@ public sealed class SettingsService
 
     /// <summary>Builds the JSON <see cref="ViewModels.SettingsViewModel.ExportSettingsCommand"/> writes to
     /// the user-chosen destination, with <see cref="AppSettings.PolarAccessToken"/>/
-    /// <see cref="AppSettings.PolarRefreshToken"/> redacted — <c>settings.json</c> on disk holds a live
-    /// Supabase session, and "Exportar ajustes" is meant to move preferences between machines, not hand out
+    /// <see cref="AppSettings.PolarRefreshToken"/> redacted — legacy <c>settings.json</c> files may still
+    /// hold a live Supabase session until migration succeeds. "Exportar ajustes" must not hand out
     /// a working login that anyone who receives the exported file (backup drive, USB, support ticket) could
     /// replay (docs/analisis-proyecto/roadmap.md, Fase 4). Round-trips a fresh copy of <see cref="Settings"/>
     /// instead of mutating it in place, so the live in-memory session the rest of the running app still uses

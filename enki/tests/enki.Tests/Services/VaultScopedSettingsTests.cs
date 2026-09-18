@@ -9,6 +9,7 @@ namespace enki.Tests.Services;
 public sealed class VaultScopedSettingsTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "enki-vault-settings-" + Guid.NewGuid().ToString("N"));
+    private readonly TestPolarCredentialStore _credentialStore = new();
     private string Global => Path.Combine(_root, "global");
     private string VaultA => Path.Combine(_root, "a");
     private string VaultB => Path.Combine(_root, "b");
@@ -20,15 +21,16 @@ public sealed class VaultScopedSettingsTests : IDisposable
     }
 
     [Fact]
-    public void Save_LoadsPreferencesFromVault_AndKeepsCredentialsGlobal()
+    public void Save_LoadsPreferencesFromVault_AndKeepsCredentialsInSecureStore()
     {
-        var settings = new SettingsService(Global);
+        var settings = new SettingsService(Global, _credentialStore);
         var vault = new VaultService(settings);
         vault.SetVaultPath(VaultA);
         settings.Settings.Theme = "Light";
         settings.Settings.Language = "fr-FR";
         settings.Settings.StatisticsCollapsedSections.Add("tasks");
         settings.Settings.CalendarShowWeekends = false;
+        settings.Settings.PolarLinked = true;
         settings.Settings.PolarAccessToken = "secret";
         settings.Save();
 
@@ -39,9 +41,10 @@ public sealed class VaultScopedSettingsTests : IDisposable
         Assert.Contains("tasks", vaultJson);
         Assert.DoesNotContain("secret", vaultJson);
         Assert.DoesNotContain("Theme", globalJson);
-        Assert.Contains("secret", globalJson);
+        Assert.DoesNotContain("secret", globalJson);
+        Assert.Equal("secret", _credentialStore.Credentials?.AccessToken);
 
-        var reopened = new SettingsService(Global);
+        var reopened = new SettingsService(Global, _credentialStore);
         Assert.Equal("Light", reopened.Settings.Theme);
         Assert.False(reopened.Settings.CalendarShowWeekends);
         Assert.Equal("secret", reopened.Settings.PolarAccessToken);
@@ -50,7 +53,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
     [Fact]
     public void ChangeVault_ReloadsEachVaultsOwnPreferences()
     {
-        var settings = new SettingsService(Global);
+        var settings = new SettingsService(Global, _credentialStore);
         var vault = new VaultService(settings);
         vault.SetVaultPath(VaultA);
         settings.Settings.Theme = "Light";
@@ -69,13 +72,13 @@ public sealed class VaultScopedSettingsTests : IDisposable
     [Fact]
     public void FirstVault_MigratesTemporaryPreferences()
     {
-        var settings = new SettingsService(Global);
+        var settings = new SettingsService(Global, _credentialStore);
         settings.Settings.Language = "de-DE";
         settings.Settings.Theme = "Light";
         settings.Save();
         new VaultService(settings).SetVaultPath(VaultA);
 
-        Assert.Equal("de-DE", new SettingsService(Global).Settings.Language);
+        Assert.Equal("de-DE", new SettingsService(Global, _credentialStore).Settings.Language);
         Assert.Contains("Light", File.ReadAllText(VaultFile(VaultA)));
         Assert.DoesNotContain("Language", File.ReadAllText(Path.Combine(Global, "settings.json")));
     }
@@ -89,7 +92,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
         File.WriteAllText(Path.Combine(Global, "settings.json"),
             JsonSerializer.Serialize(new { VaultPath = VaultA, Theme = "Light", Language = "es-ES", PolarAccessToken = "token" }));
 
-        var settings = new SettingsService(Global);
+        var settings = new SettingsService(Global, _credentialStore);
         Assert.Equal("Dark", settings.Settings.Theme);
         Assert.Equal("es-ES", settings.Settings.Language);
         Assert.Equal("token", settings.Settings.PolarAccessToken);
@@ -100,7 +103,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
     [Fact]
     public void VaultSettingsSave_PreservesAppPreferences()
     {
-        var settings = new SettingsService(Global);
+        var settings = new SettingsService(Global, _credentialStore);
         var vault = new VaultService(settings);
         vault.SetVaultPath(VaultA);
         settings.Settings.Theme = "Light";
@@ -108,7 +111,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
         var vaultSettings = new VaultSettingsService(vault);
         vaultSettings.Settings.UiZoomPercent = 150;
         vaultSettings.Save();
-        Assert.Equal("Light", new SettingsService(Global).Settings.Theme);
+        Assert.Equal("Light", new SettingsService(Global, _credentialStore).Settings.Theme);
         Assert.Equal(150, new VaultSettingsService(vault).Settings.UiZoomPercent);
     }
 
@@ -122,7 +125,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
         Directory.CreateDirectory(Path.Combine(VaultA, ".enki", "themes"));
         File.WriteAllText(Path.Combine(VaultA, ".enki", "themes", "custom.css"), "vault theme");
 
-        new VaultService(new SettingsService(Global)).SetVaultPath(VaultA);
+        new VaultService(new SettingsService(Global, _credentialStore)).SetVaultPath(VaultA);
 
         Assert.Equal("vault theme", File.ReadAllText(Path.Combine(VaultA, ".enki", "themes", "custom.css")));
         Assert.Equal("legacy logo", File.ReadAllText(Path.Combine(VaultA, ".enki", "brand-logo.png")));
@@ -131,7 +134,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
     [Fact]
     public void ImportPreferences_WritesActiveVault_AndKeepsInstallationData()
     {
-        var settings = new SettingsService(Global);
+        var settings = new SettingsService(Global, _credentialStore);
         var vault = new VaultService(settings);
         vault.SetVaultPath(VaultA);
         settings.Settings.PolarAccessToken = "local token";
@@ -141,7 +144,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
 
         Assert.Equal(VaultA, settings.Settings.VaultPath);
         Assert.Equal("local token", settings.Settings.PolarAccessToken);
-        Assert.Equal("Light", new SettingsService(Global).Settings.Theme);
+        Assert.Equal("Light", new SettingsService(Global, _credentialStore).Settings.Theme);
     }
 
     [Fact]
@@ -153,7 +156,7 @@ public sealed class VaultScopedSettingsTests : IDisposable
         File.WriteAllText(Path.Combine(Global, "settings.json"),
             JsonSerializer.Serialize(new { VaultPath = VaultA, Language = "es-ES" }));
 
-        var settings = new SettingsService(Global);
+        var settings = new SettingsService(Global, _credentialStore);
 
         Assert.Equal("es-ES", settings.Settings.Language);
         Assert.Single(Directory.GetFiles(Path.GetDirectoryName(VaultFile(VaultA))!, "settings.json.corrupt-*"));
