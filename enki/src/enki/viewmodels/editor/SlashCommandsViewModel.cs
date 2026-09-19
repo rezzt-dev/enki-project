@@ -28,6 +28,10 @@ public sealed partial class SlashCommandsViewModel : ObservableObject
         new SlashCommand { Key = "lista", Label = LocalizationService.Instance["Editor_SlashCommand_BulletList_Label"], Icon = "FormatListBulleted", InsertTextLiteral = "- ", CursorOffset = 2 },
         new SlashCommand { Key = "tarea", Label = LocalizationService.Instance["Editor_SlashCommand_TaskList_Label"], Icon = "CheckboxBlankOutline", InsertTextLiteral = "- [ ] ", CursorOffset = 6 },
         new SlashCommand { Key = "cita", Label = LocalizationService.Instance["Editor_SlashCommand_Quote_Label"], Icon = "FormatQuoteClose", InsertTextLiteral = "> ", CursorOffset = 2 },
+        // Aviso (callout): el tipo va literal y sin traducir porque forma parte del documento, no de la
+        // interfaz — ver MarkdownCallouts. El cursor aterriza tras "[!note] ", listo para el título, y el
+        // tipo queda seleccionable a un par de teclas por si se quiere otro.
+        new SlashCommand { Key = "aviso", Label = LocalizationService.Instance["Editor_SlashCommand_Callout_Label"], Icon = "InformationOutline", InsertTextLiteral = "> [!note] \n> ", CursorOffset = 10 },
         new SlashCommand { Key = "enlace", Label = LocalizationService.Instance["Editor_SlashCommand_Link_Label"], Icon = "LinkVariant", InsertTextKey = "Editor_LinkInsert_Placeholder", CursorOffset = 1 },
         // Inserta un "[[" abierto y nada más — EditorView.OnSlashCommandSelected llama a
         // UpdateNoteLinkPicker() justo después de insertar el texto de cualquier comando, que es lo que

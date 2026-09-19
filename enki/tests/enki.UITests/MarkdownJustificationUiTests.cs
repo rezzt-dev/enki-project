@@ -16,7 +16,7 @@ namespace enki.UITests;
 
 /// <summary>Comprueba saltos, tipografía y geometría sobre el formateador real de AvaloniaEdit.</summary>
 [Collection(AvaloniaHeadlessCollection.Name)]
-public class MarkdownParagraphJustificationUiTests
+public class MarkdownJustificationUiTests
 {
     private const string Body = "Este párrafo contiene palabras de distintos tamaños para comprobar una lectura cómoda y uniforme. ";
 
@@ -96,7 +96,7 @@ public class MarkdownParagraphJustificationUiTests
     [InlineData(260, 14)]
     [InlineData(400, 16)]
     [InlineData(670, 22)]
-    public void Prose_FillsIntermediateRowsWithoutChangingBreaksOrLastRow(double width, double size)
+    public void Prose_FillsEveryIntermediateRowWithoutChangingBreaksOrLastRow(double width, double size)
     {
         using var fixture = new Fixture(string.Concat(Enumerable.Repeat(Body, 8)), width, size);
         var natural = fixture.Rows(false);
@@ -104,7 +104,10 @@ public class MarkdownParagraphJustificationUiTests
         var rows = fixture.Rows(true);
         Assert.Equal(expected.Select(row => (row.FirstTextSourceIndex, row.Length)),
             rows.Select(row => (row.FirstTextSourceIndex, row.Length)));
-        Assert.Contains(rows.Take(rows.Length - 1), row => Math.Abs(row.Width - fixture.Editor.TextArea.TextView.Bounds.Width) < .05);
+        // Todas, no "alguna": un margen derecho que solo cuadra a ratos se lee como un fallo, y era
+        // exactamente el síntoma que dejaba la versión anterior al rendirse fila a fila.
+        Assert.All(rows.Take(rows.Length - 1),
+            row => Assert.Equal(fixture.Editor.TextArea.TextView.Bounds.Width, row.Width, .05));
         Assert.Equal(expected[^1].Width, rows[^1].Width, 5);
         for (var i = 0; i < rows.Length; i++)
         {
@@ -115,6 +118,50 @@ public class MarkdownParagraphJustificationUiTests
         fixture.Editor.Select(0, fixture.Text.Length);
         Assert.Equal(fixture.Text, fixture.Editor.SelectedText);
         Assert.False(fixture.Editor.Document.UndoStack.CanUndo);
+    }
+
+    /// <summary>Una fila que necesita más blanco del que cabe cómodamente entre sus palabras —la que
+    /// precede a una palabra muy larga— también cuadra: es el caso que antes dejaba media página en
+    /// bandera. Lo que no puede pasar es que el texto se "descosa": los saltos siguen donde estaban y la
+    /// geometría sigue siendo recorrible carácter a carácter.</summary>
+    [Fact]
+    public void RowsBeforeAVeryLongWord_StillReachTheColumnEdge()
+    {
+        const string text = "uno dos tres cuatro cinco seis siete ocho nueve diez once doce trece " +
+                            "catorce quince dieciseis diecisiete dieciocho diecinueve veinte veintiuno";
+        using var fixture = new Fixture(text, 300, 16);
+        var natural = fixture.Rows(false);
+        var rows = fixture.Rows(true);
+        Assert.Equal(natural.Select(row => (row.FirstTextSourceIndex, row.Length)),
+            rows.Select(row => (row.FirstTextSourceIndex, row.Length)));
+        Assert.All(rows.Take(rows.Length - 1),
+            row => Assert.Equal(fixture.Editor.TextArea.TextView.Bounds.Width, row.Width, .05));
+        foreach (var row in rows) CheckGeometry(row);
+    }
+
+    /// <summary>Listas, tareas y citas se justifican igual que un párrafo —una página con los párrafos a
+    /// ras y las listas en bandera se lee como dos composiciones distintas— pero conservan su sangría:
+    /// cada fila sigue empezando exactamente donde empezaba.</summary>
+    [Theory]
+    [InlineData("- ")]
+    [InlineData("1. ")]
+    [InlineData("- [ ] ")]
+    [InlineData("> ")]
+    [InlineData("> > ")]
+    public void IndentedBlocks_JustifyWithoutLosingTheirIndent(string prefix)
+    {
+        using var fixture = new Fixture(prefix + string.Concat(Enumerable.Repeat(Body, 5)), 350, 16);
+        var natural = fixture.Rows(false);
+        var expected = natural.Select(row => (row.Start, row.Length)).ToArray();
+        var rows = fixture.Rows(true);
+        Assert.Equal(expected.Select(row => row.Length), rows.Select(row => row.Length));
+        for (var i = 0; i < rows.Length; i++) Assert.Equal(expected[i].Start, rows[i].Start, .05);
+        Assert.All(rows.Take(rows.Length - 1),
+            row => Assert.Equal(fixture.Editor.TextArea.TextView.Bounds.Width, row.Width, .05));
+        Assert.Equal(natural[^1].Width, rows[^1].Width, 5);
+        // Desde la segunda fila: la primera empieza por la viñeta/casilla dibujada, un widget cuya
+        // geometría la reporta AvaloniaEdit y no este formateo — se desvía igual con y sin justificar.
+        foreach (var row in rows.Skip(1)) CheckGeometry(row);
     }
 
     [Theory]
@@ -133,13 +180,11 @@ public class MarkdownParagraphJustificationUiTests
         Assert.Equal(expected, fixture.Rows(true).Select(row => (row.Length, row.Width)));
     }
 
+    /// <summary>Lo que se queda como está: un encabezado (estirar un título se lee como un error), la
+    /// sangría de cuatro espacios y el tabulador (espaciado literal), el código y los bloques que ya
+    /// traen su propia alineación HTML.</summary>
     [Theory]
     [InlineData("# ")]
-    [InlineData("- ")]
-    [InlineData("1. ")]
-    [InlineData("- [ ] ")]
-    [InlineData("> ")]
-    [InlineData("> > ")]
     [InlineData("    ")]
     [InlineData("\t")]
     [InlineData("```csharp\n")]

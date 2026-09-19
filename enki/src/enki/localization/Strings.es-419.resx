@@ -673,6 +673,9 @@
   <data name="Editor_SlashCommand_BulletList_Label" xml:space="preserve">
     <value>Lista con viñetas</value>
   </data>
+  <data name="Editor_SlashCommand_Callout_Label" xml:space="preserve">
+    <value>Aviso</value>
+  </data>
   <data name="Editor_SlashCommand_CodeBlock_Label" xml:space="preserve">
     <value>Bloque de código</value>
   </data>
@@ -788,6 +791,9 @@
   </data>
   <data name="Editor_Toolbar_H3_Tooltip" xml:space="preserve">
     <value>Encabezado 3</value>
+  </data>
+  <data name="Editor_Toolbar_Highlight_Tooltip" xml:space="preserve">
+    <value>Resaltar</value>
   </data>
   <data name="Editor_Toolbar_HorizontalRule_Tooltip" xml:space="preserve">
     <value>Regla horizontal</value>
@@ -2712,6 +2718,12 @@
   <data name="Settings_EditDocs_Title" xml:space="preserve">
     <value>Atajos del editor</value>
   </data>
+  <data name="Settings_Editor_AutoPairs_Description" xml:space="preserve">
+    <value>Escribir un paréntesis o unas comillas los cierra solo, y hacerlo con texto seleccionado lo envuelve en vez de sustituirlo.</value>
+  </data>
+  <data name="Settings_Editor_AutoPairs_Label" xml:space="preserve">
+    <value>Cerrar paréntesis y comillas</value>
+  </data>
   <data name="Settings_Editor_Autosave_Description" xml:space="preserve">
     <value>Las notas se guardan automáticamente mientras se escribe.</value>
   </data>
@@ -2810,6 +2822,18 @@
   </data>
   <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
     <value>Variables: {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} y {{cursor}}. Admiten formato ({{date:dd/MM/yyyy}}) y desplazamiento ({{date+1d}}).</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Description" xml:space="preserve">
+    <value>El texto justificado llena cada línea hasta el margen derecho de la columna. En bandera conserva los finales de línea naturales.</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Justified" xml:space="preserve">
+    <value>Justificado</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Label" xml:space="preserve">
+    <value>Alineación del texto</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Ragged" xml:space="preserve">
+    <value>En bandera</value>
   </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>EDITOR</value>
@@ -3225,11 +3249,44 @@
   <data name="Settings_Shortcuts_DailyPreviousDay" xml:space="preserve">
     <value>Nota diaria: día anterior</value>
   </data>
+  <data name="Settings_Shortcuts_DeleteLines" xml:space="preserve">
+    <value>Borrar línea</value>
+  </data>
   <data name="Settings_Shortcuts_Description" xml:space="preserve">
     <value>Atajos de teclado para navegación, editor, Kanban y zoom de vista.</value>
   </data>
+  <data name="Settings_Shortcuts_DuplicateLines" xml:space="preserve">
+    <value>Duplicar línea</value>
+  </data>
+  <data name="Settings_Shortcuts_Highlight" xml:space="preserve">
+    <value>Resaltado</value>
+  </data>
+  <data name="Settings_Shortcuts_InlineCode" xml:space="preserve">
+    <value>Código en línea</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineDown" xml:space="preserve">
+    <value>Bajar línea</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineUp" xml:space="preserve">
+    <value>Subir línea</value>
+  </data>
+  <data name="Settings_Shortcuts_SelectLine" xml:space="preserve">
+    <value>Seleccionar línea</value>
+  </data>
+  <data name="Settings_Shortcuts_Strikethrough" xml:space="preserve">
+    <value>Tachado</value>
+  </data>
   <data name="Settings_Shortcuts_Title" xml:space="preserve">
     <value>Atajos de teclado</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleList" xml:space="preserve">
+    <value>Lista con viñetas</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleQuote" xml:space="preserve">
+    <value>Cita</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleTask" xml:space="preserve">
+    <value>Tarea / marcar</value>
   </data>
   <data name="Settings_Skills_CommunityLink_Description" xml:space="preserve">
     <value>Explore e instale habilidades compartidas por la comunidad de Enki.</value>

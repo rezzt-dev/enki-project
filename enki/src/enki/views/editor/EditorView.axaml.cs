@@ -32,6 +32,10 @@ public partial class EditorView : UserControl
     private readonly MarkdownStyle _style;
     private readonly MarkdownLivePreviewColorizer _colorizer;
 
+    /// <summary>Quien colorea el interior de los bloques de código. Carga sus gramáticas la primera vez
+    /// que hace falta y avisa por <c>Changed</c> cuando ya puede colorear, que es cuando se repinta.</summary>
+    private readonly MarkdownCodeHighlighter _codeHighlighter;
+
     /// <summary>Los botones de copiar de los bloques de código, en su lienzo superpuesto al editor. Se
     /// guarda aunque nadie le pida nada después: es quien escucha al TextView para recolocarlos.</summary>
     private readonly CodeBlockCopyOverlay _codeBlockCopyOverlay;
@@ -58,6 +62,11 @@ public partial class EditorView : UserControl
         var textView = textArea.TextView;
 
         _colorizer = new MarkdownLivePreviewColorizer(_livePreviewState, _style);
+        _codeHighlighter = new MarkdownCodeHighlighter(_livePreviewState);
+        _colorizer.CodeHighlighter = _codeHighlighter;
+        // Las gramáticas se cargan en segundo plano la primera vez que se ve un bloque de código: hasta
+        // entonces el código se dibuja plano, y este repintado es el que lo enciende.
+        _codeHighlighter.Changed += () => textView.Redraw();
         _fencesTimer = new DispatcherTimer { Interval = EditorDebounce.Delay };
         _fencesTimer.Tick += (_, _) =>
         {
@@ -134,6 +143,9 @@ public partial class EditorView : UserControl
         textArea.SelectionChanged += (_, _) => OnCaretOrSelectionChanged();
         textArea.AddHandler(InputElement.KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
         textArea.AddHandler(InputElement.PointerPressedEvent, OnEditorPointerPressed, RoutingStrategies.Tunnel);
+        // Pares automáticos: se escucha en túnel para llegar antes que la inserción de AvaloniaEdit, que
+        // ya habría sustituido la selección que se quiere envolver (ver EditorView.Editing.cs).
+        textArea.AddHandler(InputElement.TextInputEvent, OnEditorTextInput, RoutingStrategies.Tunnel);
 
         Editor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
@@ -228,6 +240,8 @@ public partial class EditorView : UserControl
         // en el redibujado de abajo: el interruptor que la bloqueaba puede ser justo el que se acaba de
         // cambiar, y obligar a cerrar y reabrir la nota para verlo sería absurdo.
         MarkdownImageCache.ForgetFailed();
+        // Otro tema de la aplicación pide el tema de código que le hace juego (claro/oscuro).
+        _codeHighlighter.RefreshTheme();
         // Otro tamaño de letra o de columna puede dejar a una tabla sin sitio (o devolvérselo), y con ello
         // cambia si su fila separadora sigue plegada.
         _livePreviewState.TableFolding?.Refresh();
@@ -306,6 +320,10 @@ public partial class EditorView : UserControl
         _livePreviewState.Fences = MarkdownLineParser.ComputeFences(text);
         _livePreviewState.HtmlLines = MarkdownHtmlParser.ComputeLineStates(text, _livePreviewState.Fences);
         _livePreviewState.Tables.SetRows(MarkdownTableParser.Scan(text, _livePreviewState.Fences));
+        _livePreviewState.Callouts = MarkdownCallouts.Scan(text, _livePreviewState.Fences);
+        // Los bloques tokenizados dejan de valer en cuanto cambia el texto; se vuelven a hacer solo los
+        // que se dibujen de verdad.
+        _codeHighlighter.Invalidate();
     }
 
     /// <summary>Fires whenever the tab strip switches which note is active (NotesViewModel.ActiveEditor).
@@ -769,7 +787,7 @@ public partial class EditorView : UserControl
 
     /// <summary>Continues lists/quotes on Enter and exits an empty list item instead of adding another marker,
     /// matching Obsidian's list-editing behavior; also backs the Ctrl+B/Ctrl+I/Ctrl+K formatting shortcuts —
-    /// same <see cref="WrapSelection"/>/
+    /// same <see cref="ToggleInline"/>/
     /// <see cref="InsertAtCaret"/> helpers the toolbar buttons already use.</summary>
     private void OnEditorKeyDown(object? sender, KeyEventArgs e)
     {
@@ -839,14 +857,13 @@ public partial class EditorView : UserControl
             return;
         }
 
-        // Atajos de formato remapeables (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) — ya no
-        // se comparan literales Key.B/Key.I/... contra KeyModifiers.Control, sino el gesto efectivo que
-        // Ajustes › Atajos haya asignado a cada uno vía ShortcutRegistry.
-        if (ShortcutRegistry.Matches(ShortcutIds.EditorBold, e)) { WrapSelection("**"); e.Handled = true; return; }
-        if (ShortcutRegistry.Matches(ShortcutIds.EditorItalic, e)) { WrapSelection("_"); e.Handled = true; return; }
+        // Atajos de formato y de línea remapeables (propuesta 29, docs/propuesta-nuevas-funcionalidades.md)
+        // — no se comparan literales Key.B/Key.I/... contra KeyModifiers.Control, sino el gesto efectivo
+        // que Ajustes › Atajos haya asignado a cada uno vía ShortcutRegistry. Ver EditorView.Editing.cs.
+        if (HandleFormattingShortcut(e)) { e.Handled = true; return; }
         if (ShortcutRegistry.Matches(ShortcutIds.EditorInsertLink, e))
         {
-            InsertAtCaret(LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
+            InsertLink();
             e.Handled = true;
             return;
         }
@@ -863,16 +880,22 @@ public partial class EditorView : UserControl
             return;
         }
 
-        // Tabulador dentro de una tabla: salta de celda en celda, como en cualquier hoja de cálculo. Fuera
-        // de una tabla el tabulador sigue indentando, que es lo que hace AvaloniaEdit por su cuenta.
-        if (e.Key == Key.Tab && e.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift &&
-            MoveToAdjacentTableCell(forward: e.KeyModifiers != KeyModifiers.Shift))
+        // Tabulador dentro de una tabla: salta de celda en celda, como en cualquier hoja de cálculo.
+        // Dentro de una lista: anida un nivel (o lo saca, con Mayús) y renumera. Fuera de las dos cosas el
+        // tabulador sigue indentando, que es lo que hace AvaloniaEdit por su cuenta.
+        if (e.Key == Key.Tab && e.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift)
         {
-            e.Handled = true;
-            return;
+            var forward = e.KeyModifiers != KeyModifiers.Shift;
+            if (MoveToAdjacentTableCell(forward) || HandleListIndent(outdent: !forward))
+            {
+                e.Handled = true;
+                return;
+            }
         }
 
-        if (e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None) return;
+        if (HandleCaretKey(e)) { e.Handled = true; return; }
+
+        if (e.Key != Key.Enter || e.KeyModifiers != KeyModifiers.None || Editor.SelectionLength > 0) return;
 
         var doc = Editor.Document;
         var caretOffset = Editor.CaretOffset;
@@ -907,8 +930,15 @@ public partial class EditorView : UserControl
             return;
         }
 
-        doc.Insert(caretOffset, "\n" + continuation);
-        Editor.CaretOffset = caretOffset + 1 + continuation.Length;
+        // Inserción y renumeración pertenecen al mismo documento y a un único paso de deshacer.
+        using (doc.RunUpdate())
+        {
+            var delimiter = MarkdownEditing.LineDelimiter(doc, line);
+            doc.Insert(caretOffset, delimiter + continuation);
+            Editor.CaretOffset = caretOffset + delimiter.Length + continuation.Length;
+            if (model.Kind == MdBlockKind.OrderedList)
+                MarkdownEditing.RenumberOrderedLists(doc, Editor.CaretOffset);
+        }
         e.Handled = true;
     }
 
@@ -1119,53 +1149,55 @@ public partial class EditorView : UserControl
         }
     }
 
-    private void WrapSelection(string prefix, string? suffix = null)
-    {
-        suffix ??= prefix;
-        var start = Editor.SelectionStart;
-        var length = Editor.SelectionLength;
-        var doc = Editor.Document;
-
-        doc.Insert(start + length, suffix);
-        doc.Insert(start, prefix);
-
-        Editor.SelectionStart = start + prefix.Length;
-        Editor.SelectionLength = length;
-        Editor.Focus();
-    }
-
-    private void InsertLinePrefix(string token)
-    {
-        var line = Editor.Document.GetLineByOffset(Editor.CaretOffset);
-        Editor.Document.Insert(line.Offset, token);
-        Editor.Focus();
-    }
-
     private void InsertAtCaret(string token)
     {
         Editor.Document.Insert(Editor.CaretOffset, token);
         Editor.Focus();
     }
 
-    private void OnBoldClick(object? sender, RoutedEventArgs e) => WrapSelection("**");
-    private void OnItalicClick(object? sender, RoutedEventArgs e) => WrapSelection("_");
-    private void OnStrikethroughClick(object? sender, RoutedEventArgs e) => WrapSelection("~~");
-    private void OnH1Click(object? sender, RoutedEventArgs e) => InsertLinePrefix("# ");
-    private void OnH2Click(object? sender, RoutedEventArgs e) => InsertLinePrefix("## ");
-    private void OnH3Click(object? sender, RoutedEventArgs e) => InsertLinePrefix("### ");
-    private void OnQuoteClick(object? sender, RoutedEventArgs e) => InsertLinePrefix("> ");
-    private void OnBulletClick(object? sender, RoutedEventArgs e) => InsertLinePrefix("- ");
-    private void OnOrderedClick(object? sender, RoutedEventArgs e) => InsertLinePrefix("1. ");
-    private void OnTaskListClick(object? sender, RoutedEventArgs e) => InsertLinePrefix("- [ ] ");
-    private void OnCodeClick(object? sender, RoutedEventArgs e) => WrapSelection("`");
-    private void OnCodeBlockClick(object? sender, RoutedEventArgs e)
+    /// <summary>"Insertar enlace": con texto seleccionado lo convierte en el rótulo del enlace y deja el
+    /// cursor donde va la dirección — que es el único dato que falta. Sin selección inserta la plantilla
+    /// entera, como hasta ahora.</summary>
+    private void InsertLink()
     {
-        var start = Editor.CaretOffset;
-        Editor.Document.Insert(start, "```\n\n```");
-        Editor.CaretOffset = start + 4;
+        if (Editor.SelectionLength == 0)
+        {
+            InsertAtCaret(LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
+            return;
+        }
+        var start = Editor.SelectionStart;
+        var length = Editor.SelectionLength;
+        using var update = Editor.Document.RunUpdate();
+        Editor.Document.Insert(start + length, "]()");
+        Editor.Document.Insert(start, "[");
+        Editor.SelectionLength = 0;
+        Editor.CaretOffset = start + length + 3;
         Editor.Focus();
     }
-    private void OnLinkClick(object? sender, RoutedEventArgs e) => InsertAtCaret(LocalizationService.Instance["Editor_LinkInsert_Placeholder"]);
+
+    // Los botones de la barra de formato comparten exactamente el mismo comportamiento que sus atajos
+    // (ver EditorView.Editing.cs): alternan en vez de acumular, y sustituyen el marcador de bloque que
+    // hubiera en vez de anteponer otro — pulsar "H2" sobre un H1 deja un H2, no "# ## ".
+    private void OnBoldClick(object? sender, RoutedEventArgs e) => ToggleInline("**");
+    private void OnItalicClick(object? sender, RoutedEventArgs e) => ToggleInline("_");
+    private void OnStrikethroughClick(object? sender, RoutedEventArgs e) => ToggleInline("~~");
+    private void OnH1Click(object? sender, RoutedEventArgs e) => ToggleHeading(1);
+    private void OnH2Click(object? sender, RoutedEventArgs e) => ToggleHeading(2);
+    private void OnH3Click(object? sender, RoutedEventArgs e) => ToggleHeading(3);
+    private void OnQuoteClick(object? sender, RoutedEventArgs e) => ToggleQuote();
+    private void OnBulletClick(object? sender, RoutedEventArgs e) => ToggleList(MdBlockKind.BulletList);
+    private void OnOrderedClick(object? sender, RoutedEventArgs e) => ToggleList(MdBlockKind.OrderedList);
+    private void OnTaskListClick(object? sender, RoutedEventArgs e) => ToggleList(MdBlockKind.TaskList);
+    private void OnCodeClick(object? sender, RoutedEventArgs e) => ToggleInline("`");
+    private void OnHighlightClick(object? sender, RoutedEventArgs e) => ToggleInline("==");
+
+    /// <summary>Bloque de código: con texto seleccionado lo mete dentro del bloque en vez de descartarlo,
+    /// y en ambos casos empieza en su propia línea — un bloque de código a media frase no es Markdown
+    /// válido.</summary>
+    private void OnCodeBlockClick(object? sender, RoutedEventArgs e) =>
+        Apply(MarkdownEditing.InsertCodeBlock(Editor.Document, CurrentSelection()));
+
+    private void OnLinkClick(object? sender, RoutedEventArgs e) => InsertLink();
     /// <summary>Botón "insertar imagen" de la barra de formato: abre el diálogo de archivos y adjunta lo
     /// que se elija. Antes insertaba la plantilla de texto <c>![texto](url)</c> para que el usuario la
     /// rellenara a mano, lo que obligaba a saberse de memoria la ruta del archivo.</summary>

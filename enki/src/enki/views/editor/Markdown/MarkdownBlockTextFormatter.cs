@@ -25,7 +25,11 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
     }
 
     private static readonly ConditionalWeakTable<VisualLine, BlockLayout> Blocks = new();
-    private static readonly ConditionalWeakTable<VisualLine, MdLine> Paragraphs = new();
+
+    /// <summary>Las líneas cuyo texto se justifica, con su análisis ya hecho. A diferencia de
+    /// <see cref="Blocks"/> —que solo tienen listas y citas, las que necesitan sangría— aquí entra
+    /// cualquier bloque de prosa, incluidos los párrafos sueltos.</summary>
+    private static readonly ConditionalWeakTable<VisualLine, MdLine> Justifiable = new();
 
     // AvaloniaEdit 12.0 no expone un setter para el formateador. El único acceso privado queda
     // aislado aquí, por TextView; no sustituimos el formateador global de la aplicación.
@@ -41,17 +45,37 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
         var line = context.VisualLine.FirstDocumentLine;
         var text = context.Document.GetText(line);
         var model = MarkdownLineParser.Parse(text, line.Offset, state.GetFence(line.LineNumber));
-        if (state.JustifyParagraphs && model.Kind == MdBlockKind.Paragraph &&
-            state.GetAlignment(line.LineNumber) == MdAlign.None &&
-            state.Tables.GetRow(line.LineNumber) is null &&
-            text.Length > 0 && !char.IsWhiteSpace(text[0]) && !text.Contains('\t') &&
-            !model.Spans.Exists(span => span.Kind == MdSpanKind.Image))
-            Paragraphs.Add(context.VisualLine, model);
+        if (IsJustifiable(state, line.LineNumber, text, model)) Justifiable.Add(context.VisualLine, model);
         if (model.Kind is MdBlockKind.BulletList or MdBlockKind.OrderedList or MdBlockKind.TaskList)
             Blocks.Add(context.VisualLine, new BlockLayout(model.ContentStart - line.Offset, 0));
         else if (model.Kind == MdBlockKind.Blockquote)
             Blocks.Add(context.VisualLine, new BlockLayout(model.ContentStart - line.Offset,
                 MarkdownQuoteLayout.ContentIndent(model.QuoteDepth)));
+    }
+
+    /// <summary>Si la línea <paramref name="lineNumber"/> entra en el texto justificado. Fuera quedan las
+    /// que no son prosa (una tabla, un bloque con alineación HTML propia, un encabezado), las que llevan
+    /// tabuladores —cuyo avance lo decide el formateador y no se puede repartir sin descuadrar las
+    /// paradas— y las que dibujan una imagen, cuyo ancho no es texto.
+    ///
+    /// La excepción de los cuatro espacios iniciales es solo para párrafos: en Markdown esa sangría
+    /// significa "bloque de código" y su espaciado es literal. En una lista, en cambio, la sangría es lo
+    /// que marca el nivel de anidamiento y no dice nada del contenido.</summary>
+    private static bool IsJustifiable(LivePreviewState state, int lineNumber, string text, MdLine model)
+    {
+        if (!state.JustifyParagraphs || text.Length == 0 || text.Contains('\t')) return false;
+        if (!MarkdownJustification.IsJustifiableBlock(model.Kind)) return false;
+        if (state.GetAlignment(lineNumber) != MdAlign.None) return false;
+        if (state.Tables.GetRow(lineNumber) is not null) return false;
+        if (model.Spans.Exists(span => span.Kind == MdSpanKind.Image)) return false;
+
+        if (model.Kind == MdBlockKind.Paragraph)
+        {
+            var indent = 0;
+            while (indent < text.Length && text[indent] == ' ') indent++;
+            if (indent >= 4) return false;
+        }
+        return true;
     }
 
     public override TextLine? FormatLine(ITextSource textSource, int firstTextSourceIndex, double paragraphWidth,
@@ -68,8 +92,8 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
         {
             var natural = inner.FormatLine(textSource, firstTextSourceIndex, paragraphWidth,
                 paragraphProperties, previousLineBreak, textRunCache);
-            if (natural is null || !Paragraphs.TryGetValue(context.VisualLine, out var paragraph)) return natural;
-            var justified = MarkdownParagraphJustification.Format(inner, natural, context, paragraph,
+            if (natural is null || !Justifiable.TryGetValue(context.VisualLine, out var paragraph)) return natural;
+            var justified = MarkdownJustification.Format(inner, natural, context, paragraph,
                 paragraphWidth, paragraphProperties);
             return justified is null ? natural : new WrappedRow(justified, natural);
         }
@@ -84,7 +108,8 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
         }
 
         var indent = firstTextSourceIndex == 0 ? layout.FirstLineIndent : layout.Indent;
-        var line = inner.FormatLine(textSource, firstTextSourceIndex, Math.Max(1, paragraphWidth - indent),
+        var contentWidth = Math.Max(1, paragraphWidth - indent);
+        var line = inner.FormatLine(textSource, firstTextSourceIndex, contentWidth,
             paragraphProperties, previousLineBreak, textRunCache);
         if (line is null) return null;
 
@@ -101,11 +126,34 @@ internal sealed class MarkdownBlockTextFormatter(TextFormatter inner) : TextForm
                     new RowProperties(paragraphProperties, TextAlignment.Left));
                 layout.Indent = indent + (prefix?.WidthIncludingTrailingWhitespace ?? 0);
             }
-            return indent <= 0 ? line : Position(line, indent, paragraphProperties);
         }
 
-        if (indent <= 0) return line;
-        return Position(line, indent, paragraphProperties);
+        return Compose(line, context, indent, contentWidth, paragraphWidth, paragraphProperties);
+    }
+
+    /// <summary>Deja la fila de una lista o una cita en su sitio: justificada dentro de su ancho de
+    /// contenido si toca, y en cualquier caso desplazada por su sangría.
+    ///
+    /// Una fila justificada mide exactamente el ancho de contenido, así que colocarla alineada a la
+    /// derecha en una caja del ancho del párrafo la deja empezando justo en la sangría — un único formateo
+    /// en vez de los dos que necesita una fila de ancho desconocido.</summary>
+    private TextLine Compose(TextLine line, ITextRunConstructionContext context, double indent, double contentWidth,
+        double paragraphWidth, TextParagraphProperties paragraphProperties)
+    {
+        if (Justifiable.TryGetValue(context.VisualLine, out var block) &&
+            MarkdownJustification.CanJustifyRow(line, context, contentWidth, paragraphProperties) &&
+            MarkdownJustification.BuildRuns(line, context, block, contentWidth) is { } runs)
+        {
+            // La alineación a la derecha de Avalonia cuadra el ancho *con* el blanco final de la fila —el
+            // espacio en el que el formateador decidió partir—, así que la caja tiene que contarlo también:
+            // sin eso la fila entraría justo ese espacio por delante de su sangría.
+            var trailing = line.WidthIncludingTrailingWhitespace - line.Width;
+            var justified = MarkdownJustification.Position(inner, runs, line.FirstTextSourceIndex,
+                indent + contentWidth + trailing, paragraphProperties);
+            if (justified is not null) return new WrappedRow(justified, line);
+        }
+
+        return indent <= 0 ? line : Position(line, indent, paragraphProperties);
     }
 
     private TextLine Position(TextLine line, double indent, TextParagraphProperties paragraphProperties)

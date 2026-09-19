@@ -44,6 +44,18 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _editorWordWrap;
 
+    /// <summary>Ajustes › Editor › "Alineación del texto": justificado (por defecto) o en bandera. Es la
+    /// cara visible de <see cref="EditorPreferences.JustifyParagraphs"/>, que hasta ahora solo se podía
+    /// cambiar desde el código — ver <see cref="Views.Editor.Markdown.MarkdownJustification"/> para qué
+    /// bloques abarca y qué hace exactamente con cada fila.</summary>
+    [ObservableProperty]
+    private bool _editorJustifyText;
+
+    /// <summary>Ajustes › Editor › "Cerrar paréntesis y comillas" — ver
+    /// <see cref="EditorPreferences.AutoPairs"/>.</summary>
+    [ObservableProperty]
+    private bool _editorAutoPairs;
+
     /// <summary>Ajustes › Editor › "Imágenes remotas" — ver
     /// <see cref="EditorPreferences.RemoteImages"/> para por qué esto es un interruptor y no un
     /// comportamiento fijo.</summary>
@@ -119,6 +131,20 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.EditorWordWrap = value;
         _settingsService.Save();
         EditorPreferences.WordWrap = value;
+    }
+
+    partial void OnEditorJustifyTextChanged(bool value)
+    {
+        _settingsService.Settings.EditorJustifyParagraphs = value;
+        _settingsService.Save();
+        EditorPreferences.JustifyParagraphs = value;
+    }
+
+    partial void OnEditorAutoPairsChanged(bool value)
+    {
+        _settingsService.Settings.EditorAutoPairs = value;
+        _settingsService.Save();
+        EditorPreferences.AutoPairs = value;
     }
 
     partial void OnEditorRemoteImagesChanged(bool value)

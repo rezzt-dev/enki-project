@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### ANADIDO
+- edicion markdown profesional sobre `MarkdownEditing`: alternar formato en linea y marcadores de bloque, aplicar acciones a selecciones multilínea, anidar y renumerar listas, continuar listas y citas con intro, inicio inteligente, borrado de marcadores, pares automaticos configurables, pegado de urls como enlaces y operaciones para mover, duplicar, borrar o ampliar la seleccion por lineas, todo integrado con atajos remapeables y acciones deshacibles completas.
+- resaltado de sintaxis para bloques de codigo con lenguaje declarado mediante las gramaticas textmate y los temas claro/oscuro que ya usa el visor de archivos, cargado en segundo plano, almacenado por bloque y limitado por tiempo y numero de lineas para no bloquear la escritura.
+- avisos compatibles con la sintaxis de obsidian (`> [!note]`, `tip`, `warning`, `danger` y sus alias), con icono, titulo, tono y fondo propios del tema, mas el comando `/aviso` para insertarlos sin memorizar la sintaxis.
+- controles en ajustes > editor para elegir entre alineacion justificada o en bandera y activar o desactivar el cierre automatico de parentesis y comillas, persistidos por vault y traducidos a los siete idiomas soportados.
 - plantillas de notas reutilizables en `<vault>/.enki/templates/`: cada plantilla es un archivo markdown con frontmatter opcional (`name`, `description`, `title`) y un cuerpo con variables `{{title}}`, `{{date}}`, `{{time}}`, `{{datetime}}`, `{{weekday}}`, `{{month}}`, `{{year}}`, `{{uuid}}` y `{{cursor}}`, con formato (`{{date:dd/MM/yyyy}}`) y desplazamiento (`{{date+1d}}`) opcionales; lo que no se reconoce se deja intacto en la nota.
 - flujo "desde plantilla" en documentos —boton de la vista completa, fila de acciones de la vista simplificada, menu contextual de la rejilla y paleta de comandos— con selector para crear la nota, editar la plantilla en una pestana del editor, crear una plantilla nueva ya rellena con la sintaxis, abrir su carpeta y eliminarla respetando "preguntar antes de borrar".
 - ajuste "plantilla de la nota diaria" en ajustes > editor > plantillas, guardado por vault en `<vault>/.enki/settings.json`: la plantilla decide el contenido y, si declara `title`, tambien el nombre de la nota; solo se aplica al crearla, nunca sobre la nota del dia que ya existe.
@@ -26,6 +30,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - anadir modos para descubrir notas huerfanas, conexiones entre sesiones y grupos de notas conectadas, calculados sobre el vault accesible completo para evitar falsos resultados al filtrar.
 
 #### CAMBIOS
+- rehacer la justificacion de parrafos, listas, tareas y citas para distribuir primero los espacios y despues un interletraje limitado, conservar la geometria del cursor y la seleccion, respetar la ultima fila y el codigo, y mantener estable el ajuste de linea durante los repintados.
+- unificar los botones de la barra de formato y los atajos sobre las mismas operaciones de edicion para que encabezados, listas, tareas, citas y formato en linea alternen o sustituyan el marcador existente en vez de acumular sintaxis.
+- documentar el comportamiento y los limites del editor en `.docs/project-info/editor-markdown.md` y ampliar `MarkdownEditingTests`, `MarkdownCalloutsTests`, `EditorEditingUiTests`, `MarkdownCodeHighlightUiTests` y `MarkdownJustificationUiTests` con regresiones de seleccion, deshacer, saltos lf/crlf, cercas de codigo, avisos, resaltado y geometria de texto.
 - establecer `.docs/project-info/` como ruta versionada de la documentacion del proyecto y aclarar en `README.md`, `README.en.md`, `AGENTS.md` y `.gitignore` que `docs/` no forma parte del checkout.
 - anadir `.docs/project-info/qa-manual-release-candidate.md`, la checklist de qa manual de release candidate que consolida las verificaciones de lector de pantalla, render de wikilinks/enlaces rotos, reconexion de polar realtime y selector de recurrencia que los tests automaticos no cubren.
 - anadir empaquetado real por sistema en `enki/packaging/`: paquete `.deb` y `.tar.gz` con integracion `.desktop`/iconos hicolor en Linux, instalador Inno Setup en Windows y bundle `.app`/`.dmg` firmado ad-hoc en macOS, todos generados a partir del mismo publish self-contained y sin arrastrar `local.properties` al paquete final.
@@ -37,6 +44,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - cubrir el pegado de imagenes de punta a punta en `enki.UITests/EditorViewImagesUiTests.cs` contra el portapapeles real del `TopLevel` (adjunto guardado y referencia insertada, varias imagenes, imagen que ya vive en el vault, sustitucion de la seleccion y pegado de texto sin adjuntos), y documentar el comportamiento nuevo en `.docs/project-info/imagenes-en-notas.md`.
 
 #### CORREGIDO
+- conservar el texto seleccionado, la posicion del cursor y los saltos lf/crlf al insertar bloques de codigo o editar lineas, y agrupar cada transformacion compuesta y la renumeracion de listas en un unico paso de deshacer.
+- impedir que la sangria, la renumeracion, inicio inteligente y retroceso interpreten como listas los ejemplos escritos dentro de una cerca de codigo, y permitir escribir tres acentos graves seguidos sin que el autocierre interrumpa la apertura del bloque.
+- interpretar correctamente el estilo textmate no definido para evitar aplicar cursiva, negrita y subrayado a la vez, y aplicar el presupuesto de tokenizacion al bloque completo en vez de reiniciarlo en cada linea.
+- convertir una url pegada sobre texto seleccionado en un enlace markdown y mantener el pegado normal cuando el portapapeles no contiene una url valida.
 - corregir los enlaces de documentacion y los iconos de ambos README, ademas de las referencias y enlaces relativos de `AGENTS.md` y `.docs/project-info/`, para que apunten a archivos existentes.
 - mostrar el grafo cuando el vault contiene notas sin ninguna sesion creada y evitar ocultarlo temporalmente durante una recarga.
 - cancelar el extremo pendiente de un enlace manual al cambiar los filtros para impedir conexiones accidentales con notas ocultas.
@@ -52,6 +63,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- professional markdown editing through `MarkdownEditing`: toggle inline formatting and block markers, apply actions to multiline selections, indent and renumber lists, continue lists and quotes with enter, smart home, marker deletion, configurable automatic pairs, url-to-link pasting, and line move, duplicate, delete and expand operations, all connected to remappable shortcuts and complete undo actions.
+- syntax highlighting for fenced code blocks with a declared language using the textmate grammars and light/dark themes already shared by the file viewer, loaded in the background, cached per block and bounded by time and line count so typing never blocks.
+- obsidian-compatible callouts (`> [!note]`, `tip`, `warning`, `danger` and their aliases) with theme-aware icons, titles, tones and backgrounds, plus the `/aviso` command so they can be inserted without memorising the syntax.
+- settings under settings > editor to choose justified or ragged text and enable or disable automatic bracket and quote closing, persisted per vault and translated into all seven supported languages.
 - reusable note templates in `<vault>/.enki/templates/`: each template is a markdown file with optional front matter (`name`, `description`, `title`) and a body with `{{title}}`, `{{date}}`, `{{time}}`, `{{datetime}}`, `{{weekday}}`, `{{month}}`, `{{year}}`, `{{uuid}}` and `{{cursor}}` variables, with optional format (`{{date:dd/MM/yyyy}}`) and offset (`{{date+1d}}`); anything unrecognised is left untouched in the note.
 - a "from template" flow in documents — full-view button, simplified-view action row, note grid context menu and command palette — with a picker to create the note, edit the template in an editor tab, create a new template pre-filled with the syntax, open its folder and delete it honouring "ask before deleting".
 - a "daily note template" setting under settings > editor > templates, stored per vault in `<vault>/.enki/settings.json`: the template decides the content and, when it declares `title`, the note's name too; it only applies on creation, never over the day's existing note.
@@ -68,6 +83,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add modes to discover orphan notes, cross-session connections and connected note groups, computed over the entire accessible vault to prevent misleading results when filtering.
 
 #### CHANGED
+- rebuild paragraph, list, task and quote justification to distribute word spacing before limited character tracking, preserve caret and selection geometry, respect final rows and code, and keep wrapping stable across redraws.
+- route formatting-toolbar buttons and shortcuts through the same editing operations so headings, lists, tasks, quotes and inline formatting toggle or replace existing markers instead of stacking syntax.
+- document editor behaviour and limits in `.docs/project-info/editor-markdown.md` and expand `MarkdownEditingTests`, `MarkdownCalloutsTests`, `EditorEditingUiTests`, `MarkdownCodeHighlightUiTests` and `MarkdownJustificationUiTests` with regressions for selections, undo, lf/crlf line endings, code fences, callouts, highlighting and text geometry.
 - establish `.docs/project-info/` as the versioned project documentation path and clarify in `README.md`, `README.en.md`, `AGENTS.md`, and `.gitignore` that `docs/` is not part of the checkout.
 - add `.docs/project-info/qa-manual-release-candidate.md`, the release-candidate manual qa checklist covering screen reader, wikilink/broken-link rendering, polar realtime reconnection and recurrence selector checks that automated tests don't cover.
 - add real per-platform packaging under `enki/packaging/`: a `.deb` and `.tar.gz` with `.desktop`/hicolor icon integration on Linux, an Inno Setup installer on Windows, and an ad-hoc signed `.app`/`.dmg` bundle on macOS, all built from the same self-contained publish and never carrying `local.properties` into the final package.
@@ -79,6 +97,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - cover image pasting end to end in `enki.UITests/EditorViewImagesUiTests.cs` against the `TopLevel`'s real clipboard (saved attachment and inserted reference, several images, an image already living in the vault, selection replacement and text pasting without attachments), and document the new behaviour in `.docs/project-info/imagenes-en-notas.md`.
 
 #### FIXED
+- preserve selected text, caret position and lf/crlf line endings while inserting code blocks or editing lines, and group each compound transformation and list renumbering into one undo step.
+- prevent indentation, renumbering, smart home and backspace from treating examples inside a code fence as lists, and allow three consecutive backticks to be typed without automatic pairing interrupting the opening fence.
+- interpret an undefined textmate font style correctly instead of applying italic, bold and underline together, and enforce the tokenisation budget across the complete block instead of resetting it for every line.
+- turn a url pasted over selected text into a markdown link while retaining normal paste behaviour when the clipboard does not contain a valid url.
 - fix documentation links and icons in both README files, along with references and relative links in `AGENTS.md` and `.docs/project-info/`, so they point to existing files.
 - show the graph when the vault contains notes without any sessions and avoid temporarily hiding it during a reload.
 - clear the pending endpoint of a manual link when filters change to prevent accidental connections to hidden notes.

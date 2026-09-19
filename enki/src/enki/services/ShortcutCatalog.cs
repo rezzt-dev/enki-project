@@ -53,6 +53,18 @@ public static class ShortcutCatalog
         new(ShortcutIds.EditorInsertLink, "Ctrl+K", "Settings_EditDocs_Title", "Settings_EditDocs_InsertLink"),
         new(ShortcutIds.EditorFind, "Ctrl+F", "Settings_EditDocs_Title", "Settings_EditDocs_SearchInNote"),
         new(ShortcutIds.EditorFindReplace, "Ctrl+H", "Settings_EditDocs_Title", "Settings_Shortcuts_FindReplace"),
+        new(ShortcutIds.EditorStrikethrough, "Ctrl+Shift+X", "Settings_EditDocs_Title", "Settings_Shortcuts_Strikethrough"),
+        new(ShortcutIds.EditorInlineCode, "Ctrl+Shift+C", "Settings_EditDocs_Title", "Settings_Shortcuts_InlineCode"),
+        new(ShortcutIds.EditorHighlight, "Ctrl+Shift+M", "Settings_EditDocs_Title", "Settings_Shortcuts_Highlight"),
+        new(ShortcutIds.EditorToggleQuote, "Ctrl+Shift+Q", "Settings_EditDocs_Title", "Settings_Shortcuts_ToggleQuote"),
+        new(ShortcutIds.EditorToggleList, "Ctrl+Shift+L", "Settings_EditDocs_Title", "Settings_Shortcuts_ToggleList"),
+        new(ShortcutIds.EditorToggleTask, "Ctrl+Enter", "Settings_EditDocs_Title", "Settings_Shortcuts_ToggleTask"),
+        // Operaciones de línea, con los gestos que ya traen de serie los editores de código.
+        new(ShortcutIds.EditorMoveLineUp, "Alt+Up", "Settings_EditDocs_Title", "Settings_Shortcuts_MoveLineUp"),
+        new(ShortcutIds.EditorMoveLineDown, "Alt+Down", "Settings_EditDocs_Title", "Settings_Shortcuts_MoveLineDown"),
+        new(ShortcutIds.EditorDuplicateLines, "Ctrl+Shift+D", "Settings_EditDocs_Title", "Settings_Shortcuts_DuplicateLines"),
+        new(ShortcutIds.EditorDeleteLines, "Ctrl+Shift+Y", "Settings_EditDocs_Title", "Settings_Shortcuts_DeleteLines"),
+        new(ShortcutIds.EditorSelectLine, "Ctrl+L", "Settings_EditDocs_Title", "Settings_Shortcuts_SelectLine"),
 
         // ===================== Recordatorios (RemindersView.axaml) =====================
         new(ShortcutIds.RemindersNew, "Ctrl+N", "Settings_Shortcuts_Category_Reminders", "Settings_Shortcuts_RemindersNew"),

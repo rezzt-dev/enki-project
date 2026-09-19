@@ -51,6 +51,14 @@ public sealed class LivePreviewState
     public string? SearchHighlightText { get; set; }
     public bool SearchHighlightMatchCase { get; set; }
 
+    /// <summary>Qué líneas forman parte de un aviso y de cuál — repuesto en cada reescaneo del documento,
+    /// igual que <see cref="Fences"/>, porque tampoco se puede contestar línea a línea (ver
+    /// <see cref="MarkdownCallouts.Scan"/>).</summary>
+    public Dictionary<int, MdCalloutLine> Callouts { get; set; } = new();
+
+    public MdCalloutLine? GetCallout(int lineNumber) =>
+        Callouts.TryGetValue(lineNumber, out var callout) ? callout : null;
+
     public FenceInfo GetFence(int lineNumber) =>
         Fences.TryGetValue(lineNumber, out var f) ? f : default;
 

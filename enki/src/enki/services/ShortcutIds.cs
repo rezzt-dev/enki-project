@@ -36,6 +36,17 @@ public static class ShortcutIds
     public const string EditorInsertLink = "editor.insertLink";
     public const string EditorFind = "editor.find";
     public const string EditorFindReplace = "editor.findReplace";
+    public const string EditorStrikethrough = "editor.strikethrough";
+    public const string EditorInlineCode = "editor.inlineCode";
+    public const string EditorHighlight = "editor.highlight";
+    public const string EditorToggleQuote = "editor.toggleQuote";
+    public const string EditorToggleList = "editor.toggleList";
+    public const string EditorToggleTask = "editor.toggleTask";
+    public const string EditorMoveLineUp = "editor.moveLineUp";
+    public const string EditorMoveLineDown = "editor.moveLineDown";
+    public const string EditorDuplicateLines = "editor.duplicateLines";
+    public const string EditorDeleteLines = "editor.deleteLines";
+    public const string EditorSelectLine = "editor.selectLine";
 
     public const string RemindersNew = "reminders.new";
 

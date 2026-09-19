@@ -113,8 +113,10 @@ public static class EditorPreferences
         }
     }
 
+    /// <summary>Justifica el texto de las notas (Ajustes › Editor › "Alineación del texto"). Qué bloques
+    /// abarca y cómo se reparte el blanco lo decide
+    /// <c>Views.Editor.Markdown.MarkdownJustification</c>.</summary>
     private static bool _justifyParagraphs = true;
-    /// <summary>Justifica suavemente los párrafos; preparada para un futuro control en Ajustes.</summary>
     public static bool JustifyParagraphs
     {
         get => _justifyParagraphs;
@@ -122,6 +124,22 @@ public static class EditorPreferences
         {
             if (_justifyParagraphs == value) return;
             _justifyParagraphs = value;
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>Si escribir un paréntesis, un corchete o unas comillas con texto seleccionado lo envuelve,
+    /// y si sin selección se cierra solo (ver <c>EditorView.Editing.cs</c>). Es una preferencia y no una
+    /// constante porque el autocierre divide a la gente: a quien escribe código dentro de las notas le
+    /// ahorra medio teclado, y a quien escribe prosa con paréntesis sueltos le estorba.</summary>
+    private static bool _autoPairs = true;
+    public static bool AutoPairs
+    {
+        get => _autoPairs;
+        set
+        {
+            if (_autoPairs == value) return;
+            _autoPairs = value;
             Changed?.Invoke();
         }
     }

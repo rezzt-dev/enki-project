@@ -673,6 +673,9 @@
   <data name="Editor_SlashCommand_BulletList_Label" xml:space="preserve">
     <value>Aufzählungsliste</value>
   </data>
+  <data name="Editor_SlashCommand_Callout_Label" xml:space="preserve">
+    <value>Hinweis</value>
+  </data>
   <data name="Editor_SlashCommand_CodeBlock_Label" xml:space="preserve">
     <value>Codeblock</value>
   </data>
@@ -788,6 +791,9 @@
   </data>
   <data name="Editor_Toolbar_H3_Tooltip" xml:space="preserve">
     <value>Überschrift 3</value>
+  </data>
+  <data name="Editor_Toolbar_Highlight_Tooltip" xml:space="preserve">
+    <value>Hervorheben</value>
   </data>
   <data name="Editor_Toolbar_HorizontalRule_Tooltip" xml:space="preserve">
     <value>Horizontale Linie</value>
@@ -2712,6 +2718,12 @@
   <data name="Settings_EditDocs_Title" xml:space="preserve">
     <value>Editor-Tastenkürzel</value>
   </data>
+  <data name="Settings_Editor_AutoPairs_Description" xml:space="preserve">
+    <value>Eine öffnende Klammer oder ein Anführungszeichen wird automatisch geschlossen; bei markiertem Text wird die Auswahl umschlossen statt ersetzt.</value>
+  </data>
+  <data name="Settings_Editor_AutoPairs_Label" xml:space="preserve">
+    <value>Klammern und Anführungszeichen schließen</value>
+  </data>
   <data name="Settings_Editor_Autosave_Description" xml:space="preserve">
     <value>Notizen werden automatisch beim Tippen gespeichert.</value>
   </data>
@@ -2810,6 +2822,18 @@
   </data>
   <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
     <value>Variablen: {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} und {{cursor}}. Sie akzeptieren ein Format ({{date:dd/MM/yyyy}}) und einen Versatz ({{date+1d}}).</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Description" xml:space="preserve">
+    <value>Im Blocksatz reicht jede Zeile bis zum rechten Rand der Spalte. Im Flattersatz bleiben die natürlichen Zeilenenden erhalten.</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Justified" xml:space="preserve">
+    <value>Blocksatz</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Label" xml:space="preserve">
+    <value>Textausrichtung</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Ragged" xml:space="preserve">
+    <value>Flattersatz</value>
   </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>EDITOR</value>
@@ -3225,11 +3249,44 @@
   <data name="Settings_Shortcuts_DailyPreviousDay" xml:space="preserve">
     <value>Tagesnotiz: vorheriger Tag</value>
   </data>
+  <data name="Settings_Shortcuts_DeleteLines" xml:space="preserve">
+    <value>Zeile löschen</value>
+  </data>
   <data name="Settings_Shortcuts_Description" xml:space="preserve">
     <value>Tastenkürzel für Navigation, Editor, Kanban und Ansichtszoom.</value>
   </data>
+  <data name="Settings_Shortcuts_DuplicateLines" xml:space="preserve">
+    <value>Zeile duplizieren</value>
+  </data>
+  <data name="Settings_Shortcuts_Highlight" xml:space="preserve">
+    <value>Hervorhebung</value>
+  </data>
+  <data name="Settings_Shortcuts_InlineCode" xml:space="preserve">
+    <value>Inline-Code</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineDown" xml:space="preserve">
+    <value>Zeile nach unten</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineUp" xml:space="preserve">
+    <value>Zeile nach oben</value>
+  </data>
+  <data name="Settings_Shortcuts_SelectLine" xml:space="preserve">
+    <value>Zeile auswählen</value>
+  </data>
+  <data name="Settings_Shortcuts_Strikethrough" xml:space="preserve">
+    <value>Durchgestrichen</value>
+  </data>
   <data name="Settings_Shortcuts_Title" xml:space="preserve">
     <value>Tastenkürzel</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleList" xml:space="preserve">
+    <value>Aufzählung</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleQuote" xml:space="preserve">
+    <value>Zitat</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleTask" xml:space="preserve">
+    <value>Aufgabe / abhaken</value>
   </data>
   <data name="Settings_Skills_CommunityLink_Description" xml:space="preserve">
     <value>Durchsuche und installiere Skills, die von der Enki-Community geteilt werden.</value>

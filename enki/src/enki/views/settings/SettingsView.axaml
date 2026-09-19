@@ -1281,6 +1281,43 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
 
+                  <!-- Alineación del texto de las notas: justificado (por defecto) o en bandera. Mismo
+                       control segmentado que la posición de la columna, porque es la misma clase de
+                       elección: dos formas de componer la misma página, no un interruptor de una función. -->
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Editor_TextAlign_Label Settings_Editor_TextAlign_Description
+                                    Settings_Editor_TextAlign_Justified Settings_Editor_TextAlign_Ragged
+                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <StackPanel Spacing="8">
+                      <StackPanel Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Editor_TextAlign_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Editor_TextAlign_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <RadioButton Classes="segment" GroupName="EditorTextAlign" Content="{loc:Tr Settings_Editor_TextAlign_Justified, Converter={StaticResource UpperCaseConverter}}"
+                                     IsChecked="{Binding EditorJustifyText}" />
+                        <RadioButton Classes="segment" GroupName="EditorTextAlign" Content="{loc:Tr Settings_Editor_TextAlign_Ragged, Converter={StaticResource UpperCaseConverter}}"
+                                     IsChecked="{Binding !EditorJustifyText}" />
+                      </StackPanel>
+                    </StackPanel></StackPanel>
+                  </controls:SettingsSearchOption>
+
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Editor_AutoPairs_Label Settings_Editor_AutoPairs_Description
+                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Editor_AutoPairs_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Editor_AutoPairs_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorAutoPairs}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_AutoPairs_Label}" />
+                    </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+
                   <controls:SettingsSearchOption
                       ResourceKeys="Settings_Editor_ShowScrollbar_Label Settings_Editor_ShowScrollbar_Description
                                     Settings_Nav_Editor Settings_Editor_SizeLayout_Title">

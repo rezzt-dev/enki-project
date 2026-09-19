@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Media.TextFormatting;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
@@ -91,6 +92,9 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
                     codeBlockTop ??= top;
                     codeBlockBottom = top + visualLine.Height;
                     break;
+                case MdBlockKind.Blockquote when _state.GetCallout(docLine.LineNumber) is { } callout:
+                    DrawCallout(textView, drawingContext, visualLine, model, callout, top, width);
+                    break;
                 case MdBlockKind.Blockquote:
                     DrawQuoteRails(textView, drawingContext, visualLine, model, top);
                     break;
@@ -108,6 +112,42 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
 
         DrawTables(textView, drawingContext);
         DrawSearchHighlights(textView, drawingContext);
+    }
+
+    /// <summary>Pinta una línea de un aviso: el fondo teñido de su tono y la barra de color a la
+    /// izquierda, en el sitio exacto donde una cita normal llevaría su raya.
+    ///
+    /// Se dibuja línea a línea y no como un bloque entero (al contrario que el recuadro de un bloque de
+    /// código) precisamente porque no lleva borde: sin trazo que cerrar no hay costuras que evitar, y así
+    /// un aviso del que solo se ve un trozo en pantalla se pinta igual de bien, sin depender de que su
+    /// primera o su última línea estén a la vista.</summary>
+    private void DrawCallout(TextView textView, DrawingContext drawingContext, VisualLine visualLine,
+        MdLine model, MdCalloutLine callout, double top, double width)
+    {
+        var accent = MarkdownCallouts.BrushOf(callout.Tone, _style);
+        var left = QuoteRailX(textView, visualLine, model);
+        // El fondo llega hasta el borde derecho de la columna: el aviso es un bloque, y recortarlo al
+        // ancho de su texto lo convertiría en un resaltado de frases sueltas.
+        drawingContext.FillRectangle(Tint(accent), new Rect(left, top, Math.Max(0, width - left), visualLine.Height));
+        drawingContext.FillRectangle(accent,
+            new Rect(Math.Round(left), top, MarkdownQuoteLayout.RailThickness, visualLine.Height));
+    }
+
+    /// <summary>El tono de fondo de un aviso: su propio color al 9 %. Lo justo para que el bloque se
+    /// separe de la página sin que el texto de dentro pierda contraste, en tema claro y en oscuro.</summary>
+    private static IBrush Tint(IBrush accent) => accent is ISolidColorBrush solid
+        ? new ImmutableSolidColorBrush(solid.Color, 0.09)
+        : Brushes.Transparent;
+
+    /// <summary>La X donde empieza la raya de cita de <paramref name="model"/> — compartida por las citas
+    /// normales y por los avisos, que es lo que hace que un aviso y una cita empiecen exactamente en la
+    /// misma columna.</summary>
+    private static double QuoteRailX(TextView textView, VisualLine visualLine, MdLine model)
+    {
+        if (visualLine.TextLines.Count == 0) return 0;
+        var markerColumn = visualLine.GetVisualColumn(model.MarkerStart - visualLine.FirstDocumentLine.Offset);
+        return visualLine.TextLines[0].GetDistanceFromCharacterHit(new CharacterHit(markerColumn, 0))
+               - MarkdownQuoteLayout.ContentIndent(Math.Max(1, model.QuoteDepth)) - textView.HorizontalOffset;
     }
 
     private void DrawQuoteRails(TextView textView, DrawingContext drawingContext, VisualLine visualLine,

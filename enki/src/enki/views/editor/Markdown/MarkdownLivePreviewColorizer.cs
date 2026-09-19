@@ -28,6 +28,11 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
     /// flashing broken for a frame.</summary>
     public Func<IReadOnlyList<NoteFile>>? WikiLinkNotesProvider { get; set; }
 
+    /// <summary>Quien colorea el interior de los bloques de código, o null en un contexto sin resaltado
+    /// (los tests de geometría, que no quieren cargar gramáticas). Sin él, el código se sigue viendo como
+    /// siempre: monoespaciado y en color de texto secundario.</summary>
+    public MarkdownCodeHighlighter? CodeHighlighter { get; set; }
+
     public MarkdownLivePreviewColorizer(LivePreviewState state, MarkdownStyle style)
     {
         _state = state;
@@ -47,6 +52,7 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
             var start = model.MarkerStart == model.MarkerEnd ? line.Offset : model.MarkerStart;
             Safe(start, line.EndOffset, el => el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily)));
             SetForeground(start, line.EndOffset, _style.TextSecondary);
+            ColorizeCode(line);
             return;
         }
 
@@ -62,6 +68,24 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                     el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal, weight));
                 });
                 SetForeground(model.MarkerStart, line.EndOffset, _style.TextPrimary);
+                break;
+            }
+            case MdBlockKind.Blockquote when _state.GetCallout(line.LineNumber) is { } callout:
+            {
+                // El cuerpo de un aviso es texto que hay que leer, no una cita de otro: se queda en color
+                // de texto principal en vez de apagarse como una cita normal.
+                var accent = MarkdownCallouts.BrushOf(callout.Tone, _style);
+                Safe(model.ContentStart, line.EndOffset, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal)));
+                SetForeground(model.ContentStart, line.EndOffset, _style.TextPrimary);
+
+                if (!callout.IsHeader || model.CalloutKind is null) break;
+                // El título del aviso, en seminegrita y del color del tono, como su icono.
+                Safe(model.CalloutTitleStart, line.EndOffset, el => el.TextRunProperties.SetTypeface(
+                    new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.SemiBold)));
+                SetForeground(model.CalloutTitleStart, line.EndOffset, accent);
+                // El "[!tipo]" en crudo (cursor dentro) se lee como marcado, no como contenido.
+                SetForeground(model.CalloutMarkerStart, model.CalloutMarkerEnd, _style.TextMuted);
                 break;
             }
             case MdBlockKind.Blockquote:
@@ -143,6 +167,32 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                      model.HtmlTags, line.Offset, line.EndOffset, html.OpenInlineTags))
         {
             ApplyInlineStyle(kind, start, end);
+        }
+    }
+
+    /// <summary>Colorea el interior de un bloque de código con su gramática (ver
+    /// <see cref="MarkdownCodeHighlighter"/>). Se aplica <em>encima</em> del color plano que acaba de
+    /// ponerse: así, mientras las gramáticas se cargan —o cuando el bloque no declara lenguaje— el código
+    /// se ve exactamente como se veía antes, y nunca a medio colorear.</summary>
+    private void ColorizeCode(DocumentLine line)
+    {
+        if (CodeHighlighter?.Tokens(CurrentContext.Document, line.LineNumber) is not { Count: > 0 } tokens) return;
+
+        foreach (var token in tokens)
+        {
+            var start = line.Offset + token.Start;
+            var end = Math.Min(line.Offset + token.End, line.EndOffset);
+            if (start >= end) continue;
+
+            if (token.Style != FontStyle.Normal || token.Weight != FontWeight.Normal || token.Underline)
+            {
+                Safe(start, end, el =>
+                {
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily, token.Style, token.Weight));
+                    if (token.Underline) el.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
+                });
+            }
+            if (token.Foreground is { } brush) SetForeground(start, end, brush);
         }
     }
 

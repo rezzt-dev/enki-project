@@ -739,6 +739,9 @@
   <data name="Editor_SlashCommand_BulletList_Label" xml:space="preserve">
     <value>Bulleted list</value>
   </data>
+  <data name="Editor_SlashCommand_Callout_Label" xml:space="preserve">
+    <value>Callout</value>
+  </data>
   <data name="Editor_SlashCommand_CodeBlock_Label" xml:space="preserve">
     <value>Code block</value>
   </data>
@@ -854,6 +857,9 @@
   </data>
   <data name="Editor_Toolbar_H3_Tooltip" xml:space="preserve">
     <value>Heading 3</value>
+  </data>
+  <data name="Editor_Toolbar_Highlight_Tooltip" xml:space="preserve">
+    <value>Highlight</value>
   </data>
   <data name="Editor_Toolbar_HorizontalRule_Tooltip" xml:space="preserve">
     <value>Horizontal rule</value>
@@ -2979,6 +2985,12 @@
   <data name="Settings_EditDocs_Title" xml:space="preserve">
     <value>Editor Shortcuts</value>
   </data>
+  <data name="Settings_Editor_AutoPairs_Description" xml:space="preserve">
+    <value>Typing an opening bracket or quote closes it for you, and typing one with text selected wraps the selection instead of replacing it.</value>
+  </data>
+  <data name="Settings_Editor_AutoPairs_Label" xml:space="preserve">
+    <value>Close brackets and quotes</value>
+  </data>
   <data name="Settings_Editor_Autosave_Description" xml:space="preserve">
     <value>Notes are saved automatically as you type.</value>
   </data>
@@ -3077,6 +3089,18 @@
   </data>
   <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
     <value>Variables: {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} and {{cursor}}. They accept a format ({{date:dd/MM/yyyy}}) and an offset ({{date+1d}}).</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Description" xml:space="preserve">
+    <value>Justified text fills every line to the right margin of the column. Ragged text keeps the natural line endings.</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Justified" xml:space="preserve">
+    <value>Justified</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Label" xml:space="preserve">
+    <value>Text alignment</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Ragged" xml:space="preserve">
+    <value>Ragged</value>
   </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>EDITOR</value>
@@ -3510,14 +3534,32 @@
   <data name="Settings_Shortcuts_DailyPreviousDay" xml:space="preserve">
     <value>Daily note: previous day</value>
   </data>
+  <data name="Settings_Shortcuts_DeleteLines" xml:space="preserve">
+    <value>Delete line</value>
+  </data>
   <data name="Settings_Shortcuts_Description" xml:space="preserve">
     <value>Keyboard shortcuts for navigation, view zoom, and the notes editor — click any shortcut to remap it. Kanban and PDF viewer shortcuts stay fixed for now.</value>
+  </data>
+  <data name="Settings_Shortcuts_DuplicateLines" xml:space="preserve">
+    <value>Duplicate line</value>
   </data>
   <data name="Settings_Shortcuts_EmptyTrash" xml:space="preserve">
     <value>Empty the trash</value>
   </data>
   <data name="Settings_Shortcuts_FindReplace" xml:space="preserve">
     <value>Find and replace in the note</value>
+  </data>
+  <data name="Settings_Shortcuts_Highlight" xml:space="preserve">
+    <value>Highlight</value>
+  </data>
+  <data name="Settings_Shortcuts_InlineCode" xml:space="preserve">
+    <value>Inline code</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineDown" xml:space="preserve">
+    <value>Move line down</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineUp" xml:space="preserve">
+    <value>Move line up</value>
   </data>
   <data name="Settings_Shortcuts_NextTab" xml:space="preserve">
     <value>Switch to the next tab</value>
@@ -3546,8 +3588,23 @@
   <data name="Settings_Shortcuts_ResetRowTooltip" xml:space="preserve">
     <value>Reset to default</value>
   </data>
+  <data name="Settings_Shortcuts_SelectLine" xml:space="preserve">
+    <value>Select line</value>
+  </data>
+  <data name="Settings_Shortcuts_Strikethrough" xml:space="preserve">
+    <value>Strikethrough</value>
+  </data>
   <data name="Settings_Shortcuts_Title" xml:space="preserve">
     <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleList" xml:space="preserve">
+    <value>Bulleted list</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleQuote" xml:space="preserve">
+    <value>Quote</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleTask" xml:space="preserve">
+    <value>Task / tick off</value>
   </data>
   <data name="Settings_Shortcuts_ToggleZenMode" xml:space="preserve">
     <value>Toggle focus mode</value>

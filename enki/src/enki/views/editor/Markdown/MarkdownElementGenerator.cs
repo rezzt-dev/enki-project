@@ -29,7 +29,11 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     private const double CheckboxSize = 16;
     private const double CheckboxSpacing = 6;
 
-    private enum ZoneKind { Hide, Bullet, Checkbox, Align, JustifySpace, Image, TableRule, TableRow }
+    /// <summary>Lado del icono de un aviso. Algo menor que el cuerpo de texto a propósito: el icono
+    /// acompaña al título, no compite con él.</summary>
+    private const double CalloutIconSize = 15;
+
+    private enum ZoneKind { Hide, Bullet, Checkbox, Callout, Align, JustifySpace, Image, TableRule, TableRow }
 
     /// <param name="Spacer">Extra blank width (px) this zone reserves before whatever it renders: the
     /// alignment spacing of the visual row starting here, or the share of leftover width a justified
@@ -155,6 +159,11 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // marcador puede ocultarse sin alterar el documento ni falsear el hit testing.
                 if (model.MarkerStart < model.MarkerEnd)
                     zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0));
+                // Cabecera de un aviso: el "[!warning]" se sustituye por el icono del tipo (y por su
+                // nombre, si el aviso no trae título propio). Con el cursor dentro se enseña en crudo,
+                // igual que cualquier otro marcador del live preview.
+                if (!lineActive && model.CalloutKind is not null && model.CalloutMarkerStart < model.CalloutMarkerEnd)
+                    zones.Add(new Zone(model.CalloutMarkerStart, model.CalloutMarkerEnd, ZoneKind.Callout, model, 0));
                 break;
             case MdBlockKind.BulletList:
                 if (model.MarkerStart < model.MarkerEnd)
@@ -478,6 +487,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // Single trailing space matches the gap ordered lists get naturally from "1. ".
                 ZoneKind.Bullet => new WhitespaceFormattedElement("• ", length, spacer),
                 ZoneKind.Checkbox => new InlineObjectElement(length, BuildCheckbox(zone.Line, spacer)),
+                ZoneKind.Callout => new InlineObjectElement(length, BuildCalloutBadge(line, zone.Line, spacer)),
                 ZoneKind.Image => zone.Span is { } imageSpan
                     ? new InlineObjectElement(length, BuildImage(imageSpan, spacer, zone.ImageMaxWidth))
                     : null,
@@ -526,6 +536,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             {
                 ZoneKind.Bullet => MarkdownLineMeasurer.MeasureGlyph("• ", model, _style),
                 ZoneKind.Checkbox => CheckboxSize + CheckboxSpacing,
+                ZoneKind.Callout => CalloutIconSize + CheckboxSpacing,
                 // Centrar o alinear a la derecha una línea con una imagen exige contar lo que la imagen
                 // ocupa, igual que se cuenta el ancho del texto: si no, la línea se centraría como si la
                 // imagen no estuviera y quedaría desplazada justo su ancho.
@@ -656,6 +667,55 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         var textView = _textArea.TextView;
         var descent = textView.DefaultLineHeight - textView.DefaultBaseline;
         TextBlock.SetBaselineOffset(control, Math.Max(0, height - descent));
+    }
+
+    /// <summary>El distintivo que sustituye al <c>[!tipo]</c> de un aviso: su icono y, solo si el aviso no
+    /// trae título propio, el nombre del tipo. Cuando sí lo trae, el título es el texto real de la línea y
+    /// el distintivo se queda en el icono — así lo que se lee en grande es lo que escribió el autor.
+    ///
+    /// Sin hit-test: pinchar sobre el icono coloca el cursor en el documento, como pinchar sobre
+    /// cualquier otro trozo de la línea.</summary>
+    private Control BuildCalloutBadge(DocumentLine line, MdLine model, double leadingWidth)
+    {
+        var kind = model.CalloutKind ?? "note";
+        var brush = MarkdownCallouts.BrushOf(MarkdownCallouts.ToneOf(kind), _style);
+        var textView = _textArea.TextView;
+
+        var icon = new MaterialIcon
+        {
+            Kind = MarkdownCallouts.IconOf(kind),
+            Width = CalloutIconSize,
+            Height = CalloutIconSize,
+            Foreground = brush,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        Control content = icon;
+        if (model.CalloutTitleStart >= line.EndOffset)
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = CheckboxSpacing };
+            panel.Children.Add(icon);
+            panel.Children.Add(new TextBlock
+            {
+                Text = MarkdownCallouts.DefaultTitle(kind),
+                Foreground = brush,
+                FontFamily = _style.BodyFontFamily,
+                FontSize = _style.BaseFontSize,
+                FontWeight = FontWeight.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            content = panel;
+        }
+
+        content.IsHitTestVisible = false;
+        content.Margin = new Thickness(leadingWidth, 0, CheckboxSpacing, 0);
+        content.VerticalAlignment = VerticalAlignment.Top;
+        // Misma mecánica que la casilla de una tarea: se centra el distintivo contra el alto de línea y se
+        // fija su línea base a la del texto, para que la línea no crezca por llevar un icono.
+        var height = Math.Max(CalloutIconSize, textView.DefaultLineHeight);
+        content.Height = height;
+        TextBlock.SetBaselineOffset(content, textView.DefaultBaseline);
+        return content;
     }
 
     private CheckBox BuildCheckbox(MdLine model, double leadingWidth)

@@ -290,6 +290,12 @@
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}">
             <mi:MaterialIcon Kind="FormatStrikethrough" Width="16" Height="16" />
           </Button>
+          <!-- Resaltado (==texto==): el live preview ya lo pintaba, pero no había forma de escribirlo sin
+               saberse la sintaxis de memoria. -->
+          <Button Classes="icon-btn" Click="OnHighlightClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Highlight_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Highlight_Tooltip}">
+            <mi:MaterialIcon Kind="Marker" Width="16" Height="16" />
+          </Button>
         </StackPanel>
       </StackPanel>
       <Rectangle Width="1" Height="18" Fill="{DynamicResource Ink10}" Margin="6,0" />

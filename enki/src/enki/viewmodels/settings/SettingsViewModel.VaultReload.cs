@@ -20,6 +20,8 @@ public sealed partial class SettingsViewModel
         _editorTabSize = _settingsService.Settings.EditorTabSize;
         _editorLineNumbers = _settingsService.Settings.EditorLineNumbers;
         _editorWordWrap = _settingsService.Settings.EditorWordWrap;
+        _editorJustifyText = _settingsService.Settings.EditorJustifyParagraphs;
+        _editorAutoPairs = _settingsService.Settings.EditorAutoPairs;
         _editorRemoteImages = _settingsService.Settings.EditorRemoteImages;
         _editorSidePanelVisible = _settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = _settingsService.Settings.NotesViewMode == "Simple";
@@ -87,7 +89,8 @@ public sealed partial class SettingsViewModel
         EditorPreferences.TabSize = _settingsService.Settings.EditorTabSize;
         EditorPreferences.LineNumbers = _editorLineNumbers;
         EditorPreferences.WordWrap = _editorWordWrap;
-        EditorPreferences.JustifyParagraphs = _settingsService.Settings.EditorJustifyParagraphs;
+        EditorPreferences.JustifyParagraphs = _editorJustifyText;
+        EditorPreferences.AutoPairs = _editorAutoPairs;
         EditorPreferences.RemoteImages = _editorRemoteImages;
         EditorPreferences.SidePanelVisible = _editorSidePanelVisible;
         EditorPreferences.ToolbarVisible = _settingsService.Settings.EditorToolbarVisible;
@@ -109,6 +112,8 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(EditorTabSize));
         OnPropertyChanged(nameof(EditorLineNumbers));
         OnPropertyChanged(nameof(EditorWordWrap));
+        OnPropertyChanged(nameof(EditorJustifyText));
+        OnPropertyChanged(nameof(EditorAutoPairs));
         OnPropertyChanged(nameof(EditorRemoteImages));
         OnPropertyChanged(nameof(EditorSidePanelVisible));
         OnPropertyChanged(nameof(IsSimplifiedNotesView));

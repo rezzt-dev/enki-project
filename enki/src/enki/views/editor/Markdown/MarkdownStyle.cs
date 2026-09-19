@@ -12,6 +12,12 @@ public sealed class MarkdownStyle
     public required IBrush TextMuted { get; init; }
     public required IBrush Accent { get; init; }
     public required IBrush Danger { get; init; }
+
+    /// <summary>Tonos de los avisos (<see cref="MarkdownCallouts"/>). Son los mismos verdes/ámbar/rojos
+    /// con los que la aplicación marca ya un guardado correcto o un fallo de sincronización: un aviso
+    /// dentro de una nota se lee con el mismo código de color que el resto del programa.</summary>
+    public required IBrush Success { get; init; }
+    public required IBrush Warning { get; init; }
     /// <summary>Foreground the colorizer must switch styled text to wherever it overlaps the selection —
     /// otherwise a heading/link/code span keeps its own color while the selection highlight behind it
     /// turns the same near-white shade the app uses for selected-text background, and the run reads as
@@ -69,6 +75,7 @@ public sealed class MarkdownStyle
         var accent = FindBrush("InkBrush", "#F5F5F5");
         var danger = FindBrush("DangerBrush", "#F76B6B");
         var highlight = FindBrush("HighlightBrush", "#F5C542");
+        var success = FindBrush("SuccessBrush", "#5FBF7F");
         var border = FindBrush("BorderSubtleBrush", "#1A1A1E");
         var selectionForeground = FindBrush("SelectionForegroundBrush", "#000000");
         // PanelBackgroundBrush is the same color as the editor card behind it, so filling code blocks
@@ -84,6 +91,8 @@ public sealed class MarkdownStyle
             TextMuted = textMuted,
             Accent = accent,
             Danger = danger,
+            Success = success,
+            Warning = highlight,
             SelectionForeground = selectionForeground,
             CodeInlineBackground = codeBackground,
             CodeBlockBackground = codeBackground,

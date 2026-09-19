@@ -93,9 +93,33 @@ public partial class EditorView
                 // remota) no puede impedir pegar texto: se anota y se sigue por la vía normal.
                 LogService.Warning("No se pudo leer una imagen del portapapeles", ex);
             }
+
+            try
+            {
+                // Pegar una URL sobre texto seleccionado lo convierte en enlace en vez de sustituirlo
+                // (ver MarkdownEditing.LinkFromPaste). Va después de las imágenes: una URL de imagen
+                // copiada como archivo ya se habrá adjuntado arriba.
+                if (await TryPasteLinkAsync(clipboard)) return;
+            }
+            catch (Exception ex)
+            {
+                LogService.Warning("No se pudo leer texto del portapapeles", ex);
+            }
         }
 
         Editor.Paste();
+    }
+
+    /// <summary>Devuelve si el pegado se ha resuelto convirtiendo la selección en un enlace Markdown —
+    /// solo ocurre con una URL en el portapapeles y texto seleccionado; ver
+    /// <see cref="Markdown.MarkdownEditing.LinkFromPaste"/>.</summary>
+    private async Task<bool> TryPasteLinkAsync(IClipboard clipboard)
+    {
+        if (Editor.SelectionLength == 0) return false;
+        using var data = await clipboard.TryGetDataAsync();
+        if (data is null || !data.Contains(DataFormat.Text)) return false;
+        var text = await data.TryGetTextAsync();
+        return text is not null && TryPasteAsLink(text);
     }
 
     /// <summary>Devuelve si el contenido del portapapeles se ha insertado como imagen. El orden importa:

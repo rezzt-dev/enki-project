@@ -96,6 +96,21 @@ public sealed class MdLine
 
     public string? FenceLanguage { get; set; }
 
+    /// <summary>Si esta línea es la cabecera de un aviso (<c>&gt; [!warning] Título</c>), el tipo escrito
+    /// entre corchetes; null en cualquier otra línea — incluidas las del cuerpo del aviso, que son citas
+    /// normales y solo el escaneo del documento sabe a qué aviso pertenecen (ver
+    /// <see cref="MarkdownCallouts"/>).</summary>
+    public string? CalloutKind { get; set; }
+
+    /// <summary>Solo con <see cref="CalloutKind"/>: el rango del marcador <c>[!tipo]</c>, que el live
+    /// preview oculta y sustituye por el icono del aviso.</summary>
+    public int CalloutMarkerStart { get; set; }
+    public int CalloutMarkerEnd { get; set; }
+
+    /// <summary>Solo con <see cref="CalloutKind"/>: dónde empieza el título propio del aviso. Si coincide
+    /// con el final de la línea, el aviso no trae título y se enseña el nombre del tipo.</summary>
+    public int CalloutTitleStart { get; set; }
+
     public List<MdSpan> Spans { get; } = new();
 
     /// <summary>Recognized HTML tags found on the line, in document order — the same tags that also appear

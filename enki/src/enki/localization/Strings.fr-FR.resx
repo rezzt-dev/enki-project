@@ -673,6 +673,9 @@
   <data name="Editor_SlashCommand_BulletList_Label" xml:space="preserve">
     <value>Liste à puces</value>
   </data>
+  <data name="Editor_SlashCommand_Callout_Label" xml:space="preserve">
+    <value>Encadré</value>
+  </data>
   <data name="Editor_SlashCommand_CodeBlock_Label" xml:space="preserve">
     <value>Bloc de code</value>
   </data>
@@ -788,6 +791,9 @@
   </data>
   <data name="Editor_Toolbar_H3_Tooltip" xml:space="preserve">
     <value>Titre 3</value>
+  </data>
+  <data name="Editor_Toolbar_Highlight_Tooltip" xml:space="preserve">
+    <value>Surligner</value>
   </data>
   <data name="Editor_Toolbar_HorizontalRule_Tooltip" xml:space="preserve">
     <value>Ligne horizontale</value>
@@ -2712,6 +2718,12 @@
   <data name="Settings_EditDocs_Title" xml:space="preserve">
     <value>Raccourcis de l'éditeur</value>
   </data>
+  <data name="Settings_Editor_AutoPairs_Description" xml:space="preserve">
+    <value>Une parenthèse ou un guillemet ouvrant se ferme automatiquement, et avec du texte sélectionné, la sélection est entourée au lieu d'être remplacée.</value>
+  </data>
+  <data name="Settings_Editor_AutoPairs_Label" xml:space="preserve">
+    <value>Fermer parenthèses et guillemets</value>
+  </data>
   <data name="Settings_Editor_Autosave_Description" xml:space="preserve">
     <value>Les notes sont enregistrées automatiquement pendant la saisie.</value>
   </data>
@@ -2810,6 +2822,18 @@
   </data>
   <data name="Settings_Editor_Templates_Variables" xml:space="preserve">
     <value>Variables : {{title}}, {{date}}, {{time}}, {{datetime}}, {{weekday}}, {{month}}, {{year}}, {{uuid}} et {{cursor}}. Elles acceptent un format ({{date:dd/MM/yyyy}}) et un décalage ({{date+1d}}).</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Description" xml:space="preserve">
+    <value>Le texte justifié remplit chaque ligne jusqu'à la marge droite de la colonne. En drapeau, les fins de ligne naturelles sont conservées.</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Justified" xml:space="preserve">
+    <value>Justifié</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Label" xml:space="preserve">
+    <value>Alignement du texte</value>
+  </data>
+  <data name="Settings_Editor_TextAlign_Ragged" xml:space="preserve">
+    <value>En drapeau</value>
   </data>
   <data name="Settings_Editor_Title" xml:space="preserve">
     <value>ÉDITEUR</value>
@@ -3225,11 +3249,44 @@
   <data name="Settings_Shortcuts_DailyPreviousDay" xml:space="preserve">
     <value>Note quotidienne : jour précédent</value>
   </data>
+  <data name="Settings_Shortcuts_DeleteLines" xml:space="preserve">
+    <value>Supprimer la ligne</value>
+  </data>
   <data name="Settings_Shortcuts_Description" xml:space="preserve">
     <value>Raccourcis clavier pour la navigation, l'éditeur, Kanban et le zoom de la vue.</value>
   </data>
+  <data name="Settings_Shortcuts_DuplicateLines" xml:space="preserve">
+    <value>Dupliquer la ligne</value>
+  </data>
+  <data name="Settings_Shortcuts_Highlight" xml:space="preserve">
+    <value>Surlignage</value>
+  </data>
+  <data name="Settings_Shortcuts_InlineCode" xml:space="preserve">
+    <value>Code en ligne</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineDown" xml:space="preserve">
+    <value>Descendre la ligne</value>
+  </data>
+  <data name="Settings_Shortcuts_MoveLineUp" xml:space="preserve">
+    <value>Monter la ligne</value>
+  </data>
+  <data name="Settings_Shortcuts_SelectLine" xml:space="preserve">
+    <value>Sélectionner la ligne</value>
+  </data>
+  <data name="Settings_Shortcuts_Strikethrough" xml:space="preserve">
+    <value>Barré</value>
+  </data>
   <data name="Settings_Shortcuts_Title" xml:space="preserve">
     <value>Raccourcis clavier</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleList" xml:space="preserve">
+    <value>Liste à puces</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleQuote" xml:space="preserve">
+    <value>Citation</value>
+  </data>
+  <data name="Settings_Shortcuts_ToggleTask" xml:space="preserve">
+    <value>Tâche / cocher</value>
   </data>
   <data name="Settings_Skills_CommunityLink_Description" xml:space="preserve">
     <value>Parcourir et installer les compétences partagées par la communauté Enki.</value>

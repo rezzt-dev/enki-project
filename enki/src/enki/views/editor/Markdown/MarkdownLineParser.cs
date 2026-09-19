@@ -155,6 +155,21 @@ public static class MarkdownLineParser
             model.MarkerStart = lineOffset + indent;
             model.MarkerEnd = lineOffset + j;
             model.ContentStart = lineOffset + j;
+
+            // Aviso al estilo de Obsidian: "> [!warning] Título". Se reconoce aquí y no en un bloque
+            // aparte porque sintácticamente ES una cita — ver MarkdownCallouts.
+            var content = text[j..];
+            if (MarkdownCallouts.HeaderRange(content, out var afterMarker) is { } marker)
+            {
+                model.CalloutKind = content[(marker.Start.Value + 2)..(marker.End.Value - 1)];
+                model.CalloutMarkerStart = lineOffset + j + marker.Start.Value;
+                model.CalloutMarkerEnd = lineOffset + j + afterMarker;
+                model.CalloutTitleStart = model.CalloutMarkerEnd;
+                // El título lleva formato en línea como cualquier otro texto; el marcador no.
+                ScanInline(model, text, j + afterMarker, n, lineOffset);
+                return;
+            }
+
             ScanInline(model, text, j, n, lineOffset);
             return;
         }

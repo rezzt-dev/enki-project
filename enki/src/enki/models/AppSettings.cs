@@ -280,6 +280,8 @@ public sealed class AppSettings
     /// <summary>Justificación visual de párrafos; activa también en ajustes anteriores sin esta clave.</summary>
     public bool EditorJustifyParagraphs { get; set; } = true;
 
+    public bool EditorAutoPairs { get; set; } = true;
+
     /// <summary>Si el editor descarga y dibuja las imágenes escritas con una URL http(s) — Ajustes ›
     /// Editor. Las imágenes del propio vault y las <c>data:</c> incrustadas se dibujan siempre; estas
     /// otras convierten abrir una nota en una petición a un servidor de terceros, así que se pueden

@@ -240,6 +240,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorTabSize = settingsService.Settings.EditorTabSize;
         _editorLineNumbers = settingsService.Settings.EditorLineNumbers;
         _editorWordWrap = settingsService.Settings.EditorWordWrap;
+        _editorJustifyText = settingsService.Settings.EditorJustifyParagraphs;
+        _editorAutoPairs = settingsService.Settings.EditorAutoPairs;
         _editorRemoteImages = settingsService.Settings.EditorRemoteImages;
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
@@ -307,7 +309,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.TabSize = settingsService.Settings.EditorTabSize;
         EditorPreferences.LineNumbers = _editorLineNumbers;
         EditorPreferences.WordWrap = _editorWordWrap;
-        EditorPreferences.JustifyParagraphs = settingsService.Settings.EditorJustifyParagraphs;
+        EditorPreferences.JustifyParagraphs = _editorJustifyText;
+        EditorPreferences.AutoPairs = _editorAutoPairs;
         EditorPreferences.RemoteImages = _editorRemoteImages;
         EditorPreferences.SidePanelVisible = _editorSidePanelVisible;
         EditorPreferences.ToolbarVisible = settingsService.Settings.EditorToolbarVisible;
