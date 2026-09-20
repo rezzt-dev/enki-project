@@ -152,13 +152,28 @@ public sealed partial class SessionsViewModel : ViewModelBase
     [ObservableProperty]
     private string _newSessionPasswordConfirm = string.Empty;
 
-    /// <summary>Longitud mínima de la contraseña de una sesión protegida. Es el <em>único</em> requisito:
-    /// no hay reglas de composición (mayúsculas, dígitos, símbolos) ni las va a haber — la contraseña llega
-    /// tal cual a <c>SessionEncryptionService</c>, que la pasa por PBKDF2-SHA256 sobre sus bytes UTF-8, así
-    /// que cualquier combinación de caracteres vale por igual. Enki es una app local de un solo usuario, no
-    /// un servicio expuesto a fuerza bruta remota: exigir una contraseña larga aquí solo consigue que el
-    /// usuario deje de usar sesiones protegidas.</summary>
-    private const int MinPasswordLength = 4;
+    /// <summary>Longitud mínima de la contraseña de una sesión protegida. Sigue siendo el <em>único</em>
+    /// requisito: no hay reglas de composición (mayúsculas, dígitos, símbolos) ni las va a haber — la
+    /// contraseña llega tal cual a <c>SessionEncryptionService</c>, que la pasa por PBKDF2-SHA256 sobre sus
+    /// bytes UTF-8, así que cualquier combinación de caracteres vale por igual y una frase larga protege
+    /// mucho más que una palabra corta con símbolos.
+    ///
+    /// <para>El mínimo era 4 con el argumento de que Enki es una app local y no un servicio expuesto a
+    /// fuerza bruta remota. Ese argumento no se sostiene aquí: el atacante de una sesión protegida no ataca
+    /// la app, ataca el archivo. <c>.session.json</c> lleva la DEK envuelta y viaja en cualquier copia del
+    /// vault — un backup en un USB, una carpeta sincronizada, el .zip de "Crear copia de seguridad", un
+    /// portátil robado — así que el ataque es <em>offline</em> y sin límite de intentos. Con PBKDF2-SHA256 a
+    /// 210.000 iteraciones, 4 caracteres alfanuméricos son ~1,7 millones de candidatos: minutos en GPU. 12
+    /// caracteres mueven ese coste varios órdenes de magnitud y siguen siendo una contraseña que se teclea
+    /// una vez por sesión de trabajo, no cada minuto (ver .docs/auditoria-seguridad-y-fallos-criticos.md,
+    /// SEC-02).</para>
+    ///
+    /// <para>Las sesiones creadas con una contraseña más corta siguen abriéndose con normalidad — este
+    /// mínimo solo se aplica al crear una sesión o al cambiar la contraseña con un código de recuperación,
+    /// que son los dos únicos puntos donde el usuario elige una nueva. El texto visible que anuncia el
+    /// mínimo vive en <c>Sessions_CreateDialog_PasswordTooShort</c>/<c>Sessions_Unlock_PasswordMismatch</c>
+    /// y menciona este número: cambiarlo aquí obliga a actualizar esas cadenas en los 7 idiomas.</para></summary>
+    private const int MinPasswordLength = 12;
 
     /// <summary>Non-null while the "here are your 5 recovery codes" dialog is open — opened once, right
     /// after <see cref="ConfirmCreateSession"/> creates a protected session, and never reopened later (the
@@ -212,6 +227,13 @@ public sealed partial class SessionsViewModel : ViewModelBase
         !IsProcessingSessionAction &&
         !string.IsNullOrWhiteSpace(NewSessionName) &&
         (!NewSessionIsProtected || (NewSessionPassword.Length >= MinPasswordLength && NewSessionPassword == NewSessionPasswordConfirm));
+
+    /// <summary>Cierto cuando el usuario ya empezó a escribir una contraseña que todavía no llega a
+    /// <see cref="MinPasswordLength"/>. Existe para poder decirlo en el propio diálogo: con el mínimo en 12,
+    /// dejar el botón "Crear" deshabilitado sin explicar por qué convierte un requisito razonable en un
+    /// formulario que no responde. Falso con el campo vacío — ahí todavía no hay nada que corregir.</summary>
+    public bool IsNewSessionPasswordTooShort =>
+        NewSessionIsProtected && NewSessionPassword.Length > 0 && NewSessionPassword.Length < MinPasswordLength;
 
     /// <summary>Raised when the whole graph document should be (re)rendered from scratch — the page was
     /// (re)opened, a session was created/renamed/deleted, or notes were created/renamed/deleted from the
@@ -307,9 +329,17 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     partial void OnNewSessionNameChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
 
-    partial void OnNewSessionIsProtectedChanged(bool value) => OnPropertyChanged(nameof(CanConfirmCreate));
+    partial void OnNewSessionIsProtectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanConfirmCreate));
+        OnPropertyChanged(nameof(IsNewSessionPasswordTooShort));
+    }
 
-    partial void OnNewSessionPasswordChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
+    partial void OnNewSessionPasswordChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanConfirmCreate));
+        OnPropertyChanged(nameof(IsNewSessionPasswordTooShort));
+    }
 
     partial void OnNewSessionPasswordConfirmChanged(string value) => OnPropertyChanged(nameof(CanConfirmCreate));
 

@@ -1788,6 +1788,21 @@
   <data name="Notification_NoteImageOpenFailed_Title" xml:space="preserve">
     <value>No se pudo abrir la imagen</value>
   </data>
+  <data name="Notification_NoteLinkBlocked_Title" xml:space="preserve">
+    <value>Enlace no abierto</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_UnsupportedScheme" xml:space="preserve">
+    <value>«{0}» no es una dirección web. Enki solo abre enlaces http, https y mailto, para que una nota escrita por otra persona no pueda lanzar nada en tu equipo.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_OutsideVault" xml:space="preserve">
+    <value>«{0}» apunta fuera de tu vault. Enki solo abre archivos locales que vivan dentro de él.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Executable" xml:space="preserve">
+    <value>«{0}» es un archivo ejecutable. Enki nunca abre uno desde una nota.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
+    <value>«{0}» no existe en tu vault. El enlace está roto.</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>NOTIFICACIONES</value>
   </data>
@@ -2160,6 +2175,9 @@
   <data name="Sessions_CreateDialog_PasswordConfirmPlaceholder" xml:space="preserve">
     <value>Confirmar contraseña</value>
   </data>
+  <data name="Sessions_CreateDialog_PasswordTooShort" xml:space="preserve">
+    <value>Usa al menos 12 caracteres. Una copia del vault se puede atacar sin conexión y sin límite de intentos: una contraseña larga es lo único que la protege.</value>
+  </data>
   <data name="Sessions_CreateDialog_ProtectToggleLabel" xml:space="preserve">
     <value>Proteger con contraseña</value>
   </data>
@@ -2356,7 +2374,7 @@
     <value>Nueva contraseña</value>
   </data>
   <data name="Sessions_Unlock_PasswordMismatch" xml:space="preserve">
-    <value>Las contraseñas no coinciden o son demasiado cortas.</value>
+    <value>Las contraseñas no coinciden, o tienen menos de 12 caracteres.</value>
   </data>
   <data name="Sessions_Unlock_PasswordPlaceholder" xml:space="preserve">
     <value>Contraseña</value>

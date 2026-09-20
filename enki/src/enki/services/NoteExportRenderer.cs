@@ -28,15 +28,8 @@ public static class NoteExportRenderer
     /// original tal cual (el navegador la resolverá si el HTML queda junto a la imagen).</summary>
     private const int MaxEmbeddedImageBytes = 8 * 1024 * 1024;
 
-    /// <summary>Esquemas permitidos en enlaces e imágenes. Cualquier otro (<c>javascript:</c>,
-    /// <c>vbscript:</c>…) se degrada a texto plano: el HTML exportado se abre fuera de la app y no debe
-    /// ejecutar nada.</summary>
-    private static readonly HashSet<string> SafeSchemes = new(StringComparer.OrdinalIgnoreCase)
-        { "http", "https", "mailto" };
-
     private static readonly Regex EscapeSequenceRegex = new(@"\\([!""#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])", RegexOptions.Compiled);
     private static readonly Regex OrderedListStartRegex = new(@"^\s{0,3}(\d{1,9})[.)]\s", RegexOptions.Compiled);
-    private static readonly Regex SchemeRegex = new(@"^[a-zA-Z][a-zA-Z0-9+.\-]*:", RegexOptions.Compiled);
 
     /// <summary>Documento HTML completo y autónomo: cabecera con el título de la nota (y sus etiquetas si
     /// <paramref name="includeTags"/> y la nota las tiene — la "opción de incluir o no el
@@ -512,21 +505,16 @@ public static class NoteExportRenderer
         }
     }
 
-    private static bool IsSafeUrl(string url)
-    {
-        var schemeMatch = SchemeRegex.Match(url);
-        return schemeMatch.Success && SafeSchemes.Contains(schemeMatch.Value[..^1]);
-    }
+    /// <summary>Esquemas permitidos en enlaces e imágenes, y qué cuenta como ruta local: los dos criterios
+    /// viven ya en <see cref="ExternalLinkPolicy"/>, que es donde el Ctrl+clic del editor los aplica para
+    /// no entregarle al sistema un destino arbitrario (.docs/auditoria-seguridad-y-fallos-criticos.md,
+    /// SEC-01). Aquí el criterio es el mismo pero la consecuencia es otra: lo que no pasa el filtro se
+    /// degrada a texto plano, porque el HTML exportado se abre fuera de la app y no debe ejecutar nada.
+    /// Una ruta local sí se conserva tal cual (el navegador la resolverá si el documento queda junto a sus
+    /// archivos), sin la comprobación de existencia que sí hace la política del editor.</summary>
+    private static bool IsSafeUrl(string url) => ExternalLinkPolicy.IsSafeUrl(url);
 
-    // A Windows absolute path ("C:\Users\...", "C:/Users/...") matches SchemeRegex too — a single letter
-    // followed by ':' looks exactly like a URL scheme — so without this check LooksLikeLocalPath below
-    // misclassified it as "unsafe scheme" and the image/link got silently dropped down to alt-text-only
-    // (análisis §4.2, Fase 8) instead of being treated as the local file path it actually is.
-    private static readonly Regex WindowsDrivePathRegex = new(@"^[a-zA-Z]:[\\/]", RegexOptions.Compiled);
-
-    private static bool LooksLikeLocalPath(string url) =>
-        url.Length > 0 && !url.StartsWith("//", StringComparison.Ordinal)
-        && (!SchemeRegex.IsMatch(url) || WindowsDrivePathRegex.IsMatch(url));
+    private static bool LooksLikeLocalPath(string url) => ExternalLinkPolicy.LooksLikeLocalPath(url);
 
     private static readonly Regex DataImageUriRegex = new(@"^data:image/[a-zA-Z0-9.+\-]+;base64,", RegexOptions.Compiled);
 

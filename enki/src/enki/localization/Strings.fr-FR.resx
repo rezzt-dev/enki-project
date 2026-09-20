@@ -1788,6 +1788,21 @@
   <data name="Notification_NoteImageOpenFailed_Title" xml:space="preserve">
     <value>Impossible d'ouvrir l'image</value>
   </data>
+  <data name="Notification_NoteLinkBlocked_Title" xml:space="preserve">
+    <value>Lien non ouvert</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_UnsupportedScheme" xml:space="preserve">
+    <value>« {0} » n'est pas une adresse web. Enki n'ouvre que les liens http, https et mailto, pour qu'une note écrite par quelqu'un d'autre ne puisse rien lancer sur votre ordinateur.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_OutsideVault" xml:space="preserve">
+    <value>« {0} » pointe hors de votre coffre. Enki n'ouvre que les fichiers locaux qui s'y trouvent.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Executable" xml:space="preserve">
+    <value>« {0} » est un fichier exécutable. Enki n'en ouvre jamais depuis une note.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
+    <value>« {0} » n'existe pas dans votre coffre. Le lien est rompu.</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>NOTIFICATIONS</value>
   </data>
@@ -2160,6 +2175,9 @@
   <data name="Sessions_CreateDialog_PasswordConfirmPlaceholder" xml:space="preserve">
     <value>Confirmer le mot de passe</value>
   </data>
+  <data name="Sessions_CreateDialog_PasswordTooShort" xml:space="preserve">
+    <value>Utilisez au moins 12 caractères. Une copie du coffre peut être attaquée hors ligne, sans limite de tentatives : une phrase de passe longue est sa seule protection.</value>
+  </data>
   <data name="Sessions_CreateDialog_ProtectToggleLabel" xml:space="preserve">
     <value>Protéger par mot de passe</value>
   </data>
@@ -2356,7 +2374,7 @@
     <value>Nouveau mot de passe</value>
   </data>
   <data name="Sessions_Unlock_PasswordMismatch" xml:space="preserve">
-    <value>Les mots de passe ne correspondent pas, ou sont trop courts.</value>
+    <value>Les mots de passe ne correspondent pas ou font moins de 12 caractères.</value>
   </data>
   <data name="Sessions_Unlock_PasswordPlaceholder" xml:space="preserve">
     <value>Mot de passe</value>

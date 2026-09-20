@@ -79,7 +79,10 @@ public sealed class SettingsService
     {
         if (JsonFileStore.TryLoad<AppSettings>(_settingsPath, out var loaded))
         {
-            var legacy = new PolarCredentials(loaded!.PolarAccessToken, loaded.PolarRefreshToken);
+            // Antes de nada: un archivo dañado o de otra versión puede traer números imposibles, y llegan
+            // hasta los viewmodels sin que nadie los mire. Ver AppSettings.Normalize.
+            loaded!.Normalize();
+            var legacy = new PolarCredentials(loaded.PolarAccessToken, loaded.PolarRefreshToken);
             _legacyCredentialsPending = legacy.AccessToken is not null || legacy.RefreshToken is not null;
             if (!loaded.PolarLinked && !_legacyCredentialsPending) return loaded;
             try
@@ -257,6 +260,9 @@ public sealed class SettingsService
             if (!InstallationKeys.Contains(entry.Key) && global.ContainsKey(entry.Key))
                 global[entry.Key] = entry.Value?.DeepClone();
         Settings = global.Deserialize<AppSettings>() ?? new AppSettings();
+        // Las preferencias del vault que se acaban de fusionar vienen de su propio settings.json, que es
+        // tan editable a mano como el global — mismo saneado que en Load().
+        Settings.Normalize();
         Settings.VaultPath = path;
         Save();
     }
@@ -276,6 +282,10 @@ public sealed class SettingsService
         foreach (var entry in PreferencesOnly(imported))
             if (current.ContainsKey(entry.Key)) current[entry.Key] = entry.Value?.DeepClone();
         Settings = current.Deserialize<AppSettings>() ?? throw new InvalidDataException("Invalid settings JSON");
+        // La entrada menos confiable de las tres: un archivo que el usuario elige en un diálogo y que pudo
+        // escribir cualquiera. Sin esto, "Importar ajustes" era la vía directa a un zoom o un cuerpo de
+        // letra imposibles.
+        Settings.Normalize();
         Save();
     }
 

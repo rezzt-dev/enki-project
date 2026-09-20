@@ -63,27 +63,58 @@ public class SessionsViewModelEncryptionTests : IDisposable
         Assert.True(vm.CanConfirmCreate);
     }
 
-    [Fact]
-    public void CanConfirmCreate_AcceptsAFourCharacterPassword()
+    /// <summary>El mínimo subió de 4 a 12 (.docs/auditoria-seguridad-y-fallos-criticos.md, SEC-02): el
+    /// atacante de una sesión protegida no pelea con la app sino con una copia del manifiesto, offline y
+    /// sin límite de intentos, y 4 caracteres se agotan en minutos por mucho PBKDF2 que haya detrás. Once
+    /// caracteres tienen que seguir siendo rechazados aunque "parezcan" una contraseña.</summary>
+    [Theory]
+    [InlineData("1234")]
+    [InlineData("abcdefghijk")]       // 11: justo por debajo del mínimo
+    public void CanConfirmCreate_RejectsAPasswordBelowTheMinimum(string password)
     {
         var (vm, _) = CreateViewModel();
         vm.NewSessionName = "Privada";
         vm.NewSessionIsProtected = true;
 
-        vm.NewSessionPassword = "1234";
-        vm.NewSessionPasswordConfirm = "1234";
+        vm.NewSessionPassword = password;
+        vm.NewSessionPasswordConfirm = password;
 
-        Assert.True(vm.CanConfirmCreate);
+        Assert.False(vm.CanConfirmCreate);
+        Assert.True(vm.IsNewSessionPasswordTooShort);
     }
 
+    /// <summary>El aviso de "demasiado corta" solo aparece cuando hay algo escrito: con el campo vacío
+    /// todavía no hay nada que corregir, y con una contraseña válida tampoco.</summary>
+    [Fact]
+    public void IsNewSessionPasswordTooShort_OnlyWhileThereIsSomethingToFix()
+    {
+        var (vm, _) = CreateViewModel();
+        vm.NewSessionName = "Privada";
+        vm.NewSessionIsProtected = true;
+        Assert.False(vm.IsNewSessionPasswordTooShort);
+
+        vm.NewSessionPassword = "corta";
+        Assert.True(vm.IsNewSessionPasswordTooShort);
+
+        vm.NewSessionPassword = "una-contraseña-larga";
+        Assert.False(vm.IsNewSessionPasswordTooShort);
+
+        // Desactivar la protección deja de exigir contraseña, así que el aviso también se retira.
+        vm.NewSessionPassword = "corta";
+        vm.NewSessionIsProtected = false;
+        Assert.False(vm.IsNewSessionPasswordTooShort);
+    }
+
+    /// <summary>La longitud es el único requisito: sigue sin haber reglas de composición, porque la
+    /// contraseña acaba en PBKDF2 sobre sus bytes UTF-8 y ahí toda combinación vale igual.</summary>
     [Theory]
-    [InlineData("1234")]              // solo dígitos
-    [InlineData("abcd")]              // solo letras minúsculas
-    [InlineData("ABCD")]              // solo mayúsculas
-    [InlineData("....")]              // solo símbolos
-    [InlineData("    ")]              // solo espacios
-    [InlineData("ñáé€")]              // no ASCII
-    [InlineData("🔒🔑🗝️📓")]           // emoji
+    [InlineData("123456789012")]              // solo dígitos
+    [InlineData("abcdefghijkl")]              // solo letras minúsculas
+    [InlineData("ABCDEFGHIJKL")]              // solo mayúsculas
+    [InlineData("............")]              // solo símbolos
+    [InlineData("            ")]              // solo espacios
+    [InlineData("ñáéíóúñáéíóú")]              // no ASCII
+    [InlineData("🔒🔑🗝️📓🔒🔑🗝️📓🔒🔑🗝️📓")]     // emoji
     public void CanConfirmCreate_ImposesNoCompositionRules(string password)
     {
         var (vm, _) = CreateViewModel();
@@ -97,20 +128,34 @@ public class SessionsViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
-    public async Task AFourCharacterPassword_RoundTripsThroughLockAndUnlock()
+    public async Task APassphrase_RoundTripsThroughLockAndUnlock()
     {
         var (vm, sessions) = CreateViewModel();
         vm.NewSessionName = "Privada";
         vm.NewSessionIsProtected = true;
-        vm.NewSessionPassword = "1234";
-        vm.NewSessionPasswordConfirm = "1234";
+        vm.NewSessionPassword = "caballo-batería-grapa";
+        vm.NewSessionPasswordConfirm = "caballo-batería-grapa";
         await vm.ConfirmCreateSessionCommand.ExecuteAsync(null);
 
         var created = sessions.List().Single(s => s.Name == "Privada");
         sessions.Lock(created);
         Assert.False(sessions.IsUnlocked(created));
 
-        Assert.False(sessions.Unlock(created, "12345"));
+        Assert.False(sessions.Unlock(created, "caballo-batería-grapas"));
+        Assert.True(sessions.Unlock(created, "caballo-batería-grapa"));
+    }
+
+    /// <summary>El mínimo nuevo solo se aplica al elegir contraseña. Una sesión creada por una versión
+    /// anterior con una contraseña de 4 caracteres tiene que seguir abriéndose: bloquear su acceso sería
+    /// convertir un endurecimiento en pérdida de datos.</summary>
+    [Fact]
+    public void AnExistingShortPassword_StillUnlocks()
+    {
+        var (_, sessions) = CreateViewModel();
+        var (created, _) = sessions.CreateEncrypted("Heredada", "1234");
+
+        sessions.Lock(created);
+        Assert.False(sessions.IsUnlocked(created));
         Assert.True(sessions.Unlock(created, "1234"));
     }
 

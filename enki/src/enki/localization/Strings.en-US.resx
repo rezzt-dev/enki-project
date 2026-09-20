@@ -1788,6 +1788,21 @@
   <data name="Notification_NoteImageOpenFailed_Title" xml:space="preserve">
     <value>Image could not be opened</value>
   </data>
+  <data name="Notification_NoteLinkBlocked_Title" xml:space="preserve">
+    <value>Link not opened</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_UnsupportedScheme" xml:space="preserve">
+    <value>“{0}” isn't a web address. Enki only opens http, https and mailto links, so that a note written by someone else can't launch anything on your computer.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_OutsideVault" xml:space="preserve">
+    <value>“{0}” points outside your vault. Enki only opens local files that live inside it.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Executable" xml:space="preserve">
+    <value>“{0}” is an executable file. Enki never opens those from a note.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
+    <value>“{0}” doesn't exist in your vault. The link is broken.</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>NOTIFICATIONS</value>
   </data>
@@ -2160,6 +2175,9 @@
   <data name="Sessions_CreateDialog_PasswordConfirmPlaceholder" xml:space="preserve">
     <value>Confirm password</value>
   </data>
+  <data name="Sessions_CreateDialog_PasswordTooShort" xml:space="preserve">
+    <value>Use at least 12 characters. A copy of the vault can be attacked offline, with no attempt limit — a long passphrase is the only thing protecting it.</value>
+  </data>
   <data name="Sessions_CreateDialog_ProtectToggleLabel" xml:space="preserve">
     <value>Protect with a password</value>
   </data>
@@ -2356,7 +2374,7 @@
     <value>New password</value>
   </data>
   <data name="Sessions_Unlock_PasswordMismatch" xml:space="preserve">
-    <value>Passwords don't match, or are too short.</value>
+    <value>Passwords don't match, or are shorter than 12 characters.</value>
   </data>
   <data name="Sessions_Unlock_PasswordPlaceholder" xml:space="preserve">
     <value>Password</value>

@@ -445,6 +445,30 @@ public sealed partial class EditorViewModel : ViewModelBase
         if (match is not null) _onOpenNote(match);
     }
 
+    /// <summary>Avisa de que un Ctrl+clic no abrió el enlace y por qué — lo llama <c>EditorView</c> cuando
+    /// <see cref="ExternalLinkPolicy"/> rechaza el destino. El motivo se traduce a un mensaje distinto por
+    /// caso a propósito: "fuera del vault" y "esto ejecuta algo" son situaciones muy diferentes para quien
+    /// lee la nota, y un aviso genérico haría que la protección pareciera un fallo de la app
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, SEC-01).</summary>
+    public void ReportBlockedLink(string target, ExternalLinkBlockReason reason)
+    {
+        var messageKey = reason switch
+        {
+            ExternalLinkBlockReason.OutsideVault => "Notification_NoteLinkBlocked_OutsideVault",
+            ExternalLinkBlockReason.ExecutableFile => "Notification_NoteLinkBlocked_Executable",
+            ExternalLinkBlockReason.Missing => "Notification_NoteLinkBlocked_Missing",
+            _ => "Notification_NoteLinkBlocked_UnsupportedScheme"
+        };
+        var severity = reason == ExternalLinkBlockReason.Missing
+            ? NotificationSeverity.Info
+            : NotificationSeverity.Warning;
+
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_NoteLinkBlocked_Title"),
+            LocalizedTextFormatter.Format(messageKey, ExternalLinkPolicy.Describe(target)),
+            severity);
+    }
+
     /// <summary>Every note in the vault (<see cref="VaultService.GetAllNotesAcrossVault"/> — root plus every
     /// unlocked session, not just this note's own) — what <see cref="OpenWikiLink"/> resolves a Ctrl+click
     /// against, and what the live-preview colorizer (<c>Views.Editor.Markdown.MarkdownLivePreviewColorizer</c>)

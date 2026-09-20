@@ -1788,6 +1788,21 @@
   <data name="Notification_NoteImageOpenFailed_Title" xml:space="preserve">
     <value>Bild konnte nicht geöffnet werden</value>
   </data>
+  <data name="Notification_NoteLinkBlocked_Title" xml:space="preserve">
+    <value>Link nicht geöffnet</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_UnsupportedScheme" xml:space="preserve">
+    <value>„{0}“ ist keine Webadresse. Enki öffnet nur http-, https- und mailto-Links, damit eine von jemand anderem geschriebene Notiz nichts auf deinem Rechner starten kann.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_OutsideVault" xml:space="preserve">
+    <value>„{0}“ zeigt aus deinem Vault heraus. Enki öffnet nur lokale Dateien, die darin liegen.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Executable" xml:space="preserve">
+    <value>„{0}“ ist eine ausführbare Datei. Enki öffnet so etwas nie aus einer Notiz.</value>
+  </data>
+  <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
+    <value>„{0}“ existiert nicht in deinem Vault. Der Link ist defekt.</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>BENACHRICHTIGUNGEN</value>
   </data>
@@ -2160,6 +2175,9 @@
   <data name="Sessions_CreateDialog_PasswordConfirmPlaceholder" xml:space="preserve">
     <value>Passwort bestätigen</value>
   </data>
+  <data name="Sessions_CreateDialog_PasswordTooShort" xml:space="preserve">
+    <value>Verwende mindestens 12 Zeichen. Eine Kopie des Vaults kann offline und ohne Versuchsbegrenzung angegriffen werden — ein langes Passwort ist der einzige Schutz.</value>
+  </data>
   <data name="Sessions_CreateDialog_ProtectToggleLabel" xml:space="preserve">
     <value>Mit Passwort schützen</value>
   </data>
@@ -2356,7 +2374,7 @@
     <value>Neues Passwort</value>
   </data>
   <data name="Sessions_Unlock_PasswordMismatch" xml:space="preserve">
-    <value>Die Passwörter stimmen nicht überein oder sind zu kurz.</value>
+    <value>Die Passwörter stimmen nicht überein oder sind kürzer als 12 Zeichen.</value>
   </data>
   <data name="Sessions_Unlock_PasswordPlaceholder" xml:space="preserve">
     <value>Passwort</value>

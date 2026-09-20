@@ -308,7 +308,9 @@ public partial class EditorView
                 vm.OpenImageExternally(target.Value);
                 return true;
             case MarkdownImageKind.Remote:
-                OpenExternalUrl(target.Value);
+                // Ya viene filtrado a http(s) por MarkdownImageResolver, pero pasa por la misma política
+                // que cualquier otro destino: el filtro vive en un solo sitio.
+                OpenLinkTarget(target.Value);
                 return true;
             default:
                 return false;

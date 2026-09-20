@@ -62,8 +62,24 @@ public sealed class PolarTaskService
         DataChanged?.Invoke();
     }
 
-    private PolarTaskStore Load() =>
-        JsonFileStore.TryLoad<PolarTaskStore>(_path, out var loaded) ? loaded! : new PolarTaskStore();
+    private PolarTaskStore Load()
+    {
+        if (!JsonFileStore.TryLoad<PolarTaskStore>(_path, out var loaded)) return new PolarTaskStore();
+
+        foreach (var task in loaded!.Tasks) task.Recurrence = NormalizeRecurrence(task.Recurrence);
+        return loaded;
+    }
+
+    /// <summary>Degrada a <see cref="PolarRecurrence.None"/> cualquier valor que no sea uno de los
+    /// definidos. <c>System.Text.Json</c> deserializa un entero arbitrario a un <c>enum</c> sin quejarse,
+    /// así que un archivo dañado o editado a mano puede meter un valor que ningún <c>switch</c> del
+    /// proyecto contempla: el formateador lo pintaría como etiqueta vacía y el motor de recurrencia no
+    /// sabría avanzarlo. Sanearlo al cargar deja el dato coherente desde el primer momento, además del
+    /// corte que ya hace <see cref="AdvanceUntilAfter"/> por su cuenta
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-01). Mismo criterio que
+    /// <see cref="PolarWire.RecurrenceFromWire"/> aplica a lo que llega de Supabase.</summary>
+    internal static PolarRecurrence NormalizeRecurrence(PolarRecurrence recurrence) =>
+        Enum.IsDefined(recurrence) ? recurrence : PolarRecurrence.None;
 
     public void Save()
     {
@@ -420,14 +436,12 @@ public sealed class PolarTaskService
         foreach (var task in Store.Tasks.Where(t =>
                      t.Completed && t.Recurrence != PolarRecurrence.None && t.DueDateUtc is not null && !t.IsDeleted))
         {
-            var nextDue = task.DueDateUtc!.Value;
-            var advanced = false;
-            while (nextDue <= now)
-            {
-                nextDue = CalculateNextDueDate(nextDue, task.Recurrence);
-                advanced = true;
-            }
-            if (!advanced) continue;
+            // Una tarea cuya próxima fecha ya está en el futuro no tiene nada que avanzar; el resto se
+            // adelanta con el avance acotado de AdvanceUntilAfter, que devuelve null en vez de girar para
+            // siempre si la recurrencia no sabe avanzar (ver su documentación).
+            var currentDue = task.DueDateUtc!.Value;
+            if (currentDue > now) continue;
+            if (AdvanceUntilAfter(currentDue, task.Recurrence, now) is not { } nextDue) continue;
 
             task.Completed = false;
             task.DueDateUtc = nextDue;
@@ -443,6 +457,57 @@ public sealed class PolarTaskService
 
         if (changed) Save();
         return changed;
+    }
+
+    /// <summary>Tope de avances encadenados de <see cref="CalculateNextDueDate"/> en una sola llamada a
+    /// <see cref="AdvanceUntilAfter"/>. 10.000 saltos son ~27 años en recurrencia diaria: de sobra para
+    /// recuperar una tarea olvidada tras años sin abrir la app, y barato de agotar (cada salto son dos
+    /// conversiones de zona horaria). Existe por lo mismo que
+    /// <c>CalendarAggregationService.MaxGhostOccurrenceIterations</c>, que ya acotaba su propio
+    /// encadenado — ver <see cref="AdvanceUntilAfter"/>.</summary>
+    private const int MaxRolloverIterations = 10_000;
+
+    /// <summary>Primera ocurrencia estrictamente posterior a <paramref name="threshold"/> partiendo de
+    /// <paramref name="start"/>, avanzando siempre al menos una vez. <see langword="null"/> significa "no se
+    /// puede avanzar", y el llamador debe tratarlo como "deja esto como está" en vez de insistir.
+    ///
+    /// <para>Es la red de seguridad de los dos bucles de rollover (<see cref="RollRecurringTasks"/> y
+    /// <c>ReminderService.Fire</c>), que antes eran <c>while (next &lt;= now)</c> sin tope. El caso que los
+    /// colgaba: <see cref="CalculateNextDueDate"/> devuelve la fecha <em>sin cambios</em> para cualquier
+    /// valor de <see cref="PolarRecurrence"/> que no esté en su <c>switch</c>, y
+    /// <c>System.Text.Json</c> deserializa sin quejarse un entero fuera de rango a un <c>enum</c> — así que
+    /// un <c>polar-tasks.json</c>/<c>reminders.json</c> dañado o editado a mano con <c>"Recurrence": 7</c>
+    /// bastaba para dejar la app girando para siempre al cargar o al sincronizar, sin salida desde la
+    /// interfaz. Aquí eso se detecta como "el candidato no avanzó" y se corta
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-01).</para></summary>
+    /// <param name="timeZone">Zona cuya hora de pared se preserva — ver <see cref="CalculateNextDueDate"/>.</param>
+    public static DateTime? AdvanceUntilAfter(DateTime start, PolarRecurrence recurrence, DateTime threshold, TimeZoneInfo? timeZone = null)
+    {
+        var next = start;
+        for (var i = 0; i < MaxRolloverIterations; i++)
+        {
+            DateTime candidate;
+            try
+            {
+                candidate = CalculateNextDueDate(next, recurrence, timeZone);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Una fecha almacenada pegada a DateTime.MaxValue desborda al sumarle el intervalo. No hay
+                // siguiente ocurrencia posible, así que es el mismo caso que "no avanza".
+                return null;
+            }
+
+            // Ningún valor conocido de PolarRecurrence se queda quieto: si el candidato no es posterior,
+            // la recurrencia es desconocida (o está corrupta) y seguir iterando no llegaría nunca.
+            if (candidate <= next) return null;
+
+            next = candidate;
+            if (next > threshold) return next;
+        }
+
+        LogService.Warning($"Recurrencia {recurrence} sin alcanzar {threshold:O} tras {MaxRolloverIterations} saltos desde {start:O}");
+        return null;
     }
 
     /// <summary>Exact algorithm from docs/supabase-sync/02-logica-de-negocio.md#motor-de-recurrencia —

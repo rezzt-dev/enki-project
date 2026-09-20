@@ -327,6 +327,8 @@
             <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_CreateDialog_PasswordConfirmPlaceholder}"
                       Text="{Binding NewSessionPasswordConfirm}" PasswordChar="●"
                       AutomationProperties.Name="{loc:Tr Sessions_CreateDialog_PasswordConfirmPlaceholder}" />
+            <TextBlock Text="{loc:Tr Sessions_CreateDialog_PasswordTooShort}" Classes="faint" TextWrapping="Wrap"
+                       IsVisible="{Binding IsNewSessionPasswordTooShort}" />
             <TextBlock Text="{loc:Tr Sessions_CreateDialog_ProtectHint}" Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
 

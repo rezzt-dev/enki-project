@@ -5,6 +5,64 @@ namespace enki.Models;
 
 public sealed class AppSettings
 {
+    /// <summary>Devuelve cada preferencia numérica al rango que su control de Ajustes permite elegir, y
+    /// reemplaza por el valor por defecto lo que quede fuera. Lo llama
+    /// <see cref="Services.SettingsService"/> tras cada deserialización —carga, cambio de vault e
+    /// importación— igual que <see cref="VaultSettings.Normalize"/> hace con las suyas.
+    ///
+    /// <para>Hasta ahora solo acotaban los comandos de la interfaz (<c>Math.Clamp</c> en los
+    /// <c>ZoomIn</c>/<c>ZoomOut</c> y compañía), no la lectura del archivo. Un <c>settings.json</c> dañado,
+    /// editado a mano o traído de otra versión podía dejar valores imposibles en sitios sin red: un
+    /// <see cref="EditorFontSize"/> de 0 o negativo hace que Avalonia rechace la fuente y tumbe el editor,
+    /// y "Importar ajustes" acepta cualquier JSON cuyas claves existan. El caso grave es el de
+    /// <c>VaultSettings.UiZoomPercent</c>, que escala <em>toda</em> la ventana: a 0 no queda ningún control
+    /// con el que volver a Ajustes a arreglarlo (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-02).</para>
+    ///
+    /// <para>Deliberadamente no toca las preferencias de texto (<see cref="Theme"/>,
+    /// <see cref="StartupPage"/>, <see cref="EditorColumnPosition"/>…): esas ya las resuelve cada
+    /// consumidor con su propio <c>Parse</c> y su valor de salida, así que un valor desconocido allí no
+    /// rompe nada.</para></summary>
+    public void Normalize()
+    {
+        // Los rangos son los de los controles de Ajustes (views/settings/SettingsView.axaml); cambiar uno
+        // allí sin cambiarlo aquí solo significa que el archivo admite algo que la UI no deja elegir.
+        EditorFontSize = Clamp(EditorFontSize, 12, 20, 14);
+        EditorColumnWidth = Clamp(EditorColumnWidth, 480, 1400, 760);
+        EditorTabSize = Clamp(EditorTabSize, 2, 8, 4);
+        ReminderSoonWindowDays = Clamp(ReminderSoonWindowDays, 1, 30, 7);
+        NotificationSoundVolume = Clamp(NotificationSoundVolume, 0, 100, 70);
+        AutoBackupIntervalDays = Clamp(AutoBackupIntervalDays, 1, 30, 1);
+        AutoBackupRetentionCount = Clamp(AutoBackupRetentionCount, 1, 30, 5);
+
+        // La franja horaria laboral necesita además que el final sea posterior al principio: dos valores
+        // individualmente válidos pero cruzados dejan el calendario sin ninguna hora que pintar.
+        CalendarWorkingHoursStart = Clamp(CalendarWorkingHoursStart, 0, 23, 9);
+        CalendarWorkingHoursEnd = Clamp(CalendarWorkingHoursEnd, 1, 24, 18);
+        if (CalendarWorkingHoursEnd <= CalendarWorkingHoursStart)
+        {
+            CalendarWorkingHoursStart = 9;
+            CalendarWorkingHoursEnd = 18;
+        }
+    }
+
+    /// <summary>Acota a [<paramref name="min"/>, <paramref name="max"/>] con dos excepciones que no son
+    /// acotado sino reparación, las dos con el mismo criterio que <see cref="VaultSettings.Normalize"/>:
+    ///
+    /// <list type="bullet">
+    /// <item>un cero cuando el mínimo es mayor que cero es el <c>default(T)</c> que deja
+    /// <c>System.Text.Json</c> al leer un archivo escrito por una versión anterior a esta propiedad — no es
+    /// "el usuario eligió cero", así que vuelve al valor por defecto en vez de al mínimo, que sería una
+    /// elección que nadie hizo;</item>
+    /// <item><c>NaN</c>/infinito, que <c>System.Text.Json</c> no produce pero sí puede traer un archivo
+    /// escrito por otra herramienta, no se puede acotar de forma significativa.</item>
+    /// </list></summary>
+    private static double Clamp(double value, double min, double max, double fallback) =>
+        !double.IsFinite(value) || (value == 0 && min > 0) ? fallback : Math.Clamp(value, min, max);
+
+    /// <inheritdoc cref="Clamp(double, double, double, double)"/>
+    private static int Clamp(int value, int min, int max, int fallback) =>
+        value == 0 && min > 0 ? fallback : Math.Clamp(value, min, max);
+
     public string? VaultPath { get; set; }
     public bool SidebarExpanded { get; set; } = true;
 

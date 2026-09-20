@@ -27,7 +27,20 @@ public sealed class VaultSettings
         DashboardHiddenSections ??= [];
         DashboardSectionOrder ??= [];
         DashboardLayoutStyle ??= Services.DashboardLayoutEngine.Classic;
+
+        // El zoom escala toda la ventana, así que es el único ajuste que puede dejar la app sin ninguna
+        // salida: a 0 no se ve un solo control con el que volver a Ajustes a corregirlo, y a 100.000 la
+        // interfaz no cabe en la pantalla. Un 0 aquí es además el default(int) de un vault anterior a esta
+        // propiedad, no una elección (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-02).
+        UiZoomPercent = UiZoomPercent == 0 ? 100 : System.Math.Clamp(UiZoomPercent, MinUiZoomPercent, MaxUiZoomPercent);
     }
+
+    /// <summary>Extremos de <see cref="UiZoomPercent"/>, los mismos que ofrecen Ajustes › Apariencia y los
+    /// atajos de zoom del shell (<c>SettingsViewModel.UiZoomMinPercent</c>/<c>MaxPercent</c> y sus gemelos
+    /// en <c>MainWindowViewModel</c>). Viven aquí, en el modelo, porque el saneado tiene que poder
+    /// aplicarse antes de que exista ningún viewmodel.</summary>
+    public const int MinUiZoomPercent = 50;
+    public const int MaxUiZoomPercent = 200;
     /// <summary>Global UI zoom (docs/funcionalidad-zoom-interfaz.md), applied as a
     /// <c>LayoutTransformControl</c> scale over the whole shell. Range enforced by
     /// <c>ViewModels.MainWindowViewModel</c> (50–200, steps of 10); 100 is "no zoom", the size the app

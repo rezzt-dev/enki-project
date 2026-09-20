@@ -1125,7 +1125,7 @@ public partial class EditorView : UserControl
             }
             else if (span.Kind == MdSpanKind.Link)
             {
-                OpenExternalUrl(target);
+                OpenLinkTarget(target);
             }
             else if (DataContext is EditorViewModel vm)
             {
@@ -1137,15 +1137,34 @@ public partial class EditorView : UserControl
         }
     }
 
-    private static void OpenExternalUrl(string url)
+    /// <summary>Abre el destino de un <c>[texto](destino)</c>, pero solo después de que
+    /// <see cref="ExternalLinkPolicy"/> diga que se puede: <c>UseShellExecute</c> es el equivalente a un
+    /// doble clic del usuario, y el destino de un enlace es texto libre de un archivo que pudo escribir
+    /// cualquiera (.docs/auditoria-seguridad-y-fallos-criticos.md, SEC-01). Lo que se rechaza se explica al
+    /// usuario en vez de no hacer nada: un Ctrl+clic que se traga el gesto en silencio parece un fallo de
+    /// la app, no una protección.</summary>
+    private void OpenLinkTarget(string target)
     {
+        var viewModel = DataContext as EditorViewModel;
+        var resolution = ExternalLinkPolicy.Resolve(target, viewModel?.NoteDirectory, viewModel?.VaultRootPath);
+        if (resolution.Target is not { } safeTarget)
+        {
+            // Un ancla del propio documento no es un enlace bloqueado, solo algo que Enki todavía no sabe
+            // hacer: no merece un aviso, igual que una imagen rota deja pasar el clic sin decir nada.
+            if (resolution.Reason == ExternalLinkBlockReason.InPageAnchor) return;
+
+            LogService.Warning($"Enlace no abierto por política de enlaces ({resolution.Reason}): '{target}'");
+            viewModel?.ReportBlockedLink(target, resolution.Reason);
+            return;
+        }
+
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(safeTarget) { UseShellExecute = true });
         }
         catch (Exception ex)
         {
-            LogService.Warning($"No se pudo abrir '{url}' con la aplicación del sistema", ex);
+            LogService.Warning($"No se pudo abrir '{safeTarget}' con la aplicación del sistema", ex);
         }
     }
 

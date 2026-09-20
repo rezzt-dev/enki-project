@@ -78,7 +78,14 @@ public sealed class ReminderService
 
     private List<Reminder> Load()
     {
-        if (JsonFileStore.TryLoad<List<Reminder>>(_path, out var loaded)) return loaded!;
+        if (JsonFileStore.TryLoad<List<Reminder>>(_path, out var loaded))
+        {
+            // Ver PolarTaskService.NormalizeRecurrence: un valor de enum fuera de rango en el JSON no es
+            // un error de deserialización para System.Text.Json, pero sí lo es para todo lo que después
+            // hace switch sobre él.
+            foreach (var reminder in loaded!) reminder.Recurrence = PolarTaskService.NormalizeRecurrence(reminder.Recurrence);
+            return loaded;
+        }
 
         if (File.Exists(_path)) LoadedFromCorruptData = true;
         return [];
@@ -310,23 +317,23 @@ public sealed class ReminderService
     /// preexistente). Para uno recurrente (Fase 10, docs/analisis-proyecto/roadmap.md — "recurrencia nativa
     /// a Reminder"), se reprograma en su lugar a la siguiente ocurrencia y se deja armado
     /// (<see cref="Reminder.IsTriggered"/> en <see langword="false"/>), igual que <see cref="Reschedule"/> ya
-    /// rearma un recordatorio arrastrado a otra fecha — así no hace falta recrearlo a mano cada vez. El
-    /// <c>while</c> avanza más de una ocurrencia si hiciera falta (p. ej. la app estuvo cerrada varios días),
-    /// mismo criterio que <c>PolarTaskService.RollRecurringTasks</c>, cuya aritmética de avance (con DST)
-    /// reutiliza directamente en vez de duplicarla.</summary>
+    /// rearma un recordatorio arrastrado a otra fecha — así no hace falta recrearlo a mano cada vez.
+    /// <c>PolarTaskService.AdvanceUntilAfter</c> avanza más de una ocurrencia si hiciera falta (p. ej. la
+    /// app estuvo cerrada varios días), mismo criterio y misma aritmética de avance (con DST) que
+    /// <c>PolarTaskService.RollRecurringTasks</c>, en vez de duplicarla.
+    ///
+    /// <para>Si el avance no es posible —recurrencia desconocida por un <c>reminders.json</c> dañado, o
+    /// fecha desbordada— el recordatorio se marca disparado y se comporta como uno normal. Degradar a "una
+    /// sola vez" es lo peor que puede pasar aquí; el bucle sin tope que había antes colgaba la app entera
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-01).</para></summary>
     private void Fire(Reminder reminder, DateTime nowUtc)
     {
-        if (reminder.Recurrence == PolarRecurrence.None)
+        if (reminder.Recurrence == PolarRecurrence.None ||
+            PolarTaskService.AdvanceUntilAfter(reminder.NotifyAtUtc, reminder.Recurrence, nowUtc) is not { } next)
         {
             reminder.IsTriggered = true;
             return;
         }
-
-        var next = reminder.NotifyAtUtc;
-        do
-        {
-            next = PolarTaskService.CalculateNextDueDate(next, reminder.Recurrence);
-        } while (next <= nowUtc);
 
         reminder.NotifyAtUtc = next;
         Touch(reminder);
