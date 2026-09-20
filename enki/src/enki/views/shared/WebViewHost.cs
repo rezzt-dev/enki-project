@@ -4,6 +4,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform;
 using enki.Localization;
+using enki.Services;
 
 namespace enki.Views;
 
@@ -46,9 +47,10 @@ public static class WebViewHost
                 available = false;
             }
         }
-        catch
+        catch (Exception ex)
         {
             available = false;
+            LogService.Warning("No se pudo consultar la disponibilidad del WebView", ex);
         }
 
         _available = available;

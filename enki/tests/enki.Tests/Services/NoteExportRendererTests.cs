@@ -198,7 +198,7 @@ public class NoteExportRendererTests : IDisposable
         var imagePath = Path.Combine(_storageDirectory, "img.png");
         File.WriteAllBytes(imagePath, [1, 2, 3]);
 
-        var html = NoteExportRenderer.RenderBodyHtml("![local](img.png)", _storageDirectory);
+        var html = NoteExportRenderer.RenderBodyHtml("![local](img.png)", _storageDirectory, _storageDirectory);
 
         Assert.Contains($"<img src=\"data:image/png;base64,{Convert.ToBase64String(new byte[] { 1, 2, 3 })}\" alt=\"local\"/>", html);
     }
@@ -206,9 +206,40 @@ public class NoteExportRendererTests : IDisposable
     [Fact]
     public void RenderBody_Image_WithMissingLocalFile_KeepsOriginalPath()
     {
-        var html = NoteExportRenderer.RenderBodyHtml("![local](no-existe.png)", _storageDirectory);
+        var html = NoteExportRenderer.RenderBodyHtml("![local](no-existe.png)", _storageDirectory, _storageDirectory);
 
         Assert.Contains("<img src=\"no-existe.png\" alt=\"local\"/>", html);
+    }
+
+    [Fact]
+    public void RenderBody_Image_OutsideVault_IsNeverEmbedded()
+    {
+        var vault = Path.Combine(_storageDirectory, "vault");
+        var notes = Path.Combine(vault, "notas");
+        Directory.CreateDirectory(notes);
+        var privateImage = Path.Combine(_storageDirectory, "privada.png");
+        File.WriteAllBytes(privateImage, [9, 8, 7]);
+
+        var html = NoteExportRenderer.RenderBodyHtml("![privada](../../privada.png)", notes, vault);
+
+        Assert.Contains("src=\"../../privada.png\"", html);
+        Assert.DoesNotContain(Convert.ToBase64String(new byte[] { 9, 8, 7 }), html);
+    }
+
+    [Fact]
+    public void RenderBody_Image_SymbolicLinkLeavingVault_IsNeverEmbedded()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var vault = Path.Combine(_storageDirectory, "vault");
+        Directory.CreateDirectory(vault);
+        var privateImage = Path.Combine(_storageDirectory, "privada.png");
+        File.WriteAllBytes(privateImage, [6, 6, 6]);
+        File.CreateSymbolicLink(Path.Combine(vault, "enlace.png"), privateImage);
+
+        var html = NoteExportRenderer.RenderBodyHtml("![privada](enlace.png)", vault, vault);
+
+        Assert.Contains("src=\"enlace.png\"", html);
+        Assert.DoesNotContain(Convert.ToBase64String(new byte[] { 6, 6, 6 }), html);
     }
 
     [Fact]
@@ -234,7 +265,7 @@ public class NoteExportRendererTests : IDisposable
         var imagePath = Path.Combine(_storageDirectory, "captura.png");
         File.WriteAllBytes(imagePath, [4, 5, 6]);
 
-        var html = NoteExportRenderer.RenderBodyHtml("![[captura.png]]", _storageDirectory);
+        var html = NoteExportRenderer.RenderBodyHtml("![[captura.png]]", _storageDirectory, _storageDirectory);
 
         Assert.Contains($"<img src=\"data:image/png;base64,{Convert.ToBase64String(new byte[] { 4, 5, 6 })}\"", html);
     }
@@ -299,8 +330,8 @@ public class NoteExportRendererTests : IDisposable
         note.Tags.AddRange(new[] { "receta", "cocina" });
         const string content = "---\ntags: [receta, cocina]\n---\n\nCuerpo";
 
-        var withTags = NoteExportRenderer.RenderDocument(note, content, includeTags: true);
-        var withoutTags = NoteExportRenderer.RenderDocument(note, content, includeTags: false);
+        var withTags = NoteExportRenderer.RenderDocument(note, content, includeTags: true, "/vault");
+        var withoutTags = NoteExportRenderer.RenderDocument(note, content, includeTags: false, "/vault");
 
         Assert.Contains("<span class=\"doc-tag\">#receta</span>", withTags);
         // La clase CSS .doc-tag siempre está en la hoja de estilo incrustada — lo que no debe aparecer es
@@ -313,7 +344,7 @@ public class NoteExportRendererTests : IDisposable
     {
         var note = Note("Nota <b>rara</b>");
 
-        var html = NoteExportRenderer.RenderDocument(note, "Cuerpo", includeTags: true);
+        var html = NoteExportRenderer.RenderDocument(note, "Cuerpo", includeTags: true, "/vault");
 
         Assert.StartsWith("<!doctype html>", html);
         Assert.Contains("<title>Nota &lt;b&gt;rara&lt;/b&gt;</title>", html);

@@ -1869,6 +1869,12 @@
   <data name="Notification_NoteImageAttachFailed_Title" xml:space="preserve">
     <value>Image not attached</value>
   </data>
+  <data name="Notification_NoteImageTooLarge" xml:space="preserve">
+    <value>The file exceeds the {0} MB image limit.</value>
+  </data>
+  <data name="Notification_NoteImageUnsupported" xml:space="preserve">
+    <value>The selected file is not a supported image.</value>
+  </data>
   <data name="Notification_NoteImageOpenFailed_Message" xml:space="preserve">
     <value>No application was found to open "{0}".</value>
   </data>
@@ -4291,6 +4297,12 @@ Happy writing.</value>
   </data>
   <data name="Notification_SettingsCorrupt_Message" xml:space="preserve">
     <value>settings.json was corrupted, so Enki reset my settings to their defaults — including the Polar account link, if one was linked. My previous settings are still on disk.</value>
+  </data>
+  <data name="Notification_VaultSettingsCorrupt_Title" xml:space="preserve">
+    <value>Vault settings couldn't be read</value>
+  </data>
+  <data name="Notification_VaultSettingsCorrupt_Message" xml:space="preserve">
+    <value>The vault settings were corrupted and have been reset. The original file was preserved at: {0}</value>
   </data>
   <data name="Notification_NotificationsCorrupt_Title" xml:space="preserve">
     <value>Notification log couldn't be read</value>

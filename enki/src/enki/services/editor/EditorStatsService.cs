@@ -33,9 +33,10 @@ public static class EditorStatsService
                 modifiedUtc = info.LastWriteTimeUtc;
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             // Si la ruta no es válida o no existe, usamos DateTime.MinValue.
+            LogService.Debug($"No se pudieron leer las fechas de '{fullPath}': {ex}");
         }
 
         return new EditorStats

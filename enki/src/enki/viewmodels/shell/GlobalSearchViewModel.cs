@@ -115,9 +115,10 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
                 };
             }
         }
-        catch
+        catch (Exception ex)
         {
             // En entornos sin dispatcher (p. ej. tests unitarios) el temporizador simplemente no se crea.
+            LogService.Debug($"No se pudo crear el temporizador de búsqueda global: {ex}");
         }
     }
 
@@ -227,13 +228,14 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
             // Llegó un tecleo más reciente: esta búsqueda ya no importa. No se toca Results/IsSearching —
             // la búsqueda que la reemplazó es la que decide el estado final del popup.
         }
-        catch
+        catch (Exception ex)
         {
             // La búsqueda global no debe romper la app. En caso de fallo inesperado se limpia la
             // lista y se actualiza el estado vacío; el usuario puede intentar de nuevo.
             Results.Clear();
             IsSearching = false;
             NotifySearchStateChanged();
+            LogService.Error("La búsqueda global falló", ex);
         }
     }
 

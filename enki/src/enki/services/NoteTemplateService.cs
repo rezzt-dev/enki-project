@@ -312,7 +312,11 @@ public sealed class NoteTemplateService
     {
         if (string.IsNullOrWhiteSpace(yaml)) return null;
         try { return YamlDeserializer.Deserialize<TemplateFrontMatter>(yaml); }
-        catch (YamlDotNet.Core.YamlException) { return null; }
+        catch (YamlDotNet.Core.YamlException ex)
+        {
+            LogService.Debug($"Frontmatter YAML de plantilla no válido: {ex}");
+            return null;
+        }
     }
 
     /// <summary>Forma tipada del frontmatter, solo para deserializar; los campos desconocidos se ignoran

@@ -434,9 +434,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase);
             foreach (var name in names) list.Add(name);
         }
-        catch
+        catch (Exception ex)
         {
             // Fall back to just the bundled default if the platform can't enumerate system fonts.
+            LogService.Warning("No se pudieron enumerar las fuentes del sistema", ex);
         }
         return list;
     }

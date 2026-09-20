@@ -27,6 +27,8 @@ public sealed class SettingsService
     public event Action? SettingsChanged;
     /// <summary>Se dispara cuando una escritura de tokens falla por falta de acceso al almacén seguro.</summary>
     public event Action? CredentialStoreFailed;
+    /// <summary>Se dispara al recuperar un <c>.enki/settings.json</c> corrupto e indica dónde quedó su copia.</summary>
+    public event Action<string>? VaultSettingsRecoveredFromCorruptData;
 
     public AppSettings Settings { get; private set; }
 
@@ -38,6 +40,9 @@ public sealed class SettingsService
     /// consultado por el compositor (<c>MainWindowViewModel</c>) justo después de construir este servicio
     /// para avisar al usuario en vez de resetear los ajustes en silencio.</summary>
     public bool LoadedFromCorruptData { get; private set; }
+
+    /// <summary>Copia de seguridad creada al detectar ajustes corruptos del vault durante el arranque.</summary>
+    public string? CorruptVaultSettingsBackupPath { get; private set; }
 
     /// <summary>El almacén seguro no estuvo disponible al cargar la sesión. Si había tokens heredados,
     /// permanecen en settings.json hasta que una migración posterior pueda completarse.</summary>
@@ -66,7 +71,15 @@ public sealed class SettingsService
     internal SettingsService(string? storageDirectory, IPolarCredentialStore? credentialStore)
     {
         var configDir = storageDirectory ?? AppDataDirectory.Resolve();
-        Directory.CreateDirectory(configDir);
+        try
+        {
+            PrivateDataPermissions.HardenExistingTree(configDir);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning($"No se pudieron restringir los permisos de '{configDir}'", ex);
+            Directory.CreateDirectory(configDir);
+        }
         _settingsPath = Path.Combine(configDir, "settings.json");
         _credentialStore = credentialStore ?? PolarCredentialStore.Create(configDir);
         Settings = Load();
@@ -159,7 +172,7 @@ public sealed class SettingsService
             Directory.CreateDirectory(Path.GetDirectoryName(_vaultSettingsPath)!);
             JsonFileStore.WithLock(_vaultSettingsPath, () =>
             {
-                var merged = ReadVaultObject(_vaultSettingsPath);
+                var merged = ReadVaultObject(_vaultSettingsPath, ReportCorruptVaultSettings);
                 foreach (var entry in preferences) merged[entry.Key] = entry.Value?.DeepClone();
                 JsonFileStore.Save(_vaultSettingsPath, merged);
             });
@@ -220,7 +233,7 @@ public sealed class SettingsService
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         JsonFileStore.WithLock(target, () =>
         {
-            var vault = ReadVaultObject(target);
+            var vault = ReadVaultObject(target, ReportCorruptVaultSettings);
             if (pending is not null)
             {
                 // Incluye elecciones hechas antes de seleccionar el primer vault.
@@ -255,7 +268,7 @@ public sealed class SettingsService
         var previous = JsonSerializer.SerializeToNode(oldSettings)!.AsObject();
         foreach (var key in InstallationKeys)
             if (previous.TryGetPropertyValue(key, out var value)) global[key] = value?.DeepClone();
-        var stored = ReadVaultObject(target);
+        var stored = ReadVaultObject(target, ReportCorruptVaultSettings);
         foreach (var entry in stored)
             if (!InstallationKeys.Contains(entry.Key) && global.ContainsKey(entry.Key))
                 global[entry.Key] = entry.Value?.DeepClone();
@@ -289,7 +302,7 @@ public sealed class SettingsService
         Save();
     }
 
-    internal static JsonObject ReadVaultObject(string path)
+    internal static JsonObject ReadVaultObject(string path, Action<string>? recovered = null)
     {
         if (!File.Exists(path)) return new JsonObject();
         try
@@ -303,8 +316,15 @@ public sealed class SettingsService
             var backup = $"{path}.corrupt-{Guid.NewGuid():N}";
             File.Copy(path, backup);
             JsonFileStore.Save(path, new JsonObject());
+            recovered?.Invoke(backup);
             return new JsonObject();
         }
+    }
+
+    private void ReportCorruptVaultSettings(string backupPath)
+    {
+        CorruptVaultSettingsBackupPath = backupPath;
+        VaultSettingsRecoveredFromCorruptData?.Invoke(backupPath);
     }
 
     /// <summary>Only ever called from inside the <see cref="JsonFileStore.WithLock"/> block in
@@ -320,8 +340,9 @@ public sealed class SettingsService
             var json = File.ReadAllText(_settingsPath);
             return JsonSerializer.Deserialize<AppSettings>(json)?.VaultPath;
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
+            LogService.Warning($"No se pudo conservar VaultPath desde '{_settingsPath}'", ex);
             return null;
         }
     }

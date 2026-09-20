@@ -532,7 +532,8 @@ public sealed partial class NotesViewModel : ViewModelBase
         var topLevel = App.MainWindowRef is not null
             ? Avalonia.Controls.TopLevel.GetTopLevel(App.MainWindowRef)
             : null;
-        await NoteExportService.ExportHtmlAsync(note, content, includeTags: true, topLevel, NotifyCallback);
+        await NoteExportService.ExportHtmlAsync(note, content, includeTags: true, _vaultService.VaultPath,
+            topLevel, NotifyCallback);
     }
 
     /// <summary><see cref="NotificationService.Push"/> como callback suelto (o null en tests sin servicio)

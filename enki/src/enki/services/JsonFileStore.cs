@@ -50,9 +50,9 @@ internal static class JsonFileStore
                 }
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            // fall through — caller substitutes its own default, same as every Load() before this helper
+            LogService.Warning($"No se pudo leer o deserializar el JSON '{Path.GetFullPath(path)}'", ex);
         }
 
         value = default;
@@ -66,9 +66,7 @@ internal static class JsonFileStore
     {
         using var fileLock = LockForWrite(path, mutexTimeout ?? MutexTimeout);
         var json = JsonSerializer.Serialize(value, IndentedOptions);
-        var tempPath = $"{path}.tmp-{Guid.NewGuid():N}";
-        File.WriteAllText(tempPath, json);
-        File.Move(tempPath, path, overwrite: true);
+        DurableFile.WriteAllTextAtomic(path, json, privateFile: true);
     }
 
     /// <summary>Runs <paramref name="action"/> under the same per-path lock <see cref="TryLoad{T}"/>/

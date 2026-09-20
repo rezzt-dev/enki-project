@@ -773,4 +773,27 @@ public class VaultServiceTests : IDisposable
 
         Assert.Equal(picked, resolved);
     }
+    [Theory]
+    [InlineData(".notas", "notas")]
+    [InlineData("CON", "_CON")]
+    [InlineData("aux.txt", "_aux.txt")]
+    [InlineData("informe. ", "informe")]
+    [InlineData("a:b?c", "abc")]
+    public void SanitizeFileName_ProducesPortableVisibleNames(string input, string expected) =>
+        Assert.Equal(expected, VaultService.SanitizeFileName(input, "fallback"));
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("..")]
+    [InlineData("...")]
+    public void SanitizeFileName_DotOnlyNamesUseFallback(string input) =>
+        Assert.Equal("fallback", VaultService.SanitizeFileName(input, "fallback"));
+
+    [Fact]
+    public void SanitizeFileName_LimitsUtf8ComponentLength()
+    {
+        var sanitized = VaultService.SanitizeFileName(new string('\u00f1', 200));
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(sanitized) <= 200);
+    }
 }

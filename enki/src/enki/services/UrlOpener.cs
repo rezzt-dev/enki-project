@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 
 namespace enki.Services;
@@ -24,9 +25,10 @@ public static class UrlOpener
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
-        catch
+        catch (Exception ex)
         {
             // Ignorar: sin navegador asociado o URL no soportada.
+            LogService.Warning($"No se pudo abrir la URL '{url}'", ex);
         }
     }
 }

@@ -897,12 +897,20 @@ public sealed partial class VaultService
         if (encryptedRoot is null)
         {
             try { return File.ReadAllText(path); }
-            catch { return string.Empty; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                LogService.Warning($"No se pudo leer la nota '{path}'", ex);
+                return string.Empty;
+            }
         }
 
         byte[] raw;
         try { raw = File.ReadAllBytes(path); }
-        catch { return string.Empty; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning($"No se pudo leer la nota cifrada '{path}'", ex);
+            return string.Empty;
+        }
 
         try
         {
@@ -1066,9 +1074,7 @@ public sealed partial class VaultService
 
         try
         {
-            var tempPath = $"{path}.tmp-{Guid.NewGuid():N}";
-            File.WriteAllBytes(tempPath, bytes);
-            File.Move(tempPath, path, overwrite: true);
+            DurableFile.WriteAllBytesAtomic(path, bytes);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -1119,6 +1125,37 @@ public sealed partial class VaultService
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
 
         WriteFileAtomic(fullPath, bytes);
+        InvalidateVaultSizeCache();
+    }
+
+    /// <summary>Copia un adjunto sin cargarlo entero en memoria y sin publicar un archivo parcial. En una
+    /// sesión protegida el formato AES-GCM actual necesita autenticar el mensaje completo, por lo que se
+    /// materializa únicamente después de aplicar el límite; fuera de ella la copia es streaming.</summary>
+    public void CopyBinaryFile(string fullPath, Stream source, long maxBytes)
+    {
+        EnsureVaultAvailable();
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
+        if (encryptedRoot is null)
+        {
+            DurableFile.CopyAtomic(fullPath, source, maxBytes);
+        }
+        else
+        {
+            using var bounded = new MemoryStream();
+            var buffer = new byte[81920];
+            long copied = 0;
+            while (true)
+            {
+                var read = source.Read(buffer, 0, buffer.Length);
+                if (read == 0) break;
+                copied += read;
+                if (copied > maxBytes)
+                    throw new InvalidDataException($"El archivo supera el límite de {maxBytes} bytes.");
+                bounded.Write(buffer, 0, read);
+            }
+            WriteFileAtomic(fullPath, bounded.ToArray());
+        }
         InvalidateVaultSizeCache();
     }
 
@@ -1535,8 +1572,37 @@ public sealed partial class VaultService
 
     internal static string SanitizeFileName(string name, string? fallback = null)
     {
-        var invalid = Path.GetInvalidFileNameChars();
-        var cleaned = new string(name.Where(c => !invalid.Contains(c)).ToArray()).Trim();
-        return string.IsNullOrWhiteSpace(cleaned) ? (fallback ?? LocalizationService.Instance["Vault_DefaultNoteTitle"]) : cleaned;
+        const int maxUtf8Bytes = 200;
+        const string portableInvalid = "<>:\"/\\|?*";
+        var cleaned = new string(name.Where(c => c >= ' ' && portableInvalid.IndexOf(c) < 0
+                                                   && !Path.GetInvalidFileNameChars().Contains(c)).ToArray())
+            .Trim().TrimStart('.').TrimEnd(' ', '.');
+
+        if (cleaned is "." or ".." || string.IsNullOrWhiteSpace(cleaned))
+            cleaned = fallback ?? LocalizationService.Instance["Vault_DefaultNoteTitle"];
+
+        var stem = cleaned.Split('.')[0];
+        if (WindowsReservedFileNames.Contains(stem)) cleaned = "_" + cleaned;
+
+        var truncated = new StringBuilder();
+        var byteCount = 0;
+        foreach (var rune in cleaned.EnumerateRunes())
+        {
+            if (byteCount + rune.Utf8SequenceLength > maxUtf8Bytes) break;
+            truncated.Append(rune.ToString());
+            byteCount += rune.Utf8SequenceLength;
+        }
+
+        var result = truncated.ToString().TrimEnd(' ', '.');
+        return string.IsNullOrWhiteSpace(result)
+            ? LocalizationService.Instance["Vault_DefaultNoteTitle"]
+            : result;
     }
+
+    private static readonly HashSet<string> WindowsReservedFileNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CON", "PRN", "AUX", "NUL", "CLOCK$",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    };
 }

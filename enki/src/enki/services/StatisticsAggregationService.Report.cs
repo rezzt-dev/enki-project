@@ -483,8 +483,16 @@ public sealed partial class StatisticsAggregationService
 
                 long length;
                 try { length = new FileInfo(path).Length; }
-                catch (IOException) { continue; }
-                catch (UnauthorizedAccessException) { continue; }
+                catch (IOException ex)
+                {
+                    LogService.Debug($"No se pudo medir '{path}' para las estadísticas: {ex}");
+                    continue;
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    LogService.Debug($"No se pudo medir '{path}' para las estadísticas: {ex}");
+                    continue;
+                }
 
                 var extension = Path.GetExtension(path).TrimStart('.').ToUpperInvariant();
                 if (extension.Length == 0) extension = "—";
@@ -598,8 +606,8 @@ public sealed partial class StatisticsAggregationService
                 var info = new FileInfo(note.FullPath);
                 if (info.Exists) notesBytes += info.Length;
             }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
+            catch (IOException ex) { LogService.Debug($"No se pudo medir la nota '{note.FullPath}': {ex}"); }
+            catch (UnauthorizedAccessException ex) { LogService.Debug($"No se pudo medir la nota '{note.FullPath}': {ex}"); }
         }
 
         var longest = notes.OrderByDescending(n => n.WordCount).FirstOrDefault();
@@ -639,7 +647,11 @@ public sealed partial class StatisticsAggregationService
     {
         var root = Path.Combine(vaultService.VaultPath ?? string.Empty, ".sessions");
         try { return Directory.Exists(root) ? Directory.GetDirectories(root).Length : 0; }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return 0; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning("No se pudieron contar las carpetas de sesión", ex);
+            return 0;
+        }
     }
 
     // ===================== Rachas =====================

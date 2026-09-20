@@ -117,6 +117,18 @@ public sealed partial class EditorViewModel
         {
             return save();
         }
+        catch (NoteImageAttachmentException ex)
+        {
+            LogService.Warning($"Se rechazó la imagen adjunta para '{Note.FullPath}'", ex);
+            var reason = ex.Failure == NoteImageAttachmentFailure.TooLarge
+                ? LocalizedTextFormatter.Format("Notification_NoteImageTooLarge", NoteImageService.MaxSourceBytes / 1024 / 1024)
+                : LocalizedTextFormatter.Format("Notification_NoteImageUnsupported");
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteImageAttachFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteImageAttachFailed_Message", reason),
+                NotificationSeverity.Warning);
+            return null;
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or VaultUnavailableException
                                        or SessionLockedException)
         {

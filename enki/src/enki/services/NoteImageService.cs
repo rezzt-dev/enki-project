@@ -2,6 +2,9 @@ using System;
 using System.Globalization;
 using System.IO;
 using enki.Models;
+using SkiaSharp;
+using Svg.Skia;
+using System.Xml;
 
 namespace enki.Services;
 
@@ -16,6 +19,8 @@ namespace enki.Services;
 /// </summary>
 public sealed class NoteImageService
 {
+    public const long MaxSourceBytes = 64L * 1024 * 1024;
+
     private readonly VaultService _vaultService;
 
     public NoteImageService(VaultService vaultService) => _vaultService = vaultService;
@@ -43,6 +48,11 @@ public sealed class NoteImageService
         if (!File.Exists(sourcePath)) return null;
 
         var fullSource = Path.GetFullPath(sourcePath);
+        var info = new FileInfo(fullSource);
+        if (info.Length > MaxSourceBytes)
+            throw new NoteImageAttachmentException(NoteImageAttachmentFailure.TooLarge);
+        ValidateImage(fullSource, Path.GetExtension(fullSource));
+
         if (IsInsideVault(fullSource))
             return NoteImageAttachments.MarkdownReference(note.FullPath, fullSource);
 
@@ -50,8 +60,38 @@ public sealed class NoteImageService
         if (folder is null) return null;
 
         var destination = UniquePath(folder, NoteImageAttachments.SanitizeFileName(Path.GetFileName(fullSource)));
-        _vaultService.WriteBinaryFile(destination, File.ReadAllBytes(fullSource));
+        using var source = new FileStream(fullSource, FileMode.Open, FileAccess.Read, FileShare.Read);
+        _vaultService.CopyBinaryFile(destination, source, MaxSourceBytes);
         return NoteImageAttachments.MarkdownReference(note.FullPath, destination);
+    }
+
+    private static void ValidateImage(string path, string extension)
+    {
+        try
+        {
+            using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (string.Equals(extension, ".svg", StringComparison.OrdinalIgnoreCase))
+            {
+                using var svg = new SKSvg();
+                svg.Load(source);
+                if (svg.Picture is null) throw new InvalidDataException("SVG sin contenido gráfico.");
+                return;
+            }
+
+            using var codec = SKCodec.Create(source);
+            if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0)
+                throw new InvalidDataException("Cabecera de imagen no reconocida.");
+        }
+        catch (NoteImageAttachmentException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is InvalidDataException or ArgumentException or IOException
+                                       or InvalidOperationException or NotSupportedException or XmlException
+                                       or OutOfMemoryException)
+        {
+            throw new NoteImageAttachmentException(NoteImageAttachmentFailure.UnsupportedFormat, ex);
+        }
     }
 
     private bool IsInsideVault(string fullPath)
@@ -84,4 +124,18 @@ public sealed class NoteImageService
         // dejar que el bucle devuelva una ruta ya ocupada.
         return Path.Combine(folder, $"{name}-{Guid.NewGuid():N}{extension}");
     }
+}
+
+public enum NoteImageAttachmentFailure { TooLarge, UnsupportedFormat }
+
+/// <summary>Fallo de validación de un adjunto, separado de un error de disco para que el editor pueda
+/// explicar si el archivo excede el límite o no contiene una imagen reconocible.</summary>
+public sealed class NoteImageAttachmentException : IOException
+{
+    public NoteImageAttachmentFailure Failure { get; }
+
+    public NoteImageAttachmentException(NoteImageAttachmentFailure failure, Exception? innerException = null)
+        : base(failure == NoteImageAttachmentFailure.TooLarge
+            ? "La imagen supera el tamaño máximo permitido."
+            : "El archivo no contiene una imagen compatible.", innerException) => Failure = failure;
 }

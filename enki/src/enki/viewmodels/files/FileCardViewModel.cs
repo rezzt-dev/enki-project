@@ -301,9 +301,10 @@ public sealed partial class FileCardViewModel : ObservableObject
                     if (generation == _generation) Thumbnail = bitmap;
                 });
             }
-            catch
+            catch (Exception ex)
             {
                 // Sin miniatura: la tarjeta sigue enseñando el icono por tipo.
+                LogService.Debug($"No se pudo generar la miniatura de '{file.FullPath}': {ex}");
             }
             finally
             {

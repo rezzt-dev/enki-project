@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -20,9 +21,10 @@ public static class FolderOpener
             else
                 Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         }
-        catch
+        catch (Exception ex)
         {
             // Ignorar: sin gestor de archivos asociado o ruta no accesible.
+            LogService.Warning($"No se pudo abrir la carpeta '{path}'", ex);
         }
     }
 
@@ -42,9 +44,10 @@ public static class FolderOpener
             else if (Path.GetDirectoryName(filePath) is { } directory)
                 Open(directory);
         }
-        catch
+        catch (Exception ex)
         {
             // Ignorar: sin gestor de archivos asociado o ruta no accesible.
+            LogService.Warning($"No se pudo revelar el archivo '{filePath}'", ex);
         }
     }
 }

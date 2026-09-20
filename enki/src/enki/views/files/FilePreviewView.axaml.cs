@@ -10,6 +10,7 @@ using Avalonia.VisualTree;
 using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using enki.ViewModels;
+using enki.Services;
 
 namespace enki.Views;
 
@@ -158,9 +159,10 @@ public partial class FilePreviewView : UserControl
                     : null;
                 _codeTextMateInstallation.SetGrammar(scopeName);
             }
-            catch
+            catch (Exception ex)
             {
                 // Gramática que TextMate no sabe cargar: el texto se sigue viendo, solo que sin colores.
+                LogService.Debug($"No se pudo cargar la gramática TextMate para '{language}': {ex}");
             }
         }, DispatcherPriority.Loaded);
     }

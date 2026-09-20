@@ -51,8 +51,12 @@ notas, purga de bitmaps al bloquear, timeout comun de regex y mutex, una unica i
 arranque, commit atomico del backup y restauracion guiada segura. La suite queda en **1866 pruebas, 0
 fallos** en `enki.Tests` y **254 pruebas, 0 fallos** en `enki.UITests`.
 
-El resto de hallazgos (SEC-08 en adelante) sigue abierto y mantiene el orden de trabajo del final del
-documento.
+Los ocho hallazgos **Bajo** (**SEC-08**, **SEC-09**, **SEC-10**, **BUG-11** a **BUG-15**) estan
+**corregidos y testeados** tambien, con regresiones en `VaultServiceTests`, `NoteExportRendererTests`,
+`JsonFileStoreTests`, `NoteImageServiceTests`, `SettingsServiceTests` y `VaultBackupServiceTests`.
+**OPS-01** queda **verificado** (informativo, sin cambios de codigo). Con esto **todos los hallazgos del
+documento estan cerrados**; solo permanecen las decisiones de producto y verificaciones de plataforma
+anotadas arriba.
 
 ---
 
@@ -88,15 +92,15 @@ documento.
 | BUG-08 | ✅ Medio (corregido) | Tres `SettingsService` independientes en el arranque | `App.axaml.cs:41,51` |
 | BUG-09 | ✅ Medio (corregido) | El backup borra el destino antes de saber si puede escribirlo | `services/VaultBackupService.cs:43` |
 | BUG-10 | ✅ Medio (corregido) | No existe "restaurar copia de seguridad" en la app | `viewmodels/settings/SettingsViewModel.DangerZone.cs` |
-| SEC-08 | Bajo | `SanitizeFileName` acepta `..`, `.` y nombres ocultos/reservados | `services/VaultService.cs:1547` |
-| SEC-09 | Bajo | La exportacion HTML incrusta imagenes de fuera del vault | `services/NoteExportRenderer.cs:474` |
-| SEC-10 | Bajo | Permisos por defecto de estado y logs en Linux/macOS | `services/JsonFileStore.cs:66` |
-| BUG-11 | Bajo | Adjuntar imagen lee el archivo entero sin limite de tamaño | `services/NoteImageService.cs:54` |
-| BUG-12 | Bajo | Un `.enki/settings.json` corrupto se vacia de forma silenciosa | `services/SettingsService.cs` (`ReadVaultObject`) |
-| BUG-13 | Bajo | 36 `catch` vacios: fallos que no dejan rastro | (transversal) |
-| BUG-14 | Bajo | Escritura "atomica" sin `fsync` | `services/JsonFileStore.cs:66`, `services/VaultService.cs:1081` |
-| BUG-15 | Bajo | El recorrido del vault sigue enlaces simbolicos | `services/VaultBackupService.cs:50` |
-| OPS-01 | Informativo | Consecuencias de excluir `local.properties` del paquete | `enki/packaging/` |
+| SEC-08 | ✅ Bajo (corregido y testeado) | `SanitizeFileName` acepta `..`, `.` y nombres ocultos/reservados | `services/VaultService.cs:1547` |
+| SEC-09 | ✅ Bajo (corregido y testeado) | La exportacion HTML incrusta imagenes de fuera del vault | `services/NoteExportRenderer.cs:474` |
+| SEC-10 | ✅ Bajo (corregido y testeado) | Permisos por defecto de estado y logs en Linux/macOS | `services/JsonFileStore.cs:66` |
+| BUG-11 | ✅ Bajo (corregido y testeado) | Adjuntar imagen lee el archivo entero sin limite de tamaño | `services/NoteImageService.cs:54` |
+| BUG-12 | ✅ Bajo (corregido y testeado) | Un `.enki/settings.json` corrupto se vacia de forma silenciosa | `services/SettingsService.cs` (`ReadVaultObject`) |
+| BUG-13 | ✅ Bajo (corregido y testeado) | 36 `catch` vacios: fallos que no dejan rastro | (transversal) |
+| BUG-14 | ✅ Bajo (corregido y testeado) | Escritura "atomica" sin `fsync` | `services/JsonFileStore.cs:66`, `services/VaultService.cs:1081` |
+| BUG-15 | ✅ Bajo (corregido y testeado) | El recorrido del vault sigue enlaces simbolicos | `services/VaultBackupService.cs:50` |
+| OPS-01 | ✅ Informativo (verificado) | Consecuencias de excluir `local.properties` del paquete | `enki/packaging/` |
 
 ---
 
@@ -761,7 +765,7 @@ preferencias se fusionan por `SettingsService` sin restaurar secretos. Hay prueb
 
 ## BAJO
 
-### SEC-08 · `SanitizeFileName` acepta `..`, `.` y nombres ocultos/reservados
+### SEC-08 · `SanitizeFileName` acepta `..`, `.` y nombres ocultos/reservados ✅
 
 **Donde:** [`VaultService.cs:1547`](../enki/src/enki/services/VaultService.cs#L1547).
 
@@ -782,7 +786,7 @@ las plataformas y `\` tambien en Windows). Pero deja pasar:
 quedara oculta), comprobar la lista de nombres reservados en Windows, recortar puntos/espacios finales y
 acotar la longitud.
 
-### SEC-09 · La exportacion HTML incrusta imagenes de fuera del vault
+### SEC-09 · La exportacion HTML incrusta imagenes de fuera del vault ✅
 
 **Donde:** [`NoteExportRenderer.cs:474`](../enki/src/enki/services/NoteExportRenderer.cs#L474)
 (`TryEmbedLocalImage`).
@@ -795,7 +799,7 @@ esta bien hecho (lista blanca de esquemas, escapado sistematico, saneado de etiq
 **Como cerrarlo.** Exigir que la ruta resuelta caiga dentro del vault; si no, dejar el `src` original en vez
 de incrustar.
 
-### SEC-10 · Permisos por defecto de estado y logs en Linux/macOS
+### SEC-10 · Permisos por defecto de estado y logs en Linux/macOS ✅
 
 **Donde:** [`JsonFileStore.cs:66`](../enki/src/enki/services/JsonFileStore.cs#L66),
 [`LogService.cs`](../enki/src/enki/services/LogService.cs), backups en `%AppData%/Enki/backups/`.
@@ -808,7 +812,7 @@ automatico, que contienen el vault entero**.
 **Como cerrarlo.** `0700` en la carpeta `%AppData%/Enki` y `0600` en los archivos que crea, en el arranque.
 En Windows el ACL heredado del perfil ya lo cubre.
 
-### BUG-11 · Adjuntar imagen lee el archivo entero sin limite de tamaño
+### BUG-11 · Adjuntar imagen lee el archivo entero sin limite de tamaño ✅
 
 **Donde:** [`NoteImageService.cs:54`](../enki/src/enki/services/NoteImageService.cs#L54)
 (`File.ReadAllBytes(fullSource)`).
@@ -822,7 +826,7 @@ cabecera con Skia. Ese es el patron a replicar.
 **Como cerrarlo.** Tope de tamaño con aviso al usuario y copia por streaming (`File.Copy` o `CopyToAsync`)
 en vez de `ReadAllBytes`.
 
-### BUG-12 · Un `.enki/settings.json` corrupto se vacia de forma silenciosa
+### BUG-12 · Un `.enki/settings.json` corrupto se vacia de forma silenciosa ✅
 
 **Donde:** `SettingsService.ReadVaultObject`
 ([`SettingsService.cs`](../enki/src/enki/services/SettingsService.cs)).
@@ -835,7 +839,7 @@ para el caso equivalente del archivo global.
 **Como cerrarlo.** Marcar el caso con una bandera analoga a `LoadedFromCorruptData` y que el compositor
 avise con `_notificationService.Push(...)`, mencionando la ruta de la copia de seguridad.
 
-### BUG-13 · 36 `catch` vacios: fallos que no dejan rastro
+### BUG-13 · 36 `catch` vacios: fallos que no dejan rastro ✅
 
 Hay 36 bloques `catch` que no registran nada. Muchos estan justificados y comentados (limpieza best-effort,
 "sin navegador asociado"). Otros no: `PolarRealtimeService.ConnectAsync` traga cualquier excepcion sin
@@ -847,7 +851,7 @@ existia".
 hoy son mudos. El coste es una linea por sitio y convierte un "a veces no sincroniza" irreproducible en un
 log accionable.
 
-### BUG-14 · Escritura "atomica" sin `fsync`
+### BUG-14 · Escritura "atomica" sin `fsync` ✅
 
 **Donde:** [`JsonFileStore.cs:66`](../enki/src/enki/services/JsonFileStore.cs#L66),
 [`VaultService.cs:1081`](../enki/src/enki/services/VaultService.cs#L1081).
@@ -860,7 +864,7 @@ los datos.
 **Como cerrarlo.** Escribir con `FileStream` y `Flush(true)` antes del `Move` en los archivos criticos
 (notas, `settings.json`, `.session.json`).
 
-### BUG-15 · El recorrido del vault sigue enlaces simbolicos
+### BUG-15 · El recorrido del vault sigue enlaces simbolicos ✅
 
 **Donde:** [`VaultBackupService.cs:50`](../enki/src/enki/services/VaultBackupService.cs#L50) y el resto de
 usos de `SearchOption.AllDirectories`.
@@ -872,7 +876,7 @@ propio usuario sin mala intencion (un enlace a una carpeta de referencias, por e
 **Como cerrarlo.** Pasar `EnumerationOptions` con el atributo `ReparsePoint` ignorado, o comprobar
 `FileSystemInfo.LinkTarget` antes de descender.
 
-### OPS-01 · Consecuencias de excluir `local.properties` del paquete
+### OPS-01 · Consecuencias de excluir `local.properties` del paquete ✅
 
 Esto **esta bien resuelto** y se anota solo para que no se pierda el contexto al publicar. Los tres scripts
 de empaquetado excluyen `local.properties`
@@ -947,7 +951,17 @@ Conviene dejarlo escrito para no "arreglarlo" por error en una pasada futura:
 15. ~~SEC-07 — politica de imagenes remotas.~~ (+ default apagado y `http://`: decisiones de producto
    pendientes).
 
-**Deuda de robustez, sin prisa:** SEC-08, SEC-09, SEC-10, BUG-11, BUG-12, BUG-13, BUG-14, BUG-15.
+**Deuda de robustez, sin prisa: hecho.**
+
+16. ~~SEC-08 — saneado de nombres de archivo y carpeta.~~
+17. ~~SEC-09 — la exportacion HTML solo incrusta imagenes contenidas en el vault.~~
+18. ~~SEC-10 — permisos `0700`/`0600` en datos privados de Linux y macOS.~~
+19. ~~BUG-11 — tope de tamaño al adjuntar imagenes.~~
+20. ~~BUG-12 — aviso al recuperar un `.enki/settings.json` corrupto.~~
+21. ~~BUG-13 — `catch` acotados y con registro en el log.~~
+22. ~~BUG-14 — escritura atomica con `fsync` antes del `Move`.~~
+23. ~~BUG-15 — el recorrido del vault ignora enlaces simbolicos.~~
+24. ~~OPS-01 — verificado.~~
 
 ---
 

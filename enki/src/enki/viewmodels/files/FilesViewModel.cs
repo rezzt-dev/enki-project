@@ -829,9 +829,10 @@ public sealed partial class FilesViewModel : ViewModelBase
                 _ = Task.Delay(TimeSpan.FromMinutes(5)).ContinueWith(_ => VaultService.TryCleanupDecryptedTempFile(tempPath));
             }
         }
-        catch
+        catch (Exception ex)
         {
             if (isTempCopy) VaultService.TryCleanupDecryptedTempFile(readablePath);
+            LogService.Warning($"No se pudo abrir '{card.File.FullPath}' con la aplicación del sistema", ex);
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Files_OpenWithSystem_FailedTitle"),
                 LocalizedTextFormatter.Format("Files_OpenWithSystem_FailedMessage", card.FileName),

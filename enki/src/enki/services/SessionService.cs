@@ -1013,9 +1013,7 @@ public sealed class SessionService
         var manifestPath = Path.Combine(_vaultService.VaultPath, RootGraphManifestFileName);
         try
         {
-            var tempPath = $"{manifestPath}.tmp-{Guid.NewGuid():N}";
-            File.WriteAllText(tempPath, JsonSerializer.Serialize(manifest, JsonOptions));
-            File.Move(tempPath, manifestPath, overwrite: true);
+            DurableFile.WriteAllTextAtomic(manifestPath, JsonSerializer.Serialize(manifest, JsonOptions), privateFile: true);
         }
         catch (IOException ex)
         {
@@ -1039,9 +1037,7 @@ public sealed class SessionService
         // reported I/O failures instead of swallowing them, it just wasn't atomic yet.
         try
         {
-            var tempPath = $"{manifestPath}.tmp-{Guid.NewGuid():N}";
-            File.WriteAllText(tempPath, JsonSerializer.Serialize(manifest, JsonOptions));
-            File.Move(tempPath, manifestPath, overwrite: true);
+            DurableFile.WriteAllTextAtomic(manifestPath, JsonSerializer.Serialize(manifest, JsonOptions), privateFile: true);
 
             // VaultService memoizes "is this session encrypted?" per session root against the manifest's
             // mtime; a manifest written and read back inside the same filesystem timestamp tick would

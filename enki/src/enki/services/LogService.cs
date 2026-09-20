@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -43,16 +44,19 @@ public static class LogService
     {
         try
         {
-            _logDirectory = storageDirectory ?? Path.Combine(AppDataDirectory.Resolve(), "logs");
-            Directory.CreateDirectory(_logDirectory);
+            var appData = storageDirectory is null ? AppDataDirectory.Resolve() : null;
+            if (appData is not null) PrivateDataPermissions.HardenExistingTree(appData);
+            _logDirectory = storageDirectory ?? Path.Combine(appData!, "logs");
+            PrivateDataPermissions.EnsurePrivateDirectory(_logDirectory);
             PurgeOldLogFiles();
         }
-        catch
+        catch (Exception ex)
         {
             // Si ni siquiera se puede crear la carpeta de logs, el logging se degrada a no-op — nunca debe
             // tumbar el arranque de la app por esto (que es justo el tipo de fallo que Fase 0 quiere que se
             // reporte, no que se propague).
             _logDirectory = null;
+            Trace.TraceError($"No se pudo inicializar el registro de Enki: {ex}");
         }
     }
 
@@ -81,14 +85,25 @@ public static class LogService
             lock (WriteLock)
             {
                 var path = Path.Combine(_logDirectory, $"enki-{DateTime.Now:yyyyMMdd}.log");
-                File.AppendAllText(path, line.Append(Environment.NewLine).ToString());
+                var options = new FileStreamOptions
+                {
+                    Mode = FileMode.Append,
+                    Access = FileAccess.Write,
+                    Share = FileShare.Read
+                };
+                if (!OperatingSystem.IsWindows()) options.UnixCreateMode = PrivateDataPermissions.FileMode;
+                using var stream = new FileStream(path, options);
+                using var writer = new StreamWriter(stream);
+                writer.Write(line.Append(Environment.NewLine).ToString());
+                PrivateDataPermissions.EnsurePrivateFile(path);
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Best-effort: un fallo al escribir el propio log (disco lleno, carpeta borrada en caliente) no
             // puede tumbar el código que intenta reportar otro fallo — eso sería justo el "fallo silencioso"
             // que esta fase existe para cerrar.
+            Trace.TraceError($"No se pudo escribir el registro de Enki: {ex}");
         }
     }
 
@@ -101,9 +116,10 @@ public static class LogService
             {
                 if (File.GetLastWriteTime(file) < cutoff) File.Delete(file);
             }
-            catch
+            catch (Exception ex)
             {
                 // Limpieza best-effort: un fichero antiguo bloqueado/no borrable no debe impedir el arranque.
+                Trace.TraceWarning($"No se pudo purgar el log antiguo '{file}': {ex}");
             }
         }
     }
@@ -114,8 +130,9 @@ public static class LogService
         {
             return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
         }
-        catch
+        catch (Exception ex)
         {
+            Trace.TraceWarning($"No se pudo resolver la versión de Enki: {ex}");
             return "unknown";
         }
     }

@@ -57,6 +57,13 @@ public sealed partial class MainWindowViewModel
         _sessionService = new SessionService(_vaultService);
         _kanbanService = new KanbanService(_vaultService, deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
         _notificationService = new NotificationService(_settingsService, _vaultService);
+        void NotifyCorruptVaultSettings(string backupPath) => _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_VaultSettingsCorrupt_Title"),
+            LocalizedTextFormatter.Format("Notification_VaultSettingsCorrupt_Message", backupPath),
+            Models.NotificationSeverity.Error);
+        _settingsService.VaultSettingsRecoveredFromCorruptData += NotifyCorruptVaultSettings;
+        if (_settingsService.CorruptVaultSettingsBackupPath is { } corruptVaultSettingsBackup)
+            NotifyCorruptVaultSettings(corruptVaultSettingsBackup);
         void NotifyCredentialStoreFailure() => _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Notification_PolarCredentialsUnavailable_Title"),
             LocalizedTextFormatter.Format("Notification_PolarCredentialsUnavailable_Message"),

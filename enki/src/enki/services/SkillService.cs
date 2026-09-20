@@ -128,13 +128,21 @@ public sealed class SkillService
     private static int CountMarkdown(string directory, SearchOption option)
     {
         try { return Directory.EnumerateFiles(directory, "*.md", option).Count(); }
-        catch (UnauthorizedAccessException) { return 0; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            LogService.Debug($"No se pudieron contar las skills de '{directory}': {ex}");
+            return 0;
+        }
     }
 
     private SkillFile? TryReadSkill(string filePath)
     {
         try { return ReadSkill(filePath); }
-        catch { return null; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning($"No se pudo leer la skill '{filePath}'", ex);
+            return null;
+        }
     }
 
     /// <summary>Lee una skill desde una ruta absoluta sin importarla al vault.</summary>
@@ -539,7 +547,11 @@ public sealed class SkillService
     {
         if (string.IsNullOrWhiteSpace(yaml)) return null;
         try { return YamlDeserializer.Deserialize<SkillFrontMatter>(yaml); }
-        catch { return null; }
+        catch (YamlDotNet.Core.YamlException ex)
+        {
+            LogService.Debug($"Frontmatter YAML de skill no válido: {ex}");
+            return null;
+        }
     }
 
     private static string SanitizeId(string name)

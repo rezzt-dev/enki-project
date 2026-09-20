@@ -146,9 +146,10 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
             if (IsFitWidth) ApplyFitWidth();
             await RenderCurrentPageAsync();
         }
-        catch
+        catch (Exception ex)
         {
             IsFaulted = true;
+            LogService.Warning($"No se pudo abrir o renderizar el PDF '{_rawFullPath}'", ex);
         }
         finally
         {
@@ -162,9 +163,10 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         {
             return PdfRenderHelper.GetPageSizes(path);
         }
-        catch
+        catch (Exception ex)
         {
             // Sin tamaños se sigue pudiendo ver el PDF: se deducen del primer render.
+            LogService.Debug($"No se pudieron leer los tamaños de página de '{path}': {ex}");
             return [];
         }
     }
@@ -299,11 +301,12 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         {
             rendered = await Task.Run(() => PdfRenderHelper.RenderPageByDpi(_fullPath, pageIndex, renderDpi));
         }
-        catch
+        catch (Exception ex)
         {
             // Solo el primer render tumba la previsualización entera: un fallo puntual en un cambio de página o
             // de zoom posterior deja en pantalla la página que ya había.
             if (CurrentPageImage is null) IsFaulted = true;
+            LogService.Warning($"No se pudo renderizar la página {pageIndex + 1} de '{_rawFullPath}'", ex);
             return;
         }
 
@@ -329,9 +332,10 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
                 var bitmap = PdfRenderHelper.RenderPageByWidth(_fullPath, page.PageIndex, ThumbnailWidth);
                 Dispatcher.UIThread.Post(() => page.Thumbnail = bitmap);
             }
-            catch
+            catch (Exception ex)
             {
                 // Una miniatura suelta que no se pudo renderizar se queda en blanco; no merece un aviso.
+                LogService.Debug($"No se pudo renderizar la miniatura {page.PageIndex + 1} de '{_rawFullPath}': {ex}");
             }
         });
     }

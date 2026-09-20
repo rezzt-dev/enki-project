@@ -19,6 +19,12 @@ public sealed class VaultBackupService
     private const long MaxRestoredSettingsBytes = 4L * 1024 * 1024;
     private const int MaxArchiveEntries = 100_000;
     private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
+    private static readonly EnumerationOptions VaultEnumerationOptions = new()
+    {
+        RecurseSubdirectories = true,
+        IgnoreInaccessible = false,
+        AttributesToSkip = FileAttributes.ReparsePoint
+    };
 
     private readonly VaultService _vaultService;
     private readonly string _appDataDirectory;
@@ -57,7 +63,9 @@ public sealed class VaultBackupService
             {
                 if (!string.IsNullOrWhiteSpace(_vaultService.VaultPath) && Directory.Exists(_vaultService.VaultPath))
                 {
-                    foreach (var file in Directory.EnumerateFiles(_vaultService.VaultPath, "*", SearchOption.AllDirectories))
+                    // Un enlace a ~/ o un ciclo no forma parte del vault y no puede ampliar el backup a
+                    // datos arbitrarios del equipo. ReparsePoint cubre enlaces de archivos y carpetas.
+                    foreach (var file in Directory.EnumerateFiles(_vaultService.VaultPath, "*", VaultEnumerationOptions))
                     {
                         var fullFile = Path.GetFullPath(file);
                         if (string.Equals(fullFile, destination, VaultService.PathComparison)
@@ -92,6 +100,7 @@ public sealed class VaultBackupService
             // ZIP nuevo ya se cerró correctamente y su directorio central quedó escrito.
             _beforeBackupCommit?.Invoke(temporary);
             File.Move(temporary, destination, overwrite: true);
+            PrivateDataPermissions.EnsurePrivateFile(destination);
             return new VaultBackupResult(failedEntries);
         }
         catch
@@ -260,7 +269,7 @@ public sealed class VaultBackupService
 
         try
         {
-            Directory.CreateDirectory(AutoBackupDirectory);
+            PrivateDataPermissions.EnsurePrivateDirectory(AutoBackupDirectory);
             var destination = Path.Combine(AutoBackupDirectory, $"Enki-AutoBackup-{DateTime.Now:yyyy-MM-dd-HHmmss}.zip");
             CreateBackup(destination);
 

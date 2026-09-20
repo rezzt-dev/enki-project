@@ -136,7 +136,10 @@ public static class MarkdownLineParser
         if (indent <= 3 && n - indent >= 3)
         {
             try { isHorizontalRule = HorizontalRuleRegex.IsMatch(text[indent..]); }
-            catch (RegexMatchTimeoutException) { /* texto plano */ }
+            catch (RegexMatchTimeoutException ex)
+            {
+                LogService.Warning("La detección de regla horizontal agotó su tiempo; se conserva como texto", ex);
+            }
         }
         if (isHorizontalRule)
         {

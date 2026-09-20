@@ -46,9 +46,10 @@ public static class NotificationSoundPlayer
             {
                 if (attempt()) return true;
             }
-            catch
+            catch (Exception ex)
             {
                 // Este eslabón no está disponible en esta máquina; pasar al siguiente.
+                LogService.Debug($"Un método de reproducción de sonido no está disponible: {ex}");
             }
         }
 

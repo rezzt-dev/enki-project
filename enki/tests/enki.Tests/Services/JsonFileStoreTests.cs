@@ -39,6 +39,16 @@ public class JsonFileStoreTests : IDisposable
     }
 
     [Fact]
+    public void Save_OnUnix_CreatesPrivateStateFile()
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        JsonFileStore.Save(_path, new { Secret = "value" });
+
+        Assert.Equal(PrivateDataPermissions.FileMode, File.GetUnixFileMode(_path));
+    }
+
+    [Fact]
     public void TryLoad_MissingFile_ReturnsFalse()
     {
         var loaded = JsonFileStore.TryLoad<List<string>>(_path, out var value);

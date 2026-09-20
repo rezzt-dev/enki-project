@@ -13,7 +13,7 @@ namespace enki.Services;
 /// below never inspects the payload, it just debounces and calls
 /// <see cref="PolarSyncService.SyncNowAsync"/> — the existing push/pull/LWW logic is untouched. Any failure
 /// to connect or subscribe (offline, a table not yet added to the <c>supabase_realtime</c> publication,
-/// etc.) is swallowed silently: the polling timer already covers correctness, so this service only ever
+/// etc.) is logged and polling still covers correctness, so this service only ever
 /// makes sync feel faster, never more correct.</summary>
 public sealed class PolarRealtimeService
 {
@@ -85,9 +85,11 @@ public sealed class PolarRealtimeService
             await channel.Subscribe();
             _client = client;
         }
-        catch
+        catch (Exception ex)
         {
-            try { client?.Disconnect(); } catch { /* best-effort cleanup of a half-open socket */ }
+            LogService.Warning("No se pudo conectar Polar Realtime; se mantendrá el sondeo periódico", ex);
+            try { client?.Disconnect(); }
+            catch (Exception cleanupError) { LogService.Debug($"No se pudo cerrar el socket Realtime incompleto: {cleanupError}"); }
             _client = null;
             _appliedAccessToken = null;
         }
@@ -102,8 +104,10 @@ public sealed class PolarRealtimeService
         _debounceTimer.Stop();
         if (_client is { } client)
         {
-            try { client.RemoveStateChangedHandler(HandleSocketStateChanged); } catch { /* already gone/broken */ }
-            try { client.Disconnect(); } catch { /* already gone/broken, nothing to clean up */ }
+            try { client.RemoveStateChangedHandler(HandleSocketStateChanged); }
+            catch (Exception ex) { LogService.Debug($"El handler Realtime ya no se pudo retirar: {ex}"); }
+            try { client.Disconnect(); }
+            catch (Exception ex) { LogService.Debug($"El socket Realtime ya no se pudo cerrar: {ex}"); }
         }
         _client = null;
         _appliedAccessToken = null;

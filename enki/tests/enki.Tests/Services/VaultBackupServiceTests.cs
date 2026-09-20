@@ -79,6 +79,34 @@ public class VaultBackupServiceTests : IDisposable
     }
 
     [Fact]
+    public void CreateBackup_OnUnix_CreatesPrivateArchive()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var destination = Path.Combine(_root, "private-backup.zip");
+
+        CreateService().CreateBackup(destination);
+
+        Assert.Equal(PrivateDataPermissions.FileMode, File.GetUnixFileMode(destination));
+    }
+
+    [Fact]
+    public void CreateBackup_DoesNotFollowSymbolicLinksOutsideVault()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var outside = Path.Combine(_root, "outside");
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "privado.txt"), "secreto");
+        Directory.CreateSymbolicLink(Path.Combine(_vaultPath, "enlace"), outside);
+        var destination = Path.Combine(_root, "no-links.zip");
+
+        CreateService().CreateBackup(destination);
+
+        using var archive = ZipFile.OpenRead(destination);
+        Assert.DoesNotContain(archive.Entries, entry => entry.FullName.Contains("privado", StringComparison.Ordinal));
+        Assert.DoesNotContain(archive.Entries, entry => entry.FullName.StartsWith("vault/enlace", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void CreateBackup_WhenCommitFails_PreservesPreviousDestinationAndRemovesTemporary()
     {
         var settings = new SettingsService(_appDataDirectory);

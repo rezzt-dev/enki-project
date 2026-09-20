@@ -21,7 +21,7 @@ public static class NoteExportService
     /// <summary>Flujo completo de "Exportar como HTML…". No-op silencioso si no hay
     /// <paramref name="topLevel"/> (tests, donde <c>App.MainWindowRef</c> es null — mismo criterio que
     /// los comandos de importar/exportar ajustes) o si el usuario cancela el diálogo.</summary>
-    public static async Task ExportHtmlAsync(NoteFile note, string content, bool includeTags,
+    public static async Task ExportHtmlAsync(NoteFile note, string content, bool includeTags, string vaultRootPath,
         TopLevel? topLevel, Action<LocalizedText, LocalizedText, NotificationSeverity>? notify)
     {
         if (topLevel?.StorageProvider is null) return;
@@ -40,7 +40,7 @@ public static class NoteExportService
 
         try
         {
-            var html = NoteExportRenderer.RenderDocument(note, content, includeTags);
+            var html = NoteExportRenderer.RenderDocument(note, content, includeTags, vaultRootPath);
             await File.WriteAllTextAsync(destination, html);
             notify?.Invoke(
                 LocalizedTextFormatter.Format("Notification_NoteExportSuccess_Title"),

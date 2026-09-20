@@ -671,9 +671,10 @@ public partial class EditorView : UserControl
             popup.HorizontalOffset = Math.Max(8, point.Value.X);
             popup.VerticalOffset = Math.Max(8, point.Value.Y + 4);
         }
-        catch
+        catch (Exception ex)
         {
             // Si no se puede calcular la posición, el popup usa su offset por defecto.
+            LogService.Debug($"No se pudo posicionar el selector junto al cursor: {ex}");
         }
     }
 

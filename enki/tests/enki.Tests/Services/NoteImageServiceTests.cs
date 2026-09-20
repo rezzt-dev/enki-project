@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 using enki.Models;
 using enki.Services;
 using Xunit;
@@ -34,7 +33,8 @@ public class NoteImageServiceTests : IDisposable
         return vault;
     }
 
-    private static readonly byte[] SampleImage = Encoding.UTF8.GetBytes("no es un PNG de verdad, pero son bytes");
+    private static readonly byte[] SampleImage = Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
 
     [Fact]
     public void SaveBytes_WritesIntoTheNotesOwnAttachmentsFolder()
@@ -109,6 +109,36 @@ public class NoteImageServiceTests : IDisposable
         var service = new NoteImageService(vault);
 
         Assert.Null(service.SaveFromFile(note, Path.Combine(_storageDirectory, "no-existe.png")));
+    }
+
+    [Fact]
+    public void SaveFromFile_TooLarge_RejectsBeforeCreatingAnAttachment()
+    {
+        var vault = CreateVault();
+        var note = vault.CreateNote("Proyecto");
+        var service = new NoteImageService(vault);
+        var source = Path.Combine(_storageDirectory, "enorme.png");
+        using (var stream = File.Create(source)) stream.SetLength(NoteImageService.MaxSourceBytes + 1);
+
+        var error = Assert.Throws<NoteImageAttachmentException>(() => service.SaveFromFile(note, source));
+
+        Assert.Equal(NoteImageAttachmentFailure.TooLarge, error.Failure);
+        Assert.False(Directory.Exists(Path.Combine(_vaultPath, "Proyecto.attachments")));
+    }
+
+    [Fact]
+    public void SaveFromFile_FakeImageExtension_RejectsTheFile()
+    {
+        var vault = CreateVault();
+        var note = vault.CreateNote("Proyecto");
+        var service = new NoteImageService(vault);
+        var source = Path.Combine(_storageDirectory, "falsa.png");
+        File.WriteAllText(source, "esto no es una imagen");
+
+        var error = Assert.Throws<NoteImageAttachmentException>(() => service.SaveFromFile(note, source));
+
+        Assert.Equal(NoteImageAttachmentFailure.UnsupportedFormat, error.Failure);
+        Assert.False(Directory.Exists(Path.Combine(_vaultPath, "Proyecto.attachments")));
     }
 
     [Fact]

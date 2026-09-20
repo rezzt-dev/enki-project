@@ -9,6 +9,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform;
 using enki.Models;
+using enki.Services;
 
 namespace enki.Views.Sessions;
 
@@ -1609,7 +1610,11 @@ public static class SessionGraphRenderer
                 b = Convert.ToInt32(h[4..6], 16);
                 return true;
             }
-            catch { return false; }
+            catch (Exception ex) when (ex is FormatException or OverflowException)
+            {
+                LogService.Debug($"Color hexadecimal no válido '{hex}': {ex}");
+                return false;
+            }
         }
 
         private static string HslToRgba(double h, double s, double l)

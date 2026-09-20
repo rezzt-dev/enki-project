@@ -35,9 +35,9 @@ public static class NoteExportRenderer
     /// <paramref name="includeTags"/> y la nota las tiene — la "opción de incluir o no el
     /// frontmatter/tags" de la propuesta; el bloque YAML en sí nunca se vuelca como texto, no es
     /// contenido), el cuerpo Markdown renderizado y la hoja de estilo monocroma incrustada.</summary>
-    public static string RenderDocument(NoteFile note, string markdownContent, bool includeTags)
+    public static string RenderDocument(NoteFile note, string markdownContent, bool includeTags, string vaultRootPath)
     {
-        var body = RenderBodyHtml(markdownContent, Path.GetDirectoryName(note.FullPath));
+        var body = RenderBodyHtml(markdownContent, Path.GetDirectoryName(note.FullPath), vaultRootPath);
         var title = WebUtility.HtmlEncode(note.Title);
 
         var sb = new StringBuilder(body.Length + 4096);
@@ -64,7 +64,7 @@ public static class NoteExportRenderer
     /// retira antes de renderizar — es metadato (etiquetas), no contenido del documento.</summary>
     /// <param name="noteDirectory">Carpeta de la nota en disco; se usa para resolver (e incrustar como
     /// data URI) las imágenes referenciadas con ruta relativa. Puede ser null en tests.</param>
-    public static string RenderBodyHtml(string markdownContent, string? noteDirectory)
+    public static string RenderBodyHtml(string markdownContent, string? noteDirectory, string? vaultRootPath = null)
     {
         var text = NoteTagHelper.StripFrontMatter(markdownContent ?? string.Empty);
         if (text.Length == 0) return string.Empty;
@@ -141,7 +141,7 @@ public static class NoteExportRenderer
             // navegador hereda su text-align a todo lo que quede dentro.
             if (parsed.Kind == MdBlockKind.Paragraph && MarkdownHtmlParser.HasBlockTag(parsed.HtmlTags))
             {
-                sb.Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory)).Append('\n');
+                sb.Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory, vaultRootPath)).Append('\n');
                 i++;
                 continue;
             }
@@ -151,7 +151,7 @@ public static class NoteExportRenderer
             // MarkdownLineParser — lo que las hace tabla es el bloque, no la línea.
             if (tables.TryGetValue(i + 1, out var tableRow) && tableRow.Kind == MdTableRowKind.Header)
             {
-                i = EmitTable(lines, lineOffsets, ParseLine, OpenTags, tableRow.Table, sb, noteDirectory);
+                i = EmitTable(lines, lineOffsets, ParseLine, OpenTags, tableRow.Table, sb, noteDirectory, vaultRootPath);
                 continue;
             }
 
@@ -159,7 +159,7 @@ public static class NoteExportRenderer
             {
                 case MdBlockKind.Heading:
                     sb.Append("<h").Append(parsed.HeadingLevel).Append('>')
-                        .Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory))
+                        .Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory, vaultRootPath))
                         .Append("</h").Append(parsed.HeadingLevel).Append(">\n");
                     i++;
                     break;
@@ -178,7 +178,7 @@ public static class NoteExportRenderer
                             var line = ParseLine(i);
                             if (line.Kind != MdBlockKind.Blockquote) break;
                             if (!first) sb.Append("<br/>\n");
-                            sb.Append(RenderInline(lines[i], lineOffsets[i], line, OpenTags(i), noteDirectory));
+                            sb.Append(RenderInline(lines[i], lineOffsets[i], line, OpenTags(i), noteDirectory, vaultRootPath));
                             first = false;
                             i++;
                         }
@@ -189,7 +189,7 @@ public static class NoteExportRenderer
                 case MdBlockKind.BulletList:
                 case MdBlockKind.TaskList:
                 case MdBlockKind.OrderedList:
-                    i = EmitList(lines, lineOffsets, ParseLine, IsCodeLine, OpenTags, i, parsed, sb, noteDirectory);
+                    i = EmitList(lines, lineOffsets, ParseLine, IsCodeLine, OpenTags, i, parsed, sb, noteDirectory, vaultRootPath);
                     break;
 
                 default:
@@ -208,7 +208,7 @@ public static class NoteExportRenderer
                             if (line.Kind != MdBlockKind.Paragraph) break;
                             if (MarkdownHtmlParser.HasBlockTag(line.HtmlTags)) break;
                             if (!first) sb.Append("<br/>\n");
-                            sb.Append(RenderInline(lines[i], lineOffsets[i], line, OpenTags(i), noteDirectory));
+                            sb.Append(RenderInline(lines[i], lineOffsets[i], line, OpenTags(i), noteDirectory, vaultRootPath));
                             first = false;
                             i++;
                         }
@@ -229,7 +229,8 @@ public static class NoteExportRenderer
     /// exportación tampoco lo hace — coherente con lo que el usuario ve al editar. Devuelve el índice de
     /// la primera línea no consumida.</summary>
     private static int EmitList(string[] lines, int[] lineOffsets, Func<int, MdLine> parseLine, Func<int, bool> isCodeLine,
-        Func<int, IReadOnlyList<string>> openTags, int startIndex, MdLine firstParsed, StringBuilder sb, string? noteDirectory)
+        Func<int, IReadOnlyList<string>> openTags, int startIndex, MdLine firstParsed, StringBuilder sb,
+        string? noteDirectory, string? vaultRootPath)
     {
         var kind = firstParsed.Kind;
         if (kind == MdBlockKind.OrderedList)
@@ -258,13 +259,13 @@ public static class NoteExportRenderer
                 sb.Append("<li class=\"task\"><input type=\"checkbox\" disabled")
                     .Append(line.TaskChecked ? " checked" : string.Empty)
                     .Append("/> ")
-                    .Append(RenderInline(lines[i], lineOffsets[i], line, openTags(i), noteDirectory))
+                    .Append(RenderInline(lines[i], lineOffsets[i], line, openTags(i), noteDirectory, vaultRootPath))
                     .Append("</li>\n");
             }
             else
             {
                 sb.Append("<li>")
-                    .Append(RenderInline(lines[i], lineOffsets[i], line, openTags(i), noteDirectory))
+                    .Append(RenderInline(lines[i], lineOffsets[i], line, openTags(i), noteDirectory, vaultRootPath))
                     .Append("</li>\n");
             }
             i++;
@@ -281,7 +282,8 @@ public static class NoteExportRenderer
     /// documento exportado tenga la misma rejilla rectangular que dibuja el editor, aunque una fila de la
     /// nota tenga menos celdas que las demás. Devuelve el índice de la primera línea no consumida.</summary>
     private static int EmitTable(string[] lines, int[] lineOffsets, Func<int, MdLine> parseLine,
-        Func<int, IReadOnlyList<string>> openTags, MdTable table, StringBuilder sb, string? noteDirectory)
+        Func<int, IReadOnlyList<string>> openTags, MdTable table, StringBuilder sb, string? noteDirectory,
+        string? vaultRootPath)
     {
         void EmitRow(int lineIndex, string cellTag)
         {
@@ -296,7 +298,7 @@ public static class NoteExportRenderer
                 sb.Append('<').Append(cellTag).Append(AlignClass(table.Alignments[column])).Append('>');
                 if (column < cells.Count)
                 {
-                    sb.Append(RenderInline(lineText, lineOffset, model, openTags(lineIndex), noteDirectory,
+                    sb.Append(RenderInline(lineText, lineOffset, model, openTags(lineIndex), noteDirectory, vaultRootPath,
                         cells[column].Start, cells[column].End));
                 }
                 sb.Append("</").Append(cellTag).Append('>');
@@ -335,7 +337,8 @@ public static class NoteExportRenderer
     /// Lo usan las celdas de una tabla, que son trozos de línea y no líneas enteras.</param>
     /// <param name="to">Offset absoluto donde parar, o null para llegar al final de la línea.</param>
     private static string RenderInline(string lineText, int lineOffset, MdLine model,
-        IReadOnlyList<string> openAtLineStart, string? noteDirectory, int? from = null, int? to = null)
+        IReadOnlyList<string> openAtLineStart, string? noteDirectory, string? vaultRootPath,
+        int? from = null, int? to = null)
     {
         var sb = new StringBuilder(lineText.Length * 2);
         var pos = from ?? Math.Max(model.ContentStart, lineOffset);
@@ -354,7 +357,7 @@ public static class NoteExportRenderer
             if (span.End > limit) continue;
 
             AppendPlainText(sb, lineText, pos - lineOffset, span.Start - lineOffset);
-            AppendSpan(sb, span, model, lineText, lineOffset, noteDirectory);
+            AppendSpan(sb, span, model, lineText, lineOffset, noteDirectory, vaultRootPath);
             pos = span.End;
         }
 
@@ -367,7 +370,8 @@ public static class NoteExportRenderer
         return sb.ToString();
     }
 
-    private static void AppendSpan(StringBuilder sb, MdSpan span, MdLine model, string lineText, int lineOffset, string? noteDirectory)
+    private static void AppendSpan(StringBuilder sb, MdSpan span, MdLine model, string lineText, int lineOffset,
+        string? noteDirectory, string? vaultRootPath)
     {
         var content = Slice(lineText, lineOffset, span.ContentStart, span.ContentEnd);
 
@@ -406,7 +410,7 @@ public static class NoteExportRenderer
                 sb.Append("<span class=\"wikilink\">").Append(EscapeText(content)).Append("</span>");
                 break;
             case MdSpanKind.Image:
-                AppendImage(sb, span, content, noteDirectory);
+                AppendImage(sb, span, content, noteDirectory, vaultRootPath);
                 break;
             case MdSpanKind.Link:
                 AppendLink(sb, span, content);
@@ -435,7 +439,7 @@ public static class NoteExportRenderer
             .Append(EscapeText(text)).Append("</a>");
     }
 
-    private static void AppendImage(StringBuilder sb, MdSpan span, string alt, string? noteDirectory)
+    private static void AppendImage(StringBuilder sb, MdSpan span, string alt, string? noteDirectory, string? vaultRootPath)
     {
         var url = span.LinkTarget ?? string.Empty;
         // A pre-existing data: image (pasted straight into the note, or from a previous export) doesn't
@@ -450,7 +454,7 @@ public static class NoteExportRenderer
             return;
         }
 
-        var src = TryEmbedLocalImage(url, noteDirectory) ?? url;
+        var src = TryEmbedLocalImage(url, noteDirectory, vaultRootPath) ?? url;
         sb.Append("<img src=\"").Append(WebUtility.HtmlEncode(src)).Append("\" alt=\"")
             .Append(WebUtility.HtmlEncode(EscapeSequenceRegex.Replace(alt, "$1"))).Append('"');
         // El tamaño explícito de `![alt|300x200](src)` viaja al HTML como atributos width/height, para que
@@ -464,9 +468,9 @@ public static class NoteExportRenderer
     /// para que el HTML exportado sea autocontenido. Devuelve null si la ruta no apunta a una imagen, el
     /// archivo no existe, supera <see cref="MaxEmbeddedImageBytes"/> o no se puede leer — en ese caso el
     /// src original se mantiene tal cual.</summary>
-    private static string? TryEmbedLocalImage(string url, string? noteDirectory)
+    private static string? TryEmbedLocalImage(string url, string? noteDirectory, string? vaultRootPath)
     {
-        if (noteDirectory is null || url.Length == 0 || IsSafeUrl(url)
+        if (noteDirectory is null || vaultRootPath is null || url.Length == 0 || IsSafeUrl(url)
             || url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
             return null;
 
@@ -474,9 +478,15 @@ public static class NoteExportRenderer
         try
         {
             path = Path.GetFullPath(Path.Combine(noteDirectory, url));
+            var root = Path.GetFullPath(vaultRootPath);
+            var rootPrefix = root.EndsWith(Path.DirectorySeparatorChar)
+                ? root : root + Path.DirectorySeparatorChar;
+            if (!path.StartsWith(rootPrefix, VaultService.PathComparison)) return null;
+            if (ContainsReparsePoint(root, path)) return null;
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
         {
+            LogService.Debug($"No se pudo resolver la imagen local '{url}' durante la exportación: {ex}");
             return null;
         }
 
@@ -503,6 +513,21 @@ public static class NoteExportRenderer
         {
             return null;
         }
+    }
+
+    /// <summary>La contención léxica no basta: un enlace dentro del vault puede apuntar fuera y hacer que
+    /// <see cref="File.ReadAllBytes(string)"/> termine leyendo otro árbol. Se rechaza cualquier componente
+    /// enlazado entre la raíz configurada y la imagen.</summary>
+    private static bool ContainsReparsePoint(string root, string path)
+    {
+        var relative = Path.GetRelativePath(root, path);
+        var current = root;
+        foreach (var component in relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        {
+            current = Path.Combine(current, component);
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) return true;
+        }
+        return false;
     }
 
     /// <summary>Esquemas permitidos en enlaces e imágenes, y qué cuenta como ruta local: los dos criterios

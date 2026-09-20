@@ -178,9 +178,10 @@ public partial class MainWindow : Window
             using var stream = AssetLoader.Open(uri);
             Icon = new WindowIcon(stream);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Si el asset no está disponible (diseño, tests), deja el icono que traiga la ventana.
+            LogService.Warning($"No se pudo cargar el icono de ventana '{resourceName}'", ex);
         }
     }
 
@@ -214,9 +215,10 @@ public partial class MainWindow : Window
             BrandIcon.Source = Bitmap.DecodeToWidth(stream, BrandLogoImage.SidebarPixels,
                 BitmapInterpolationMode.HighQuality);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Si el asset no está disponible, el Image queda vacío y el sidebar sigue usable.
+            LogService.Warning($"No se pudo cargar el logo integrado '{resourceName}'", ex);
         }
     }
 

@@ -58,6 +58,16 @@ public class SettingsServiceTests : IDisposable
         Assert.False(service.LoadedFromCorruptData);
     }
 
+    [Fact]
+    public void Constructor_OnUnix_RestrictsAppDataDirectory()
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        _ = new SettingsService(_storageDirectory, _credentialStore);
+
+        Assert.Equal(PrivateDataPermissions.DirectoryMode, File.GetUnixFileMode(_storageDirectory));
+    }
+
     /// <summary>Fase 1 (docs/analisis-proyecto/roadmap.md): a settings.json that exists but fails to parse
     /// must be distinguishable from a brand-new install with no file at all, so the shell
     /// (<c>MainWindowViewModel</c>) can warn the user instead of silently losing every setting — including
@@ -283,5 +293,24 @@ public class SettingsServiceTests : IDisposable
         Assert.True(reopened.CredentialStoreUnavailable);
         Assert.Equal("refresh-secret", _credentialStore.Credentials?.RefreshToken);
         Assert.DoesNotContain("refresh-secret", File.ReadAllText(reopened.SettingsFilePath));
+    }
+
+    [Fact]
+    public void Load_CorruptVaultSettings_PreservesOriginalAndReportsBackupPath()
+    {
+        var vault = Path.Combine(_storageDirectory, "vault");
+        var vaultSettings = Path.Combine(vault, ".enki", "settings.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(vaultSettings)!);
+        File.WriteAllText(vaultSettings, "{ ajustes rotos ");
+        Directory.CreateDirectory(_storageDirectory);
+        File.WriteAllText(Path.Combine(_storageDirectory, "settings.json"),
+            System.Text.Json.JsonSerializer.Serialize(new { VaultPath = vault }));
+
+        var service = new SettingsService(_storageDirectory, _credentialStore);
+
+        Assert.NotNull(service.CorruptVaultSettingsBackupPath);
+        Assert.True(File.Exists(service.CorruptVaultSettingsBackupPath));
+        Assert.Equal("{ ajustes rotos ", File.ReadAllText(service.CorruptVaultSettingsBackupPath!));
+        Assert.NotNull(System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(vaultSettings)) as System.Text.Json.Nodes.JsonObject);
     }
 }

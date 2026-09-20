@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using enki.Localization;
 using enki.Models;
+using enki.Services;
 using enki.ViewModels;
 using enki.Views.Sessions;
 
@@ -359,7 +360,11 @@ public partial class SessionsView : UserControl
 
         JsonDocument document;
         try { document = JsonDocument.Parse(json); }
-        catch (JsonException) { return; }
+        catch (JsonException ex)
+        {
+            LogService.Warning("El WebView del grafo envió un mensaje JSON no válido", ex);
+            return;
+        }
 
         using (document)
         {
