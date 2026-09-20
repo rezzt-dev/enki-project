@@ -74,6 +74,7 @@ subespacios de notas con un grafo visual de relaciones, ideales para proyectos a
 - **modo enlace manual**: doble clic abre la nota; clic simple en modo enlace une dos notas de la misma sesion.
 - **grafo combinado**: vista unificada de todas las sesiones.
 - **proteccion con contrasena** (cifrado de sobre aes-gcm + pbkdf2): las sesiones bloqueadas quedan excluidas del grafo, la lista de archivos y las vistas previas hasta que se desbloquean.
+  - **que cubre exactamente el cifrado**: el *contenido* de las notas y de sus adjuntos, incluido su historial de versiones. **no** se cifran los nombres de archivo de las notas, el nombre de la sesion, sus fechas, su numero de notas ni la estructura de enlaces del manifiesto: siguen legibles en disco para quien tenga acceso a la carpeta del vault (una copia de seguridad, una carpeta sincronizada, un equipo compartido). es una decision de diseno —la barra lateral tiene que poder mostrar una sesion bloqueada sin abrirla— y el dialogo de crear sesion protegida lo dice ahora con todas las letras. cerrarlo del todo exigiria cifrar tambien los nombres, que es un cambio de formato con migracion.
 
 ### 1.7 🏠 dashboard
 

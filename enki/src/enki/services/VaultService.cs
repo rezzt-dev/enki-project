@@ -355,27 +355,26 @@ public sealed partial class VaultService
     }
 
     /// <summary>For a file under a currently-unlocked encrypted session, decrypts it to a fresh temp file
-    /// under the OS temp directory and returns that path — for callers (PDF rendering via PDFium, "open
-    /// with the system app") that need a real path on disk rather than a byte buffer. For a file outside
-    /// any encrypted session, returns <paramref name="fullPath"/> unchanged — the overwhelmingly common
-    /// case pays zero extra I/O. Throws <see cref="SessionLockedException"/> if the session is encrypted
-    /// but locked. The caller owns cleanup of a temp copy via <see cref="TryCleanupDecryptedTempFile"/> —
-    /// compare the returned path against <paramref name="fullPath"/> to know whether one was made.</summary>
+    /// under <see cref="PrivateTempFile"/>'s per-user directory and returns that path — for callers (PDF
+    /// rendering via PDFium, "open with the system app") that need a real path on disk rather than a byte
+    /// buffer. For a file outside any encrypted session, returns <paramref name="fullPath"/> unchanged —
+    /// the overwhelmingly common case pays zero extra I/O. Throws <see cref="SessionLockedException"/> if
+    /// the session is encrypted but locked. The caller owns cleanup of a temp copy via
+    /// <see cref="TryCleanupDecryptedTempFile"/> — compare the returned path against
+    /// <paramref name="fullPath"/> to know whether one was made.</summary>
     public string ResolveReadablePath(string fullPath)
     {
         var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
         if (encryptedRoot is null) return fullPath;
 
         var plaintext = _encryptionService.Decrypt(encryptedRoot, File.ReadAllBytes(fullPath));
-        var tempPath = Path.Combine(Path.GetTempPath(), $"{DecryptedTempFilePrefix}{Guid.NewGuid():N}{Path.GetExtension(fullPath)}");
-        File.WriteAllBytes(tempPath, plaintext);
-        // A decrypted copy sitting in the OS-shared temp directory with default permissions is readable by
-        // any other local account on the umask this process inherited on Linux/macOS — restrict it to the
-        // owner right after writing (docs/version-alfa-3/01-analisis-detallado.md §4.1, Media). Windows has
-        // no POSIX mode bits; SetUnixFileMode throws PlatformNotSupportedException there.
-        if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(tempPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-        return tempPath;
+        // El archivo nace ya con modo 0600 dentro del directorio temporal privado, antes del primer byte de
+        // contenido. Antes se escribía con File.WriteAllBytes y se hacía SetUnixFileMode *después*: entre
+        // las dos operaciones el archivo existía con la máscara heredada (normalmente 0644), o sea legible
+        // por cualquier otra cuenta local, y justo con el contenido que el usuario cifró a propósito
+        // (.docs/auditoria-seguridad-y-fallos-criticos.md, SEC-04). PrivateTempFile también borra el
+        // archivo si la escritura falla a medias, para no dejar texto en claro incompleto en disco.
+        return PrivateTempFile.Write(DecryptedTempFilePrefix, Path.GetExtension(fullPath), plaintext);
     }
 
     /// <summary>Best-effort delete of a decrypted temp file produced by <see cref="ResolveReadablePath"/>
@@ -406,22 +405,12 @@ public sealed partial class VaultService
     /// app — <see cref="SessionEncryptionService.LockAll"/> was never actually called either) could leave
     /// plaintext copies of protected-session content in the world-shared temp directory indefinitely
     /// (docs/version-alfa-3/01-analisis-detallado.md §4.1, Alta). Runs at startup too in case the previous
-    /// shutdown was itself a crash that skipped the shutdown sweep.</summary>
-    public static void CleanupStaleDecryptedTempFiles()
-    {
-        string[] files;
-        try
-        {
-            files = Directory.GetFiles(Path.GetTempPath(), $"{DecryptedTempFilePrefix}*");
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            LogService.Warning("No se pudo listar el directorio temporal para limpiar descifrados", ex);
-            return;
-        }
-
-        foreach (var file in files) TryCleanupDecryptedTempFile(file);
-    }
+    /// shutdown was itself a crash that skipped the shutdown sweep. Sweeps both where these files live now
+    /// (<see cref="PrivateTempFile"/>'s per-user directory) and the root of the OS temp directory, where
+    /// every version before SEC-04 left them — otherwise upgrading would strand a user's old plaintext
+    /// copies there forever.</summary>
+    public static void CleanupStaleDecryptedTempFiles() =>
+        PrivateTempFile.CleanupStale(DecryptedTempFilePrefix, TryCleanupDecryptedTempFile);
 
     private (long Size, bool Incomplete) ComputeVaultSizeBytes()
     {

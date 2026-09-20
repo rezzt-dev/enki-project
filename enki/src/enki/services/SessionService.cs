@@ -155,7 +155,9 @@ public sealed class SessionService
     /// <summary>Unwraps the session's DEK with <paramref name="password"/> and, on success, caches it as
     /// unlocked so <see cref="VaultService"/>'s content read/write transparently decrypts/encrypts this
     /// session from here on. Returns false on a wrong password or a non-encrypted session — never throws
-    /// for either.</summary>
+    /// for either. Does throw <see cref="SessionManifestCorruptException"/> if the manifest's encryption
+    /// metadata is unusable: that is not a wrong password and the caller must not present it as one (see
+    /// <see cref="SessionEncryptionService"/>).</summary>
     public bool Unlock(Session session, string password)
     {
         var manifest = ReadManifest(session.RootPath);
@@ -180,7 +182,8 @@ public sealed class SessionService
     /// then rewraps the DEK under <paramref name="newPassword"/> and persists the updated manifest. Leaves
     /// the session unlocked on success (the DEK was just recovered, no reason to ask the user to unlock it
     /// again with the password they just chose). Returns false for a non-encrypted session, a wrong/already
-    /// -used code, without throwing.</summary>
+    /// -used code, without throwing; throws <see cref="SessionManifestCorruptException"/> for an unusable
+    /// manifest, same as <see cref="Unlock"/>.</summary>
     public bool ResetPasswordWithRecoveryCode(Session session, string recoveryCode, string newPassword)
     {
         var manifest = ReadManifest(session.RootPath);

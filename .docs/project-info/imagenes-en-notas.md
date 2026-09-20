@@ -115,6 +115,28 @@ exacto en que la lee; las imágenes del propio vault y las `data:` incrustadas n
 se dibujan siempre. Al cambiarlo, `MarkdownImageCache.ForgetFailed()` olvida las que no pudieron cargarse
 para que el siguiente repintado lo reintente, sin tener que cerrar y reabrir la nota.
 
+### 4.1 Qué puede y qué no puede descargar una imagen remota
+
+Una URL dentro de una nota es texto que puede no haber escrito quien la lee, así que la descarga pasa por
+`RemoteImagePolicy` (`services/RemoteImagePolicy.cs`):
+
+- **Destino.** Solo direcciones públicas. Loopback, rangos privados, link-local (incluido el
+  `169.254.169.254` de los metadatos de nube), CGNAT, multicast, documentación y reservados se rechazan,
+  en IPv4 y en IPv6, y también en las formas en que una IPv4 puede venir disfrazada dentro de una IPv6
+  (`::ffff:127.0.0.1`, 6to4, NAT64). La comprobación **no se hace sobre la cadena de la URL** —un dominio
+  público puede resolver a `127.0.0.1`, y puede cambiar de respuesta entre la comprobación y la conexión—
+  sino en `SocketsHttpHandler.ConnectCallback`: se resuelve el nombre, se descartan las direcciones no
+  públicas y se conecta a esas mismas direcciones ya validadas.
+- **Redirecciones.** Se siguen a mano, como mucho 3, validando cada salto igual que el primero (cada uno
+  abre su propia conexión, así que pasa por el mismo filtro) y rechazando el paso de `https` a `http`.
+- **Tamaño.** `MaxRemoteBytes` (16 MB), cortado **leyendo por streaming**: el cuerpo deja de leerse en
+  cuanto pasa del tope, aunque el servidor no mande `Content-Length`.
+- **Tiempo.** 20 s de presupuesto total para toda la descarga, redirecciones incluidas.
+
+Un destino bloqueado se pinta como imagen rota (estado `Failed`), exactamente igual que una imagen que
+falta, y se anota con `LogService.Warning`. Esto **no** protege contra un píxel de seguimiento alojado en
+un servidor público: para eso está el interruptor.
+
 ## 5. Cómo se dibuja (y por qué es instantáneo)
 
 El generador de elementos de AvaloniaEdit corre **dentro del layout** de cada repintado. Ahí no puede

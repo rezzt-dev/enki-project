@@ -2182,7 +2182,7 @@
     <value>Protect with a password</value>
   </data>
   <data name="Sessions_CreateDialog_ProtectHint" xml:space="preserve">
-    <value>The session's notes are encrypted on disk. You'll get 5 recovery codes in case you forget the password.</value>
+    <value>Encrypts the content of the notes and their attachments. Their file names, the session's structure and its dates stay readable on disk. You'll get 5 recovery codes in case you forget the password.</value>
   </data>
   <data name="Sessions_CreatedNotification_Message" xml:space="preserve">
     <value>Session '{0}' created.</value>
@@ -2393,6 +2393,9 @@
   </data>
   <data name="Sessions_Unlock_WrongPassword" xml:space="preserve">
     <value>Wrong password.</value>
+  </data>
+  <data name="Sessions_Unlock_CorruptManifest" xml:space="preserve">
+    <value>This session's encryption data can't be read — the file that holds it is damaged. Restore the session from a backup; no password or recovery code can open it as it is.</value>
   </data>
   <data name="Sessions_VaultOptionLabel" xml:space="preserve">
     <value>Vault</value>

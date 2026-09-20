@@ -576,6 +576,11 @@ public sealed partial class SessionsViewModel : ViewModelBase
             // 01-analisis-detallado.md §4.1, Media).
             unlocked = await Task.Run(() => _sessionService.Unlock(item.Session, password));
         }
+        catch (SessionManifestCorruptException ex)
+        {
+            ReportCorruptManifest(item, ex);
+            return;
+        }
         finally
         {
             IsProcessingSessionAction = false;
@@ -622,6 +627,11 @@ public sealed partial class SessionsViewModel : ViewModelBase
             // rewraps it under the new password, each its own PBKDF2-210k derivation.
             succeeded = await Task.Run(() => _sessionService.ResetPasswordWithRecoveryCode(item.Session, recoveryCode, newPassword));
         }
+        catch (SessionManifestCorruptException ex)
+        {
+            ReportCorruptManifest(item, ex);
+            return;
+        }
         finally
         {
             IsProcessingSessionAction = false;
@@ -642,6 +652,17 @@ public sealed partial class SessionsViewModel : ViewModelBase
         {
             UnlockError = LocalizationService.Instance["Sessions_Unlock_InvalidRecoveryCode"];
         }
+    }
+
+    /// <summary>Un manifiesto ilegible no es una contraseña equivocada, y decirle al usuario que lo es le
+    /// hace reintentar indefinidamente algo que nunca va a funcionar — de ahí un mensaje propio en vez de
+    /// reutilizar <c>Sessions_Unlock_WrongPassword</c> (.docs/auditoria-seguridad-y-fallos-criticos.md,
+    /// SEC-06). El motivo técnico concreto va al log, que es donde sirve de algo; el diálogo solo dice que
+    /// la sesión está dañada y que hay que recurrir a una copia de seguridad.</summary>
+    private void ReportCorruptManifest(SessionListItemViewModel item, SessionManifestCorruptException ex)
+    {
+        LogService.Warning($"El cifrado de la sesión '{item.Session.Name}' no se puede leer", ex);
+        UnlockError = LocalizationService.Instance["Sessions_Unlock_CorruptManifest"];
     }
 
     [RelayCommand]

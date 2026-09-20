@@ -2182,7 +2182,7 @@
     <value>Proteger con contraseña</value>
   </data>
   <data name="Sessions_CreateDialog_ProtectHint" xml:space="preserve">
-    <value>Las notas de la sesión se cifran en disco. Vas a recibir 5 códigos de recuperación por si olvidas la contraseña.</value>
+    <value>Se cifra el contenido de las notas y sus adjuntos. Sus nombres de archivo, la estructura de la sesión y sus fechas siguen legibles en disco. Vas a recibir 5 códigos de recuperación por si olvidas la contraseña.</value>
   </data>
   <data name="Sessions_CreatedNotification_Message" xml:space="preserve">
     <value>Sesión '{0}' creada.</value>
@@ -2393,6 +2393,9 @@
   </data>
   <data name="Sessions_Unlock_WrongPassword" xml:space="preserve">
     <value>Contraseña incorrecta.</value>
+  </data>
+  <data name="Sessions_Unlock_CorruptManifest" xml:space="preserve">
+    <value>Los datos de cifrado de esta sesión no se pueden leer: el archivo que los guarda está dañado. Restaura la sesión desde una copia de seguridad; así no hay contraseña ni código de recuperación que la abra.</value>
   </data>
   <data name="Sessions_VaultOptionLabel" xml:space="preserve">
     <value>Bóveda</value>

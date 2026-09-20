@@ -2182,7 +2182,7 @@
     <value>Protéger par mot de passe</value>
   </data>
   <data name="Sessions_CreateDialog_ProtectHint" xml:space="preserve">
-    <value>Les notes de la session sont chiffrées sur le disque. Vous recevrez 5 codes de récupération au cas où vous oublieriez le mot de passe.</value>
+    <value>Le contenu des notes et leurs pièces jointes sont chiffrés. Leurs noms de fichier, la structure de la session et ses dates restent lisibles sur le disque. Vous recevrez 5 codes de récupération au cas où vous oublieriez le mot de passe.</value>
   </data>
   <data name="Sessions_CreatedNotification_Message" xml:space="preserve">
     <value>Session '{0}' créée.</value>
@@ -2393,6 +2393,9 @@
   </data>
   <data name="Sessions_Unlock_WrongPassword" xml:space="preserve">
     <value>Mot de passe incorrect.</value>
+  </data>
+  <data name="Sessions_Unlock_CorruptManifest" xml:space="preserve">
+    <value>Les données de chiffrement de cette session sont illisibles : le fichier qui les contient est endommagé. Restaurez la session depuis une sauvegarde ; en l'état, aucun mot de passe ni code de récupération ne peut l'ouvrir.</value>
   </data>
   <data name="Sessions_VaultOptionLabel" xml:space="preserve">
     <value>Coffre</value>

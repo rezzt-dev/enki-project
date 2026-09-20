@@ -91,7 +91,9 @@ el filtro actúa solo sobre esas dos señales inmediatas, nunca sobre el registr
     `volumePercent <= 0`, sin intentar ni siquiera el pitido de último recurso — es el "silencio"
     explícito de la cadena de fallback (`NotificationSoundPlayer.cs:26,36`).
   - **Cadena de fallback** al reproducir (`NotificationSoundPlayer.cs:9-56`): asset empaquetado
-    (`avares://enki/assets/sounds/notification.wav`, extraído a un fichero temporal la primera vez) →
+    (`avares://enki/assets/sounds/notification.wav`, extraído la primera vez al directorio temporal
+    privado por usuario de `PrivateTempFile`, con modo `0700`, y no a la raíz compartida de `/tmp`, donde
+    otra cuenta local podía ocupar de antemano su nombre fijo con un enlace simbólico) →
     sonido nativo del sistema operativo → `Console.Beep()` → silencio. Cada eslabón se intenta con su
     propio try/catch y solo se pasa al siguiente si el anterior falla o no está disponible en esa
     máquina. No hay ninguna librería de audio en el proyecto — "reproducir" siempre significa invocar un

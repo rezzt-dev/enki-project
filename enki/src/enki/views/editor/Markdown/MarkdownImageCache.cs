@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -87,11 +89,24 @@ internal static class MarkdownImageCache
     private static readonly object Gate = new();
 
     /// <summary>Un único cliente para todas las descargas remotas — crear uno por imagen agotaría los
-    /// sockets del sistema, que es el error clásico con <see cref="HttpClient"/>.</summary>
-    private static readonly Lazy<HttpClient> Http = new(() => new HttpClient
-    {
-        Timeout = TimeSpan.FromSeconds(20)
-    });
+    /// sockets del sistema, que es el error clásico con <see cref="HttpClient"/>. Lleva puesto el filtro de
+    /// destino de <see cref="RemoteImagePolicy"/>, que es lo que impide que una nota ajena use el editor
+    /// para sondear la red local del usuario.</summary>
+    private static readonly Lazy<HttpClient> DefaultHttp = new(() => CreateHttpClient(RemoteImagePolicy.CreateHandler()));
+
+    private static HttpClient? s_testHttp;
+
+    private static HttpClient Http => s_testHttp ?? DefaultHttp.Value;
+
+    private static HttpClient CreateHttpClient(HttpMessageHandler handler) =>
+        new(handler) { Timeout = RemoteImagePolicy.RequestTimeout };
+
+    /// <summary>Costura para probar <see cref="Download"/> sin red: sustituye el transporte por uno falso,
+    /// igual que <c>PolarAuthService</c>/<c>SupabaseRestClient</c> aceptan un <c>httpHandler</c> opcional
+    /// por el mismo motivo. Pasar null devuelve el cliente real. El filtro de destino no pasa por aquí —
+    /// vive en el handler de producción y se prueba por su cuenta en <c>RemoteImagePolicyTests</c>.</summary>
+    internal static void UseHttpHandlerForTests(HttpMessageHandler? handler) =>
+        s_testHttp = handler is null ? null : CreateHttpClient(handler);
 
     /// <summary>Devuelve la imagen de <paramref name="src"/> si ya está cargada y, si no, arranca su carga
     /// en segundo plano y devuelve una entrada en <see cref="MarkdownImageState.Loading"/>. Nunca bloquea:
@@ -240,19 +255,79 @@ internal static class MarkdownImageCache
         }
     }
 
-    private static byte[] Download(string url)
+    /// <summary>Descarga una imagen remota con todo acotado: destino (el handler solo conecta a
+    /// direcciones públicas, ver <see cref="RemoteImagePolicy"/>), número de redirecciones, esquema de cada
+    /// salto, tamaño y tiempo total.
+    ///
+    /// <para>Las redirecciones se siguen aquí en vez de dejarlas al <see cref="HttpClient"/> para poder
+    /// rechazar a mano —y poder probar— el salto de <c>https</c> a <c>http</c>, que es el que convierte una
+    /// descarga cifrada en una en claro sin que el usuario se entere.</para>
+    ///
+    /// <para>Corre dentro de <see cref="Start"/>, que ya convierte cualquier excepción en la entrada
+    /// <see cref="MarkdownImageState.Failed"/> que el editor pinta como imagen rota, más un
+    /// <c>LogService.Warning</c>. Un destino bloqueado se ve, por tanto, exactamente igual que una imagen
+    /// que no existe: nada se cae y nada sube.</para></summary>
+    internal static byte[] Download(string url)
     {
-        using var response = Http.Value.GetAsync(url).GetAwaiter().GetResult();
-        response.EnsureSuccessStatusCode();
+        var uri = new Uri(url, UriKind.Absolute);
+        if (!RemoteImagePolicy.IsAllowedScheme(uri))
+            throw new InvalidOperationException($"'{uri.Scheme}' no es un esquema de imagen remota");
 
-        if (response.Content.Headers.ContentLength is > MaxRemoteBytes)
-            throw new InvalidOperationException($"La imagen remota supera el máximo de {MaxRemoteBytes} bytes");
+        // Un presupuesto único para toda la descarga: el Timeout del HttpClient es por petición, así que
+        // encadenando redirecciones se pagaría entero una vez por salto.
+        using var budget = new CancellationTokenSource(RemoteImagePolicy.RequestTimeout);
 
-        var bytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
-        if (bytes.LongLength > MaxRemoteBytes)
-            throw new InvalidOperationException($"La imagen remota supera el máximo de {MaxRemoteBytes} bytes");
+        for (var hop = 0; ; hop++)
+        {
+            using var response = Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, budget.Token)
+                .GetAwaiter().GetResult();
 
-        return bytes;
+            if (IsRedirect(response.StatusCode))
+            {
+                if (hop == RemoteImagePolicy.MaxRedirects)
+                    throw new InvalidOperationException(
+                        $"La imagen remota encadena más de {RemoteImagePolicy.MaxRedirects} redirecciones");
+
+                uri = RemoteImagePolicy.ResolveRedirect(uri, response.Headers.Location);
+                continue;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            // Content-Length es una pista del servidor, no una garantía: sirve para no empezar siquiera una
+            // descarga que ya se declara demasiado grande, pero el corte de verdad es el de ReadCapped.
+            if (response.Content.Headers.ContentLength is > MaxRemoteBytes)
+                throw new InvalidOperationException($"La imagen remota supera el máximo de {MaxRemoteBytes} bytes");
+
+            return ReadCapped(response.Content, budget.Token);
+        }
+    }
+
+    private static bool IsRedirect(HttpStatusCode status) =>
+        status is HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther
+            or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+
+    /// <summary>Lee el cuerpo cortando de verdad en <see cref="MaxRemoteBytes"/>. Antes se usaba
+    /// <c>ReadAsByteArrayAsync</c> y se comprobaba el tamaño después: un servidor que no envíe
+    /// <c>Content-Length</c> —o que mienta— conseguía así que se descargara y se guardara en memoria el
+    /// contenido entero antes de que nadie mirara cuánto ocupaba, que es justo lo que el tope existía para
+    /// evitar.</summary>
+    private static byte[] ReadCapped(HttpContent content, CancellationToken ct)
+    {
+        using var stream = content.ReadAsStreamAsync(ct).GetAwaiter().GetResult();
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+
+        int read;
+        while ((read = stream.Read(chunk, 0, chunk.Length)) > 0)
+        {
+            if (buffer.Length + read > MaxRemoteBytes)
+                throw new InvalidOperationException($"La imagen remota supera el máximo de {MaxRemoteBytes} bytes");
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
     }
 
     /// <summary>Decodifica los bytes de una imagen al ancho pedido. El SVG pasa por

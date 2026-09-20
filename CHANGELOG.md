@@ -59,6 +59,14 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - proteger los tokens de sesion de polar con dpapi en windows, secret service mediante libsecret en linux y keychain en macos, fuera de `settings.json`.
 - migrar los tokens heredados solo tras confirmar su escritura segura y avisar de los fallos sin guardar nuevas sesiones en texto plano.
 - mantener la redaccion de tokens en la exportacion de ajustes y los backups de `settings.json` global y del vault, incluidos los archivos heredados.
+- escribir todos los temporales de la app en un directorio propio por usuario con modo `0700` y comprobado en cada uso (`PrivateTempFile`), en vez de con un nombre fijo en la raiz compartida del temporal del sistema, donde otra cuenta local podia ocupar ese nombre con un enlace simbolico para que la app truncara un archivo ajeno.
+- crear la copia descifrada temporal de `VaultService.ResolveReadablePath` con modo `0600` desde la propia llamada que la crea (`FileMode.CreateNew` mas `FileStreamOptions.UnixCreateMode`) y borrarla si la escritura falla a medias, cerrando la ventana en la que existia con la mascara heredada; el barrido de arranque y cierre limpia ahora tambien los temporales que dejaron versiones anteriores sueltos en la raiz del temporal.
+- validar el manifiesto de cifrado de una sesion protegida antes de derivar nada en `SessionEncryptionService`: base64 decodificable, sal y clave envuelta con longitud coherente, `Iterations` dentro de rango y `FormatVersion` conocida.
+- distinguir "contrasena incorrecta" de "manifiesto ilegible" con `SessionManifestCorruptException` y un mensaje propio en el dialogo de desbloqueo, para que una sesion danada no se presente como un error de tecleo.
+- restringir las imagenes remotas del editor a direcciones publicas comprobando la ip realmente conectada en `SocketsHttpHandler.ConnectCallback` (`RemoteImagePolicy`), lo que cubre loopback, rangos privados, link-local, cgnat, multicast y reservados en ipv4 e ipv6, incluidas las ipv4 disfrazadas dentro de una ipv6.
+- limitar a tres las redirecciones de una imagen remota, validar cada salto igual que el primero y rechazar el paso de `https` a `http`.
+- cortar la descarga de una imagen remota por streaming al llegar a `MaxRemoteBytes`, en vez de traerse el cuerpo entero a memoria antes de medirlo, y acotar toda la descarga con un presupuesto de tiempo unico.
+- decir en el dialogo de crear una sesion protegida que el cifrado cubre el contenido de las notas y sus adjuntos, y que los nombres de archivo, la estructura y las fechas siguen legibles en disco.
 
 ### ENGLISH
 
@@ -112,6 +120,14 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - protect polar session tokens with dpapi on windows, secret service through libsecret on linux, and keychain on macos, outside `settings.json`.
 - migrate legacy tokens only after secure storage succeeds and report failures without saving new sessions in plain text.
 - keep tokens redacted in settings exports and backups of global and vault `settings.json`, including legacy files.
+- write every temporary file the app creates into a per-user directory with mode `0700`, checked on each use (`PrivateTempFile`), instead of a fixed name in the shared root of the system temp directory, where another local account could claim that name with a symlink and make the app truncate someone else's file.
+- create the decrypted temporary copy of `VaultService.ResolveReadablePath` with mode `0600` in the very call that creates it (`FileMode.CreateNew` plus `FileStreamOptions.UnixCreateMode`) and delete it if the write fails halfway, closing the window in which it existed with the inherited umask; the startup and shutdown sweep now also cleans up temporary files left loose in the temp root by earlier versions.
+- validate a protected session's encryption manifest before deriving anything in `SessionEncryptionService`: decodable base64, coherent salt and wrapped key lengths, `Iterations` within range and a known `FormatVersion`.
+- tell "wrong password" apart from "unreadable manifest" with `SessionManifestCorruptException` and a message of its own in the unlock dialog, so a damaged session is not presented as a typing mistake.
+- restrict the editor's remote images to public addresses by checking the ip actually connected to in `SocketsHttpHandler.ConnectCallback` (`RemoteImagePolicy`), covering loopback, private ranges, link-local, cgnat, multicast and reserved ranges in ipv4 and ipv6, including ipv4 addresses disguised inside an ipv6 one.
+- limit a remote image to three redirects, validate every hop like the first one and refuse a downgrade from `https` to `http`.
+- cut a remote image download while streaming once it reaches `MaxRemoteBytes`, instead of pulling the whole body into memory before measuring it, and bound the whole download with a single time budget.
+- state in the protected-session dialog that encryption covers the content of the notes and their attachments, and that file names, structure and dates stay readable on disk.
 
 ### ENTRADAS ANTERIORES
 

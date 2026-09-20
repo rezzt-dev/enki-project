@@ -2182,7 +2182,7 @@
     <value>Mit Passwort schützen</value>
   </data>
   <data name="Sessions_CreateDialog_ProtectHint" xml:space="preserve">
-    <value>Die Notizen der Sitzung werden auf der Festplatte verschlüsselt. Du erhältst 5 Wiederherstellungscodes für den Fall, dass du das Passwort vergisst.</value>
+    <value>Der Inhalt der Notizen und ihre Anhänge werden verschlüsselt. Ihre Dateinamen, die Struktur der Sitzung und ihre Daten bleiben auf der Festplatte lesbar. Du erhältst 5 Wiederherstellungscodes, falls du das Passwort vergisst.</value>
   </data>
   <data name="Sessions_CreatedNotification_Message" xml:space="preserve">
     <value>Sitzung '{0}' erstellt.</value>
@@ -2393,6 +2393,9 @@
   </data>
   <data name="Sessions_Unlock_WrongPassword" xml:space="preserve">
     <value>Falsches Passwort.</value>
+  </data>
+  <data name="Sessions_Unlock_CorruptManifest" xml:space="preserve">
+    <value>Die Verschlüsselungsdaten dieser Sitzung sind nicht lesbar — die Datei, die sie enthält, ist beschädigt. Stelle die Sitzung aus einer Sicherung wieder her; so kann sie kein Passwort und kein Wiederherstellungscode öffnen.</value>
   </data>
   <data name="Sessions_VaultOptionLabel" xml:space="preserve">
     <value>Tresor</value>

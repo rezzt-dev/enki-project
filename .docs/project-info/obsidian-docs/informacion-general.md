@@ -19,7 +19,7 @@ esta pensado para **una sola persona**: tu. no es una suite colaborativa, ni un 
 enki funciona alrededor de un **vault**: una carpeta normal de tu disco que tu eliges y que contiene tus notas como archivos markdown ordinarios. a partir de ahi, la aplicacion te da herramientas para organizar y conectar esa informacion:
 
 - **notas** que viven en tu disco como archivos `.md` normales, con carpetas, etiquetas (`#tags`) y enlaces entre ellas (`[[wikilinks]]`).
-- **sesiones**: subespacios de notas para proyectos aislados (una tesis, un viaje, un producto), cada uno con su propio grafo visual de relaciones. se pueden proteger con contrasena.
+- **sesiones**: subespacios de notas para proyectos aislados (una tesis, un viaje, un producto), cada uno con su propio grafo visual de relaciones. se pueden proteger con contrasena, que cifra el contenido de las notas y sus adjuntos (los nombres de archivo y la estructura siguen visibles en disco).
 - **un tablero kanban** local de tareas con columnas, prioridades, fechas limite y subtareas.
 - **polar**: tareas que se sincronizan en la nube y se comparten con la app android del mismo nombre. es **opcional** - si no lo vinculas, enki funciona igual con todo lo demas.
 - **un calendario** unificado que reune las tareas del kanban, las tareas de polar y los recordatorios en una sola vista.

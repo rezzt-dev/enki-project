@@ -23,11 +23,31 @@ problemas de diseño, de validacion de entrada o de casos que ningun test cubre 
 
 Los cuatro hallazgos bloqueantes (**SEC-01**, **SEC-02**, **BUG-01**, **BUG-02**) estan **corregidos**, con
 pruebas de regresion propias: `ExternalLinkPolicyTests`, `RecurrenceRolloverTests`,
-`SettingsNormalizationTests` y los casos reescritos de `SessionsViewModelEncryptionTests`. Tras los
-arreglos: build sin warnings y **1756 pruebas, 0 fallos**. El detalle de cada uno esta en su ficha, bajo
-"Corregido".
+`SettingsNormalizationTests` y los casos reescritos de `SessionsViewModelEncryptionTests`.
 
-El resto sigue abierto y mantiene el orden de trabajo del final del documento.
+Los cinco hallazgos **Medio** de seguridad (**SEC-03**, **SEC-04**, **SEC-05**, **SEC-06**, **SEC-07**)
+estan **corregidos** tambien, con 101 pruebas nuevas en `PrivateTempFileTests`,
+`SessionManifestValidationTests`, `RemoteImagePolicyTests` y `MarkdownRemoteImageDownloadTests`, mas 6 en
+`SessionsProtectHintUiTests` (`enki.UITests`). Tras los arreglos: build sin warnings y **1857 pruebas, 0
+fallos** en `enki.Tests` (linea base: 1756), y 254 en `enki.UITests`. El detalle de cada uno esta en su
+ficha, bajo "Corregido".
+
+**Lo que queda abierto de estos cinco** (y esta anotado en su ficha):
+
+- **SEC-06** — no se ha anadido AAD al AES-GCM. Es el endurecimiento que impediria intercambiar el
+  contenido cifrado de dos notas o de dos sesiones, pero exige cambiar el formato (version nueva,
+  migracion y compatibilidad hacia atras) y un fallo ahi significa perdida irrecuperable de datos
+  cifrados de usuarios reales. No se toca sin decision explicita.
+- **SEC-07** — siguen abiertas dos decisiones de producto: si `EditorPreferences.RemoteImages` deberia
+  pasar a estar **apagado por defecto** con un aviso en linea y un boton de "cargar" (el patron de los
+  clientes de correo), y si `http://` deberia dejar de aceptarse como destino inicial. Ninguna de las dos
+  se ha tomado aqui: la primera cambia el comportamiento por defecto del editor y la segunda rompe notas
+  existentes legitimas.
+- **SEC-03/SEC-04** — el comportamiento en **Windows y macOS no esta verificado**: todo el desarrollo y
+  las pruebas se han hecho en Linux. Compila y esta razonado por plataforma, nada mas.
+
+El resto de hallazgos (BUG-03 en adelante, SEC-08 en adelante) sigue abierto y mantiene el orden de trabajo
+del final del documento.
 
 ---
 
@@ -50,11 +70,11 @@ El resto sigue abierto y mantiene el orden de trabajo del final del documento.
 | SEC-02 | ✅ **Alto** (corregido) | Contraseña minima de 4 caracteres en sesiones cifradas | `viewmodels/sessions/SessionsViewModel.cs:161` |
 | BUG-01 | ✅ **Alto** (corregido) | Dos bucles de recurrencia sin tope: cuelgue permanente | `services/polar/PolarTaskService.cs:425` |
 | BUG-02 | ✅ **Alto** (corregido) | Preferencias sin validacion de rango al cargar: app inusable sin salida | `viewmodels/shell/MainWindowViewModel.Composition.cs:133` |
-| SEC-03 | Medio | Temporal de nombre fijo y predecible en `/tmp` | `services/NotificationSoundPlayer.cs:105` |
-| SEC-04 | Medio | Ventana TOCTOU al restringir permisos del temporal descifrado | `services/VaultService.cs:377` |
-| SEC-05 | Medio | Los metadatos de una sesion protegida viven en claro | `models/SessionManifest.cs` |
-| SEC-06 | Medio | El manifiesto de cifrado se consume sin validar | `services/SessionEncryptionService.cs:200` |
-| SEC-07 | Medio | Imagenes remotas activadas por defecto: fuga de IP y SSRF local | `views/editor/Markdown/MarkdownImageCache.cs:243` |
+| SEC-03 | ✅ Medio (corregido) | Temporal de nombre fijo y predecible en `/tmp` | `services/NotificationSoundPlayer.cs:105` |
+| SEC-04 | ✅ Medio (corregido) | Ventana TOCTOU al restringir permisos del temporal descifrado | `services/VaultService.cs:377` |
+| SEC-05 | ✅ Medio (corregido) | Los metadatos de una sesion protegida viven en claro | `models/SessionManifest.cs` |
+| SEC-06 | ✅ Medio (corregido) | El manifiesto de cifrado se consume sin validar | `services/SessionEncryptionService.cs:200` |
+| SEC-07 | ✅ Medio (corregido) | Imagenes remotas activadas por defecto: fuga de IP y SSRF local | `views/editor/Markdown/MarkdownImageCache.cs:243` |
 | BUG-03 | Medio | Sin tope de pixeles al decodificar: bomba de imagen | `views/editor/Markdown/MarkdownImageCache.cs:279` |
 | BUG-04 | Medio | `VaultNoteCache` crece sin limite | `services/VaultNoteCache.cs` |
 | BUG-05 | Medio | La cache de imagenes no se purga al bloquear una sesion | `views/editor/Markdown/MarkdownImageCache.cs` |
@@ -291,6 +311,31 @@ para el nombre. Ese es el patron a copiar.
 (`Path.Combine(Path.GetTempPath(), $"enki-{uid}")` creada con modo `0700`), y `FileMode.CreateNew` con
 reintento en vez de `File.Create` sobre una ruta que puede existir.
 
+**Corregido.** SEC-03 y SEC-04 eran el mismo problema visto desde dos sitios —escribir un temporal con
+garantias en un directorio compartido—, asi que se resuelven una sola vez, en
+[`PrivateTempFile`](../enki/src/enki/services/PrivateTempFile.cs), y no con dos parches distintos. Aplica
+**las dos** defensas que el informe planteaba como alternativas, porque cada una tapa lo que la otra deja
+pasar: un directorio propio por usuario dentro del temporal del sistema, creado con modo `0700` en la
+propia llamada que lo crea y **comprobado en cada uso** (existe, no es un enlace simbolico, y su modo es
+exactamente el esperado); y, dentro, `FileMode.CreateNew` mas `FileStreamOptions.UnixCreateMode` (0600), de
+modo que ningun archivo se escribe nunca sobre una ruta que pueda existir ya.
+
+El WAV empaquetado
+([`NotificationSoundPlayer.EnsureAssetExtracted`](../enki/src/enki/services/NotificationSoundPlayer.cs))
+conserva su nombre fijo, pero ahora **dentro** de ese directorio `0700`, donde ninguna otra cuenta puede
+poner ni leer nada; se escribe con el patron temporal + `File.Move` que `JsonFileStore` ya usa en el resto
+del proyecto, asi que tampoco se trunca ni se ve a medias. **No se limpia al salir, a proposito**: es
+siempre el mismo archivo, de unos pocos KB, sin nada del usuario dentro, y borrarlo solo obligaria a volver
+a extraerlo en cada arranque; ademas, un gancho de apagado propio para el reproductor de sonido seria un
+segundo mecanismo de apagado en paralelo al que ya existe. La ruta de winmm (`SND_FILENAME`) no cambia:
+sigue recibiendo una ruta de archivo real.
+
+Si el directorio privado no es utilizable en esa maquina, `EnsureAssetExtracted` lanza y el try/catch por
+eslabon de `TryPlay` degrada al sonido del sistema — exactamente para lo que esa cadena existe. 7 pruebas
+nuevas en [`PrivateTempFileTests`](../enki/tests/enki.Tests/Services/PrivateTempFileTests.cs).
+**Pendiente / no verificado:** el comportamiento en Windows y macOS solo esta razonado y compilado, no
+probado (todo el trabajo se ha hecho en Linux).
+
 ### SEC-04 · Ventana TOCTOU al restringir permisos del temporal descifrado
 
 **Donde:** [`VaultService.cs:377`](../enki/src/enki/services/VaultService.cs#L377).
@@ -309,6 +354,27 @@ usuario cifro a proposito.
 `new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, FileOptions.None)`
 precedido de `File.Create` + `SetUnixFileMode` **antes** de escribir el contenido, o usar
 `UnixFileMode` en el constructor de `FileStreamOptions` (disponible en .NET 8).
+
+**Corregido.** `ResolveReadablePath` ya no escribe nada por su cuenta: delega en `PrivateTempFile.Write`
+(ver SEC-03), de modo que el archivo **nace con modo 0600 antes del primer byte de contenido**, en la misma
+llamada al sistema que lo crea. No hay dos operaciones, asi que no hay ventana entre ellas. Si la escritura
+falla a mitad, el archivo se borra antes de propagar el error: un temporal descifrado incompleto es justo
+lo que no debe quedarse en disco.
+
+El contrato de `ResolveReadablePath` no se toca — mismo prefijo `enki-dec-`, misma extension, misma
+limpieza via `TryCleanupDecryptedTempFile`/`CleanupStaleDecryptedTempFiles` y las mismas llamadas desde
+`Program.Main` y el cierre de `MainWindow`—, pero el barrido mira ahora **dos** sitios: el directorio
+privado, donde viven los temporales desde este cambio, y la raiz del temporal del sistema, donde los dejaba
+cualquier version anterior. Sin eso, actualizar dejaria las copias en claro de la version vieja tiradas ahi
+para siempre.
+
+Un detalle que el informe daba por bueno y no lo era: en .NET 8, el *setter* de
+`FileStreamOptions.UnixCreateMode` esta anotado `[UnsupportedOSPlatform("windows")]`, y este proyecto
+compila CA1416 como error — asignarlo sin condicionar por plataforma no compila. Lo mismo pasa con la
+sobrecarga `Directory.CreateDirectory(string, UnixFileMode)`. Son las dos unicas condiciones por plataforma
+que hay en `PrivateTempFile`, y en Windows no se pierde nada: el temporal ya esta dentro del perfil del
+usuario. Cubierto por `PrivateTempFileTests` (modo `0600` del archivo, `0700` del directorio, borrado del
+parcial y barrido de los dos sitios).
 
 ### SEC-05 · Los metadatos de una sesion protegida viven en claro
 
@@ -329,6 +395,30 @@ contraseña" y cualquiera asume que eso cubre los titulos.
 sesion protegida ("se cifra el contenido de las notas; los titulos y la estructura siguen siendo visibles")
 y la misma nota en la documentacion publica. Si en algun momento se quiere cerrar de verdad, hay que cifrar
 tambien los nombres de archivo, y eso es un cambio de formato con migracion.
+
+**Corregido.** El diseño no se toca: no se cifra ningun nombre ni cambia el formato. Lo que cambia es que
+ahora se dice. `Sessions_CreateDialog_ProtectHint` pasa de "las notas de la sesion se cifran en disco" —que
+invita justo a la suposicion equivocada— a decir las dos mitades: **se cifra el contenido de las notas y
+sus adjuntos**, y **los nombres de archivo, la estructura de la sesion y sus fechas siguen legibles en
+disco**. El aviso de los 5 codigos de recuperacion se conserva en la misma linea. Traducido a los 7
+idiomas. El `TextBlock` del dialogo
+([`SessionsView.axaml`](../enki/src/enki/views/sessions/SessionsView.axaml)) ya tenia
+`TextWrapping="Wrap"` dentro de un `Border.modal-card` de ancho maximo 380, y
+[`SessionsProtectHintUiTests`](../enki/tests/enki.UITests/SessionsProtectHintUiTests.cs) lo mide sobre el
+XAML real en los 6 idiomas: el aviso ocupa 4 lineas (~70 px) en los 322 px utiles de la tarjeta y el
+dialogo entero se queda en 516–530 px de alto segun el idioma, por debajo del tope de 640 que cabe en una
+pantalla de portatil pequena.
+
+Se dice "en disco" y no "en la app" a proposito: con la sesion bloqueada, la interfaz **si** oculta nombres
+y contenido (`Files_LockedSession_Message`, `Notes_LockedSession_Message`,
+`Sessions_Graph_AccessibleScope`), y esas cadenas son correctas tal y como estan. Lo que queda al
+descubierto es el arbol de archivos de quien tenga acceso a la carpeta: una copia de seguridad, una carpeta
+sincronizada, un equipo compartido. Se ha repasado el resto de los textos de sesiones en `Strings.resx`
+buscando una promesa mas amplia de la real y no la hay.
+
+La misma aclaracion esta ahora en la documentacion que describe la funcion:
+`.docs/project-info/obsidian-docs/features-document.md` §1.6 (con el detalle de que si entra en el cifrado
+el historial de versiones de la nota) e `informacion-general.md`. No se ha creado ningun documento nuevo.
 
 ### SEC-06 · El manifiesto de cifrado se consume sin validar
 
@@ -359,6 +449,47 @@ Como endurecimiento adicional: hoy el AES-GCM no lleva **AAD**, asi que nada ata
 archivo ni a su sesion. Alguien con acceso al disco puede intercambiar el contenido cifrado de dos notas o
 de dos sesiones y la app lo aceptara como valido. Añadir la ruta relativa como AAD lo cierra.
 
+**Corregido (todo menos el AAD).**
+[`SessionEncryptionService.TryUnwrapSlot`](../enki/src/enki/services/SessionEncryptionService.cs) valida la
+ranura entera **antes de derivar nada**: base64 decodificable (la `FormatException` se traduce a un fallo
+propio en vez de escaparse), sal de al menos 16 bytes y DEK envuelta de al menos 60 (nonce + clave + tag,
+que es lo que `WrapWithSecret` produce), e `Iterations` dentro de rango. `FormatVersion` se comprueba
+ahora, por fin, en las dos puertas de entrada.
+
+**Los limites, y por que esos.** El techo es 10.000.000: PBKDF2-SHA256 va del orden de 2–3 millones de
+iteraciones por segundo y nucleo en un equipo de escritorio actual, asi que ese techo son unos pocos
+segundos —lo peor que puede costar un valor disparatado que aun asi este dentro del rango—, frente a las
+horas de los 2.000.000.000 del informe. El suelo es 1.000, mucho mas bajo que los 100.000 que sugeria el
+informe, y es deliberado: **no es una politica de seguridad, es un detector de basura**. Toda version de
+Enki ha escrito siempre `DefaultIterations` (210.000), asi que cualquier suelo por debajo de esa cifra deja
+pasar el 100 % de los manifiestos reales; ponerlo en "lo que hoy se considera seguro" solo serviria para
+dejar a alguien fuera de sus propios datos cifrados, sin ninguna via de recuperacion, por una decision que
+tomo el programa y no el. 1.000 esta muy por encima de los valores que delatan corrupcion (0, negativos) y
+muy por debajo de cualquier configuracion real.
+
+**Contraseña incorrecta y manifiesto ilegible dejan de ser la misma respuesta.** Lo segundo lanza
+[`SessionManifestCorruptException`](../enki/src/enki/models/SessionManifestCorruptException.cs) —tipo
+propio, al lado de `SessionLockedException` y por el mismo motivo—, que `SessionService.Unlock` y
+`ResetPasswordWithRecoveryCode` dejan pasar y `SessionsViewModel.ConfirmUnlock`/`ConfirmPasswordReset`
+convierten en `Sessions_Unlock_CorruptManifest` (traducido a los 7 idiomas), con el motivo tecnico concreto
+en el log. Sin esto, a alguien con una sesion dañada se le decia "contraseña incorrecta" y reintentaba
+indefinidamente algo que nunca iba a funcionar.
+
+**La ruta de recuperacion no se rompe por una ranura mala.** `TryUnlockWithRecoveryCode` salta la ranura
+ilegible y sigue probando las otras: las 5 son envoltorios independientes de la misma DEK, y una dañada no
+puede costarle al usuario los otros cuatro codigos. Solo si ninguna abrio nada **y** alguna era ilegible se
+reporta la corrupcion.
+
+19 pruebas nuevas en
+[`SessionManifestValidationTests`](../enki/tests/enki.Tests/Services/SessionManifestValidationTests.cs).
+Comprobado revirtiendo el arreglo: la de `Iterations` enorme no falla sin la cota, **se cuelga** (la suite
+filtrada se agota a los 120 s), y las de base64/`FormatVersion`/`Iterations` fuera de rango fallan.
+
+**Pendiente: el AAD.** Se deja fuera a proposito. Atar cada bloque cifrado a su ruta exigiria una version
+de formato nueva, su migracion y la compatibilidad hacia atras, y un fallo ahi no es un error recuperable:
+es perdida irreversible de datos cifrados de usuarios reales. No entra sin una decision explicita que lo
+pida.
+
 ### SEC-07 · Imagenes remotas activadas por defecto: fuga de IP y SSRF local
 
 **Donde:** [`MarkdownImageCache.cs:243`](../enki/src/enki/views/editor/Markdown/MarkdownImageCache.cs#L243),
@@ -381,6 +512,48 @@ recomendacion que un defecto. Pero conviene tener presente el alcance real:
 (o avisar al degradar), y evaluar poner la preferencia en **apagado por defecto** con un aviso en linea
 ("esta nota tiene imagenes remotas — cargarlas avisara a su servidor") y un boton de "cargar". Ese patron
 (el de los clientes de correo) es el que encaja con la promesa del producto.
+
+**Corregido (la parte tecnica).** Nuevo
+[`RemoteImagePolicy`](../enki/src/enki/services/RemoteImagePolicy.cs):
+
+- **Destino.** Se rechazan loopback, rangos privados, link-local (incluido el `169.254.169.254` de los
+  metadatos de nube), CGNAT, multicast, documentacion y reservados, en IPv4 y en IPv6, y tambien las formas
+  en que una IPv4 puede venir disfrazada dentro de una IPv6 (`::ffff:127.0.0.1`, 6to4, NAT64) — el hueco
+  clasico de un filtro escrito solo para IPv4. La comprobacion **no se hace sobre la cadena de la URL**,
+  que no es una defensa, sino en `SocketsHttpHandler.ConnectCallback`: se resuelve el nombre, se descartan
+  las direcciones no publicas y se conecta **a esas mismas direcciones ya validadas**, de modo que no hay
+  hueco entre lo validado y lo usado (DNS rebinding) y un nombre como `localhost` o un dominio publico que
+  apunte dentro no son casos especiales, sino el mismo caso.
+- **Redirecciones.** `AllowAutoRedirect = false` y bucle propio, con tope de 3 saltos. Cada salto abre su
+  propia conexion, asi que pasa por el mismo filtro de destino; y se rechaza explicitamente el paso de
+  `https` a `http`. Se hace a mano en vez de dejarselo al runtime precisamente para poder probarlo.
+- **Tamaño.** `MaxRemoteBytes` (16 MB) se conserva, pero ahora se corta **leyendo por streaming**: el
+  cuerpo deja de leerse en cuanto pasa del tope. Antes, `ReadAsByteArrayAsync` se traia el contenido entero
+  a memoria y solo despues se miraba cuanto ocupaba, que es justo lo que el tope existia para evitar.
+- **Tiempo.** 20 s de presupuesto total para toda la descarga, redirecciones incluidas — no 20 s por salto.
+
+Un destino bloqueado se pinta como imagen rota (`MarkdownImageState.Failed`) y se anota con
+`LogService.Warning`, igual que una imagen que falta: el `try/catch` de `MarkdownImageCache.Start` ya hacia
+exactamente eso, asi que no sube ninguna excepcion. La cache, el presupuesto de memoria y `ForgetFailed`
+quedan intactos. La costura para probar sin red es un handler inyectable
+(`MarkdownImageCache.UseHttpHandlerForTests`), el mismo patron de `httpHandler` opcional que
+`PolarAuthService`/`SupabaseRestClient` ya usaban.
+
+75 pruebas nuevas entre
+[`RemoteImagePolicyTests`](../enki/tests/enki.Tests/Services/RemoteImagePolicyTests.cs) (tabla de casos de
+`IsPubliclyRoutable`, con los bordes de cada rango, y las redirecciones) y
+[`MarkdownRemoteImageDownloadTests`](../enki/tests/enki.Tests/Services/MarkdownRemoteImageDownloadTests.cs)
+(descarga con transporte falso). Ningun test toca la red.
+
+**Pendiente: dos decisiones de producto que no se han tomado aqui.**
+
+1. `EditorPreferences.RemoteImages` **sigue activo por defecto**, y `AppSettings.EditorRemoteImages` no se
+   ha tocado. Cambiarlo a apagado por defecto con un aviso en linea y un boton de "cargar" —el patron de
+   los clientes de correo— es lo que de verdad cierra el pixel de seguimiento, que el filtro de destino
+   **no** aborda: un servidor publico que solo quiere ver la IP del lector sigue funcionando. Es un cambio
+   de comportamiento por defecto del editor y le corresponde a quien decide el producto.
+2. `http://` **se sigue aceptando** como destino inicial. Bloquearlo romperia notas existentes legitimas;
+   lo que si se bloquea es *degradar* a `http` a mitad de una descarga que empezo en `https`.
 
 ### BUG-03 · Sin tope de pixeles al decodificar: bomba de imagen
 
@@ -718,12 +891,14 @@ Conviene dejarlo escrito para no "arreglarlo" por error en una pasada futura:
 
 **Antes de publicar (muy recomendable):**
 
-5. BUG-09 — backup a temporal y `Move` al final.
-6. SEC-06 — capturar `FormatException` y acotar `Iterations`.
-7. BUG-03 — tope de pixeles antes de decodificar.
-8. BUG-08 — un unico `SettingsService` y `try/catch` en el arranque.
-9. SEC-03 / SEC-04 — temporales con nombre aleatorio y permisos desde la creacion.
-10. SEC-05 — decir en la UI que el cifrado cubre el contenido, no los titulos.
+5. ~~SEC-06 — capturar `FormatException` y acotar `Iterations`.~~ (+ AAD: pendiente, y fuera del alcance
+   sin una decision explicita — cambia el formato).
+6. ~~SEC-03 / SEC-04 — temporales con nombre aleatorio y permisos desde la creacion.~~ (sin verificar en
+   Windows/macOS).
+7. ~~SEC-05 — decir en la UI que el cifrado cubre el contenido, no los titulos.~~
+8. BUG-09 — backup a temporal y `Move` al final.
+9. BUG-03 — tope de pixeles antes de decodificar.
+10. BUG-08 — un unico `SettingsService` y `try/catch` en el arranque.
 
 **Primera iteracion despues de publicar:**
 
@@ -731,7 +906,8 @@ Conviene dejarlo escrito para no "arreglarlo" por error en una pasada futura:
 12. BUG-06 — timeouts de regex.
 13. BUG-04 / BUG-05 — presupuesto en `VaultNoteCache` y purga de imagenes al bloquear.
 14. BUG-07 — timeout en el mutex de `JsonFileStore`.
-15. SEC-07 — politica de imagenes remotas.
+15. ~~SEC-07 — politica de imagenes remotas.~~ (+ default apagado y `http://`: decisiones de producto
+   pendientes).
 
 **Deuda de robustez, sin prisa:** SEC-08, SEC-09, SEC-10, BUG-11, BUG-12, BUG-13, BUG-14, BUG-15.
 

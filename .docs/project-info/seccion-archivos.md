@@ -193,7 +193,13 @@ ficha (`ShowsInfoPanel`): icono y extensión, nombre, tipo y datos, el motivo (`
 reproducir/abrir con la aplicación del sistema y mostrar en la carpeta. Nunca un error sin salida.
 
 "Abrir con el sistema" (`OpenWithSystem`) entrega una copia descifrada temporal cuando el archivo vive en una
-sesión protegida, y avisa si el sistema no tiene aplicación asociada.
+sesión protegida, y avisa si el sistema no tiene aplicación asociada. Esa copia
+(`VaultService.ResolveReadablePath`) no se escribe en la raíz del directorio temporal del sistema, que es
+compartido por todas las cuentas de la máquina, sino en el directorio privado por usuario de
+`PrivateTempFile` (`services/PrivateTempFile.cs`), creado con modo `0700`; y el archivo nace ya con modo
+`0600` —`FileMode.CreateNew` más `FileStreamOptions.UnixCreateMode`— antes del primer byte de contenido, no
+con un `chmod` posterior. El barrido de arranque y cierre (`CleanupStaleDecryptedTempFiles`) mira los dos
+sitios, para seguir limpiando lo que dejaran versiones anteriores sueltas en la raíz del temporal.
 
 ## 7. Visor de PDF
 
