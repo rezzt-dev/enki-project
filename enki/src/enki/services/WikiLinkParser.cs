@@ -47,7 +47,7 @@ public readonly struct WikiLinkOccurrence
 /// feed is the session graph's derived edges, not any on-screen rendering.</summary>
 public static class WikiLinkParser
 {
-    private static readonly Regex Pattern = new(@"\[\[([^\]|#]+?)(?:[|#][^\]]*)?\]\]", RegexOptions.Compiled);
+    private static readonly Regex Pattern = new(@"\[\[([^\]|#]+?)(?:[|#][^\]]*)?\]\]", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     /// <summary>Every wikilink occurrence in <paramref name="markdown"/>, in document order, with its
     /// position — the shared primitive behind <see cref="ExtractTargets"/>,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using enki.Services;
 
 namespace enki.Views.Editor.Markdown;
 
@@ -85,15 +86,15 @@ public static class MarkdownHtmlParser
 
     private static readonly Regex TagRegex = new(
         """<\s*(?<close>/)?\s*(?<name>[a-zA-Z][a-zA-Z0-9]*)(?<attrs>(?:\s+[a-zA-Z_:][-a-zA-Z0-9_:.]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*(?<self>/)?\s*>""",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     private static readonly Regex AlignAttrRegex = new(
         """\balign\s*=\s*(?:"(?<v>[^"]*)"|'(?<v>[^']*)'|(?<v>[^\s"'=<>`]+))""",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexSafety.MatchTimeout);
 
     private static readonly Regex TextAlignStyleRegex = new(
         @"\btext-align\s*:\s*(?<v>[a-zA-Z]+)",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexSafety.MatchTimeout);
 
     /// <summary>Recognized tags inside one line, left to right. Offsets are absolute
     /// (<paramref name="lineOffset"/> + index) so they can be compared against carets, selections and
@@ -103,32 +104,42 @@ public static class MarkdownHtmlParser
         var tokens = new List<HtmlTagToken>();
         if (string.IsNullOrEmpty(text) || text.IndexOf('<') < 0) return tokens;
 
-        foreach (Match match in TagRegex.Matches(text))
+        try
         {
-            // "\<div>" is the escape hatch for showing a tag literally, now that an unescaped one is
-            // concealed — same backslash escape the Markdown scanner honours for its own markers.
-            if (match.Index > 0 && text[match.Index - 1] == '\\') continue;
-
-            var name = match.Groups["name"].Value.ToLowerInvariant();
-            var isBlock = BlockTags.Contains(name);
-            if (!isBlock && !InlineTags.Contains(name)) continue;
-
-            var isClose = match.Groups["close"].Success;
-            var kind = isClose
-                ? HtmlTagKind.Close
-                : match.Groups["self"].Success || name == "br"
-                    ? HtmlTagKind.SelfClosing
-                    : HtmlTagKind.Open;
-
-            tokens.Add(new HtmlTagToken
+            foreach (Match match in TagRegex.Matches(text))
             {
-                Start = lineOffset + match.Index,
-                End = lineOffset + match.Index + match.Length,
-                Name = name,
-                Kind = kind,
-                IsBlock = isBlock,
-                Align = isClose ? MdAlign.None : AlignOf(name, match.Groups["attrs"].Value)
-            });
+                // "\<div>" is the escape hatch for showing a tag literally, now that an unescaped one is
+                // concealed — same backslash escape the Markdown scanner honours for its own markers.
+                if (match.Index > 0 && text[match.Index - 1] == '\\') continue;
+
+                var name = match.Groups["name"].Value.ToLowerInvariant();
+                var isBlock = BlockTags.Contains(name);
+                if (!isBlock && !InlineTags.Contains(name)) continue;
+
+                var isClose = match.Groups["close"].Success;
+                var kind = isClose
+                    ? HtmlTagKind.Close
+                    : match.Groups["self"].Success || name == "br"
+                        ? HtmlTagKind.SelfClosing
+                        : HtmlTagKind.Open;
+
+                tokens.Add(new HtmlTagToken
+                {
+                    Start = lineOffset + match.Index,
+                    End = lineOffset + match.Index + match.Length,
+                    Name = name,
+                    Kind = kind,
+                    IsBlock = isBlock,
+                    Align = isClose ? MdAlign.None : AlignOf(name, match.Groups["attrs"].Value)
+                });
+            }
+        }
+        catch (RegexMatchTimeoutException ex)
+        {
+            // Esta función corre durante el layout. Ante una línea patológica se descarta cualquier token
+            // parcial y se pinta completa como texto plano, sin propagar una excepción al hilo de UI.
+            LogService.Warning("Se agotó el tiempo al analizar HTML de una línea Markdown", ex);
+            tokens.Clear();
         }
 
         return tokens;

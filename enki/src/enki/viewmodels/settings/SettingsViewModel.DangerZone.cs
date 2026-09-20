@@ -33,6 +33,14 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _pendingResetSettings;
 
+    [ObservableProperty]
+    private bool _pendingRestoreBackup;
+
+    [ObservableProperty]
+    private string _pendingRestoreDestination = string.Empty;
+
+    private string? _pendingRestoreSource;
+
     /// <summary>"Backup automático" (Ajustes › General, zona de peligro, Fase 1 de
     /// docs/analisis-proyecto/roadmap.md) — complemento opcional al backup manual: crea uno nuevo cada
     /// <see cref="AppSettings.AutoBackupIntervalDays"/> días y conserva los últimos
@@ -178,6 +186,108 @@ public sealed partial class SettingsViewModel
                 VaultFailureReasons.DescribeLocalized(ex),
                 Models.NotificationSeverity.Error);
         }
+    }
+
+    /// <summary>Elige un ZIP y una carpeta contenedora, pero no toca el disco hasta que el usuario
+    /// confirma el aviso. La restauración siempre crea un vault hermano nuevo: nunca extrae sobre el
+    /// activo ni sobre una carpeta existente.</summary>
+    [RelayCommand]
+    private async Task RequestRestoreBackup()
+    {
+        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
+        if (topLevel?.StorageProvider is null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = LocalizationService.Instance["Settings_General_DangerZone_RestoreDialogTitle"],
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType(LocalizationService.Instance["Settings_General_DangerZone_ZipFileType"]) { Patterns = ["*.zip"] }]
+        });
+        var source = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        if (string.IsNullOrWhiteSpace(source)) return;
+
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = LocalizationService.Instance["Settings_General_DangerZone_RestoreFolderDialogTitle"],
+            AllowMultiple = false
+        });
+        var parent = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+        if (string.IsNullOrWhiteSpace(parent)) return;
+
+        _pendingRestoreSource = source;
+        PendingRestoreDestination = UniqueRestorePath(parent);
+        PendingRestoreBackup = true;
+    }
+
+    [RelayCommand]
+    private void CancelRestoreBackup()
+    {
+        PendingRestoreBackup = false;
+        _pendingRestoreSource = null;
+        PendingRestoreDestination = string.Empty;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmRestoreBackup()
+    {
+        var source = _pendingRestoreSource;
+        var destination = PendingRestoreDestination;
+        CancelRestoreBackup();
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(destination)) return;
+
+        try
+        {
+            await _polarSyncService.RunWithSyncPausedAsync(() =>
+            {
+                FlushPendingSave();
+                var restored = _vaultBackupService.RestoreBackup(source, destination);
+                _vaultService.SetVaultPath(restored.VaultPath);
+                if (!string.IsNullOrWhiteSpace(restored.SettingsJson))
+                    _settingsService.ImportPreferences(restored.SettingsJson);
+                VaultPath = restored.VaultPath;
+                RefreshVaultSizeLabel();
+                _onVaultChanged();
+            });
+
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_RestoreCompletedTitle"),
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_RestoreCompletedMessage", destination),
+                Models.NotificationSeverity.Success);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException)
+        {
+            LogService.Warning($"No se pudo validar la copia de seguridad '{source}'", ex);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_RestoreFailedTitle"),
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_RestoreInvalidMessage"),
+                Models.NotificationSeverity.Error);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            LogService.Warning($"No se pudo restaurar la copia de seguridad '{source}'", ex);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_RestoreFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_AccessDenied"),
+                Models.NotificationSeverity.Error);
+        }
+        catch (IOException ex)
+        {
+            LogService.Warning($"No se pudo restaurar la copia de seguridad '{source}'", ex);
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_RestoreFailedTitle"),
+                LocalizedTextFormatter.Format("Common_Error_IOFailure"),
+                Models.NotificationSeverity.Error);
+        }
+    }
+
+    private static string UniqueRestorePath(string parent)
+    {
+        var baseName = $"Enki-Restored-{DateTime.Now:yyyy-MM-dd-HHmmss}";
+        var candidate = Path.Combine(parent, baseName);
+        var suffix = 2;
+        while (Directory.Exists(candidate) || File.Exists(candidate))
+            candidate = Path.Combine(parent, $"{baseName}-{suffix++}");
+        return candidate;
     }
 
     /// <summary>Exporta <c>settings.json</c> a una ubicación elegida por el usuario — sin lógica de merge,

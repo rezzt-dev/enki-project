@@ -5600,4 +5600,16 @@ Feliz escritura.</value>
   <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
     <value>Totales del vault accesible. Las sesiones bloqueadas no se incluyen.</value>
   </data>
+  <data name="Settings_General_DangerZone_RestoreBackupButton" xml:space="preserve"><value>Restaurar copia</value></data>
+  <data name="Settings_General_DangerZone_RestoreDialogTitle" xml:space="preserve"><value>Seleccionar copia de seguridad</value></data>
+  <data name="Settings_General_DangerZone_RestoreFolderDialogTitle" xml:space="preserve"><value>Seleccionar dónde crear la bóveda restaurada</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedTitle" xml:space="preserve"><value>Copia restaurada</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedMessage" xml:space="preserve"><value>La bóveda restaurada está activa en {0}.</value></data>
+  <data name="Settings_General_DangerZone_RestoreFailedTitle" xml:space="preserve"><value>No se pudo restaurar la copia</value></data>
+  <data name="Settings_General_DangerZone_RestoreInvalidMessage" xml:space="preserve"><value>El archivo no es una copia válida de Enki o contiene rutas no seguras.</value></data>
+  <data name="Settings_RestoreDialog_Title" xml:space="preserve"><value>Restaurar copia de seguridad</value></data>
+  <data name="Settings_RestoreDialog_Message" xml:space="preserve"><value>Se cambiará la bóveda activa por una copia restaurada en una carpeta nueva. La bóveda actual no se modificará. ¿Quieres continuar?</value></data>
+  <data name="Startup_Error_Title" xml:space="preserve"><value>Enki no pudo iniciar</value></data>
+  <data name="Startup_Error_Message" xml:space="preserve"><value>Se registró el error. Revisa los archivos de diagnóstico en:&#10;{0}</value></data>
+  <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>ruta de registro no disponible</value></data>
 </root>

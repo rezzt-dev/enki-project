@@ -5600,4 +5600,16 @@ Bonne rédaction.</value>
   <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
     <value>Totaux du coffre accessible. Les sessions verrouillées sont exclues.</value>
   </data>
+  <data name="Settings_General_DangerZone_RestoreBackupButton" xml:space="preserve"><value>Restaurer la sauvegarde</value></data>
+  <data name="Settings_General_DangerZone_RestoreDialogTitle" xml:space="preserve"><value>Sélectionner une sauvegarde</value></data>
+  <data name="Settings_General_DangerZone_RestoreFolderDialogTitle" xml:space="preserve"><value>Sélectionner où créer le coffre restauré</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedTitle" xml:space="preserve"><value>Sauvegarde restaurée</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedMessage" xml:space="preserve"><value>Le coffre restauré est actif dans {0}.</value></data>
+  <data name="Settings_General_DangerZone_RestoreFailedTitle" xml:space="preserve"><value>Impossible de restaurer la sauvegarde</value></data>
+  <data name="Settings_General_DangerZone_RestoreInvalidMessage" xml:space="preserve"><value>Le fichier n’est pas une sauvegarde Enki valide ou contient des chemins non sécurisés.</value></data>
+  <data name="Settings_RestoreDialog_Title" xml:space="preserve"><value>Restaurer la sauvegarde</value></data>
+  <data name="Settings_RestoreDialog_Message" xml:space="preserve"><value>Le coffre actif sera remplacé par une copie restaurée dans un nouveau dossier. Le coffre actuel ne sera pas modifié. Continuer ?</value></data>
+  <data name="Startup_Error_Title" xml:space="preserve"><value>Enki n’a pas pu démarrer</value></data>
+  <data name="Startup_Error_Message" xml:space="preserve"><value>L’erreur a été enregistrée. Consultez les fichiers de diagnostic dans :&#10;{0}</value></data>
+  <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>chemin du journal indisponible</value></data>
 </root>

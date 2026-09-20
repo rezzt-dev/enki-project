@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using enki.Services;
 
 namespace enki.Views.Editor.Markdown;
 
@@ -14,7 +15,8 @@ namespace enki.Views.Editor.Markdown;
 /// </summary>
 public static class MarkdownLineParser
 {
-    private static readonly Regex HorizontalRuleRegex = new(@"^([-*_])[ \t]*(\1[ \t]*){2,}$", RegexOptions.Compiled);
+    private static readonly Regex HorizontalRuleRegex = new(
+        @"^([-*_])[ \t]*(\1[ \t]*){2,}$", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     /// <summary>Scans the whole document text once to determine which lines sit inside/around fenced code blocks.</summary>
     public static Dictionary<int, FenceInfo> ComputeFences(string documentText)
@@ -130,7 +132,13 @@ public static class MarkdownLineParser
         }
 
         // Horizontal rule: ---, ***, ___ (optionally spaced), nothing else on the line.
-        if (indent <= 3 && n - indent >= 3 && HorizontalRuleRegex.IsMatch(text[indent..]))
+        var isHorizontalRule = false;
+        if (indent <= 3 && n - indent >= 3)
+        {
+            try { isHorizontalRule = HorizontalRuleRegex.IsMatch(text[indent..]); }
+            catch (RegexMatchTimeoutException) { /* texto plano */ }
+        }
+        if (isHorizontalRule)
         {
             model.Kind = MdBlockKind.HorizontalRule;
             model.MarkerStart = lineOffset + indent;

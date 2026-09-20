@@ -21,11 +21,18 @@ namespace enki.Services;
 /// depends on that mtime granularity at all.</para></summary>
 internal sealed class VaultNoteCache
 {
+    private const long DefaultMemoryBudgetBytes = 64L * 1024 * 1024;
+
     private readonly object _lock = new();
     private readonly Dictionary<string, Entry> _entries;
+    private readonly long _memoryBudgetBytes;
+    private long _approximateBytes;
+    private long _usageSequence;
 
-    public VaultNoteCache()
+    public VaultNoteCache(long memoryBudgetBytes = DefaultMemoryBudgetBytes)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(memoryBudgetBytes);
+        _memoryBudgetBytes = memoryBudgetBytes;
         _entries = new Dictionary<string, Entry>(PathComparer());
     }
 
@@ -34,7 +41,13 @@ internal sealed class VaultNoteCache
             ? StringComparer.OrdinalIgnoreCase
             : StringComparer.Ordinal;
 
-    private readonly record struct Entry(NoteFile Note, string Content, DateTime FileWriteUtc);
+    private sealed record Entry(NoteFile Note, string Content, DateTime FileWriteUtc, long ApproximateBytes)
+    {
+        public long LastUsed { get; set; }
+    }
+
+    internal int Count { get { lock (_lock) return _entries.Count; } }
+    internal long ApproximateBytes { get { lock (_lock) return _approximateBytes; } }
 
     /// <summary>Returns the cached (note, content) pair for <paramref name="info"/> if it's still fresh
     /// (same <see cref="FileInfo.LastWriteTimeUtc"/> as when it was cached), otherwise reads it via
@@ -49,11 +62,14 @@ internal sealed class VaultNoteCache
         lock (_lock)
         {
             if (_entries.TryGetValue(info.FullName, out var cached) && cached.FileWriteUtc == info.LastWriteTimeUtc)
+            {
+                cached.LastUsed = ++_usageSequence;
                 return (cached.Note.Clone(), cached.Content);
+            }
         }
 
         var result = read(info);
-        lock (_lock) { _entries[info.FullName] = new Entry(result.Note, result.Content, info.LastWriteTimeUtc); }
+        lock (_lock) { PutUnderLock(info.FullName, result.Note, result.Content, info.LastWriteTimeUtc); }
         return (result.Note.Clone(), result.Content);
     }
 
@@ -61,7 +77,7 @@ internal sealed class VaultNoteCache
     /// hand (a note that was just written), so the very next read of it doesn't need to touch disk at all.</summary>
     public void Put(string fullPath, NoteFile note, string content, DateTime fileWriteUtc)
     {
-        lock (_lock) { _entries[fullPath] = new Entry(note, content, fileWriteUtc); }
+        lock (_lock) { PutUnderLock(fullPath, note, content, fileWriteUtc); }
     }
 
     /// <summary>Drops any cached entry for <paramref name="fullPath"/> — called wherever a note stops
@@ -69,7 +85,7 @@ internal sealed class VaultNoteCache
     /// future scan won't even enumerate.</summary>
     public void Invalidate(string fullPath)
     {
-        lock (_lock) { _entries.Remove(fullPath); }
+        lock (_lock) { RemoveUnderLock(fullPath); }
     }
 
     /// <summary>Drops every cached entry under <paramref name="rootPath"/> — called when a session is
@@ -84,7 +100,49 @@ internal sealed class VaultNoteCache
             var toRemove = _entries.Keys
                 .Where(key => key.StartsWith(prefix, VaultService.PathComparison) || string.Equals(key, rootPath, VaultService.PathComparison))
                 .ToList();
-            foreach (var key in toRemove) _entries.Remove(key);
+            foreach (var key in toRemove) RemoveUnderLock(key);
         }
+    }
+
+    private void PutUnderLock(string fullPath, NoteFile note, string content, DateTime fileWriteUtc)
+    {
+        RemoveUnderLock(fullPath);
+
+        var approximateBytes = EstimateBytes(fullPath, note, content);
+        _entries[fullPath] = new Entry(note, content, fileWriteUtc, approximateBytes)
+        {
+            LastUsed = ++_usageSequence
+        };
+        _approximateBytes += approximateBytes;
+        TrimUnderLock();
+    }
+
+    private void RemoveUnderLock(string fullPath)
+    {
+        if (!_entries.Remove(fullPath, out var removed)) return;
+        _approximateBytes -= removed.ApproximateBytes;
+    }
+
+    /// <summary>Desaloja primero la nota menos usada. La estimación cuenta los caracteres UTF-16 de
+    /// contenido y metadatos; no pretende medir cada cabecera del runtime, solo imponer un techo estable
+    /// al componente dominante (el texto completo de las notas).</summary>
+    private void TrimUnderLock()
+    {
+        while (_approximateBytes > _memoryBudgetBytes && _entries.Count > 0)
+        {
+            var oldest = _entries.Aggregate((left, right) =>
+                left.Value.LastUsed <= right.Value.LastUsed ? left : right);
+            RemoveUnderLock(oldest.Key);
+        }
+    }
+
+    private static long EstimateBytes(string key, NoteFile note, string content)
+    {
+        static long StringBytes(string? value) => (long)(value?.Length ?? 0) * sizeof(char);
+
+        var total = StringBytes(key) + StringBytes(content) + StringBytes(note.FullPath)
+                    + StringBytes(note.Title) + StringBytes(note.Preview) + 128;
+        foreach (var tag in note.Tags) total += StringBytes(tag) + 16;
+        return total;
     }
 }

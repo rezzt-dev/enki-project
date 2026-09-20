@@ -79,6 +79,60 @@ public class VaultBackupServiceTests : IDisposable
     }
 
     [Fact]
+    public void CreateBackup_WhenCommitFails_PreservesPreviousDestinationAndRemovesTemporary()
+    {
+        var settings = new SettingsService(_appDataDirectory);
+        var vault = new VaultService(settings);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        var service = new VaultBackupService(vault, _appDataDirectory,
+            _ => throw new InvalidOperationException("fallo simulado antes del commit"));
+        var destination = Path.Combine(_root, "backup.zip");
+        File.WriteAllText(destination, "backup anterior");
+
+        Assert.Throws<InvalidOperationException>(() => service.CreateBackup(destination));
+
+        Assert.Equal("backup anterior", File.ReadAllText(destination));
+        Assert.Empty(Directory.GetFiles(_root, "backup.zip.tmp-*"));
+    }
+
+    [Fact]
+    public void RestoreBackup_RoundTripsVaultIntoANewFolder()
+    {
+        File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota restaurable");
+        Directory.CreateDirectory(Path.Combine(_vaultPath, "Adjuntos"));
+        File.WriteAllBytes(Path.Combine(_vaultPath, "Adjuntos", "x.bin"), [1, 2, 3]);
+        var service = CreateService();
+        var backup = Path.Combine(_root, "roundtrip.zip");
+        service.CreateBackup(backup);
+        var restoredPath = Path.Combine(_root, "vault-restaurado");
+
+        var result = service.RestoreBackup(backup, restoredPath);
+
+        Assert.Equal(Path.GetFullPath(restoredPath), result.VaultPath);
+        Assert.Equal("# Nota restaurable", File.ReadAllText(Path.Combine(restoredPath, "Nota.md")));
+        Assert.Equal([1, 2, 3], File.ReadAllBytes(Path.Combine(restoredPath, "Adjuntos", "x.bin")));
+        Assert.NotNull(result.SettingsJson);
+    }
+
+    [Fact]
+    public void RestoreBackup_WithZipSlipEntry_RejectsItWithoutCreatingDestination()
+    {
+        var service = CreateService();
+        var backup = Path.Combine(_root, "malicious.zip");
+        using (var archive = ZipFile.Open(backup, ZipArchiveMode.Create))
+        {
+            using var writer = new StreamWriter(archive.CreateEntry("vault/../../escape.md").Open());
+            writer.Write("fuera");
+        }
+        var destination = Path.Combine(_root, "restored");
+
+        Assert.Throws<InvalidDataException>(() => service.RestoreBackup(backup, destination));
+
+        Assert.False(Directory.Exists(destination));
+        Assert.False(File.Exists(Path.Combine(_root, "escape.md")));
+    }
+
+    [Fact]
     public void CreateBackup_MissingVaultFolder_StillBacksUpAppData()
     {
         var settings = new SettingsService(_appDataDirectory);

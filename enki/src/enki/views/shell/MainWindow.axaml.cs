@@ -16,7 +16,9 @@ namespace enki;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    public MainWindow() : this(new SettingsService()) { }
+
+    public MainWindow(SettingsService settingsService)
     {
         InitializeComponent();
 
@@ -39,7 +41,7 @@ public partial class MainWindow : Window
                 UpdateBrandIcon();
             };
 
-        var viewModel = new MainWindowViewModel();
+        var viewModel = new MainWindowViewModel(settingsService);
         DataContext = viewModel;
 
         // Después de fijar el DataContext, no antes: el logo puede ser la imagen personalizada del

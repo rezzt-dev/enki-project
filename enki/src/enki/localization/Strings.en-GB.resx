@@ -5600,4 +5600,16 @@ Happy writing.</value>
   <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
     <value>Accessible vault totals. Locked sessions are excluded.</value>
   </data>
+  <data name="Settings_General_DangerZone_RestoreBackupButton" xml:space="preserve"><value>Restore backup</value></data>
+  <data name="Settings_General_DangerZone_RestoreDialogTitle" xml:space="preserve"><value>Select backup</value></data>
+  <data name="Settings_General_DangerZone_RestoreFolderDialogTitle" xml:space="preserve"><value>Select where to create the restored vault</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedTitle" xml:space="preserve"><value>Backup restored</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedMessage" xml:space="preserve"><value>The restored vault is now active at {0}.</value></data>
+  <data name="Settings_General_DangerZone_RestoreFailedTitle" xml:space="preserve"><value>Could not restore backup</value></data>
+  <data name="Settings_General_DangerZone_RestoreInvalidMessage" xml:space="preserve"><value>The file is not a valid Enki backup or contains unsafe paths.</value></data>
+  <data name="Settings_RestoreDialog_Title" xml:space="preserve"><value>Restore backup</value></data>
+  <data name="Settings_RestoreDialog_Message" xml:space="preserve"><value>The active vault will switch to a restored copy in a new folder. Your current vault will not be modified. Continue?</value></data>
+  <data name="Startup_Error_Title" xml:space="preserve"><value>Enki could not start</value></data>
+  <data name="Startup_Error_Message" xml:space="preserve"><value>The error was logged. Review the diagnostic files at:&#10;{0}</value></data>
+  <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>log path unavailable</value></data>
 </root>

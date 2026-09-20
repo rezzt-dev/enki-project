@@ -18,9 +18,11 @@ namespace enki.ViewModels;
 /// file declares them — so no wiring, timing or field-initialization order changed by this split.</summary>
 public sealed partial class MainWindowViewModel
 {
-    public MainWindowViewModel()
+    public MainWindowViewModel() : this(new SettingsService()) { }
+
+    public MainWindowViewModel(SettingsService settingsService)
     {
-        _settingsService = new SettingsService();
+        _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         // Propuesta 29 (docs/propuesta-nuevas-funcionalidades.md): carga los overrides de atajos de teclado
         // guardados antes de que cualquier vista construya sus KeyBindings, para que la primera ventana
         // arranque ya con los gestos remapeados en vez de con los valores por defecto.

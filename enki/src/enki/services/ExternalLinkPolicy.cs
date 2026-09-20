@@ -80,12 +80,12 @@ public static class ExternalLinkPolicy
             ".py", ".rb", ".pl", ".php", ".deb", ".rpm", ".pkg", ".dmg"
         };
 
-    private static readonly Regex SchemeRegex = new(@"^[a-zA-Z][a-zA-Z0-9+.\-]*:", RegexOptions.Compiled);
+    private static readonly Regex SchemeRegex = new(@"^[a-zA-Z][a-zA-Z0-9+.\-]*:", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     /// <summary>Una ruta absoluta de Windows (<c>C:\Users\…</c>) encaja también con
     /// <see cref="SchemeRegex"/> —una letra suelta seguida de <c>:</c> es indistinguible de un esquema—
     /// así que hace falta esta comprobación para no confundirla con un esquema desconocido.</summary>
-    private static readonly Regex WindowsDrivePathRegex = new(@"^[a-zA-Z]:[\\/]", RegexOptions.Compiled);
+    private static readonly Regex WindowsDrivePathRegex = new(@"^[a-zA-Z]:[\\/]", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     /// <summary>Longitud máxima del destino que se enseña en un aviso. Un enlace puede ser una URL enorme
     /// o un <c>data:</c> entero, y el panel de notificaciones no es sitio para volcarlo.</summary>

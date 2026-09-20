@@ -38,7 +38,7 @@ public static class DailyNoteNaming
     /// justamente lo que aquel expande al generar el nombre.</summary>
     private static readonly Regex PlaceholderPattern = new(
         @"\{\{\s*(?<name>\p{L}+)\s*(?:(?<sign>[+-])\s*(?<amount>\d+)\s*(?<unit>\p{L}+))?\s*(?::(?<format>[^}]*))?\s*\}\}",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        RegexOptions.Compiled | RegexOptions.CultureInvariant, RegexSafety.MatchTimeout);
 
     /// <summary>Nombre de la nota diaria de <paramref name="date"/>: el que dicte el <c>title</c> de
     /// <paramref name="template"/>, o <see cref="FallbackTitleFor"/> si no hay plantilla o no declara

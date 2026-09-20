@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using enki.Views.Editor.Markdown;
 using Xunit;
 
@@ -222,5 +223,18 @@ public class MarkdownHtmlParserTests
     {
         Assert.Equal("</div>", MarkdownHtmlParser.SanitizedTag(MarkdownHtmlParser.ParseTags("</div>", 0)[0]));
         Assert.Equal("<br/>", MarkdownHtmlParser.SanitizedTag(MarkdownHtmlParser.ParseTags("<br>", 0)[0]));
+    }
+
+    [Fact]
+    public void ParseTags_PathologicalUnclosedAttributes_ReturnsPromptlyAsPlainText()
+    {
+        var line = "<div " + string.Concat(System.Linq.Enumerable.Repeat("a='aaaaaaaa' ", 20_000));
+        var stopwatch = Stopwatch.StartNew();
+
+        var tags = MarkdownHtmlParser.ParseTags(line, 0);
+
+        stopwatch.Stop();
+        Assert.Empty(tags);
+        Assert.True(stopwatch.Elapsed < System.TimeSpan.FromSeconds(2));
     }
 }

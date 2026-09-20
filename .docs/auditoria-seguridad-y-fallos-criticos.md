@@ -46,8 +46,13 @@ ficha, bajo "Corregido".
 - **SEC-03/SEC-04** — el comportamiento en **Windows y macOS no esta verificado**: todo el desarrollo y
   las pruebas se han hecho en Linux. Compila y esta razonado por plataforma, nada mas.
 
-El resto de hallazgos (BUG-03 en adelante, SEC-08 en adelante) sigue abierto y mantiene el orden de trabajo
-del final del documento.
+Los ocho fallos **BUG-03** a **BUG-10** estan **corregidos** tambien: limite previo de pixeles, LRU para
+notas, purga de bitmaps al bloquear, timeout comun de regex y mutex, una unica instancia de ajustes en el
+arranque, commit atomico del backup y restauracion guiada segura. La suite queda en **1866 pruebas, 0
+fallos** en `enki.Tests` y **254 pruebas, 0 fallos** en `enki.UITests`.
+
+El resto de hallazgos (SEC-08 en adelante) sigue abierto y mantiene el orden de trabajo del final del
+documento.
 
 ---
 
@@ -75,14 +80,14 @@ del final del documento.
 | SEC-05 | ✅ Medio (corregido) | Los metadatos de una sesion protegida viven en claro | `models/SessionManifest.cs` |
 | SEC-06 | ✅ Medio (corregido) | El manifiesto de cifrado se consume sin validar | `services/SessionEncryptionService.cs:200` |
 | SEC-07 | ✅ Medio (corregido) | Imagenes remotas activadas por defecto: fuga de IP y SSRF local | `views/editor/Markdown/MarkdownImageCache.cs:243` |
-| BUG-03 | Medio | Sin tope de pixeles al decodificar: bomba de imagen | `views/editor/Markdown/MarkdownImageCache.cs:279` |
-| BUG-04 | Medio | `VaultNoteCache` crece sin limite | `services/VaultNoteCache.cs` |
-| BUG-05 | Medio | La cache de imagenes no se purga al bloquear una sesion | `views/editor/Markdown/MarkdownImageCache.cs` |
-| BUG-06 | Medio | Ningun `Regex` del proyecto tiene timeout (ReDoS) | `views/editor/Markdown/MarkdownHtmlParser.cs:87` |
-| BUG-07 | Medio | `JsonFileStore` espera el mutex sin timeout | `services/JsonFileStore.cs:87` |
-| BUG-08 | Medio | Tres `SettingsService` independientes en el arranque | `App.axaml.cs:41,51` |
-| BUG-09 | Medio | El backup borra el destino antes de saber si puede escribirlo | `services/VaultBackupService.cs:43` |
-| BUG-10 | Medio | No existe "restaurar copia de seguridad" en la app | `viewmodels/settings/SettingsViewModel.DangerZone.cs` |
+| BUG-03 | ✅ Medio (corregido) | Sin tope de pixeles al decodificar: bomba de imagen | `views/editor/Markdown/MarkdownImageCache.cs:279` |
+| BUG-04 | ✅ Medio (corregido) | `VaultNoteCache` crece sin limite | `services/VaultNoteCache.cs` |
+| BUG-05 | ✅ Medio (corregido) | La cache de imagenes no se purga al bloquear una sesion | `views/editor/Markdown/MarkdownImageCache.cs` |
+| BUG-06 | ✅ Medio (corregido) | Ningun `Regex` del proyecto tiene timeout (ReDoS) | `views/editor/Markdown/MarkdownHtmlParser.cs:87` |
+| BUG-07 | ✅ Medio (corregido) | `JsonFileStore` espera el mutex sin timeout | `services/JsonFileStore.cs:87` |
+| BUG-08 | ✅ Medio (corregido) | Tres `SettingsService` independientes en el arranque | `App.axaml.cs:41,51` |
+| BUG-09 | ✅ Medio (corregido) | El backup borra el destino antes de saber si puede escribirlo | `services/VaultBackupService.cs:43` |
+| BUG-10 | ✅ Medio (corregido) | No existe "restaurar copia de seguridad" en la app | `viewmodels/settings/SettingsViewModel.DangerZone.cs` |
 | SEC-08 | Bajo | `SanitizeFileName` acepta `..`, `.` y nombres ocultos/reservados | `services/VaultService.cs:1547` |
 | SEC-09 | Bajo | La exportacion HTML incrusta imagenes de fuera del vault | `services/NoteExportRenderer.cs:474` |
 | SEC-10 | Bajo | Permisos por defecto de estado y logs en Linux/macOS | `services/JsonFileStore.cs:66` |
@@ -579,6 +584,10 @@ una URL remota. Resultado: `OutOfMemoryException` y la app se cae, o el sistema 
 cualquier imagen cuyo `Width * Height` supere un limite (p. ej. 50 millones de pixeles) y pintar el hueco
 de "imagen rota" que ya existe.
 
+**Corregido.** `MarkdownImageCache.Decode` comprueba la cabecera contra un maximo de 50 millones de
+pixeles antes de construir el `Bitmap`; la multiplicacion se hace en `long` para que dimensiones extremas
+no desborden. Una imagen rechazada sigue la ruta existente de imagen rota y aviso en log.
+
 ### BUG-04 · `VaultNoteCache` crece sin limite
 
 **Donde:** [`VaultNoteCache.cs`](../enki/src/enki/services/VaultNoteCache.cs).
@@ -598,6 +607,10 @@ patron aplicado a medias.
 **Como cerrarlo.** Copiar el mecanismo de `MarkdownImageCache`: presupuesto en bytes, `LastUsedUtc` por
 entrada y `Trim()` al insertar.
 
+**Corregido.** `VaultNoteCache` tiene un presupuesto de 64 MB, contabilidad aproximada del texto y
+metadatos y desalojo LRU tanto en lecturas como en `Put`. Una entrada individual se puede devolver al
+llamador que la acaba de leer, pero no queda residente si por si sola supera el presupuesto.
+
 ### BUG-05 · La cache de imagenes no se purga al bloquear una sesion
 
 **Donde:** [`MarkdownImageCache.cs`](../enki/src/enki/views/editor/Markdown/MarkdownImageCache.cs) frente a
@@ -613,6 +626,9 @@ proceso** y nadie la purga: los bitmaps ya descifrados de los adjuntos de esa se
 por `NoteDirectory`, asi que el filtrado es directo — y llamarlo desde `SessionService.Lock` junto al
 existente. Añadir tambien un `Clear()` en el apagado, al lado de `SessionEncryptionService.LockAll()`
 ([`MainWindowViewModel.cs:505`](../enki/src/enki/viewmodels/shell/MainWindowViewModel.cs#L505)).
+
+**Corregido.** `SessionService.Lock` invalida notas y bitmaps bajo la raiz de sesion, y `Shutdown` vacia
+la cache completa. Una decodificacion que termine despues de invalidar ya no puede reinsertar su bitmap.
 
 ### BUG-06 · Ningun `Regex` del proyecto tiene timeout (ReDoS)
 
@@ -638,6 +654,11 @@ construidos sobre contenido de usuario, capturar `RegexMatchTimeoutException` y 
 pinta como texto plano". Alternativa mas solida para `TagRegex`: reescribirlo con un escaner lineal a mano
 (la gramatica es pequeña y ya es una lista blanca).
 
+**Corregido.** `RegexSafety.MatchTimeout` fija 100 ms y se aplica a todas las expresiones regulares del
+proyecto, incluidas las dos sustituciones estaticas de `VaultService`. `MarkdownHtmlParser` captura el
+timeout, descarta tokens parciales y devuelve la linea como texto plano; el detector de separadores
+Markdown aplica la misma degradacion.
+
 ### BUG-07 · `JsonFileStore` espera el mutex sin timeout
 
 **Donde:** [`JsonFileStore.cs:87`](../enki/src/enki/services/JsonFileStore.cs#L87).
@@ -655,6 +676,9 @@ nombre — la aplicacion se queda colgada en el arranque sin ningun mensaje.
 **Como cerrarlo.** `WaitOne(TimeSpan.FromSeconds(5))` y, al agotarse, decidir explicitamente: continuar sin
 lock registrando un aviso (lectura) o fallar con un error visible (escritura). Nunca esperar para siempre
 en el hilo de UI.
+
+**Corregido.** Las esperas estan limitadas a 5 segundos. Una lectura agotada continua sobre el fichero
+atomico y registra un aviso; una escritura lanza `TimeoutException` en vez de bloquear la UI para siempre.
 
 ### BUG-08 · Tres `SettingsService` independientes en el arranque
 
@@ -685,6 +709,10 @@ lector ligero de solo lectura, sin `Save()`, para los dos campos que se necesita
 pasarlo al resto. Y envolver el arranque en un `try/catch` que enseñe un dialogo con la ruta del log en vez
 de morir en silencio.
 
+**Corregido.** `App` crea una sola instancia, aplica con ella idioma y tema y la pasa por `MainWindow` al
+compositor. Todo el arranque queda dentro de un `try/catch`; si falla se registra la excepcion y se muestra
+una ventana minima con la ruta del log.
+
 ### BUG-09 · El backup borra el destino antes de saber si puede escribirlo
 
 **Donde:** [`VaultBackupService.cs:43`](../enki/src/enki/services/VaultBackupService.cs#L43).
@@ -702,6 +730,10 @@ proposito entero es "no perder nada", es el peor momento posible para no tener r
 al terminar con exito — exactamente el patron que `JsonFileStore.Save` y `VaultService.WriteFileAtomic` ya
 usan en el resto del proyecto. Borrar el temporal en el `catch`.
 
+**Corregido.** El ZIP se crea y cierra en un temporal hermano y solo entonces reemplaza el destino. Los
+fallos al abrir un fichero fuente se siguen reportando como entrada omitida; un fallo una vez iniciada la
+escritura del ZIP aborta el commit, conserva el backup anterior y limpia el temporal.
+
 ### BUG-10 · No existe "restaurar copia de seguridad" en la app
 
 **Donde:** [`SettingsViewModel.DangerZone.cs`](../enki/src/enki/viewmodels/settings/SettingsViewModel.DangerZone.cs).
@@ -718,6 +750,12 @@ probado**, que es la forma clasica de descubrir que los backups no servian.
 vault activo, restaure a una carpeta nueva (nunca sobre la actual), y haga entradas con
 `Path.GetFullPath` verificado contra la raiz de destino para evitar *zip slip* si el archivo fue
 manipulado. Y añadir un test de ida y vuelta backup → restauracion.
+
+**Corregido.** Ajustes ofrece seleccion de ZIP y carpeta contenedora, confirmacion explicita y cambio al
+vault restaurado. El servicio valida todas las raices del archivo, rechaza enlaces simbolicos y rutas que
+escapen, extrae primero a un temporal, exige un destino nuevo y nunca escribe dentro del vault activo. Las
+preferencias se fusionan por `SettingsService` sin restaurar secretos. Hay pruebas de ida y vuelta y de
+`zip slip`, y los textos nuevos estan en los seis catalogos localizados mas el recurso neutro.
 
 ---
 
@@ -896,16 +934,16 @@ Conviene dejarlo escrito para no "arreglarlo" por error en una pasada futura:
 6. ~~SEC-03 / SEC-04 — temporales con nombre aleatorio y permisos desde la creacion.~~ (sin verificar en
    Windows/macOS).
 7. ~~SEC-05 — decir en la UI que el cifrado cubre el contenido, no los titulos.~~
-8. BUG-09 — backup a temporal y `Move` al final.
-9. BUG-03 — tope de pixeles antes de decodificar.
-10. BUG-08 — un unico `SettingsService` y `try/catch` en el arranque.
+8. ~~BUG-09 — backup a temporal y `Move` al final.~~
+9. ~~BUG-03 — tope de pixeles antes de decodificar.~~
+10. ~~BUG-08 — un unico `SettingsService` y `try/catch` en el arranque.~~
 
 **Primera iteracion despues de publicar:**
 
-11. BUG-10 — restaurar copia de seguridad (con su test de ida y vuelta).
-12. BUG-06 — timeouts de regex.
-13. BUG-04 / BUG-05 — presupuesto en `VaultNoteCache` y purga de imagenes al bloquear.
-14. BUG-07 — timeout en el mutex de `JsonFileStore`.
+11. ~~BUG-10 — restaurar copia de seguridad (con su test de ida y vuelta).~~
+12. ~~BUG-06 — timeouts de regex.~~
+13. ~~BUG-04 / BUG-05 — presupuesto en `VaultNoteCache` y purga de imagenes al bloquear.~~
+14. ~~BUG-07 — timeout en el mutex de `JsonFileStore`.~~
 15. ~~SEC-07 — politica de imagenes remotas.~~ (+ default apagado y `http://`: decisiones de producto
    pendientes).
 

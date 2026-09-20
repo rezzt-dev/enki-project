@@ -74,6 +74,11 @@ internal static class MarkdownImageCache
     /// entradas menos recientemente usadas hasta volver por debajo.</summary>
     private const long MemoryBudgetBytes = 96L * 1024 * 1024;
 
+    /// <summary>Techo del tamaño natural antes de pedir a Skia que decodifique. El límite de bytes del
+    /// fichero no protege de una bomba de descompresión: un PNG diminuto puede declarar miles de millones
+    /// de píxeles y reservar varios GB al abrirse. Se comprueba sobre la cabecera, antes del decode.</summary>
+    internal const long MaxNaturalPixels = 50_000_000;
+
     /// <summary>Tamaño máximo que se acepta descargar de una URL remota. Una imagen mayor casi seguro es
     /// un error (un enlace a un ZIP, una página HTML) y no algo que merezca la pena tener en memoria.</summary>
     private const long MaxRemoteBytes = 16L * 1024 * 1024;
@@ -85,7 +90,7 @@ internal static class MarkdownImageCache
     private static readonly TimeSpan FreshnessInterval = TimeSpan.FromSeconds(2);
 
     private static readonly Dictionary<string, MarkdownImageEntry> Entries = new(StringComparer.Ordinal);
-    private static readonly HashSet<string> InFlight = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, object> InFlight = new(StringComparer.Ordinal);
     private static readonly object Gate = new();
 
     /// <summary>Un único cliente para todas las descargas remotas — crear uno por imagen agotaría los
@@ -97,6 +102,8 @@ internal static class MarkdownImageCache
     private static HttpClient? s_testHttp;
 
     private static HttpClient Http => s_testHttp ?? DefaultHttp.Value;
+
+    internal static int EntryCount { get { lock (Gate) return Entries.Count; } }
 
     private static HttpClient CreateHttpClient(HttpMessageHandler handler) =>
         new(handler) { Timeout = RemoteImagePolicy.RequestTimeout };
@@ -155,6 +162,56 @@ internal static class MarkdownImageCache
         }
     }
 
+    /// <summary>Olvida todos los bitmaps asociados a notas bajo <paramref name="rootPath"/>. La clave
+    /// empieza por la carpeta de la nota, seguida de un separador nulo, por lo que se compara esa primera
+    /// parte como ruta y no el texto completo (el destino Markdown podría contener el mismo prefijo por
+    /// casualidad). Una carga que termine después de invalidar ya no vuelve a insertar su resultado.</summary>
+    public static void InvalidatePrefix(string rootPath)
+    {
+        if (string.IsNullOrWhiteSpace(rootPath)) return;
+
+        lock (Gate)
+        {
+            var keys = Entries.Keys.Concat(InFlight.Keys)
+                .Where(key => KeyBelongsUnder(key, rootPath)).Distinct(StringComparer.Ordinal).ToList();
+            foreach (var key in keys)
+            {
+                Entries.Remove(key);
+                InFlight.Remove(key);
+            }
+        }
+    }
+
+    /// <summary>Vacía la caché compartida al cerrar la aplicación, junto con las claves de sesión.</summary>
+    public static void Clear()
+    {
+        lock (Gate)
+        {
+            Entries.Clear();
+            InFlight.Clear();
+        }
+    }
+
+    private static bool KeyBelongsUnder(string key, string rootPath)
+    {
+        var separator = key.IndexOf('\0');
+        var noteDirectory = separator >= 0 ? key[..separator] : key;
+        if (noteDirectory.Length == 0) return false;
+
+        try
+        {
+            var root = Path.GetFullPath(rootPath);
+            var directory = Path.GetFullPath(noteDirectory);
+            var prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+            return string.Equals(directory, root, VaultService.PathComparison)
+                   || directory.StartsWith(prefix, VaultService.PathComparison);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Cierto si la entrada ya está resuelta y su archivo de origen se ha modificado en disco
     /// desde que se cargó. Se comprueba como mucho una vez cada <see cref="FreshnessInterval"/>.</summary>
     private static bool NeedsReload(MarkdownImageEntry entry, DateTime now)
@@ -181,7 +238,9 @@ internal static class MarkdownImageCache
     /// <see cref="Gate"/> tomado.</summary>
     private static void Start(string key, MarkdownImageContext context, string src, int decodeWidth, Action onLoaded)
     {
-        if (!InFlight.Add(key)) return;
+        if (InFlight.ContainsKey(key)) return;
+        var flightToken = new object();
+        InFlight[key] = flightToken;
 
         _ = Task.Run(() =>
         {
@@ -200,9 +259,16 @@ internal static class MarkdownImageCache
 
             lock (Gate)
             {
-                InFlight.Remove(key);
-                if (Entries.TryGetValue(key, out var target)) Apply(target, loaded);
-                else Entries[key] = loaded;
+                // El token distingue una carga vieja cancelada por InvalidatePrefix/Clear de otra nueva
+                // para la misma clave. La vieja no puede retirar ni completar la entrada de la nueva.
+                if (InFlight.TryGetValue(key, out var currentFlight)
+                    && ReferenceEquals(currentFlight, flightToken))
+                {
+                    InFlight.Remove(key);
+                    if (Entries.TryGetValue(key, out var target)) Apply(target, loaded);
+                }
+                // Si la entrada desapareció mientras se cargaba, una sesión se bloqueó o la aplicación
+                // está cerrando. No se reinserta el bitmap en claro después de esa invalidación.
                 Trim();
             }
 
@@ -349,6 +415,9 @@ internal static class MarkdownImageCache
         // liberarse, así que reutilizar aquí el flujo de la decodificación lo dejaba cerrado justo antes
         // de decodificar — y toda imagen acababa marcada como rota.
         var natural = ReadNaturalSize(data);
+        if (!IsNaturalSizeAllowed(natural.Width, natural.Height))
+            throw new InvalidDataException(
+                $"La imagen declara {natural.Width}x{natural.Height} píxeles y supera el máximo de {MaxNaturalPixels}");
 
         using var stream = new MemoryStream(data, writable: false);
         var bitmap = natural.Width > 0 && natural.Width <= decodeWidth
@@ -385,6 +454,9 @@ internal static class MarkdownImageCache
             return (0, 0);
         }
     }
+
+    internal static bool IsNaturalSizeAllowed(int width, int height) =>
+        width <= 0 || height <= 0 || (long)width * height <= MaxNaturalPixels;
 
     private static string MediaTypeExtension(string dataUri)
     {

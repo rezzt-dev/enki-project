@@ -935,8 +935,8 @@ public sealed partial class VaultService
         if (string.IsNullOrWhiteSpace(title)) title = LocalizationService.Instance["Vault_UntitledNoteTitle"];
 
         var body = string.Join(" ", bodyLines.Where(l => l != title));
-        body = Regex.Replace(body, @"[#*`_>\-\[\]!]", " ");
-        body = Regex.Replace(body, @"\s+", " ").Trim();
+        body = Regex.Replace(body, @"[#*`_>\-\[\]!]", " ", RegexOptions.None, RegexSafety.MatchTimeout);
+        body = Regex.Replace(body, @"\s+", " ", RegexOptions.None, RegexSafety.MatchTimeout).Trim();
 
         var preview = body.Length > 160 ? body[..160].TrimEnd() + "…" : body;
         return (title, preview);

@@ -44,7 +44,7 @@ public static class NoteTemplateRenderer
     /// separa nombre y formato, el resto pertenece al formato.</summary>
     private static readonly Regex PlaceholderPattern = new(
         @"\{\{\s*(?<name>\p{L}+)\s*(?:(?<sign>[+-])\s*(?<amount>\d+)\s*(?<unit>\p{L}+))?\s*(?::(?<format>[^}]*))?\s*\}\}",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        RegexOptions.Compiled | RegexOptions.CultureInvariant, RegexSafety.MatchTimeout);
 
     /// <summary>Expande <paramref name="template"/> con <paramref name="title"/> como valor de
     /// <c>{{title}}</c> y <paramref name="now"/> (por defecto, la hora local actual) como referencia

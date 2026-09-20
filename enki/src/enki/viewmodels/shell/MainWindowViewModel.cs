@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
+using enki.Views.Editor.Markdown;
 using Material.Icons;
 
 namespace enki.ViewModels;
@@ -502,6 +503,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     /// §4.1, Alta).</summary>
     public void Shutdown()
     {
+        MarkdownImageCache.Clear();
         _vaultService.EncryptionService.LockAll();
         VaultService.CleanupStaleDecryptedTempFiles();
     }

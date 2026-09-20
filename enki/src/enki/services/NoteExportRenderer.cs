@@ -28,8 +28,8 @@ public static class NoteExportRenderer
     /// original tal cual (el navegador la resolverá si el HTML queda junto a la imagen).</summary>
     private const int MaxEmbeddedImageBytes = 8 * 1024 * 1024;
 
-    private static readonly Regex EscapeSequenceRegex = new(@"\\([!""#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])", RegexOptions.Compiled);
-    private static readonly Regex OrderedListStartRegex = new(@"^\s{0,3}(\d{1,9})[.)]\s", RegexOptions.Compiled);
+    private static readonly Regex EscapeSequenceRegex = new(@"\\([!""#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])", RegexOptions.Compiled, RegexSafety.MatchTimeout);
+    private static readonly Regex OrderedListStartRegex = new(@"^\s{0,3}(\d{1,9})[.)]\s", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     /// <summary>Documento HTML completo y autónomo: cabecera con el título de la nota (y sus etiquetas si
     /// <paramref name="includeTags"/> y la nota las tiene — la "opción de incluir o no el
@@ -516,7 +516,7 @@ public static class NoteExportRenderer
 
     private static bool LooksLikeLocalPath(string url) => ExternalLinkPolicy.LooksLikeLocalPath(url);
 
-    private static readonly Regex DataImageUriRegex = new(@"^data:image/[a-zA-Z0-9.+\-]+;base64,", RegexOptions.Compiled);
+    private static readonly Regex DataImageUriRegex = new(@"^data:image/[a-zA-Z0-9.+\-]+;base64,", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     private static bool IsDataImageUri(string url) => DataImageUriRegex.IsMatch(url);
 

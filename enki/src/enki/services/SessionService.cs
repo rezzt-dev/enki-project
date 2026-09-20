@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using enki.Localization;
 using enki.Models;
+using enki.Views.Editor.Markdown;
 
 namespace enki.Services;
 
@@ -174,6 +175,7 @@ public sealed class SessionService
     {
         _encryptionService.Lock(session.RootPath);
         _vaultService.InvalidateCacheUnderPath(session.RootPath);
+        MarkdownImageCache.InvalidatePrefix(session.RootPath);
     }
 
     public bool IsUnlocked(Session session) => !session.IsEncrypted || _encryptionService.IsUnlocked(session.RootPath);

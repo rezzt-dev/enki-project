@@ -50,9 +50,9 @@ public sealed record ThemeParseResult(bool Success, IReadOnlyDictionary<string, 
 /// half-applied.</summary>
 public static class ThemeCssParser
 {
-    private static readonly Regex CommentRegex = new(@"/\*.*?\*/", RegexOptions.Singleline | RegexOptions.Compiled);
-    private static readonly Regex RootBlockRegex = new(@":root\s*\{([^}]*)\}", RegexOptions.Singleline | RegexOptions.Compiled);
-    private static readonly Regex VariableRegex = new(@"--([a-zA-Z0-9-]+)\s*:\s*([^;]+);", RegexOptions.Compiled);
+    private static readonly Regex CommentRegex = new(@"/\*.*?\*/", RegexOptions.Singleline | RegexOptions.Compiled, RegexSafety.MatchTimeout);
+    private static readonly Regex RootBlockRegex = new(@":root\s*\{([^}]*)\}", RegexOptions.Singleline | RegexOptions.Compiled, RegexSafety.MatchTimeout);
+    private static readonly Regex VariableRegex = new(@"--([a-zA-Z0-9-]+)\s*:\s*([^;]+);", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     public static ThemeParseResult Parse(string cssText)
     {

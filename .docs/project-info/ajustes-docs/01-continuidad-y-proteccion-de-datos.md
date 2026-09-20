@@ -1,8 +1,8 @@
 # Ajustes › General — Zona de peligro: continuidad y protección de datos
 
 > **Alcance**: este documento describe, tal como está implementado hoy, todo lo relacionado con
-> proteger los datos del usuario desde Ajustes — tamaño y acceso al vault, copia de seguridad manual
-> y automática, exportar/importar `settings.json`, restablecer ajustes por defecto, y el ajuste
+> proteger los datos del usuario desde Ajustes — tamaño y acceso al vault, copia de seguridad manual,
+> restauración y copia automática, exportar/importar `settings.json`, restablecer ajustes por defecto, y el ajuste
 > "preguntar antes de borrar" que gobierna las confirmaciones de borrado en el resto de la app. Todo
 > vive en la tarjeta "Zona peligrosa" al final de **Ajustes › General**
 > (`enki/src/enki/views/settings/SettingsView.axaml:175-261`), salvo "preguntar antes de borrar", cuyo
@@ -64,6 +64,20 @@ relativa dentro del zip se añade a `VaultBackupResult.FailedEntries`. El comand
 - Cualquier otra excepción → notificación de error con `ex.Message` tal cual (sin traducir — limitación
   documentada, no un bug: el mensaje de una excepción de plataforma no traducida por tipo puede llegar
   en el idioma del sistema operativo en vez del idioma activo de Enki).
+
+## Restaurar una copia
+
+`RequestRestoreBackupCommand` pide el ZIP y una carpeta contenedora, propone dentro de ella
+`Enki-Restored-{fecha}` y muestra una confirmación antes de tocar el disco. `RestoreBackup` valida que el
+archivo solo contenga las raíces `vault/` y `app-data/`, rechaza enlaces simbólicos y comprueba con
+`Path.GetFullPath` que cada entrada del vault quede bajo el temporal de extracción (*zip slip*). El
+destino debe ser nuevo y no puede estar dentro del vault activo.
+
+La extracción completa ocurre primero en un directorio temporal hermano; solo al terminar se renombra a
+su nombre definitivo. Después la app cambia al vault restaurado y fusiona las preferencias redacted de
+`app-data/settings.json` mediante `SettingsService`, sin recuperar credenciales ni la ruta antigua. El
+vault anterior nunca se sobrescribe. Los demás JSON antiguos de `app-data/` no se extraen: desde la
+migración a persistencia por vault sus copias vigentes ya viven dentro de `vault/.tasks` y `vault/.enki`.
 
 ## Copia de seguridad automática
 

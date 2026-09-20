@@ -5600,4 +5600,16 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Sessions_Graph_AccessibleScope" xml:space="preserve">
     <value>Gesamtzahlen des zugänglichen Vaults. Gesperrte Sitzungen sind ausgeschlossen.</value>
   </data>
+  <data name="Settings_General_DangerZone_RestoreBackupButton" xml:space="preserve"><value>Sicherung wiederherstellen</value></data>
+  <data name="Settings_General_DangerZone_RestoreDialogTitle" xml:space="preserve"><value>Sicherung auswählen</value></data>
+  <data name="Settings_General_DangerZone_RestoreFolderDialogTitle" xml:space="preserve"><value>Ordner für den wiederhergestellten Vault auswählen</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedTitle" xml:space="preserve"><value>Sicherung wiederhergestellt</value></data>
+  <data name="Settings_General_DangerZone_RestoreCompletedMessage" xml:space="preserve"><value>Der wiederhergestellte Vault ist jetzt unter {0} aktiv.</value></data>
+  <data name="Settings_General_DangerZone_RestoreFailedTitle" xml:space="preserve"><value>Sicherung konnte nicht wiederhergestellt werden</value></data>
+  <data name="Settings_General_DangerZone_RestoreInvalidMessage" xml:space="preserve"><value>Die Datei ist keine gültige Enki-Sicherung oder enthält unsichere Pfade.</value></data>
+  <data name="Settings_RestoreDialog_Title" xml:space="preserve"><value>Sicherung wiederherstellen</value></data>
+  <data name="Settings_RestoreDialog_Message" xml:space="preserve"><value>Der aktive Vault wird auf eine wiederhergestellte Kopie in einem neuen Ordner umgestellt. Der aktuelle Vault wird nicht verändert. Fortfahren?</value></data>
+  <data name="Startup_Error_Title" xml:space="preserve"><value>Enki konnte nicht gestartet werden</value></data>
+  <data name="Startup_Error_Message" xml:space="preserve"><value>Der Fehler wurde protokolliert. Diagnose-Dateien befinden sich unter:&#10;{0}</value></data>
+  <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>Protokollpfad nicht verfügbar</value></data>
 </root>

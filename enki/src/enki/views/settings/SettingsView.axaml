@@ -510,17 +510,26 @@
 
                   <controls:SettingsSearchOption
                       ResourceKeys="Settings_General_DangerZone_BackupHint Settings_General_DangerZone_CreateBackupButton
+                                    Settings_General_DangerZone_RestoreBackupButton
                                     Settings_Nav_General Settings_General_DangerZone_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
 
                     <TextBlock Text="{loc:Tr Settings_General_DangerZone_BackupHint}"
                                Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    <Button Classes="pill" Command="{Binding CreateBackupCommand}" HorizontalAlignment="Left">
-                      <StackPanel Orientation="Horizontal" Spacing="8">
-                        <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="14" Height="14" />
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_CreateBackupButton, Converter={StaticResource UpperCaseConverter}}" />
-                      </StackPanel>
-                    </Button></StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="pill" Command="{Binding CreateBackupCommand}" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="14" Height="14" />
+                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_CreateBackupButton, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="pill" Command="{Binding RequestRestoreBackupCommand}" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <mi:MaterialIcon Kind="BackupRestore" Width="14" Height="14" />
+                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_RestoreBackupButton, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel></StackPanel>
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
@@ -2763,6 +2772,28 @@
       </controls:SettingsSearchOption>
       </StackPanel>
     </ScrollViewer>
+
+    <!-- ===================== Diálogo: restaurar copia de seguridad ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding PendingRestoreBackup}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="BackupRestore" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Settings_RestoreDialog_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr Settings_RestoreDialog_Message}" FontSize="14" TextWrapping="Wrap" MaxWidth="380" />
+          <TextBlock Text="{Binding PendingRestoreDestination}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" MaxWidth="380" />
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelRestoreBackupCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmRestoreBackupCommand}">
+              <TextBlock Text="{loc:Tr Settings_General_DangerZone_RestoreBackupButton, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: restablecer ajustes por defecto ===================== -->
     <controls:ModalOverlayHost IsOpen="{Binding PendingResetSettings}">
