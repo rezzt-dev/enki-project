@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using Avalonia.Controls;
@@ -38,7 +39,7 @@ public sealed class InterfaceFontUiTests
                 new PolarTaskService(directory), new ReminderService(directory), settings);
             vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(directory), new VaultSettingsService(vault),
                 vault, new VaultBackupService(vault, directory), auth, sync, notifications,
-                () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
+                (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
                 _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
             var body = new TextBlock { Text = "Dashboard" };

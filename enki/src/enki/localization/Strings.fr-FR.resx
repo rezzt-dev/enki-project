@@ -292,6 +292,24 @@
   <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve">
     <value>Toute la journée</value>
   </data>
+  <data name="CommandPalette_Action_ExportCalendarPdf" xml:space="preserve">
+    <value>Exporter le calendrier en PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportCalendarPng" xml:space="preserve">
+    <value>Exporter le calendrier en PNG</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPdf" xml:space="preserve">
+    <value>Exporter le tableau en PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPng" xml:space="preserve">
+    <value>Exporter le tableau en PNG</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePdf" xml:space="preserve">
+    <value>Exporter la note en PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePng" xml:space="preserve">
+    <value>Exporter la note en PNG</value>
+  </data>
   <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
     <value>Nouvelle note à partir d'un modèle</value>
   </data>
@@ -836,6 +854,39 @@
   </data>
   <data name="Editor_Toolbar_ToggleSidePanel_Tooltip" xml:space="preserve">
     <value>Afficher/masquer le panneau latéral</value>
+  </data>
+  <data name="Export_Error_NothingToExport" xml:space="preserve">
+    <value>Il n’y a encore rien de mis en page à exporter.</value>
+  </data>
+  <data name="Export_Error_TooLarge" xml:space="preserve">
+    <value>La vue est trop grande pour une seule image.</value>
+  </data>
+  <data name="Export_Error_ViewNotOpen" xml:space="preserve">
+    <value>Ouvre d’abord la vue que tu veux exporter.</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_one" xml:space="preserve">
+    <value>{0} carte</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_other" xml:space="preserve">
+    <value>{0} cartes</value>
+  </data>
+  <data name="Export_MenuTooltip" xml:space="preserve">
+    <value>Exporter…</value>
+  </data>
+  <data name="Export_PdfFileType" xml:space="preserve">
+    <value>Document PDF</value>
+  </data>
+  <data name="Export_PngFileType" xml:space="preserve">
+    <value>Image PNG</value>
+  </data>
+  <data name="Export_ToPdf" xml:space="preserve">
+    <value>Exporter en PDF…</value>
+  </data>
+  <data name="Export_ToPng" xml:space="preserve">
+    <value>Exporter en PNG…</value>
+  </data>
+  <data name="Export_ViewDialog_Title" xml:space="preserve">
+    <value>Exporter la vue</value>
   </data>
   <data name="Files_AllFolder" xml:space="preserve">
     <value>Tous les fichiers</value>
@@ -1809,6 +1860,9 @@
   <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
     <value>« {0} » n'existe pas dans votre coffre. Le lien est rompu.</value>
   </data>
+  <data name="Notification_OpenLink" xml:space="preserve">
+    <value>Ouvrir</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>NOTIFICATIONS</value>
   </data>
@@ -1842,6 +1896,12 @@
   <data name="Notification_ReminderDue_Title" xml:space="preserve">
     <value>Rappel : {0}</value>
   </data>
+  <data name="Notification_ReminderSnoozeElapsed_Message" xml:space="preserve">
+    <value>Le report est terminé.</value>
+  </data>
+  <data name="Notification_ReminderSnoozeElapsed_Title" xml:space="preserve">
+    <value>Rappel reporté : {0}</value>
+  </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Erreur de session</value>
   </data>
@@ -1863,11 +1923,26 @@
   <data name="Notification_Severity_Warning" xml:space="preserve">
     <value>Avertissement</value>
   </data>
+  <data name="Notification_UpdateAvailable_Message" xml:space="preserve">
+    <value>Ouvre la page de la release pour la télécharger.</value>
+  </data>
+  <data name="Notification_UpdateAvailable_Title" xml:space="preserve">
+    <value>La version {0} est disponible</value>
+  </data>
   <data name="Notification_VaultChanged_Message" xml:space="preserve">
     <value>Le dossier du coffre a été modifié avec succès.</value>
   </data>
   <data name="Notification_VaultChanged_Title" xml:space="preserve">
     <value>Coffre modifié</value>
+  </data>
+  <data name="Notification_ViewExportFailed_Title" xml:space="preserve">
+    <value>Échec de l’export</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Message" xml:space="preserve">
+    <value>Enregistrée dans {0}</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Title" xml:space="preserve">
+    <value>Vue exportée</value>
   </data>
   <data name="Notifications_ClearAllButton" xml:space="preserve">
     <value>Tout effacer</value>
@@ -2028,6 +2103,9 @@
   <data name="Reminder_Bucket_Overdue" xml:space="preserve">
     <value>EN RETARD</value>
   </data>
+  <data name="Reminder_Bucket_Snoozed" xml:space="preserve">
+    <value>Reporté</value>
+  </data>
   <data name="Reminder_Bucket_Soon" xml:space="preserve">
     <value>BIENTÔT</value>
   </data>
@@ -2048,6 +2126,51 @@
   </data>
   <data name="Reminder_InboxTooltip" xml:space="preserve">
     <value>Rappels</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_one" xml:space="preserve">
+    <value>Reporté {0} fois</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_other" xml:space="preserve">
+    <value>Reporté {0} fois</value>
+  </data>
+  <data name="Reminder_Snooze_Cancel" xml:space="preserve">
+    <value>Annuler le report</value>
+  </data>
+  <data name="Reminder_Snooze_Custom" xml:space="preserve">
+    <value>Personnalisé…</value>
+  </data>
+  <data name="Reminder_Snooze_CustomApply" xml:space="preserve">
+    <value>Reporter</value>
+  </data>
+  <data name="Reminder_Snooze_CustomMinutes_AccessibleName" xml:space="preserve">
+    <value>Minutes de report</value>
+  </data>
+  <data name="Reminder_Snooze_Evening" xml:space="preserve">
+    <value>Ce soir</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_one" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_other" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Reminder_Snooze_MenuTitle" xml:space="preserve">
+    <value>Reporter jusqu’à</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_one" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_other" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Reminder_Snooze_Tomorrow" xml:space="preserve">
+    <value>Demain</value>
+  </data>
+  <data name="Reminder_Snooze_Tooltip" xml:space="preserve">
+    <value>Reporter</value>
+  </data>
+  <data name="Reminder_SnoozedUntilFormat" xml:space="preserve">
+    <value>Reporté jusqu’à {0}</value>
   </data>
   <data name="Reminder_UndoDismiss" xml:space="preserve">
     <value>Annuler</value>
@@ -3234,6 +3357,27 @@
   <data name="Settings_Notifications_Reminders_Title" xml:space="preserve">
     <value>Rappels</value>
   </data>
+  <data name="Settings_Notifications_Snooze_Description" xml:space="preserve">
+    <value>Valeurs rapides proposées par le menu « Reporter » dans la boîte de rappels et le centre de notifications.</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Evening" xml:space="preserve">
+    <value>Heure de « Ce soir »</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Hour_Unit" xml:space="preserve">
+    <value>{0}:00</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Primary" xml:space="preserve">
+    <value>Première valeur rapide</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Secondary" xml:space="preserve">
+    <value>Deuxième valeur rapide</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Title" xml:space="preserve">
+    <value>Reporter</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Tomorrow" xml:space="preserve">
+    <value>Heure de « Demain »</value>
+  </data>
   <data name="Settings_Notifications_Sound_Description" xml:space="preserve">
     <value>Émettre un son lorsqu'une notification arrive.</value>
   </data>
@@ -3338,6 +3482,42 @@
   </data>
   <data name="Settings_Skills_Title" xml:space="preserve">
     <value>Compétences</value>
+  </data>
+  <data name="Settings_Updates_AvailableFormat" xml:space="preserve">
+    <value>La version {0} est disponible</value>
+  </data>
+  <data name="Settings_Updates_CheckNow" xml:space="preserve">
+    <value>Vérifier maintenant</value>
+  </data>
+  <data name="Settings_Updates_Checking" xml:space="preserve">
+    <value>Vérification…</value>
+  </data>
+  <data name="Settings_Updates_Description" xml:space="preserve">
+    <value>Enki ne télécharge ni n’installe rien de lui-même : il signale seulement qu’une version plus récente existe et ouvre sa page dans le navigateur.</value>
+  </data>
+  <data name="Settings_Updates_Download" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="Settings_Updates_Failed" xml:space="preserve">
+    <value>Impossible de vérifier les mises à jour. Vérifie ta connexion et réessaie.</value>
+  </data>
+  <data name="Settings_Updates_InstalledFormat" xml:space="preserve">
+    <value>Version installée : {0}</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Description" xml:space="preserve">
+    <value>Désactivé par défaut. Désactivé, Enki n’effectue aucune requête réseau de lui-même — « Vérifier maintenant » reste disponible à tout moment.</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Label" xml:space="preserve">
+    <value>Vérifier au démarrage</value>
+  </data>
+  <data name="Settings_Updates_Skip" xml:space="preserve">
+    <value>Ignorer cette version</value>
+  </data>
+  <data name="Settings_Updates_Title" xml:space="preserve">
+    <value>Mises à jour</value>
+  </data>
+  <data name="Settings_Updates_UpToDate" xml:space="preserve">
+    <value>Tu es sur la dernière version.</value>
   </data>
   <data name="Settings_ViewZoom_IncreaseDecrease" xml:space="preserve">
     <value>Augmenter ou diminuer le niveau de zoom</value>
@@ -5737,4 +5917,9 @@ Bonne rédaction.</value>
   <data name="Editor_Transclusion_ReadFailed" xml:space="preserve"><value>Impossible de lire cette note intégrée.</value></data>
   <data name="Editor_Math_Rendering" xml:space="preserve"><value>Rendu de la formule…</value></data>
   <data name="Editor_Mermaid_Rendering" xml:space="preserve"><value>Rendu du diagramme…</value></data>
+  <data name="Shell_InboxTooltip" xml:space="preserve"><value>Boîte de réception — notez une idée rapidement</value></data>
+  <data name="Settings_Notifications_Inbox_Label" xml:space="preserve"><value>Bouton boîte de réception</value></data>
+  <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Afficher le bouton de boîte de réception dans la barre de titre, pour noter une idée directement dans le coffre.</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Sélecteur de coffre</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Afficher la ligne de changement de coffre au-dessus des sections de la barre latérale. Masquée, la palette de commandes change toujours de coffre.</value></data>
 </root>

@@ -414,6 +414,60 @@ esta familia que puede faltar en una máquina concreta.
 - [ ] Exportar a HTML esa nota: las fórmulas salen incrustadas como imagen y se ven con el archivo abierto
       **sin conexión**; los diagramas salen como bloque de código.
 
+## 8.6 Aplazar recordatorios (T5)
+
+Casi todo el comportamiento está cubierto por tests; lo que queda aquí es lo que solo se ve con la app
+delante y con el reloj corriendo de verdad.
+
+- [ ] "Aplazar" aparece en la fila de la bandeja de recordatorios y en la del centro de notificaciones de
+      un aviso de vencimiento, y **no** en un aviso que no nace de un vencimiento (un error de sync).
+- [ ] Aplazar 10 min saca el aviso de "Vencidas", lo deja al final de la lista atenuado y con "Aplazado
+      hasta HH:MM"; el contador de "Aplazado N veces" aparece a partir del segundo aplazamiento.
+- [ ] Pasados los 10 min reales, el aviso vuelve a sonar y el elemento recupera su cubo original.
+- [ ] Aplazar una tarjeta Kanban **no** cambia su fecha límite en el tablero ni en el Calendario.
+- [ ] Aplazar una ocurrencia de un recordatorio recurrente no desplaza las siguientes.
+- [ ] Con "No molestar" activo y un aplazamiento que cae dentro de la franja, el aviso llega al terminar
+      la franja, no dentro.
+- [ ] Cerrar y reabrir Enki conserva los aplazamientos pendientes.
+- [ ] Completar o borrar el elemento de origen hace desaparecer su aplazamiento sin reavisar.
+- [ ] Se puede aplazar solo con teclado (Tab hasta el botón, Enter, flechas por el menú) y el lector de
+      pantalla anuncia el botón "Aplazar" y la opción enfocada.
+- [ ] Cambiar los valores rápidos en Ajustes › Notificaciones cambia las etiquetas del menú ("25 min",
+      "2 h") sin reiniciar.
+
+## 8.7 Exportar vistas a imagen y PDF (T8)
+
+Esta sección es **comprobación visual**: los tests garantizan la estructura del PDF y que la región
+exportable existe y está maquetada, pero que la imagen se vea bien solo se ve mirándola.
+
+- [ ] Kanban con más columnas de las que caben en pantalla: el PNG incluye **todas**, no solo las visibles,
+      y las tarjetas se leen sin recortes.
+- [ ] Lo mismo con el tablero en disposición horizontal (Ajustes › Apariencia).
+- [ ] Calendario en Mes, Semana, Día y Agenda: la imagen lleva la cabecera de días de la semana y **no**
+      lleva la barra de navegación (◀ ▶ Hoy, selector de vista).
+- [ ] El PDF abre correctamente en el visor del sistema, en Evince/Preview/Adobe y en un navegador.
+- [ ] Una nota larga da un PDF de varias páginas A4, con encabezados, listas, citas y bloques de código
+      reconocibles.
+- [ ] En tema claro y en tema oscuro, el fondo de la lámina y el contenido son coherentes entre sí.
+- [ ] Con el idioma cambiado, la cabecera y el nombre propuesto respetan el idioma y el formato de fecha.
+- [ ] Cancelar el diálogo de guardado no deja ningún archivo ni ningún aviso.
+- [ ] Guardar en una carpeta sin permiso de escritura muestra el motivo y no deja un archivo a medias.
+- [ ] Tras exportar se abre el explorador del sistema con el archivo seleccionado.
+
+## 8.8 Aviso de versión nueva (T9)
+
+- [ ] Recién instalado, con "Buscar al iniciar" apagado (lo de fábrica): arrancar Enki **no** genera
+      ninguna petición de red (comprobar con un cortafuegos o un monitor de red).
+- [ ] "Buscar ahora" con conexión encuentra la última release y muestra versión, notas, "Descargar" y
+      "Omitir esta versión".
+- [ ] "Descargar" abre la página de la release en el navegador y **no** descarga ningún archivo.
+- [ ] "Omitir esta versión" hace desaparecer el bloque; reiniciar con "Buscar al iniciar" activo no vuelve
+      a avisar de esa versión.
+- [ ] Sin conexión, "Buscar ahora" muestra el mensaje de fallo; arrancar con "Buscar al iniciar" activo y
+      sin conexión **no** muestra nada y no retrasa el arranque.
+- [ ] Con "Buscar al iniciar" activo, dos arranques seguidos en menos de 24 h generan una sola petición.
+- [ ] El aviso de la campana lleva el botón "Abrir" y abre la misma página.
+
 ---
 
 ## 9. Criterio de salida antes de `0.2.0`

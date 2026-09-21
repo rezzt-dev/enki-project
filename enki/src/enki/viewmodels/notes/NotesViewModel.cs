@@ -12,6 +12,7 @@ using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
+using enki.Services.Export;
 
 namespace enki.ViewModels;
 
@@ -545,6 +546,35 @@ public sealed partial class NotesViewModel : ViewModelBase
             : null;
         await NoteExportService.ExportHtmlAsync(note, content, includeTags: true, _vaultService.VaultPath,
             topLevel, NotifyCallback);
+    }
+
+    // ===================== Exportar a imagen y a PDF (T8) =====================
+    // Mismo flujo que la exportación a HTML de aquí arriba (contenido en vivo si la nota está abierta,
+    // diálogo del sistema, aviso por NotifyCallback); lo que cambia es que la hoja la compone
+    // Services.Export.NotePageComposer en vez de NoteExportRenderer.
+
+    /// <summary>"Exportar como PNG…" desde el menú contextual de una tarjeta de nota.</summary>
+    [RelayCommand]
+    private Task ExportNoteAsPng(NoteCardViewModel card) => ExportNoteAsImageAsync(card.Note, ExportFormat.Png);
+
+    /// <summary>"Exportar como PDF…" desde el menú contextual de una tarjeta de nota.</summary>
+    [RelayCommand]
+    private Task ExportNoteAsPdf(NoteCardViewModel card) => ExportNoteAsImageAsync(card.Note, ExportFormat.Pdf);
+
+    /// <summary>Exporta la nota activa; no hace nada si no hay ninguna abierta. Es la entrada desde la
+    /// paleta de comandos, donde no hay tarjeta sobre la que hacer clic derecho.</summary>
+    public Task ExportActiveNoteAsync(ExportFormat format) =>
+        ActiveEditor?.Note is { } note ? ExportNoteAsImageAsync(note, format) : Task.CompletedTask;
+
+    private async Task ExportNoteAsImageAsync(NoteFile note, ExportFormat format)
+    {
+        if (!TryReadContentForExport(note, out var content)) return;
+
+        var topLevel = App.MainWindowRef is not null
+            ? Avalonia.Controls.TopLevel.GetTopLevel(App.MainWindowRef)
+            : null;
+        await ViewExportService.ExportNoteAsync(note.Title, content, note.Title, format,
+            VisualSnapshotRenderer.ScaleHighResolution, topLevel, NotifyCallback);
     }
 
     /// <summary><see cref="NotificationService.Push"/> como callback suelto (o null en tests sin servicio)

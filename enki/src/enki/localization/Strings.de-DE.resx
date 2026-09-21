@@ -292,6 +292,24 @@
   <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve">
     <value>Ganztägig</value>
   </data>
+  <data name="CommandPalette_Action_ExportCalendarPdf" xml:space="preserve">
+    <value>Kalender als PDF exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportCalendarPng" xml:space="preserve">
+    <value>Kalender als PNG exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPdf" xml:space="preserve">
+    <value>Board als PDF exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPng" xml:space="preserve">
+    <value>Board als PNG exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePdf" xml:space="preserve">
+    <value>Notiz als PDF exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePng" xml:space="preserve">
+    <value>Notiz als PNG exportieren</value>
+  </data>
   <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
     <value>Neue Notiz aus Vorlage</value>
   </data>
@@ -836,6 +854,39 @@
   </data>
   <data name="Editor_Toolbar_ToggleSidePanel_Tooltip" xml:space="preserve">
     <value>Seitenpanel ein-/ausblenden</value>
+  </data>
+  <data name="Export_Error_NothingToExport" xml:space="preserve">
+    <value>Es ist noch nichts zum Exportieren angeordnet.</value>
+  </data>
+  <data name="Export_Error_TooLarge" xml:space="preserve">
+    <value>Die Ansicht ist zu groß für ein einzelnes Bild.</value>
+  </data>
+  <data name="Export_Error_ViewNotOpen" xml:space="preserve">
+    <value>Öffne zuerst die Ansicht, die du exportieren möchtest.</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_one" xml:space="preserve">
+    <value>{0} Karte</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_other" xml:space="preserve">
+    <value>{0} Karten</value>
+  </data>
+  <data name="Export_MenuTooltip" xml:space="preserve">
+    <value>Exportieren…</value>
+  </data>
+  <data name="Export_PdfFileType" xml:space="preserve">
+    <value>PDF-Dokument</value>
+  </data>
+  <data name="Export_PngFileType" xml:space="preserve">
+    <value>PNG-Bild</value>
+  </data>
+  <data name="Export_ToPdf" xml:space="preserve">
+    <value>Als PDF exportieren…</value>
+  </data>
+  <data name="Export_ToPng" xml:space="preserve">
+    <value>Als PNG exportieren…</value>
+  </data>
+  <data name="Export_ViewDialog_Title" xml:space="preserve">
+    <value>Ansicht exportieren</value>
   </data>
   <data name="Files_AllFolder" xml:space="preserve">
     <value>Alle Dateien</value>
@@ -1809,6 +1860,9 @@
   <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
     <value>„{0}“ existiert nicht in deinem Vault. Der Link ist defekt.</value>
   </data>
+  <data name="Notification_OpenLink" xml:space="preserve">
+    <value>Öffnen</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>BENACHRICHTIGUNGEN</value>
   </data>
@@ -1842,6 +1896,12 @@
   <data name="Notification_ReminderDue_Title" xml:space="preserve">
     <value>Erinnerung: {0}</value>
   </data>
+  <data name="Notification_ReminderSnoozeElapsed_Message" xml:space="preserve">
+    <value>Die Zurückstellung ist abgelaufen.</value>
+  </data>
+  <data name="Notification_ReminderSnoozeElapsed_Title" xml:space="preserve">
+    <value>Zurückgestellte Erinnerung: {0}</value>
+  </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Sitzungsfehler</value>
   </data>
@@ -1863,11 +1923,26 @@
   <data name="Notification_Severity_Warning" xml:space="preserve">
     <value>Warnung</value>
   </data>
+  <data name="Notification_UpdateAvailable_Message" xml:space="preserve">
+    <value>Öffne die Release-Seite zum Herunterladen.</value>
+  </data>
+  <data name="Notification_UpdateAvailable_Title" xml:space="preserve">
+    <value>Version {0} ist verfügbar</value>
+  </data>
   <data name="Notification_VaultChanged_Message" xml:space="preserve">
     <value>Der Tresor-Ordner wurde erfolgreich geändert.</value>
   </data>
   <data name="Notification_VaultChanged_Title" xml:space="preserve">
     <value>Tresor geändert</value>
+  </data>
+  <data name="Notification_ViewExportFailed_Title" xml:space="preserve">
+    <value>Export fehlgeschlagen</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Message" xml:space="preserve">
+    <value>Gespeichert unter {0}</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Title" xml:space="preserve">
+    <value>Ansicht exportiert</value>
   </data>
   <data name="Notifications_ClearAllButton" xml:space="preserve">
     <value>Alle löschen</value>
@@ -2028,6 +2103,9 @@
   <data name="Reminder_Bucket_Overdue" xml:space="preserve">
     <value>ÜBERFÄLLIG</value>
   </data>
+  <data name="Reminder_Bucket_Snoozed" xml:space="preserve">
+    <value>Zurückgestellt</value>
+  </data>
   <data name="Reminder_Bucket_Soon" xml:space="preserve">
     <value>BALD</value>
   </data>
@@ -2048,6 +2126,51 @@
   </data>
   <data name="Reminder_InboxTooltip" xml:space="preserve">
     <value>Erinnerungen</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_one" xml:space="preserve">
+    <value>{0}-mal zurückgestellt</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_other" xml:space="preserve">
+    <value>{0}-mal zurückgestellt</value>
+  </data>
+  <data name="Reminder_Snooze_Cancel" xml:space="preserve">
+    <value>Zurückstellung aufheben</value>
+  </data>
+  <data name="Reminder_Snooze_Custom" xml:space="preserve">
+    <value>Benutzerdefiniert…</value>
+  </data>
+  <data name="Reminder_Snooze_CustomApply" xml:space="preserve">
+    <value>Zurückstellen</value>
+  </data>
+  <data name="Reminder_Snooze_CustomMinutes_AccessibleName" xml:space="preserve">
+    <value>Minuten zum Zurückstellen</value>
+  </data>
+  <data name="Reminder_Snooze_Evening" xml:space="preserve">
+    <value>Heute Abend</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_one" xml:space="preserve">
+    <value>{0} Std.</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_other" xml:space="preserve">
+    <value>{0} Std.</value>
+  </data>
+  <data name="Reminder_Snooze_MenuTitle" xml:space="preserve">
+    <value>Zurückstellen bis</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_one" xml:space="preserve">
+    <value>{0} Min.</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_other" xml:space="preserve">
+    <value>{0} Min.</value>
+  </data>
+  <data name="Reminder_Snooze_Tomorrow" xml:space="preserve">
+    <value>Morgen</value>
+  </data>
+  <data name="Reminder_Snooze_Tooltip" xml:space="preserve">
+    <value>Zurückstellen</value>
+  </data>
+  <data name="Reminder_SnoozedUntilFormat" xml:space="preserve">
+    <value>Zurückgestellt bis {0}</value>
   </data>
   <data name="Reminder_UndoDismiss" xml:space="preserve">
     <value>Rückgängig</value>
@@ -3234,6 +3357,27 @@
   <data name="Settings_Notifications_Reminders_Title" xml:space="preserve">
     <value>Erinnerungen</value>
   </data>
+  <data name="Settings_Notifications_Snooze_Description" xml:space="preserve">
+    <value>Schnellwerte des Menüs „Zurückstellen“ im Erinnerungs-Posteingang und im Benachrichtigungscenter.</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Evening" xml:space="preserve">
+    <value>Uhrzeit für „Heute Abend“</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Hour_Unit" xml:space="preserve">
+    <value>{0}:00</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Primary" xml:space="preserve">
+    <value>Erster Schnellwert</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Secondary" xml:space="preserve">
+    <value>Zweiter Schnellwert</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Title" xml:space="preserve">
+    <value>Zurückstellen</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Tomorrow" xml:space="preserve">
+    <value>Uhrzeit für „Morgen“</value>
+  </data>
   <data name="Settings_Notifications_Sound_Description" xml:space="preserve">
     <value>Bei eingehenden Benachrichtigungen einen Sound abspielen.</value>
   </data>
@@ -3338,6 +3482,42 @@
   </data>
   <data name="Settings_Skills_Title" xml:space="preserve">
     <value>Skills</value>
+  </data>
+  <data name="Settings_Updates_AvailableFormat" xml:space="preserve">
+    <value>Version {0} ist verfügbar</value>
+  </data>
+  <data name="Settings_Updates_CheckNow" xml:space="preserve">
+    <value>Jetzt suchen</value>
+  </data>
+  <data name="Settings_Updates_Checking" xml:space="preserve">
+    <value>Wird gesucht…</value>
+  </data>
+  <data name="Settings_Updates_Description" xml:space="preserve">
+    <value>Enki lädt und installiert nichts von selbst: Es weist nur darauf hin, dass eine neuere Version existiert, und öffnet deren Seite im Browser.</value>
+  </data>
+  <data name="Settings_Updates_Download" xml:space="preserve">
+    <value>Herunterladen</value>
+  </data>
+  <data name="Settings_Updates_Failed" xml:space="preserve">
+    <value>Suche nach Aktualisierungen fehlgeschlagen. Prüfe die Verbindung und versuche es erneut.</value>
+  </data>
+  <data name="Settings_Updates_InstalledFormat" xml:space="preserve">
+    <value>Installierte Version: {0}</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Description" xml:space="preserve">
+    <value>Standardmäßig aus. Ist es aus, stellt Enki von sich aus keine Netzwerkanfragen — „Jetzt suchen“ bleibt jederzeit verfügbar.</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Label" xml:space="preserve">
+    <value>Beim Start suchen</value>
+  </data>
+  <data name="Settings_Updates_Skip" xml:space="preserve">
+    <value>Diese Version überspringen</value>
+  </data>
+  <data name="Settings_Updates_Title" xml:space="preserve">
+    <value>Aktualisierungen</value>
+  </data>
+  <data name="Settings_Updates_UpToDate" xml:space="preserve">
+    <value>Du hast die neueste Version.</value>
   </data>
   <data name="Settings_ViewZoom_IncreaseDecrease" xml:space="preserve">
     <value>Zoomstufe erhöhen oder verringern</value>
@@ -5737,4 +5917,9 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Editor_Transclusion_ReadFailed" xml:space="preserve"><value>Diese eingebettete Notiz konnte nicht gelesen werden.</value></data>
   <data name="Editor_Math_Rendering" xml:space="preserve"><value>Formel wird gerendert…</value></data>
   <data name="Editor_Mermaid_Rendering" xml:space="preserve"><value>Diagramm wird gerendert…</value></data>
+  <data name="Shell_InboxTooltip" xml:space="preserve"><value>Posteingang — eine Idee schnell notieren</value></data>
+  <data name="Settings_Notifications_Inbox_Label" xml:space="preserve"><value>Posteingang-Schaltfläche</value></data>
+  <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Die Posteingang-Schaltfläche in der Titelleiste anzeigen, um eine Idee direkt im Vault zu notieren.</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Vault-Auswahl</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Die Zeile zum Wechseln des Vaults über den Abschnitten der Seitenleiste anzeigen. Ausgeblendet wechselt die Befehlspalette weiterhin den Vault.</value></data>
 </root>

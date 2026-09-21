@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using Avalonia;
@@ -51,7 +52,7 @@ public class DashboardGridEditorUiTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
+            (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         // Igual que el usuario: primero una plantilla, y desde ella a personalizado.
         vm.SelectDashboardLayoutStyleCommand.Execute(layoutStyle);

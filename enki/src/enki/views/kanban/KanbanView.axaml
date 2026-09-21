@@ -851,7 +851,7 @@
            línea de estado, y de las cuatro solo dos pedían alguna acción ("alta prioridad" y "vencidas"):
            esas dos son ahora filtros de un clic en la barra de herramientas, en vez de un número que el
            usuario tenía que traducir a mano a un repaso columna por columna. -->
-      <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,22">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,22">
         <StackPanel Grid.Column="0" Spacing="6" MaxWidth="620" HorizontalAlignment="Left" VerticalAlignment="Center">
           <TextBlock Text="{loc:Tr Kanban_Board_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
           <TextBlock Text="{Binding BoardName, Converter={StaticResource UpperCaseSpacedBulletConverter}}" Classes="page-title" />
@@ -869,7 +869,29 @@
                        ToolTip.Tip="{Binding TaskManagementLockedHint}" />
         </StackPanel>
 
-        <Button Grid.Column="2" Classes="pill" Height="36" Command="{Binding AddColumnCommand}" VerticalAlignment="Center"
+        <!-- Exportar el tablero a PNG/PDF (T8). Mismo patrón de botón de icono con MenuFlyout que el de
+             "más acciones" del visor de archivos, en vez de dos botones sueltos en la cabecera. -->
+        <Button Grid.Column="2" Classes="icon-btn" Width="36" Height="36" VerticalAlignment="Center" Margin="0,0,8,0"
+                IsVisible="{Binding DisplayMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Board}"
+                ToolTip.Tip="{loc:Tr Export_MenuTooltip}" AutomationProperties.Name="{loc:Tr Export_MenuTooltip}">
+          <mi:MaterialIcon Kind="TrayArrowDown" Width="16" Height="16" />
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight">
+              <MenuItem Header="{loc:Tr Export_ToPng}" Command="{Binding ExportBoardAsPngCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="ImageOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Export_ToPdf}" Command="{Binding ExportBoardAsPdfCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+
+        <Button Grid.Column="3" Classes="pill" Height="36" Command="{Binding AddColumnCommand}" VerticalAlignment="Center"
                 ToolTip.Tip="{loc:Tr Kanban_Board_AddColumnTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Board_AddColumnTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
@@ -1111,7 +1133,11 @@
       <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Disabled"
                     HorizontalScrollBarVisibility="{Binding BoardHorizontalScrollBarVisibility}"
                     IsVisible="{Binding BoardOrientation, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Vertical}">
-        <ItemsControl ItemsSource="{Binding Columns}" Margin="-8,0" HorizontalAlignment="Stretch">
+        <!-- x:Name: región exportable a PNG/PDF (T8). Se rasteriza el contenido del ScrollViewer, no el
+             ScrollViewer, porque el contenido está dispuesto a su ancho completo y es el visor quien lo
+             recorta — así la imagen sale con todas las columnas aunque no quepan en pantalla. Ver
+             Services.Export.ViewExportService.FindExportRoot. -->
+        <ItemsControl x:Name="KanbanExportRootVertical" ItemsSource="{Binding Columns}" Margin="-8,0" HorizontalAlignment="Stretch">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <UniformGrid Rows="1" />
@@ -1124,7 +1150,7 @@
            cada una con su propia scrollbar horizontal para las tarjetas. -->
       <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                     IsVisible="{Binding BoardOrientation, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Horizontal}">
-        <ItemsControl ItemsSource="{Binding Columns}" ItemTemplate="{StaticResource KanbanColumnTemplateHorizontal}">
+        <ItemsControl x:Name="KanbanExportRootHorizontal" ItemsSource="{Binding Columns}" ItemTemplate="{StaticResource KanbanColumnTemplateHorizontal}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <StackPanel Spacing="16" />

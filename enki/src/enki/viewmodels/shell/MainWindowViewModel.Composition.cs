@@ -77,6 +77,11 @@ public sealed partial class MainWindowViewModel
         // Fase 10 (docs/analisis-proyecto/roadmap.md): una tarjeta borrada para siempre no debe dejar un
         // descarte de recordatorio huérfano apuntando a un id que ya no existe.
         _kanbanService.CardPermanentlyDeleted += _dismissedReminderService.RemoveForCard;
+        // T5: mismo razonamiento para los aplazamientos — un aplazamiento huérfano volvería a avisar de
+        // una tarjeta que ya no existe. Ver también CheckDueSnoozes, que cubre el resto de los motivos
+        // por los que un origen deja de existir (completado, recordatorio borrado, otro vault…).
+        _snoozedReminderService = new SnoozedReminderService(_vaultService);
+        _kanbanService.CardPermanentlyDeleted += _snoozedReminderService.Cancel;
         _polarAuthService = new PolarAuthService(_settingsService);
         // currentUserIdProvider stamps which Polar account was linked at the moment each row first became
         // dirty, so PolarSyncService can later refuse to push it under a different account
@@ -129,6 +134,8 @@ public sealed partial class MainWindowViewModel
         _useCustomTitleBar = _settingsService.Settings.UseCustomTitleBar;
         _notificationsPanelEnabled = _settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
+        _inboxPanelEnabled = _settingsService.Settings.InboxPanelEnabled;
+        _vaultSwitcherEnabled = _settingsService.Settings.VaultSwitcherEnabled;
         _notificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
         _remindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
         _calendarPanelEnabled = _settingsService.Settings.CalendarPanelEnabled;
@@ -147,8 +154,9 @@ public sealed partial class MainWindowViewModel
         // Always live (not gated behind vault readiness): the kanban board and the notification log are
         // both independent of the vault folder, and the two title-bar buttons stay visible even on the
         // vault-setup screen.
-        NotificationCenter = new NotificationCenterViewModel(_notificationService, _settingsService);
-        ReminderInbox = new ReminderInboxViewModel(_kanbanService, _reminderService, _settingsService, _dismissedReminderService, OpenKanbanCard, OpenReminder);
+        NotificationCenter = new NotificationCenterViewModel(_notificationService, _settingsService,
+            snoozedReminderService: _snoozedReminderService);
+        ReminderInbox = new ReminderInboxViewModel(_kanbanService, _reminderService, _settingsService, _dismissedReminderService, _snoozedReminderService, OpenKanbanCard, OpenReminder);
         ReminderInbox.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ReminderInboxViewModel.OverdueCount)) UpdateCalendarBadge();
@@ -202,6 +210,12 @@ public sealed partial class MainWindowViewModel
         _autoBackupTimer.Tick += (_, _) => _vaultBackupService.RunScheduledBackupIfDue(_settingsService);
         _autoBackupTimer.Start();
         _vaultBackupService.RunScheduledBackupIfDue(_settingsService);
+
+        // Aviso de versión nueva (T9). No bloquea el arranque —se lanza y se olvida— y, con el ajuste
+        // apagado (lo de fábrica), ni siquiera construye el cliente HTTP: CheckOnStartupAsync sale antes
+        // de tocar la red. Ver CheckForUpdatesOnStartup.
+        _updateCheckService = new UpdateCheckService(_settingsService);
+        _ = CheckForUpdatesOnStartupAsync();
 
         // Same "independent of vault readiness" reasoning as the two panels above — linking to Polar
         // and its background sync have nothing to do with which vault folder is open.
@@ -322,7 +336,17 @@ public sealed partial class MainWindowViewModel
     }
 
     /// <summary>Registra o vuelve a registrar el gesto remapeable. Cualquier fallo queda convertido en un
-    /// aviso y nunca interrumpe el arranque; bandeja, paleta y atajo local permanecen disponibles.</summary>
+    /// aviso y nunca interrumpe el arranque; bandeja, paleta y atajo local permanecen disponibles.
+    ///
+    /// <para>Una limitación del escritorio no se notifica: bajo Wayland ningún cliente puede reservar
+    /// teclas globales (<see cref="GlobalHotkeyStatus.Unreliable"/>) y en una plataforma sin backend
+    /// tampoco (<see cref="GlobalHotkeyStatus.Unsupported"/>). No es algo que el usuario pueda arreglar ni
+    /// cambia entre arranques, así que queda en el log y la captura rápida sigue ofreciéndose por bandeja,
+    /// paleta y atajo local. Solo se avisa de lo accionable —combinación ya ocupada u otro fallo— y aun eso
+    /// una sola vez por gesto y motivo: la firma del último aviso vive en
+    /// <c>AppSettings.QuickCaptureHotkeyWarningSignature</c>, así que cambiar el atajo en Ajustes › Atajos,
+    /// o que el motivo pase a ser otro, sí vuelve a avisar.</para>
+    /// </summary>
     private void ApplyQuickCaptureHotkey(bool notifyOnFailure)
     {
         var gesture = ShortcutRegistry.GetGesture(ShortcutIds.QuickCapture);
@@ -330,7 +354,23 @@ public sealed partial class MainWindowViewModel
         if (string.Equals(_appliedQuickCaptureGesture, serializedGesture, StringComparison.Ordinal)) return;
         _appliedQuickCaptureGesture = serializedGesture;
         var result = _globalHotkeyService.Apply(gesture, OpenQuickCapture);
-        if (!notifyOnFailure || result.Status == GlobalHotkeyStatus.Registered) return;
+
+        var notifiable = result.Status is GlobalHotkeyStatus.Conflict or GlobalHotkeyStatus.Failed;
+        if (!notifiable && result.Status != GlobalHotkeyStatus.Registered)
+            LogService.Warning(
+                $"Atajo global no disponible en este escritorio ({result.Status}): {serializedGesture}");
+
+        var settings = _settingsService.Settings;
+        var signature = notifiable ? $"{serializedGesture}|{result.Status}" : null;
+        var alreadyWarned = string.Equals(settings.QuickCaptureHotkeyWarningSignature, signature,
+            StringComparison.Ordinal);
+        if (!alreadyWarned)
+        {
+            settings.QuickCaptureHotkeyWarningSignature = signature;
+            _settingsService.Save();
+        }
+
+        if (!notifyOnFailure || signature is null || alreadyWarned) return;
         _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Notification_QuickCaptureHotkeyUnavailable_Title"),
             result.Reason ?? LocalizedTextFormatter.Format("QuickCapture_Hotkey_Failed"),
@@ -484,7 +524,8 @@ public sealed partial class MainWindowViewModel
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnKanbanBoardOrientationChanged,
-            OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService);
+            OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService,
+            OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

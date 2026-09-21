@@ -278,6 +278,54 @@ public class SettingsViewModelTests : IDisposable
         Assert.False(notified);
     }
 
+    /// <summary>Los dos interruptores nuevos llegan como parámetros opcionales al final del constructor,
+    /// así que el riesgo real es que nadie los conecte: se comprueba que cada uno persiste y avisa.</summary>
+    [Fact]
+    public void OnInboxPanelEnabledChanged_PersistsAndInvokesCallback()
+    {
+        var settingsService = new SettingsService(_storageDirectory);
+        var vault = new VaultService(settingsService);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        var vaultSettingsService = new VaultSettingsService(vault);
+        var authService = new PolarAuthService(settingsService);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        bool? notified = null;
+
+        var vm = new SettingsViewModel(
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            null, v => notified = v);
+
+        Assert.True(vm.InboxPanelEnabled);
+        vm.InboxPanelEnabled = false;
+
+        Assert.False(notified);
+        Assert.False(settingsService.Settings.InboxPanelEnabled);
+    }
+
+    [Fact]
+    public void OnVaultSwitcherEnabledChanged_PersistsAndInvokesCallback()
+    {
+        var settingsService = new SettingsService(_storageDirectory);
+        var vault = new VaultService(settingsService);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        var vaultSettingsService = new VaultSettingsService(vault);
+        var authService = new PolarAuthService(settingsService);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        bool? notified = null;
+
+        var vm = new SettingsViewModel(
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            null, null, v => notified = v);
+
+        Assert.True(vm.VaultSwitcherEnabled);
+        vm.VaultSwitcherEnabled = false;
+
+        Assert.False(notified);
+        Assert.False(settingsService.Settings.VaultSwitcherEnabled);
+    }
+
     [Fact]
     public void EditorFontSize_UpdatesEditorPreferences_ImmediatelyEvenBeforeDebouncedSave()
     {

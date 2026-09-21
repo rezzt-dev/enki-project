@@ -65,6 +65,8 @@ public sealed partial class SettingsViewModel
         _polarShowTaskTags = _settingsService.Settings.PolarShowTaskTags;
         _notificationsPanelEnabled = _settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
+        _inboxPanelEnabled = _settingsService.Settings.InboxPanelEnabled;
+        _vaultSwitcherEnabled = _settingsService.Settings.VaultSwitcherEnabled;
         _showDesktopToasts = _settingsService.Settings.ShowDesktopToasts;
         _muteInfoNotifications = _settingsService.Settings.MuteInfoNotifications;
         _muteSuccessNotifications = _settingsService.Settings.MuteSuccessNotifications;
@@ -161,6 +163,8 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(PolarShowTaskTags));
         OnPropertyChanged(nameof(NotificationsPanelEnabled));
         OnPropertyChanged(nameof(RemindersPanelEnabled));
+        OnPropertyChanged(nameof(InboxPanelEnabled));
+        OnPropertyChanged(nameof(VaultSwitcherEnabled));
         OnPropertyChanged(nameof(ShowDesktopToasts));
         OnPropertyChanged(nameof(MuteInfoNotifications));
         OnPropertyChanged(nameof(MuteSuccessNotifications));

@@ -32,6 +32,11 @@ public sealed class AppSettings
         EditorTabSize = Clamp(EditorTabSize, 2, 8, 4);
         ReminderSoonWindowDays = Clamp(ReminderSoonWindowDays, 1, 30, 7);
         NotificationSoundVolume = Clamp(NotificationSoundVolume, 0, 100, 70);
+        SnoozePrimaryMinutes = Clamp(SnoozePrimaryMinutes, Services.SnoozeSchedule.MinMinutes, Services.SnoozeSchedule.MaxMinutes, 10);
+        SnoozeSecondaryMinutes = Clamp(SnoozeSecondaryMinutes, Services.SnoozeSchedule.MinMinutes, Services.SnoozeSchedule.MaxMinutes, 60);
+        SnoozeCustomMinutes = Clamp(SnoozeCustomMinutes, Services.SnoozeSchedule.MinMinutes, Services.SnoozeSchedule.MaxMinutes, 30);
+        SnoozeEveningHour = Clamp(SnoozeEveningHour, 0, 23, 18);
+        SnoozeTomorrowHour = Clamp(SnoozeTomorrowHour, 0, 23, 9);
         AutoBackupIntervalDays = Clamp(AutoBackupIntervalDays, 1, 30, 1);
         AutoBackupRetentionCount = Clamp(AutoBackupRetentionCount, 1, 30, 5);
 
@@ -96,6 +101,12 @@ public sealed class AppSettings
     public bool MinimizeToTray { get; set; }
 
     public bool SidebarExpanded { get; set; } = true;
+
+    /// <summary>Muestra/oculta la fila "Cambiar de vault" entre la cabecera de marca y la navegación
+    /// (T4, .docs/project-info/multi-vault-en-caliente.md). Quien trabaja siempre sobre el mismo vault no
+    /// necesita el selector ocupando una fila permanente del raíl; apagarlo no descarta los recientes,
+    /// solo esconde el acceso, y la paleta de comandos sigue siendo la vía para cambiar de vault.</summary>
+    public bool VaultSwitcherEnabled { get; set; } = true;
 
     /// <summary>BCP-47 code of the UI language the user picked ("es-ES", "en-US", "en-GB", "de-DE",
     /// "fr-FR", "es-419") — see docs/agent-docs/internacionalizacion-i18n.md §2.1. Null/empty means "not
@@ -179,8 +190,14 @@ public sealed class AppSettings
     /// <summary>Shows/hides the bell (system event log) button in the title bar entirely.</summary>
     public bool NotificationsPanelEnabled { get; set; } = true;
 
-    /// <summary>Shows/hides the inbox (due-date reminders) button in the title bar entirely.</summary>
+    /// <summary>Shows/hides the reminders (due-date) button in the title bar entirely.</summary>
     public bool RemindersPanelEnabled { get; set; } = true;
+
+    /// <summary>Shows/hides the inbox (captura rápida) button in the title bar entirely — el botón que
+    /// apunta una idea suelta sin salir de donde estés. Hermano de
+    /// <see cref="RemindersPanelEnabled"/>/<see cref="NotificationsPanelEnabled"/>: los tres botones de
+    /// contenido de la barra de título se ocultan por separado desde Ajustes › Notificaciones.</summary>
+    public bool InboxPanelEnabled { get; set; } = true;
 
     /// <summary>Whether a new notification push also raises an OS-style toast (see
     /// <c>enki.Services.ToastService</c>), on top of the bell badge.</summary>
@@ -194,6 +211,45 @@ public sealed class AppSettings
     /// <summary>How many days ahead a kanban card's due date counts as "próxima a vencer" in the
     /// reminder inbox — see <c>ReminderInboxViewModel.Reload</c>.</summary>
     public int ReminderSoonWindowDays { get; set; } = 7;
+
+    // ===================== Aplazar recordatorios (T5) =====================
+    // Valores rápidos del menú "Aplazar" de la bandeja de recordatorios y del centro de notificaciones.
+    // Ver Services.SnoozeSchedule, que es quien los convierte en un instante concreto (y quien los acota
+    // por su cuenta, para que un valor imposible degrade al de fábrica en vez de romper el aplazamiento).
+
+    /// <summary>Minutos de la primera opción rápida de "Aplazar" — "10 min" de fábrica.</summary>
+    public int SnoozePrimaryMinutes { get; set; } = 10;
+
+    /// <summary>Minutos de la segunda opción rápida de "Aplazar" — "1 h" de fábrica.</summary>
+    public int SnoozeSecondaryMinutes { get; set; } = 60;
+
+    /// <summary>Hora local (0–23) de la opción "Esta tarde".</summary>
+    public int SnoozeEveningHour { get; set; } = 18;
+
+    /// <summary>Hora local (0–23) de la opción "Mañana".</summary>
+    public int SnoozeTomorrowHour { get; set; } = 9;
+
+    /// <summary>Último valor usado en "Personalizado…", para que el control aparezca donde el usuario lo
+    /// dejó en vez de volver siempre al valor de fábrica.</summary>
+    public int SnoozeCustomMinutes { get; set; } = 30;
+
+    // ===================== Aviso de versión nueva (T9) =====================
+    // Ver Services.UpdateCheckService. La comprobación es una sola petición GET anónima a la API pública
+    // de GitHub; todo lo que la gobierna está aquí y nada de ello viaja a ningún sitio.
+
+    /// <summary>Si Enki comprueba al arrancar si hay una release más reciente. <b>Desactivado de
+    /// fábrica</b> (§9 del documento de funcionalidades dejaba abierto el valor por defecto): con esto
+    /// apagado la app no toca la red por su cuenta jamás, que es lo coherente con el resto del producto.
+    /// El botón "Buscar ahora" de Ajustes sigue disponible siempre.</summary>
+    public bool CheckUpdatesOnStartup { get; set; }
+
+    /// <summary>Última comprobación, automática o manual — hace de límite de "una cada 24 h" para la
+    /// automática.</summary>
+    public DateTime? LastUpdateCheckUtc { get; set; }
+
+    /// <summary>Versión que el usuario pidió omitir con "Omitir esta versión". Solo silencia esa y las
+    /// anteriores: una posterior vuelve a avisar.</summary>
+    public string? SkippedUpdateVersion { get; set; }
 
     // ===================== Vínculo con Polar (Ajustes › Cuenta) =====================
     // See docs/supabase-sync/ — enabling this unlocks the "Gestión de tareas" view in Kanban and turns
@@ -516,6 +572,13 @@ public sealed class AppSettings
     /// defecto de <c>Services.ShortcutCatalog</c> — un atajo nunca tocado por el usuario no aparece aquí.
     /// Ver <c>Services.ShortcutRegistry</c>.</summary>
     public Dictionary<string, string> ShortcutOverrides { get; set; } = new();
+
+    /// <summary>Firma (<c>"{gesto}|{GlobalHotkeyStatus}"</c>) del último aviso de "atajo global no
+    /// disponible" que ya se le enseñó al usuario, o null si nunca falló o el último intento sí se
+    /// registró. Evita que un escritorio donde el atajo global nunca va a funcionar (Wayland sin portal)
+    /// apile una notificación idéntica en cada arranque: solo se avisa cuando cambia el gesto o el motivo.
+    /// Ver <c>ViewModels.Shell.MainWindowViewModel.ApplyQuickCaptureHotkey</c>.</summary>
+    public string? QuickCaptureHotkeyWarningSignature { get; set; }
 
     // ===================== Temas personalizados (importación de temas, Ajustes › Apariencia) =====================
     // Cada tema importado se valida contra Services.ThemeCatalog antes de aceptarse (solo los valores de

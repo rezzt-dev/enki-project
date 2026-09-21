@@ -79,6 +79,36 @@ public sealed class QuickCaptureViewModelTests : IDisposable
         Assert.Equal(kanban.Board.Columns[^1].Id, reloaded.Settings.QuickCaptureKanbanColumnId);
     }
 
+    /// <summary>El popup de la bandeja de entrada de la barra de título comparte este viewmodel con la
+    /// mini-ventana global, así que guardar desde el popup tiene que cerrarlo — su IsOpen es lo único que
+    /// lo cierra; CloseRequested solo lo escucha la ventana.</summary>
+    [Fact]
+    public void Toggle_OpensAndSubmitClosesTheTitleBarPopup()
+    {
+        var (viewModel, _, _, _, _) = CreateViewModel();
+
+        viewModel.ToggleCommand.Execute(null);
+        Assert.True(viewModel.IsOpen);
+
+        viewModel.Draft = "Idea desde la barra de título";
+        viewModel.SubmitCommand.Execute(null);
+
+        Assert.False(viewModel.IsOpen);
+    }
+
+    [Fact]
+    public void Toggle_ClosesAnAlreadyOpenPopup_WithoutLosingTheDraft()
+    {
+        var (viewModel, _, _, _, _) = CreateViewModel();
+        viewModel.ToggleCommand.Execute(null);
+        viewModel.Draft = "A medio escribir";
+
+        viewModel.ToggleCommand.Execute(null);
+
+        Assert.False(viewModel.IsOpen);
+        Assert.Equal("A medio escribir", viewModel.Draft);
+    }
+
     [Fact]
     public void Submit_WithoutVault_KeepsDraftAndShowsReason()
     {

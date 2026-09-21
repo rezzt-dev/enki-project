@@ -20,6 +20,11 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _remindersPanelEnabled;
 
+    /// <summary>Botón de bandeja de entrada (captura rápida) de la barra de título. Tercer interruptor
+    /// del grupo, junto a la campana y a los recordatorios — ver <c>AppSettings.InboxPanelEnabled</c>.</summary>
+    [ObservableProperty]
+    private bool _inboxPanelEnabled;
+
     [ObservableProperty]
     private bool _showDesktopToasts;
 
@@ -40,6 +45,64 @@ public sealed partial class SettingsViewModel
 
     public string ReminderSoonWindowDaysLabel =>
         string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Notifications_Reminders_SoonWindow_Unit"], (int)ReminderSoonWindowDays);
+
+    // ===================== Valores rápidos de "Aplazar" (T5) =====================
+    // Lo que el usuario ajusta aquí es exactamente lo que ofrecen los menús "Aplazar" de la bandeja de
+    // recordatorios y del centro de notificaciones — ver Services.SnoozeSchedule, que es quien traduce
+    // cada opción a un instante y quien acota estos valores si el settings.json trae algo imposible.
+
+    [ObservableProperty]
+    private decimal _snoozePrimaryMinutes;
+
+    [ObservableProperty]
+    private decimal _snoozeSecondaryMinutes;
+
+    [ObservableProperty]
+    private double _snoozeEveningHour;
+
+    [ObservableProperty]
+    private double _snoozeTomorrowHour;
+
+    /// <summary>Misma fórmula que la etiqueta del propio menú (<c>ReminderInboxViewModel.FormatDuration</c>)
+    /// para que Ajustes y el menú digan literalmente lo mismo: "1 h 30 min", no "90".</summary>
+    public string SnoozePrimaryLabel => ReminderInboxViewModel.FormatDuration((int)SnoozePrimaryMinutes);
+
+    public string SnoozeSecondaryLabel => ReminderInboxViewModel.FormatDuration((int)SnoozeSecondaryMinutes);
+
+    public string SnoozeEveningHourLabel => FormatHour(SnoozeEveningHour);
+
+    public string SnoozeTomorrowHourLabel => FormatHour(SnoozeTomorrowHour);
+
+    private static string FormatHour(double hour) =>
+        string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Notifications_Snooze_Hour_Unit"], (int)hour);
+
+    partial void OnSnoozePrimaryMinutesChanged(decimal value)
+    {
+        _settingsService.Settings.SnoozePrimaryMinutes = (int)value;
+        DebouncedSave();
+        OnPropertyChanged(nameof(SnoozePrimaryLabel));
+    }
+
+    partial void OnSnoozeSecondaryMinutesChanged(decimal value)
+    {
+        _settingsService.Settings.SnoozeSecondaryMinutes = (int)value;
+        DebouncedSave();
+        OnPropertyChanged(nameof(SnoozeSecondaryLabel));
+    }
+
+    partial void OnSnoozeEveningHourChanged(double value)
+    {
+        _settingsService.Settings.SnoozeEveningHour = (int)value;
+        DebouncedSave();
+        OnPropertyChanged(nameof(SnoozeEveningHourLabel));
+    }
+
+    partial void OnSnoozeTomorrowHourChanged(double value)
+    {
+        _settingsService.Settings.SnoozeTomorrowHour = (int)value;
+        DebouncedSave();
+        OnPropertyChanged(nameof(SnoozeTomorrowHourLabel));
+    }
 
     // ===================== Horario "no molestar" y sonido (docs/ajustes-docs/04-editor-y-notificaciones.md §2) =====================
 
@@ -76,6 +139,13 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.RemindersPanelEnabled = value;
         _settingsService.Save();
         _onRemindersPanelChanged(value);
+    }
+
+    partial void OnInboxPanelEnabledChanged(bool value)
+    {
+        _settingsService.Settings.InboxPanelEnabled = value;
+        _settingsService.Save();
+        _onInboxPanelChanged?.Invoke(value);
     }
 
     partial void OnShowDesktopToastsChanged(bool value)

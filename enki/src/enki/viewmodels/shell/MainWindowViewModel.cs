@@ -51,6 +51,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly KanbanService _kanbanService;
     private readonly NotificationService _notificationService;
     private readonly DismissedReminderService _dismissedReminderService;
+    private readonly SnoozedReminderService _snoozedReminderService;
+
+    /// <summary>Aviso de versión nueva (T9). Se construye siempre pero no abre ninguna conexión hasta que
+    /// alguien comprueba: sin el ajuste puesto, <c>CheckOnStartupAsync</c> sale antes de tocar la red.</summary>
+    private readonly UpdateCheckService _updateCheckService;
     private readonly ReminderService _reminderService;
     private readonly PolarAuthService _polarAuthService;
     private readonly SupabaseRestClient _supabaseRestClient;
@@ -275,6 +280,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private bool _remindersPanelEnabled;
+
+    /// <summary>Shows/hides the inbox (captura rápida) button in the title bar.</summary>
+    [ObservableProperty]
+    private bool _inboxPanelEnabled;
+
+    /// <summary>Shows/hides the "Cambiar de vault" row between the sidebar's brand header and its
+    /// navigation. Con el selector oculto, "Cambiar de vault" de la paleta de comandos sigue abriendo el
+    /// mismo desplegable — ver el ancla del Popup en MainWindow.axaml.</summary>
+    [ObservableProperty]
+    private bool _vaultSwitcherEnabled;
 
     /// <summary>Shows/hides the "Recordatorios" entry in the sidebar's fixed bottom group.</summary>
     [ObservableProperty]
@@ -550,6 +565,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         _globalHotkeyService.Dispose();
         _vaultChangeWatcher.Dispose();
         _webClipService.Dispose();
+        _updateCheckService.Dispose();
         _vaultService.EncryptionService.LockAll();
         VaultService.CleanupStaleDecryptedTempFiles();
     }

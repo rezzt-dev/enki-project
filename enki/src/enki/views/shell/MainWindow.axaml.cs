@@ -328,6 +328,18 @@ public partial class MainWindow : Window
         textBox?.SelectAll();
     }
 
+    /// <summary>Foco directo en el borrador al abrir la bandeja de entrada: el gesto es "apunto esto
+    /// antes de que se me olvide", así que teclear tiene que funcionar sin un click extra. No hace
+    /// SelectAll como el resto de popups de búsqueda — aquí el texto previo es un borrador que se sigue
+    /// escribiendo, no una consulta que se reemplaza.</summary>
+    private void InboxPopup_Opened(object? sender, EventArgs e)
+    {
+        if (sender is not Popup popup) return;
+        var textBox = popup.FindDescendantOfType<TextBox>();
+        textBox?.Focus();
+        if (textBox is not null) textBox.CaretIndex = textBox.Text?.Length ?? 0;
+    }
+
     private void WebClipPopup_Opened(object? sender, EventArgs e)
     {
         if (sender is not Popup popup) return;

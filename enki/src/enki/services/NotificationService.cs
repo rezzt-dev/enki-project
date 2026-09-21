@@ -90,8 +90,26 @@ public sealed class NotificationService
         => PushCore(enki.Localization.LocalizedTextFormatter.Resolve(title),
             enki.Localization.LocalizedTextFormatter.Resolve(message), severity, title, message);
 
+    /// <summary>Igual que <see cref="PushLocalized"/> pero dejando anotado de qué vencimiento nace el
+    /// aviso, para que el centro de notificaciones pueda ofrecer "Aplazar" en esa fila (T5). Un método
+    /// aparte y no un parámetro opcional más porque es el único tipo de aviso que lo lleva, y así las
+    /// decenas de <c>Push</c> repartidos por la app no cambian de firma.</summary>
+    public AppNotification PushDue(LocalizedText title, LocalizedText message, SnoozeTarget snoozeTarget,
+        NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(enki.Localization.LocalizedTextFormatter.Resolve(title),
+            enki.Localization.LocalizedTextFormatter.Resolve(message), severity, title, message, snoozeTarget);
+
+    /// <summary>Aviso con un enlace que el usuario puede abrir desde la campana — hoy, el de versión
+    /// nueva (T9). Método aparte por lo mismo que <see cref="PushDue"/>: es el único tipo de aviso que lo
+    /// lleva.</summary>
+    public AppNotification PushWithLink(LocalizedText title, LocalizedText message, string linkUrl,
+        NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(enki.Localization.LocalizedTextFormatter.Resolve(title),
+            enki.Localization.LocalizedTextFormatter.Resolve(message), severity, title, message, linkUrl: linkUrl);
+
     private AppNotification PushCore(string title, string message, NotificationSeverity severity,
-        LocalizedText? localizedTitle = null, LocalizedText? localizedMessage = null)
+        LocalizedText? localizedTitle = null, LocalizedText? localizedMessage = null,
+        SnoozeTarget? snoozeTarget = null, string? linkUrl = null)
     {
         var notification = new AppNotification
         {
@@ -100,7 +118,9 @@ public sealed class NotificationService
             Message = message,
             LocalizedTitle = localizedTitle,
             LocalizedMessage = localizedMessage,
-            Severity = severity
+            Severity = severity,
+            SnoozeTarget = snoozeTarget,
+            LinkUrl = linkUrl
         };
 
         if (IsMuted(severity)) return notification;

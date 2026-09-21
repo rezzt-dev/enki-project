@@ -29,11 +29,11 @@ secciones indicadas.
 
 ### Prioridad media — cerrar el flujo de planificación
 
-- [ ] **T5 · Snooze de recordatorios** — añadir "Aplazar" (10 min, 1 h, mañana, personalizado) a la notificación y a la bandeja de recordatorios para reprogramar `NotifyAtUtc` sin cerrarlo. → [§4.1](#41-t5--aplazar-recordatorios-snooze)
+- [x] **T5 · Snooze de recordatorios** — "Aplazar" (10 min, 1 h, esta tarde, mañana, personalizado) en la bandeja de recordatorios y en el centro de notificaciones. Implementado sin reescribir `NotifyAtUtc`: ver `.docs/project-info/notificaciones-y-recordatorios.md`, sección "Aplazar recordatorios (T5)", para por qué aplazar no es reprogramar. → [§4.1](#41-t5--aplazar-recordatorios-snooze)
 - [ ] **T6 · Tiempo real y Pomodoro** — registrar el tiempo real trabajado en tarjetas Kanban y tareas Polar (junto al `DurationMinutes` estimado) con un temporizador Pomodoro que avisa por `NotificationService`. → [§4.2](#42-t6--registro-de-tiempo-real-y-pomodoro)
 - [ ] **T7 · Notas relacionadas y menciones sin enlazar** — añadir al panel lateral del editor un bloque "Relacionadas" (por etiquetas y enlaces compartidos) y "Menciones sin enlazar" (notas cuyo título aparece en el texto sin `[[ ]]`) con enlazado en un clic. → [§4.3](#43-t7--notas-relacionadas-y-menciones-sin-enlazar)
-- [ ] **T8 · Exportar vistas a imagen/PDF** — exportar el Calendario y el tablero Kanban (y, de paso, una nota) a PNG y PDF desde la paleta de comandos y los menús de cada vista. → [§4.4](#44-t8--exportar-calendario-y-kanban-a-imagen-o-pdf)
-- [ ] **T9 · Aviso de versión nueva** — comprobar al arrancar (y manualmente en Ajustes) si hay una release más reciente en GitHub y mostrar un aviso con enlace de descarga; sin auto-actualización. → [§4.5](#45-t9--aviso-de-actualizaciones)
+- [x] **T8 · Exportar vistas a imagen/PDF** — Calendario, tablero Kanban y notas a PNG y PDF, desde el menú de cada vista y desde la paleta de comandos. PDF escrito a mano, sin dependencias nuevas: ver `.docs/project-info/exportar-vistas-imagen-pdf.md`. → [§4.4](#44-t8--exportar-calendario-y-kanban-a-imagen-o-pdf)
+- [x] **T9 · Aviso de versión nueva** — comprobación opcional al arrancar (desactivada de fábrica) y manual desde Ajustes, con aviso, notas de la release y enlace de descarga; sin auto-actualización. Ver `.docs/project-info/aviso-de-version-nueva.md`. → [§4.5](#45-t9--aviso-de-actualizaciones)
 
 ### Prioridad baja — más adelante
 

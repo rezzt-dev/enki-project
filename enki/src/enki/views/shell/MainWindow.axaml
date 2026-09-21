@@ -190,10 +190,11 @@
                  el logo, el nombre de la app y el botón de plegar, y ahí el nombre del vault se leería
                  como parte de la marca. Plegado queda solo el icono, con el nombre en el tooltip, igual
                  que cualquier otra fila del raíl. -->
-            <Grid Grid.Row="2" Margin="0,4,0,0">
-              <Button Name="VaultSwitcherTrigger" Classes="nav-item"
+            <Grid Grid.Row="2" Name="VaultSwitcherRow">
+              <Button Name="VaultSwitcherTrigger" Classes="nav-item" Margin="0,4,0,0"
                       Classes.collapsed="{Binding !IsSidebarExpanded}"
                       Classes.active="{Binding VaultSwitcher.IsOpen}"
+                      IsVisible="{Binding VaultSwitcherEnabled}"
                       Command="{Binding VaultSwitcher.ToggleCommand}"
                       ToolTip.Tip="{Binding VaultSwitcher.ActiveVaultName}"
                       ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}"
@@ -213,7 +214,11 @@
                 </Grid>
               </Button>
 
-              <Popup PlacementTarget="{Binding #VaultSwitcherTrigger}" Placement="BottomEdgeAlignedLeft"
+              <!-- Anclado a la fila y no al botón: con el selector oculto (Ajustes › General › Barra
+                   lateral) el botón deja de tener caja, pero "Cambiar de vault" de la paleta de comandos
+                   sigue abriendo este mismo popup, que necesita un ancla con posición real. La fila vacía
+                   mide 0 de alto, así que ocultar el botón no deja hueco. -->
+              <Popup PlacementTarget="{Binding #VaultSwitcherRow}" Placement="BottomEdgeAlignedLeft"
                      VerticalOffset="6" IsLightDismissEnabled="True"
                      OverlayInputPassThroughElement="{Binding #VaultSwitcherTrigger}"
                      IsOpen="{Binding VaultSwitcher.IsOpen, Mode=TwoWay}">
@@ -444,16 +449,19 @@
     <Border Background="Transparent" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Bottom"
             Cursor="BottomRightCorner" IsVisible="{Binding UseCustomTitleBar}" Tag="SouthEast" PointerPressed="ResizeGrip_PointerPressed" />
 
-    <!-- ===================== Notificaciones + recordatorios =====================
-         Two buttons — deliberately NOT gated by UseCustomTitleBar like the window controls below, since
-         they carry app content (not window chrome) and stay meaningful whether Enki or the OS is
-         drawing the title bar. Each is independently hideable from Ajustes › Notificaciones
-         (MainWindowViewModel.NotificationsPanelEnabled/RemindersPanelEnabled) instead. They are NOT the
+    <!-- ===================== Botones de contenido de la barra de título =====================
+         Orden fijo, de izquierda a derecha: buscar · notificaciones · recordatorios · bandeja de entrada.
+         Deliberately NOT gated by UseCustomTitleBar like the window controls below, since they carry app
+         content (not window chrome) and stay meaningful whether Enki or the OS is drawing the title bar.
+         Each is independently hideable from Ajustes › Notificaciones (MainWindowViewModel
+         .NotificationsPanelEnabled/RemindersPanelEnabled/InboxPanelEnabled) instead. They are NOT the
          same feature: the bell is a push-driven system event log (NotificationCenterViewModel — vault
-         switched, sync errors…); the inbox is a pull-driven view over kanban due dates AND the user's own
-         standalone reminders from the Recordatorios page (ReminderInboxViewModel — "what's due soon"). A
-         fired reminder still also lands in the bell as a one-off toast/log entry ("this just happened"),
-         but the inbox is what stays labeled "Recordatorios" and lists it until it's completed/dismissed.
+         switched, sync errors…); recordatorios is a pull-driven view over kanban due dates AND the user's
+         own standalone reminders from the Recordatorios page (ReminderInboxViewModel — "what's due
+         soon"); la bandeja de entrada no lee nada, escribe: es la captura rápida (QuickCaptureViewModel)
+         para apuntar una idea en Inbox/ o como tarjeta. A fired reminder still also lands in the bell as
+         a one-off toast/log entry ("this just happened"), but the reminders panel is what stays labeled
+         "Recordatorios" and lists it until it's completed/dismissed.
          See docs/agent-docs/notificaciones-y-recordatorios.md for the fuller design. -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0">
 
@@ -716,26 +724,69 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:NotificationItemViewModel">
-                    <Button Classes="dropdown-item"
-                            Command="{Binding $parent[ItemsControl].DataContext.SelectItemCommand}"
-                            CommandParameter="{Binding}"
-                            AutomationProperties.Name="{Binding Title}">
-                      <Grid ColumnDefinitions="Auto,*,Auto">
-                        <mi:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIcon}" Width="15" Height="15"
-                                          Margin="0,2,10,0" VerticalAlignment="Top" Classes="severity-icon"
-                                          Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
-                                          Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
-                                          Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
-                        <StackPanel Grid.Column="1" Spacing="2">
-                          <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"
-                                     Classes.faint="{Binding IsRead}" />
-                          <TextBlock Text="{Binding Message}" Classes="faint" FontSize="11" TextWrapping="Wrap"
-                                     IsVisible="{Binding HasMessage}" />
+                    <!-- Fila + menú "Aplazar" (T5), solo en los avisos nacidos de un vencimiento. Misma
+                         estructura que la fila de la bandeja de recordatorios: el menú va fuera del Button
+                         para no meter botones dentro de un botón. -->
+                    <StackPanel>
+                      <Button Classes="dropdown-item"
+                              Command="{Binding $parent[ItemsControl].DataContext.SelectItemCommand}"
+                              CommandParameter="{Binding}"
+                              AutomationProperties.Name="{Binding Title}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                          <mi:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIcon}" Width="15" Height="15"
+                                            Margin="0,2,10,0" VerticalAlignment="Top" Classes="severity-icon"
+                                            Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
+                                            Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
+                                            Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"
+                                       Classes.faint="{Binding IsRead}" />
+                            <TextBlock Text="{Binding Message}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                                       IsVisible="{Binding HasMessage}" />
+                            <!-- Acción del aviso (T9: "Descargar"). El enlace pasa otra vez por
+                                 ExternalLinkPolicy al abrirse, ver NotificationCenterViewModel.OpenLink. -->
+                            <Button Classes="ghost" Padding="0,2" HorizontalAlignment="Left"
+                                    IsVisible="{Binding HasLink}"
+                                    Command="{Binding $parent[ItemsControl].DataContext.OpenLinkCommand}"
+                                    CommandParameter="{Binding}">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <mi:MaterialIcon Kind="OpenInNew" Width="11" Height="11" />
+                                <TextBlock Text="{loc:Tr Notification_OpenLink, Converter={StaticResource UpperCaseConverter}}"
+                                           FontSize="10.5" FontWeight="Bold" />
+                              </StackPanel>
+                            </Button>
+                          </StackPanel>
+                          <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20" Margin="8,0,0,0"
+                                  VerticalAlignment="Top" IsVisible="{Binding CanSnooze}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.ToggleSnoozeMenuCommand}"
+                                  CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Reminder_Snooze_Tooltip}"
+                                  AutomationProperties.Name="{loc:Tr Reminder_Snooze_Tooltip}">
+                            <mi:MaterialIcon Kind="AlarmSnooze" Width="12" Height="12" />
+                          </Button>
+                          <TextBlock Grid.Column="3" Text="{Binding TimeLabel}" Classes="faint" FontSize="9.5"
+                                     Margin="8,2,0,0" VerticalAlignment="Top" />
+                        </Grid>
+                      </Button>
+
+                      <Border Classes="snooze-menu" IsVisible="{Binding IsSnoozeMenuOpen}">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{loc:Tr Reminder_Snooze_MenuTitle, Converter={StaticResource UpperCaseConverter}}"
+                                     Classes="eyebrow" FontSize="9.5" Margin="8,0,0,4" />
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryCommand}"
+                                  CommandParameter="{Binding}" />
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryCommand}"
+                                  CommandParameter="{Binding}" />
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozeEveningCommand}"
+                                  CommandParameter="{Binding}" />
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozeTomorrowCommand}"
+                                  CommandParameter="{Binding}" />
                         </StackPanel>
-                        <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" Classes="faint" FontSize="9.5"
-                                   Margin="8,2,0,0" VerticalAlignment="Top" />
-                      </Grid>
-                    </Button>
+                      </Border>
+                    </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -744,15 +795,18 @@
         </Popup>
       </Grid>
 
-      <!-- Inbox: vencimientos de tarjetas Kanban con fecha límite — distinto de la página "Recordatorios"
-           (entidad Reminder). Renombrado para disambiguar (ver docs/notificaciones-y-recordatorios.md). -->
+      <!-- Recordatorios: vencimientos de tarjetas Kanban con fecha límite más los recordatorios propios
+           de la página "Recordatorios". El icono es CalendarClockOutline, el mismo que la entrada
+           "Recordatorios" del sidebar (SidebarSectionCatalog), para que el botón y la página a la que
+           lleva se reconozcan como la misma cosa. InboxOutline, que llevaba antes, pasó al botón de
+           bandeja de entrada de aquí al lado. Ver docs/notificaciones-y-recordatorios.md. -->
       <Grid DataContext="{Binding ReminderInbox}"
             IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemindersPanelEnabled}">
         <Button Name="RemindersTrigger" Classes="titlebar-btn titlebar-btn-plain" Command="{Binding ToggleCommand}"
                 ToolTip.Tip="{loc:Tr Reminder_InboxTooltip}"
                 AutomationProperties.Name="{loc:Tr Reminder_InboxTooltip}">
           <Panel Width="20" Height="20">
-            <mi:MaterialIcon Kind="InboxOutline" Width="19" Height="19"
+            <mi:MaterialIcon Kind="CalendarClockOutline" Width="19" Height="19"
                               HorizontalAlignment="Center" VerticalAlignment="Center" />
             <Border Classes="titlebar-badge" IsVisible="{Binding OverdueCount, Converter={StaticResource CountToBoolConverter}}">
               <TextBlock Classes="titlebar-badge-text" Text="{Binding OverdueCount}" />
@@ -789,42 +843,177 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:ReminderItemViewModel">
-                    <!-- Three-row hierarchy — metadata (bucket/due date), title, column tag — instead of
-                         a flat text stack, plus a left accent bar (see Button.dropdown-item.reminder-item)
-                         so urgency reads at a glance across the whole list. -->
-                    <Button Classes="dropdown-item reminder-item"
-                            Classes.overdue="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Overdue}"
-                            Classes.today="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Today}"
-                            Command="{Binding $parent[ItemsControl].DataContext.OpenCardCommand}"
-                            CommandParameter="{Binding}"
-                            AutomationProperties.Name="{Binding Title}">
-                      <StackPanel Spacing="5">
-                        <Grid ColumnDefinitions="*,Auto">
-                          <TextBlock Grid.Column="0" Text="{Binding BucketLabel}" Classes="faint" FontSize="9.5"
-                                     FontWeight="Bold" LetterSpacing="1"
-                                     Classes.overdue="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Overdue}"
-                                     Classes.today="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Today}" />
-                          <TextBlock Grid.Column="1" Text="{Binding DueDateLabel}" Classes="faint" FontSize="9.5" />
-                        </Grid>
-                        <Grid ColumnDefinitions="*,Auto">
-                          <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="Bold" FontSize="13"
-                                     TextWrapping="Wrap" VerticalAlignment="Center" />
-                          <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20" Margin="8,0,0,0"
-                                  VerticalAlignment="Top"
-                                  Command="{Binding $parent[ItemsControl].DataContext.DismissCommand}"
-                                  CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Reminder_DismissTooltip}">
-                            <mi:MaterialIcon Kind="Close" Width="11" Height="11" />
-                          </Button>
-                        </Grid>
-                        <!-- Mismo criterio que en el propio tablero: el nombre de una columna se dibuja
-                             siempre en mayúsculas, escriba el usuario lo que escriba. -->
-                        <TextBlock Text="{Binding ColumnTitle, Converter={StaticResource UpperCaseConverter}}"
-                                   Classes="faint" FontSize="10.5" LetterSpacing="1" />
-                      </StackPanel>
-                    </Button>
+                    <!-- Fila + su menú "Aplazar" desplegable (T5). El menú va FUERA del Button de la fila
+                         y no dentro: anidado, cada opción quedaría dentro del área clicable que abre la
+                         tarjeta, y un lector de pantalla anunciaría botones dentro de un botón. -->
+                    <StackPanel>
+                      <!-- Three-row hierarchy — metadata (bucket/due date), title, column tag — instead of
+                           a flat text stack, plus a left accent bar (see Button.dropdown-item.reminder-item)
+                           so urgency reads at a glance across the whole list. -->
+                      <Button Classes="dropdown-item reminder-item"
+                              Classes.overdue="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Overdue}"
+                              Classes.today="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Today}"
+                              Classes.snoozed="{Binding IsSnoozed}"
+                              Command="{Binding $parent[ItemsControl].DataContext.OpenCardCommand}"
+                              CommandParameter="{Binding}"
+                              AutomationProperties.Name="{Binding Title}">
+                        <StackPanel Spacing="5">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding BucketLabel}" Classes="faint" FontSize="9.5"
+                                       FontWeight="Bold" LetterSpacing="1"
+                                       Classes.overdue="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Overdue}"
+                                       Classes.today="{Binding Bucket, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Today}" />
+                            <TextBlock Grid.Column="1" Text="{Binding DueDateLabel}" Classes="faint" FontSize="9.5" />
+                          </Grid>
+                          <Grid ColumnDefinitions="*,Auto,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="Bold" FontSize="13"
+                                       TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20" Margin="8,0,0,0"
+                                    VerticalAlignment="Top"
+                                    Command="{Binding $parent[ItemsControl].DataContext.ToggleSnoozeMenuCommand}"
+                                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Reminder_Snooze_Tooltip}"
+                                    AutomationProperties.Name="{loc:Tr Reminder_Snooze_Tooltip}">
+                              <mi:MaterialIcon Kind="AlarmSnooze" Width="12" Height="12" />
+                            </Button>
+                            <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20" Margin="4,0,0,0"
+                                    VerticalAlignment="Top"
+                                    Command="{Binding $parent[ItemsControl].DataContext.DismissCommand}"
+                                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Reminder_DismissTooltip}"
+                                    AutomationProperties.Name="{loc:Tr Reminder_DismissTooltip}">
+                              <mi:MaterialIcon Kind="Close" Width="11" Height="11" />
+                            </Button>
+                          </Grid>
+                          <!-- "Aplazado hasta 15:40" + contador de aplazamientos: solo con un aplazamiento
+                               vigente, y por encima del origen para que se lea junto a la fecha. -->
+                          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsSnoozed}">
+                            <TextBlock Grid.Column="0" Text="{Binding SnoozedUntilLabel}" Classes="faint"
+                                       FontSize="10.5" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="1" Text="{Binding SnoozeCountLabel}" Classes="faint"
+                                       FontSize="9.5" Margin="8,0,0,0" IsVisible="{Binding HasSnoozeCount}" />
+                          </Grid>
+                          <!-- Mismo criterio que en el propio tablero: el nombre de una columna se dibuja
+                               siempre en mayúsculas, escriba el usuario lo que escriba. -->
+                          <TextBlock Text="{Binding ColumnTitle, Converter={StaticResource UpperCaseConverter}}"
+                                     Classes="faint" FontSize="10.5" LetterSpacing="1" />
+                        </StackPanel>
+                      </Button>
+
+                      <Border Classes="snooze-menu" IsVisible="{Binding IsSnoozeMenuOpen}">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{loc:Tr Reminder_Snooze_MenuTitle, Converter={StaticResource UpperCaseConverter}}"
+                                     Classes="eyebrow" FontSize="9.5" Margin="8,0,0,4" />
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryCommand}"
+                                  CommandParameter="{Binding}" />
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryCommand}"
+                                  CommandParameter="{Binding}" />
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozeEveningCommand}"
+                                  CommandParameter="{Binding}" />
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.SnoozeTomorrowCommand}"
+                                  CommandParameter="{Binding}" />
+
+                          <!-- Personalizado: minutos (el rango es el de Services.SnoozeSchedule,
+                               1 minuto – 7 días) y confirmación explícita. -->
+                          <Grid ColumnDefinitions="*,Auto" Margin="8,6,0,0" ColumnSpacing="6">
+                            <NumericUpDown Grid.Column="0" Minimum="1" Maximum="10080" Increment="5"
+                                           FormatString="0" FontSize="12"
+                                           Value="{Binding $parent[ItemsControl].DataContext.CustomSnoozeMinutes, Mode=TwoWay}"
+                                           AutomationProperties.Name="{loc:Tr Reminder_Snooze_CustomMinutes_AccessibleName}" />
+                            <Button Grid.Column="1" Classes="ghost" Padding="6,2" VerticalAlignment="Center"
+                                    Command="{Binding $parent[ItemsControl].DataContext.SnoozeCustomCommand}"
+                                    CommandParameter="{Binding}">
+                              <TextBlock Text="{loc:Tr Reminder_Snooze_CustomApply, Converter={StaticResource UpperCaseConverter}}"
+                                         FontSize="11" FontWeight="Bold" />
+                            </Button>
+                          </Grid>
+
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Cancel}"
+                                  IsVisible="{Binding IsSnoozed}"
+                                  Command="{Binding $parent[ItemsControl].DataContext.CancelSnoozeCommand}"
+                                  CommandParameter="{Binding}" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- ===================== Bandeja de entrada (captura rápida) =====================
+           Cuarto botón de contenido de la barra de título: apuntar una idea suelta sin salir de donde
+           estés. No estrena ningún almacén — comparte QuickCaptureViewModel con la mini-ventana global
+           (Ctrl+Alt+Space) y con la paleta de comandos, así que el borrador y el destino elegido son los
+           mismos se abra por donde se abra, y la idea acaba en Inbox/ del vault o como tarjeta Kanban
+           igual que allí. Aquí es un popup y no una ventana porque el gesto nace de la propia ventana
+           de Enki, ya visible. -->
+      <Grid DataContext="{Binding QuickCapture}"
+            IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).InboxPanelEnabled}">
+        <Button Name="InboxTrigger" Classes="titlebar-btn titlebar-btn-plain" Command="{Binding ToggleCommand}"
+                ToolTip.Tip="{loc:Tr Shell_InboxTooltip}"
+                AutomationProperties.Name="{loc:Tr Shell_InboxTooltip}">
+          <mi:MaterialIcon Kind="InboxOutline" Width="19" Height="19"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+
+        <Popup PlacementTarget="{Binding #InboxTrigger}" Placement="BottomEdgeAlignedRight"
+               VerticalOffset="6" IsLightDismissEnabled="True"
+               OverlayInputPassThroughElement="{Binding #InboxTrigger}"
+               IsOpen="{Binding IsOpen, Mode=TwoWay}" Opened="InboxPopup_Opened">
+          <Border Classes="dropdown-popover" Width="320">
+            <StackPanel Spacing="12">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{loc:Tr QuickCapture_Title, Converter={StaticResource UpperCaseConverter}}"
+                           Classes="eyebrow" FontSize="10.5" />
+                <TextBlock Text="{loc:Tr QuickCapture_Subtitle}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+
+              <TextBox Name="InboxTextBox" Text="{Binding Draft}" Height="110"
+                       AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
+                       PlaceholderText="{loc:Tr QuickCapture_Placeholder}"
+                       AutomationProperties.Name="{loc:Tr QuickCapture_Input_AccessibleName}">
+                <TextBox.KeyBindings>
+                  <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SubmitCommand}" />
+                </TextBox.KeyBindings>
+              </TextBox>
+
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Destinations}"
+                        SelectedItem="{Binding SelectedDestination}"
+                        AutomationProperties.Name="{loc:Tr QuickCapture_Destination_Label}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:QuickCaptureDestinationOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding KanbanColumns}"
+                        SelectedItem="{Binding SelectedKanbanColumn}"
+                        IsVisible="{Binding IsKanbanDestination}"
+                        AutomationProperties.Name="{loc:Tr QuickCapture_KanbanColumn_Label}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:QuickCaptureColumnOption">
+                    <TextBlock Text="{Binding Title}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+
+              <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource DangerBrush}"
+                         TextWrapping="Wrap" FontSize="11.5"
+                         IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+              <Button Classes="pill-primary" HorizontalAlignment="Stretch" Command="{Binding SubmitCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
+                  <TextBlock Text="{loc:Tr QuickCapture_Submit, Converter={StaticResource UpperCaseConverter}}" />
+                  <TextBlock Text="{loc:Tr QuickCapture_SubmitHint}" Opacity="0.7" FontSize="10"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
             </StackPanel>
           </Border>
         </Popup>
@@ -834,7 +1023,7 @@
            Floats over whatever page is showing instead of reserving a bar of its own — dragging the
            window happens from the sidebar's brand header (see TitleBar_PointerPressed above), not from
            here. Individually gated by UseCustomTitleBar (not the whole StackPanel, unlike before) so
-           the bell/inbox pair above stays visible when the OS draws its own min/max/close instead. -->
+           the content buttons above stay visible when the OS draws its own min/max/close instead. -->
       <Button Classes="titlebar-btn" Click="Minimize_Click" ToolTip.Tip="{loc:Tr Shell_MinimizeTooltip}"
               Margin="85,5,5,5"
               IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">

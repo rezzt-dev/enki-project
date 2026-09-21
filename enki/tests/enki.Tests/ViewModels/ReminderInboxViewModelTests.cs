@@ -22,6 +22,7 @@ public class ReminderInboxViewModelTests : IDisposable
     private readonly ReminderService _reminderService;
     private readonly SettingsService _settingsService;
     private readonly DismissedReminderService _dismissedReminderService;
+    private readonly SnoozedReminderService _snoozedReminderService;
     private string? _openedCardId;
     private string? _openedReminderId;
 
@@ -31,6 +32,7 @@ public class ReminderInboxViewModelTests : IDisposable
         _reminderService = new ReminderService(_storageDirectory);
         _settingsService = new SettingsService(_storageDirectory);
         _dismissedReminderService = new DismissedReminderService(_storageDirectory);
+        _snoozedReminderService = new SnoozedReminderService(_storageDirectory);
     }
 
     public void Dispose()
@@ -39,7 +41,7 @@ public class ReminderInboxViewModelTests : IDisposable
     }
 
     private ReminderInboxViewModel CreateViewModel() =>
-        new(_kanbanService, _reminderService, _settingsService, _dismissedReminderService,
+        new(_kanbanService, _reminderService, _settingsService, _dismissedReminderService, _snoozedReminderService,
             id => _openedCardId = id, id => _openedReminderId = id);
 
     private KanbanCard AddDueCard(string title = "Tarjeta")
@@ -184,5 +186,146 @@ public class ReminderInboxViewModelTests : IDisposable
 
         Assert.DoesNotContain(vm.Items, i => i.SourceId == reminder.Id);
         Assert.True(_dismissedReminderService.IsDismissed(reminder.Id, reminder.NotifyAtUtc));
+    }
+
+    // ===================== Aplazar (T5, .docs/funcionalidades-pendientes-priorizadas.md §4.1) =====================
+
+    [Fact]
+    public void SnoozePrimary_MovesTheItemOutOfOverdue_WithoutTouchingTheCard()
+    {
+        var card = AddDueCard();
+        var originalDue = card.DueDateUtc;
+        var vm = CreateViewModel();
+
+        vm.SnoozePrimaryCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        var item = vm.Items.Single(i => i.SourceId == card.Id);
+        Assert.True(item.IsSnoozed);
+        Assert.Equal(ReminderBucket.Snoozed, item.Bucket);
+        Assert.Equal(0, vm.OverdueCount);
+        // Criterio EARS: aplazar no reprograma la entidad de origen.
+        Assert.Equal(originalDue, card.DueDateUtc);
+    }
+
+    [Fact]
+    public void SnoozePrimary_UsesTheConfiguredQuickValue()
+    {
+        _settingsService.Settings.SnoozePrimaryMinutes = 25;
+        var card = AddDueCard();
+        var vm = CreateViewModel();
+        var before = DateTime.UtcNow;
+
+        vm.SnoozePrimaryCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        var until = vm.Items.Single(i => i.SourceId == card.Id).SnoozedUntilUtc!.Value;
+        Assert.InRange(until, before.AddMinutes(25), DateTime.UtcNow.AddMinutes(25).AddSeconds(5));
+    }
+
+    [Fact]
+    public void SnoozeCustom_UsesTheEnteredMinutes_AndRemembersThemInSettings()
+    {
+        var card = AddDueCard();
+        var vm = CreateViewModel();
+        vm.ToggleSnoozeMenuCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+        vm.CustomSnoozeMinutes = 45;
+
+        vm.SnoozeCustomCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        Assert.Equal(45, _settingsService.Settings.SnoozeCustomMinutes);
+        var until = vm.Items.Single(i => i.SourceId == card.Id).SnoozedUntilUtc!.Value;
+        Assert.InRange(until, DateTime.UtcNow.AddMinutes(44), DateTime.UtcNow.AddMinutes(46));
+    }
+
+    [Fact]
+    public void SnoozeTwice_CountsTheRepeatOnTheItem()
+    {
+        var card = AddDueCard();
+        var vm = CreateViewModel();
+
+        vm.SnoozePrimaryCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+        vm.SnoozeSecondaryCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        var item = vm.Items.Single(i => i.SourceId == card.Id);
+        Assert.Equal(2, item.SnoozeCount);
+        Assert.True(item.HasSnoozeCount);
+    }
+
+    [Fact]
+    public void CancelSnooze_BringsTheItemBackToItsRealBucket()
+    {
+        var card = AddDueCard();
+        var vm = CreateViewModel();
+        vm.SnoozePrimaryCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        vm.CancelSnoozeCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        var item = vm.Items.Single(i => i.SourceId == card.Id);
+        Assert.False(item.IsSnoozed);
+        Assert.Equal(ReminderBucket.Overdue, item.Bucket);
+        Assert.Equal(1, vm.OverdueCount);
+    }
+
+    /// <summary>Aplazar un recordatorio recurrente no puede tocar su <c>NotifyAtUtc</c>: ese campo ya
+    /// apunta a la siguiente ocurrencia de la serie.</summary>
+    [Fact]
+    public void Snooze_OnARecurringReminder_LeavesTheSeriesAlone()
+    {
+        var reminder = _reminderService.Create("Semanal", string.Empty, DateTime.UtcNow.AddMinutes(-5),
+            "BellRingOutline", recurrence: PolarRecurrence.Weekly);
+        var vm = CreateViewModel();
+
+        vm.SnoozeSecondaryCommand.Execute(vm.Items.Single(i => i.SourceId == reminder.Id));
+
+        Assert.Equal(PolarRecurrence.Weekly, reminder.Recurrence);
+        Assert.Equal(reminder.NotifyAtUtc, _reminderService.Reminders.Single(r => r.Id == reminder.Id).NotifyAtUtc);
+        Assert.True(vm.Items.Single(i => i.SourceId == reminder.Id).IsSnoozed);
+    }
+
+    [Fact]
+    public void Dismiss_AlsoDropsAPendingSnooze()
+    {
+        var card = AddDueCard();
+        var vm = CreateViewModel();
+        vm.SnoozePrimaryCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        vm.DismissCommand.Execute(vm.Items.Single(i => i.SourceId == card.Id));
+
+        Assert.Null(_snoozedReminderService.Find(card.Id, card.DueDateUtc!.Value));
+    }
+
+    [Fact]
+    public void ToggleSnoozeMenu_OpensOnlyOneMenuAtATime()
+    {
+        var first = AddDueCard("Primera");
+        var second = AddDueCard("Segunda");
+        var vm = CreateViewModel();
+
+        vm.ToggleSnoozeMenuCommand.Execute(vm.Items.Single(i => i.SourceId == first.Id));
+        vm.ToggleSnoozeMenuCommand.Execute(vm.Items.Single(i => i.SourceId == second.Id));
+
+        Assert.False(vm.Items.Single(i => i.SourceId == first.Id).IsSnoozeMenuOpen);
+        Assert.True(vm.Items.Single(i => i.SourceId == second.Id).IsSnoozeMenuOpen);
+    }
+
+    [Fact]
+    public void SnoozedItems_SortAfterTheOnesStillDemandingAttention()
+    {
+        var snoozed = AddDueCard("Aplazada");
+        var pending = AddDueCard("Pendiente");
+        var vm = CreateViewModel();
+
+        vm.SnoozePrimaryCommand.Execute(vm.Items.Single(i => i.SourceId == snoozed.Id));
+
+        Assert.Equal(pending.Id, vm.Items[0].SourceId);
+        Assert.Equal(snoozed.Id, vm.Items[^1].SourceId);
+    }
+
+    [Theory]
+    [InlineData(10, "10 min")]
+    [InlineData(60, "1 h")]
+    [InlineData(90, "1 h 30 min")]
+    public void FormatDuration_ReadsAsADuration_NotAsRawMinutes(int minutes, string expected)
+    {
+        Assert.Equal(expected, ReminderInboxViewModel.FormatDuration(minutes));
     }
 }

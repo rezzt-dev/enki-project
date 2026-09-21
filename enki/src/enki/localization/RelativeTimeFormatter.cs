@@ -53,4 +53,16 @@ public static class RelativeTimeFormatter
         var local = utc.ToLocalTime();
         return local.ToString(pattern, culture) + ", " + local.ToString("t", culture);
     }
+
+    /// <summary>Hora local a secas cuando el instante cae hoy, y fecha corta + hora cuando no — el
+    /// formato de "Aplazado hasta 15:40" / "Aplazado hasta 3 mar, 09:00" (T5). Decidir entre las dos
+    /// formas aquí y no en cada vista evita que dos pantallas muestren el mismo dato de forma distinta,
+    /// mismo motivo por el que <see cref="Format(DateTime)"/> vive en esta clase y no en cada item.</summary>
+    public static string FormatClockOrShortDate(DateTime utc)
+    {
+        var local = utc.ToLocalTime();
+        return local.Date == DateTime.Now.Date
+            ? local.ToString("t", LocalizationService.Instance.CurrentCulture)
+            : FormatAbsoluteShort(utc);
+    }
 }

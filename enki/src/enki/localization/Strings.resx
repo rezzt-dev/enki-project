@@ -295,6 +295,24 @@
   <data name="CommandPalette_Action_AddKanbanColumn" xml:space="preserve">
     <value>New Kanban column</value>
   </data>
+  <data name="CommandPalette_Action_ExportCalendarPdf" xml:space="preserve">
+    <value>Export calendar as PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportCalendarPng" xml:space="preserve">
+    <value>Export calendar as PNG</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPdf" xml:space="preserve">
+    <value>Export board as PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPng" xml:space="preserve">
+    <value>Export board as PNG</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePdf" xml:space="preserve">
+    <value>Export note as PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePng" xml:space="preserve">
+    <value>Export note as PNG</value>
+  </data>
   <data name="CommandPalette_Action_ImportNotes" xml:space="preserve">
     <value>Import notes</value>
   </data>
@@ -905,6 +923,39 @@
   </data>
   <data name="Editor_Toolbar_ToggleZenMode_Tooltip" xml:space="preserve">
     <value>Toggle focus mode</value>
+  </data>
+  <data name="Export_Error_NothingToExport" xml:space="preserve">
+    <value>There is nothing laid out to export yet.</value>
+  </data>
+  <data name="Export_Error_TooLarge" xml:space="preserve">
+    <value>The view is too large to export as a single image.</value>
+  </data>
+  <data name="Export_Error_ViewNotOpen" xml:space="preserve">
+    <value>Open the view you want to export first.</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_one" xml:space="preserve">
+    <value>{0} card</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_other" xml:space="preserve">
+    <value>{0} cards</value>
+  </data>
+  <data name="Export_MenuTooltip" xml:space="preserve">
+    <value>Export…</value>
+  </data>
+  <data name="Export_PdfFileType" xml:space="preserve">
+    <value>PDF document</value>
+  </data>
+  <data name="Export_PngFileType" xml:space="preserve">
+    <value>PNG image</value>
+  </data>
+  <data name="Export_ToPdf" xml:space="preserve">
+    <value>Export as PDF…</value>
+  </data>
+  <data name="Export_ToPng" xml:space="preserve">
+    <value>Export as PNG…</value>
+  </data>
+  <data name="Export_ViewDialog_Title" xml:space="preserve">
+    <value>Export view</value>
   </data>
   <data name="Files_AllFolder" xml:space="preserve">
     <value>All files</value>
@@ -1896,6 +1947,9 @@
   <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
     <value>“{0}” doesn't exist in your vault. The link is broken.</value>
   </data>
+  <data name="Notification_OpenLink" xml:space="preserve">
+    <value>Open</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>NOTIFICATIONS</value>
   </data>
@@ -1929,6 +1983,12 @@
   <data name="Notification_ReminderDue_Title" xml:space="preserve">
     <value>Reminder: {0}</value>
   </data>
+  <data name="Notification_ReminderSnoozeElapsed_Message" xml:space="preserve">
+    <value>The snooze period has ended.</value>
+  </data>
+  <data name="Notification_ReminderSnoozeElapsed_Title" xml:space="preserve">
+    <value>Snoozed reminder: {0}</value>
+  </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Session error</value>
   </data>
@@ -1950,11 +2010,26 @@
   <data name="Notification_Severity_Warning" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="Notification_UpdateAvailable_Message" xml:space="preserve">
+    <value>Open the release page to download it.</value>
+  </data>
+  <data name="Notification_UpdateAvailable_Title" xml:space="preserve">
+    <value>Version {0} is available</value>
+  </data>
   <data name="Notification_VaultChanged_Message" xml:space="preserve">
     <value>The vault folder was changed successfully.</value>
   </data>
   <data name="Notification_VaultChanged_Title" xml:space="preserve">
     <value>Vault changed</value>
+  </data>
+  <data name="Notification_ViewExportFailed_Title" xml:space="preserve">
+    <value>Export failed</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Message" xml:space="preserve">
+    <value>Saved to {0}</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Title" xml:space="preserve">
+    <value>View exported</value>
   </data>
   <data name="Notifications_ClearAllButton" xml:space="preserve">
     <value>Clear all</value>
@@ -2115,6 +2190,9 @@
   <data name="Reminder_Bucket_Overdue" xml:space="preserve">
     <value>OVERDUE</value>
   </data>
+  <data name="Reminder_Bucket_Snoozed" xml:space="preserve">
+    <value>Snoozed</value>
+  </data>
   <data name="Reminder_Bucket_Soon" xml:space="preserve">
     <value>SOON</value>
   </data>
@@ -2135,6 +2213,51 @@
   </data>
   <data name="Reminder_InboxTooltip" xml:space="preserve">
     <value>Reminders</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_one" xml:space="preserve">
+    <value>Snoozed {0} time</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_other" xml:space="preserve">
+    <value>Snoozed {0} times</value>
+  </data>
+  <data name="Reminder_Snooze_Cancel" xml:space="preserve">
+    <value>Cancel snooze</value>
+  </data>
+  <data name="Reminder_Snooze_Custom" xml:space="preserve">
+    <value>Custom…</value>
+  </data>
+  <data name="Reminder_Snooze_CustomApply" xml:space="preserve">
+    <value>Snooze</value>
+  </data>
+  <data name="Reminder_Snooze_CustomMinutes_AccessibleName" xml:space="preserve">
+    <value>Minutes to snooze</value>
+  </data>
+  <data name="Reminder_Snooze_Evening" xml:space="preserve">
+    <value>This evening</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_one" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_other" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Reminder_Snooze_MenuTitle" xml:space="preserve">
+    <value>Snooze until</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_one" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_other" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Reminder_Snooze_Tomorrow" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="Reminder_Snooze_Tooltip" xml:space="preserve">
+    <value>Snooze</value>
+  </data>
+  <data name="Reminder_SnoozedUntilFormat" xml:space="preserve">
+    <value>Snoozed until {0}</value>
   </data>
   <data name="Reminder_UndoDismiss" xml:space="preserve">
     <value>Undo</value>
@@ -3501,6 +3624,27 @@
   <data name="Settings_Notifications_Reminders_Title" xml:space="preserve">
     <value>Reminders</value>
   </data>
+  <data name="Settings_Notifications_Snooze_Description" xml:space="preserve">
+    <value>Quick values offered by the “Snooze” menu in the reminder inbox and the notification centre.</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Evening" xml:space="preserve">
+    <value>“This evening” time</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Hour_Unit" xml:space="preserve">
+    <value>{0}:00</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Primary" xml:space="preserve">
+    <value>First quick value</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Secondary" xml:space="preserve">
+    <value>Second quick value</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Title" xml:space="preserve">
+    <value>Snooze</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Tomorrow" xml:space="preserve">
+    <value>“Tomorrow” time</value>
+  </data>
   <data name="Settings_Notifications_Sound_Description" xml:space="preserve">
     <value>Play a sound when a notification arrives.</value>
   </data>
@@ -3665,6 +3809,42 @@
   </data>
   <data name="Settings_Skills_Title" xml:space="preserve">
     <value>Skills</value>
+  </data>
+  <data name="Settings_Updates_AvailableFormat" xml:space="preserve">
+    <value>Version {0} is available</value>
+  </data>
+  <data name="Settings_Updates_CheckNow" xml:space="preserve">
+    <value>Check now</value>
+  </data>
+  <data name="Settings_Updates_Checking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="Settings_Updates_Description" xml:space="preserve">
+    <value>Enki never downloads or installs anything on its own: it only tells you when a newer release exists and opens its page in your browser.</value>
+  </data>
+  <data name="Settings_Updates_Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Settings_Updates_Failed" xml:space="preserve">
+    <value>Could not check for updates. Check your connection and try again.</value>
+  </data>
+  <data name="Settings_Updates_InstalledFormat" xml:space="preserve">
+    <value>Installed version: {0}</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Description" xml:space="preserve">
+    <value>Off by default. With it off, Enki makes no network requests of its own — “Check now” still works whenever you want it.</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Label" xml:space="preserve">
+    <value>Check on startup</value>
+  </data>
+  <data name="Settings_Updates_Skip" xml:space="preserve">
+    <value>Skip this version</value>
+  </data>
+  <data name="Settings_Updates_Title" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Settings_Updates_UpToDate" xml:space="preserve">
+    <value>You are on the latest version.</value>
   </data>
   <data name="Settings_ViewZoom_IncreaseDecrease" xml:space="preserve">
     <value>Increase or decrease zoom level</value>
@@ -5737,4 +5917,9 @@ Happy writing.</value>
   <data name="Editor_Transclusion_ReadFailed" xml:space="preserve"><value>This embedded note could not be read.</value></data>
   <data name="Editor_Math_Rendering" xml:space="preserve"><value>Rendering formula…</value></data>
   <data name="Editor_Mermaid_Rendering" xml:space="preserve"><value>Rendering diagram…</value></data>
+  <data name="Shell_InboxTooltip" xml:space="preserve"><value>Inbox — jot down a quick idea</value></data>
+  <data name="Settings_Notifications_Inbox_Label" xml:space="preserve"><value>Inbox button</value></data>
+  <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Show the inbox button in the title bar, for jotting an idea straight into the vault.</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Vault switcher</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Show the row that switches vault above the sidebar sections. Hidden, the command palette still switches vault.</value></data>
 </root>

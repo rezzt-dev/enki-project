@@ -292,6 +292,24 @@
   <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve">
     <value>Todo el día</value>
   </data>
+  <data name="CommandPalette_Action_ExportCalendarPdf" xml:space="preserve">
+    <value>Exportar calendario como PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportCalendarPng" xml:space="preserve">
+    <value>Exportar calendario como PNG</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPdf" xml:space="preserve">
+    <value>Exportar tablero como PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPng" xml:space="preserve">
+    <value>Exportar tablero como PNG</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePdf" xml:space="preserve">
+    <value>Exportar nota como PDF</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePng" xml:space="preserve">
+    <value>Exportar nota como PNG</value>
+  </data>
   <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
     <value>Nueva nota desde plantilla</value>
   </data>
@@ -836,6 +854,39 @@
   </data>
   <data name="Editor_Toolbar_ToggleSidePanel_Tooltip" xml:space="preserve">
     <value>Mostrar/ocultar panel lateral</value>
+  </data>
+  <data name="Export_Error_NothingToExport" xml:space="preserve">
+    <value>Todavía no hay nada maquetado que exportar.</value>
+  </data>
+  <data name="Export_Error_TooLarge" xml:space="preserve">
+    <value>La vista es demasiado grande para exportarla como una sola imagen.</value>
+  </data>
+  <data name="Export_Error_ViewNotOpen" xml:space="preserve">
+    <value>Abre antes la vista que quieres exportar.</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_one" xml:space="preserve">
+    <value>{0} tarjeta</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_other" xml:space="preserve">
+    <value>{0} tarjetas</value>
+  </data>
+  <data name="Export_MenuTooltip" xml:space="preserve">
+    <value>Exportar…</value>
+  </data>
+  <data name="Export_PdfFileType" xml:space="preserve">
+    <value>Documento PDF</value>
+  </data>
+  <data name="Export_PngFileType" xml:space="preserve">
+    <value>Imagen PNG</value>
+  </data>
+  <data name="Export_ToPdf" xml:space="preserve">
+    <value>Exportar como PDF…</value>
+  </data>
+  <data name="Export_ToPng" xml:space="preserve">
+    <value>Exportar como PNG…</value>
+  </data>
+  <data name="Export_ViewDialog_Title" xml:space="preserve">
+    <value>Exportar vista</value>
   </data>
   <data name="Files_AllFolder" xml:space="preserve">
     <value>Todos los archivos</value>
@@ -1809,6 +1860,9 @@
   <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
     <value>«{0}» no existe en tu vault. El enlace está roto.</value>
   </data>
+  <data name="Notification_OpenLink" xml:space="preserve">
+    <value>Abrir</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>NOTIFICACIONES</value>
   </data>
@@ -1842,6 +1896,12 @@
   <data name="Notification_ReminderDue_Title" xml:space="preserve">
     <value>Recordatorio: {0}</value>
   </data>
+  <data name="Notification_ReminderSnoozeElapsed_Message" xml:space="preserve">
+    <value>El aplazamiento ha terminado.</value>
+  </data>
+  <data name="Notification_ReminderSnoozeElapsed_Title" xml:space="preserve">
+    <value>Recordatorio aplazado: {0}</value>
+  </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Error de sesión</value>
   </data>
@@ -1863,11 +1923,26 @@
   <data name="Notification_Severity_Warning" xml:space="preserve">
     <value>Advertencia</value>
   </data>
+  <data name="Notification_UpdateAvailable_Message" xml:space="preserve">
+    <value>Abre la página de la release para descargarla.</value>
+  </data>
+  <data name="Notification_UpdateAvailable_Title" xml:space="preserve">
+    <value>La versión {0} ya está disponible</value>
+  </data>
   <data name="Notification_VaultChanged_Message" xml:space="preserve">
     <value>La carpeta de la bóveda se cambió correctamente.</value>
   </data>
   <data name="Notification_VaultChanged_Title" xml:space="preserve">
     <value>Bóveda cambiada</value>
+  </data>
+  <data name="Notification_ViewExportFailed_Title" xml:space="preserve">
+    <value>No se pudo exportar</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Message" xml:space="preserve">
+    <value>Guardada en {0}</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Title" xml:space="preserve">
+    <value>Vista exportada</value>
   </data>
   <data name="Notifications_ClearAllButton" xml:space="preserve">
     <value>Borrar todo</value>
@@ -2028,6 +2103,9 @@
   <data name="Reminder_Bucket_Overdue" xml:space="preserve">
     <value>ATRASADO</value>
   </data>
+  <data name="Reminder_Bucket_Snoozed" xml:space="preserve">
+    <value>Aplazado</value>
+  </data>
   <data name="Reminder_Bucket_Soon" xml:space="preserve">
     <value>PRONTO</value>
   </data>
@@ -2048,6 +2126,51 @@
   </data>
   <data name="Reminder_InboxTooltip" xml:space="preserve">
     <value>Recordatorios</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_one" xml:space="preserve">
+    <value>Aplazado {0} vez</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_other" xml:space="preserve">
+    <value>Aplazado {0} veces</value>
+  </data>
+  <data name="Reminder_Snooze_Cancel" xml:space="preserve">
+    <value>Cancelar aplazamiento</value>
+  </data>
+  <data name="Reminder_Snooze_Custom" xml:space="preserve">
+    <value>Personalizado…</value>
+  </data>
+  <data name="Reminder_Snooze_CustomApply" xml:space="preserve">
+    <value>Aplazar</value>
+  </data>
+  <data name="Reminder_Snooze_CustomMinutes_AccessibleName" xml:space="preserve">
+    <value>Minutos de aplazamiento</value>
+  </data>
+  <data name="Reminder_Snooze_Evening" xml:space="preserve">
+    <value>Esta tarde</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_one" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_other" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Reminder_Snooze_MenuTitle" xml:space="preserve">
+    <value>Aplazar hasta</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_one" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_other" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Reminder_Snooze_Tomorrow" xml:space="preserve">
+    <value>Mañana</value>
+  </data>
+  <data name="Reminder_Snooze_Tooltip" xml:space="preserve">
+    <value>Aplazar</value>
+  </data>
+  <data name="Reminder_SnoozedUntilFormat" xml:space="preserve">
+    <value>Aplazado hasta {0}</value>
   </data>
   <data name="Reminder_UndoDismiss" xml:space="preserve">
     <value>Deshacer</value>
@@ -3234,6 +3357,27 @@
   <data name="Settings_Notifications_Reminders_Title" xml:space="preserve">
     <value>Recordatorios</value>
   </data>
+  <data name="Settings_Notifications_Snooze_Description" xml:space="preserve">
+    <value>Valores rápidos que ofrece el menú «Aplazar» en la bandeja de recordatorios y en el centro de notificaciones.</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Evening" xml:space="preserve">
+    <value>Hora de «Esta tarde»</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Hour_Unit" xml:space="preserve">
+    <value>{0}:00</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Primary" xml:space="preserve">
+    <value>Primer valor rápido</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Secondary" xml:space="preserve">
+    <value>Segundo valor rápido</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Title" xml:space="preserve">
+    <value>Aplazar</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Tomorrow" xml:space="preserve">
+    <value>Hora de «Mañana»</value>
+  </data>
   <data name="Settings_Notifications_Sound_Description" xml:space="preserve">
     <value>Reproducir un sonido cuando llega una notificación.</value>
   </data>
@@ -3338,6 +3482,42 @@
   </data>
   <data name="Settings_Skills_Title" xml:space="preserve">
     <value>Habilidades</value>
+  </data>
+  <data name="Settings_Updates_AvailableFormat" xml:space="preserve">
+    <value>La versión {0} ya está disponible</value>
+  </data>
+  <data name="Settings_Updates_CheckNow" xml:space="preserve">
+    <value>Buscar ahora</value>
+  </data>
+  <data name="Settings_Updates_Checking" xml:space="preserve">
+    <value>Buscando…</value>
+  </data>
+  <data name="Settings_Updates_Description" xml:space="preserve">
+    <value>Enki no descarga ni instala nada por su cuenta: solo te avisa de que existe una versión más reciente y abre su página en el navegador.</value>
+  </data>
+  <data name="Settings_Updates_Download" xml:space="preserve">
+    <value>Descargar</value>
+  </data>
+  <data name="Settings_Updates_Failed" xml:space="preserve">
+    <value>No se pudo comprobar si hay actualizaciones. Revisa la conexión e inténtalo de nuevo.</value>
+  </data>
+  <data name="Settings_Updates_InstalledFormat" xml:space="preserve">
+    <value>Versión instalada: {0}</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Description" xml:space="preserve">
+    <value>Desactivado de fábrica. Con esto apagado, Enki no hace ninguna petición de red por su cuenta — «Buscar ahora» sigue disponible cuando quieras.</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Label" xml:space="preserve">
+    <value>Buscar al iniciar</value>
+  </data>
+  <data name="Settings_Updates_Skip" xml:space="preserve">
+    <value>Omitir esta versión</value>
+  </data>
+  <data name="Settings_Updates_Title" xml:space="preserve">
+    <value>Actualizaciones</value>
+  </data>
+  <data name="Settings_Updates_UpToDate" xml:space="preserve">
+    <value>Estás en la última versión.</value>
   </data>
   <data name="Settings_ViewZoom_IncreaseDecrease" xml:space="preserve">
     <value>Aumentar o disminuir el nivel de zoom</value>
@@ -5737,4 +5917,9 @@ Feliz escritura.</value>
   <data name="Editor_Transclusion_ReadFailed" xml:space="preserve"><value>No se pudo leer esta nota incrustada.</value></data>
   <data name="Editor_Math_Rendering" xml:space="preserve"><value>Renderizando fórmula…</value></data>
   <data name="Editor_Mermaid_Rendering" xml:space="preserve"><value>Renderizando diagrama…</value></data>
+  <data name="Shell_InboxTooltip" xml:space="preserve"><value>Bandeja de entrada — anota una idea rápida</value></data>
+  <data name="Settings_Notifications_Inbox_Label" xml:space="preserve"><value>Botón de bandeja de entrada</value></data>
+  <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Mostrar el botón de bandeja de entrada en la barra de título, para anotar una idea directamente en el vault.</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Selector de vault</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Mostrar la fila para cambiar de vault encima de las secciones de la barra lateral. Oculta, la paleta de comandos sigue cambiando de vault.</value></data>
 </root>

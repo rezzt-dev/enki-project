@@ -13,8 +13,11 @@ namespace enki.ViewModels;
 public sealed record QuickCaptureDestinationOption(QuickCaptureDestination Value, string Label);
 public sealed record QuickCaptureColumnOption(string Id, string Title);
 
-/// <summary>Estado duradero de la mini-ventana de captura. La ventana puede cerrarse y recrearse; esta
-/// instancia permanece viva en la composición del shell, por lo que Esc conserva el borrador.</summary>
+/// <summary>Estado duradero de la captura rápida, compartido por sus dos superficies: la mini-ventana
+/// global (<c>QuickCaptureWindow</c>, atajo del sistema) y el popup del botón de bandeja de entrada de la
+/// barra de título (<c>MainWindow.axaml</c>). Ninguna de las dos es dueña del borrador — esta instancia
+/// permanece viva en la composición del shell, así que Esc lo conserva y lo escrito en una puerta sigue
+/// ahí al abrir la otra.</summary>
 public sealed partial class QuickCaptureViewModel : ViewModelBase
 {
     private readonly QuickCaptureService _captureService;
@@ -42,6 +45,12 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
 
     [ObservableProperty]
     private string? _errorMessage;
+
+    /// <summary>Estado del popup de la bandeja de entrada de la barra de título (MainWindow.axaml). Vive
+    /// aquí, junto al borrador, y no en un viewmodel aparte: el popup y la mini-ventana global son dos
+    /// puertas a la misma captura, así que lo que se escriba en una sigue ahí al abrir la otra.</summary>
+    [ObservableProperty]
+    private bool _isOpen;
 
     public bool IsKanbanDestination => SelectedDestination?.Value == QuickCaptureDestination.KanbanCard;
     public double UiZoomScale => _vaultSettingsService.Settings.UiZoomPercent / 100.0;
@@ -102,6 +111,16 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
         _vaultSettingsService.Save();
     }
 
+    /// <summary>Abre/cierra el popup de la barra de título. Al abrir repite la misma preparación que la
+    /// mini-ventana (<see cref="PrepareToShow"/>), porque el vault o las columnas del tablero pueden haber
+    /// cambiado desde la última vez.</summary>
+    [RelayCommand]
+    private void Toggle()
+    {
+        if (!IsOpen) PrepareToShow();
+        IsOpen = !IsOpen;
+    }
+
     private bool CanSubmit() => !string.IsNullOrWhiteSpace(Draft);
 
     [RelayCommand(CanExecute = nameof(CanSubmit))]
@@ -128,6 +147,7 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
                         : "Notification_QuickCaptureSaved_Card",
                     result.Title), NotificationSeverity.Success);
             _onCaptured?.Invoke(result);
+            IsOpen = false;
             CloseRequested?.Invoke();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or VaultUnavailableException
@@ -148,5 +168,9 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel() => CloseRequested?.Invoke();
+    private void Cancel()
+    {
+        IsOpen = false;
+        CloseRequested?.Invoke();
+    }
 }

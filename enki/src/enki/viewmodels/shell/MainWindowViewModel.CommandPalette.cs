@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using enki.Localization;
+using enki.Services.Export;
 using Material.Icons;
 
 namespace enki.ViewModels;
@@ -63,6 +64,30 @@ public sealed partial class MainWindowViewModel
 
         if (Kanban is not null)
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AddKanbanColumn"], MaterialIconKind.ViewColumnOutline, AddKanbanColumnFromPalette));
+
+        // Exportar vistas (T8). Solo se ofrecen las de la página en la que estamos: la exportación
+        // rasteriza lo que está en pantalla, así que un comando de exportar el calendario desde Documentos
+        // no tendría nada que rasterizar — mismo criterio que el modo enfoque o "sincronizar con Polar",
+        // que tampoco se ofrecen cuando no aplican.
+        if (Calendar is not null && CurrentPage == Calendar)
+        {
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportCalendarPng"], MaterialIconKind.ImageOutline, () => _ = Calendar.ExportViewAsync(ExportFormat.Png)));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportCalendarPdf"], MaterialIconKind.FilePdfBox, () => _ = Calendar.ExportViewAsync(ExportFormat.Pdf)));
+        }
+
+        if (Kanban is not null && CurrentPage == Kanban)
+        {
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportKanbanPng"], MaterialIconKind.ImageOutline, () => _ = Kanban.ExportBoardAsync(ExportFormat.Png)));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportKanbanPdf"], MaterialIconKind.FilePdfBox, () => _ = Kanban.ExportBoardAsync(ExportFormat.Pdf)));
+        }
+
+        // La nota, en cambio, se compone desde su Markdown y no desde la pantalla, así que basta con que
+        // haya una pestaña activa: no hace falta estar en Documentos.
+        if (Notes?.ActiveEditor is not null)
+        {
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportNotePng"], MaterialIconKind.ImageOutline, () => _ = Notes.ExportActiveNoteAsync(ExportFormat.Png)));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportNotePdf"], MaterialIconKind.FilePdfBox, () => _ = Notes.ExportActiveNoteAsync(ExportFormat.Pdf)));
+        }
 
         if (Settings is not null)
         {
