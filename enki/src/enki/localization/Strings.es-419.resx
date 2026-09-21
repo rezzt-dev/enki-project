@@ -5725,4 +5725,16 @@ Feliz escritura.</value>
   <data name="Settings_General_Tray_Title" xml:space="preserve"><value>Bandeja del sistema</value></data>
   <data name="Settings_General_Tray_Description" xml:space="preserve"><value>Mantén la captura rápida al alcance aunque la ventana principal esté oculta.</value></data>
   <data name="Settings_General_Tray_KeepRunning" xml:space="preserve"><value>Mantener Enki en la bandeja al cerrar la ventana principal</value></data>
+  <data name="Editor_Transclusion_AccessibleName" xml:space="preserve"><value>Nota incrustada: {0}</value></data>
+  <data name="Editor_Transclusion_Truncated" xml:space="preserve"><value>Vista previa recortada. Abre la nota para leer el resto.</value></data>
+  <data name="Editor_Transclusion_Broken" xml:space="preserve"><value>La nota incrustada no existe.</value></data>
+  <data name="Editor_Transclusion_Ambiguous" xml:space="preserve"><value>Más de una nota coincide con esta referencia.</value></data>
+  <data name="Editor_Transclusion_SectionMissing" xml:space="preserve"><value>La sección solicitada no existe en esta nota.</value></data>
+  <data name="Editor_Transclusion_BlockMissing" xml:space="preserve"><value>El bloque solicitado no existe en esta nota.</value></data>
+  <data name="Editor_Transclusion_Locked" xml:space="preserve"><value>Esta nota pertenece a una sesión bloqueada. Desbloquéala para ver su contenido.</value></data>
+  <data name="Editor_Transclusion_Cycle" xml:space="preserve"><value>La incrustación circular se detuvo aquí.</value></data>
+  <data name="Editor_Transclusion_DepthLimit" xml:space="preserve"><value>Se alcanzó el límite de profundidad de incrustación.</value></data>
+  <data name="Editor_Transclusion_ReadFailed" xml:space="preserve"><value>No se pudo leer esta nota incrustada.</value></data>
+  <data name="Editor_Math_Rendering" xml:space="preserve"><value>Renderizando fórmula…</value></data>
+  <data name="Editor_Mermaid_Rendering" xml:space="preserve"><value>Renderizando diagrama…</value></data>
 </root>

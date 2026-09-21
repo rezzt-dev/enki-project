@@ -28,6 +28,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     private readonly SettingsService? _settingsService;
     private readonly NotificationService? _notificationService;
     private readonly VaultChangeWatcher? _changeWatcher;
+    private readonly NoteTransclusionService _transclusionService;
     private readonly Action _onBack;
     private readonly Action _onChanged;
     private readonly Action<NoteFile>? _onOpenNote;
@@ -382,6 +383,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         _dailyNoteService = dailyNoteService;
         _onOpenDailyNoteFor = onOpenDailyNoteFor;
         _changeWatcher = changeWatcher;
+        _transclusionService = new NoteTransclusionService(vaultService);
         Note = note;
         _title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _tagsInput = string.Join(", ", note.Tags);
@@ -487,6 +489,13 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// tolerance the rest of the app already has for cross-tab state (docs/analisis-proyecto/roadmap.md,
     /// Fase 5).</summary>
     public IReadOnlyList<NoteFile> WikiLinkScopeNotes { get; private set; } = [];
+
+    /// <summary>Resuelve el contenido que el live preview pide para <c>![[…]]</c>. Se queda en el VM para
+    /// que la vista no lea el vault por su cuenta; el servicio sigue trabajando sobre las entidades reales
+    /// y la lista de alcance idéntica a la de los wikilinks.</summary>
+    public NoteTransclusionResult ResolveTransclusion(string reference, IReadOnlyList<string>? ancestry = null) =>
+        _transclusionService.Resolve(reference, WikiLinkScopeNotes,
+            ancestry ?? [Note.FullPath]);
 
     private void RefreshWikiLinkScopeNotes()
     {

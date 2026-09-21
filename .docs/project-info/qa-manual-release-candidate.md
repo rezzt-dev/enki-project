@@ -374,6 +374,46 @@ estado; esta matriz valida la integración real con el escritorio.
 - [ ] Con «Mantener Enki en la bandeja» apagado, cerrar la principal termina el proceso. Encendido, la
       oculta y la captura sigue operativa; «Salir» vuelca el último autoguardado y elimina el icono.
 
+## 8.4 Notas embebidas (T10)
+
+Los tests automáticos cubren la resolución, las secciones, los bloques, los ciclos y la profundidad. Lo que
+solo se ve con el editor delante es el dibujado y el refresco.
+
+- [ ] `![[Otra nota]]` se dibuja como bloque embebido con su título; entrar con el cursor lo devuelve a
+      texto y salir lo vuelve a dibujar.
+- [ ] `![[Nota#Sección]]` embebe solo esa sección y `![[Nota#^id]]` solo ese bloque. Una sección o un
+      bloque inexistentes muestran su aviso y **no** vuelcan la nota entera.
+- [ ] `![[diagrama.png]]` sigue dibujándose como imagen, no como nota embebida.
+- [ ] Un clic en el bloque abre la nota embebida en una pestaña.
+- [ ] Editar la nota embebida en otra pestaña —o fuera de Enki, con el sincronizador de la sección 8.2—
+      actualiza el embebido en un par de segundos sin reabrir la anfitriona.
+- [ ] Con A embebiendo B y B embebiendo A, la recursión se corta con aviso y la aplicación no se cuelga.
+- [ ] Una nota en sesión protegida bloqueada muestra el aviso de sesión bloqueada y **nunca** su contenido;
+      al desbloquear la sesión aparece.
+- [ ] Con lector de pantalla, el bloque se anuncia como nota embebida con su título.
+
+## 8.5 Fórmulas y diagramas (T11)
+
+Ejecutar en Windows, macOS y Linux: el motor de diagramas depende del WebView del sistema y es lo único de
+esta familia que puede faltar en una máquina concreta.
+
+- [ ] `$E=mc^2$` se dibuja en línea sin alterar el alto de la línea; `$$…$$` en líneas propias se dibuja
+      como bloque centrado y las líneas de dentro quedan plegadas.
+- [ ] Entrar con el cursor en una fórmula o en un diagrama enseña el texto en crudo; salir lo vuelve a
+      dibujar.
+- [ ] `de $20 a $30`, `\$literal` y `$$` dentro de un bloque de código siguen siendo texto.
+- [ ] Un bloque ` ```mermaid ` se dibuja como diagrama, con los colores del tema activo, y **sin** el
+      recuadro de bloque de código ni su botón de copiar encima.
+- [ ] Un diagrama mal escrito y un LaTeX inválido degradan a su código/fuente visible, nunca a un hueco.
+- [ ] En una máquina sin motor de WebView disponible, los diagramas degradan a bloque de código y el editor
+      sigue funcionando con normalidad.
+- [ ] Cambiar de tema claro/oscuro y de tamaño de fuente del editor vuelve a dibujar fórmulas y diagramas
+      con los colores y el tamaño nuevos.
+- [ ] Una nota con muchas fórmulas se escribe sin retardo perceptible (el render es asíncrono) y el
+      consumo de memoria no crece indefinidamente al recorrerla.
+- [ ] Exportar a HTML esa nota: las fórmulas salen incrustadas como imagen y se ven con el archivo abierto
+      **sin conexión**; los diagramas salen como bloque de código.
+
 ---
 
 ## 9. Criterio de salida antes de `0.2.0`

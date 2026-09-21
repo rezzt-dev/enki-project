@@ -15,6 +15,19 @@ public class WikiLinkParserTests
         Title = title
     };
 
+    [Theory]
+    [InlineData("Nota", "Nota", null, null)]
+    [InlineData("Nota#Mi sección", "Nota", "Mi sección", null)]
+    [InlineData("Nota#^bloque-1", "Nota", null, "bloque-1")]
+    [InlineData("Nota^bloque-2|Alias", "Nota", null, "bloque-2")]
+    public void ParseTarget_SeparatesNoteAndFragment(string raw, string note, string? heading, string? block)
+    {
+        var parsed = WikiLinkParser.ParseTarget(raw);
+        Assert.Equal(note, parsed.Note);
+        Assert.Equal(heading, parsed.Heading);
+        Assert.Equal(block, parsed.BlockId);
+    }
+
     [Fact]
     public void ResolveTarget_MatchesByFileName_BeforeTitle()
     {

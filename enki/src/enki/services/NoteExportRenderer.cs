@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using enki.Localization;
 using enki.Models;
 using enki.Views.Editor.Markdown;
+using SkiaSharp;
 
 namespace enki.Services;
 
@@ -77,6 +78,15 @@ public static class NoteExportRenderer
         // <i> que cierra tres líneas más abajo tiene que seguir en cursiva aquí igual que en el editor,
         // y cada bloque exportado (<p>, <li>, <h2>…) debe salir balanceado por sí mismo.
         var htmlStates = MarkdownHtmlParser.ComputeLineStates(text, fences);
+        // Fórmulas de bloque ($$…$$) y diagramas Mermaid: igual que las tablas, son bloques y no líneas.
+        // Solo las fórmulas se dibujan aquí — CSharpMath compone en proceso y da una imagen estática. Un
+        // diagrama Mermaid necesita el WebView del editor, que no existe en un servicio de exportación, y
+        // por eso sigue saliendo como su bloque de código (T11, .docs/funcionalidades-pendientes-priorizadas.md).
+        var specialBlocks = new Dictionary<int, MarkdownSpecialBlock>();
+        foreach (var block in MarkdownSpecialBlocks.Scan(text, fences))
+        {
+            if (block.Kind == MarkdownSpecialBlockKind.Math) specialBlocks[block.StartLine] = block;
+        }
         var lines = text.Split('\n');
 
         // Offsets absolutos de cada línea, precomputados una sola vez: el parser trabaja con posiciones
@@ -143,6 +153,14 @@ public static class NoteExportRenderer
             {
                 sb.Append(RenderInline(lines[i], lineOffsets[i], parsed, OpenTags(i), noteDirectory, vaultRootPath)).Append('\n');
                 i++;
+                continue;
+            }
+
+            // Fórmula de bloque: se emite su imagen y el bucle salta más allá del `$$` de cierre.
+            if (specialBlocks.TryGetValue(i + 1, out var mathBlock))
+            {
+                AppendMath(sb, mathBlock.Source, display: true);
+                i = mathBlock.EndLine;
                 continue;
             }
 
@@ -409,6 +427,14 @@ public static class NoteExportRenderer
                 // hiperenlace roto.
                 sb.Append("<span class=\"wikilink\">").Append(EscapeText(content)).Append("</span>");
                 break;
+            case MdSpanKind.Math:
+                AppendMath(sb, content, span.IsDisplayMath);
+                break;
+            case MdSpanKind.Transclusion:
+                // La nota embebida no se resuelve fuera del vault, así que el documento estático conserva
+                // la referencia en vez de tragársela — mismo criterio que un wikilink.
+                sb.Append("<span class=\"wikilink\">").Append(EscapeText(span.LinkTarget ?? content)).Append("</span>");
+                break;
             case MdSpanKind.Image:
                 AppendImage(sb, span, content, noteDirectory, vaultRootPath);
                 break;
@@ -416,6 +442,28 @@ public static class NoteExportRenderer
                 AppendLink(sb, span, content);
                 break;
         }
+    }
+
+    /// <summary>Fórmula LaTeX como imagen estática incrustada (PNG en data URI, negro sobre el fondo
+    /// blanco de la plantilla) para que el documento exportado siga siendo un archivo autónomo, sin
+    /// script ni CDN. Si el render falla, sale el LaTeX original entre delimitadores, que es legible.</summary>
+    private static void AppendMath(StringBuilder sb, string latex, bool display)
+    {
+        var png = LatexRenderService.RenderPng(latex, display, display ? 26f : 19f, SKColors.Black);
+        var delimiter = display ? "$$" : "$";
+        if (png is null)
+        {
+            var raw = WebUtility.HtmlEncode(delimiter + latex + delimiter);
+            if (display) sb.Append("<pre><code class=\"math\">").Append(raw).Append("</code></pre>\n");
+            else sb.Append("<code class=\"math\">").Append(raw).Append("</code>");
+            return;
+        }
+
+        var alt = WebUtility.HtmlEncode(latex);
+        if (display) sb.Append("<p class=\"math-block\">");
+        sb.Append("<img class=\"math\" alt=\"").Append(alt).Append("\" src=\"data:image/png;base64,")
+            .Append(Convert.ToBase64String(png)).Append("\"/>");
+        if (display) sb.Append("</p>\n");
     }
 
     private static string SanitizedTagAt(MdLine model, int start)
@@ -627,6 +675,8 @@ public static class NoteExportRenderer
         p { margin: 0 0 14px; }
         a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
         .wikilink { font-weight: 600; border-bottom: 1px dashed #8a8a8a; }
+        img.math { vertical-align: middle; max-width: 100%; }
+        .math-block { text-align: center; margin: 18px 0; }
         code, pre { font-family: 'JetBrains Mono', 'Cascadia Code', ui-monospace, Consolas, monospace; }
         code { background: #f0f0f0; padding: 1px 5px; font-size: 0.86em; }
         pre { background: #f5f5f5; border: 1px solid #e0e0e0; padding: 14px 16px; margin: 0 0 16px;

@@ -114,6 +114,10 @@ internal sealed class CodeBlockCopyOverlay
                 if (inBlock) continue;
                 inBlock = true;
 
+                // Un bloque Mermaid dibujado ya no enseña su código: copiarlo desde aquí no tendría de
+                // dónde, y el botón caería sobre el diagrama (ver MarkdownSpecialBlockFolding).
+                if (_state.IsRenderedSpecialBlockLine(lineNumber)) continue;
+
                 // Solo la apertura del bloque lleva botón, y solo si de verdad empieza aquí: la primera
                 // línea de código visible de un bloque a medio desplazar no es su esquina superior.
                 if (!fence.IsDelimiter || _state.GetFence(lineNumber - 1).IsCode) continue;

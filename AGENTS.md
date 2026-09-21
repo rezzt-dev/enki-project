@@ -81,6 +81,7 @@ normalices a un solo idioma.
   `.docs/project-info/seccion-archivos.md`, `.docs/project-info/vista-simplificada-notas.md`,
   `.docs/project-info/plantillas-de-notas.md`, `.docs/project-info/notas-diarias.md`,
   `.docs/project-info/imagenes-en-notas.md`, `.docs/project-info/tablas-en-notas.md`,
+  `.docs/project-info/transclusion-de-notas.md`, `.docs/project-info/formulas-y-diagramas.md`,
   `.docs/project-info/busqueda-texto-completo.md`, `.docs/project-info/logo-personalizado.md`,
   `.docs/project-info/funcionalidad-zoom-interfaz.md`,
   `.docs/project-info/notificaciones-y-recordatorios.md`,

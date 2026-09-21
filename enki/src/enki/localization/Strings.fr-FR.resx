@@ -5725,4 +5725,16 @@ Bonne rédaction.</value>
   <data name="Settings_General_Tray_Title" xml:space="preserve"><value>Zone de notification</value></data>
   <data name="Settings_General_Tray_Description" xml:space="preserve"><value>Gardez la capture rapide à portée de main lorsque la fenêtre principale est masquée.</value></data>
   <data name="Settings_General_Tray_KeepRunning" xml:space="preserve"><value>Garder Enki dans la zone de notification à la fermeture de la fenêtre principale</value></data>
+  <data name="Editor_Transclusion_AccessibleName" xml:space="preserve"><value>Note intégrée : {0}</value></data>
+  <data name="Editor_Transclusion_Truncated" xml:space="preserve"><value>Aperçu tronqué. Ouvrez la note pour lire la suite.</value></data>
+  <data name="Editor_Transclusion_Broken" xml:space="preserve"><value>La note intégrée n’existe pas.</value></data>
+  <data name="Editor_Transclusion_Ambiguous" xml:space="preserve"><value>Plusieurs notes correspondent à cette référence.</value></data>
+  <data name="Editor_Transclusion_SectionMissing" xml:space="preserve"><value>La section demandée n’existe pas dans cette note.</value></data>
+  <data name="Editor_Transclusion_BlockMissing" xml:space="preserve"><value>Le bloc demandé n’existe pas dans cette note.</value></data>
+  <data name="Editor_Transclusion_Locked" xml:space="preserve"><value>Cette note appartient à une session verrouillée. Déverrouillez-la pour voir son contenu.</value></data>
+  <data name="Editor_Transclusion_Cycle" xml:space="preserve"><value>L’intégration circulaire a été arrêtée ici.</value></data>
+  <data name="Editor_Transclusion_DepthLimit" xml:space="preserve"><value>Limite de profondeur d’intégration atteinte.</value></data>
+  <data name="Editor_Transclusion_ReadFailed" xml:space="preserve"><value>Impossible de lire cette note intégrée.</value></data>
+  <data name="Editor_Math_Rendering" xml:space="preserve"><value>Rendu de la formule…</value></data>
+  <data name="Editor_Mermaid_Rendering" xml:space="preserve"><value>Rendu du diagramme…</value></data>
 </root>

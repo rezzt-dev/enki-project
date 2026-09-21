@@ -37,8 +37,8 @@ secciones indicadas.
 
 ### Prioridad baja — más adelante
 
-- [ ] **T10 · Transclusión `![[Nota]]`** — renderizar el contenido de otra nota (o sección) embebido en el visor en lugar de degradarlo a wikilink. → [§5.1](#51-t10--transclusión-nota)
-- [ ] **T11 · Fórmulas y diagramas** — soportar LaTeX (`$…$`, `$$…$$`) y bloques ` ```mermaid ` en el visor; solo si el avatar es estudiante/técnico. → [§5.2](#52-t11--fórmulas-latex-y-diagramas-mermaid)
+- [x] **T10 · Transclusión `![[Nota]]`** — renderizar el contenido de otra nota (o sección) embebido en el visor en lugar de degradarlo a wikilink. → [§5.1](#51-t10--transclusión-nota)
+- [x] **T11 · Fórmulas y diagramas** — soportar LaTeX (`$…$`, `$$…$$`) y bloques ` ```mermaid ` en el visor; solo si el avatar es estudiante/técnico. → [§5.2](#52-t11--fórmulas-latex-y-diagramas-mermaid)
 - [ ] **T12 · Captura móvil vía Polar** — aceptar en Enki notas/ideas capturadas desde el móvil a través de Supabase/Polar como paso intermedio barato hacia la sincronización de notas. → [§5.3](#53-t12--captura-móvil-vía-polar-y-sincronización-de-notas)
 - [ ] **T13 · Importación desde otras herramientas** — verificar qué formatos cubre el código actual (Obsidian, Notion, `.ics`) y, si el avatar viene de otra app, subirla a prioridad alta. → [§5.4](#54-t13--importación-y-exportación-ics-obsidian-notion)
 
@@ -705,6 +705,15 @@ omitida, límite de frecuencia con reloj inyectado. **Complejidad:** baja; **est
 
 ### 5.1 T10 · Transclusión `![[Nota]]`
 
+> **Estado: implementado.** La referencia viva del comportamiento, los estados de error y los límites está
+> en [`project-info/transclusion-de-notas.md`](project-info/transclusion-de-notas.md). El diseño de abajo se
+> siguió tal cual: resolución sobre las notas reales del vault (sin almacén secundario), tope de cinco
+> niveles, detección de ciclos **antes** de leer el archivo, embebido de solo lectura y sesiones bloqueadas
+> que nunca enseñan su contenido. Se añadió un corte a 300 líneas por embebido y un refresco cada dos
+> segundos, porque una nota embebida no es un búfer abierto y no pasa por el vigilante de conflictos de T1.
+> En la exportación a HTML la referencia se conserva como enlace interno: fuera del vault no hay nada que
+> resolver.
+
 `MarkdownLineParser` degrada explícitamente estas transclusiones a wikilink normal. Implementarlas implica:
 resolver la nota (y opcionalmente `#sección` o `^bloque`) mediante `WikiLinkParser`, renderizar su contenido
 embebido en el visor con **límite de profundidad y detección de ciclos** (A embebe B que embebe A), refrescar
@@ -717,6 +726,15 @@ si hay un ciclo, entonces el sistema deberá cortar la recursión y mostrar un a
 sesión bloqueada, entonces el sistema no deberá mostrar su contenido.
 
 ### 5.2 T11 · Fórmulas LaTeX y diagramas Mermaid
+
+> **Estado: implementado.** La referencia viva —sintaxis, motores, cachés, límites y degradación— está en
+> [`project-info/formulas-y-diagramas.md`](project-info/formulas-y-diagramas.md). Lo que se decidió al
+> evaluar el peso frente al valor: las **fórmulas** las compone CSharpMath en proceso (sin navegador, sin
+> archivos temporales) y los **diagramas** los dibuja el bundle de Mermaid empaquetado en un `NativeWebView`
+> oculto de 1×1 px que solo devuelve SVG, rasterizado después con `Svg.Skia`. Las dos rutas son locales,
+> cacheadas, con tiempo límite (2 s y 4 s) y degradan al LaTeX o al bloque de código cuando fallan. En la
+> exportación a HTML solo entran las fórmulas, como PNG en `data:` URI: un diagrama necesita el WebView del
+> editor, que no existe en un servicio de exportación, y sale como su bloque de código.
 
 No se encontró Mermaid ni LaTeX. Solo importa si el avatar es estudiante o técnico. Requiere un motor de
 render local (nunca CDN, por privacidad y offline): el proyecto ya incluye `Avalonia.Controls.WebView`,

@@ -28,6 +28,56 @@ public class NoteExportRendererTests : IDisposable
     private static string Body(string markdown) => NoteExportRenderer.RenderBodyHtml(markdown, noteDirectory: null);
 
     [Fact]
+    public void RenderBody_InlineFormula_IsEmbeddedAsAStaticImage()
+    {
+        // El documento exportado tiene que seguir siendo autónomo: la fórmula viaja dentro del HTML como
+        // PNG en data URI, sin script ni CDN (T11).
+        var html = Body("La energía es $E=mc^2$.");
+
+        Assert.Contains("<img class=\"math\" alt=\"E=mc^2\" src=\"data:image/png;base64,", html);
+        Assert.DoesNotContain("$E=mc^2$", html);
+    }
+
+    [Fact]
+    public void RenderBody_DisplayFormula_IsItsOwnCentredBlock()
+    {
+        var html = Body("$$\n\\int_0^1 x^2 dx\n$$");
+
+        Assert.Contains("<p class=\"math-block\">", html);
+        Assert.Contains("src=\"data:image/png;base64,", html);
+        Assert.DoesNotContain("<p>$$</p>", html);
+    }
+
+    [Fact]
+    public void RenderBody_InvalidFormula_FallsBackToItsSource()
+    {
+        // Degradar a código es lo mismo que hace el editor cuando el render falla: el LaTeX original se
+        // lee igual de bien que una imagen rota, que no se lee en absoluto.
+        var html = Body("Roto: $\\ordenmaquinada$.");
+
+        Assert.Contains("<code class=\"math\">$\\ordenmaquinada$</code>", html);
+    }
+
+    [Fact]
+    public void RenderBody_MermaidDiagram_StaysACodeBlock()
+    {
+        // Mermaid necesita el WebView del editor, que no existe en la exportación: el bloque sale como su
+        // propio código, legible, en vez de como un hueco vacío.
+        var html = Body("```mermaid\ngraph TD;\nA--&gt;B;\n```".Replace("&gt;", ">"));
+
+        Assert.Contains("<pre><code class=\"language-mermaid\">", html);
+        Assert.Contains("graph TD;", html);
+    }
+
+    [Fact]
+    public void RenderBody_Transclusion_KeepsTheReferenceInsteadOfDroppingIt()
+    {
+        var html = Body("Ver ![[Otra nota]] para el detalle.");
+
+        Assert.Contains("<span class=\"wikilink\">Otra nota</span>", html);
+    }
+
+    [Fact]
     public void RenderBody_Headings_RenderAtTheirLevel()
     {
         var html = Body("# Uno\n\n### Tres");

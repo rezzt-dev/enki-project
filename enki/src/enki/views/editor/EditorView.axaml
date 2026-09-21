@@ -501,6 +501,11 @@
                no llega a recibir estilo ni plantilla. Sin Background no entra en el hit-test: todo clic que
                no caiga en un botón atraviesa el lienzo y llega al editor. -->
           <Grid x:Name="CodeBlockInputHost" Grid.Row="1">
+            <!-- Motor único y oculto que convierte Mermaid a SVG. Mide 1 px porque algunos backends no
+                 inicializan un NativeWebView desconectado o sin tamaño; nunca recibe entrada ni navega. -->
+            <ContentControl x:Name="MermaidEngineHost" Width="1" Height="1" Opacity="0"
+                            IsHitTestVisible="False" ClipToBounds="True" ZIndex="-1"
+                            HorizontalAlignment="Left" VerticalAlignment="Top" />
             <Border x:Name="EditorColumnHost" Margin="8">
               <!-- Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
                    code block's box is painted that far outside the text column on each side, into the left
