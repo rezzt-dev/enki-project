@@ -5624,4 +5624,40 @@ Bonne rédaction.</value>
   <data name="Startup_Error_Title" xml:space="preserve"><value>Enki n’a pas pu démarrer</value></data>
   <data name="Startup_Error_Message" xml:space="preserve"><value>L’erreur a été enregistrée. Consultez les fichiers de diagnostic dans :&#10;{0}</value></data>
   <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>chemin du journal indisponible</value></data>
+  <data name="Editor_History_Trigger_ExternalConflict" xml:space="preserve"><value>Conflit externe</value></data>
+  <data name="Editor_External_Conflict_Title" xml:space="preserve"><value>Modification externe</value></data>
+  <data name="Editor_External_Conflict_Message" xml:space="preserve"><value>« {0} » a été modifiée en dehors d'Enki et des modifications ne sont pas enregistrées. Choisis la version à conserver.</value></data>
+  <data name="Editor_External_Conflict_Reassurance" xml:space="preserve"><value>La version écartée est d'abord enregistrée dans l'historique de la note : tu peux toujours y revenir.</value></data>
+  <data name="Editor_External_Conflict_KeepMine" xml:space="preserve"><value>Garder la mienne</value></data>
+  <data name="Editor_External_Conflict_LoadFromDisk" xml:space="preserve"><value>Charger celle du disque</value></data>
+  <data name="Editor_External_Conflict_ShowDiff" xml:space="preserve"><value>Voir les différences</value></data>
+  <data name="Editor_External_Conflict_HideDiff" xml:space="preserve"><value>Masquer les différences</value></data>
+  <data name="Editor_External_Conflict_DiffLegend" xml:space="preserve"><value>En vert, ce qu'apporte ta version ; en rouge, ce qui n'existe que sur le disque.</value></data>
+  <data name="Editor_External_Badge" xml:space="preserve"><value>Conflit</value></data>
+  <data name="Editor_External_Badge_Tooltip" xml:space="preserve"><value>Une modification externe reste non résolue : l'enregistrement automatique de cette note est en pause. Clique pour décider.</value></data>
+  <data name="Editor_External_Deleted_Title" xml:space="preserve"><value>Note supprimée hors d'Enki</value></data>
+  <data name="Editor_External_Deleted_Message" xml:space="preserve"><value>« {0} » n'existe plus dans le coffre. Ce qui est à l'écran reste ici et n'a pas été perdu.</value></data>
+  <data name="Editor_External_Deleted_Hint" xml:space="preserve"><value>Tu peux l'enregistrer comme nouvelle note dans le même dossier, ou l'abandonner et fermer l'onglet.</value></data>
+  <data name="Editor_External_Deleted_SaveAsNew" xml:space="preserve"><value>Enregistrer comme nouvelle note</value></data>
+  <data name="Editor_External_Deleted_Discard" xml:space="preserve"><value>Abandonner et fermer</value></data>
+  <data name="Notification_NoteReloadedExternally_Title" xml:space="preserve"><value>Note mise à jour de l'extérieur</value></data>
+  <data name="Notification_NoteReloadedExternally_Message" xml:space="preserve"><value>« {0} » a changé en dehors d'Enki et a été rechargée. Il n'y avait aucune modification non enregistrée.</value></data>
+  <data name="Notification_NoteExternalConflict_Title" xml:space="preserve"><value>Modification externe non résolue</value></data>
+  <data name="Notification_NoteExternalConflict_Message" xml:space="preserve"><value>L'enregistrement automatique de « {0} » est en pause jusqu'à ce que tu choisisses la version à conserver.</value></data>
+  <data name="Notification_NoteRenamedExternally_Title" xml:space="preserve"><value>Note déplacée de l'extérieur</value></data>
+  <data name="Notification_NoteRenamedExternally_Message" xml:space="preserve"><value>L'onglet suit désormais « {0} » vers son nouvel emplacement.</value></data>
+  <data name="Notification_NoteDeletedExternally_Title" xml:space="preserve"><value>Note supprimée de l'extérieur</value></data>
+  <data name="Notification_NoteDeletedExternally_Message" xml:space="preserve"><value>« {0} » n'est plus dans le coffre. Son contenu reste à l'écran et l'enregistrement automatique est en pause.</value></data>
+  <data name="Notification_NoteConflictKeptMine_Title" xml:space="preserve"><value>Ta version a été conservée</value></data>
+  <data name="Notification_NoteConflictKeptMine_Message" xml:space="preserve"><value>La version du disque de « {0} » a été enregistrée dans l'historique, au cas où.</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Title" xml:space="preserve"><value>Version du disque chargée</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Message" xml:space="preserve"><value>Ta version de « {0} » a été enregistrée dans l'historique, au cas où.</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Title" xml:space="preserve"><value>Note enregistrée à nouveau</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Message" xml:space="preserve"><value>« {0} » a été recréée avec le contenu que tu avais à l'écran.</value></data>
+  <data name="Settings_Editor_WatchExternal_Label" xml:space="preserve"><value>Surveiller les modifications externes du coffre</value></data>
+  <data name="Settings_Editor_WatchExternal_Description" xml:space="preserve"><value>Détecte ce que d'autres programmes (Syncthing, Dropbox, un autre éditeur) écrivent dans les notes ouvertes. Même désactivé, un enregistrement n'écrase jamais une modification faite hors d'Enki.</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Label" xml:space="preserve"><value>Recharger automatiquement s'il n'y a aucune modification locale</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Description" xml:space="preserve"><value>En cas de modifications non enregistrées, la question est toujours posée ; ceci ne décide que du cas contraire.</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Title" xml:space="preserve"><value>Texte non enregistré conservé dans l'historique</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Message" xml:space="preserve"><value>« {0} » a été fermée avec une modification externe non résolue. Ce que tu avais écrit se trouve dans l'historique des versions de la note.</value></data>
 </root>

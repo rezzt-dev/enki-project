@@ -5624,4 +5624,40 @@ A disfrutar escribiendo.</value>
   <data name="Startup_Error_Title" xml:space="preserve"><value>Enki no ha podido iniciar</value></data>
   <data name="Startup_Error_Message" xml:space="preserve"><value>Se ha registrado el error. Revisa los archivos de diagnóstico en:&#10;{0}</value></data>
   <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>ruta de log no disponible</value></data>
+  <data name="Editor_History_Trigger_ExternalConflict" xml:space="preserve"><value>Conflicto externo</value></data>
+  <data name="Editor_External_Conflict_Title" xml:space="preserve"><value>Cambio externo</value></data>
+  <data name="Editor_External_Conflict_Message" xml:space="preserve"><value>«{0}» se ha modificado fuera de Enki y tienes cambios sin guardar. Elige qué versión se queda.</value></data>
+  <data name="Editor_External_Conflict_Reassurance" xml:space="preserve"><value>La versión que descartes se guarda antes en el historial de la nota, así que siempre puedes volver a ella.</value></data>
+  <data name="Editor_External_Conflict_KeepMine" xml:space="preserve"><value>Conservar la mía</value></data>
+  <data name="Editor_External_Conflict_LoadFromDisk" xml:space="preserve"><value>Cargar la de disco</value></data>
+  <data name="Editor_External_Conflict_ShowDiff" xml:space="preserve"><value>Ver diferencias</value></data>
+  <data name="Editor_External_Conflict_HideDiff" xml:space="preserve"><value>Ocultar diferencias</value></data>
+  <data name="Editor_External_Conflict_DiffLegend" xml:space="preserve"><value>En verde, lo que aporta tu versión; en rojo, lo que solo está en la de disco.</value></data>
+  <data name="Editor_External_Badge" xml:space="preserve"><value>Conflicto</value></data>
+  <data name="Editor_External_Badge_Tooltip" xml:space="preserve"><value>Hay un cambio externo sin resolver: el autoguardado de esta nota está en pausa. Pulsa para decidir.</value></data>
+  <data name="Editor_External_Deleted_Title" xml:space="preserve"><value>Nota borrada fuera de Enki</value></data>
+  <data name="Editor_External_Deleted_Message" xml:space="preserve"><value>«{0}» ya no existe en el vault. Lo que hay en pantalla sigue aquí y no se ha perdido.</value></data>
+  <data name="Editor_External_Deleted_Hint" xml:space="preserve"><value>Puedes guardarlo como nota nueva en la misma carpeta, o descartarlo y cerrar la pestaña.</value></data>
+  <data name="Editor_External_Deleted_SaveAsNew" xml:space="preserve"><value>Guardar como nota nueva</value></data>
+  <data name="Editor_External_Deleted_Discard" xml:space="preserve"><value>Descartar y cerrar</value></data>
+  <data name="Notification_NoteReloadedExternally_Title" xml:space="preserve"><value>Nota actualizada desde fuera</value></data>
+  <data name="Notification_NoteReloadedExternally_Message" xml:space="preserve"><value>«{0}» cambió fuera de Enki y se ha recargado. No había cambios sin guardar.</value></data>
+  <data name="Notification_NoteExternalConflict_Title" xml:space="preserve"><value>Cambio externo sin resolver</value></data>
+  <data name="Notification_NoteExternalConflict_Message" xml:space="preserve"><value>El autoguardado de «{0}» está en pausa hasta que elijas qué versión se queda.</value></data>
+  <data name="Notification_NoteRenamedExternally_Title" xml:space="preserve"><value>Nota movida desde fuera</value></data>
+  <data name="Notification_NoteRenamedExternally_Message" xml:space="preserve"><value>La pestaña sigue a «{0}» en su nueva ruta.</value></data>
+  <data name="Notification_NoteDeletedExternally_Title" xml:space="preserve"><value>Nota borrada desde fuera</value></data>
+  <data name="Notification_NoteDeletedExternally_Message" xml:space="preserve"><value>«{0}» ya no está en el vault. Su contenido sigue en pantalla y el autoguardado está en pausa.</value></data>
+  <data name="Notification_NoteConflictKeptMine_Title" xml:space="preserve"><value>Se conservó tu versión</value></data>
+  <data name="Notification_NoteConflictKeptMine_Message" xml:space="preserve"><value>La versión de disco de «{0}» quedó guardada en el historial por si la necesitas.</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Title" xml:space="preserve"><value>Se cargó la versión de disco</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Message" xml:space="preserve"><value>Tu versión de «{0}» quedó guardada en el historial por si la necesitas.</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Title" xml:space="preserve"><value>Nota guardada de nuevo</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Message" xml:space="preserve"><value>«{0}» se ha vuelto a crear con el contenido que tenías en pantalla.</value></data>
+  <data name="Settings_Editor_WatchExternal_Label" xml:space="preserve"><value>Vigilar cambios externos en el vault</value></data>
+  <data name="Settings_Editor_WatchExternal_Description" xml:space="preserve"><value>Detecta lo que otros programas (Syncthing, Dropbox, otro editor) escriban en las notas que tengas abiertas. Aunque esté apagado, un guardado nunca pisa un cambio hecho fuera de Enki.</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Label" xml:space="preserve"><value>Recargar automáticamente si no hay cambios locales</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Description" xml:space="preserve"><value>Con cambios sin guardar siempre se pregunta antes; esto solo decide qué pasa cuando no los hay.</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Title" xml:space="preserve"><value>Texto sin guardar guardado en el historial</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Message" xml:space="preserve"><value>«{0}» se cerró con un cambio externo sin resolver. Lo que tenías escrito está en el historial de versiones de la nota.</value></data>
 </root>

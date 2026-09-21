@@ -5624,4 +5624,40 @@ Happy writing.</value>
   <data name="Startup_Error_Title" xml:space="preserve"><value>Enki could not start</value></data>
   <data name="Startup_Error_Message" xml:space="preserve"><value>The error was logged. Review the diagnostic files at:&#10;{0}</value></data>
   <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>log path unavailable</value></data>
+  <data name="Editor_History_Trigger_ExternalConflict" xml:space="preserve"><value>External conflict</value></data>
+  <data name="Editor_External_Conflict_Title" xml:space="preserve"><value>External change</value></data>
+  <data name="Editor_External_Conflict_Message" xml:space="preserve"><value>“{0}” was modified outside Enki and you have unsaved changes. Choose which version stays.</value></data>
+  <data name="Editor_External_Conflict_Reassurance" xml:space="preserve"><value>Whichever version you discard is saved to the note's history first, so you can always go back to it.</value></data>
+  <data name="Editor_External_Conflict_KeepMine" xml:space="preserve"><value>Keep mine</value></data>
+  <data name="Editor_External_Conflict_LoadFromDisk" xml:space="preserve"><value>Load from disk</value></data>
+  <data name="Editor_External_Conflict_ShowDiff" xml:space="preserve"><value>Show differences</value></data>
+  <data name="Editor_External_Conflict_HideDiff" xml:space="preserve"><value>Hide differences</value></data>
+  <data name="Editor_External_Conflict_DiffLegend" xml:space="preserve"><value>In green, what your version contributes; in red, what only exists on disk.</value></data>
+  <data name="Editor_External_Badge" xml:space="preserve"><value>Conflict</value></data>
+  <data name="Editor_External_Badge_Tooltip" xml:space="preserve"><value>An external change is still unresolved: autosave is paused for this note. Click to decide.</value></data>
+  <data name="Editor_External_Deleted_Title" xml:space="preserve"><value>Note deleted outside Enki</value></data>
+  <data name="Editor_External_Deleted_Message" xml:space="preserve"><value>“{0}” no longer exists in the vault. What is on screen is still here and has not been lost.</value></data>
+  <data name="Editor_External_Deleted_Hint" xml:space="preserve"><value>You can save it as a new note in the same folder, or discard it and close the tab.</value></data>
+  <data name="Editor_External_Deleted_SaveAsNew" xml:space="preserve"><value>Save as new note</value></data>
+  <data name="Editor_External_Deleted_Discard" xml:space="preserve"><value>Discard and close</value></data>
+  <data name="Notification_NoteReloadedExternally_Title" xml:space="preserve"><value>Note updated from outside</value></data>
+  <data name="Notification_NoteReloadedExternally_Message" xml:space="preserve"><value>“{0}” changed outside Enki and has been reloaded. There were no unsaved changes.</value></data>
+  <data name="Notification_NoteExternalConflict_Title" xml:space="preserve"><value>Unresolved external change</value></data>
+  <data name="Notification_NoteExternalConflict_Message" xml:space="preserve"><value>Autosave for “{0}” is paused until you choose which version stays.</value></data>
+  <data name="Notification_NoteRenamedExternally_Title" xml:space="preserve"><value>Note moved from outside</value></data>
+  <data name="Notification_NoteRenamedExternally_Message" xml:space="preserve"><value>The tab now follows “{0}” to its new path.</value></data>
+  <data name="Notification_NoteDeletedExternally_Title" xml:space="preserve"><value>Note deleted from outside</value></data>
+  <data name="Notification_NoteDeletedExternally_Message" xml:space="preserve"><value>“{0}” is no longer in the vault. Its content is still on screen and autosave is paused.</value></data>
+  <data name="Notification_NoteConflictKeptMine_Title" xml:space="preserve"><value>Your version was kept</value></data>
+  <data name="Notification_NoteConflictKeptMine_Message" xml:space="preserve"><value>The on-disk version of “{0}” was saved to the history in case you need it.</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Title" xml:space="preserve"><value>The on-disk version was loaded</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Message" xml:space="preserve"><value>Your version of “{0}” was saved to the history in case you need it.</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Title" xml:space="preserve"><value>Note saved again</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Message" xml:space="preserve"><value>“{0}” has been created again with the content you had on screen.</value></data>
+  <data name="Settings_Editor_WatchExternal_Label" xml:space="preserve"><value>Watch for external changes in the vault</value></data>
+  <data name="Settings_Editor_WatchExternal_Description" xml:space="preserve"><value>Detects what other programs (Syncthing, Dropbox, another editor) write to the notes you have open. Even with this off, a save never overwrites a change made outside Enki.</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Label" xml:space="preserve"><value>Reload automatically when there are no local changes</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Description" xml:space="preserve"><value>With unsaved changes you are always asked first; this only decides what happens when there are none.</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Title" xml:space="preserve"><value>Unsaved text kept in the history</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Message" xml:space="preserve"><value>“{0}” closed with an unresolved external change. What you had written is in the note's version history.</value></data>
 </root>

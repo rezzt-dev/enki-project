@@ -304,6 +304,54 @@ donde deben y que el calendario se lea bien en los dos temas y con el zoom aplic
 
 ---
 
+## 8.2 Cambios externos en el vault (T1)
+
+Lo que los tests automáticos no pueden cubrir de
+[`cambios-externos-en-el-vault.md`](cambios-externos-en-el-vault.md): un sincronizador de verdad, con sus
+ráfagas, sus temporales y sus relojes, y dos editores escribiendo sobre la misma carpeta a la vez. Los
+tests usan un `FileSystemWatcher` real pero un solo proceso y un vault local.
+
+**Montaje**: el vault dentro de una carpeta sincronizada con Syncthing o Dropbox y, aparte, el mismo vault
+abierto en otro editor de texto (VS Code, `nvim`, el editor del sistema).
+
+- [ ] Con una nota abierta en Enki y **sin** tocarla, editarla y guardarla desde el otro editor: Enki la
+      recarga sola en unos segundos, sin diálogo, el cursor se queda donde estaba y el desplazamiento no
+      salta al principio. Aparece una notificación discreta ("nota actualizada desde fuera").
+- [ ] Con una nota abierta y **con** texto sin guardar, editarla y guardarla desde el otro editor: aparece
+      el diálogo de conflicto, el indicador de guardado deja de avanzar y el texto del editor sigue
+      intacto. Esperar un minuto sin tocar nada: el archivo en disco **no** cambia (el autoguardado está
+      realmente en pausa).
+- [ ] En ese diálogo, "Ver diferencias" muestra las dos versiones línea a línea y se lee bien en tema claro
+      y oscuro y con el zoom de interfaz al 150 %.
+- [ ] "Conservar la mía": el archivo en disco pasa a tener el texto del editor y la pestaña "Historial"
+      ofrece la versión de disco descartada con el motivo "conflicto externo".
+- [ ] "Cargar la de disco": el editor pasa a mostrar el texto ajeno y el "Historial" ofrece el texto local
+      descartado, también como "conflicto externo".
+- [ ] `Esc` cierra el diálogo sin decidir: aparece el aviso de conflicto en la cabecera, el autoguardado
+      sigue en pausa y pulsar el aviso vuelve a abrir el diálogo. Cerrar la pestaña en ese estado deja el
+      texto sin guardar en el "Historial" de la nota y avisa de ello.
+- [ ] Dejar que el sincronizador traiga varios cambios de la misma nota seguidos (editar desde el móvil o
+      desde otro equipo varias veces): Enki muestra **un** aviso por cambio, no una ráfaga, y no aparece
+      ningún diálogo por los archivos `.sync-conflict` que el sincronizador deje en la carpeta.
+- [ ] Borrar la nota abierta desde el explorador de archivos: el texto sigue en pantalla, aparece el
+      diálogo de borrado y "Guardar como nota nueva" la recrea con ese contenido.
+- [ ] Renombrar la nota abierta desde el explorador de archivos: la pestaña sigue al archivo, el título de
+      la cabecera cambia y el siguiente guardado escribe en la ruta nueva.
+- [ ] Editar en Enki durante un par de minutos seguidos sin tocar nada fuera: **no** aparece ningún
+      diálogo de conflicto (el autoguardado no se confunde con un cambio externo).
+- [ ] Con una sesión protegida bloqueada y una nota suya que cambie por sincronización: no aparece ningún
+      diálogo ni se lee nada de esa sesión; al desbloquearla, la revisión se retoma.
+- [ ] Ajustes › Editor › "Vigilar cambios externos en el vault" apagado: no aparecen avisos, pero editar la
+      nota desde fuera y después escribir en Enki sigue abriendo el conflicto en vez de pisar el cambio
+      ajeno. Volver a encenderlo retoma la vigilancia sin cerrar y reabrir la pestaña.
+- [ ] Con el vault en una unidad de red o en una carpeta muy grande, comprobar en el log
+      (`LogService`) que, si la vigilancia degrada a sondeo, queda registrado — y que los cambios se
+      siguen detectando, solo que más tarde.
+- [ ] Cambiar de vault desde Ajustes con pestañas abiertas y después editar desde fuera una nota del vault
+      **anterior**: no aparece ningún aviso (el vigilante ya no la vigila).
+
+---
+
 ## 9. Criterio de salida antes de `0.2.0`
 
 - Todos los puntos de las secciones 4 a 7 están en `OK` o `NO PROBADO` con motivo documentado — ningún

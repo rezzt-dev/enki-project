@@ -301,7 +301,15 @@ public partial class EditorView : UserControl
         }
         _livePreviewState.Selections = selections;
 
-        if (_boundVm is not null) _boundVm.Outline.UpdateActiveItem(textArea.Caret.Offset);
+        if (_boundVm is not null)
+        {
+            _boundVm.Outline.UpdateActiveItem(textArea.Caret.Offset);
+            // En vivo, no solo al cambiar de pestaña (CaptureEditorState): una recarga silenciosa por un
+            // cambio externo al vault reemplaza el texto mientras el usuario está dentro de la nota, y
+            // devolver el cursor donde estaba exige saberlo en ese momento, no en el último cambio de
+            // pestaña. Ver .docs/project-info/cambios-externos-en-el-vault.md.
+            _boundVm.LastCaretOffset = textArea.Caret.Offset;
+        }
 
         // Entrar en una tabla la devuelve a su forma de texto, con su fila separadora incluida; salir de
         // ella vuelve a plegarla.

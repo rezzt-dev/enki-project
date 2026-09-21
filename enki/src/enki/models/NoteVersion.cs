@@ -28,7 +28,13 @@ public enum NoteVersionTrigger
     /// the user reviewing each change individually — today, <c>VaultService.RenameNote</c>'s wikilink-rewrite
     /// cascade, which can silently rewrite dozens of other notes to keep a link pointing at a just-renamed
     /// one.</summary>
-    PreBulkOperation
+    PreBulkOperation,
+
+    /// <summary>Capturada al resolver un conflicto con un cambio hecho fuera de Enki: guarda el contenido
+    /// de la versión que el usuario <em>descartó</em> — la suya si eligió cargar la de disco, la de disco
+    /// si eligió conservar la suya. Es lo que hace que ninguna de las dos opciones del diálogo de
+    /// conflicto sea destructiva. Ver <c>.docs/project-info/cambios-externos-en-el-vault.md</c>.</summary>
+    ExternalConflict
 }
 
 /// <summary>Metadata for one saved snapshot of a note's content — see
@@ -62,6 +68,7 @@ public sealed class NoteVersion
         NoteVersionTrigger.Manual => LocalizationService.Instance["Editor_History_Trigger_Manual"],
         NoteVersionTrigger.PreRestore => LocalizationService.Instance["Editor_History_Trigger_PreRestore"],
         NoteVersionTrigger.PreBulkOperation => LocalizationService.Instance["Editor_History_Trigger_PreBulkOperation"],
+        NoteVersionTrigger.ExternalConflict => LocalizationService.Instance["Editor_History_Trigger_ExternalConflict"],
         _ => string.Empty
     };
 }

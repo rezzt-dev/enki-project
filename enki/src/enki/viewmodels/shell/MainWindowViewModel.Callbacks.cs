@@ -323,6 +323,9 @@ public sealed partial class MainWindowViewModel
 
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
+        // Libera el vigilante del vault anterior y crea el del nuevo: sus notas registradas eran las
+        // pestañas que se cierran unas líneas más abajo.
+        _vaultChangeWatcher.Start(_vaultService.VaultPath);
         ApplyVaultPreferences();
         _habitService.Reload();
 

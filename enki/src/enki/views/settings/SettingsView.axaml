@@ -1369,6 +1369,35 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
 
+                  <!-- Cambios externos al vault (.docs/project-info/cambios-externos-en-el-vault.md) -->
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Editor_WatchExternal_Label Settings_Editor_WatchExternal_Description
+                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Editor_WatchExternal_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Editor_WatchExternal_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding VaultWatchExternalChanges}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_WatchExternal_Label}" />
+                    </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Editor_AutoReloadExternal_Label Settings_Editor_AutoReloadExternal_Description
+                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding CanAutoReloadExternalChanges}">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Editor_AutoReloadExternal_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Editor_AutoReloadExternal_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding VaultAutoReloadExternalChanges}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_AutoReloadExternal_Label}" />
+                    </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+
                   <controls:SettingsSearchOption
                       ResourceKeys="Settings_Editor_SidePanel_Label Settings_Editor_SidePanel_Description
                                     Settings_Nav_Editor Settings_Editor_SizeLayout_Title">

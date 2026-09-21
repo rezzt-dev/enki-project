@@ -5624,4 +5624,40 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Startup_Error_Title" xml:space="preserve"><value>Enki konnte nicht gestartet werden</value></data>
   <data name="Startup_Error_Message" xml:space="preserve"><value>Der Fehler wurde protokolliert. Diagnose-Dateien befinden sich unter:&#10;{0}</value></data>
   <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>Protokollpfad nicht verfügbar</value></data>
+  <data name="Editor_History_Trigger_ExternalConflict" xml:space="preserve"><value>Externer Konflikt</value></data>
+  <data name="Editor_External_Conflict_Title" xml:space="preserve"><value>Externe Änderung</value></data>
+  <data name="Editor_External_Conflict_Message" xml:space="preserve"><value>„{0}“ wurde außerhalb von Enki geändert und es gibt ungespeicherte Änderungen. Wähle, welche Fassung bleibt.</value></data>
+  <data name="Editor_External_Conflict_Reassurance" xml:space="preserve"><value>Die verworfene Fassung wird zuvor im Verlauf der Notiz gesichert — du kannst jederzeit zu ihr zurück.</value></data>
+  <data name="Editor_External_Conflict_KeepMine" xml:space="preserve"><value>Meine behalten</value></data>
+  <data name="Editor_External_Conflict_LoadFromDisk" xml:space="preserve"><value>Von der Festplatte laden</value></data>
+  <data name="Editor_External_Conflict_ShowDiff" xml:space="preserve"><value>Unterschiede anzeigen</value></data>
+  <data name="Editor_External_Conflict_HideDiff" xml:space="preserve"><value>Unterschiede ausblenden</value></data>
+  <data name="Editor_External_Conflict_DiffLegend" xml:space="preserve"><value>Grün zeigt, was deine Fassung beiträgt; Rot, was es nur auf der Festplatte gibt.</value></data>
+  <data name="Editor_External_Badge" xml:space="preserve"><value>Konflikt</value></data>
+  <data name="Editor_External_Badge_Tooltip" xml:space="preserve"><value>Eine externe Änderung ist noch ungeklärt: Das automatische Speichern dieser Notiz pausiert. Zum Entscheiden klicken.</value></data>
+  <data name="Editor_External_Deleted_Title" xml:space="preserve"><value>Notiz außerhalb von Enki gelöscht</value></data>
+  <data name="Editor_External_Deleted_Message" xml:space="preserve"><value>„{0}“ gibt es im Vault nicht mehr. Was auf dem Bildschirm steht, ist weiterhin da und nicht verloren.</value></data>
+  <data name="Editor_External_Deleted_Hint" xml:space="preserve"><value>Du kannst ihn als neue Notiz im selben Ordner speichern oder verwerfen und den Tab schließen.</value></data>
+  <data name="Editor_External_Deleted_SaveAsNew" xml:space="preserve"><value>Als neue Notiz speichern</value></data>
+  <data name="Editor_External_Deleted_Discard" xml:space="preserve"><value>Verwerfen und schließen</value></data>
+  <data name="Notification_NoteReloadedExternally_Title" xml:space="preserve"><value>Notiz von außen aktualisiert</value></data>
+  <data name="Notification_NoteReloadedExternally_Message" xml:space="preserve"><value>„{0}“ wurde außerhalb von Enki geändert und neu geladen. Es gab keine ungespeicherten Änderungen.</value></data>
+  <data name="Notification_NoteExternalConflict_Title" xml:space="preserve"><value>Ungeklärte externe Änderung</value></data>
+  <data name="Notification_NoteExternalConflict_Message" xml:space="preserve"><value>Das automatische Speichern von „{0}“ pausiert, bis du wählst, welche Fassung bleibt.</value></data>
+  <data name="Notification_NoteRenamedExternally_Title" xml:space="preserve"><value>Notiz von außen verschoben</value></data>
+  <data name="Notification_NoteRenamedExternally_Message" xml:space="preserve"><value>Der Tab folgt „{0}“ jetzt zum neuen Pfad.</value></data>
+  <data name="Notification_NoteDeletedExternally_Title" xml:space="preserve"><value>Notiz von außen gelöscht</value></data>
+  <data name="Notification_NoteDeletedExternally_Message" xml:space="preserve"><value>„{0}“ ist nicht mehr im Vault. Der Inhalt steht weiterhin auf dem Bildschirm und das automatische Speichern pausiert.</value></data>
+  <data name="Notification_NoteConflictKeptMine_Title" xml:space="preserve"><value>Deine Fassung wurde behalten</value></data>
+  <data name="Notification_NoteConflictKeptMine_Message" xml:space="preserve"><value>Die Fassung von der Festplatte von „{0}“ wurde im Verlauf gesichert, falls du sie brauchst.</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Title" xml:space="preserve"><value>Fassung von der Festplatte geladen</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Message" xml:space="preserve"><value>Deine Fassung von „{0}“ wurde im Verlauf gesichert, falls du sie brauchst.</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Title" xml:space="preserve"><value>Notiz erneut gespeichert</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Message" xml:space="preserve"><value>„{0}“ wurde mit dem Inhalt vom Bildschirm neu angelegt.</value></data>
+  <data name="Settings_Editor_WatchExternal_Label" xml:space="preserve"><value>Externe Änderungen im Vault überwachen</value></data>
+  <data name="Settings_Editor_WatchExternal_Description" xml:space="preserve"><value>Erkennt, was andere Programme (Syncthing, Dropbox, ein anderer Editor) in geöffnete Notizen schreiben. Auch ausgeschaltet überschreibt ein Speichern nie eine Änderung von außerhalb von Enki.</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Label" xml:space="preserve"><value>Automatisch neu laden, wenn es keine lokalen Änderungen gibt</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Description" xml:space="preserve"><value>Bei ungespeicherten Änderungen wird immer zuerst gefragt; dies entscheidet nur den Fall ohne solche.</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Title" xml:space="preserve"><value>Ungespeicherter Text im Verlauf gesichert</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Message" xml:space="preserve"><value>„{0}“ wurde mit einer ungeklärten externen Änderung geschlossen. Was du geschrieben hattest, steht im Versionsverlauf der Notiz.</value></data>
 </root>

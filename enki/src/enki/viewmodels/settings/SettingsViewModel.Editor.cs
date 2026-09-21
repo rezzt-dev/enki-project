@@ -56,6 +56,25 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _editorAutoPairs;
 
+    /// <summary>Ajustes › Editor › "Vigilar cambios externos en el vault" — ver
+    /// <see cref="Models.AppSettings.VaultWatchExternalChanges"/>. No hay espejo en
+    /// <see cref="EditorPreferences"/> porque quien lo consume no es la vista del editor sino
+    /// <see cref="VaultChangeWatcher"/>, que lo lee del propio <see cref="SettingsService"/> al reaccionar
+    /// a <see cref="SettingsService.SettingsChanged"/>.</summary>
+    [ObservableProperty]
+    private bool _vaultWatchExternalChanges;
+
+    /// <summary>Ajustes › Editor › "Recargar automáticamente si no hay cambios locales" — ver
+    /// <see cref="Models.AppSettings.VaultAutoReloadExternalChanges"/>. Solo tiene sentido con la
+    /// vigilancia encendida, de ahí <see cref="CanAutoReloadExternalChanges"/>.</summary>
+    [ObservableProperty]
+    private bool _vaultAutoReloadExternalChanges;
+
+    /// <summary>Si el interruptor de recarga automática está operativo: sin vigilancia no hay nada que
+    /// recargar automáticamente, así que se muestra apagado en gris en vez de ofrecer una elección que no
+    /// haría nada.</summary>
+    public bool CanAutoReloadExternalChanges => VaultWatchExternalChanges;
+
     /// <summary>Ajustes › Editor › "Imágenes remotas" — ver
     /// <see cref="EditorPreferences.RemoteImages"/> para por qué esto es un interruptor y no un
     /// comportamiento fijo.</summary>
@@ -145,6 +164,21 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.EditorAutoPairs = value;
         _settingsService.Save();
         EditorPreferences.AutoPairs = value;
+    }
+
+    partial void OnVaultWatchExternalChangesChanged(bool value)
+    {
+        _settingsService.Settings.VaultWatchExternalChanges = value;
+        _settingsService.Save();
+        // VaultChangeWatcher se suscribe a SettingsChanged, que Save acaba de disparar: no hace falta
+        // avisarle desde aquí.
+        OnPropertyChanged(nameof(CanAutoReloadExternalChanges));
+    }
+
+    partial void OnVaultAutoReloadExternalChangesChanged(bool value)
+    {
+        _settingsService.Settings.VaultAutoReloadExternalChanges = value;
+        _settingsService.Save();
     }
 
     partial void OnEditorRemoteImagesChanged(bool value)

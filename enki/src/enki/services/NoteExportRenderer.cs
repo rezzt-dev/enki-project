@@ -517,7 +517,20 @@ public static class NoteExportRenderer
 
     /// <summary>La contención léxica no basta: un enlace dentro del vault puede apuntar fuera y hacer que
     /// <see cref="File.ReadAllBytes(string)"/> termine leyendo otro árbol. Se rechaza cualquier componente
-    /// enlazado entre la raíz configurada y la imagen.</summary>
+    /// enlazado entre la raíz configurada y la imagen.
+    ///
+    /// <para><b>Un componente que no existe no es un enlace</b> y no puede redirigir a ninguna parte, así
+    /// que el recorrido se detiene ahí y la comprobación pasa. Quien decide entonces es la comprobación de
+    /// existencia de <see cref="TryEmbedLocalImage"/>, que devuelve <see langword="null"/> y deja el
+    /// <c>src</c> original tal cual — exactamente lo que debe ocurrir con el enlace a una imagen que el
+    /// usuario borró o escribió mal. Antes, <see cref="File.GetAttributes(string)"/> lanzaba sobre esa
+    /// ruta y la excepción escapaba hasta <see cref="RenderBodyHtml"/>: un único enlace roto tumbaba la
+    /// exportación entera de la nota.</para>
+    ///
+    /// <para>Cualquier <em>otro</em> fallo al leer los atributos (permisos, E/S) sí rechaza. No poder
+    /// comprobar si un componente es un enlace no es lo mismo que haber comprobado que no lo es, y esta
+    /// función existe precisamente para no acabar leyendo fuera del vault
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md).</para></summary>
     private static bool ContainsReparsePoint(string root, string path)
     {
         var relative = Path.GetRelativePath(root, path);
@@ -525,7 +538,26 @@ public static class NoteExportRenderer
         foreach (var component in relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
         {
             current = Path.Combine(current, component);
-            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) return true;
+
+            FileAttributes attributes;
+            try
+            {
+                attributes = File.GetAttributes(current);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
+                // Este componente no existe, así que ninguno más abajo existe tampoco: no hay nada que
+                // pueda redirigir la lectura. Ver el comentario de este método.
+                return false;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                LogService.Debug(
+                    $"No se pudieron leer los atributos de '{current}' al exportar; no se incrusta la imagen: {ex}");
+                return true;
+            }
+
+            if ((attributes & FileAttributes.ReparsePoint) != 0) return true;
         }
         return false;
     }

@@ -51,6 +51,9 @@ public sealed partial class MainWindowViewModel
         // caché de notas del vault, así que puede construirse aquí sin orden particular.
         _noteSearchService = new NoteSearchService(_vaultService);
         _vaultBackupService = new VaultBackupService(_vaultService);
+        // Solo se construye aquí; empieza a mirar el disco en InitializeShell, cuando ya se sabe qué vault
+        // hay (en el primer arranque todavía no hay ninguno) — y se reinicia en OnVaultChanged.
+        _vaultChangeWatcher = new VaultChangeWatcher(_vaultService, _settingsService);
         _vaultSettingsService = new VaultSettingsService(_vaultService);
         _noteTemplateService = new NoteTemplateService(_vaultService);
         _habitService = new HabitService(_vaultService);
@@ -356,6 +359,11 @@ public sealed partial class MainWindowViewModel
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
 
+        // Empieza (o reinicia) la vigilancia del vault que se acaba de abrir. Idempotente: volver a
+        // llamar libera el vigilante anterior antes de crear el nuevo, así que no filtra recursos si esta
+        // inicialización se repite.
+        _vaultChangeWatcher.Start(_vaultService.VaultPath);
+
         // Refrescar visibilidad del grupo fijo del sidebar por si cambió mientras el vault no estaba listo.
         NotificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
         RemindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
@@ -372,7 +380,7 @@ public sealed partial class MainWindowViewModel
         var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService);
         Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
         Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService,
-            _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics));
+            _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics), _vaultChangeWatcher);
         Notes.PropertyChanged += OnNotesPropertyChanged;
         // Restaurar pestañas abiertas al reiniciar (docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §2) —
         // después de construir Notes pero antes de que la ventana quede lista, para que las pestañas ya

@@ -28,6 +28,13 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - permitir renombrar, fusionar y eliminar etiquetas en los tres modulos sin crear otro almacen: conservar el frontmatter y el historial de las notas, evitar duplicados por entidad, sincronizar los cambios de polar y actualizar las pestanas de notas abiertas.
 - ampliar el grafo global del vault con filtros combinables por sesion y etiquetas para explorar las notas accesibles sin crear otro almacen ni sustituir el renderizador existente.
 - anadir modos para descubrir notas huerfanas, conexiones entre sesiones y grupos de notas conectadas, calculados sobre el vault accesible completo para evitar falsos resultados al filtrar.
+- deteccion de cambios hechos sobre el vault fuera de enki (syncthing, dropbox, otro editor): `VaultChangeWatcher` vigila la carpeta con un `FileSystemWatcher` filtrado a `*.md`, con rebote por ruta, filtro de temporales y archivos de conflicto, y degradacion a sondeo si el vigilante falla o el sistema de archivos no lo soporta.
+- huella en disco por nota (`NoteDiskStamp`: fecha, tamano y hash del archivo) con la que se distingue una escritura propia de una ajena por comparacion exacta en vez de por ventanas de tiempo, de modo que el autoguardado nunca genera un falso conflicto.
+- comprobacion previa a guardar en `VaultService.WriteContentChecked`, independiente del vigilante: si el archivo en disco ya no es el que se leyo, la escritura se aborta sin tocar nada en vez de pisar el cambio ajeno.
+- politica de conflicto en el editor: recarga silenciosa conservando cursor y desplazamiento cuando no hay cambios locales, y dialogo de conflicto con "conservar la mia", "cargar la de disco" y "ver diferencias" cuando los hay; la version descartada se guarda antes en el historial local con el motivo "conflicto externo", asi que ninguna opcion destruye nada.
+- pausa del autoguardado por nota mientras la decision siga pendiente, con aviso en la cabecera del editor que la reabre, y conservacion del texto sin guardar en el historial si la pestana se cierra sin decidir.
+- manejo del borrado y del renombrado desde fuera: la nota borrada conserva su contenido en pantalla y se ofrece guardarla como nota nueva; la renombrada o movida hace que la pestana siga a su archivo a la ruta nueva.
+- ajustes > editor "vigilar cambios externos en el vault" y "recargar automaticamente si no hay cambios locales", ambos activados por defecto y traducidos a los siete idiomas soportados; con la vigilancia apagada, la comprobacion previa a guardar sigue en pie.
 
 #### CAMBIOS
 - rehacer la justificacion de parrafos, listas, tareas y citas para distribuir primero los espacios y despues un interletraje limitado, conservar la geometria del cursor y la seleccion, respetar la ultima fila y el codigo, y mantener estable el ajuste de linea durante los repintados.
@@ -54,6 +61,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - evitar que el recuento del grafo se solape con sus controles en ventanas estrechas y mantener accesible el boton de restablecer al desplazar el panel de filtros.
 - sustituir el texto seleccionado al pegar una imagen en el editor, igual que hace cualquier otro pegado, en una sola operacion deshacible con un unico `ctrl+z`.
 - descartar con aviso una imagen del portapapeles que no entrega ni un byte, en vez de guardar un adjunto vacio e insertar un `![](...)` que apunta a una imagen rota.
+- exportar una nota que contiene un enlace a una imagen inexistente en vez de fallar entera: la comprobacion de enlaces simbolicos de `NoteExportRenderer` lanzaba al leer los atributos de una ruta que no existe, de modo que un unico `![](imagen-borrada.png)` tumbaba la exportacion a html y pdf de toda la nota.
 
 #### SEGURIDAD
 - proteger los tokens de sesion de polar con dpapi en windows, secret service mediante libsecret en linux y keychain en macos, fuera de `settings.json`.
@@ -89,6 +97,13 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - allow tags to be renamed, merged and removed across all three modules without a separate store: preserve note front matter and version history, remove duplicates within each item, sync polar changes and refresh open note tabs.
 - extend the global vault graph with combined session and tag filters to explore accessible notes without creating another store or replacing the existing renderer.
 - add modes to discover orphan notes, cross-session connections and connected note groups, computed over the entire accessible vault to prevent misleading results when filtering.
+- detection of changes made to the vault outside enki (syncthing, dropbox, another editor): `VaultChangeWatcher` watches the folder with a `FileSystemWatcher` filtered to `*.md`, with per-path debouncing, filtering of temporary and sync-conflict files, and degradation to polling when the watcher fails or the file system does not support it.
+- a per-note on-disk stamp (`NoteDiskStamp`: timestamp, size and file hash) used to tell an own write from a foreign one by exact comparison rather than time windows, so autosave never produces a false conflict.
+- a pre-save check in `VaultService.WriteContentChecked`, independent of the watcher: if the file on disk is no longer the one that was read, the write is aborted without touching anything instead of overwriting the foreign change.
+- conflict policy in the editor: silent reload preserving caret and scroll position when there are no local changes, and a conflict dialog offering "keep mine", "load from disk" and "show differences" when there are; the discarded version is saved to the local history first under the "external conflict" trigger, so neither option destroys anything.
+- per-note autosave pause while the decision is still pending, with a header badge that reopens the dialog, and preservation of the unsaved text in the history if the tab is closed without deciding.
+- handling of external deletes and renames: a deleted note keeps its content on screen and offers to be saved as a new note; a renamed or moved one makes the tab follow its file to the new path.
+- settings > editor toggles "watch for external changes in the vault" and "reload automatically when there are no local changes", both on by default and translated into the seven supported languages; with watching off, the pre-save check still applies.
 
 #### CHANGED
 - rebuild paragraph, list, task and quote justification to distribute word spacing before limited character tracking, preserve caret and selection geometry, respect final rows and code, and keep wrapping stable across redraws.
@@ -115,6 +130,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - prevent graph counts from overlapping controls in narrow windows and keep the reset button accessible while scrolling the filter panel.
 - replace the selected text when pasting an image into the editor, like any other paste does, as a single operation that one `ctrl+z` undoes.
 - discard a clipboard image that yields no bytes, with a notification, instead of saving an empty attachment and inserting a `![](...)` pointing at a broken image.
+- export a note containing a link to a missing image instead of failing outright: `NoteExportRenderer`'s symbolic-link check threw while reading the attributes of a path that does not exist, so a single `![](deleted-image.png)` brought down html and pdf export for the whole note.
 
 #### SECURITY
 - protect polar session tokens with dpapi on windows, secret service through libsecret on linux, and keychain on macos, outside `settings.json`.

@@ -27,6 +27,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     private readonly SessionService? _sessionService;
     private readonly SettingsService? _settingsService;
     private readonly NotificationService? _notificationService;
+    private readonly VaultChangeWatcher? _changeWatcher;
     private readonly Action _onBack;
     private readonly Action _onChanged;
     private readonly Action<NoteFile>? _onOpenNote;
@@ -365,7 +366,8 @@ public sealed partial class EditorViewModel : ViewModelBase
         Action<NoteFile>? onOpenNote = null, KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null,
         Action<NoteFile, string>? onExportHtml = null, SessionService? sessionService = null,
-        DailyNoteService? dailyNoteService = null, Action<DateOnly>? onOpenDailyNoteFor = null)
+        DailyNoteService? dailyNoteService = null, Action<DateOnly>? onOpenDailyNoteFor = null,
+        VaultChangeWatcher? changeWatcher = null)
     {
         _vaultService = vaultService;
         _onBack = onBack;
@@ -379,6 +381,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         _onExportHtml = onExportHtml;
         _dailyNoteService = dailyNoteService;
         _onOpenDailyNoteFor = onOpenDailyNoteFor;
+        _changeWatcher = changeWatcher;
         Note = note;
         _title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _tagsInput = string.Join(", ", note.Tags);
@@ -386,6 +389,10 @@ public sealed partial class EditorViewModel : ViewModelBase
         var content = vaultService.ReadContent(note);
         Document = new TextDocument(content);
         _lastSavedContent = content;
+        // Antes que nada derivado del contenido: la huella de lo que se acaba de leer es la referencia
+        // contra la que se detecta cualquier cambio externo a partir de ahora (ver
+        // EditorViewModel.ExternalChanges.cs).
+        TrackForExternalChanges();
         _lastSavedUtc = note.ModifiedUtc;
         _saveStatus = FormatSaveStatus(_lastSavedUtc);
 
@@ -506,7 +513,10 @@ public sealed partial class EditorViewModel : ViewModelBase
         // running on every keystroke (docs/analisis-proyecto/roadmap.md, Fase 6, análisis §3) — see the
         // _saveTimer.Tick handler above, which refreshes it right after (or instead of) saving.
         _saveTimer.Stop();
-        if (dirty) _saveTimer.Start();
+        // Con un conflicto externo sin resolver el autoguardado de esta nota está en pausa: seguir
+        // escribiendo es legítimo (el buffer es del usuario), escribirlo a disco por su cuenta no lo es
+        // hasta que decida qué versión gana. Ver EditorViewModel.ExternalChanges.cs.
+        if (dirty && !IsAutosavePaused) _saveTimer.Start();
     }
 
     /// <summary>Writes immediately, skipping the debounce — called when a change must not be left
@@ -517,9 +527,27 @@ public sealed partial class EditorViewModel : ViewModelBase
     public void FlushPendingSave()
     {
         _saveTimer.Stop();
-        if (!IsDirty || _pendingText is not { } text) return;
+        if (IsAutosavePaused || !IsDirty || _pendingText is not { } text) return;
         Save(text);
         Backlinks.Refresh(Note);
+    }
+
+    /// <summary>Cierra esta pestaña: vuelca lo que quedara pendiente y suelta lo que tenía enganchado
+    /// fuera de sí misma — el temporizador de autoguardado y el registro en
+    /// <see cref="VaultChangeWatcher"/>. Lo llama <c>NotesViewModel</c> en cada camino de cierre (una
+    /// pestaña, todas, las de una sesión que se bloquea); sustituye a llamar solo a
+    /// <see cref="FlushPendingSave"/>, que volcaba el texto pero dejaba la nota vigilada como si la
+    /// pestaña siguiera abierta.</summary>
+    public void Close()
+    {
+        // Antes de volcar: una decisión pendiente tiene el autoguardado en pausa, así que lo que quede sin
+        // guardar no se escribiría a disco y cerrar la pestaña lo tiraría a la basura. Ver
+        // EditorViewModel.ExternalChanges.cs.
+        PreserveUnsavedTextOnClose();
+        FlushPendingSave();
+        _saveTimer.Stop();
+        UnsubscribeFromExternalChanges();
+        _changeWatcher?.Untrack(Note.FullPath);
     }
 
     /// <summary>Writes <paramref name="currentText"/> to disk. On an I/O failure (disco lleno, vault
@@ -536,6 +564,14 @@ public sealed partial class EditorViewModel : ViewModelBase
         // the next launch) — every 600ms autosave tick after that must keep failing gracefully instead of
         // trying to encrypt with a DEK that's no longer cached. The catch below stays as a safety net for
         // the (much rarer) race where the lock happens between this check and the write itself.
+        if (IsAutosavePaused)
+        {
+            // Hay un conflicto externo esperando decisión: se conserva el texto pendiente y no se toca el
+            // disco. El guardado se reanuda solo cuando el usuario resuelve el diálogo.
+            _pendingText = currentText;
+            return;
+        }
+
         if (_vaultService.IsPathInLockedSession(Note.FullPath))
         {
             HandleSaveFailure(new SessionLockedException(Note.FullPath), currentText);
@@ -544,7 +580,16 @@ public sealed partial class EditorViewModel : ViewModelBase
 
         try
         {
-            _vaultService.WriteContent(Note, currentText);
+            // Comprobada contra la huella de la última lectura/escritura propia: si la nota cambió fuera
+            // de Enki desde entonces, esto lanza en vez de escribir y el cambio ajeno queda intacto en
+            // disco. Es la red de seguridad independiente del vigilante — cubre los casos en los que no
+            // llegó a enterarse (búfer desbordado, unidad de red, equipo suspendido).
+            AdoptDiskStamp(_vaultService.WriteContentChecked(Note, currentText, _diskStamp));
+        }
+        catch (ExternalModificationException ex)
+        {
+            HandleExternalChange(new VaultExternalChange(Note.FullPath, ex.Kind), currentText);
+            return;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -576,6 +621,9 @@ public sealed partial class EditorViewModel : ViewModelBase
         SaveStatus = FormatSaveStatus(_lastSavedUtc);
 
         Note = _vaultService.GetNote(Note.FullPath) ?? Note;
+        // El contenido de disco es otro: la huella anterior ya no sirve como referencia de "esto lo
+        // escribí yo", y sin refrescarla el siguiente autoguardado se rechazaría a sí mismo.
+        AdoptDiskStamp(NoteDiskStamps.TryRead(Note.FullPath));
         TagsInput = string.Join(", ", Note.Tags);
         RefreshWikiLinkScopeNotes();
         Backlinks.Refresh(Note);
@@ -623,6 +671,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         Stats.RefreshLocalizedLabels();
         FindReplace.RefreshLocalizedLabels();
         History.RefreshLocalizedLabels();
+        RefreshExternalChangeLabels();
         // La fecha de la nota diaria y el tooltip de "combinar con la plantilla" se formatean con el
         // idioma activo, así que se rehacen aquí como el resto de textos de la cabecera.
         RefreshDailyNoteState();
@@ -663,6 +712,8 @@ public sealed partial class EditorViewModel : ViewModelBase
         if (_suppressTitleRename || string.IsNullOrWhiteSpace(value)) return;
         var oldPath = Note.FullPath;
         var oldTitle = Path.GetFileNameWithoutExtension(oldPath);
+        // Mismo motivo que en Delete: el renombrado es de Enki, no de fuera.
+        _changeWatcher?.Untrack(oldPath);
 
         try
         {
@@ -682,6 +733,7 @@ public sealed partial class EditorViewModel : ViewModelBase
             _suppressTitleRename = true;
             Title = oldTitle;
             _suppressTitleRename = false;
+            TrackForExternalChanges();
             return;
         }
 
@@ -702,6 +754,7 @@ public sealed partial class EditorViewModel : ViewModelBase
                 NotificationSeverity.Info);
         }
 
+        TrackForExternalChanges();
         _kanbanService?.RelinkNotePath(oldPath, Note.FullPath);
         RefreshLinkedCards();
         RefreshWikiLinkScopeNotes();
@@ -719,7 +772,9 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// doesn't attempt to rename the file a second time, which would fail since the old path is already gone.</summary>
     public void SyncRenamedNote(NoteFile note)
     {
+        _changeWatcher?.Untrack(Note.FullPath);
         Note = note;
+        TrackForExternalChanges();
         _suppressTitleRename = true;
         Title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _suppressTitleRename = false;
@@ -762,6 +817,9 @@ public sealed partial class EditorViewModel : ViewModelBase
     private void Delete()
     {
         EditorBacklinksService.WarnIfDeletingLeavesBrokenLinks(_vaultService, _notificationService, Note);
+        // Antes de borrar, no después: el borrado genera su propio evento en el sistema de archivos y sin
+        // esto la pestaña se avisaría a sí misma de que "alguien" borró la nota desde fuera.
+        _changeWatcher?.Untrack(Note.FullPath);
         _vaultService.DeleteNote(Note);
         _onChanged();
         _onBack();

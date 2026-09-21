@@ -243,6 +243,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorJustifyText = settingsService.Settings.EditorJustifyParagraphs;
         _editorAutoPairs = settingsService.Settings.EditorAutoPairs;
         _editorRemoteImages = settingsService.Settings.EditorRemoteImages;
+        _vaultWatchExternalChanges = settingsService.Settings.VaultWatchExternalChanges;
+        _vaultAutoReloadExternalChanges = settingsService.Settings.VaultAutoReloadExternalChanges;
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;

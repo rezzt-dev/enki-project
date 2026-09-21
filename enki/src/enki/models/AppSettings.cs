@@ -346,6 +346,19 @@ public sealed class AppSettings
     /// apagar. Por defecto activo, como en cualquier editor Markdown.</summary>
     public bool EditorRemoteImages { get; set; } = true;
 
+    /// <summary>Si Enki vigila el vault para enterarse de los cambios que otro programa (Syncthing,
+    /// Dropbox, otro editor) haga sobre las notas abiertas — Ajustes › Editor. Apagarlo no deja el
+    /// autoguardado desprotegido: la comprobación previa a escribir de
+    /// <c>VaultService.WriteContentChecked</c> sigue en pie y no depende de esto. Ver
+    /// <c>.docs/project-info/cambios-externos-en-el-vault.md</c>.</summary>
+    public bool VaultWatchExternalChanges { get; set; } = true;
+
+    /// <summary>Si una nota abierta <em>sin</em> cambios locales se recarga sola cuando cambia fuera de
+    /// Enki. Apagado, ese caso también pregunta en vez de recargar en silencio; con cambios locales
+    /// siempre se pregunta, decida lo que decida este ajuste. Solo tiene efecto con
+    /// <see cref="VaultWatchExternalChanges"/> encendido.</summary>
+    public bool VaultAutoReloadExternalChanges { get; set; } = true;
+
     /// <summary>Whether the editor's side panel (outline, backlinks, stats) is visible.</summary>
     public bool EditorSidePanelVisible { get; set; } = true;
 

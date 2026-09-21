@@ -23,6 +23,8 @@ public sealed partial class SettingsViewModel
         _editorJustifyText = _settingsService.Settings.EditorJustifyParagraphs;
         _editorAutoPairs = _settingsService.Settings.EditorAutoPairs;
         _editorRemoteImages = _settingsService.Settings.EditorRemoteImages;
+        _vaultWatchExternalChanges = _settingsService.Settings.VaultWatchExternalChanges;
+        _vaultAutoReloadExternalChanges = _settingsService.Settings.VaultAutoReloadExternalChanges;
         _editorSidePanelVisible = _settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = _settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = _settingsService.Settings.UseCustomTitleBar;
@@ -115,6 +117,9 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(EditorJustifyText));
         OnPropertyChanged(nameof(EditorAutoPairs));
         OnPropertyChanged(nameof(EditorRemoteImages));
+        OnPropertyChanged(nameof(VaultWatchExternalChanges));
+        OnPropertyChanged(nameof(VaultAutoReloadExternalChanges));
+        OnPropertyChanged(nameof(CanAutoReloadExternalChanges));
         OnPropertyChanged(nameof(EditorSidePanelVisible));
         OnPropertyChanged(nameof(IsSimplifiedNotesView));
         OnPropertyChanged(nameof(UseCustomTitleBar));

@@ -205,6 +205,23 @@
       </Border>
 
       <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <!-- Cambio externo sin resolver (.docs/project-info/cambios-externos-en-el-vault.md): mientras
+             haya una decisión pendiente el autoguardado de esta nota está en pausa, y eso no puede ser un
+             estado invisible. Se muestra también en la vista simplificada, a diferencia del resto de
+             adornos de la cabecera: es lo contrario de un adorno. -->
+        <Button Classes="pill pill-compact"
+                IsVisible="{Binding ShowExternalConflictBadge}"
+                Command="{Binding ReopenExternalConflictCommand}"
+                ToolTip.Tip="{loc:Tr Editor_External_Badge_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_External_Badge_Tooltip}">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14"
+                             Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr Editor_External_Badge, Converter={StaticResource UpperCaseConverter}}"
+                       Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
         <!-- Indicador de guardado prominente (Fase 2 §2). En la vista simplificada se queda solo el
              icono: la pestaña ya lleva su propio punto de "sin guardar", y esos ~70px de etiqueta son la
              diferencia entre que la cabecera quepa o no en un panel de editor estrecho. -->
@@ -938,6 +955,103 @@
             </Grid>
           </StackPanel>
         </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: la nota cambió fuera de Enki
+         (.docs/project-info/cambios-externos-en-el-vault.md) =====================
+         Ninguna de las dos opciones destruye nada: la versión descartada se guarda antes en el historial
+         local con el motivo "conflicto externo". Escape equivale a "decidir luego", que cierra el diálogo
+         y deja el autoguardado en pausa hasta que haya decisión. -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsExternalConflictOpen}">
+      <Border Classes="modal-card" MaxWidth="720" Width="680" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Border.KeyBindings>
+          <KeyBinding Gesture="Escape" Command="{Binding PostponeExternalDecisionCommand}" />
+        </Border.KeyBindings>
+        <Grid RowDefinitions="Auto,Auto,*,Auto" MaxHeight="560">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="FileSyncOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Editor_External_Conflict_Title, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Spacing="6" Margin="0,12,0,14">
+            <TextBlock Text="{Binding ExternalConflictMessage}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Editor_External_Conflict_Reassurance}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Border Grid.Row="2" Classes="card" Padding="2" MinHeight="180" IsVisible="{Binding IsExternalDiffVisible}">
+            <ScrollViewer>
+              <StackPanel Spacing="0">
+                <TextBlock Text="{loc:Tr Editor_External_Conflict_DiffLegend}" Classes="muted" FontSize="11" Margin="10,8" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding ExternalDiffLines}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="0" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="services:DiffLine">
+                      <Border Classes="diff-line"
+                              Classes.diff-added="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}"
+                              Classes.diff-removed="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="diff-marker" Text="+"
+                                     IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}" />
+                          <TextBlock Classes="diff-marker" Text="&#x2212;"
+                                     IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}" />
+                          <TextBlock Classes="diff-text" Text="{Binding Text}"
+                                     FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+
+          <Grid Grid.Row="3" Margin="0,16,0,0" ColumnDefinitions="Auto,*,Auto,Auto">
+            <Button Grid.Column="0" Classes="ghost" Command="{Binding ToggleExternalDiffCommand}">
+              <TextBlock Text="{Binding ExternalDiffToggleLabel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="ghost modal-cancel" Command="{Binding LoadFromDiskCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Editor_External_Conflict_LoadFromDisk, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="3" Classes="pill-primary" Command="{Binding KeepMineCommand}">
+              <TextBlock Text="{loc:Tr Editor_External_Conflict_KeepMine, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: la nota se borró fuera de Enki =====================
+         El contenido sigue en pantalla y el autoguardado en pausa: escribirlo recrearía en silencio un
+         archivo que alguien borró a propósito. -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsExternallyDeleted}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="FileRemoveOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Editor_External_Deleted_Title, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding ExternalDeletedMessage}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Editor_External_Deleted_Hint}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding DiscardAfterExternalDeleteCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Editor_External_Deleted_Discard, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding SaveAfterExternalDeleteCommand}">
+              <TextBlock Text="{loc:Tr Editor_External_Deleted_SaveAsNew, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
       </Border>
     </controls:ModalOverlayHost>
 

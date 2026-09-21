@@ -22,7 +22,7 @@ secciones indicadas.
 
 ### Prioridad alta — confianza en los datos y captura
 
-- [ ] **T1 · Cambios externos en el vault** — vigilar el vault con `FileSystemWatcher` y comprobar `LastWriteTimeUtc` antes de guardar, de modo que el autoguardado nunca pise un cambio hecho fuera de Enki: recarga silenciosa si no hay ediciones locales y diálogo de conflicto (conservar mía / cargar la de disco / ver diferencias) si las hay. → [§3.1](#31-t1--detección-de-cambios-externos-en-el-vault)
+- [x] **T1 · Cambios externos en el vault** — vigilar el vault con `FileSystemWatcher` y comprobar `LastWriteTimeUtc` antes de guardar, de modo que el autoguardado nunca pise un cambio hecho fuera de Enki: recarga silenciosa si no hay ediciones locales y diálogo de conflicto (conservar mía / cargar la de disco / ver diferencias) si las hay. → [§3.1](#31-t1--detección-de-cambios-externos-en-el-vault)
 - [ ] **T2 · Captura rápida global** — icono de bandeja y atajo global que abren una mini-ventana para escribir una idea y enviarla a `Inbox/` (nota) o a una tarjeta Kanban sin abrir la ventana principal. → [§3.2](#32-t2--captura-rápida-global)
 - [ ] **T3 · Web clipper simple** — pegar una URL y crear una nota en `Inbox/` con título, enlace y texto principal extraído; si el sitio bloquea la extracción, la nota se crea igualmente solo con título y enlace. → [§3.3](#33-t3--web-clipper-simple-pegar-url--nota)
 - [ ] **T4 · Multi-vault sin reiniciar** — guardar una lista de vaults recientes y ofrecer un selector para cambiar de vault en caliente (reutilizando la recarga de servicios que ya existe en `SwitchVault`). → [§3.4](#34-t4--multi-vault-sin-reiniciar)
@@ -166,6 +166,16 @@ barata y cierra un hueco muy visible; T1 va primero porque es la única con ries
 ## 3. Prioridad alta — confianza en los datos y captura
 
 ### 3.1 T1 · Detección de cambios externos en el vault
+
+> **Estado: implementado.** El diseño de abajo se siguió con dos desviaciones deliberadas, documentadas en
+> [`project-info/cambios-externos-en-el-vault.md`](project-info/cambios-externos-en-el-vault.md), que es la
+> referencia viva de esta funcionalidad:
+>
+> - Las escrituras propias no se descartan con un registro de "escrituras recientes" (punto 1 del diseño)
+>   sino comparando la huella `(fecha, tamaño, hash)` que el editor adopta tras cada guardado. Es exacto en
+>   vez de heurístico y no depende de ninguna ventana de tiempo.
+> - El vigilante cubre el vault entero pero solo **evalúa** las notas abiertas. Una nota que nadie tiene
+>   cargada no puede ser pisada, y `VaultNoteCache` ya la relee sola en el siguiente escaneo.
 
 **Problema.** No hay `FileSystemWatcher` ni comprobación de modificación externa al abrir o guardar. El
 usuario guarda Markdown en disco, por lo que casi seguro usa Syncthing, Dropbox u otro editor sobre la misma

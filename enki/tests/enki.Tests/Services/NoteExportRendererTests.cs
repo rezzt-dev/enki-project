@@ -211,6 +211,38 @@ public class NoteExportRendererTests : IDisposable
         Assert.Contains("<img src=\"no-existe.png\" alt=\"local\"/>", html);
     }
 
+    /// <summary>Un enlace a una imagen que no existe no puede tumbar la exportación de la nota entera: la
+    /// comprobación de enlaces simbólicos recorre las carpetas desde la raíz del vault, y una carpeta
+    /// intermedia que no está hacía que <c>File.GetAttributes</c> lanzara en mitad de ese recorrido.</summary>
+    [Fact]
+    public void RenderBody_Image_WithMissingIntermediateFolder_KeepsOriginalPath_WithoutThrowing()
+    {
+        var vault = Path.Combine(_storageDirectory, "vault");
+        Directory.CreateDirectory(vault);
+
+        var html = NoteExportRenderer.RenderBodyHtml("![rota](adjuntos/2024/foto.png)", vault, vault);
+
+        Assert.Contains("<img src=\"adjuntos/2024/foto.png\" alt=\"rota\"/>", html);
+    }
+
+    /// <summary>La nota se exporta completa aunque lleve un enlace roto por el medio: lo roto se degrada,
+    /// lo demás no se pierde.</summary>
+    [Fact]
+    public void RenderBody_WithABrokenImageAmongOtherContent_StillRendersTheWholeNote()
+    {
+        var vault = Path.Combine(_storageDirectory, "vault");
+        Directory.CreateDirectory(vault);
+        File.WriteAllBytes(Path.Combine(vault, "buena.png"), [4, 5, 6]);
+
+        var html = NoteExportRenderer.RenderBodyHtml(
+            "Antes.\n\n![rota](no-existe.png)\n\n![buena](buena.png)\n\nY al final, texto.", vault, vault);
+
+        Assert.Contains("Antes.", html);
+        Assert.Contains("src=\"no-existe.png\"", html);
+        Assert.Contains($"data:image/png;base64,{Convert.ToBase64String(new byte[] { 4, 5, 6 })}", html);
+        Assert.Contains("Y al final, texto.", html);
+    }
+
     [Fact]
     public void RenderBody_Image_OutsideVault_IsNeverEmbedded()
     {

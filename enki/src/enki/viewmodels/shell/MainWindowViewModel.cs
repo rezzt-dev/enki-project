@@ -15,8 +15,14 @@ using Material.Icons;
 
 namespace enki.ViewModels;
 
-public sealed partial class MainWindowViewModel : ViewModelBase
+/// <remarks>Es <see cref="IDisposable"/> porque posee un <see cref="VaultChangeWatcher"/>, que envuelve
+/// un <see cref="System.IO.FileSystemWatcher"/> y sus temporizadores. Liberarlo es lo mismo que hace
+/// <see cref="Shutdown"/> al cerrar la ventana — <see cref="Dispose"/> delega ahí y ambos son
+/// idempotentes, así que da igual cuál se llame primero, o las dos veces.</remarks>
+public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
+    private bool _shutdownCompleted;
+
     private readonly SettingsService _settingsService;
     private readonly CustomThemeService _customThemeService;
     private readonly BrandLogoService _brandLogoService;
@@ -24,6 +30,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly NoteSearchService _noteSearchService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly VaultSettingsService _vaultSettingsService;
+
+    /// <summary>Vigilancia de los cambios que otro programa hace sobre el vault (Syncthing, Dropbox, otro
+    /// editor). Vive aquí, y no dentro de Notas, porque su ciclo de vida es el del vault activo, no el de
+    /// una pantalla: se arranca al abrir el vault, se reinicia al cambiarlo y se libera al cerrar la app.
+    /// Ver <c>.docs/project-info/cambios-externos-en-el-vault.md</c>.</summary>
+    private readonly VaultChangeWatcher _vaultChangeWatcher;
 
     /// <summary>Plantillas de notas de <c>&lt;vault&gt;/.enki/templates/</c>. Se comparte instancia entre
     /// Documentos (que las aplica) y Ajustes (que elige la de la nota diaria) para que crear una plantilla
@@ -503,8 +515,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     /// §4.1, Alta).</summary>
     public void Shutdown()
     {
+        if (_shutdownCompleted) return;
+        _shutdownCompleted = true;
+
         MarkdownImageCache.Clear();
+        _vaultChangeWatcher.Dispose();
         _vaultService.EncryptionService.LockAll();
         VaultService.CleanupStaleDecryptedTempFiles();
     }
+
+    /// <summary>Ver el comentario de la clase: mismo trabajo que <see cref="Shutdown"/>.</summary>
+    public void Dispose() => Shutdown();
 }
