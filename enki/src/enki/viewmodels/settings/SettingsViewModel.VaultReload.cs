@@ -11,6 +11,7 @@ public sealed partial class SettingsViewModel
     public void ReloadForVault()
     {
         _startupPage = ParseAppPage(_settingsService.Settings.StartupPage);
+        _minimizeToTray = _settingsService.Settings.MinimizeToTray;
         _isDarkTheme = _settingsService.Settings.Theme != "Light";
         _isCustomThemeActive = _customThemeService.ActiveThemeId is not null;
         _editorFontSize = _settingsService.Settings.EditorFontSize;
@@ -105,6 +106,7 @@ public sealed partial class SettingsViewModel
 
 
         OnPropertyChanged(nameof(StartupPage));
+        OnPropertyChanged(nameof(MinimizeToTray));
         OnPropertyChanged(nameof(IsDarkTheme));
         OnPropertyChanged(nameof(IsCustomThemeActive));
         OnPropertyChanged(nameof(EditorFontSize));

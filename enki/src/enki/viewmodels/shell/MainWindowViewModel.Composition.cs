@@ -161,6 +161,31 @@ public sealed partial class MainWindowViewModel
         // que puede referenciar con seguridad Notes/Kanban/Settings aunque todavía sean null aquí — para
         // cuando el usuario realmente pulse Ctrl+Shift+K, InitializeShell ya los habrá construido.
         CommandPalette = new CommandPaletteViewModel(BuildCommandPaletteItems);
+        // Selector de vaults (T4): vive junto a la paleta y el quick switcher, fuera de la shell, porque
+        // su lista es de la instalación y no del vault abierto — sigue teniendo sentido, y sigue siendo
+        // la vía para salir de ahí, incluso en la pantalla de configuración inicial.
+        VaultSwitcher = new VaultSwitcherViewModel(_settingsService, _vaultService,
+            async path => await SwitchToVaultAsync(path), PickVaultFolderAsync);
+        // Web clipper (T3). Notes todavía no existe aquí (lo crea InitializeShell), pero el callback solo
+        // se invoca cuando el usuario guarda una página, mucho después — mismo criterio que el proveedor
+        // de comandos de la paleta justo arriba.
+        _webClipService = new WebClipService(_vaultService);
+        WebClip = new WebClipViewModel(_webClipService, _vaultService, _notificationService,
+            _ => Notes?.Reload());
+        QuickCapture = new QuickCaptureViewModel(
+            new QuickCaptureService(_vaultService, _kanbanService), _vaultService, _kanbanService,
+            _vaultSettingsService, _notificationService,
+            result =>
+            {
+                if (result.Destination == Models.QuickCaptureDestination.InboxNote) Notes?.Reload();
+                else Kanban?.Reload();
+                Dashboard?.Reload();
+                Statistics?.Reload();
+            });
+        _globalHotkeyService = new GlobalHotkeyService();
+        _shortcutChangedHandler = () => ApplyQuickCaptureHotkey(notifyOnFailure: true);
+        ShortcutRegistry.Changed += _shortcutChangedHandler;
+        if (SingleInstanceGuard.IsFirstInstance) ApplyQuickCaptureHotkey(notifyOnFailure: true);
 
         // Polls for reminders whose scheduled time has arrived and turns each into a real notification
         // (see CheckDueReminders) — independent of the vault folder, so it runs from app start regardless
@@ -296,6 +321,22 @@ public sealed partial class MainWindowViewModel
         }
     }
 
+    /// <summary>Registra o vuelve a registrar el gesto remapeable. Cualquier fallo queda convertido en un
+    /// aviso y nunca interrumpe el arranque; bandeja, paleta y atajo local permanecen disponibles.</summary>
+    private void ApplyQuickCaptureHotkey(bool notifyOnFailure)
+    {
+        var gesture = ShortcutRegistry.GetGesture(ShortcutIds.QuickCapture);
+        var serializedGesture = gesture.ToString();
+        if (string.Equals(_appliedQuickCaptureGesture, serializedGesture, StringComparison.Ordinal)) return;
+        _appliedQuickCaptureGesture = serializedGesture;
+        var result = _globalHotkeyService.Apply(gesture, OpenQuickCapture);
+        if (!notifyOnFailure || result.Status == GlobalHotkeyStatus.Registered) return;
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_QuickCaptureHotkeyUnavailable_Title"),
+            result.Reason ?? LocalizedTextFormatter.Format("QuickCapture_Hotkey_Failed"),
+            Models.NotificationSeverity.Warning);
+    }
+
     /// <summary>Continúa el arranque después de que el usuario elige un idioma en
     /// <see cref="LanguageSetup"/>.</summary>
     private void OnLanguageSelected() => ShowVaultSetupOrShell();
@@ -341,6 +382,14 @@ public sealed partial class MainWindowViewModel
 
     private void InitializeShell()
     {
+        // T4: el vault del arranque también cuenta como "abierto ahora", y este es el único punto por el
+        // que pasa tanto el que venía guardado en settings.json como el que acaba de elegir
+        // VaultSetupViewModel. Registrarlo aquí —y no en el constructor de VaultService— es lo que
+        // distingue "hay una ruta guardada" de "se ha abierto de verdad": una segunda instancia llega al
+        // constructor pero nunca hasta aquí (ver ShowVaultSetupOrShell).
+        _settingsService.RegisterRecentVault(_vaultService.VaultPath);
+        VaultSwitcher.Refresh();
+
         ReloadVaultData();
         _kanbanService.EnsureSeedBoard();
         // Guarantees every vault this shell ever opens has a "default" session — a brand-new vault, one
@@ -431,7 +480,7 @@ public sealed partial class MainWindowViewModel
                 Statistics?.Reload();
             });
         Settings = new SettingsViewModel(_settingsService, _customThemeService, _brandLogoService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
-            _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
+            _polarSyncService, _notificationService, SwitchToVaultAsync, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnKanbanBoardOrientationChanged,

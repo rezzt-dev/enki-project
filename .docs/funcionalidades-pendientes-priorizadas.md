@@ -23,9 +23,9 @@ secciones indicadas.
 ### Prioridad alta — confianza en los datos y captura
 
 - [x] **T1 · Cambios externos en el vault** — vigilar el vault con `FileSystemWatcher` y comprobar `LastWriteTimeUtc` antes de guardar, de modo que el autoguardado nunca pise un cambio hecho fuera de Enki: recarga silenciosa si no hay ediciones locales y diálogo de conflicto (conservar mía / cargar la de disco / ver diferencias) si las hay. → [§3.1](#31-t1--detección-de-cambios-externos-en-el-vault)
-- [ ] **T2 · Captura rápida global** — icono de bandeja y atajo global que abren una mini-ventana para escribir una idea y enviarla a `Inbox/` (nota) o a una tarjeta Kanban sin abrir la ventana principal. → [§3.2](#32-t2--captura-rápida-global)
-- [ ] **T3 · Web clipper simple** — pegar una URL y crear una nota en `Inbox/` con título, enlace y texto principal extraído; si el sitio bloquea la extracción, la nota se crea igualmente solo con título y enlace. → [§3.3](#33-t3--web-clipper-simple-pegar-url--nota)
-- [ ] **T4 · Multi-vault sin reiniciar** — guardar una lista de vaults recientes y ofrecer un selector para cambiar de vault en caliente (reutilizando la recarga de servicios que ya existe en `SwitchVault`). → [§3.4](#34-t4--multi-vault-sin-reiniciar)
+- [x] **T2 · Captura rápida global** — icono de bandeja y atajo global que abren una mini-ventana para escribir una idea y enviarla a `Inbox/` (nota) o a una tarjeta Kanban sin abrir la ventana principal. → [§3.2](#32-t2--captura-rápida-global)
+- [x] **T3 · Web clipper simple** — pegar una URL y crear una nota en `Inbox/` con título, enlace y texto principal extraído; si el sitio bloquea la extracción, la nota se crea igualmente solo con título y enlace. → [§3.3](#33-t3--web-clipper-simple-pegar-url--nota)
+- [x] **T4 · Multi-vault sin reiniciar** — guardar una lista de vaults recientes y ofrecer un selector para cambiar de vault en caliente (reutilizando la recarga de servicios que ya existe en `SwitchVault`). → [§3.4](#34-t4--multi-vault-sin-reiniciar)
 
 ### Prioridad media — cerrar el flujo de planificación
 
@@ -283,6 +283,9 @@ Manual: Syncthing/Dropbox real y edición simultánea en otro editor (añadir al
 ---
 
 ### 3.2 T2 · Captura rápida global
+
+> **Estado: implementado.** La referencia viva del comportamiento, arquitectura y límites por plataforma
+> está en [`project-info/captura-rapida-global.md`](project-info/captura-rapida-global.md).
 
 **Problema.** No hay icono de bandeja ni atajo global. «Sé exactamente dónde está lo que necesito» empieza
 por poder **soltar una idea** sin abrir la ventana principal ni decidir dónde va.

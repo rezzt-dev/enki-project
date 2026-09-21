@@ -10,6 +10,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### ANADIDO
+- captura rapida global desde el icono de bandeja, la paleta de comandos, un atajo local y el atajo global remapeable `ctrl+alt+espacio`: abre una mini-ventana independiente, conserva el borrador al cancelar y crea directamente una nota en `Inbox/` o una tarjeta en la columna Kanban elegida, sin traer al frente la ventana principal.
+- backends nativos del atajo global para Windows (`RegisterHotKey`), Linux X11 (`XGrabKey`) y macOS (`RegisterEventHotKey`), con degradacion explicita en Wayland, conflictos y plataformas no compatibles; ajuste opcional para mantener Enki en la bandeja al cerrar la ventana principal.
 - edicion markdown profesional sobre `MarkdownEditing`: alternar formato en linea y marcadores de bloque, aplicar acciones a selecciones multilínea, anidar y renumerar listas, continuar listas y citas con intro, inicio inteligente, borrado de marcadores, pares automaticos configurables, pegado de urls como enlaces y operaciones para mover, duplicar, borrar o ampliar la seleccion por lineas, todo integrado con atajos remapeables y acciones deshacibles completas.
 - resaltado de sintaxis para bloques de codigo con lenguaje declarado mediante las gramaticas textmate y los temas claro/oscuro que ya usa el visor de archivos, cargado en segundo plano, almacenado por bloque y limitado por tiempo y numero de lineas para no bloquear la escritura.
 - avisos compatibles con la sintaxis de obsidian (`> [!note]`, `tip`, `warning`, `danger` y sus alias), con icono, titulo, tono y fondo propios del tema, mas el comando `/aviso` para insertarlos sin memorizar la sintaxis.
@@ -79,6 +81,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- global quick capture from the tray icon, command palette, a local shortcut and the remappable `ctrl+alt+space` system-wide shortcut: it opens an independent mini-window, preserves the draft when cancelled and writes directly to an `Inbox/` note or the selected Kanban column without bringing the main window forward.
+- native global-shortcut backends for Windows (`RegisterHotKey`), Linux X11 (`XGrabKey`) and macOS (`RegisterEventHotKey`), with explicit fallback for Wayland, conflicts and unsupported platforms; plus an opt-in setting to keep Enki in the tray when the main window closes.
 - professional markdown editing through `MarkdownEditing`: toggle inline formatting and block markers, apply actions to multiline selections, indent and renumber lists, continue lists and quotes with enter, smart home, marker deletion, configurable automatic pairs, url-to-link pasting, and line move, duplicate, delete and expand operations, all connected to remappable shortcuts and complete undo actions.
 - syntax highlighting for fenced code blocks with a declared language using the textmate grammars and light/dark themes already shared by the file viewer, loaded in the background, cached per block and bounded by time and line count so typing never blocks.
 - obsidian-compatible callouts (`> [!note]`, `tip`, `warning`, `danger` and their aliases) with theme-aware icons, titles, tones and backgrounds, plus the `/aviso` command so they can be inserted without memorising the syntax.

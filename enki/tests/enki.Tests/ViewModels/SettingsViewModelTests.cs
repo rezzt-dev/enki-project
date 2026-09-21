@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using enki.Services;
 using enki.Localization;
 using enki.ViewModels;
@@ -56,7 +57,7 @@ public class SettingsViewModelTests : IDisposable
         SettingsViewModel? vm = null;
         vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
+            switchVault: (_, _) => Task.FromResult(true), onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
             onKanbanBoardOrientationChanged: _ => { },
@@ -189,7 +190,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         Assert.Equal(16, vm.EditorFontSize);
         Assert.True(vm.IsDarkTheme);
@@ -270,7 +271,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
+            (_, _) => Task.FromResult(true), _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         vm.NotificationsPanelEnabled = false;
 
@@ -377,7 +378,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, v => notified = v, () => { });
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, v => notified = v, () => { });
 
         vm.UiZoomPercent = 150;
 

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using enki.Services;
 using enki.ViewModels;
 using Xunit;
@@ -48,7 +49,7 @@ public class SettingsViewModelTemplatesTests : IDisposable
         var vm = new SettingsViewModel(
             settingsService, new CustomThemeService(settingsService), new BrandLogoService(_storageDirectory),
             vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
+            switchVault: (_, _) => Task.FromResult(true), onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { },
             onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },

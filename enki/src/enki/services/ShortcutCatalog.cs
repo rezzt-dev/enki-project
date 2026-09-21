@@ -21,6 +21,7 @@ public static class ShortcutCatalog
         new(ShortcutIds.QuickSwitcher, "Ctrl+P", "Settings_Navigation_Title", "Settings_Shortcuts_QuickSwitcher"),
         new(ShortcutIds.CommandPalette, "Ctrl+Shift+K", "Settings_Navigation_Title", "Settings_Shortcuts_CommandPalette"),
         new(ShortcutIds.QuickNewNote, "Ctrl+Shift+N", "Settings_Navigation_Title", "Settings_Navigation_QuickNote"),
+        new(ShortcutIds.QuickCapture, "Ctrl+Alt+Space", "Settings_Navigation_Title", "Settings_Shortcuts_QuickCapture"),
         new(ShortcutIds.NavigateDashboard, "Ctrl+D1", "Settings_Navigation_Title", "Settings_Navigation_ToDashboard"),
         new(ShortcutIds.NavigateNotes, "Ctrl+D2", "Settings_Navigation_Title", "Settings_Navigation_ToNotes"),
         new(ShortcutIds.NavigateKanban, "Ctrl+D3", "Settings_Navigation_Title", "Settings_Navigation_ToKanban"),

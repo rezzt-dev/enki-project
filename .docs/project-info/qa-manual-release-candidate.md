@@ -352,6 +352,30 @@ abierto en otro editor de texto (VS Code, `nvim`, el editor del sistema).
 
 ---
 
+## 8.3 Captura rápida global (T2)
+
+Ejecutar en Windows, macOS, Linux X11 y Linux Wayland. Los tests automáticos cubren la escritura y el
+estado; esta matriz valida la integración real con el escritorio.
+
+- [ ] El icono de bandeja muestra «Captura rápida», «Abrir Enki» y «Salir»; pulsar el icono y la primera
+      opción abren la mini-ventana sin mostrar ni activar la principal.
+- [ ] El atajo global configurado abre la captura desde otra aplicación con el foco en el campo de texto.
+      En Wayland aparece un único aviso comprensible y bandeja/paleta siguen funcionando.
+- [ ] Si otra aplicación ocupa la combinación, Enki arranca con normalidad, notifica el conflicto y el
+      atajo vuelve a funcionar al remapearlo a una combinación libre sin reiniciar.
+- [ ] `Ctrl+Enter` crea una nota en `Inbox/` —incluida la carpeta si no existía— o una tarjeta en la columna
+      seleccionada; la ventana se cierra y el foco vuelve a la aplicación anterior.
+- [ ] `Esc` con texto cierra la ventana; al abrirla de nuevo el borrador está intacto. Un error de disco,
+      un vault ausente o un tablero sin columnas tampoco descartan el texto.
+- [ ] Con zoom al 50 %, 100 %, 150 % y 200 %, tema claro/oscuro y los siete idiomas, la ventana cabe, no
+      recorta controles y respeta `CornerRadius="0"`.
+- [ ] Con lector de pantalla se anuncian campo, destino, columna, error y resultado; destino y envío se
+      pueden operar sin ratón.
+- [ ] Con «Mantener Enki en la bandeja» apagado, cerrar la principal termina el proceso. Encendido, la
+      oculta y la captura sigue operativa; «Salir» vuelca el último autoguardado y elimina el icono.
+
+---
+
 ## 9. Criterio de salida antes de `0.2.0`
 
 - Todos los puntos de las secciones 4 a 7 están en `OK` o `NO PROBADO` con motivo documentado — ningún

@@ -230,10 +230,7 @@ public sealed partial class VaultService
     public void InitializeVault(string path, bool seedWelcomeNote)
     {
         Directory.CreateDirectory(path);
-        VaultPath = path;
-        _settingsService.Settings.VaultPath = path;
-        _settingsService.SwitchVault(path);
-        _settingsService.Save();
+        AdoptVaultPath(path);
 
         if (seedWelcomeNote && !Directory.EnumerateFiles(VaultPath, "*.md").Any())
         {
@@ -245,10 +242,34 @@ public sealed partial class VaultService
     public void SetVaultPath(string path)
     {
         Directory.CreateDirectory(path);
+        AdoptVaultPath(path);
+    }
+
+    /// <summary>Lo que significa "a partir de ahora el vault es este", compartido por
+    /// <see cref="InitializeVault"/> y <see cref="SetVaultPath"/> para que cambiar de vault en caliente
+    /// (T4, .docs/project-info/multi-vault-en-caliente.md) no dependa de por cuál de los dos se entró.
+    ///
+    /// <para>Lo que antes no hacía ninguno de los dos, y es lo que convierte esto en un cambio de vault de
+    /// verdad y no solo en un cambio de ruta: <b>vaciar las cachés en memoria</b>. Tanto
+    /// <see cref="_noteCache"/> como <see cref="_sessionEncryptionCache"/> están indexadas por ruta
+    /// absoluta, así que con vaults distintos nunca se servirían entradas cruzadas — pero sí se quedaban
+    /// vivas las del vault anterior, ocupando el presupuesto de memoria de la caché y, sobre todo,
+    /// manteniendo en RAM el contenido de notas de un vault que el usuario acaba de cerrar (incluidas las
+    /// de una sesión que se bloquea justo después). Volver a A después de B tiene que releer el disco,
+    /// no servir lo que se leyó antes de irse.</para></summary>
+    private void AdoptVaultPath(string path)
+    {
+        _noteCache.Clear();
+        InvalidateSessionEncryptionCache();
+        InvalidateVaultSizeCache();
         VaultPath = path;
         _settingsService.Settings.VaultPath = path;
+        // Antes de RegisterRecentVault: SwitchVault reemplaza la instancia de AppSettings, y la lista de
+        // recientes tiene que acabar en la nueva (viaja con las claves de instalación), no en la que se
+        // acaba de sustituir.
         _settingsService.SwitchVault(path);
         _settingsService.Save();
+        _settingsService.RegisterRecentVault(path);
     }
 
     /// <summary>True cuando la última llamada a <see cref="GetVaultSizeBytes"/> se topó con al menos un
@@ -327,6 +348,43 @@ public sealed partial class VaultService
             }, TaskScheduler.Default);
             _vaultSizeRefreshTask = task;
             return task;
+        }
+    }
+
+    /// <summary>Por qué no se puede abrir <paramref name="path"/> como vault, o <see langword="null"/> si
+    /// sí se puede (T4). Comprueba lo que de verdad falla en la práctica —la carpeta ya no está (movida,
+    /// borrada, unidad externa desconectada, recurso de red caído) o está pero no se deja leer (permisos)—
+    /// haciendo una lectura real del directorio en vez de fiarse solo de <see cref="Directory.Exists"/>,
+    /// que devuelve <see langword="false"/> tanto para "no existe" como para "no tengo permiso ni para
+    /// mirar", y deja al usuario sin saber cuál de las dos es.
+    ///
+    /// <para>Se usa para <b>pintar</b> una entrada reciente como no disponible con su motivo, no para
+    /// borrarla: la lista nunca se poda sola (ver <see cref="Models.RecentVault"/>). El texto se compone
+    /// con las mismas claves que <see cref="VaultFailureReasons"/> usa para los fallos de escritura, para
+    /// que "acceso denegado" se lea igual venga de donde venga.</para></summary>
+    public static LocalizedText? DescribeVaultUnavailability(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return LocalizedTextFormatter.Format("Notification_VaultUnavailable_Reason");
+
+        try
+        {
+            if (!Directory.Exists(path))
+                return LocalizedTextFormatter.Format("Notification_SaveFailed_Reason_PathNotFound");
+            // Enumerar (y no solo existir) es lo que distingue "no está" de "no puedo leerla": basta con
+            // pedir la primera entrada, así que ni siquiera en un vault enorme cuesta nada.
+            using var probe = Directory.EnumerateFileSystemEntries(path).GetEnumerator();
+            probe.MoveNext();
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return LocalizedTextFormatter.Format("Common_Error_AccessDenied");
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            LogService.Warning($"No se pudo comprobar la disponibilidad del vault '{path}'", ex);
+            return LocalizedTextFormatter.Format("Common_Error_IOFailure");
         }
     }
 

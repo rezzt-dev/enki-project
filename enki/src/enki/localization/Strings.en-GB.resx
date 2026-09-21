@@ -5660,4 +5660,69 @@ Happy writing.</value>
   <data name="Settings_Editor_AutoReloadExternal_Description" xml:space="preserve"><value>With unsaved changes you are always asked first; this only decides what happens when there are none.</value></data>
   <data name="Notification_NoteUnsavedKeptInHistory_Title" xml:space="preserve"><value>Unsaved text kept in the history</value></data>
   <data name="Notification_NoteUnsavedKeptInHistory_Message" xml:space="preserve"><value>“{0}” closed with an unresolved external change. What you had written is in the note's version history.</value></data>
+  <data name="VaultSwitcher_Eyebrow" xml:space="preserve"><value>Vault</value></data>
+  <data name="VaultSwitcher_Tooltip" xml:space="preserve"><value>Switch vault</value></data>
+  <data name="VaultSwitcher_RecentsTitle" xml:space="preserve"><value>Recent vaults</value></data>
+  <data name="VaultSwitcher_Browse" xml:space="preserve"><value>Open another folder…</value></data>
+  <data name="VaultSwitcher_RemoveFromRecents" xml:space="preserve"><value>Remove from recents</value></data>
+  <data name="VaultSwitcher_ActiveBadge" xml:space="preserve"><value>Open</value></data>
+  <data name="VaultSwitcher_RemoveHint" xml:space="preserve"><value>Removing a vault from this list never touches its files.</value></data>
+  <data name="CommandPalette_Action_SwitchVault" xml:space="preserve"><value>Switch vault…</value></data>
+  <data name="Notification_VaultSwitchFailed_Title" xml:space="preserve"><value>Vault not opened</value></data>
+  <data name="Notification_VaultSwitchFailed_Message" xml:space="preserve"><value>“{0}” stays where it is: {1}</value></data>
+  <data name="Notification_VaultSwitchBlocked_Title" xml:space="preserve"><value>Unsaved changes</value></data>
+  <data name="Notification_VaultSwitchBlocked_Message" xml:space="preserve"><value>The vault was not switched: {0} could not be saved.</value></data>
+  <data name="WebClip_Error_InvalidUrl" xml:space="preserve"><value>That doesn't look like a web address.</value></data>
+  <data name="WebClip_Error_UnsupportedScheme" xml:space="preserve"><value>Only http and https addresses can be saved — this one starts with “{0}”.</value></data>
+  <data name="WebClip_Error_PrivateAddress" xml:space="preserve"><value>“{0}” is on this machine or this network, so it is never requested.</value></data>
+  <data name="WebClip_Partial_NoReadableText" xml:space="preserve"><value>The page had no readable text to extract.</value></data>
+  <data name="WebClip_Partial_Timeout" xml:space="preserve"><value>The site took too long to answer.</value></data>
+  <data name="WebClip_Partial_HttpStatus" xml:space="preserve"><value>The site answered with error {0}.</value></data>
+  <data name="WebClip_Partial_Unreachable" xml:space="preserve"><value>The site could not be reached.</value></data>
+  <data name="WebClip_Partial_TooManyRedirects" xml:space="preserve"><value>The address kept redirecting.</value></data>
+  <data name="WebClip_Partial_TooLarge" xml:space="preserve"><value>The page is larger than the 2 MB limit.</value></data>
+  <data name="WebClip_Partial_NotHtml" xml:space="preserve"><value>That address is not a web page ({0}).</value></data>
+  <data name="WebClip_Note_SourceLabel" xml:space="preserve"><value>Source</value></data>
+  <data name="WebClip_Note_NoContent" xml:space="preserve"><value>*The text of this page could not be extracted. The link above still opens it.*</value></data>
+  <data name="WebClip_Title" xml:space="preserve"><value>Save web page</value></data>
+  <data name="WebClip_UrlPlaceholder" xml:space="preserve"><value>Paste a link</value></data>
+  <data name="WebClip_SaveButton" xml:space="preserve"><value>Save to Inbox</value></data>
+  <data name="WebClip_Working" xml:space="preserve"><value>Fetching the page…</value></data>
+  <data name="WebClip_Hint" xml:space="preserve"><value>Nothing is run from the page and no remote resource is downloaded.</value></data>
+  <data name="CommandPalette_Action_ClipWebPage" xml:space="preserve"><value>Save web page…</value></data>
+  <data name="Notification_WebClipSaved_Title" xml:space="preserve"><value>Page saved</value></data>
+  <data name="Notification_WebClipSaved_Message" xml:space="preserve"><value>“{0}” is now in Inbox.</value></data>
+  <data name="Notification_WebClipPartial_Title" xml:space="preserve"><value>Page saved without its text</value></data>
+  <data name="Notification_WebClipPartial_Message" xml:space="preserve"><value>“{0}” was saved with its title and link only: {1}</value></data>
+  <data name="Notification_WebClipFailed_Title" xml:space="preserve"><value>Page not saved</value></data>
+  <data name="QuickCapture_Title" xml:space="preserve"><value>Quick capture</value></data>
+  <data name="QuickCapture_Subtitle" xml:space="preserve"><value>Write it down now; organise it later.</value></data>
+  <data name="QuickCapture_Placeholder" xml:space="preserve"><value>Type an idea…</value></data>
+  <data name="QuickCapture_Input_AccessibleName" xml:space="preserve"><value>Quick capture text</value></data>
+  <data name="QuickCapture_Destination_Label" xml:space="preserve"><value>Destination</value></data>
+  <data name="QuickCapture_Destination_Inbox" xml:space="preserve"><value>Inbox note</value></data>
+  <data name="QuickCapture_Destination_Kanban" xml:space="preserve"><value>Kanban card</value></data>
+  <data name="QuickCapture_KanbanColumn_Label" xml:space="preserve"><value>Kanban column</value></data>
+  <data name="QuickCapture_Submit" xml:space="preserve"><value>Save</value></data>
+  <data name="QuickCapture_SubmitHint" xml:space="preserve"><value>Ctrl+Enter</value></data>
+  <data name="QuickCapture_Error_NoVault" xml:space="preserve"><value>Choose or open a vault before saving this capture.</value></data>
+  <data name="QuickCapture_Error_NoKanbanColumn" xml:space="preserve"><value>The Kanban board has no available column.</value></data>
+  <data name="QuickCapture_Error_SaveFailed" xml:space="preserve"><value>The capture could not be saved: {0}</value></data>
+  <data name="Notification_QuickCaptureSaved_Title" xml:space="preserve"><value>Capture saved</value></data>
+  <data name="Notification_QuickCaptureSaved_Note" xml:space="preserve"><value>“{0}” was saved in Inbox.</value></data>
+  <data name="Notification_QuickCaptureSaved_Card" xml:space="preserve"><value>“{0}” was added to Kanban.</value></data>
+  <data name="Notification_QuickCaptureHotkeyUnavailable_Title" xml:space="preserve"><value>Global shortcut unavailable</value></data>
+  <data name="QuickCapture_Hotkey_UnsupportedPlatform" xml:space="preserve"><value>The global quick-capture shortcut is not supported on this platform. Use the tray icon or command palette.</value></data>
+  <data name="QuickCapture_Hotkey_Failed" xml:space="preserve"><value>The global quick-capture shortcut could not be registered. Use the tray icon or command palette.</value></data>
+  <data name="QuickCapture_Hotkey_UnsupportedKey" xml:space="preserve"><value>This key cannot be used for a global shortcut.</value></data>
+  <data name="QuickCapture_Hotkey_Conflict" xml:space="preserve"><value>The global quick-capture shortcut is already in use by the system or another application.</value></data>
+  <data name="QuickCapture_Hotkey_Wayland" xml:space="preserve"><value>Wayland does not reliably allow applications to register global shortcuts. Use the tray icon or command palette.</value></data>
+  <data name="QuickCapture_Hotkey_NoDisplay" xml:space="preserve"><value>No X11 display is available for the global shortcut. Use the tray icon or command palette.</value></data>
+  <data name="Tray_OpenEnki" xml:space="preserve"><value>Open Enki</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="CommandPalette_Action_QuickCapture" xml:space="preserve"><value>Quick capture…</value></data>
+  <data name="Settings_Shortcuts_QuickCapture" xml:space="preserve"><value>Quick capture</value></data>
+  <data name="Settings_General_Tray_Title" xml:space="preserve"><value>System tray</value></data>
+  <data name="Settings_General_Tray_Description" xml:space="preserve"><value>Keep quick capture within reach while the main window is hidden.</value></data>
+  <data name="Settings_General_Tray_KeepRunning" xml:space="preserve"><value>Keep Enki in the tray when closing the main window</value></data>
 </root>

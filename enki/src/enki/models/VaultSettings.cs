@@ -61,6 +61,16 @@ public sealed class VaultSettings
     /// propio cursor para descargar los cambios que aún no tiene.</summary>
     public long PolarLastSyncAtUtcMs { get; set; }
 
+    // ===================== Captura rápida global (T2) =====================
+
+    /// <summary>Último destino elegido en la mini-ventana. Es por vault porque la organización de cada
+    /// espacio puede ser distinta y la columna Kanban asociada solo existe dentro de ese vault.</summary>
+    public QuickCaptureDestination QuickCaptureDestination { get; set; } = QuickCaptureDestination.InboxNote;
+
+    /// <summary>Columna preferida para nuevas tarjetas de captura rápida. Si desaparece, el servicio usa
+    /// la primera columna disponible y el selector actualiza este valor en la siguiente elección.</summary>
+    public string? QuickCaptureKanbanColumnId { get; set; }
+
     // ===================== Dashboard configurable (propuesta 27) =====================
 
     /// <summary>Ordered list of dashboard section keys (e.g. "QuickAccess", "Today", "Vault",

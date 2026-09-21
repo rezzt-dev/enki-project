@@ -116,7 +116,7 @@
             </Transitions>
           </Border.Transitions>
 
-          <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="14,18,14,16">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="14,18,14,16">
 
             <!-- Brand header — logo, text, and (only while expanded) the toggle button all share this
                  one row so they line up on the same vertical center. Collapsed: the toggle moves to its
@@ -183,8 +183,114 @@
               </Border>
             </Button>
 
+            <!-- Selector de vault (T4, .docs/project-info/multi-vault-en-caliente.md): el rótulo
+                 dice qué carpeta está abierta —la pregunta que se hace quien separa trabajo y vida
+                 personal en dos vaults— y al pulsarlo se despliega la lista de recientes. Fila propia
+                 entre el brand header y la navegación en vez de dentro del header: el header ya carga con
+                 el logo, el nombre de la app y el botón de plegar, y ahí el nombre del vault se leería
+                 como parte de la marca. Plegado queda solo el icono, con el nombre en el tooltip, igual
+                 que cualquier otra fila del raíl. -->
+            <Grid Grid.Row="2" Margin="0,4,0,0">
+              <Button Name="VaultSwitcherTrigger" Classes="nav-item"
+                      Classes.collapsed="{Binding !IsSidebarExpanded}"
+                      Classes.active="{Binding VaultSwitcher.IsOpen}"
+                      Command="{Binding VaultSwitcher.ToggleCommand}"
+                      ToolTip.Tip="{Binding VaultSwitcher.ActiveVaultName}"
+                      ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}"
+                      AutomationProperties.Name="{loc:Tr VaultSwitcher_Tooltip}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="SafeSquareOutline" Width="20" Height="20"
+                                   VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" MinWidth="0"
+                              IsVisible="{Binding IsSidebarExpanded}">
+                    <TextBlock Text="{loc:Tr VaultSwitcher_Eyebrow, Converter={StaticResource UpperCaseConverter}}"
+                               Classes="faint" FontSize="9" LetterSpacing="1.5" />
+                    <TextBlock Text="{Binding VaultSwitcher.ActiveVaultName}" FontSize="12"
+                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                  </StackPanel>
+                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Width="16" Height="16"
+                                   VerticalAlignment="Center" IsVisible="{Binding IsSidebarExpanded}" />
+                </Grid>
+              </Button>
+
+              <Popup PlacementTarget="{Binding #VaultSwitcherTrigger}" Placement="BottomEdgeAlignedLeft"
+                     VerticalOffset="6" IsLightDismissEnabled="True"
+                     OverlayInputPassThroughElement="{Binding #VaultSwitcherTrigger}"
+                     IsOpen="{Binding VaultSwitcher.IsOpen, Mode=TwoWay}">
+                <Border Classes="dropdown-popover" Width="320">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="{loc:Tr VaultSwitcher_RecentsTitle, Converter={StaticResource UpperCaseConverter}}"
+                               Classes="eyebrow" FontSize="10.5" />
+
+                    <ItemsControl ItemsSource="{Binding VaultSwitcher.Recents}"
+                                  IsVisible="{Binding VaultSwitcher.HasOtherVaults}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="2" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RecentVaultItemViewModel">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <Button Grid.Column="0" Classes="dropdown-item"
+                                    Classes.active="{Binding IsActive}"
+                                    IsEnabled="{Binding IsAvailable}"
+                                    Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).VaultSwitcher.OpenRecentCommand}"
+                                    CommandParameter="{Binding .}"
+                                    AutomationProperties.Name="{Binding DisplayName}">
+                              <Grid ColumnDefinitions="Auto,*">
+                                <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="16" Height="16"
+                                                 Margin="0,2,10,0" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1" Spacing="2" MinWidth="0">
+                                  <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontWeight="Bold"
+                                               TextTrimming="CharacterEllipsis" MaxLines="1" MinWidth="0" />
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" Classes="faint"
+                                               Text="{loc:Tr VaultSwitcher_ActiveBadge, Converter={StaticResource UpperCaseConverter}}"
+                                               IsVisible="{Binding IsActive}" />
+                                  </Grid>
+                                  <TextBlock Text="{Binding Path}" Classes="faint" FontSize="10"
+                                             TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                  <TextBlock Text="{Binding LastOpenedLabel}" Classes="faint" FontSize="10"
+                                             IsVisible="{Binding IsAvailable}" />
+                                  <!-- Ruta no disponible: la entrada se queda, atenuada y con el motivo
+                                       concreto (unidad desconectada, permisos), porque es justo la que el
+                                       usuario querrá recuperar cuando vuelva a conectar el disco. -->
+                                  <TextBlock Text="{Binding UnavailableReason}" Classes="faint" FontSize="10"
+                                             TextWrapping="Wrap" IsVisible="{Binding !IsAvailable}" />
+                                </StackPanel>
+                              </Grid>
+                            </Button>
+                            <Button Grid.Column="1" Classes="icon-btn icon-btn-danger" Width="28" Height="28"
+                                    VerticalAlignment="Top"
+                                    Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).VaultSwitcher.RemoveRecentCommand}"
+                                    CommandParameter="{Binding .}"
+                                    ToolTip.Tip="{loc:Tr VaultSwitcher_RemoveFromRecents}"
+                                    AutomationProperties.Name="{loc:Tr VaultSwitcher_RemoveFromRecents}">
+                              <mi:MaterialIcon Kind="Close" Width="14" Height="14" />
+                            </Button>
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{loc:Tr VaultSwitcher_RemoveHint}" Classes="faint" TextWrapping="Wrap"
+                               IsVisible="{Binding VaultSwitcher.HasOtherVaults}" />
+
+                    <Button Classes="pill" HorizontalAlignment="Stretch"
+                            Command="{Binding VaultSwitcher.BrowseForVaultCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" />
+                        <TextBlock Text="{loc:Tr VaultSwitcher_Browse, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </Grid>
+
             <!-- Nav items -->
-            <ItemsControl Grid.Row="2" ItemsSource="{Binding NavItems}" Margin="0,24,0,0">
+            <ItemsControl Grid.Row="3" ItemsSource="{Binding NavItems}" Margin="0,24,0,0">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                   <StackPanel Spacing="4" />
@@ -224,7 +330,7 @@
                  barra lateral), en el orden/visibilidad que el usuario decida arrastrando, más Ajustes
                  siempre al final — mismo ItemTemplate que el ItemsControl de NavItems de arriba, solo que
                  en una lista aparte para que este grupo quede fijo en vez de desplazarse con la principal. -->
-            <StackPanel Grid.Row="4" Spacing="4">
+            <StackPanel Grid.Row="5" Spacing="4">
               <ItemsControl ItemsSource="{Binding BottomNavItems}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -516,6 +622,54 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
               </ScrollViewer>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- Web clipper (T3, .docs/project-info/web-clipper.md): pegar una URL y que salga una nota en
+           Inbox/. Mismo patrón de popup anclado a la barra de título que la paleta de comandos de arriba,
+           porque guardar una página no pertenece a ninguna pantalla: se pide desde la paleta, desde la
+           cabecera de Documentos y desde la captura rápida. -->
+      <Grid>
+        <Popup Name="WebClipPopup" PlacementTarget="{Binding #GlobalSearchTrigger}"
+               Placement="BottomEdgeAlignedRight" VerticalOffset="6"
+               IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #GlobalSearchTrigger}"
+               IsOpen="{Binding WebClip.IsOpen, Mode=TwoWay}" Width="420"
+               Opened="WebClipPopup_Opened">
+          <Border Classes="dropdown-popover" Width="420">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{loc:Tr WebClip_Title, Converter={StaticResource UpperCaseConverter}}"
+                         Classes="eyebrow" FontSize="10.5" />
+
+              <TextBox Name="WebClipTextBox" Classes="search"
+                       Text="{Binding WebClip.Url, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="{loc:Tr WebClip_UrlPlaceholder}"
+                       AutomationProperties.Name="{loc:Tr WebClip_UrlPlaceholder}"
+                       IsEnabled="{Binding WebClip.IsIdle}"
+                       KeyDown="WebClipTextBox_KeyDown" />
+
+              <!-- El motivo del rechazo se lee junto al campo que hay que corregir, no solo en el panel de
+                   avisos: una URL mal escrita se arregla aquí mismo. -->
+              <TextBlock Text="{Binding WebClip.ErrorMessage}" Classes="faint" TextWrapping="Wrap"
+                         IsVisible="{Binding WebClip.ErrorMessage, Converter={x:Static baseconv:StringConverters.IsNotNullOrEmpty}}" />
+
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding WebClip.IsBusy}">
+                <mi:MaterialIcon Kind="Loading" Classes="spin" Width="16" Height="16" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr WebClip_Working}" Classes="faint" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <TextBlock Text="{loc:Tr WebClip_Hint}" Classes="faint" TextWrapping="Wrap" />
+
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <Button Grid.Column="1" Classes="ghost modal-cancel" Margin="0,0,8,0"
+                        Command="{Binding WebClip.CancelCommand}">
+                  <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+                </Button>
+                <Button Grid.Column="2" Classes="pill-primary" Command="{Binding WebClip.SaveCommand}">
+                  <TextBlock Text="{loc:Tr WebClip_SaveButton, Converter={StaticResource UpperCaseConverter}}" />
+                </Button>
+              </Grid>
             </StackPanel>
           </Border>
         </Popup>

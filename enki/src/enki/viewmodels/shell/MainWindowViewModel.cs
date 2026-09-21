@@ -30,6 +30,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly NoteSearchService _noteSearchService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly VaultSettingsService _vaultSettingsService;
+    private readonly WebClipService _webClipService;
+    private readonly GlobalHotkeyService _globalHotkeyService;
+    private readonly Action _shortcutChangedHandler;
+    private string? _appliedQuickCaptureGesture;
 
     /// <summary>Vigilancia de los cambios que otro programa hace sobre el vault (Syncthing, Dropbox, otro
     /// editor). Vive aquí, y no dentro de Notas, porque su ciclo de vida es el del vault activo, no el de
@@ -159,6 +163,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     /// Ctrl+Shift+K para ejecutar cualquier acción registrada por el shell, no solo navegar. El registro de
     /// comandos vive en <c>MainWindowViewModel.CommandPalette.cs</c> (<c>BuildCommandPaletteItems</c>).</summary>
     public CommandPaletteViewModel CommandPalette { get; }
+
+    /// <summary>Selector "Cambiar de vault" de la cabecera del sidebar (T4,
+    /// .docs/project-info/multi-vault-en-caliente.md). Siempre vivo, como <see cref="CommandPalette"/> y
+    /// compañía: se construye en el constructor y no en <c>InitializeShell</c>, así que sobrevive a
+    /// cualquier número de cambios de vault sin recrearse.</summary>
+    public VaultSwitcherViewModel VaultSwitcher { get; }
+
+    /// <summary>Web clipper (T3, .docs/project-info/web-clipper.md): pegar una URL y que salga una nota en
+    /// <c>Inbox/</c>. Otro popup del shell, como <see cref="CommandPalette"/>, y por el mismo motivo —
+    /// guardar una página no pertenece a ninguna pantalla en concreto y se pide desde la paleta de
+    /// comandos, desde Documentos y desde la captura rápida.</summary>
+    public WebClipViewModel WebClip { get; }
+
+    /// <summary>Única instancia del borrador y la lógica de la mini-ventana. La ventana visual se puede
+    /// recrear, pero este estado sobrevive a Esc hasta que la captura se envía.</summary>
+    public QuickCaptureViewModel QuickCapture { get; }
+
+    /// <summary>Petición agnóstica de UI para mostrar la mini-ventana. La atiende <c>MainWindow</c> tanto
+    /// para el comando local como para el callback del hotkey nativo.</summary>
+    public event Action? QuickCaptureRequested;
 
     [ObservableProperty]
     private bool _isVaultReady;
@@ -507,6 +531,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public void OpenCommandPalette() => CommandPalette.IsOpen = true;
 
+    [RelayCommand]
+    public void OpenQuickCapture() => QuickCaptureRequested?.Invoke();
+
     /// <summary>Called from <c>MainWindow.axaml.cs</c>'s <c>Closing</c> handler, alongside the editor/settings
     /// flush calls already there. Before this, <see cref="SessionEncryptionService.LockAll"/> was never
     /// actually invoked from anywhere despite its own doc comment claiming otherwise, and no decrypted temp
@@ -519,7 +546,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         _shutdownCompleted = true;
 
         MarkdownImageCache.Clear();
+        ShortcutRegistry.Changed -= _shortcutChangedHandler;
+        _globalHotkeyService.Dispose();
         _vaultChangeWatcher.Dispose();
+        _webClipService.Dispose();
         _vaultService.EncryptionService.LockAll();
         VaultService.CleanupStaleDecryptedTempFiles();
     }

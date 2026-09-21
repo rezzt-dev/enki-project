@@ -100,14 +100,14 @@ public sealed partial class SettingsViewModel
         // VaultService.ResolveVaultFolder.
         var folder = VaultService.ResolveVaultFolder(pickedFolder);
 
-        await _polarSyncService.RunWithSyncPausedAsync(() =>
-        {
-            FlushPendingSave();
-            _vaultService.SetVaultPath(folder);
-            VaultPath = folder;
-            RefreshVaultSizeLabel();
-            _onVaultChanged();
-        });
+        // Desde T4 el cambio de vault (validar la ruta, volcar lo pendiente y cancelar si algo quedó sin
+        // guardar, bloquear sesiones, pausar la sincronización y recargar) lo hace el shell por un único
+        // camino, compartido con el selector del sidebar y la paleta de comandos. Aquí solo queda
+        // refrescar lo que esta pantalla muestra del vault, y solo si el cambio se llegó a producir.
+        if (!await _switchVault(folder, null)) return;
+
+        VaultPath = folder;
+        RefreshVaultSizeLabel();
     }
 
     // ===================== Zona de peligro (Ajustes › General) =====================
@@ -237,17 +237,22 @@ public sealed partial class SettingsViewModel
 
         try
         {
-            await _polarSyncService.RunWithSyncPausedAsync(() =>
+            // La extracción no toca el vault activo (escribe en una carpeta nueva, ver
+            // VaultBackupService.RestoreBackup), así que se hace antes de pedir el cambio: si el .zip
+            // resulta no ser válido, el vault abierto no se ha movido de sitio.
+            var restored = _vaultBackupService.RestoreBackup(source, destination);
+            // Las preferencias que venían en la copia se importan en el hueco entre adoptar la ruta nueva
+            // y recargar las pantallas, que es donde tienen que aplicarse: ya sobre el vault restaurado,
+            // pero todavía antes de que nadie las lea.
+            var imported = await _switchVault(restored.VaultPath, () =>
             {
-                FlushPendingSave();
-                var restored = _vaultBackupService.RestoreBackup(source, destination);
-                _vaultService.SetVaultPath(restored.VaultPath);
                 if (!string.IsNullOrWhiteSpace(restored.SettingsJson))
                     _settingsService.ImportPreferences(restored.SettingsJson);
-                VaultPath = restored.VaultPath;
-                RefreshVaultSizeLabel();
-                _onVaultChanged();
             });
+            if (!imported) return;
+
+            VaultPath = restored.VaultPath;
+            RefreshVaultSizeLabel();
 
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Settings_General_DangerZone_RestoreCompletedTitle"),

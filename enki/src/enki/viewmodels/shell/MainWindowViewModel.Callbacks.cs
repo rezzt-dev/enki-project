@@ -40,6 +40,8 @@ public sealed partial class MainWindowViewModel
         Statistics?.RefreshLocalizedLabels();
         NotificationCenter.RefreshLocalizedLabels();
         ReminderInbox.RefreshLocalizedLabels();
+        VaultSwitcher.RefreshLocalizedLabels();
+        QuickCapture.RefreshLocalizedLabels();
 
         RebuildNavItems();
         CommandPalette.RefreshLocalizedLabels();
@@ -314,6 +316,15 @@ public sealed partial class MainWindowViewModel
 
     private void OnVaultChanged()
     {
+        // Ninguna sesión cifrada del vault anterior puede seguir desbloqueada al otro lado del cambio, ni
+        // dejar un temporal en claro por el camino (T4, .docs/project-info/multi-vault-en-caliente.md).
+        // Aquí y no en SwitchToVaultAsync porque este método es el punto por el que pasan *todos* los
+        // cambios de vault, incluido el de "restaurar copia de seguridad" de Ajustes. Las DEK viven en
+        // memoria indexadas por la raíz de su sesión, así que soltarlas después de adoptar la ruta nueva
+        // es igual de efectivo que antes y cubre un camino más.
+        _vaultService.EncryptionService.LockAll();
+        VaultService.CleanupStaleDecryptedTempFiles();
+
         Kanban?.CloseForVaultChange();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
@@ -323,6 +334,8 @@ public sealed partial class MainWindowViewModel
 
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
+        QuickCapture.RefreshLocalizedLabels();
+        QuickCapture.ReloadDestinations();
         // Libera el vigilante del vault anterior y crea el del nuevo: sus notas registradas eran las
         // pestañas que se cierran unas líneas más abajo.
         _vaultChangeWatcher.Start(_vaultService.VaultPath);

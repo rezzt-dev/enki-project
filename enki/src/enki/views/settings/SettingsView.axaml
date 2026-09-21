@@ -179,6 +179,27 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
+                ResourceKeys="Settings_General_Tray_Title Settings_General_Tray_Description
+                              Settings_General_Tray_KeepRunning Settings_Nav_General">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_General_Tray_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_General_Tray_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_Tray_KeepRunning}" FontSize="13"
+                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_General_Tray_KeepRunning}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
                 ResourceKeys="Settings_General_Startup_Title Settings_General_Startup_Description
                               Settings_General_Startup_Dashboard Settings_General_Startup_Calendar
                               Settings_General_Startup_Kanban Settings_General_Startup_Notes

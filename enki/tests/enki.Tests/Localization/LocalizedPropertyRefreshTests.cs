@@ -42,6 +42,7 @@ public class LocalizedPropertyRefreshTests
         ["NoteVersionItemViewModel"] = "EditorVersionHistoryViewModel.Reload",
         ["NotificationItemViewModel"] = "NotificationsViewModel.Reload y NotificationCenterViewModel.Reload",
         ["PolarTaskRowViewModel"] = "PolarTaskManagementViewModel.Reload",
+        ["RecentVaultItemViewModel"] = "VaultSwitcherViewModel.Refresh (también al cambiar de idioma, ver RefreshLocalizedLabels)",
         ["ReminderItemViewModel"] = "ReminderInboxViewModel.Reload",
         ["ReminderListItemViewModel"] = "RemindersViewModel.Reload",
         ["SessionListItemViewModel"] = "SessionsViewModel.Reload",

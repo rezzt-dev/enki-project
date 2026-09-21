@@ -10,6 +10,7 @@ public static class ShortcutIds
     public const string QuickSwitcher = "shell.quickSwitcher";
     public const string CommandPalette = "shell.commandPalette";
     public const string QuickNewNote = "shell.quickNewNote";
+    public const string QuickCapture = "shell.quickCapture";
     public const string NavigateDashboard = "shell.navigateDashboard";
     public const string NavigateNotes = "shell.navigateNotes";
     public const string NavigateKanban = "shell.navigateKanban";

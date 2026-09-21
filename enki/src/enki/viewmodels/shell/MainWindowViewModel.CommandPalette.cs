@@ -41,6 +41,11 @@ public sealed partial class MainWindowViewModel
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_QuickNewNote"], MaterialIconKind.NoteTextOutline, QuickNewNote));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenGlobalSearch"], MaterialIconKind.Magnify, OpenGlobalSearch));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenQuickSwitcher"], MaterialIconKind.NoteSearchOutline, OpenQuickSwitcher));
+        items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_QuickCapture"], MaterialIconKind.LightningBoltOutline, OpenQuickCapture));
+        // T4: se ofrece siempre, incluso sin ningún vault reciente además del abierto — el selector
+        // también es desde donde se abre una carpeta nueva como vault.
+        items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_SwitchVault"], MaterialIconKind.SafeSquareOutline, OpenVaultSwitcher));
+        items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ClipWebPage"], MaterialIconKind.WebPlus, () => WebClip.Open()));
 
         if (Notes is not null)
         {

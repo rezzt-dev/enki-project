@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace enki.Models;
 
@@ -43,6 +44,19 @@ public sealed class AppSettings
             CalendarWorkingHoursStart = 9;
             CalendarWorkingHoursEnd = 18;
         }
+
+        // Vaults recientes (T4): un settings.json de otra versión —o editado a mano— puede traer la lista
+        // a null, con entradas sin ruta o con la misma carpeta repetida. El selector no es sitio para
+        // descubrirlo, así que se sanea aquí igual que el resto: fuera las entradas sin ruta, una sola por
+        // carpeta (la más reciente gana) y como mucho MaxRecentVaults, en orden de apertura.
+        RecentVaults = (RecentVaults ?? [])
+            .Where(v => !string.IsNullOrWhiteSpace(v.Path))
+            .GroupBy(v => v.Path, Services.VaultService.PathComparison == StringComparison.OrdinalIgnoreCase
+                ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
+            .Select(group => group.MaxBy(v => v.LastOpenedUtc)!)
+            .OrderByDescending(v => v.LastOpenedUtc)
+            .Take(MaxRecentVaults)
+            .ToList();
     }
 
     /// <summary>Acota a [<paramref name="min"/>, <paramref name="max"/>] con dos excepciones que no son
@@ -64,6 +78,23 @@ public sealed class AppSettings
         value == 0 && min > 0 ? fallback : Math.Clamp(value, min, max);
 
     public string? VaultPath { get; set; }
+
+    /// <summary>Cuántas carpetas conserva <see cref="RecentVaults"/> antes de descartar la más antigua.</summary>
+    public const int MaxRecentVaults = 10;
+
+    /// <summary>Carpetas que se han abierto como vault en esta instalación, de la más reciente a la más
+    /// antigua — el respaldo del selector "Cambiar de vault" (T4,
+    /// .docs/project-info/multi-vault-en-caliente.md). Global, no por vault: ver <see cref="RecentVault"/>.
+    /// La lista la mantienen <c>SettingsService.RegisterRecentVault</c>/<c>RemoveRecentVault</c>, nunca los
+    /// viewmodels directamente, para que el orden y el tope sean los mismos vengan de donde vengan.</summary>
+    public List<RecentVault> RecentVaults { get; set; } = [];
+
+    /// <summary>"Mantener Enki en la bandeja al cerrar la ventana" (Ajustes › General, T2). Apagado por
+    /// defecto a propósito: cerrar una ventana y que el proceso siga vivo es justo el comportamiento que
+    /// sorprende a quien no lo ha pedido. Con él activo, cerrar la ventana principal la oculta y Enki
+    /// sigue disponible desde el icono de bandeja (captura rápida incluida) hasta elegir "Salir".</summary>
+    public bool MinimizeToTray { get; set; }
+
     public bool SidebarExpanded { get; set; } = true;
 
     /// <summary>BCP-47 code of the UI language the user picked ("es-ES", "en-US", "en-GB", "de-DE",
