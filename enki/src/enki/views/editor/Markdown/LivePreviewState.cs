@@ -44,6 +44,45 @@ public sealed class LivePreviewState
     /// lector) simplemente hace que ninguna imagen de archivo llegue a cargarse.</summary>
     internal MarkdownImageContext Images { get; set; } = MarkdownImageContext.Empty;
 
+    /// <summary>Resolvedor y navegación de transclusiones de la pestaña activa. Igual que
+    /// <see cref="Images"/>, se sustituye entera al cambiar de documento para que ningún visual conserve
+    /// servicios o rutas de la pestaña anterior.</summary>
+    internal MarkdownTransclusionContext Transclusions { get; set; } = MarkdownTransclusionContext.Empty;
+
+    /// <summary>Indica si el documento contiene al menos una transclusión. La vista lo usa para activar
+    /// el sondeo ligero que vuelve a dibujar contenidos modificados fuera de la nota actual.</summary>
+    public bool HasTransclusions { get; set; }
+
+    /// <summary>Render asíncrono y cacheado de fórmulas de la vista. Lo posee <c>EditorView</c>; el estado
+    /// solo lo publica a los generadores de elementos.</summary>
+    internal MarkdownFormulaCache? Formulas { get; set; }
+    internal MarkdownMermaidCache? Mermaid { get; set; }
+
+    internal IReadOnlyList<MarkdownSpecialBlock> SpecialBlocks { get; set; } = Array.Empty<MarkdownSpecialBlock>();
+    internal MarkdownSpecialBlockFolding? SpecialBlockFolding { get; set; }
+
+    internal MarkdownSpecialBlock? SpecialBlockStartingAt(int lineNumber)
+    {
+        foreach (var block in SpecialBlocks)
+            if (block.StartLine == lineNumber) return block;
+        return null;
+    }
+
+    /// <summary>Si la línea encabeza un bloque enriquecido que ya está dibujado. Un diagrama Mermaid
+    /// empieza en una cerca <c>```mermaid</c>, así que sin esta pregunta el recuadro de código y su botón
+    /// de copiar —que reparsean el documento por su cuenta— seguirían pintándose encima del diagrama.</summary>
+    internal bool IsRenderedSpecialBlockLine(int lineNumber) =>
+        SpecialBlockStartingAt(lineNumber) is { } block && SpecialBlockFolding?.IsCollapsed(block) == true;
+
+    internal bool CanRender(MarkdownSpecialBlock block, MarkdownStyle style)
+    {
+        if (block.Kind == MarkdownSpecialBlockKind.Math)
+            return Formulas?.GetOrRequest(block.Source, display: true, style)
+                is { State: not MarkdownRenderState.Failed };
+        return Mermaid?.GetOrRequest(block.Source, style)
+            is { State: not MarkdownRenderState.Failed };
+    }
+
     /// <summary>Term the editor's Buscar/Reemplazar panel is currently searching for — null/empty means
     /// no highlight. Set by the view whenever the panel is open and its search text/match-case changes, so
     /// <see cref="MarkdownBackgroundRenderer"/> can shade every match, not just the one the native text

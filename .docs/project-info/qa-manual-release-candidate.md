@@ -304,6 +304,172 @@ donde deben y que el calendario se lea bien en los dos temas y con el zoom aplic
 
 ---
 
+## 8.2 Cambios externos en el vault (T1)
+
+Lo que los tests automáticos no pueden cubrir de
+[`cambios-externos-en-el-vault.md`](cambios-externos-en-el-vault.md): un sincronizador de verdad, con sus
+ráfagas, sus temporales y sus relojes, y dos editores escribiendo sobre la misma carpeta a la vez. Los
+tests usan un `FileSystemWatcher` real pero un solo proceso y un vault local.
+
+**Montaje**: el vault dentro de una carpeta sincronizada con Syncthing o Dropbox y, aparte, el mismo vault
+abierto en otro editor de texto (VS Code, `nvim`, el editor del sistema).
+
+- [ ] Con una nota abierta en Enki y **sin** tocarla, editarla y guardarla desde el otro editor: Enki la
+      recarga sola en unos segundos, sin diálogo, el cursor se queda donde estaba y el desplazamiento no
+      salta al principio. Aparece una notificación discreta ("nota actualizada desde fuera").
+- [ ] Con una nota abierta y **con** texto sin guardar, editarla y guardarla desde el otro editor: aparece
+      el diálogo de conflicto, el indicador de guardado deja de avanzar y el texto del editor sigue
+      intacto. Esperar un minuto sin tocar nada: el archivo en disco **no** cambia (el autoguardado está
+      realmente en pausa).
+- [ ] En ese diálogo, "Ver diferencias" muestra las dos versiones línea a línea y se lee bien en tema claro
+      y oscuro y con el zoom de interfaz al 150 %.
+- [ ] "Conservar la mía": el archivo en disco pasa a tener el texto del editor y la pestaña "Historial"
+      ofrece la versión de disco descartada con el motivo "conflicto externo".
+- [ ] "Cargar la de disco": el editor pasa a mostrar el texto ajeno y el "Historial" ofrece el texto local
+      descartado, también como "conflicto externo".
+- [ ] `Esc` cierra el diálogo sin decidir: aparece el aviso de conflicto en la cabecera, el autoguardado
+      sigue en pausa y pulsar el aviso vuelve a abrir el diálogo. Cerrar la pestaña en ese estado deja el
+      texto sin guardar en el "Historial" de la nota y avisa de ello.
+- [ ] Dejar que el sincronizador traiga varios cambios de la misma nota seguidos (editar desde el móvil o
+      desde otro equipo varias veces): Enki muestra **un** aviso por cambio, no una ráfaga, y no aparece
+      ningún diálogo por los archivos `.sync-conflict` que el sincronizador deje en la carpeta.
+- [ ] Borrar la nota abierta desde el explorador de archivos: el texto sigue en pantalla, aparece el
+      diálogo de borrado y "Guardar como nota nueva" la recrea con ese contenido.
+- [ ] Renombrar la nota abierta desde el explorador de archivos: la pestaña sigue al archivo, el título de
+      la cabecera cambia y el siguiente guardado escribe en la ruta nueva.
+- [ ] Editar en Enki durante un par de minutos seguidos sin tocar nada fuera: **no** aparece ningún
+      diálogo de conflicto (el autoguardado no se confunde con un cambio externo).
+- [ ] Con una sesión protegida bloqueada y una nota suya que cambie por sincronización: no aparece ningún
+      diálogo ni se lee nada de esa sesión; al desbloquearla, la revisión se retoma.
+- [ ] Ajustes › Editor › "Vigilar cambios externos en el vault" apagado: no aparecen avisos, pero editar la
+      nota desde fuera y después escribir en Enki sigue abriendo el conflicto en vez de pisar el cambio
+      ajeno. Volver a encenderlo retoma la vigilancia sin cerrar y reabrir la pestaña.
+- [ ] Con el vault en una unidad de red o en una carpeta muy grande, comprobar en el log
+      (`LogService`) que, si la vigilancia degrada a sondeo, queda registrado — y que los cambios se
+      siguen detectando, solo que más tarde.
+- [ ] Cambiar de vault desde Ajustes con pestañas abiertas y después editar desde fuera una nota del vault
+      **anterior**: no aparece ningún aviso (el vigilante ya no la vigila).
+
+---
+
+## 8.3 Captura rápida global (T2)
+
+Ejecutar en Windows, macOS, Linux X11 y Linux Wayland. Los tests automáticos cubren la escritura y el
+estado; esta matriz valida la integración real con el escritorio.
+
+- [ ] El icono de bandeja muestra «Captura rápida», «Abrir Enki» y «Salir»; pulsar el icono y la primera
+      opción abren la mini-ventana sin mostrar ni activar la principal.
+- [ ] El atajo global configurado abre la captura desde otra aplicación con el foco en el campo de texto.
+      En Wayland aparece un único aviso comprensible y bandeja/paleta siguen funcionando.
+- [ ] Si otra aplicación ocupa la combinación, Enki arranca con normalidad, notifica el conflicto y el
+      atajo vuelve a funcionar al remapearlo a una combinación libre sin reiniciar.
+- [ ] `Ctrl+Enter` crea una nota en `Inbox/` —incluida la carpeta si no existía— o una tarjeta en la columna
+      seleccionada; la ventana se cierra y el foco vuelve a la aplicación anterior.
+- [ ] `Esc` con texto cierra la ventana; al abrirla de nuevo el borrador está intacto. Un error de disco,
+      un vault ausente o un tablero sin columnas tampoco descartan el texto.
+- [ ] Con zoom al 50 %, 100 %, 150 % y 200 %, tema claro/oscuro y los siete idiomas, la ventana cabe, no
+      recorta controles y respeta `CornerRadius="0"`.
+- [ ] Con lector de pantalla se anuncian campo, destino, columna, error y resultado; destino y envío se
+      pueden operar sin ratón.
+- [ ] Con «Mantener Enki en la bandeja» apagado, cerrar la principal termina el proceso. Encendido, la
+      oculta y la captura sigue operativa; «Salir» vuelca el último autoguardado y elimina el icono.
+
+## 8.4 Notas embebidas (T10)
+
+Los tests automáticos cubren la resolución, las secciones, los bloques, los ciclos y la profundidad. Lo que
+solo se ve con el editor delante es el dibujado y el refresco.
+
+- [ ] `![[Otra nota]]` se dibuja como bloque embebido con su título; entrar con el cursor lo devuelve a
+      texto y salir lo vuelve a dibujar.
+- [ ] `![[Nota#Sección]]` embebe solo esa sección y `![[Nota#^id]]` solo ese bloque. Una sección o un
+      bloque inexistentes muestran su aviso y **no** vuelcan la nota entera.
+- [ ] `![[diagrama.png]]` sigue dibujándose como imagen, no como nota embebida.
+- [ ] Un clic en el bloque abre la nota embebida en una pestaña.
+- [ ] Editar la nota embebida en otra pestaña —o fuera de Enki, con el sincronizador de la sección 8.2—
+      actualiza el embebido en un par de segundos sin reabrir la anfitriona.
+- [ ] Con A embebiendo B y B embebiendo A, la recursión se corta con aviso y la aplicación no se cuelga.
+- [ ] Una nota en sesión protegida bloqueada muestra el aviso de sesión bloqueada y **nunca** su contenido;
+      al desbloquear la sesión aparece.
+- [ ] Con lector de pantalla, el bloque se anuncia como nota embebida con su título.
+
+## 8.5 Fórmulas y diagramas (T11)
+
+Ejecutar en Windows, macOS y Linux: el motor de diagramas depende del WebView del sistema y es lo único de
+esta familia que puede faltar en una máquina concreta.
+
+- [ ] `$E=mc^2$` se dibuja en línea sin alterar el alto de la línea; `$$…$$` en líneas propias se dibuja
+      como bloque centrado y las líneas de dentro quedan plegadas.
+- [ ] Entrar con el cursor en una fórmula o en un diagrama enseña el texto en crudo; salir lo vuelve a
+      dibujar.
+- [ ] `de $20 a $30`, `\$literal` y `$$` dentro de un bloque de código siguen siendo texto.
+- [ ] Un bloque ` ```mermaid ` se dibuja como diagrama, con los colores del tema activo, y **sin** el
+      recuadro de bloque de código ni su botón de copiar encima.
+- [ ] Un diagrama mal escrito y un LaTeX inválido degradan a su código/fuente visible, nunca a un hueco.
+- [ ] En una máquina sin motor de WebView disponible, los diagramas degradan a bloque de código y el editor
+      sigue funcionando con normalidad.
+- [ ] Cambiar de tema claro/oscuro y de tamaño de fuente del editor vuelve a dibujar fórmulas y diagramas
+      con los colores y el tamaño nuevos.
+- [ ] Una nota con muchas fórmulas se escribe sin retardo perceptible (el render es asíncrono) y el
+      consumo de memoria no crece indefinidamente al recorrerla.
+- [ ] Exportar a HTML esa nota: las fórmulas salen incrustadas como imagen y se ven con el archivo abierto
+      **sin conexión**; los diagramas salen como bloque de código.
+
+## 8.6 Aplazar recordatorios (T5)
+
+Casi todo el comportamiento está cubierto por tests; lo que queda aquí es lo que solo se ve con la app
+delante y con el reloj corriendo de verdad.
+
+- [ ] "Aplazar" aparece en la fila de la bandeja de recordatorios y en la del centro de notificaciones de
+      un aviso de vencimiento, y **no** en un aviso que no nace de un vencimiento (un error de sync).
+- [ ] Aplazar 10 min saca el aviso de "Vencidas", lo deja al final de la lista atenuado y con "Aplazado
+      hasta HH:MM"; el contador de "Aplazado N veces" aparece a partir del segundo aplazamiento.
+- [ ] Pasados los 10 min reales, el aviso vuelve a sonar y el elemento recupera su cubo original.
+- [ ] Aplazar una tarjeta Kanban **no** cambia su fecha límite en el tablero ni en el Calendario.
+- [ ] Aplazar una ocurrencia de un recordatorio recurrente no desplaza las siguientes.
+- [ ] Con "No molestar" activo y un aplazamiento que cae dentro de la franja, el aviso llega al terminar
+      la franja, no dentro.
+- [ ] Cerrar y reabrir Enki conserva los aplazamientos pendientes.
+- [ ] Completar o borrar el elemento de origen hace desaparecer su aplazamiento sin reavisar.
+- [ ] Se puede aplazar solo con teclado (Tab hasta el botón, Enter, flechas por el menú) y el lector de
+      pantalla anuncia el botón "Aplazar" y la opción enfocada.
+- [ ] Cambiar los valores rápidos en Ajustes › Notificaciones cambia las etiquetas del menú ("25 min",
+      "2 h") sin reiniciar.
+
+## 8.7 Exportar vistas a imagen y PDF (T8)
+
+Esta sección es **comprobación visual**: los tests garantizan la estructura del PDF y que la región
+exportable existe y está maquetada, pero que la imagen se vea bien solo se ve mirándola.
+
+- [ ] Kanban con más columnas de las que caben en pantalla: el PNG incluye **todas**, no solo las visibles,
+      y las tarjetas se leen sin recortes.
+- [ ] Lo mismo con el tablero en disposición horizontal (Ajustes › Apariencia).
+- [ ] Calendario en Mes, Semana, Día y Agenda: la imagen lleva la cabecera de días de la semana y **no**
+      lleva la barra de navegación (◀ ▶ Hoy, selector de vista).
+- [ ] El PDF abre correctamente en el visor del sistema, en Evince/Preview/Adobe y en un navegador.
+- [ ] Una nota larga da un PDF de varias páginas A4, con encabezados, listas, citas y bloques de código
+      reconocibles.
+- [ ] En tema claro y en tema oscuro, el fondo de la lámina y el contenido son coherentes entre sí.
+- [ ] Con el idioma cambiado, la cabecera y el nombre propuesto respetan el idioma y el formato de fecha.
+- [ ] Cancelar el diálogo de guardado no deja ningún archivo ni ningún aviso.
+- [ ] Guardar en una carpeta sin permiso de escritura muestra el motivo y no deja un archivo a medias.
+- [ ] Tras exportar se abre el explorador del sistema con el archivo seleccionado.
+
+## 8.8 Aviso de versión nueva (T9)
+
+- [ ] Recién instalado, con "Buscar al iniciar" apagado (lo de fábrica): arrancar Enki **no** genera
+      ninguna petición de red (comprobar con un cortafuegos o un monitor de red).
+- [ ] "Buscar ahora" con conexión encuentra la última release y muestra versión, notas, "Descargar" y
+      "Omitir esta versión".
+- [ ] "Descargar" abre la página de la release en el navegador y **no** descarga ningún archivo.
+- [ ] "Omitir esta versión" hace desaparecer el bloque; reiniciar con "Buscar al iniciar" activo no vuelve
+      a avisar de esa versión.
+- [ ] Sin conexión, "Buscar ahora" muestra el mensaje de fallo; arrancar con "Buscar al iniciar" activo y
+      sin conexión **no** muestra nada y no retrasa el arranque.
+- [ ] Con "Buscar al iniciar" activo, dos arranques seguidos en menos de 24 h generan una sola petición.
+- [ ] El aviso de la campana lleva el botón "Abrir" y abre la misma página.
+
+---
+
 ## 9. Criterio de salida antes de `0.2.0`
 
 - Todos los puntos de las secciones 4 a 7 están en `OK` o `NO PROBADO` con motivo documentado — ningún

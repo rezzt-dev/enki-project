@@ -104,6 +104,19 @@ internal sealed class VaultNoteCache
         }
     }
 
+    /// <summary>Vacía la caché entera — lo llama <see cref="VaultService.SetVaultPath"/> al cambiar de
+    /// vault en caliente (T4). <see cref="InvalidatePrefix"/> no sirve para eso: las notas del vault
+    /// anterior no están bajo la ruta del nuevo, así que sin este método se quedarían residentes en
+    /// memoria (con su contenido) durante todo lo que dure la sesión del vault nuevo.</summary>
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            _entries.Clear();
+            _approximateBytes = 0;
+        }
+    }
+
     private void PutUnderLock(string fullPath, NoteFile note, string content, DateTime fileWriteUtc)
     {
         RemoveUnderLock(fullPath);

@@ -84,6 +84,14 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
             var model = MarkdownLineParser.Parse(text, docLine.Offset, fence);
             var top = visualLine.VisualTop - textView.VerticalOffset;
 
+            // Lo que se ve en la línea de apertura de un diagrama ya renderizado es el diagrama, no
+            // código: ni recuadro ni botón de copiar (ver CodeBlockCopyOverlay).
+            if (_state.IsRenderedSpecialBlockLine(docLine.LineNumber))
+            {
+                FlushCodeBlock();
+                continue;
+            }
+
             if (model.Kind != MdBlockKind.CodeFence) FlushCodeBlock();
 
             switch (model.Kind)

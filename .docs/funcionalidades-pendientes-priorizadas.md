@@ -22,23 +22,23 @@ secciones indicadas.
 
 ### Prioridad alta — confianza en los datos y captura
 
-- [ ] **T1 · Cambios externos en el vault** — vigilar el vault con `FileSystemWatcher` y comprobar `LastWriteTimeUtc` antes de guardar, de modo que el autoguardado nunca pise un cambio hecho fuera de Enki: recarga silenciosa si no hay ediciones locales y diálogo de conflicto (conservar mía / cargar la de disco / ver diferencias) si las hay. → [§3.1](#31-t1--detección-de-cambios-externos-en-el-vault)
-- [ ] **T2 · Captura rápida global** — icono de bandeja y atajo global que abren una mini-ventana para escribir una idea y enviarla a `Inbox/` (nota) o a una tarjeta Kanban sin abrir la ventana principal. → [§3.2](#32-t2--captura-rápida-global)
-- [ ] **T3 · Web clipper simple** — pegar una URL y crear una nota en `Inbox/` con título, enlace y texto principal extraído; si el sitio bloquea la extracción, la nota se crea igualmente solo con título y enlace. → [§3.3](#33-t3--web-clipper-simple-pegar-url--nota)
-- [ ] **T4 · Multi-vault sin reiniciar** — guardar una lista de vaults recientes y ofrecer un selector para cambiar de vault en caliente (reutilizando la recarga de servicios que ya existe en `SwitchVault`). → [§3.4](#34-t4--multi-vault-sin-reiniciar)
+- [x] **T1 · Cambios externos en el vault** — vigilar el vault con `FileSystemWatcher` y comprobar `LastWriteTimeUtc` antes de guardar, de modo que el autoguardado nunca pise un cambio hecho fuera de Enki: recarga silenciosa si no hay ediciones locales y diálogo de conflicto (conservar mía / cargar la de disco / ver diferencias) si las hay. → [§3.1](#31-t1--detección-de-cambios-externos-en-el-vault)
+- [x] **T2 · Captura rápida global** — icono de bandeja y atajo global que abren una mini-ventana para escribir una idea y enviarla a `Inbox/` (nota) o a una tarjeta Kanban sin abrir la ventana principal. → [§3.2](#32-t2--captura-rápida-global)
+- [x] **T3 · Web clipper simple** — pegar una URL y crear una nota en `Inbox/` con título, enlace y texto principal extraído; si el sitio bloquea la extracción, la nota se crea igualmente solo con título y enlace. → [§3.3](#33-t3--web-clipper-simple-pegar-url--nota)
+- [x] **T4 · Multi-vault sin reiniciar** — guardar una lista de vaults recientes y ofrecer un selector para cambiar de vault en caliente (reutilizando la recarga de servicios que ya existe en `SwitchVault`). → [§3.4](#34-t4--multi-vault-sin-reiniciar)
 
 ### Prioridad media — cerrar el flujo de planificación
 
-- [ ] **T5 · Snooze de recordatorios** — añadir "Aplazar" (10 min, 1 h, mañana, personalizado) a la notificación y a la bandeja de recordatorios para reprogramar `NotifyAtUtc` sin cerrarlo. → [§4.1](#41-t5--aplazar-recordatorios-snooze)
+- [x] **T5 · Snooze de recordatorios** — "Aplazar" (10 min, 1 h, esta tarde, mañana, personalizado) en la bandeja de recordatorios y en el centro de notificaciones. Implementado sin reescribir `NotifyAtUtc`: ver `.docs/project-info/notificaciones-y-recordatorios.md`, sección "Aplazar recordatorios (T5)", para por qué aplazar no es reprogramar. → [§4.1](#41-t5--aplazar-recordatorios-snooze)
 - [ ] **T6 · Tiempo real y Pomodoro** — registrar el tiempo real trabajado en tarjetas Kanban y tareas Polar (junto al `DurationMinutes` estimado) con un temporizador Pomodoro que avisa por `NotificationService`. → [§4.2](#42-t6--registro-de-tiempo-real-y-pomodoro)
 - [ ] **T7 · Notas relacionadas y menciones sin enlazar** — añadir al panel lateral del editor un bloque "Relacionadas" (por etiquetas y enlaces compartidos) y "Menciones sin enlazar" (notas cuyo título aparece en el texto sin `[[ ]]`) con enlazado en un clic. → [§4.3](#43-t7--notas-relacionadas-y-menciones-sin-enlazar)
-- [ ] **T8 · Exportar vistas a imagen/PDF** — exportar el Calendario y el tablero Kanban (y, de paso, una nota) a PNG y PDF desde la paleta de comandos y los menús de cada vista. → [§4.4](#44-t8--exportar-calendario-y-kanban-a-imagen-o-pdf)
-- [ ] **T9 · Aviso de versión nueva** — comprobar al arrancar (y manualmente en Ajustes) si hay una release más reciente en GitHub y mostrar un aviso con enlace de descarga; sin auto-actualización. → [§4.5](#45-t9--aviso-de-actualizaciones)
+- [x] **T8 · Exportar vistas a imagen/PDF** — Calendario, tablero Kanban y notas a PNG y PDF, desde el menú de cada vista y desde la paleta de comandos. PDF escrito a mano, sin dependencias nuevas: ver `.docs/project-info/exportar-vistas-imagen-pdf.md`. → [§4.4](#44-t8--exportar-calendario-y-kanban-a-imagen-o-pdf)
+- [x] **T9 · Aviso de versión nueva** — comprobación opcional al arrancar (desactivada de fábrica) y manual desde Ajustes, con aviso, notas de la release y enlace de descarga; sin auto-actualización. Ver `.docs/project-info/aviso-de-version-nueva.md`. → [§4.5](#45-t9--aviso-de-actualizaciones)
 
 ### Prioridad baja — más adelante
 
-- [ ] **T10 · Transclusión `![[Nota]]`** — renderizar el contenido de otra nota (o sección) embebido en el visor en lugar de degradarlo a wikilink. → [§5.1](#51-t10--transclusión-nota)
-- [ ] **T11 · Fórmulas y diagramas** — soportar LaTeX (`$…$`, `$$…$$`) y bloques ` ```mermaid ` en el visor; solo si el avatar es estudiante/técnico. → [§5.2](#52-t11--fórmulas-latex-y-diagramas-mermaid)
+- [x] **T10 · Transclusión `![[Nota]]`** — renderizar el contenido de otra nota (o sección) embebido en el visor en lugar de degradarlo a wikilink. → [§5.1](#51-t10--transclusión-nota)
+- [x] **T11 · Fórmulas y diagramas** — soportar LaTeX (`$…$`, `$$…$$`) y bloques ` ```mermaid ` en el visor; solo si el avatar es estudiante/técnico. → [§5.2](#52-t11--fórmulas-latex-y-diagramas-mermaid)
 - [ ] **T12 · Captura móvil vía Polar** — aceptar en Enki notas/ideas capturadas desde el móvil a través de Supabase/Polar como paso intermedio barato hacia la sincronización de notas. → [§5.3](#53-t12--captura-móvil-vía-polar-y-sincronización-de-notas)
 - [ ] **T13 · Importación desde otras herramientas** — verificar qué formatos cubre el código actual (Obsidian, Notion, `.ics`) y, si el avatar viene de otra app, subirla a prioridad alta. → [§5.4](#54-t13--importación-y-exportación-ics-obsidian-notion)
 
@@ -167,6 +167,16 @@ barata y cierra un hueco muy visible; T1 va primero porque es la única con ries
 
 ### 3.1 T1 · Detección de cambios externos en el vault
 
+> **Estado: implementado.** El diseño de abajo se siguió con dos desviaciones deliberadas, documentadas en
+> [`project-info/cambios-externos-en-el-vault.md`](project-info/cambios-externos-en-el-vault.md), que es la
+> referencia viva de esta funcionalidad:
+>
+> - Las escrituras propias no se descartan con un registro de "escrituras recientes" (punto 1 del diseño)
+>   sino comparando la huella `(fecha, tamaño, hash)` que el editor adopta tras cada guardado. Es exacto en
+>   vez de heurístico y no depende de ninguna ventana de tiempo.
+> - El vigilante cubre el vault entero pero solo **evalúa** las notas abiertas. Una nota que nadie tiene
+>   cargada no puede ser pisada, y `VaultNoteCache` ya la relee sola en el siguiente escaneo.
+
 **Problema.** No hay `FileSystemWatcher` ni comprobación de modificación externa al abrir o guardar. El
 usuario guarda Markdown en disco, por lo que casi seguro usa Syncthing, Dropbox u otro editor sobre la misma
 carpeta. `EditorViewModel` autoguarda con un `DispatcherTimer` (`_saveTimer`, línea ~35/398) y llama a
@@ -273,6 +283,9 @@ Manual: Syncthing/Dropbox real y edición simultánea en otro editor (añadir al
 ---
 
 ### 3.2 T2 · Captura rápida global
+
+> **Estado: implementado.** La referencia viva del comportamiento, arquitectura y límites por plataforma
+> está en [`project-info/captura-rapida-global.md`](project-info/captura-rapida-global.md).
 
 **Problema.** No hay icono de bandeja ni atajo global. «Sé exactamente dónde está lo que necesito» empieza
 por poder **soltar una idea** sin abrir la ventana principal ni decidir dónde va.
@@ -692,6 +705,15 @@ omitida, límite de frecuencia con reloj inyectado. **Complejidad:** baja; **est
 
 ### 5.1 T10 · Transclusión `![[Nota]]`
 
+> **Estado: implementado.** La referencia viva del comportamiento, los estados de error y los límites está
+> en [`project-info/transclusion-de-notas.md`](project-info/transclusion-de-notas.md). El diseño de abajo se
+> siguió tal cual: resolución sobre las notas reales del vault (sin almacén secundario), tope de cinco
+> niveles, detección de ciclos **antes** de leer el archivo, embebido de solo lectura y sesiones bloqueadas
+> que nunca enseñan su contenido. Se añadió un corte a 300 líneas por embebido y un refresco cada dos
+> segundos, porque una nota embebida no es un búfer abierto y no pasa por el vigilante de conflictos de T1.
+> En la exportación a HTML la referencia se conserva como enlace interno: fuera del vault no hay nada que
+> resolver.
+
 `MarkdownLineParser` degrada explícitamente estas transclusiones a wikilink normal. Implementarlas implica:
 resolver la nota (y opcionalmente `#sección` o `^bloque`) mediante `WikiLinkParser`, renderizar su contenido
 embebido en el visor con **límite de profundidad y detección de ciclos** (A embebe B que embebe A), refrescar
@@ -704,6 +726,15 @@ si hay un ciclo, entonces el sistema deberá cortar la recursión y mostrar un a
 sesión bloqueada, entonces el sistema no deberá mostrar su contenido.
 
 ### 5.2 T11 · Fórmulas LaTeX y diagramas Mermaid
+
+> **Estado: implementado.** La referencia viva —sintaxis, motores, cachés, límites y degradación— está en
+> [`project-info/formulas-y-diagramas.md`](project-info/formulas-y-diagramas.md). Lo que se decidió al
+> evaluar el peso frente al valor: las **fórmulas** las compone CSharpMath en proceso (sin navegador, sin
+> archivos temporales) y los **diagramas** los dibuja el bundle de Mermaid empaquetado en un `NativeWebView`
+> oculto de 1×1 px que solo devuelve SVG, rasterizado después con `Svg.Skia`. Las dos rutas son locales,
+> cacheadas, con tiempo límite (2 s y 4 s) y degradan al LaTeX o al bloque de código cuando fallan. En la
+> exportación a HTML solo entran las fórmulas, como PNG en `data:` URI: un diagrama necesita el WebView del
+> editor, que no existe en un servicio de exportación, y sale como su bloque de código.
 
 No se encontró Mermaid ni LaTeX. Solo importa si el avatar es estudiante o técnico. Requiere un motor de
 render local (nunca CDN, por privacidad y offline): el proyecto ya incluye `Avalonia.Controls.WebView`,

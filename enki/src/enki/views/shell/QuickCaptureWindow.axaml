@@ -1,0 +1,81 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:enki.ViewModels"
+        xmlns:loc="clr-namespace:enki.Localization"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        x:Class="enki.QuickCaptureWindow"
+        x:DataType="vm:QuickCaptureViewModel"
+        Width="560" Height="350" MinWidth="280" MinHeight="175"
+        CanResize="False" ShowInTaskbar="False" Topmost="True"
+        WindowDecorations="None" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Title="{loc:Tr QuickCapture_Title}">
+
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SubmitCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
+  </Window.KeyBindings>
+
+  <LayoutTransformControl>
+    <LayoutTransformControl.LayoutTransform>
+      <ScaleTransform ScaleX="{Binding UiZoomScale}" ScaleY="{Binding UiZoomScale}" />
+    </LayoutTransformControl.LayoutTransform>
+  <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="0">
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="22">
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16"
+            PointerPressed="Header_PointerPressed">
+        <mi:MaterialIcon Kind="LightningBoltOutline" Width="20" Height="20"
+                         Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2">
+          <TextBlock Text="{loc:Tr QuickCapture_Title}" FontSize="17" FontWeight="SemiBold" />
+          <TextBlock Text="{loc:Tr QuickCapture_Subtitle}" Classes="muted" FontSize="11.5" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="icon-btn" Command="{Binding CancelCommand}"
+                AutomationProperties.Name="{loc:Tr Common_Close}">
+          <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+        </Button>
+      </Grid>
+
+      <TextBox x:Name="CaptureTextBox" Grid.Row="1" Text="{Binding Draft}"
+               AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
+               PlaceholderText="{loc:Tr QuickCapture_Placeholder}"
+               AutomationProperties.Name="{loc:Tr QuickCapture_Input_AccessibleName}" />
+
+      <TextBlock Grid.Row="2" Text="{Binding ErrorMessage}" Foreground="{DynamicResource DangerBrush}"
+                 TextWrapping="Wrap" FontSize="12" Margin="0,10,0,0"
+                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+          <ComboBox Width="170" ItemsSource="{Binding Destinations}" SelectedItem="{Binding SelectedDestination}"
+                    AutomationProperties.Name="{loc:Tr QuickCapture_Destination_Label}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:QuickCaptureDestinationOption">
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <ComboBox Width="170" ItemsSource="{Binding KanbanColumns}" SelectedItem="{Binding SelectedKanbanColumn}"
+                    IsVisible="{Binding IsKanbanDestination}"
+                    AutomationProperties.Name="{loc:Tr QuickCapture_KanbanColumn_Label}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:QuickCaptureColumnOption">
+                <TextBlock Text="{Binding Title}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+          <Button Classes="ghost" Command="{Binding CancelCommand}" Content="{loc:Tr Common_Cancel}" />
+          <Button Classes="pill-primary" Command="{Binding SubmitCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <TextBlock Text="{loc:Tr QuickCapture_Submit}" />
+              <TextBlock Text="{loc:Tr QuickCapture_SubmitHint}" Opacity="0.7" FontSize="10" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Border>
+  </LayoutTransformControl>
+</Window>

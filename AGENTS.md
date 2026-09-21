@@ -35,6 +35,14 @@ Mismo patrón en todos los servicios (`KanbanService`, `PolarTaskService`, `Remi
   así otras pantallas se mantienen al día sin necesitar una referencia directa al servicio que originó el
   cambio.
 
+## Escrituras sobre el vault
+
+El vault es una carpeta de Markdown que el usuario puede tener sincronizada (Syncthing, Dropbox) o abierta
+en otro editor. Cualquier escritura sobre el contenido de una nota abierta pasa por
+`VaultService.WriteContentChecked`, que compara el disco con la huella de la última lectura/escritura
+propia (`NoteDiskStamp`) y aborta si no coinciden, en vez de por `WriteContent` a secas. No añadas caminos
+de escritura que se salten esa comprobación. Ver `.docs/project-info/cambios-externos-en-el-vault.md`.
+
 ## Notificaciones
 
 Cualquier evento que valga la pena que el usuario vea (fallo de sync, acción destructiva, cambio de
@@ -73,13 +81,16 @@ normalices a un solo idioma.
   `.docs/project-info/seccion-archivos.md`, `.docs/project-info/vista-simplificada-notas.md`,
   `.docs/project-info/plantillas-de-notas.md`, `.docs/project-info/notas-diarias.md`,
   `.docs/project-info/imagenes-en-notas.md`, `.docs/project-info/tablas-en-notas.md`,
+  `.docs/project-info/transclusion-de-notas.md`, `.docs/project-info/formulas-y-diagramas.md`,
   `.docs/project-info/busqueda-texto-completo.md`, `.docs/project-info/logo-personalizado.md`,
   `.docs/project-info/funcionalidad-zoom-interfaz.md`,
-  `.docs/project-info/notificaciones-y-recordatorios.md`, `.docs/project-info/sistema-diseno-web.md` —
+  `.docs/project-info/notificaciones-y-recordatorios.md`,
+  `.docs/project-info/exportar-vistas-imagen-pdf.md`, `.docs/project-info/aviso-de-version-nueva.md`,
+  `.docs/project-info/cambios-externos-en-el-vault.md`, `.docs/project-info/sistema-diseno-web.md` —
   documentación específica por módulo/tema; complementa (no reemplaza) el análisis anterior.
 - `.docs/project-info/qa-manual-release-candidate.md` — checklist de QA manual (lector de pantalla,
-  render de wikilinks/enlaces rotos, reconexión de Polar Realtime, selector de recurrencia); ejecutar
-  antes de cualquier release candidate.
+  render de wikilinks/enlaces rotos, reconexión de Polar Realtime, selector de recurrencia, cambios
+  externos en el vault con un sincronizador real); ejecutar antes de cualquier release candidate.
 - `.docs/project-info/` — notas técnicas puntuales: internacionalización
   (`internacionalizacion-i18n.md`), inventario de funcionalidades y empaquetado/distribución.
 

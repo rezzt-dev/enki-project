@@ -292,6 +292,24 @@
   <data name="Calendar_WeekView_AllDayRowLabel" xml:space="preserve">
     <value>Ganztägig</value>
   </data>
+  <data name="CommandPalette_Action_ExportCalendarPdf" xml:space="preserve">
+    <value>Kalender als PDF exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportCalendarPng" xml:space="preserve">
+    <value>Kalender als PNG exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPdf" xml:space="preserve">
+    <value>Board als PDF exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportKanbanPng" xml:space="preserve">
+    <value>Board als PNG exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePdf" xml:space="preserve">
+    <value>Notiz als PDF exportieren</value>
+  </data>
+  <data name="CommandPalette_Action_ExportNotePng" xml:space="preserve">
+    <value>Notiz als PNG exportieren</value>
+  </data>
   <data name="CommandPalette_Action_NewNoteFromTemplate" xml:space="preserve">
     <value>Neue Notiz aus Vorlage</value>
   </data>
@@ -836,6 +854,39 @@
   </data>
   <data name="Editor_Toolbar_ToggleSidePanel_Tooltip" xml:space="preserve">
     <value>Seitenpanel ein-/ausblenden</value>
+  </data>
+  <data name="Export_Error_NothingToExport" xml:space="preserve">
+    <value>Es ist noch nichts zum Exportieren angeordnet.</value>
+  </data>
+  <data name="Export_Error_TooLarge" xml:space="preserve">
+    <value>Die Ansicht ist zu groß für ein einzelnes Bild.</value>
+  </data>
+  <data name="Export_Error_ViewNotOpen" xml:space="preserve">
+    <value>Öffne zuerst die Ansicht, die du exportieren möchtest.</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_one" xml:space="preserve">
+    <value>{0} Karte</value>
+  </data>
+  <data name="Export_Kanban_Subtitle_other" xml:space="preserve">
+    <value>{0} Karten</value>
+  </data>
+  <data name="Export_MenuTooltip" xml:space="preserve">
+    <value>Exportieren…</value>
+  </data>
+  <data name="Export_PdfFileType" xml:space="preserve">
+    <value>PDF-Dokument</value>
+  </data>
+  <data name="Export_PngFileType" xml:space="preserve">
+    <value>PNG-Bild</value>
+  </data>
+  <data name="Export_ToPdf" xml:space="preserve">
+    <value>Als PDF exportieren…</value>
+  </data>
+  <data name="Export_ToPng" xml:space="preserve">
+    <value>Als PNG exportieren…</value>
+  </data>
+  <data name="Export_ViewDialog_Title" xml:space="preserve">
+    <value>Ansicht exportieren</value>
   </data>
   <data name="Files_AllFolder" xml:space="preserve">
     <value>Alle Dateien</value>
@@ -1809,6 +1860,9 @@
   <data name="Notification_NoteLinkBlocked_Missing" xml:space="preserve">
     <value>„{0}“ existiert nicht in deinem Vault. Der Link ist defekt.</value>
   </data>
+  <data name="Notification_OpenLink" xml:space="preserve">
+    <value>Öffnen</value>
+  </data>
   <data name="Notification_PanelTitle" xml:space="preserve">
     <value>BENACHRICHTIGUNGEN</value>
   </data>
@@ -1842,6 +1896,12 @@
   <data name="Notification_ReminderDue_Title" xml:space="preserve">
     <value>Erinnerung: {0}</value>
   </data>
+  <data name="Notification_ReminderSnoozeElapsed_Message" xml:space="preserve">
+    <value>Die Zurückstellung ist abgelaufen.</value>
+  </data>
+  <data name="Notification_ReminderSnoozeElapsed_Title" xml:space="preserve">
+    <value>Zurückgestellte Erinnerung: {0}</value>
+  </data>
   <data name="Notification_SessionError_Title" xml:space="preserve">
     <value>Sitzungsfehler</value>
   </data>
@@ -1863,11 +1923,26 @@
   <data name="Notification_Severity_Warning" xml:space="preserve">
     <value>Warnung</value>
   </data>
+  <data name="Notification_UpdateAvailable_Message" xml:space="preserve">
+    <value>Öffne die Release-Seite zum Herunterladen.</value>
+  </data>
+  <data name="Notification_UpdateAvailable_Title" xml:space="preserve">
+    <value>Version {0} ist verfügbar</value>
+  </data>
   <data name="Notification_VaultChanged_Message" xml:space="preserve">
     <value>Der Tresor-Ordner wurde erfolgreich geändert.</value>
   </data>
   <data name="Notification_VaultChanged_Title" xml:space="preserve">
     <value>Tresor geändert</value>
+  </data>
+  <data name="Notification_ViewExportFailed_Title" xml:space="preserve">
+    <value>Export fehlgeschlagen</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Message" xml:space="preserve">
+    <value>Gespeichert unter {0}</value>
+  </data>
+  <data name="Notification_ViewExportSuccess_Title" xml:space="preserve">
+    <value>Ansicht exportiert</value>
   </data>
   <data name="Notifications_ClearAllButton" xml:space="preserve">
     <value>Alle löschen</value>
@@ -2028,6 +2103,9 @@
   <data name="Reminder_Bucket_Overdue" xml:space="preserve">
     <value>ÜBERFÄLLIG</value>
   </data>
+  <data name="Reminder_Bucket_Snoozed" xml:space="preserve">
+    <value>Zurückgestellt</value>
+  </data>
   <data name="Reminder_Bucket_Soon" xml:space="preserve">
     <value>BALD</value>
   </data>
@@ -2048,6 +2126,51 @@
   </data>
   <data name="Reminder_InboxTooltip" xml:space="preserve">
     <value>Erinnerungen</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_one" xml:space="preserve">
+    <value>{0}-mal zurückgestellt</value>
+  </data>
+  <data name="Reminder_SnoozeCountFormat_other" xml:space="preserve">
+    <value>{0}-mal zurückgestellt</value>
+  </data>
+  <data name="Reminder_Snooze_Cancel" xml:space="preserve">
+    <value>Zurückstellung aufheben</value>
+  </data>
+  <data name="Reminder_Snooze_Custom" xml:space="preserve">
+    <value>Benutzerdefiniert…</value>
+  </data>
+  <data name="Reminder_Snooze_CustomApply" xml:space="preserve">
+    <value>Zurückstellen</value>
+  </data>
+  <data name="Reminder_Snooze_CustomMinutes_AccessibleName" xml:space="preserve">
+    <value>Minuten zum Zurückstellen</value>
+  </data>
+  <data name="Reminder_Snooze_Evening" xml:space="preserve">
+    <value>Heute Abend</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_one" xml:space="preserve">
+    <value>{0} Std.</value>
+  </data>
+  <data name="Reminder_Snooze_HoursFormat_other" xml:space="preserve">
+    <value>{0} Std.</value>
+  </data>
+  <data name="Reminder_Snooze_MenuTitle" xml:space="preserve">
+    <value>Zurückstellen bis</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_one" xml:space="preserve">
+    <value>{0} Min.</value>
+  </data>
+  <data name="Reminder_Snooze_MinutesFormat_other" xml:space="preserve">
+    <value>{0} Min.</value>
+  </data>
+  <data name="Reminder_Snooze_Tomorrow" xml:space="preserve">
+    <value>Morgen</value>
+  </data>
+  <data name="Reminder_Snooze_Tooltip" xml:space="preserve">
+    <value>Zurückstellen</value>
+  </data>
+  <data name="Reminder_SnoozedUntilFormat" xml:space="preserve">
+    <value>Zurückgestellt bis {0}</value>
   </data>
   <data name="Reminder_UndoDismiss" xml:space="preserve">
     <value>Rückgängig</value>
@@ -3234,6 +3357,27 @@
   <data name="Settings_Notifications_Reminders_Title" xml:space="preserve">
     <value>Erinnerungen</value>
   </data>
+  <data name="Settings_Notifications_Snooze_Description" xml:space="preserve">
+    <value>Schnellwerte des Menüs „Zurückstellen“ im Erinnerungs-Posteingang und im Benachrichtigungscenter.</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Evening" xml:space="preserve">
+    <value>Uhrzeit für „Heute Abend“</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Hour_Unit" xml:space="preserve">
+    <value>{0}:00</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Primary" xml:space="preserve">
+    <value>Erster Schnellwert</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Secondary" xml:space="preserve">
+    <value>Zweiter Schnellwert</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Title" xml:space="preserve">
+    <value>Zurückstellen</value>
+  </data>
+  <data name="Settings_Notifications_Snooze_Tomorrow" xml:space="preserve">
+    <value>Uhrzeit für „Morgen“</value>
+  </data>
   <data name="Settings_Notifications_Sound_Description" xml:space="preserve">
     <value>Bei eingehenden Benachrichtigungen einen Sound abspielen.</value>
   </data>
@@ -3338,6 +3482,42 @@
   </data>
   <data name="Settings_Skills_Title" xml:space="preserve">
     <value>Skills</value>
+  </data>
+  <data name="Settings_Updates_AvailableFormat" xml:space="preserve">
+    <value>Version {0} ist verfügbar</value>
+  </data>
+  <data name="Settings_Updates_CheckNow" xml:space="preserve">
+    <value>Jetzt suchen</value>
+  </data>
+  <data name="Settings_Updates_Checking" xml:space="preserve">
+    <value>Wird gesucht…</value>
+  </data>
+  <data name="Settings_Updates_Description" xml:space="preserve">
+    <value>Enki lädt und installiert nichts von selbst: Es weist nur darauf hin, dass eine neuere Version existiert, und öffnet deren Seite im Browser.</value>
+  </data>
+  <data name="Settings_Updates_Download" xml:space="preserve">
+    <value>Herunterladen</value>
+  </data>
+  <data name="Settings_Updates_Failed" xml:space="preserve">
+    <value>Suche nach Aktualisierungen fehlgeschlagen. Prüfe die Verbindung und versuche es erneut.</value>
+  </data>
+  <data name="Settings_Updates_InstalledFormat" xml:space="preserve">
+    <value>Installierte Version: {0}</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Description" xml:space="preserve">
+    <value>Standardmäßig aus. Ist es aus, stellt Enki von sich aus keine Netzwerkanfragen — „Jetzt suchen“ bleibt jederzeit verfügbar.</value>
+  </data>
+  <data name="Settings_Updates_OnStartup_Label" xml:space="preserve">
+    <value>Beim Start suchen</value>
+  </data>
+  <data name="Settings_Updates_Skip" xml:space="preserve">
+    <value>Diese Version überspringen</value>
+  </data>
+  <data name="Settings_Updates_Title" xml:space="preserve">
+    <value>Aktualisierungen</value>
+  </data>
+  <data name="Settings_Updates_UpToDate" xml:space="preserve">
+    <value>Du hast die neueste Version.</value>
   </data>
   <data name="Settings_ViewZoom_IncreaseDecrease" xml:space="preserve">
     <value>Zoomstufe erhöhen oder verringern</value>
@@ -5624,4 +5804,122 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Startup_Error_Title" xml:space="preserve"><value>Enki konnte nicht gestartet werden</value></data>
   <data name="Startup_Error_Message" xml:space="preserve"><value>Der Fehler wurde protokolliert. Diagnose-Dateien befinden sich unter:&#10;{0}</value></data>
   <data name="Startup_Error_LogUnavailable" xml:space="preserve"><value>Protokollpfad nicht verfügbar</value></data>
+  <data name="Editor_History_Trigger_ExternalConflict" xml:space="preserve"><value>Externer Konflikt</value></data>
+  <data name="Editor_External_Conflict_Title" xml:space="preserve"><value>Externe Änderung</value></data>
+  <data name="Editor_External_Conflict_Message" xml:space="preserve"><value>„{0}“ wurde außerhalb von Enki geändert und es gibt ungespeicherte Änderungen. Wähle, welche Fassung bleibt.</value></data>
+  <data name="Editor_External_Conflict_Reassurance" xml:space="preserve"><value>Die verworfene Fassung wird zuvor im Verlauf der Notiz gesichert — du kannst jederzeit zu ihr zurück.</value></data>
+  <data name="Editor_External_Conflict_KeepMine" xml:space="preserve"><value>Meine behalten</value></data>
+  <data name="Editor_External_Conflict_LoadFromDisk" xml:space="preserve"><value>Von der Festplatte laden</value></data>
+  <data name="Editor_External_Conflict_ShowDiff" xml:space="preserve"><value>Unterschiede anzeigen</value></data>
+  <data name="Editor_External_Conflict_HideDiff" xml:space="preserve"><value>Unterschiede ausblenden</value></data>
+  <data name="Editor_External_Conflict_DiffLegend" xml:space="preserve"><value>Grün zeigt, was deine Fassung beiträgt; Rot, was es nur auf der Festplatte gibt.</value></data>
+  <data name="Editor_External_Badge" xml:space="preserve"><value>Konflikt</value></data>
+  <data name="Editor_External_Badge_Tooltip" xml:space="preserve"><value>Eine externe Änderung ist noch ungeklärt: Das automatische Speichern dieser Notiz pausiert. Zum Entscheiden klicken.</value></data>
+  <data name="Editor_External_Deleted_Title" xml:space="preserve"><value>Notiz außerhalb von Enki gelöscht</value></data>
+  <data name="Editor_External_Deleted_Message" xml:space="preserve"><value>„{0}“ gibt es im Vault nicht mehr. Was auf dem Bildschirm steht, ist weiterhin da und nicht verloren.</value></data>
+  <data name="Editor_External_Deleted_Hint" xml:space="preserve"><value>Du kannst ihn als neue Notiz im selben Ordner speichern oder verwerfen und den Tab schließen.</value></data>
+  <data name="Editor_External_Deleted_SaveAsNew" xml:space="preserve"><value>Als neue Notiz speichern</value></data>
+  <data name="Editor_External_Deleted_Discard" xml:space="preserve"><value>Verwerfen und schließen</value></data>
+  <data name="Notification_NoteReloadedExternally_Title" xml:space="preserve"><value>Notiz von außen aktualisiert</value></data>
+  <data name="Notification_NoteReloadedExternally_Message" xml:space="preserve"><value>„{0}“ wurde außerhalb von Enki geändert und neu geladen. Es gab keine ungespeicherten Änderungen.</value></data>
+  <data name="Notification_NoteExternalConflict_Title" xml:space="preserve"><value>Ungeklärte externe Änderung</value></data>
+  <data name="Notification_NoteExternalConflict_Message" xml:space="preserve"><value>Das automatische Speichern von „{0}“ pausiert, bis du wählst, welche Fassung bleibt.</value></data>
+  <data name="Notification_NoteRenamedExternally_Title" xml:space="preserve"><value>Notiz von außen verschoben</value></data>
+  <data name="Notification_NoteRenamedExternally_Message" xml:space="preserve"><value>Der Tab folgt „{0}“ jetzt zum neuen Pfad.</value></data>
+  <data name="Notification_NoteDeletedExternally_Title" xml:space="preserve"><value>Notiz von außen gelöscht</value></data>
+  <data name="Notification_NoteDeletedExternally_Message" xml:space="preserve"><value>„{0}“ ist nicht mehr im Vault. Der Inhalt steht weiterhin auf dem Bildschirm und das automatische Speichern pausiert.</value></data>
+  <data name="Notification_NoteConflictKeptMine_Title" xml:space="preserve"><value>Deine Fassung wurde behalten</value></data>
+  <data name="Notification_NoteConflictKeptMine_Message" xml:space="preserve"><value>Die Fassung von der Festplatte von „{0}“ wurde im Verlauf gesichert, falls du sie brauchst.</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Title" xml:space="preserve"><value>Fassung von der Festplatte geladen</value></data>
+  <data name="Notification_NoteConflictLoadedFromDisk_Message" xml:space="preserve"><value>Deine Fassung von „{0}“ wurde im Verlauf gesichert, falls du sie brauchst.</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Title" xml:space="preserve"><value>Notiz erneut gespeichert</value></data>
+  <data name="Notification_NoteRecreatedAfterDelete_Message" xml:space="preserve"><value>„{0}“ wurde mit dem Inhalt vom Bildschirm neu angelegt.</value></data>
+  <data name="Settings_Editor_WatchExternal_Label" xml:space="preserve"><value>Externe Änderungen im Vault überwachen</value></data>
+  <data name="Settings_Editor_WatchExternal_Description" xml:space="preserve"><value>Erkennt, was andere Programme (Syncthing, Dropbox, ein anderer Editor) in geöffnete Notizen schreiben. Auch ausgeschaltet überschreibt ein Speichern nie eine Änderung von außerhalb von Enki.</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Label" xml:space="preserve"><value>Automatisch neu laden, wenn es keine lokalen Änderungen gibt</value></data>
+  <data name="Settings_Editor_AutoReloadExternal_Description" xml:space="preserve"><value>Bei ungespeicherten Änderungen wird immer zuerst gefragt; dies entscheidet nur den Fall ohne solche.</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Title" xml:space="preserve"><value>Ungespeicherter Text im Verlauf gesichert</value></data>
+  <data name="Notification_NoteUnsavedKeptInHistory_Message" xml:space="preserve"><value>„{0}“ wurde mit einer ungeklärten externen Änderung geschlossen. Was du geschrieben hattest, steht im Versionsverlauf der Notiz.</value></data>
+  <data name="VaultSwitcher_Eyebrow" xml:space="preserve"><value>Tresor</value></data>
+  <data name="VaultSwitcher_Tooltip" xml:space="preserve"><value>Tresor wechseln</value></data>
+  <data name="VaultSwitcher_RecentsTitle" xml:space="preserve"><value>Zuletzt geöffnete Tresore</value></data>
+  <data name="VaultSwitcher_Browse" xml:space="preserve"><value>Anderen Ordner öffnen…</value></data>
+  <data name="VaultSwitcher_RemoveFromRecents" xml:space="preserve"><value>Aus der Liste entfernen</value></data>
+  <data name="VaultSwitcher_ActiveBadge" xml:space="preserve"><value>Geöffnet</value></data>
+  <data name="VaultSwitcher_RemoveHint" xml:space="preserve"><value>Einen Tresor aus dieser Liste zu entfernen rührt seine Dateien nie an.</value></data>
+  <data name="CommandPalette_Action_SwitchVault" xml:space="preserve"><value>Tresor wechseln…</value></data>
+  <data name="Notification_VaultSwitchFailed_Title" xml:space="preserve"><value>Tresor nicht geöffnet</value></data>
+  <data name="Notification_VaultSwitchFailed_Message" xml:space="preserve"><value>„{0}“ bleibt, wo er ist: {1}</value></data>
+  <data name="Notification_VaultSwitchBlocked_Title" xml:space="preserve"><value>Nicht gespeicherte Änderungen</value></data>
+  <data name="Notification_VaultSwitchBlocked_Message" xml:space="preserve"><value>Der Tresor wurde nicht gewechselt: {0} konnte nicht gespeichert werden.</value></data>
+  <data name="WebClip_Error_InvalidUrl" xml:space="preserve"><value>Das sieht nicht nach einer Webadresse aus.</value></data>
+  <data name="WebClip_Error_UnsupportedScheme" xml:space="preserve"><value>Nur http- und https-Adressen lassen sich speichern — diese beginnt mit „{0}“.</value></data>
+  <data name="WebClip_Error_PrivateAddress" xml:space="preserve"><value>„{0}“ liegt auf diesem Rechner oder in diesem Netzwerk und wird deshalb nie abgerufen.</value></data>
+  <data name="WebClip_Partial_NoReadableText" xml:space="preserve"><value>Die Seite enthielt keinen lesbaren Text zum Übernehmen.</value></data>
+  <data name="WebClip_Partial_Timeout" xml:space="preserve"><value>Die Website hat zu lange gebraucht.</value></data>
+  <data name="WebClip_Partial_HttpStatus" xml:space="preserve"><value>Die Website antwortete mit Fehler {0}.</value></data>
+  <data name="WebClip_Partial_Unreachable" xml:space="preserve"><value>Die Website war nicht erreichbar.</value></data>
+  <data name="WebClip_Partial_TooManyRedirects" xml:space="preserve"><value>Die Adresse leitete immer weiter um.</value></data>
+  <data name="WebClip_Partial_TooLarge" xml:space="preserve"><value>Die Seite überschreitet das Limit von 2 MB.</value></data>
+  <data name="WebClip_Partial_NotHtml" xml:space="preserve"><value>Diese Adresse ist keine Webseite ({0}).</value></data>
+  <data name="WebClip_Note_SourceLabel" xml:space="preserve"><value>Quelle</value></data>
+  <data name="WebClip_Note_NoContent" xml:space="preserve"><value>*Der Text dieser Seite konnte nicht übernommen werden. Über den Link oben lässt sie sich weiterhin öffnen.*</value></data>
+  <data name="WebClip_Title" xml:space="preserve"><value>Webseite speichern</value></data>
+  <data name="WebClip_UrlPlaceholder" xml:space="preserve"><value>Link einfügen</value></data>
+  <data name="WebClip_SaveButton" xml:space="preserve"><value>In Inbox speichern</value></data>
+  <data name="WebClip_Working" xml:space="preserve"><value>Seite wird geladen…</value></data>
+  <data name="WebClip_Hint" xml:space="preserve"><value>Aus der Seite wird nichts ausgeführt und keine entfernte Ressource geladen.</value></data>
+  <data name="CommandPalette_Action_ClipWebPage" xml:space="preserve"><value>Webseite speichern…</value></data>
+  <data name="Notification_WebClipSaved_Title" xml:space="preserve"><value>Seite gespeichert</value></data>
+  <data name="Notification_WebClipSaved_Message" xml:space="preserve"><value>„{0}“ liegt jetzt in Inbox.</value></data>
+  <data name="Notification_WebClipPartial_Title" xml:space="preserve"><value>Seite ohne Text gespeichert</value></data>
+  <data name="Notification_WebClipPartial_Message" xml:space="preserve"><value>„{0}“ wurde nur mit Titel und Link gespeichert: {1}</value></data>
+  <data name="Notification_WebClipFailed_Title" xml:space="preserve"><value>Seite nicht gespeichert</value></data>
+  <data name="QuickCapture_Title" xml:space="preserve"><value>Schnellerfassung</value></data>
+  <data name="QuickCapture_Subtitle" xml:space="preserve"><value>Jetzt notieren, später organisieren.</value></data>
+  <data name="QuickCapture_Placeholder" xml:space="preserve"><value>Idee eingeben…</value></data>
+  <data name="QuickCapture_Input_AccessibleName" xml:space="preserve"><value>Text der Schnellerfassung</value></data>
+  <data name="QuickCapture_Destination_Label" xml:space="preserve"><value>Ziel</value></data>
+  <data name="QuickCapture_Destination_Inbox" xml:space="preserve"><value>Notiz im Eingang</value></data>
+  <data name="QuickCapture_Destination_Kanban" xml:space="preserve"><value>Kanban-Karte</value></data>
+  <data name="QuickCapture_KanbanColumn_Label" xml:space="preserve"><value>Kanban-Spalte</value></data>
+  <data name="QuickCapture_Submit" xml:space="preserve"><value>Speichern</value></data>
+  <data name="QuickCapture_SubmitHint" xml:space="preserve"><value>Strg+Enter</value></data>
+  <data name="QuickCapture_Error_NoVault" xml:space="preserve"><value>Wähle oder öffne einen Vault, bevor du diese Erfassung speicherst.</value></data>
+  <data name="QuickCapture_Error_NoKanbanColumn" xml:space="preserve"><value>Das Kanban-Board hat keine verfügbare Spalte.</value></data>
+  <data name="QuickCapture_Error_SaveFailed" xml:space="preserve"><value>Die Erfassung konnte nicht gespeichert werden: {0}</value></data>
+  <data name="Notification_QuickCaptureSaved_Title" xml:space="preserve"><value>Erfassung gespeichert</value></data>
+  <data name="Notification_QuickCaptureSaved_Note" xml:space="preserve"><value>„{0}“ wurde im Eingang gespeichert.</value></data>
+  <data name="Notification_QuickCaptureSaved_Card" xml:space="preserve"><value>„{0}“ wurde zu Kanban hinzugefügt.</value></data>
+  <data name="Notification_QuickCaptureHotkeyUnavailable_Title" xml:space="preserve"><value>Globales Tastenkürzel nicht verfügbar</value></data>
+  <data name="QuickCapture_Hotkey_UnsupportedPlatform" xml:space="preserve"><value>Das globale Tastenkürzel für die Schnellerfassung wird auf dieser Plattform nicht unterstützt. Verwende das Taskleistensymbol oder die Befehlspalette.</value></data>
+  <data name="QuickCapture_Hotkey_Failed" xml:space="preserve"><value>Das globale Tastenkürzel konnte nicht registriert werden. Verwende das Taskleistensymbol oder die Befehlspalette.</value></data>
+  <data name="QuickCapture_Hotkey_UnsupportedKey" xml:space="preserve"><value>Diese Taste kann nicht für ein globales Tastenkürzel verwendet werden.</value></data>
+  <data name="QuickCapture_Hotkey_Conflict" xml:space="preserve"><value>Das globale Tastenkürzel wird bereits vom System oder einer anderen Anwendung verwendet.</value></data>
+  <data name="QuickCapture_Hotkey_Wayland" xml:space="preserve"><value>Wayland erlaubt Anwendungen keine zuverlässige Registrierung globaler Tastenkürzel. Verwende das Taskleistensymbol oder die Befehlspalette.</value></data>
+  <data name="QuickCapture_Hotkey_NoDisplay" xml:space="preserve"><value>Für das globale Tastenkürzel ist keine X11-Anzeige verfügbar. Verwende das Taskleistensymbol oder die Befehlspalette.</value></data>
+  <data name="Tray_OpenEnki" xml:space="preserve"><value>Enki öffnen</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>Beenden</value></data>
+  <data name="CommandPalette_Action_QuickCapture" xml:space="preserve"><value>Schnellerfassung…</value></data>
+  <data name="Settings_Shortcuts_QuickCapture" xml:space="preserve"><value>Schnellerfassung</value></data>
+  <data name="Settings_General_Tray_Title" xml:space="preserve"><value>Taskleiste</value></data>
+  <data name="Settings_General_Tray_Description" xml:space="preserve"><value>Halte die Schnellerfassung erreichbar, während das Hauptfenster ausgeblendet ist.</value></data>
+  <data name="Settings_General_Tray_KeepRunning" xml:space="preserve"><value>Enki beim Schließen des Hauptfensters in der Taskleiste behalten</value></data>
+  <data name="Editor_Transclusion_AccessibleName" xml:space="preserve"><value>Eingebettete Notiz: {0}</value></data>
+  <data name="Editor_Transclusion_Truncated" xml:space="preserve"><value>Vorschau gekürzt. Öffne die Notiz, um den Rest zu lesen.</value></data>
+  <data name="Editor_Transclusion_Broken" xml:space="preserve"><value>Die eingebettete Notiz ist nicht vorhanden.</value></data>
+  <data name="Editor_Transclusion_Ambiguous" xml:space="preserve"><value>Mehrere Notizen entsprechen dieser Referenz.</value></data>
+  <data name="Editor_Transclusion_SectionMissing" xml:space="preserve"><value>Der angeforderte Abschnitt ist in dieser Notiz nicht vorhanden.</value></data>
+  <data name="Editor_Transclusion_BlockMissing" xml:space="preserve"><value>Der angeforderte Block ist in dieser Notiz nicht vorhanden.</value></data>
+  <data name="Editor_Transclusion_Locked" xml:space="preserve"><value>Diese Notiz gehört zu einer gesperrten Sitzung. Entsperre sie, um den Inhalt anzuzeigen.</value></data>
+  <data name="Editor_Transclusion_Cycle" xml:space="preserve"><value>Die zirkuläre Einbettung wurde hier beendet.</value></data>
+  <data name="Editor_Transclusion_DepthLimit" xml:space="preserve"><value>Die maximale Einbettungstiefe wurde erreicht.</value></data>
+  <data name="Editor_Transclusion_ReadFailed" xml:space="preserve"><value>Diese eingebettete Notiz konnte nicht gelesen werden.</value></data>
+  <data name="Editor_Math_Rendering" xml:space="preserve"><value>Formel wird gerendert…</value></data>
+  <data name="Editor_Mermaid_Rendering" xml:space="preserve"><value>Diagramm wird gerendert…</value></data>
+  <data name="Shell_InboxTooltip" xml:space="preserve"><value>Posteingang — eine Idee schnell notieren</value></data>
+  <data name="Settings_Notifications_Inbox_Label" xml:space="preserve"><value>Posteingang-Schaltfläche</value></data>
+  <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Die Posteingang-Schaltfläche in der Titelleiste anzeigen, um eine Idee direkt im Vault zu notieren.</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Vault-Auswahl</value></data>
+  <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Die Zeile zum Wechseln des Vaults über den Abschnitten der Seitenleiste anzeigen. Ausgeblendet wechselt die Befehlspalette weiterhin den Vault.</value></data>
 </root>

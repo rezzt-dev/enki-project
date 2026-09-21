@@ -59,6 +59,12 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _notificationsSidebarEnabled;
 
+    /// <summary>Fila "Cambiar de vault", entre la cabecera de marca y la navegación. No es una sección
+    /// navegable, así que no entra en las dos listas ordenables de aquí abajo ni en el guard de "al menos
+    /// una visible": es un interruptor suelto al final de la misma tarjeta de Ajustes.</summary>
+    [ObservableProperty]
+    private bool _vaultSwitcherEnabled;
+
     [ObservableProperty]
     private bool _polarShowTaskTags;
 
@@ -200,6 +206,13 @@ public sealed partial class SettingsViewModel
         _settingsService.Save();
         _onSidebarSectionChanged(AppPage.Statistics, value);
         SyncSidebarSectionRow("Statistics", value);
+    }
+
+    partial void OnVaultSwitcherEnabledChanged(bool value)
+    {
+        _settingsService.Settings.VaultSwitcherEnabled = value;
+        _settingsService.Save();
+        _onVaultSwitcherChanged?.Invoke(value);
     }
 
     partial void OnRemindersSidebarEnabledChanged(bool value)

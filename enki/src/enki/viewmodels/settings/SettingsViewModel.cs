@@ -45,10 +45,25 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly PolarAuthService _polarAuthService;
     private readonly PolarSyncService _polarSyncService;
     private readonly NotificationService _notificationService;
-    private readonly Action _onVaultChanged;
+    /// <summary>Pide al shell abrir otra carpeta como vault activo y recargarlo todo, devolviendo si
+    /// el cambio llegó a producirse — <c>MainWindowViewModel.SwitchToVaultAsync</c>. Es una petición, no
+    /// un aviso: la secuencia segura (comprobar la ruta, volcar lo pendiente, cancelar si algo quedó sin
+    /// guardar, bloquear sesiones, recargar) vive donde está la composición, y tanto "cambiar carpeta del
+    /// vault" como "restaurar copia de seguridad" entran por aquí en vez de repetirla cada uno por su
+    /// cuenta (T4, .docs/project-info/multi-vault-en-caliente.md). El segundo parámetro es el hueco entre
+    /// adoptar la ruta y recargar, que solo usa la restauración para importar sus preferencias.</summary>
+    private readonly Func<string, Action?, Task<bool>> _switchVault;
     private readonly Action<bool> _onTitleBarModeChanged;
     private readonly Action<bool> _onNotificationsPanelChanged;
     private readonly Action<bool> _onRemindersPanelChanged;
+
+    /// <summary>Los dos interruptores nuevos (botón de bandeja de entrada de la barra de título y fila
+    /// "Cambiar de vault" del sidebar) llegan como parámetros opcionales al final del constructor, no
+    /// en su sitio "lógico" entre los demás callbacks: la docena de tests y UI-tests que construyen este
+    /// viewmodel a mano no necesitan enterarse de un ajuste que no ejercitan.</summary>
+    private readonly Action<bool>? _onInboxPanelChanged;
+
+    private readonly Action<bool>? _onVaultSwitcherChanged;
     private readonly Action<bool> _onCalendarShowSidebarScrollbarChanged;
     private readonly Action<bool> _onDashboardShowScrollbarChanged;
     private readonly Action<string> _onKanbanBoardOrientationChanged;
@@ -144,6 +159,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private AppPage _startupPage;
 
+    /// <summary>Si cerrar la ventana principal deja Enki vivo en la bandeja. Global a la instalación y
+    /// apagado por defecto para que el comportamiento de cerrar solo cambie por elección explícita.</summary>
+    [ObservableProperty]
+    private bool _minimizeToTray;
+
     public SettingsViewModel(
         SettingsService settingsService,
         CustomThemeService customThemeService,
@@ -154,7 +174,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         PolarAuthService polarAuthService,
         PolarSyncService polarSyncService,
         NotificationService notificationService,
-        Action onVaultChanged,
+        Func<string, Action?, Task<bool>> switchVault,
         Action<bool> onTitleBarModeChanged,
         Action<bool> onNotificationsPanelChanged,
         Action<bool> onRemindersPanelChanged,
@@ -167,8 +187,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action<bool> onPolarShowTaskTagsChanged,
         Action<int> onUiZoomChanged,
         Action onLanguageChanged,
-        NoteTemplateService? noteTemplateService = null)
+        NoteTemplateService? noteTemplateService = null,
+        Action<bool>? onInboxPanelChanged = null,
+        Action<bool>? onVaultSwitcherChanged = null,
+        UpdateCheckService? updateCheckService = null)
     {
+        _updateCheckService = updateCheckService;
         _settingsService = settingsService;
         _customThemeService = customThemeService;
         _brandLogoService = brandLogoService;
@@ -183,10 +207,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _polarAuthService = polarAuthService;
         _polarSyncService = polarSyncService;
         _notificationService = notificationService;
-        _onVaultChanged = onVaultChanged;
+        _switchVault = switchVault;
         _onTitleBarModeChanged = onTitleBarModeChanged;
         _onNotificationsPanelChanged = onNotificationsPanelChanged;
         _onRemindersPanelChanged = onRemindersPanelChanged;
+        _onInboxPanelChanged = onInboxPanelChanged;
+        _onVaultSwitcherChanged = onVaultSwitcherChanged;
         _onCalendarShowSidebarScrollbarChanged = onCalendarShowSidebarScrollbarChanged;
         _onSidebarSectionChanged = onSidebarSectionChanged;
         _onSidebarSectionOrderChanged = onSidebarSectionOrderChanged;
@@ -231,6 +257,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         // property update is marshaled onto the UI thread here rather than in VaultService itself.
         vaultService.VaultSizeChanged += () => Dispatcher.UIThread.Post(RefreshVaultSizeLabel);
         _startupPage = ParseAppPage(settingsService.Settings.StartupPage);
+        _minimizeToTray = settingsService.Settings.MinimizeToTray;
         _isDarkTheme = settingsService.Settings.Theme != "Light";
         _isCustomThemeActive = customThemeService.ActiveThemeId is not null;
         _editorFontSize = settingsService.Settings.EditorFontSize;
@@ -243,6 +270,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorJustifyText = settingsService.Settings.EditorJustifyParagraphs;
         _editorAutoPairs = settingsService.Settings.EditorAutoPairs;
         _editorRemoteImages = settingsService.Settings.EditorRemoteImages;
+        _vaultWatchExternalChanges = settingsService.Settings.VaultWatchExternalChanges;
+        _vaultAutoReloadExternalChanges = settingsService.Settings.VaultAutoReloadExternalChanges;
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
@@ -282,12 +311,19 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _polarShowTaskTags = settingsService.Settings.PolarShowTaskTags;
         _notificationsPanelEnabled = settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = settingsService.Settings.RemindersPanelEnabled;
+        _inboxPanelEnabled = settingsService.Settings.InboxPanelEnabled;
+        _vaultSwitcherEnabled = settingsService.Settings.VaultSwitcherEnabled;
         _showDesktopToasts = settingsService.Settings.ShowDesktopToasts;
         _muteInfoNotifications = settingsService.Settings.MuteInfoNotifications;
         _muteSuccessNotifications = settingsService.Settings.MuteSuccessNotifications;
         _muteWarningNotifications = settingsService.Settings.MuteWarningNotifications;
         _muteErrorNotifications = settingsService.Settings.MuteErrorNotifications;
         _reminderSoonWindowDays = settingsService.Settings.ReminderSoonWindowDays;
+        _checkUpdatesOnStartup = settingsService.Settings.CheckUpdatesOnStartup;
+        _snoozePrimaryMinutes = settingsService.Settings.SnoozePrimaryMinutes;
+        _snoozeSecondaryMinutes = settingsService.Settings.SnoozeSecondaryMinutes;
+        _snoozeEveningHour = settingsService.Settings.SnoozeEveningHour;
+        _snoozeTomorrowHour = settingsService.Settings.SnoozeTomorrowHour;
         _doNotDisturbEnabled = settingsService.Settings.DoNotDisturbEnabled;
         _doNotDisturbStart = settingsService.Settings.DoNotDisturbStart;
         _doNotDisturbEnd = settingsService.Settings.DoNotDisturbEnd;
@@ -487,6 +523,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SetStartupPage(AppPage page) => StartupPage = page;
 
+    partial void OnMinimizeToTrayChanged(bool value)
+    {
+        _settingsService.Settings.MinimizeToTray = value;
+        _settingsService.Save();
+    }
+
     partial void OnConfirmBeforeDeleteChanged(bool value)
     {
         _settingsService.Settings.ConfirmBeforeDelete = value;
@@ -557,6 +599,13 @@ public sealed partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(EditorTabSizeLabel));
         OnPropertyChanged(nameof(UiZoomPercentLabel));
         OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
+        OnPropertyChanged(nameof(InstalledVersionLabel));
+        OnPropertyChanged(nameof(AvailableUpdateLabel));
+        OnPropertyChanged(nameof(UpdateCheckStatusLabel));
+        OnPropertyChanged(nameof(SnoozePrimaryLabel));
+        OnPropertyChanged(nameof(SnoozeSecondaryLabel));
+        OnPropertyChanged(nameof(SnoozeEveningHourLabel));
+        OnPropertyChanged(nameof(SnoozeTomorrowHourLabel));
         OnPropertyChanged(nameof(SyncNowButtonLabel));
         OnPropertyChanged(nameof(LinkButtonLabel));
         // Las dos dependían de que otra cosa cambiara para refrescarse: la del volumen, de que se moviera

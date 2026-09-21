@@ -7,6 +7,7 @@ using enki.Localization;
 using enki.Services;
 using System;
 using System.Globalization;
+using Avalonia.Interactivity;
 
 namespace enki;
 
@@ -103,5 +104,21 @@ public partial class App : Application
         };
         ((Button)((StackPanel)window.Content).Children[2]).Click += (_, _) => window.Close();
         return window;
+    }
+
+    private void TrayQuickCapture_Click(object? sender, EventArgs e)
+    {
+        if (MainWindowRef is MainWindow window) window.ShowQuickCapture();
+    }
+
+    private void TrayOpenEnki_Click(object? sender, EventArgs e)
+    {
+        if (MainWindowRef is MainWindow window) window.ShowFromTray();
+    }
+
+    private void TrayExit_Click(object? sender, EventArgs e)
+    {
+        if (MainWindowRef is MainWindow window) window.PrepareForExplicitExit();
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.Shutdown();
     }
 }

@@ -375,6 +375,22 @@ public static class MarkdownLineParser
                     i = imageEnd;
                     continue;
                 }
+
+                var transclusionEnd = ScanTransclusion(model, text, i, to, lineOffset);
+                if (transclusionEnd > i)
+                {
+                    i = transclusionEnd;
+                    continue;
+                }
+            }
+            else if (c == '$')
+            {
+                var mathEnd = ScanMath(model, text, i, to, lineOffset);
+                if (mathEnd > i)
+                {
+                    i = mathEnd;
+                    continue;
+                }
             }
             else if (c == '[' && i + 1 < to && text[i + 1] == '[')
             {
@@ -440,6 +456,71 @@ public static class MarkdownLineParser
 
             i++;
         }
+    }
+
+    /// <summary>Reconoce una transclusión de nota después de que <see cref="ScanImage"/> haya descartado
+    /// que el mismo texto sea una imagen. Conserva sección/bloque en <see cref="MdSpan.LinkTarget"/> para
+    /// que el resolvedor pueda extraer exactamente el fragmento solicitado.</summary>
+    private static int ScanTransclusion(MdLine model, string text, int start, int to, int lineOffset)
+    {
+        if (start + 3 >= to || text[start] != '!' || text[start + 1] != '[' || text[start + 2] != '[')
+            return start;
+
+        var innerStart = start + 3;
+        var close = text.IndexOf("]]", innerStart, Math.Max(0, to - innerStart), StringComparison.Ordinal);
+        if (close == -1) return start;
+
+        var inner = text[innerStart..close];
+        var pipe = inner.IndexOf('|');
+        var target = (pipe >= 0 ? inner[..pipe] : inner).Trim();
+        if (target.Length == 0) return start;
+
+        model.Spans.Add(new MdSpan
+        {
+            Kind = MdSpanKind.Transclusion,
+            Start = lineOffset + start,
+            End = lineOffset + close + 2,
+            ContentStart = lineOffset + innerStart,
+            ContentEnd = lineOffset + close,
+            LinkTarget = target
+        });
+        return close + 2;
+    }
+
+    /// <summary>Reconoce matemáticas en una sola línea. Un dólar escapado es literal; los delimitadores
+    /// vacíos y un dólar pegado a un dígito por ambos lados se dejan como texto para no convertir importes
+    /// habituales (<c>$20</c>) en fórmulas por accidente.</summary>
+    private static int ScanMath(MdLine model, string text, int start, int to, int lineOffset)
+    {
+        if (start > 0 && text[start - 1] == '\\') return start;
+
+        var delimiterLength = start + 1 < to && text[start + 1] == '$' ? 2 : 1;
+        var contentStart = start + delimiterLength;
+        if (contentStart >= to || char.IsWhiteSpace(text[contentStart])) return start;
+
+        var close = contentStart;
+        while (close < to)
+        {
+            close = text.IndexOf(delimiterLength == 2 ? "$$" : "$", close, StringComparison.Ordinal);
+            if (close < 0 || close >= to) return start;
+            if (close > contentStart && text[close - 1] != '\\') break;
+            close += delimiterLength;
+        }
+
+        if (close == contentStart || char.IsWhiteSpace(text[close - 1])) return start;
+        if (delimiterLength == 1 && start + 1 < to && char.IsDigit(text[start + 1])
+            && close + 1 < to && char.IsDigit(text[close + 1])) return start;
+
+        model.Spans.Add(new MdSpan
+        {
+            Kind = MdSpanKind.Math,
+            Start = lineOffset + start,
+            End = lineOffset + close + delimiterLength,
+            ContentStart = lineOffset + contentStart,
+            ContentEnd = lineOffset + close,
+            IsDisplayMath = delimiterLength == 2
+        });
+        return close + delimiterLength;
     }
 
     /// <summary>Extensiones que el editor sabe dibujar como imagen. Gobierna dos decisiones distintas:

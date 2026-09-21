@@ -178,6 +178,94 @@
          </Border>
             </controls:SettingsSearchOption>
 
+            <!-- Aviso de versión nueva (T9). Solo avisa: no descarga ni ejecuta nada, y el único enlace
+                 que abre es la página de la release, validada contra el repositorio oficial en
+                 Services.UpdateCheckService. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Updates_Title Settings_Updates_Description
+                              Settings_Updates_OnStartup_Label Settings_Updates_OnStartup_Description
+                              Settings_Updates_CheckNow Settings_Updates_Download Settings_Updates_Skip
+                              Settings_Nav_General">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="Update" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Updates_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Updates_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_Updates_OnStartup_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Updates_OnStartup_Description}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding CheckUpdatesOnStartup}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Updates_OnStartup_Label}" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding InstalledVersionLabel}" Classes="faint"
+                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <Button Grid.Column="1" Classes="pill" Height="34" Command="{Binding CheckForUpdatesCommand}"
+                            IsEnabled="{Binding !IsCheckingForUpdates}"
+                            AutomationProperties.Name="{loc:Tr Settings_Updates_CheckNow}">
+                      <TextBlock Text="{loc:Tr Settings_Updates_CheckNow, Converter={StaticResource UpperCaseConverter}}" />
+                    </Button>
+                  </Grid>
+
+                  <TextBlock Text="{loc:Tr Settings_Updates_Checking}" Classes="muted" FontSize="12"
+                             IsVisible="{Binding IsCheckingForUpdates}" />
+                  <TextBlock Text="{Binding UpdateCheckStatusLabel}" Classes="muted" FontSize="12"
+                             TextWrapping="Wrap" IsVisible="{Binding HasUpdateCheckStatus}" />
+
+                  <!-- Bloque de la release encontrada: versión, notas y las dos decisiones posibles. -->
+                  <Border Classes="trash-hint" IsVisible="{Binding HasAvailableUpdate}">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="{Binding AvailableUpdateLabel}" FontSize="13" FontWeight="Bold" TextWrapping="Wrap" />
+                      <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto"
+                                    IsVisible="{Binding HasAvailableUpdateNotes}">
+                        <TextBlock Text="{Binding AvailableUpdateNotes}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </ScrollViewer>
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="pill" Height="32" Command="{Binding DownloadUpdateCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
+                            <TextBlock Text="{loc:Tr Settings_Updates_Download, Converter={StaticResource UpperCaseConverter}}" />
+                          </StackPanel>
+                        </Button>
+                        <Button Classes="ghost" Command="{Binding SkipUpdateCommand}" VerticalAlignment="Center">
+                          <TextBlock Text="{loc:Tr Settings_Updates_Skip, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_General_Tray_Title Settings_General_Tray_Description
+                              Settings_General_Tray_KeepRunning Settings_Nav_General">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_General_Tray_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_General_Tray_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_Tray_KeepRunning}" FontSize="13"
+                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_General_Tray_KeepRunning}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_General_Startup_Title Settings_General_Startup_Description
                               Settings_General_Startup_Dashboard Settings_General_Startup_Calendar
@@ -439,6 +527,23 @@
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
                     </Border></StackPanel>
+                  </controls:SettingsSearchOption>
+
+                  <!-- El selector de vault no es una sección navegable, así que va como interruptor
+                       suelto bajo las dos listas y no como una fila más dentro de ellas. -->
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_General_Sidebar_VaultSwitcher_Label
+                                    Settings_General_Sidebar_VaultSwitcher_Description
+                                    Settings_Nav_General Settings_General_Sidebar_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_General_Sidebar_VaultSwitcher_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_General_Sidebar_VaultSwitcher_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding VaultSwitcherEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_Sidebar_VaultSwitcher_Label}" />
+                    </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                 </StackPanel>
          </Border>
@@ -1369,6 +1474,35 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
 
+                  <!-- Cambios externos al vault (.docs/project-info/cambios-externos-en-el-vault.md) -->
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Editor_WatchExternal_Label Settings_Editor_WatchExternal_Description
+                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Editor_WatchExternal_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Editor_WatchExternal_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding VaultWatchExternalChanges}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_WatchExternal_Label}" />
+                    </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Editor_AutoReloadExternal_Label Settings_Editor_AutoReloadExternal_Description
+                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding CanAutoReloadExternalChanges}">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Editor_AutoReloadExternal_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Editor_AutoReloadExternal_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding VaultAutoReloadExternalChanges}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_AutoReloadExternal_Label}" />
+                    </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+
                   <controls:SettingsSearchOption
                       ResourceKeys="Settings_Editor_SidePanel_Label Settings_Editor_SidePanel_Description
                                     Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
@@ -1458,6 +1592,19 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Notifications_Inbox_Label
+                                    Settings_Notifications_Inbox_Description Settings_Nav_Notifications
+                                    Settings_Notifications_Panels_Title">
+                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Notifications_Inbox_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Notifications_Inbox_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding InboxPanelEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Inbox_Label}" />
+                    </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+                  <controls:SettingsSearchOption
                       ResourceKeys="Settings_Notifications_Toast_Label Settings_Notifications_Toast_Description
                                     Settings_Nav_Notifications Settings_Notifications_Panels_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
@@ -1537,6 +1684,56 @@
                   <TextBlock Text="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Description}"
                              Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                   <Slider Minimum="1" Maximum="30" Value="{Binding ReminderSoonWindowDays}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Label}" />
+                </StackPanel>
+         </Border>
+            </controls:SettingsSearchOption>
+
+            <!-- Valores rápidos de "Aplazar" (T5). Los dos primeros son duraciones (NumericUpDown, porque
+                 el rango útil va de 1 minuto a 7 días y un deslizador ahí no acierta); los dos últimos son
+                 horas del día, donde el deslizador de 0–23 sí es el control natural. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Notifications_Snooze_Title Settings_Notifications_Snooze_Description
+                              Settings_Notifications_Snooze_Primary Settings_Notifications_Snooze_Secondary
+                              Settings_Notifications_Snooze_Evening Settings_Notifications_Snooze_Tomorrow
+                              Settings_Nav_Notifications">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="AlarmSnooze" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Notifications_Snooze_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Snooze_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+
+                  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Snooze_Primary}" FontSize="13" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding SnoozePrimaryLabel}" Classes="faint" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="2" Width="120" Minimum="1" Maximum="10080" Increment="5"
+                                   FormatString="0" Value="{Binding SnoozePrimaryMinutes}"
+                                   AutomationProperties.Name="{loc:Tr Settings_Notifications_Snooze_Primary}" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Snooze_Secondary}" FontSize="13" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding SnoozeSecondaryLabel}" Classes="faint" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="2" Width="120" Minimum="1" Maximum="10080" Increment="15"
+                                   FormatString="0" Value="{Binding SnoozeSecondaryMinutes}"
+                                   AutomationProperties.Name="{loc:Tr Settings_Notifications_Snooze_Secondary}" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Snooze_Evening}" FontSize="13" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding SnoozeEveningHourLabel}" Classes="faint" VerticalAlignment="Center" />
+                  </Grid>
+                  <Slider Minimum="0" Maximum="23" TickFrequency="1" Value="{Binding SnoozeEveningHour}"
+                          AutomationProperties.Name="{loc:Tr Settings_Notifications_Snooze_Evening}" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Snooze_Tomorrow}" FontSize="13" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding SnoozeTomorrowHourLabel}" Classes="faint" VerticalAlignment="Center" />
+                  </Grid>
+                  <Slider Minimum="0" Maximum="23" TickFrequency="1" Value="{Binding SnoozeTomorrowHour}"
+                          AutomationProperties.Name="{loc:Tr Settings_Notifications_Snooze_Tomorrow}" />
                 </StackPanel>
          </Border>
             </controls:SettingsSearchOption>

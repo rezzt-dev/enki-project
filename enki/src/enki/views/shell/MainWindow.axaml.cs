@@ -16,10 +16,15 @@ namespace enki;
 
 public partial class MainWindow : Window
 {
+    private readonly SettingsService _settingsService;
+    private QuickCaptureWindow? _quickCaptureWindow;
+    private bool _isExplicitExit;
+
     public MainWindow() : this(new SettingsService()) { }
 
     public MainWindow(SettingsService settingsService)
     {
+        _settingsService = settingsService;
         InitializeComponent();
 
         // Tamaño inicial vía ClientSize en vez de Width/Height en el XAML: Avalonia deja Width/Height
@@ -43,6 +48,7 @@ public partial class MainWindow : Window
 
         var viewModel = new MainWindowViewModel(settingsService);
         DataContext = viewModel;
+        viewModel.QuickCaptureRequested += ShowQuickCapture;
 
         // Después de fijar el DataContext, no antes: el logo puede ser la imagen personalizada del
         // usuario, y quien sabe si lo es y con qué bytes es el viewmodel (Ajustes › Apariencia › Logo).
@@ -77,8 +83,14 @@ public partial class MainWindow : Window
         // tab closed right as the window closes could lose whatever was typed in that last window. Same
         // reasoning for Ajustes' own slider debounce (SettingsViewModel.SettingsSaveDebounceDelay), which
         // now also flushes the vault-scoped zoom level.
-        Closing += (_, _) =>
+        Closing += (_, e) =>
         {
+            if (!_isExplicitExit && _settingsService.Settings.MinimizeToTray)
+            {
+                e.Cancel = true;
+                Hide();
+                return;
+            }
             viewModel.Notes?.FlushAllEditors();
             viewModel.Settings?.FlushPendingSave();
             // Fase 1 (docs/analisis-proyecto/roadmap.md): the Skills editor debounces its own autosave the
@@ -112,6 +124,7 @@ public partial class MainWindow : Window
         Add(ShortcutIds.QuickSwitcher, vm.OpenQuickSwitcherCommand);
         Add(ShortcutIds.CommandPalette, vm.OpenCommandPaletteCommand);
         Add(ShortcutIds.QuickNewNote, vm.QuickNewNoteCommand);
+        Add(ShortcutIds.QuickCapture, vm.OpenQuickCaptureCommand);
         Add(ShortcutIds.NavigateDashboard, vm.NavigateCommand, AppPage.Dashboard);
         Add(ShortcutIds.NavigateNotes, vm.NavigateCommand, AppPage.Notes);
         Add(ShortcutIds.NavigateKanban, vm.NavigateCommand, AppPage.Kanban);
@@ -246,6 +259,34 @@ public partial class MainWindow : Window
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 
+    /// <summary>Muestra la captura sin tocar visibilidad ni estado de esta ventana principal. Reutiliza el
+    /// mismo viewmodel para conservar el borrador cuando Esc cerró la ventana anterior.</summary>
+    public void ShowQuickCapture()
+    {
+        if (DataContext is not MainWindowViewModel viewModel) return;
+        viewModel.QuickCapture.PrepareToShow();
+        if (_quickCaptureWindow is null)
+        {
+            _quickCaptureWindow = new QuickCaptureWindow { DataContext = viewModel.QuickCapture };
+            _quickCaptureWindow.Closed += (_, _) => _quickCaptureWindow = null;
+            _quickCaptureWindow.Show();
+        }
+        else
+        {
+            if (!_quickCaptureWindow.IsVisible) _quickCaptureWindow.Show();
+            _quickCaptureWindow.Activate();
+        }
+    }
+
+    public void ShowFromTray()
+    {
+        if (!IsVisible) Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    public void PrepareForExplicitExit() => _isExplicitExit = true;
+
     private void ToggleMaximizeRestore() =>
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
@@ -285,6 +326,46 @@ public partial class MainWindow : Window
         var textBox = popup.FindDescendantOfType<TextBox>();
         textBox?.Focus();
         textBox?.SelectAll();
+    }
+
+    /// <summary>Foco directo en el borrador al abrir la bandeja de entrada: el gesto es "apunto esto
+    /// antes de que se me olvide", así que teclear tiene que funcionar sin un click extra. No hace
+    /// SelectAll como el resto de popups de búsqueda — aquí el texto previo es un borrador que se sigue
+    /// escribiendo, no una consulta que se reemplaza.</summary>
+    private void InboxPopup_Opened(object? sender, EventArgs e)
+    {
+        if (sender is not Popup popup) return;
+        var textBox = popup.FindDescendantOfType<TextBox>();
+        textBox?.Focus();
+        if (textBox is not null) textBox.CaretIndex = textBox.Text?.Length ?? 0;
+    }
+
+    private void WebClipPopup_Opened(object? sender, EventArgs e)
+    {
+        if (sender is not Popup popup) return;
+        var textBox = popup.FindDescendantOfType<TextBox>();
+        textBox?.Focus();
+        textBox?.SelectAll();
+    }
+
+    /// <summary>Enter guarda la página y Escape cierra el popup (o cancela la captura en curso, ver
+    /// <c>WebClipViewModel.Cancel</c>) — el web clipper es un solo campo, así que no necesita las flechas
+    /// de los otros tres popups del shell.</summary>
+    private void WebClipTextBox_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        switch (e.Key)
+        {
+            case Key.Enter:
+                e.Handled = true;
+                if (vm.WebClip.SaveCommand.CanExecute(null)) vm.WebClip.SaveCommand.Execute(null);
+                break;
+            case Key.Escape:
+                e.Handled = true;
+                vm.WebClip.CancelCommand.Execute(null);
+                break;
+        }
     }
 
     /// <summary>Atajos de teclado dentro del buscador rápido: flechas para mover la selección,

@@ -695,7 +695,7 @@
   </Border>
 
       <!-- ===================== Contenido: barra superior + vista activa ===================== -->
-      <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" Margin="20,0,0,0">
+      <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="20,0,0,0">
 
         <!-- Navegación temporal + selector de vista — docs/calendar-feature/04-vistas-y-navegacion.md
              §9 (◀/▶/Hoy comunes a las cuatro vistas) y §1/10-diseno-visual-y-componentes.md §6
@@ -739,205 +739,155 @@
                          IsChecked="{Binding ActiveView, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Agenda, Mode=OneWay}"
                          Command="{Binding SetViewCommand}" CommandParameter="{x:Static vm:CalendarViewMode.Agenda}" />
 
+            <!-- Exportar la vista actual a PNG/PDF (T8): lo que se exporta es exactamente el rango, las
+                 capas y los filtros que hay ahora en pantalla. -->
+            <Button Classes="icon-btn calendar-toolbar-btn" Margin="14,0,0,0"
+                    ToolTip.Tip="{loc:Tr Export_MenuTooltip}" AutomationProperties.Name="{loc:Tr Export_MenuTooltip}">
+              <mi:MaterialIcon Kind="TrayArrowDown" Width="17" Height="17" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                  <MenuItem Header="{loc:Tr Export_ToPng}" Command="{Binding ExportViewAsPngCommand}">
+                    <MenuItem.Icon>
+                      <mi:MaterialIcon Kind="ImageOutline" Width="14" Height="14" />
+                    </MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Header="{loc:Tr Export_ToPdf}" Command="{Binding ExportViewAsPdfCommand}">
+                    <MenuItem.Icon>
+                      <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
+                    </MenuItem.Icon>
+                  </MenuItem>
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+
             <!-- Creación rápida — docs/calendar-feature/06-creacion-y-edicion-de-items.md §1. -->
-            <Button Classes="icon-btn calendar-toolbar-btn" Margin="14,0,0,0" Command="{Binding OpenQuickCreateForReferenceDateCommand}"
+            <Button Classes="icon-btn calendar-toolbar-btn" Margin="6,0,0,0" Command="{Binding OpenQuickCreateForReferenceDateCommand}"
                     ToolTip.Tip="{loc:Tr Common_Create}" AutomationProperties.Name="{loc:Tr Common_Create}">
               <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
             </Button>
           </StackPanel>
         </Grid>
 
-        <!-- Cabecera de días de la semana — solo Mes (Semana/Día dibujan su propia cabecera por
-             columna, ver más abajo). Orden/columnas dependen de CalendarWeekStartsOnMonday/
-             CalendarShowWeekends (docs/calendar-feature/09-configuracion-y-ajustes.md §1). -->
-        <ItemsControl Grid.Row="1" ItemsSource="{Binding WeekdayHeaders}" Margin="5,0,5,4"
-                      IsVisible="{Binding IsMonthView}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <UniformGrid Columns="{Binding MonthGridColumns}" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="x:String">
-              <TextBlock Text="{Binding}" Classes="faint calendar-weekday" />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <!-- Región exportable (T8): la cabecera de días de la semana y la vista activa, sin la barra
+             de navegación de arriba — un PNG/PDF del calendario no debe llevar botones de interfaz.
+             La localiza por nombre Services.ViewExportLocator; ver Services.ViewExportTargets. -->
+        <Grid x:Name="CalendarExportRoot" Grid.Row="1" RowDefinitions="Auto,*">
+          <!-- Cabecera de días de la semana — solo Mes (Semana/Día dibujan su propia cabecera por
+               columna, ver más abajo). Orden/columnas dependen de CalendarWeekStartsOnMonday/
+               CalendarShowWeekends (docs/calendar-feature/09-configuracion-y-ajustes.md §1). -->
+          <ItemsControl Grid.Row="0" ItemsSource="{Binding WeekdayHeaders}" Margin="5,0,5,4"
+                        IsVisible="{Binding IsMonthView}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <UniformGrid Columns="{Binding MonthGridColumns}" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Text="{Binding}" Classes="faint calendar-weekday" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
 
-        <!-- ===================== Vista Mes ===================== -->
-        <!-- Animación de "reveal" al navegar/cambiar de vista — docs/calendar-feature/
-             10-diseno-visual-y-componentes.md §8. -->
-        <ScrollViewer Grid.Row="2" IsVisible="{Binding IsMonthView}"
-                      Opacity="{Binding RevealOpacity}"
-                      RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-          <ScrollViewer.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-            </Transitions>
-          </ScrollViewer.Transitions>
-          <Border Classes="calendar-month-grid" MinHeight="480" Margin="5,0,5,5">
-            <ItemsControl ItemsSource="{Binding Days}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Rows="6" Columns="{Binding MonthGridColumns}" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CalendarMonthDayViewModel">
-                  <Border Classes="calendar-month-cell"
-                          Classes.calendar-last-col="{Binding IsLastColumn}"
-                          Classes.calendar-last-row="{Binding IsLastRow}"
-                          DragDrop.AllowDrop="True"
-                          DragDrop.DragEnter="MonthCell_DragEnter" DragDrop.DragOver="MonthCell_DragOver"
-                          DragDrop.DragLeave="MonthCell_DragLeave" DragDrop.Drop="MonthCell_Drop">
-                    <Grid>
-                      <!-- Capa de clic vacío — doc 05 §3: crea un item con la fecha de esta celda. Se
-                           sienta por debajo del contenido real en el z-order de este Grid. -->
-                      <Button Classes="calendar-cell-click-layer"
-                              Command="{Binding $parent[ItemsControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayCommand}"
-                              CommandParameter="{Binding Date}"
-                              AutomationProperties.Name="{Binding Date, StringFormat={}{0:D}}">
-                        <Button.ContextMenu>
-                          <ContextMenu>
-                            <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateKanbanHere, Converter={StaticResource UpperCaseConverter}}"
-                                      Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsKanbanCommand}"
-                                      CommandParameter="{Binding Date}" />
-                            <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreatePolarTaskHere, Converter={StaticResource UpperCaseConverter}}"
-                                      IsVisible="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).IsPolarLinked}"
-                                      Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsPolarTaskCommand}"
-                                      CommandParameter="{Binding Date}" />
-                            <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateReminderHere, Converter={StaticResource UpperCaseConverter}}"
-                                      Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsReminderCommand}"
-                                      CommandParameter="{Binding Date}" />
-                          </ContextMenu>
-                        </Button.ContextMenu>
-                      </Button>
-
-                      <Grid RowDefinitions="Auto,*" Margin="6">
-                        <Border Grid.Row="0" Classes="calendar-day-badge" Classes.today="{Binding IsToday}"
-                                Classes.selected="{Binding IsSelected}" HorizontalAlignment="Left">
-                          <TextBlock Text="{Binding DayLabel}" Classes="calendar-day-number"
-                                     Classes.today="{Binding IsToday}" Classes.outside="{Binding !IsCurrentMonth}" />
-                   </Border>
-
-                        <StackPanel Grid.Row="1" Spacing="2" Margin="0,4,0,0">
-                          <ItemsControl ItemsSource="{Binding VisibleItems}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
-
-                          <ToggleButton x:Name="OverflowToggle" Classes="calendar-overflow-trigger"
-                                        IsVisible="{Binding HasOverflow}">
-                            <TextBlock Text="{Binding OverflowLabel}" Classes="faint" FontSize="9.5" />
-                          </ToggleButton>
-
-                          <Popup PlacementTarget="{Binding #OverflowToggle}" Placement="Right" VerticalOffset="0"
-                                 IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #OverflowToggle}"
-                                 IsOpen="{Binding #OverflowToggle.IsChecked, Mode=TwoWay}">
-                            <Border Classes="dropdown-popover" Width="260">
-                              <StackPanel Spacing="8">
-                                <TextBlock Text="{Binding OverflowPopoverHeaderLabel}" Classes="eyebrow" FontSize="10" />
-                                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
-                              </StackPanel>
-                       </Border>
-                          </Popup>
-                        </StackPanel>
-                      </Grid>
-                    </Grid>
-              </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-     </Border>
-        </ScrollViewer>
-
-        <!-- ===================== Vistas Semana/Día (comparten CalendarWeekColumnViewModel —
-             Día es simplemente 1 columna, docs/calendar-feature/04-vistas-y-navegacion.md §4) ============ -->
-        <Grid Grid.Row="2" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsHourGridView}"
-              Opacity="{Binding RevealOpacity}"
-              RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-          <Grid.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-            </Transitions>
-          </Grid.Transitions>
-
-          <!-- Cabeceras de columna -->
-          <Grid Grid.Row="0" ColumnDefinitions="56,*">
-            <ItemsControl Grid.Column="1" ItemsSource="{Binding WeekColumns}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="{Binding WeekColumns.Count}" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
-                  <Border Classes="calendar-week-header" Classes.today="{Binding IsToday}">
-                    <TextBlock Text="{Binding DayLabel}" Classes="eyebrow calendar-week-header-label"
-                               Classes.today="{Binding IsToday}" FontSize="11.5" HorizontalAlignment="Center" />
-             </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Grid>
-
-          <!-- Franja "todo el día" — docs/calendar-feature/04-vistas-y-navegacion.md §3: los items sin
-               hora no ocupan franja horaria, se quedan arriba. -->
-          <Grid Grid.Row="1" ColumnDefinitions="56,*" Margin="0,6,0,6">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Calendar_WeekView_AllDayRowLabel, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="8.5" HorizontalAlignment="Center"
-                       VerticalAlignment="Top" Margin="0,4,0,0" />
-            <ItemsControl Grid.Column="1" ItemsSource="{Binding WeekColumns}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="{Binding WeekColumns.Count}" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
-                  <Border Classes="calendar-week-column" Padding="4,0" MinHeight="20"
-                          DragDrop.AllowDrop="True"
-                          DragDrop.DragEnter="AllDayColumn_DragEnter" DragDrop.DragOver="AllDayColumn_DragOver"
-                          DragDrop.DragLeave="AllDayColumn_DragLeave" DragDrop.Drop="AllDayColumn_Drop"
-                          PointerPressed="AllDayColumn_PointerPressed">
-                    <Border.ContextMenu>
-                      <ContextMenu>
-                        <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateKanbanHere, Converter={StaticResource UpperCaseConverter}}"
-                                  Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsKanbanCommand}"
-                                  CommandParameter="{Binding Date}" />
-                        <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreatePolarTaskHere, Converter={StaticResource UpperCaseConverter}}"
-                                  IsVisible="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).IsPolarLinked}"
-                                  Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsPolarTaskCommand}"
-                                  CommandParameter="{Binding Date}" />
-                        <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateReminderHere, Converter={StaticResource UpperCaseConverter}}"
-                                  Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsReminderCommand}"
-                                  CommandParameter="{Binding Date}" />
-                      </ContextMenu>
-                    </Border.ContextMenu>
-                    <ItemsControl ItemsSource="{Binding AllDayItems}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
-             </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Grid>
-
-          <!-- Grilla de horas (00:00–23:00) — docs/calendar-feature/10-diseno-visual-y-componentes.md
-               §3: separadores White05, franja de horario laboral resaltada, línea de "ahora" en rojo
-               solo en la columna de hoy. -->
-          <ScrollViewer Grid.Row="2">
-            <Grid ColumnDefinitions="56,*">
-              <ItemsControl Grid.Column="0" ItemsSource="{Binding HourRows}">
+          <!-- ===================== Vista Mes ===================== -->
+          <!-- Animación de "reveal" al navegar/cambiar de vista — docs/calendar-feature/
+               10-diseno-visual-y-componentes.md §8. -->
+          <ScrollViewer Grid.Row="1" IsVisible="{Binding IsMonthView}"
+                        Opacity="{Binding RevealOpacity}"
+                        RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
+            <ScrollViewer.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
+              </Transitions>
+            </ScrollViewer.Transitions>
+            <Border Classes="calendar-month-grid" MinHeight="480" Margin="5,0,5,5">
+              <ItemsControl ItemsSource="{Binding Days}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
-                    <StackPanel />
+                    <UniformGrid Rows="6" Columns="{Binding MonthGridColumns}" />
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:CalendarHourRowViewModel">
-                    <TextBlock Text="{Binding Label}" Classes="faint" FontSize="10" Height="60" Padding="0,2,8,0"
-                               HorizontalAlignment="Right" VerticalAlignment="Top" />
+                  <DataTemplate x:DataType="vm:CalendarMonthDayViewModel">
+                    <Border Classes="calendar-month-cell"
+                            Classes.calendar-last-col="{Binding IsLastColumn}"
+                            Classes.calendar-last-row="{Binding IsLastRow}"
+                            DragDrop.AllowDrop="True"
+                            DragDrop.DragEnter="MonthCell_DragEnter" DragDrop.DragOver="MonthCell_DragOver"
+                            DragDrop.DragLeave="MonthCell_DragLeave" DragDrop.Drop="MonthCell_Drop">
+                      <Grid>
+                        <!-- Capa de clic vacío — doc 05 §3: crea un item con la fecha de esta celda. Se
+                             sienta por debajo del contenido real en el z-order de este Grid. -->
+                        <Button Classes="calendar-cell-click-layer"
+                                Command="{Binding $parent[ItemsControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayCommand}"
+                                CommandParameter="{Binding Date}"
+                                AutomationProperties.Name="{Binding Date, StringFormat={}{0:D}}">
+                          <Button.ContextMenu>
+                            <ContextMenu>
+                              <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateKanbanHere, Converter={StaticResource UpperCaseConverter}}"
+                                        Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsKanbanCommand}"
+                                        CommandParameter="{Binding Date}" />
+                              <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreatePolarTaskHere, Converter={StaticResource UpperCaseConverter}}"
+                                        IsVisible="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).IsPolarLinked}"
+                                        Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsPolarTaskCommand}"
+                                        CommandParameter="{Binding Date}" />
+                              <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateReminderHere, Converter={StaticResource UpperCaseConverter}}"
+                                        Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsReminderCommand}"
+                                        CommandParameter="{Binding Date}" />
+                            </ContextMenu>
+                          </Button.ContextMenu>
+                        </Button>
+
+                        <Grid RowDefinitions="Auto,*" Margin="6">
+                          <Border Grid.Row="0" Classes="calendar-day-badge" Classes.today="{Binding IsToday}"
+                                  Classes.selected="{Binding IsSelected}" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding DayLabel}" Classes="calendar-day-number"
+                                       Classes.today="{Binding IsToday}" Classes.outside="{Binding !IsCurrentMonth}" />
+                     </Border>
+
+                          <StackPanel Grid.Row="1" Spacing="2" Margin="0,4,0,0">
+                            <ItemsControl ItemsSource="{Binding VisibleItems}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
+
+                            <ToggleButton x:Name="OverflowToggle" Classes="calendar-overflow-trigger"
+                                          IsVisible="{Binding HasOverflow}">
+                              <TextBlock Text="{Binding OverflowLabel}" Classes="faint" FontSize="9.5" />
+                            </ToggleButton>
+
+                            <Popup PlacementTarget="{Binding #OverflowToggle}" Placement="Right" VerticalOffset="0"
+                                   IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #OverflowToggle}"
+                                   IsOpen="{Binding #OverflowToggle.IsChecked, Mode=TwoWay}">
+                              <Border Classes="dropdown-popover" Width="260">
+                                <StackPanel Spacing="8">
+                                  <TextBlock Text="{Binding OverflowPopoverHeaderLabel}" Classes="eyebrow" FontSize="10" />
+                                  <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
+                                </StackPanel>
+                         </Border>
+                            </Popup>
+                          </StackPanel>
+                        </Grid>
+                      </Grid>
+                </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+       </Border>
+          </ScrollViewer>
 
+          <!-- ===================== Vistas Semana/Día (comparten CalendarWeekColumnViewModel —
+               Día es simplemente 1 columna, docs/calendar-feature/04-vistas-y-navegacion.md §4) ============ -->
+          <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsHourGridView}"
+                Opacity="{Binding RevealOpacity}"
+                RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
+            <Grid.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
+              </Transitions>
+            </Grid.Transitions>
+
+            <!-- Cabeceras de columna -->
+            <Grid Grid.Row="0" ColumnDefinitions="56,*">
               <ItemsControl Grid.Column="1" ItemsSource="{Binding WeekColumns}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -946,84 +896,160 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
-                    <Border Classes="calendar-week-column">
-                      <Grid>
-                        <ItemsControl ItemsSource="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).HourRows}">
-                          <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                              <StackPanel />
-                            </ItemsPanelTemplate>
-                          </ItemsControl.ItemsPanel>
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:CalendarHourRowViewModel">
-                              <Border Classes="calendar-hour-row" Classes.working="{Binding IsWorkingHour}" Height="60"
-                                      DragDrop.AllowDrop="True"
-                                      DragDrop.DragEnter="HourCell_DragEnter" DragDrop.DragOver="HourCell_DragOver"
-                                      DragDrop.DragLeave="HourCell_DragLeave" DragDrop.Drop="HourCell_Drop"
-                                      PointerPressed="HourCell_PointerPressed" Cursor="Hand" />
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <ItemsControl ItemsSource="{Binding TimedItems}" ItemTemplate="{StaticResource CalendarTimedChipTemplate}">
-                          <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                              <controls:CalendarTimedItemsPanel />
-                            </ItemsPanelTemplate>
-                          </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-
-                        <Border Classes="calendar-now-line" IsVisible="{Binding NowOffsetY, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
-                                Margin="{Binding NowOffsetY, Converter={StaticResource TopOffsetToMarginConverter}}">
-                          <Ellipse Classes="calendar-now-dot" HorizontalAlignment="Left" Margin="-3,-2.5,0,0" />
-                        </Border>
-                      </Grid>
-                    </Border>
+                    <Border Classes="calendar-week-header" Classes.today="{Binding IsToday}">
+                      <TextBlock Text="{Binding DayLabel}" Classes="eyebrow calendar-week-header-label"
+                                 Classes.today="{Binding IsToday}" FontSize="11.5" HorizontalAlignment="Center" />
+               </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </Grid>
-          </ScrollViewer>
-        </Grid>
 
-        <!-- ===================== Vista Agenda — docs/calendar-feature/04-vistas-y-navegacion.md §6:
-             lista agrupada por día, días sin items no se muestran. ===================== -->
-        <Grid Grid.Row="2" IsVisible="{Binding IsAgendaView}"
-              Opacity="{Binding RevealOpacity}"
-              RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-          <Grid.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-            </Transitions>
-          </Grid.Transitions>
-          <ScrollViewer IsVisible="{Binding !IsAgendaEmpty}">
-            <ItemsControl ItemsSource="{Binding AgendaGroups}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CalendarAgendaGroupViewModel">
-                  <StackPanel Spacing="8" Margin="0,0,0,26">
-                    <TextBlock Text="{Binding HeaderLabel}" Classes="eyebrow" />
-                    <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,0,0,4" />
-                    <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarAgendaItemTemplate}" />
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-          <!-- Empty state accionable — reutiliza el mismo comando que el atajo "N" (CalendarView_KeyDown)
-               en vez de duplicar el flujo de creación rápida. -->
-          <StackPanel IsVisible="{Binding IsAgendaEmpty}" Spacing="14"
-                      HorizontalAlignment="Center" VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="CalendarBlankOutline" Width="24" Height="24"
-                              Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-            <TextBlock Text="{loc:Tr Calendar_Agenda_EmptyMessage}" Classes="muted" HorizontalAlignment="Center" />
-            <Button Classes="pill" Command="{Binding OpenQuickCreateForReferenceDateCommand}" HorizontalAlignment="Center">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Plus" Width="13" Height="13" />
-                <TextBlock Text="{loc:Tr Calendar_Agenda_CreateItemButton, Converter={StaticResource UpperCaseConverter}}" />
-              </StackPanel>
-            </Button>
-          </StackPanel>
+            <!-- Franja "todo el día" — docs/calendar-feature/04-vistas-y-navegacion.md §3: los items sin
+                 hora no ocupan franja horaria, se quedan arriba. -->
+            <Grid Grid.Row="1" ColumnDefinitions="56,*" Margin="0,6,0,6">
+              <TextBlock Grid.Column="0" Text="{loc:Tr Calendar_WeekView_AllDayRowLabel, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="8.5" HorizontalAlignment="Center"
+                         VerticalAlignment="Top" Margin="0,4,0,0" />
+              <ItemsControl Grid.Column="1" ItemsSource="{Binding WeekColumns}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <UniformGrid Columns="{Binding WeekColumns.Count}" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
+                    <Border Classes="calendar-week-column" Padding="4,0" MinHeight="20"
+                            DragDrop.AllowDrop="True"
+                            DragDrop.DragEnter="AllDayColumn_DragEnter" DragDrop.DragOver="AllDayColumn_DragOver"
+                            DragDrop.DragLeave="AllDayColumn_DragLeave" DragDrop.Drop="AllDayColumn_Drop"
+                            PointerPressed="AllDayColumn_PointerPressed">
+                      <Border.ContextMenu>
+                        <ContextMenu>
+                          <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateKanbanHere, Converter={StaticResource UpperCaseConverter}}"
+                                    Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsKanbanCommand}"
+                                    CommandParameter="{Binding Date}" />
+                          <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreatePolarTaskHere, Converter={StaticResource UpperCaseConverter}}"
+                                    IsVisible="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).IsPolarLinked}"
+                                    Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsPolarTaskCommand}"
+                                    CommandParameter="{Binding Date}" />
+                          <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateReminderHere, Converter={StaticResource UpperCaseConverter}}"
+                                    Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayAsReminderCommand}"
+                                    CommandParameter="{Binding Date}" />
+                        </ContextMenu>
+                      </Border.ContextMenu>
+                      <ItemsControl ItemsSource="{Binding AllDayItems}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
+               </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Grid>
+
+            <!-- Grilla de horas (00:00–23:00) — docs/calendar-feature/10-diseno-visual-y-componentes.md
+                 §3: separadores White05, franja de horario laboral resaltada, línea de "ahora" en rojo
+                 solo en la columna de hoy. -->
+            <ScrollViewer Grid.Row="2">
+              <Grid ColumnDefinitions="56,*">
+                <ItemsControl Grid.Column="0" ItemsSource="{Binding HourRows}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CalendarHourRowViewModel">
+                      <TextBlock Text="{Binding Label}" Classes="faint" FontSize="10" Height="60" Padding="0,2,8,0"
+                                 HorizontalAlignment="Right" VerticalAlignment="Top" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding WeekColumns}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <UniformGrid Columns="{Binding WeekColumns.Count}" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
+                      <Border Classes="calendar-week-column">
+                        <Grid>
+                          <ItemsControl ItemsSource="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).HourRows}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <StackPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:CalendarHourRowViewModel">
+                                <Border Classes="calendar-hour-row" Classes.working="{Binding IsWorkingHour}" Height="60"
+                                        DragDrop.AllowDrop="True"
+                                        DragDrop.DragEnter="HourCell_DragEnter" DragDrop.DragOver="HourCell_DragOver"
+                                        DragDrop.DragLeave="HourCell_DragLeave" DragDrop.Drop="HourCell_Drop"
+                                        PointerPressed="HourCell_PointerPressed" Cursor="Hand" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+
+                          <ItemsControl ItemsSource="{Binding TimedItems}" ItemTemplate="{StaticResource CalendarTimedChipTemplate}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <controls:CalendarTimedItemsPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                          </ItemsControl>
+
+                          <Border Classes="calendar-now-line" IsVisible="{Binding NowOffsetY, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}"
+                                  Margin="{Binding NowOffsetY, Converter={StaticResource TopOffsetToMarginConverter}}">
+                            <Ellipse Classes="calendar-now-dot" HorizontalAlignment="Left" Margin="-3,-2.5,0,0" />
+                          </Border>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Grid>
+            </ScrollViewer>
+          </Grid>
+
+          <!-- ===================== Vista Agenda — docs/calendar-feature/04-vistas-y-navegacion.md §6:
+               lista agrupada por día, días sin items no se muestran. ===================== -->
+          <Grid Grid.Row="1" IsVisible="{Binding IsAgendaView}"
+                Opacity="{Binding RevealOpacity}"
+                RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
+            <Grid.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
+              </Transitions>
+            </Grid.Transitions>
+            <ScrollViewer IsVisible="{Binding !IsAgendaEmpty}">
+              <ItemsControl ItemsSource="{Binding AgendaGroups}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CalendarAgendaGroupViewModel">
+                    <StackPanel Spacing="8" Margin="0,0,0,26">
+                      <TextBlock Text="{Binding HeaderLabel}" Classes="eyebrow" />
+                      <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,0,0,4" />
+                      <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarAgendaItemTemplate}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <!-- Empty state accionable — reutiliza el mismo comando que el atajo "N" (CalendarView_KeyDown)
+                 en vez de duplicar el flujo de creación rápida. -->
+            <StackPanel IsVisible="{Binding IsAgendaEmpty}" Spacing="14"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+              <mi:MaterialIcon Kind="CalendarBlankOutline" Width="24" Height="24"
+                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+              <TextBlock Text="{loc:Tr Calendar_Agenda_EmptyMessage}" Classes="muted" HorizontalAlignment="Center" />
+              <Button Classes="pill" Command="{Binding OpenQuickCreateForReferenceDateCommand}" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Plus" Width="13" Height="13" />
+                  <TextBlock Text="{loc:Tr Calendar_Agenda_CreateItemButton, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Grid>
         </Grid>
 
       </Grid>

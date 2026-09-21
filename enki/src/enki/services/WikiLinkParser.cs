@@ -42,6 +42,13 @@ public readonly struct WikiLinkOccurrence
     public required string RawText { get; init; }
 }
 
+/// <summary>Partes semánticas de un destino Obsidian. Solo una de <see cref="Heading"/> y
+/// <see cref="BlockId"/> puede estar presente.</summary>
+public readonly record struct WikiLinkTarget(string Note, string? Heading, string? BlockId)
+{
+    public bool HasFragment => Heading is not null || BlockId is not null;
+}
+
 /// <summary>Extracts Obsidian-style <c>[[Note]]</c> / <c>[[Note|Alias]]</c> references from raw Markdown.
 /// Purely textual — independent of the live-preview editor's own Markdown model — since all it needs to
 /// feed is the session graph's derived edges, not any on-screen rendering.</summary>
@@ -84,6 +91,31 @@ public static class WikiLinkParser
         }
 
         return targets;
+    }
+
+    /// <summary>Separa <c>Nota#Sección</c>, <c>Nota#^bloque</c> y <c>Nota^bloque</c>. El alias, si llega
+    /// incluido, se descarta; resolver el archivo siempre usa únicamente <see cref="WikiLinkTarget.Note"/>.</summary>
+    public static WikiLinkTarget ParseTarget(string rawTarget)
+    {
+        var value = rawTarget.Trim();
+        var pipe = value.IndexOf('|');
+        if (pipe >= 0) value = value[..pipe].TrimEnd();
+
+        var hash = value.IndexOf('#');
+        if (hash >= 0)
+        {
+            var note = value[..hash].Trim();
+            var fragment = value[(hash + 1)..].Trim();
+            return fragment.StartsWith('^')
+                ? new WikiLinkTarget(note, null, fragment[1..].Trim())
+                : new WikiLinkTarget(note, fragment.Length == 0 ? null : fragment, null);
+        }
+
+        var block = value.LastIndexOf('^');
+        if (block > 0)
+            return new WikiLinkTarget(value[..block].Trim(), null, value[(block + 1)..].Trim());
+
+        return new WikiLinkTarget(value, null, null);
     }
 
     /// <summary>Resolves a single wikilink <paramref name="target"/> (as extracted by

@@ -21,7 +21,12 @@ public sealed class SettingsService
         nameof(AppSettings.VaultPath), nameof(AppSettings.PolarLinked), nameof(AppSettings.PolarUserId),
         nameof(AppSettings.PolarEmail), nameof(AppSettings.PolarAccessToken),
         nameof(AppSettings.PolarRefreshToken), nameof(AppSettings.PolarAccessTokenExpiresAtUtcMs),
-        nameof(AppSettings.PolarLastSyncAtUtcMs), nameof(AppSettings.DebugLoggingEnabled)
+        nameof(AppSettings.PolarLastSyncAtUtcMs), nameof(AppSettings.DebugLoggingEnabled),
+        // T4: la lista de vaults recientes describe la instalación, no un vault. Guardada como preferencia
+        // acabaría dentro de <vault>/.enki/settings.json, es decir, invisible desde cualquier otro vault —
+        // justo desde donde hace falta para volver. Lo mismo para el ajuste de bandeja de T2, que decide
+        // qué pasa al cerrar la ventana antes incluso de que haya un vault abierto.
+        nameof(AppSettings.RecentVaults), nameof(AppSettings.MinimizeToTray)
     ];
     /// <summary>Notifica un guardado completado para actualizar las preferencias visibles.</summary>
     public event Action? SettingsChanged;
@@ -278,6 +283,55 @@ public sealed class SettingsService
         Settings.Normalize();
         Settings.VaultPath = path;
         Save();
+    }
+
+    /// <summary>Sube <paramref name="path"/> al primer puesto de <see cref="AppSettings.RecentVaults"/> y
+    /// persiste la lista (T4). Lo llama <see cref="VaultService.SetVaultPath"/>, no los viewmodels: así
+    /// toda ruta que llegue a ser el vault activo —la elegida en el selector, la del diálogo de carpeta,
+    /// la restaurada desde un backup, la del primer arranque— entra en la lista por el mismo sitio y con
+    /// el mismo orden, sin que cada camino tenga que acordarse.
+    ///
+    /// <para>Reutiliza la entrada existente si ya conocía la carpeta, conservando el
+    /// <see cref="RecentVault.DisplayName"/> que tuviera, y descarta por el final al llegar a
+    /// <see cref="AppSettings.MaxRecentVaults"/>.</para></summary>
+    public void RegisterRecentVault(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        var full = Path.GetFullPath(path);
+        var existing = Settings.RecentVaults.Find(v => VaultService.PathsEqual(v.Path, full));
+        if (existing is not null) Settings.RecentVaults.Remove(existing);
+
+        Settings.RecentVaults.Insert(0, new RecentVault
+        {
+            Path = full,
+            DisplayName = string.IsNullOrWhiteSpace(existing?.DisplayName)
+                ? DefaultVaultDisplayName(full) : existing.DisplayName,
+            LastOpenedUtc = DateTime.UtcNow
+        });
+        if (Settings.RecentVaults.Count > AppSettings.MaxRecentVaults)
+            Settings.RecentVaults.RemoveRange(AppSettings.MaxRecentVaults,
+                Settings.RecentVaults.Count - AppSettings.MaxRecentVaults);
+        Save();
+    }
+
+    /// <summary>"Quitar de recientes" — saca la entrada de la lista y nada más: no borra, mueve ni toca un
+    /// solo archivo del vault, que sigue ahí para volver a abrirlo desde el diálogo de carpeta. Quitar el
+    /// vault activo tampoco lo cierra; simplemente dejará de aparecer en el selector cuando se cambie a
+    /// otro.</summary>
+    public void RemoveRecentVault(string path)
+    {
+        var removed = Settings.RecentVaults.RemoveAll(v => VaultService.PathsEqual(v.Path, path));
+        if (removed == 0) return;
+        Save();
+    }
+
+    /// <summary>Nombre de la carpeta del vault, con la ruta completa como red de seguridad para una raíz
+    /// (<c>C:\</c>, <c>/</c>) donde <see cref="Path.GetFileName(string)"/> devuelve cadena vacía.</summary>
+    private static string DefaultVaultDisplayName(string fullPath)
+    {
+        var name = Path.GetFileName(fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        return string.IsNullOrWhiteSpace(name) ? fullPath : name;
     }
 
     private static JsonObject PreferencesOnly(JsonObject source)

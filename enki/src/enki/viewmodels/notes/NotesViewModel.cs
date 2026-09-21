@@ -12,6 +12,7 @@ using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
+using enki.Services.Export;
 
 namespace enki.ViewModels;
 
@@ -61,6 +62,11 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// entonces esos dos accesos no se muestran.</summary>
     private readonly Action? _onOpenHabits;
     private readonly Action? _onOpenStatistics;
+
+    /// <summary>Vigilante de cambios externos al vault, compartido con cada pestaña que se abre. Opcional
+    /// como el resto de servicios de este constructor: un test que solo necesita la lista de notas no
+    /// tiene por qué levantar un <see cref="FileSystemWatcher"/> real sobre una carpeta temporal.</summary>
+    private readonly VaultChangeWatcher? _changeWatcher;
 
     // Reloading re-reads and re-parses every note file under the current folder from disk, so a plain
     // per-keystroke call in OnSearchTextChanged would hit the filesystem on every character typed —
@@ -149,7 +155,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         SettingsService? settingsService = null, NotificationService? notificationService = null,
         NoteSearchService? noteSearchService = null, NoteTemplateService? templateService = null,
         VaultSettingsService? vaultSettingsService = null, HabitService? habitService = null,
-        Action? onOpenHabits = null, Action? onOpenStatistics = null)
+        Action? onOpenHabits = null, Action? onOpenStatistics = null, VaultChangeWatcher? changeWatcher = null)
     {
         _vaultService = vaultService;
         // Opcional y con valor por defecto derivado del propio vault: el servicio no tiene estado ni
@@ -168,6 +174,12 @@ public sealed partial class NotesViewModel : ViewModelBase
         _habitService = habitService;
         _onOpenHabits = onOpenHabits;
         _onOpenStatistics = onOpenStatistics;
+        _changeWatcher = changeWatcher;
+        // Un cambio externo aceptado en una pestaña (recarga silenciosa o conflicto resuelto) puede haber
+        // cambiado título, etiquetas o vista previa de la nota: la rejilla y el árbol se enteran por el
+        // evento del servicio, sin que el editor tenga que conocer esta pantalla — mismo desacople que
+        // KanbanService.BoardChanged.
+        vaultService.ExternalChangeApplied += _ => Reload();
         _searchDebounceTimer.Tick += (_, _) =>
         {
             _searchDebounceTimer.Stop();
@@ -536,6 +548,35 @@ public sealed partial class NotesViewModel : ViewModelBase
             topLevel, NotifyCallback);
     }
 
+    // ===================== Exportar a imagen y a PDF (T8) =====================
+    // Mismo flujo que la exportación a HTML de aquí arriba (contenido en vivo si la nota está abierta,
+    // diálogo del sistema, aviso por NotifyCallback); lo que cambia es que la hoja la compone
+    // Services.Export.NotePageComposer en vez de NoteExportRenderer.
+
+    /// <summary>"Exportar como PNG…" desde el menú contextual de una tarjeta de nota.</summary>
+    [RelayCommand]
+    private Task ExportNoteAsPng(NoteCardViewModel card) => ExportNoteAsImageAsync(card.Note, ExportFormat.Png);
+
+    /// <summary>"Exportar como PDF…" desde el menú contextual de una tarjeta de nota.</summary>
+    [RelayCommand]
+    private Task ExportNoteAsPdf(NoteCardViewModel card) => ExportNoteAsImageAsync(card.Note, ExportFormat.Pdf);
+
+    /// <summary>Exporta la nota activa; no hace nada si no hay ninguna abierta. Es la entrada desde la
+    /// paleta de comandos, donde no hay tarjeta sobre la que hacer clic derecho.</summary>
+    public Task ExportActiveNoteAsync(ExportFormat format) =>
+        ActiveEditor?.Note is { } note ? ExportNoteAsImageAsync(note, format) : Task.CompletedTask;
+
+    private async Task ExportNoteAsImageAsync(NoteFile note, ExportFormat format)
+    {
+        if (!TryReadContentForExport(note, out var content)) return;
+
+        var topLevel = App.MainWindowRef is not null
+            ? Avalonia.Controls.TopLevel.GetTopLevel(App.MainWindowRef)
+            : null;
+        await ViewExportService.ExportNoteAsync(note.Title, content, note.Title, format,
+            VisualSnapshotRenderer.ScaleHighResolution, topLevel, NotifyCallback);
+    }
+
     /// <summary><see cref="NotificationService.Push"/> como callback suelto (o null en tests sin servicio)
     /// — lo recibe <see cref="NoteExportService"/> para anunciar éxito/fallo sin referenciar el servicio
     /// directamente. La lambda es necesaria: <c>Push</c> devuelve el <see cref="AppNotification"/> creado,
@@ -604,7 +645,8 @@ public sealed partial class NotesViewModel : ViewModelBase
         editor = new EditorViewModel(_vaultService, note, () => CloseEditor(editor!), Reload,
             target => OpenNote(target), _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
             onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService,
-            dailyNoteService: _dailyNoteService, onOpenDailyNoteFor: OpenDailyNoteFor);
+            dailyNoteService: _dailyNoteService, onOpenDailyNoteFor: OpenDailyNoteFor,
+            changeWatcher: _changeWatcher);
         // Antes de añadir la pestaña: EditorView lee LastCaretOffset al enlazarse con el viewmodel, y ese
         // enlace ocurre como consecuencia de las dos líneas siguientes.
         if (caretOffset is { } newTabOffset) editor.RequestCaretAt(newTabOffset);
@@ -643,7 +685,7 @@ public sealed partial class NotesViewModel : ViewModelBase
     private void CloseAllEditors()
     {
         if (OpenEditors.Count == 0) return;
-        foreach (var editor in OpenEditors) editor.FlushPendingSave();
+        foreach (var editor in OpenEditors) editor.Close();
         OpenEditors.Clear();
         ActiveEditor = null;
         PersistOpenTabs();
@@ -673,7 +715,7 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         foreach (var editor in affected)
         {
-            editor.FlushPendingSave();
+            editor.Close();
             OpenEditors.Remove(editor);
         }
 
@@ -726,7 +768,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         var index = OpenEditors.IndexOf(editor);
         if (index < 0) return;
 
-        editor.FlushPendingSave();
+        editor.Close();
         OpenEditors.RemoveAt(index);
         if (ActiveEditor == editor)
         {

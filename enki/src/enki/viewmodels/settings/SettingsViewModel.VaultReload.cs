@@ -11,6 +11,7 @@ public sealed partial class SettingsViewModel
     public void ReloadForVault()
     {
         _startupPage = ParseAppPage(_settingsService.Settings.StartupPage);
+        _minimizeToTray = _settingsService.Settings.MinimizeToTray;
         _isDarkTheme = _settingsService.Settings.Theme != "Light";
         _isCustomThemeActive = _customThemeService.ActiveThemeId is not null;
         _editorFontSize = _settingsService.Settings.EditorFontSize;
@@ -23,6 +24,8 @@ public sealed partial class SettingsViewModel
         _editorJustifyText = _settingsService.Settings.EditorJustifyParagraphs;
         _editorAutoPairs = _settingsService.Settings.EditorAutoPairs;
         _editorRemoteImages = _settingsService.Settings.EditorRemoteImages;
+        _vaultWatchExternalChanges = _settingsService.Settings.VaultWatchExternalChanges;
+        _vaultAutoReloadExternalChanges = _settingsService.Settings.VaultAutoReloadExternalChanges;
         _editorSidePanelVisible = _settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = _settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = _settingsService.Settings.UseCustomTitleBar;
@@ -62,6 +65,8 @@ public sealed partial class SettingsViewModel
         _polarShowTaskTags = _settingsService.Settings.PolarShowTaskTags;
         _notificationsPanelEnabled = _settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
+        _inboxPanelEnabled = _settingsService.Settings.InboxPanelEnabled;
+        _vaultSwitcherEnabled = _settingsService.Settings.VaultSwitcherEnabled;
         _showDesktopToasts = _settingsService.Settings.ShowDesktopToasts;
         _muteInfoNotifications = _settingsService.Settings.MuteInfoNotifications;
         _muteSuccessNotifications = _settingsService.Settings.MuteSuccessNotifications;
@@ -103,6 +108,7 @@ public sealed partial class SettingsViewModel
 
 
         OnPropertyChanged(nameof(StartupPage));
+        OnPropertyChanged(nameof(MinimizeToTray));
         OnPropertyChanged(nameof(IsDarkTheme));
         OnPropertyChanged(nameof(IsCustomThemeActive));
         OnPropertyChanged(nameof(EditorFontSize));
@@ -115,6 +121,9 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(EditorJustifyText));
         OnPropertyChanged(nameof(EditorAutoPairs));
         OnPropertyChanged(nameof(EditorRemoteImages));
+        OnPropertyChanged(nameof(VaultWatchExternalChanges));
+        OnPropertyChanged(nameof(VaultAutoReloadExternalChanges));
+        OnPropertyChanged(nameof(CanAutoReloadExternalChanges));
         OnPropertyChanged(nameof(EditorSidePanelVisible));
         OnPropertyChanged(nameof(IsSimplifiedNotesView));
         OnPropertyChanged(nameof(UseCustomTitleBar));
@@ -154,6 +163,8 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(PolarShowTaskTags));
         OnPropertyChanged(nameof(NotificationsPanelEnabled));
         OnPropertyChanged(nameof(RemindersPanelEnabled));
+        OnPropertyChanged(nameof(InboxPanelEnabled));
+        OnPropertyChanged(nameof(VaultSwitcherEnabled));
         OnPropertyChanged(nameof(ShowDesktopToasts));
         OnPropertyChanged(nameof(MuteInfoNotifications));
         OnPropertyChanged(nameof(MuteSuccessNotifications));

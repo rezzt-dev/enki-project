@@ -38,6 +38,15 @@ public enum MdSpanKind
     /// URL.</summary>
     WikiLink,
 
+    /// <summary>Transclusión Obsidian <c>![[Nota]]</c>, incluida su variante de sección o bloque. El
+    /// rango sustituye la referencia completa por un bloque de solo lectura; no se confunde con
+    /// <see cref="Image"/>, que conserva la precedencia cuando el destino tiene extensión de imagen.</summary>
+    Transclusion,
+
+    /// <summary>Fórmula LaTeX en línea delimitada por <c>$…$</c> o <c>$$…$$</c>. Los bloques de varias
+    /// líneas se detectan a nivel de documento porque no caben en el parser orientado a líneas.</summary>
+    Math,
+
     /// <summary>Imagen: <c>![alt](ruta)</c> o la forma incrustada de Obsidian <c>![[archivo.png]]</c>. A
     /// diferencia del resto de spans, el live preview no oculta solo sus marcadores sino el span entero,
     /// y dibuja la imagen real en su lugar (ver <see cref="MarkdownElementGenerator"/>); el rango cubre
@@ -59,6 +68,10 @@ public sealed class MdSpan
     /// see <see cref="Services.WikiLinkParser.ResolveTarget"/>. Para <see cref="MdSpanKind.Image"/>: la
     /// ruta (relativa a la nota, absoluta, <c>data:</c> o URL) de la imagen.</summary>
     public string? LinkTarget { get; set; }
+
+    /// <summary>En <see cref="MdSpanKind.Math"/>, distingue una fórmula de bloque (<c>$$…$$</c>) de la
+    /// variante en línea (<c>$…$</c>).</summary>
+    public bool IsDisplayMath { get; set; }
 
     /// <summary>Para <see cref="MdSpanKind.Image"/>: tamaño pedido explícitamente con la sintaxis de
     /// Obsidian <c>![alt|300](ruta)</c> / <c>![alt|300x200](ruta)</c> / <c>![[archivo.png|300]]</c>, en

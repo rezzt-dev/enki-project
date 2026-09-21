@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using Avalonia.Controls;
@@ -43,7 +44,7 @@ public sealed class SettingsSearchUiTests : IDisposable
             new ReminderService(_directory), settings);
         var vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(_directory), vaultSettings, vault,
             new VaultBackupService(vault, _directory), auth, sync, new NotificationService(settings, _directory),
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
+            (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
             _ => { }, _ => { }, _ => { }, _ => { }, () => { });
         var view = new SettingsView { DataContext = vm };
         var window = new Window { Content = view, Width = 1200, Height = 900 };

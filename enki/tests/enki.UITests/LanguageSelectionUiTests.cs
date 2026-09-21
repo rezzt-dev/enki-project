@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -84,7 +85,7 @@ public sealed class LanguageSelectionUiTests
                 new PolarTaskService(directory), new ReminderService(directory), settings);
             vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(directory), new VaultSettingsService(vault),
                 vault, new VaultBackupService(vault, directory), auth, sync, notifications,
-                () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
+                (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
                 _ => { }, _ => { }, _ => { }, _ => { }, () => vm!.RefreshLocalizedLabels());
             var view = new SettingsView { DataContext = vm };
             window = new Window { Content = view, Width = 1200, Height = 900 };

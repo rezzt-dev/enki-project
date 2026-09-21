@@ -20,7 +20,7 @@ using enki.Views.Editor.Markdown;
 
 namespace enki.Views;
 
-public partial class EditorView : UserControl
+public partial class EditorView : UserControl, IDisposable
 {
     /// <summary>The app's bundled body font — the editor's default when no custom editor font is
     /// chosen, kept independent of "DisplayFontFamily" since that resource can be swapped at
@@ -35,6 +35,8 @@ public partial class EditorView : UserControl
     /// <summary>Quien colorea el interior de los bloques de código. Carga sus gramáticas la primera vez
     /// que hace falta y avisa por <c>Changed</c> cuando ya puede colorear, que es cuando se repinta.</summary>
     private readonly MarkdownCodeHighlighter _codeHighlighter;
+    private readonly MarkdownFormulaCache _formulaCache = new();
+    private readonly MarkdownMermaidCache _mermaidCache;
 
     /// <summary>Los botones de copiar de los bloques de código, en su lienzo superpuesto al editor. Se
     /// guarda aunque nadie le pida nada después: es quien escucha al TextView para recolocarlos.</summary>
@@ -47,6 +49,11 @@ public partial class EditorView : UserControl
     /// <see cref="EditorOutlineViewModel"/>'s own debounce timer.</summary>
     private readonly DispatcherTimer _fencesTimer;
 
+    /// <summary>Las notas embebidas no son buffers abiertos y por ello no pasan por el watcher de
+    /// conflictos. Mientras haya alguna se releen sus huellas con un repintado barato; la caché del vault
+    /// evita I/O si nada cambió y el contenido se actualiza sin reabrir la nota anfitriona.</summary>
+    private readonly DispatcherTimer _transclusionRefreshTimer;
+
     /// <summary>The tab this view is currently bound to, tracked separately from DataContext so
     /// OnDataContextChanged can still reach the *outgoing* tab (to save its caret/scroll state into it)
     /// after DataContext has already moved on to the new one.</summary>
@@ -56,12 +63,28 @@ public partial class EditorView : UserControl
     {
         InitializeComponent();
 
+        _mermaidCache = new MarkdownMermaidCache(MermaidEngineHost);
+
         _style = MarkdownStyle.FromApp(ResolveEditorFontFamily(), ResolveCodeFontFamily(), EditorPreferences.FontSize);
 
         var textArea = Editor.TextArea;
         var textView = textArea.TextView;
 
         _colorizer = new MarkdownLivePreviewColorizer(_livePreviewState, _style);
+        _livePreviewState.Formulas = _formulaCache;
+        _livePreviewState.Mermaid = _mermaidCache;
+        _formulaCache.Changed += () =>
+        {
+            _livePreviewState.SpecialBlockFolding?.Refresh();
+            textView.InvalidateMeasure();
+            textView.Redraw();
+        };
+        _mermaidCache.Changed += () =>
+        {
+            _livePreviewState.SpecialBlockFolding?.Refresh();
+            textView.InvalidateMeasure();
+            textView.Redraw();
+        };
         _codeHighlighter = new MarkdownCodeHighlighter(_livePreviewState);
         _colorizer.CodeHighlighter = _codeHighlighter;
         // Las gramáticas se cargan en segundo plano la primera vez que se ve un bloque de código: hasta
@@ -73,12 +96,24 @@ public partial class EditorView : UserControl
             _fencesTimer.Stop();
             RecomputeFences();
             _livePreviewState.TableFolding?.Refresh();
+            _livePreviewState.SpecialBlockFolding?.Refresh();
+            textView.Redraw();
+        };
+        _transclusionRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _transclusionRefreshTimer.Tick += (_, _) =>
+        {
+            if (!_livePreviewState.HasTransclusions)
+            {
+                _transclusionRefreshTimer.Stop();
+                return;
+            }
             textView.Redraw();
         };
         // La fila separadora de una tabla dibujada se pliega para que no deje una banda vacía (ver
         // MarkdownTableFolding). Se construye antes que el generador de elementos porque este le pregunta
         // qué hay plegado en cada repintado.
         _livePreviewState.TableFolding = new MarkdownTableFolding(textView, _livePreviewState, _style);
+        _livePreviewState.SpecialBlockFolding = new MarkdownSpecialBlockFolding(textView, _livePreviewState, _style);
 
         textView.LineTransformers.Add(_colorizer);
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
@@ -155,9 +190,23 @@ public partial class EditorView : UserControl
         {
             EditorPreferences.Changed -= OnEditorPreferencesChanged;
             EditorPreferences.Changed += OnEditorPreferencesChanged;
+            _mermaidCache.Attach();
             OnEditorPreferencesChanged();
         };
-        DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
+        DetachedFromVisualTree += (_, _) => Dispose();
+    }
+
+    /// <summary>Soltar el editor suelta también sus cachés de fórmulas y diagramas, que retienen mapas de
+    /// bits y, en Mermaid, un WebView nativo. Se llama al desanclarse del árbol visual porque
+    /// <c>NotesView.ApplyLayout</c> construye un <see cref="EditorView"/> nuevo en cada cambio de
+    /// disposición y descarta el anterior: nadie más tiene una referencia desde la que liberarlo.</summary>
+    public void Dispose()
+    {
+        EditorPreferences.Changed -= OnEditorPreferencesChanged;
+        _transclusionRefreshTimer.Stop();
+        _formulaCache.Dispose();
+        _mermaidCache.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>Lets <see cref="MarkdownBackgroundRenderer"/> paint the fenced code block's box
@@ -301,11 +350,20 @@ public partial class EditorView : UserControl
         }
         _livePreviewState.Selections = selections;
 
-        if (_boundVm is not null) _boundVm.Outline.UpdateActiveItem(textArea.Caret.Offset);
+        if (_boundVm is not null)
+        {
+            _boundVm.Outline.UpdateActiveItem(textArea.Caret.Offset);
+            // En vivo, no solo al cambiar de pestaña (CaptureEditorState): una recarga silenciosa por un
+            // cambio externo al vault reemplaza el texto mientras el usuario está dentro de la nota, y
+            // devolver el cursor donde estaba exige saberlo en ese momento, no en el último cambio de
+            // pestaña. Ver .docs/project-info/cambios-externos-en-el-vault.md.
+            _boundVm.LastCaretOffset = textArea.Caret.Offset;
+        }
 
         // Entrar en una tabla la devuelve a su forma de texto, con su fila separadora incluida; salir de
         // ella vuelve a plegarla.
         _livePreviewState.TableFolding?.Refresh();
+        _livePreviewState.SpecialBlockFolding?.Refresh();
         textArea.TextView.Redraw();
     }
 
@@ -321,6 +379,12 @@ public partial class EditorView : UserControl
         _livePreviewState.HtmlLines = MarkdownHtmlParser.ComputeLineStates(text, _livePreviewState.Fences);
         _livePreviewState.Tables.SetRows(MarkdownTableParser.Scan(text, _livePreviewState.Fences));
         _livePreviewState.Callouts = MarkdownCallouts.Scan(text, _livePreviewState.Fences);
+        _livePreviewState.SpecialBlocks = MarkdownSpecialBlocks.Scan(text, _livePreviewState.Fences);
+        _livePreviewState.HasTransclusions = text.Contains("![[", StringComparison.Ordinal);
+        if (_livePreviewState.HasTransclusions && !_transclusionRefreshTimer.IsEnabled)
+            _transclusionRefreshTimer.Start();
+        else if (!_livePreviewState.HasTransclusions)
+            _transclusionRefreshTimer.Stop();
         // Los bloques tokenizados dejan de valer en cuanto cambia el texto; se vuelven a hacer solo los
         // que se dibujen de verdad.
         _codeHighlighter.Invalidate();
@@ -349,10 +413,13 @@ public partial class EditorView : UserControl
         // Los pliegues viven en el árbol de alturas del TextView, que se reconstruye entero al cambiar de
         // documento: hay que deshacerlos sobre el documento saliente, no dejarlos apuntando a él.
         _livePreviewState.TableFolding?.Reset();
+        _livePreviewState.SpecialBlockFolding?.Reset();
         Editor.Document = vm.Document;
         Editor.CaretOffset = Math.Clamp(vm.LastCaretOffset, 0, vm.Document.TextLength);
         Editor.FontSize = EditorPreferences.FontSize;
         _colorizer.WikiLinkNotesProvider = () => vm.WikiLinkScopeNotes;
+        _livePreviewState.Transclusions = new MarkdownTransclusionContext(
+            vm.ResolveTransclusion, vm.OpenWikiLink, vm.Note.FullPath);
         ApplyImageContext(vm);
         ApplyColumnLayout();
         ApplySidePanelVisibility();

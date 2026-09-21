@@ -51,6 +51,9 @@ public sealed partial class MainWindowViewModel
         // caché de notas del vault, así que puede construirse aquí sin orden particular.
         _noteSearchService = new NoteSearchService(_vaultService);
         _vaultBackupService = new VaultBackupService(_vaultService);
+        // Solo se construye aquí; empieza a mirar el disco en InitializeShell, cuando ya se sabe qué vault
+        // hay (en el primer arranque todavía no hay ninguno) — y se reinicia en OnVaultChanged.
+        _vaultChangeWatcher = new VaultChangeWatcher(_vaultService, _settingsService);
         _vaultSettingsService = new VaultSettingsService(_vaultService);
         _noteTemplateService = new NoteTemplateService(_vaultService);
         _habitService = new HabitService(_vaultService);
@@ -74,6 +77,11 @@ public sealed partial class MainWindowViewModel
         // Fase 10 (docs/analisis-proyecto/roadmap.md): una tarjeta borrada para siempre no debe dejar un
         // descarte de recordatorio huérfano apuntando a un id que ya no existe.
         _kanbanService.CardPermanentlyDeleted += _dismissedReminderService.RemoveForCard;
+        // T5: mismo razonamiento para los aplazamientos — un aplazamiento huérfano volvería a avisar de
+        // una tarjeta que ya no existe. Ver también CheckDueSnoozes, que cubre el resto de los motivos
+        // por los que un origen deja de existir (completado, recordatorio borrado, otro vault…).
+        _snoozedReminderService = new SnoozedReminderService(_vaultService);
+        _kanbanService.CardPermanentlyDeleted += _snoozedReminderService.Cancel;
         _polarAuthService = new PolarAuthService(_settingsService);
         // currentUserIdProvider stamps which Polar account was linked at the moment each row first became
         // dirty, so PolarSyncService can later refuse to push it under a different account
@@ -126,6 +134,8 @@ public sealed partial class MainWindowViewModel
         _useCustomTitleBar = _settingsService.Settings.UseCustomTitleBar;
         _notificationsPanelEnabled = _settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
+        _inboxPanelEnabled = _settingsService.Settings.InboxPanelEnabled;
+        _vaultSwitcherEnabled = _settingsService.Settings.VaultSwitcherEnabled;
         _notificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
         _remindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
         _calendarPanelEnabled = _settingsService.Settings.CalendarPanelEnabled;
@@ -144,8 +154,9 @@ public sealed partial class MainWindowViewModel
         // Always live (not gated behind vault readiness): the kanban board and the notification log are
         // both independent of the vault folder, and the two title-bar buttons stay visible even on the
         // vault-setup screen.
-        NotificationCenter = new NotificationCenterViewModel(_notificationService, _settingsService);
-        ReminderInbox = new ReminderInboxViewModel(_kanbanService, _reminderService, _settingsService, _dismissedReminderService, OpenKanbanCard, OpenReminder);
+        NotificationCenter = new NotificationCenterViewModel(_notificationService, _settingsService,
+            snoozedReminderService: _snoozedReminderService);
+        ReminderInbox = new ReminderInboxViewModel(_kanbanService, _reminderService, _settingsService, _dismissedReminderService, _snoozedReminderService, OpenKanbanCard, OpenReminder);
         ReminderInbox.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ReminderInboxViewModel.OverdueCount)) UpdateCalendarBadge();
@@ -158,6 +169,31 @@ public sealed partial class MainWindowViewModel
         // que puede referenciar con seguridad Notes/Kanban/Settings aunque todavía sean null aquí — para
         // cuando el usuario realmente pulse Ctrl+Shift+K, InitializeShell ya los habrá construido.
         CommandPalette = new CommandPaletteViewModel(BuildCommandPaletteItems);
+        // Selector de vaults (T4): vive junto a la paleta y el quick switcher, fuera de la shell, porque
+        // su lista es de la instalación y no del vault abierto — sigue teniendo sentido, y sigue siendo
+        // la vía para salir de ahí, incluso en la pantalla de configuración inicial.
+        VaultSwitcher = new VaultSwitcherViewModel(_settingsService, _vaultService,
+            async path => await SwitchToVaultAsync(path), PickVaultFolderAsync);
+        // Web clipper (T3). Notes todavía no existe aquí (lo crea InitializeShell), pero el callback solo
+        // se invoca cuando el usuario guarda una página, mucho después — mismo criterio que el proveedor
+        // de comandos de la paleta justo arriba.
+        _webClipService = new WebClipService(_vaultService);
+        WebClip = new WebClipViewModel(_webClipService, _vaultService, _notificationService,
+            _ => Notes?.Reload());
+        QuickCapture = new QuickCaptureViewModel(
+            new QuickCaptureService(_vaultService, _kanbanService), _vaultService, _kanbanService,
+            _vaultSettingsService, _notificationService,
+            result =>
+            {
+                if (result.Destination == Models.QuickCaptureDestination.InboxNote) Notes?.Reload();
+                else Kanban?.Reload();
+                Dashboard?.Reload();
+                Statistics?.Reload();
+            });
+        _globalHotkeyService = new GlobalHotkeyService();
+        _shortcutChangedHandler = () => ApplyQuickCaptureHotkey(notifyOnFailure: true);
+        ShortcutRegistry.Changed += _shortcutChangedHandler;
+        if (SingleInstanceGuard.IsFirstInstance) ApplyQuickCaptureHotkey(notifyOnFailure: true);
 
         // Polls for reminders whose scheduled time has arrived and turns each into a real notification
         // (see CheckDueReminders) — independent of the vault folder, so it runs from app start regardless
@@ -174,6 +210,12 @@ public sealed partial class MainWindowViewModel
         _autoBackupTimer.Tick += (_, _) => _vaultBackupService.RunScheduledBackupIfDue(_settingsService);
         _autoBackupTimer.Start();
         _vaultBackupService.RunScheduledBackupIfDue(_settingsService);
+
+        // Aviso de versión nueva (T9). No bloquea el arranque —se lanza y se olvida— y, con el ajuste
+        // apagado (lo de fábrica), ni siquiera construye el cliente HTTP: CheckOnStartupAsync sale antes
+        // de tocar la red. Ver CheckForUpdatesOnStartup.
+        _updateCheckService = new UpdateCheckService(_settingsService);
+        _ = CheckForUpdatesOnStartupAsync();
 
         // Same "independent of vault readiness" reasoning as the two panels above — linking to Polar
         // and its background sync have nothing to do with which vault folder is open.
@@ -293,6 +335,48 @@ public sealed partial class MainWindowViewModel
         }
     }
 
+    /// <summary>Registra o vuelve a registrar el gesto remapeable. Cualquier fallo queda convertido en un
+    /// aviso y nunca interrumpe el arranque; bandeja, paleta y atajo local permanecen disponibles.
+    ///
+    /// <para>Una limitación del escritorio no se notifica: bajo Wayland ningún cliente puede reservar
+    /// teclas globales (<see cref="GlobalHotkeyStatus.Unreliable"/>) y en una plataforma sin backend
+    /// tampoco (<see cref="GlobalHotkeyStatus.Unsupported"/>). No es algo que el usuario pueda arreglar ni
+    /// cambia entre arranques, así que queda en el log y la captura rápida sigue ofreciéndose por bandeja,
+    /// paleta y atajo local. Solo se avisa de lo accionable —combinación ya ocupada u otro fallo— y aun eso
+    /// una sola vez por gesto y motivo: la firma del último aviso vive en
+    /// <c>AppSettings.QuickCaptureHotkeyWarningSignature</c>, así que cambiar el atajo en Ajustes › Atajos,
+    /// o que el motivo pase a ser otro, sí vuelve a avisar.</para>
+    /// </summary>
+    private void ApplyQuickCaptureHotkey(bool notifyOnFailure)
+    {
+        var gesture = ShortcutRegistry.GetGesture(ShortcutIds.QuickCapture);
+        var serializedGesture = gesture.ToString();
+        if (string.Equals(_appliedQuickCaptureGesture, serializedGesture, StringComparison.Ordinal)) return;
+        _appliedQuickCaptureGesture = serializedGesture;
+        var result = _globalHotkeyService.Apply(gesture, OpenQuickCapture);
+
+        var notifiable = result.Status is GlobalHotkeyStatus.Conflict or GlobalHotkeyStatus.Failed;
+        if (!notifiable && result.Status != GlobalHotkeyStatus.Registered)
+            LogService.Warning(
+                $"Atajo global no disponible en este escritorio ({result.Status}): {serializedGesture}");
+
+        var settings = _settingsService.Settings;
+        var signature = notifiable ? $"{serializedGesture}|{result.Status}" : null;
+        var alreadyWarned = string.Equals(settings.QuickCaptureHotkeyWarningSignature, signature,
+            StringComparison.Ordinal);
+        if (!alreadyWarned)
+        {
+            settings.QuickCaptureHotkeyWarningSignature = signature;
+            _settingsService.Save();
+        }
+
+        if (!notifyOnFailure || signature is null || alreadyWarned) return;
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_QuickCaptureHotkeyUnavailable_Title"),
+            result.Reason ?? LocalizedTextFormatter.Format("QuickCapture_Hotkey_Failed"),
+            Models.NotificationSeverity.Warning);
+    }
+
     /// <summary>Continúa el arranque después de que el usuario elige un idioma en
     /// <see cref="LanguageSetup"/>.</summary>
     private void OnLanguageSelected() => ShowVaultSetupOrShell();
@@ -338,6 +422,14 @@ public sealed partial class MainWindowViewModel
 
     private void InitializeShell()
     {
+        // T4: el vault del arranque también cuenta como "abierto ahora", y este es el único punto por el
+        // que pasa tanto el que venía guardado en settings.json como el que acaba de elegir
+        // VaultSetupViewModel. Registrarlo aquí —y no en el constructor de VaultService— es lo que
+        // distingue "hay una ruta guardada" de "se ha abierto de verdad": una segunda instancia llega al
+        // constructor pero nunca hasta aquí (ver ShowVaultSetupOrShell).
+        _settingsService.RegisterRecentVault(_vaultService.VaultPath);
+        VaultSwitcher.Refresh();
+
         ReloadVaultData();
         _kanbanService.EnsureSeedBoard();
         // Guarantees every vault this shell ever opens has a "default" session — a brand-new vault, one
@@ -356,6 +448,11 @@ public sealed partial class MainWindowViewModel
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
 
+        // Empieza (o reinicia) la vigilancia del vault que se acaba de abrir. Idempotente: volver a
+        // llamar libera el vigilante anterior antes de crear el nuevo, así que no filtra recursos si esta
+        // inicialización se repite.
+        _vaultChangeWatcher.Start(_vaultService.VaultPath);
+
         // Refrescar visibilidad del grupo fijo del sidebar por si cambió mientras el vault no estaba listo.
         NotificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
         RemindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
@@ -372,7 +469,7 @@ public sealed partial class MainWindowViewModel
         var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService);
         Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
         Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService,
-            _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics));
+            _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics), _vaultChangeWatcher);
         Notes.PropertyChanged += OnNotesPropertyChanged;
         // Restaurar pestañas abiertas al reiniciar (docs/ajustes-docs/02-productividad-como-app-de-escritorio.md §2) —
         // después de construir Notes pero antes de que la ventana quede lista, para que las pestañas ya
@@ -423,11 +520,12 @@ public sealed partial class MainWindowViewModel
                 Statistics?.Reload();
             });
         Settings = new SettingsViewModel(_settingsService, _customThemeService, _brandLogoService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
-            _polarSyncService, _notificationService, OnVaultChanged, OnTitleBarModeChanged,
+            _polarSyncService, _notificationService, SwitchToVaultAsync, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnKanbanBoardOrientationChanged,
-            OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService);
+            OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService,
+            OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

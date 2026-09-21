@@ -1211,6 +1211,45 @@
   <Style Selector="Button.dropdown-item.reminder-item.overdue">
     <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
   </Style>
+  <!-- Aplazado (T5): sin acento de urgencia y con la fila atenuada — es justo lo contrario de
+       "reclama atención ahora", así que la barra vuelve al Ink10 neutro y el conjunto baja de peso
+       visual sin desaparecer de la lista. -->
+  <Style Selector="Button.dropdown-item.reminder-item.snoozed">
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="Opacity" Value="0.72" />
+  </Style>
+  <Style Selector="Button.dropdown-item.reminder-item.snoozed:pointerover">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- Menú "Aplazar" desplegado dentro de una fila de la bandeja o de la campana. No es un popover
+       nuevo: vive en línea dentro del popover que ya está abierto (§3.2, los bordes separan), porque un
+       segundo Popup encima del primero se cierra con el light-dismiss del de debajo. -->
+  <Style Selector="Border.snooze-menu">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="Margin" Value="0,6,0,0" />
+  </Style>
+
+  <!-- Cada opción del menú: fila completa, alineada a la izquierda y sin el LetterSpacing de .ghost,
+       que aquí haría ilegible un "Personalizado…". -->
+  <Style Selector="Button.snooze-option">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="8,5" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.snooze-option:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
+  </Style>
 
   <!-- ===================== Tarjetas (§7.5) ===================== -->
   <Style Selector="Border.card">

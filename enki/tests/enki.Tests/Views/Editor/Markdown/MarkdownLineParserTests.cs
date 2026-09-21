@@ -63,6 +63,51 @@ public class MarkdownLineParserTests
         Assert.DoesNotContain(model.Spans, s => s.Kind == MdSpanKind.WikiLink);
     }
 
+    [Theory]
+    [InlineData("![[Nota A]]", "Nota A")]
+    [InlineData("![[Nota A#Sección útil]]", "Nota A#Sección útil")]
+    [InlineData("![[Nota A#^bloque-1|Alias]]", "Nota A#^bloque-1")]
+    public void Parse_NoteEmbed_IsATransclusion(string text, string target)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Transclusion, span.Kind);
+        Assert.Equal(target, span.LinkTarget);
+        Assert.Equal(text.Length, span.End);
+    }
+
+    [Fact]
+    public void Parse_ObsidianImageEmbed_StillHasPrecedenceOverTransclusion()
+    {
+        var model = MarkdownLineParser.Parse("![[diagrama.svg]]", 0, NoFence);
+
+        Assert.Equal(MdSpanKind.Image, Assert.Single(model.Spans).Kind);
+    }
+
+    [Theory]
+    [InlineData("La energía es $E=mc^2$.", false, "E=mc^2")]
+    [InlineData("$$\\int_0^1 x^2 dx$$", true, "\\int_0^1 x^2 dx")]
+    public void Parse_LatexSpan_ReportsDisplayMode(string text, bool display, string latex)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Math, span.Kind);
+        Assert.Equal(display, span.IsDisplayMath);
+        Assert.Equal(latex, text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Theory]
+    [InlineData("El precio es $20 y nada más")]
+    [InlineData("Un dólar escapado: \\$x$")]
+    [InlineData("$ fórmula $")]
+    public void Parse_CurrencyEscapesAndWhitespace_AreNotLatex(string text)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+        Assert.DoesNotContain(model.Spans, span => span.Kind == MdSpanKind.Math);
+    }
+
     [Fact]
     public void Parse_Strikethrough_IsParsed()
     {
@@ -406,14 +451,14 @@ public class MarkdownLineParserTests
     }
 
     [Fact]
-    public void Parse_EmbeddedNoteWikiLink_StaysAWikiLink()
+    public void Parse_EmbeddedNoteWikiLink_IsATransclusion()
     {
-        // Una transclusión de nota (`![[Otra nota]]`) no es una imagen; degradarla a wikilink normal la
-        // deja al menos navegable en vez de dibujarla como imagen rota.
+        // `![[Otra nota]]` no apunta a un archivo con extensión de imagen: es una transclusión de nota,
+        // que el generador resuelve y dibuja embebida (ver MarkdownTransclusionPresenter).
         var model = MarkdownLineParser.Parse("![[Otra nota]]", 0, NoFence);
 
         var span = Assert.Single(model.Spans);
-        Assert.Equal(MdSpanKind.WikiLink, span.Kind);
+        Assert.Equal(MdSpanKind.Transclusion, span.Kind);
         Assert.Equal("Otra nota", span.LinkTarget);
     }
 

@@ -28,6 +28,56 @@ public class NoteExportRendererTests : IDisposable
     private static string Body(string markdown) => NoteExportRenderer.RenderBodyHtml(markdown, noteDirectory: null);
 
     [Fact]
+    public void RenderBody_InlineFormula_IsEmbeddedAsAStaticImage()
+    {
+        // El documento exportado tiene que seguir siendo autónomo: la fórmula viaja dentro del HTML como
+        // PNG en data URI, sin script ni CDN (T11).
+        var html = Body("La energía es $E=mc^2$.");
+
+        Assert.Contains("<img class=\"math\" alt=\"E=mc^2\" src=\"data:image/png;base64,", html);
+        Assert.DoesNotContain("$E=mc^2$", html);
+    }
+
+    [Fact]
+    public void RenderBody_DisplayFormula_IsItsOwnCentredBlock()
+    {
+        var html = Body("$$\n\\int_0^1 x^2 dx\n$$");
+
+        Assert.Contains("<p class=\"math-block\">", html);
+        Assert.Contains("src=\"data:image/png;base64,", html);
+        Assert.DoesNotContain("<p>$$</p>", html);
+    }
+
+    [Fact]
+    public void RenderBody_InvalidFormula_FallsBackToItsSource()
+    {
+        // Degradar a código es lo mismo que hace el editor cuando el render falla: el LaTeX original se
+        // lee igual de bien que una imagen rota, que no se lee en absoluto.
+        var html = Body("Roto: $\\ordenmaquinada$.");
+
+        Assert.Contains("<code class=\"math\">$\\ordenmaquinada$</code>", html);
+    }
+
+    [Fact]
+    public void RenderBody_MermaidDiagram_StaysACodeBlock()
+    {
+        // Mermaid necesita el WebView del editor, que no existe en la exportación: el bloque sale como su
+        // propio código, legible, en vez de como un hueco vacío.
+        var html = Body("```mermaid\ngraph TD;\nA--&gt;B;\n```".Replace("&gt;", ">"));
+
+        Assert.Contains("<pre><code class=\"language-mermaid\">", html);
+        Assert.Contains("graph TD;", html);
+    }
+
+    [Fact]
+    public void RenderBody_Transclusion_KeepsTheReferenceInsteadOfDroppingIt()
+    {
+        var html = Body("Ver ![[Otra nota]] para el detalle.");
+
+        Assert.Contains("<span class=\"wikilink\">Otra nota</span>", html);
+    }
+
+    [Fact]
     public void RenderBody_Headings_RenderAtTheirLevel()
     {
         var html = Body("# Uno\n\n### Tres");
@@ -209,6 +259,38 @@ public class NoteExportRendererTests : IDisposable
         var html = NoteExportRenderer.RenderBodyHtml("![local](no-existe.png)", _storageDirectory, _storageDirectory);
 
         Assert.Contains("<img src=\"no-existe.png\" alt=\"local\"/>", html);
+    }
+
+    /// <summary>Un enlace a una imagen que no existe no puede tumbar la exportación de la nota entera: la
+    /// comprobación de enlaces simbólicos recorre las carpetas desde la raíz del vault, y una carpeta
+    /// intermedia que no está hacía que <c>File.GetAttributes</c> lanzara en mitad de ese recorrido.</summary>
+    [Fact]
+    public void RenderBody_Image_WithMissingIntermediateFolder_KeepsOriginalPath_WithoutThrowing()
+    {
+        var vault = Path.Combine(_storageDirectory, "vault");
+        Directory.CreateDirectory(vault);
+
+        var html = NoteExportRenderer.RenderBodyHtml("![rota](adjuntos/2024/foto.png)", vault, vault);
+
+        Assert.Contains("<img src=\"adjuntos/2024/foto.png\" alt=\"rota\"/>", html);
+    }
+
+    /// <summary>La nota se exporta completa aunque lleve un enlace roto por el medio: lo roto se degrada,
+    /// lo demás no se pierde.</summary>
+    [Fact]
+    public void RenderBody_WithABrokenImageAmongOtherContent_StillRendersTheWholeNote()
+    {
+        var vault = Path.Combine(_storageDirectory, "vault");
+        Directory.CreateDirectory(vault);
+        File.WriteAllBytes(Path.Combine(vault, "buena.png"), [4, 5, 6]);
+
+        var html = NoteExportRenderer.RenderBodyHtml(
+            "Antes.\n\n![rota](no-existe.png)\n\n![buena](buena.png)\n\nY al final, texto.", vault, vault);
+
+        Assert.Contains("Antes.", html);
+        Assert.Contains("src=\"no-existe.png\"", html);
+        Assert.Contains($"data:image/png;base64,{Convert.ToBase64String(new byte[] { 4, 5, 6 })}", html);
+        Assert.Contains("Y al final, texto.", html);
     }
 
     [Fact]

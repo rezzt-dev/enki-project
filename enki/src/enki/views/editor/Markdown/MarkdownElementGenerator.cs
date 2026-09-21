@@ -33,7 +33,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     /// acompaña al título, no compite con él.</summary>
     private const double CalloutIconSize = 15;
 
-    private enum ZoneKind { Hide, Bullet, Checkbox, Callout, Align, JustifySpace, Image, TableRule, TableRow }
+    private enum ZoneKind { Hide, Bullet, Checkbox, Callout, Align, JustifySpace, Image, Transclusion, Math, SpecialBlock, TableRule, TableRow }
 
     /// <param name="Spacer">Extra blank width (px) this zone reserves before whatever it renders: the
     /// alignment spacing of the visual row starting here, or the share of leftover width a justified
@@ -49,6 +49,13 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         /// del que salen la ruta y el tamaño pedido. El resto de zonas no necesitan mirar ningún span
         /// concreto — les basta con el rango que ocultan.</summary>
         public MdSpan? Span { get; init; }
+
+        /// <summary>Entrada de caché ya solicitada para una fórmula. Se conserva en la zona para que el
+        /// constructor del elemento no repita la búsqueda ni pueda observar otro estado a mitad del pase.</summary>
+        public MarkdownFormulaEntry? Formula { get; init; }
+
+        public MarkdownSpecialBlock? SpecialBlock { get; init; }
+        public MarkdownMermaidEntry? Mermaid { get; init; }
 
         /// <summary>Techo del ancho de la imagen de esta zona, o 0 si no lo hay — lo pone a
         /// <see cref="MarkdownTableLayout.CellImageMaxWidth"/> una imagen dentro de una celda de tabla
@@ -114,6 +121,33 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         var model = MarkdownLineParser.Parse(text, line.Offset, fence);
         var zones = new List<Zone>();
         var lineActive = _state.Intersects(line.Offset, line.EndOffset);
+
+        if (_state.SpecialBlockStartingAt(lineNumber) is { } special
+            && !_state.Intersects(special.StartOffset, special.EndOffset)
+            && _state.SpecialBlockFolding?.IsCollapsed(special) == true)
+        {
+            var specialFormula = special.Kind == MarkdownSpecialBlockKind.Math
+                ? _state.Formulas?.GetOrRequest(special.Source, display: true, _style)
+                : null;
+            var mermaid = special.Kind == MarkdownSpecialBlockKind.Mermaid
+                ? _state.Mermaid?.GetOrRequest(special.Source, _style)
+                : null;
+            var canRender = special.Kind == MarkdownSpecialBlockKind.Math
+                ? specialFormula is { State: not MarkdownRenderState.Failed }
+                : mermaid is { State: not MarkdownRenderState.Failed };
+            if (canRender)
+            {
+                zones.Add(new Zone(special.StartOffset, special.EndOffset, ZoneKind.SpecialBlock, model, 0)
+                {
+                    Formula = specialFormula,
+                    Mermaid = mermaid,
+                    SpecialBlock = special
+                });
+                _cachedLineNumber = lineNumber;
+                _cachedZones = zones;
+                return zones;
+            }
+        }
 
         // Tablas: una fila solo se dibuja como tal si su tabla entera está inactiva (el cursor fuera) y
         // además cabe a lo ancho de la columna. Se resuelve antes que nada porque condiciona lo demás —
@@ -188,6 +222,27 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 {
                     Span = span,
                     ImageMaxWidth = imageMaxWidth
+                });
+                continue;
+            }
+
+            if (span.Kind == MdSpanKind.Transclusion)
+            {
+                zones.Add(new Zone(span.Start, span.End, ZoneKind.Transclusion, model, 0) { Span = span });
+                continue;
+            }
+
+            if (span.Kind == MdSpanKind.Math)
+            {
+                if (_state.Formulas is null) continue;
+                var latex = CurrentContext.Document.GetText(span.ContentStart, span.ContentEnd - span.ContentStart);
+                var entry = _state.Formulas.GetOrRequest(latex, span.IsDisplayMath, _style);
+                // Fallo o timeout: no se añade ninguna zona y queda visible el LaTeX original completo.
+                if (entry.State == MarkdownRenderState.Failed) continue;
+                zones.Add(new Zone(span.Start, span.End, ZoneKind.Math, model, 0)
+                {
+                    Span = span,
+                    Formula = entry
                 });
                 continue;
             }
@@ -491,6 +546,18 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 ZoneKind.Image => zone.Span is { } imageSpan
                     ? new InlineObjectElement(length, BuildImage(imageSpan, spacer, zone.ImageMaxWidth))
                     : null,
+                ZoneKind.Transclusion => zone.Span is { LinkTarget: { } reference }
+                    ? new InlineObjectElement(length, BuildTransclusion(reference, spacer))
+                    : null,
+                ZoneKind.Math => zone is { Span: { } mathSpan, Formula: { } formula }
+                    ? new InlineObjectElement(length, BuildFormula(mathSpan, formula, spacer))
+                    : null,
+                ZoneKind.SpecialBlock => zone.SpecialBlock is { } block
+                    ? new InlineObjectElement(length, block.Kind == MarkdownSpecialBlockKind.Math
+                        && zone.Formula is { } blockFormula
+                            ? BuildFormulaBlock(block, blockFormula)
+                            : BuildMermaidBlock(block, zone.Mermaid))
+                    : null,
                 // La fila separadora de una tabla: sin texto y con el alto fijo de la banda que hace de
                 // línea entre el encabezado y el cuerpo.
                 ZoneKind.TableRule => new WhitespaceFormattedElement(string.Empty, length, 0,
@@ -541,6 +608,10 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // ocupa, igual que se cuenta el ancho del texto: si no, la línea se centraría como si la
                 // imagen no estuviera y quedaría desplazada justo su ancho.
                 ZoneKind.Image => zone.Span is { } imageSpan ? MeasureImage(imageSpan, zone.ImageMaxWidth).Width : 0,
+                ZoneKind.Transclusion => Math.Max(180, _textArea.TextView.Bounds.Width),
+                ZoneKind.Math => zone.Formula?.Bitmap?.Size.Width ?? 40,
+                ZoneKind.SpecialBlock => zone.Formula?.Bitmap?.Size.Width
+                                         ?? zone.Mermaid?.Bitmap?.Size.Width ?? 80,
                 _ => 0
             };
         }
@@ -568,6 +639,122 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     private MarkdownImageLayout MeasureImage(MdSpan span, double maxWidth) =>
         MarkdownImageMeasurer.Measure(_state, _textArea.TextView, span,
             maxWidth > 0 ? maxWidth : double.PositiveInfinity);
+
+    private Control BuildTransclusion(string reference, double leadingWidth)
+    {
+        var context = _state.Transclusions;
+        var result = context.Resolve?.Invoke(reference,
+            context.CurrentNotePath is { } path ? [path] : null)
+            ?? new NoteTransclusionResult(NoteTransclusionStatus.Broken, reference, null, string.Empty,
+                Array.Empty<string>());
+        var available = Math.Max(180, _textArea.TextView.Bounds.Width - leadingWidth);
+        var control = MarkdownTransclusionPresenter.Build(result, context, _style, available);
+        control.Margin = new Thickness(leadingWidth, control.Margin.Top, control.Margin.Right, control.Margin.Bottom);
+        return control;
+    }
+
+    private Control BuildFormula(MdSpan span, MarkdownFormulaEntry entry, double leadingWidth)
+    {
+        Control control;
+        if (entry is { State: MarkdownRenderState.Ready, Bitmap: { } bitmap })
+        {
+            var available = Math.Max(40, _textArea.TextView.Bounds.Width - leadingWidth);
+            var scale = bitmap.Size.Width > available ? available / bitmap.Size.Width : 1;
+            control = new Image
+            {
+                Source = bitmap,
+                Width = Math.Max(1, bitmap.Size.Width * scale),
+                Height = Math.Max(1, bitmap.Size.Height * scale),
+                Stretch = Stretch.Uniform,
+                IsHitTestVisible = false
+            };
+            AutomationProperties.SetName(control,
+                CurrentContext.Document.GetText(span.ContentStart, span.ContentEnd - span.ContentStart));
+        }
+        else
+        {
+            control = new Border
+            {
+                Background = _style.CodeInlineBackground,
+                BorderBrush = _style.CodeBlockBorder,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(0),
+                Padding = new Thickness(7, 2),
+                Child = new TextBlock
+                {
+                    Text = Localization.LocalizationService.Instance["Editor_Math_Rendering"],
+                    FontFamily = _style.MonoFontFamily,
+                    FontSize = Math.Max(10, _style.BaseFontSize - 3),
+                    Foreground = _style.TextMuted
+                },
+                IsHitTestVisible = false
+            };
+        }
+
+        control.Margin = new Thickness(leadingWidth, span.IsDisplayMath ? 5 : 0, 0, span.IsDisplayMath ? 5 : 0);
+        control.Measure(Size.Infinity);
+        var descent = _textArea.TextView.DefaultLineHeight - _textArea.TextView.DefaultBaseline;
+        TextBlock.SetBaselineOffset(control, Math.Max(0, control.DesiredSize.Height - descent));
+        return control;
+    }
+
+    private Control BuildFormulaBlock(MarkdownSpecialBlock block, MarkdownFormulaEntry entry)
+    {
+        var surrogate = new MdSpan
+        {
+            Kind = MdSpanKind.Math,
+            Start = block.StartOffset,
+            End = block.EndOffset,
+            ContentStart = block.StartOffset,
+            ContentEnd = block.StartOffset,
+            IsDisplayMath = true
+        };
+        var control = BuildFormula(surrogate, entry, 0);
+        AutomationProperties.SetName(control, block.Source);
+        return control;
+    }
+
+    private Control BuildMermaidBlock(MarkdownSpecialBlock block, MarkdownMermaidEntry? entry)
+    {
+        if (entry is { State: MarkdownRenderState.Ready, Bitmap: { } bitmap })
+        {
+            var available = Math.Max(80, _textArea.TextView.Bounds.Width);
+            var scale = bitmap.Size.Width > available ? available / bitmap.Size.Width : 1;
+            var image = new Image
+            {
+                Source = bitmap,
+                Width = Math.Max(1, bitmap.Size.Width * scale),
+                Height = Math.Max(1, bitmap.Size.Height * scale),
+                Stretch = Stretch.Uniform,
+                Margin = new Thickness(0, 7),
+                IsHitTestVisible = false
+            };
+            AutomationProperties.SetName(image, block.Source);
+            SetImageBaseline(image, image.Height);
+            return image;
+        }
+
+        var loading = new Border
+        {
+            Background = _style.CodeBlockBackground,
+            BorderBrush = _style.CodeBlockBorder,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(0),
+            Padding = new Thickness(12, 9),
+            Margin = new Thickness(0, 5),
+            Child = new TextBlock
+            {
+                Text = enki.Localization.LocalizationService.Instance["Editor_Mermaid_Rendering"],
+                FontFamily = _style.MonoFontFamily,
+                FontSize = Math.Max(10, _style.BaseFontSize - 2),
+                Foreground = _style.TextMuted
+            },
+            IsHitTestVisible = false
+        };
+        loading.Measure(Size.Infinity);
+        TextBlock.SetBaselineOffset(loading, loading.DesiredSize.Height);
+        return loading;
+    }
 
 
     /// <summary>Texto alternativo escrito en la nota, o el nombre del archivo si no hay ninguno — algo que

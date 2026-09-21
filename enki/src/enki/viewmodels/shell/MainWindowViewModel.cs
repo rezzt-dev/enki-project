@@ -15,8 +15,14 @@ using Material.Icons;
 
 namespace enki.ViewModels;
 
-public sealed partial class MainWindowViewModel : ViewModelBase
+/// <remarks>Es <see cref="IDisposable"/> porque posee un <see cref="VaultChangeWatcher"/>, que envuelve
+/// un <see cref="System.IO.FileSystemWatcher"/> y sus temporizadores. Liberarlo es lo mismo que hace
+/// <see cref="Shutdown"/> al cerrar la ventana — <see cref="Dispose"/> delega ahí y ambos son
+/// idempotentes, así que da igual cuál se llame primero, o las dos veces.</remarks>
+public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
+    private bool _shutdownCompleted;
+
     private readonly SettingsService _settingsService;
     private readonly CustomThemeService _customThemeService;
     private readonly BrandLogoService _brandLogoService;
@@ -24,6 +30,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly NoteSearchService _noteSearchService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly VaultSettingsService _vaultSettingsService;
+    private readonly WebClipService _webClipService;
+    private readonly GlobalHotkeyService _globalHotkeyService;
+    private readonly Action _shortcutChangedHandler;
+    private string? _appliedQuickCaptureGesture;
+
+    /// <summary>Vigilancia de los cambios que otro programa hace sobre el vault (Syncthing, Dropbox, otro
+    /// editor). Vive aquí, y no dentro de Notas, porque su ciclo de vida es el del vault activo, no el de
+    /// una pantalla: se arranca al abrir el vault, se reinicia al cambiarlo y se libera al cerrar la app.
+    /// Ver <c>.docs/project-info/cambios-externos-en-el-vault.md</c>.</summary>
+    private readonly VaultChangeWatcher _vaultChangeWatcher;
 
     /// <summary>Plantillas de notas de <c>&lt;vault&gt;/.enki/templates/</c>. Se comparte instancia entre
     /// Documentos (que las aplica) y Ajustes (que elige la de la nota diaria) para que crear una plantilla
@@ -35,6 +51,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly KanbanService _kanbanService;
     private readonly NotificationService _notificationService;
     private readonly DismissedReminderService _dismissedReminderService;
+    private readonly SnoozedReminderService _snoozedReminderService;
+
+    /// <summary>Aviso de versión nueva (T9). Se construye siempre pero no abre ninguna conexión hasta que
+    /// alguien comprueba: sin el ajuste puesto, <c>CheckOnStartupAsync</c> sale antes de tocar la red.</summary>
+    private readonly UpdateCheckService _updateCheckService;
     private readonly ReminderService _reminderService;
     private readonly PolarAuthService _polarAuthService;
     private readonly SupabaseRestClient _supabaseRestClient;
@@ -148,6 +169,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     /// comandos vive en <c>MainWindowViewModel.CommandPalette.cs</c> (<c>BuildCommandPaletteItems</c>).</summary>
     public CommandPaletteViewModel CommandPalette { get; }
 
+    /// <summary>Selector "Cambiar de vault" de la cabecera del sidebar (T4,
+    /// .docs/project-info/multi-vault-en-caliente.md). Siempre vivo, como <see cref="CommandPalette"/> y
+    /// compañía: se construye en el constructor y no en <c>InitializeShell</c>, así que sobrevive a
+    /// cualquier número de cambios de vault sin recrearse.</summary>
+    public VaultSwitcherViewModel VaultSwitcher { get; }
+
+    /// <summary>Web clipper (T3, .docs/project-info/web-clipper.md): pegar una URL y que salga una nota en
+    /// <c>Inbox/</c>. Otro popup del shell, como <see cref="CommandPalette"/>, y por el mismo motivo —
+    /// guardar una página no pertenece a ninguna pantalla en concreto y se pide desde la paleta de
+    /// comandos, desde Documentos y desde la captura rápida.</summary>
+    public WebClipViewModel WebClip { get; }
+
+    /// <summary>Única instancia del borrador y la lógica de la mini-ventana. La ventana visual se puede
+    /// recrear, pero este estado sobrevive a Esc hasta que la captura se envía.</summary>
+    public QuickCaptureViewModel QuickCapture { get; }
+
+    /// <summary>Petición agnóstica de UI para mostrar la mini-ventana. La atiende <c>MainWindow</c> tanto
+    /// para el comando local como para el callback del hotkey nativo.</summary>
+    public event Action? QuickCaptureRequested;
+
     [ObservableProperty]
     private bool _isVaultReady;
 
@@ -239,6 +280,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _remindersPanelEnabled;
+
+    /// <summary>Shows/hides the inbox (captura rápida) button in the title bar.</summary>
+    [ObservableProperty]
+    private bool _inboxPanelEnabled;
+
+    /// <summary>Shows/hides the "Cambiar de vault" row between the sidebar's brand header and its
+    /// navigation. Con el selector oculto, "Cambiar de vault" de la paleta de comandos sigue abriendo el
+    /// mismo desplegable — ver el ancla del Popup en MainWindow.axaml.</summary>
+    [ObservableProperty]
+    private bool _vaultSwitcherEnabled;
 
     /// <summary>Shows/hides the "Recordatorios" entry in the sidebar's fixed bottom group.</summary>
     [ObservableProperty]
@@ -495,6 +546,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     public void OpenCommandPalette() => CommandPalette.IsOpen = true;
 
+    [RelayCommand]
+    public void OpenQuickCapture() => QuickCaptureRequested?.Invoke();
+
     /// <summary>Called from <c>MainWindow.axaml.cs</c>'s <c>Closing</c> handler, alongside the editor/settings
     /// flush calls already there. Before this, <see cref="SessionEncryptionService.LockAll"/> was never
     /// actually invoked from anywhere despite its own doc comment claiming otherwise, and no decrypted temp
@@ -503,8 +557,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     /// §4.1, Alta).</summary>
     public void Shutdown()
     {
+        if (_shutdownCompleted) return;
+        _shutdownCompleted = true;
+
         MarkdownImageCache.Clear();
+        ShortcutRegistry.Changed -= _shortcutChangedHandler;
+        _globalHotkeyService.Dispose();
+        _vaultChangeWatcher.Dispose();
+        _webClipService.Dispose();
+        _updateCheckService.Dispose();
         _vaultService.EncryptionService.LockAll();
         VaultService.CleanupStaleDecryptedTempFiles();
     }
+
+    /// <summary>Ver el comentario de la clase: mismo trabajo que <see cref="Shutdown"/>.</summary>
+    public void Dispose() => Shutdown();
 }

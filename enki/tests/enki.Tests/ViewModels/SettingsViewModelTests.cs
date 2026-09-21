@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using enki.Services;
 using enki.Localization;
 using enki.ViewModels;
@@ -56,7 +57,7 @@ public class SettingsViewModelTests : IDisposable
         SettingsViewModel? vm = null;
         vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            onVaultChanged: () => { }, onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
+            switchVault: (_, _) => Task.FromResult(true), onTitleBarModeChanged: _ => { }, onNotificationsPanelChanged: _ => { },
             onRemindersPanelChanged: _ => { }, onCalendarShowSidebarScrollbarChanged: _ => { },
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
             onKanbanBoardOrientationChanged: _ => { },
@@ -189,7 +190,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         Assert.Equal(16, vm.EditorFontSize);
         Assert.True(vm.IsDarkTheme);
@@ -270,11 +271,59 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
+            (_, _) => Task.FromResult(true), _ => { }, v => notified = v, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { });
 
         vm.NotificationsPanelEnabled = false;
 
         Assert.False(notified);
+    }
+
+    /// <summary>Los dos interruptores nuevos llegan como parámetros opcionales al final del constructor,
+    /// así que el riesgo real es que nadie los conecte: se comprueba que cada uno persiste y avisa.</summary>
+    [Fact]
+    public void OnInboxPanelEnabledChanged_PersistsAndInvokesCallback()
+    {
+        var settingsService = new SettingsService(_storageDirectory);
+        var vault = new VaultService(settingsService);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        var vaultSettingsService = new VaultSettingsService(vault);
+        var authService = new PolarAuthService(settingsService);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        bool? notified = null;
+
+        var vm = new SettingsViewModel(
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            null, v => notified = v);
+
+        Assert.True(vm.InboxPanelEnabled);
+        vm.InboxPanelEnabled = false;
+
+        Assert.False(notified);
+        Assert.False(settingsService.Settings.InboxPanelEnabled);
+    }
+
+    [Fact]
+    public void OnVaultSwitcherEnabledChanged_PersistsAndInvokesCallback()
+    {
+        var settingsService = new SettingsService(_storageDirectory);
+        var vault = new VaultService(settingsService);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        var vaultSettingsService = new VaultSettingsService(vault);
+        var authService = new PolarAuthService(settingsService);
+        var (backupService, syncService, notificationService, customThemeService, brandLogoService) = CreateExtraDependencies(settingsService, vault, authService, _storageDirectory);
+        bool? notified = null;
+
+        var vm = new SettingsViewModel(
+            settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            null, null, v => notified = v);
+
+        Assert.True(vm.VaultSwitcherEnabled);
+        vm.VaultSwitcherEnabled = false;
+
+        Assert.False(notified);
+        Assert.False(settingsService.Settings.VaultSwitcherEnabled);
     }
 
     [Fact]
@@ -377,7 +426,7 @@ public class SettingsViewModelTests : IDisposable
 
         var vm = new SettingsViewModel(
             settingsService, customThemeService, brandLogoService, vaultSettingsService, vault, backupService, authService, syncService, notificationService,
-            () => { }, _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, v => notified = v, () => { });
+            (_, _) => Task.FromResult(true), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { }, _ => { }, _ => { }, _ => { }, v => notified = v, () => { });
 
         vm.UiZoomPercent = 150;
 

@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
@@ -40,6 +41,8 @@ public sealed partial class MainWindowViewModel
         Statistics?.RefreshLocalizedLabels();
         NotificationCenter.RefreshLocalizedLabels();
         ReminderInbox.RefreshLocalizedLabels();
+        VaultSwitcher.RefreshLocalizedLabels();
+        QuickCapture.RefreshLocalizedLabels();
 
         RebuildNavItems();
         CommandPalette.RefreshLocalizedLabels();
@@ -135,6 +138,10 @@ public sealed partial class MainWindowViewModel
     private void OnNotificationsPanelModeChanged(bool value) => NotificationsPanelEnabled = value;
 
     private void OnRemindersPanelModeChanged(bool value) => RemindersPanelEnabled = value;
+
+    private void OnInboxPanelModeChanged(bool value) => InboxPanelEnabled = value;
+
+    private void OnVaultSwitcherModeChanged(bool value) => VaultSwitcherEnabled = value;
 
     private void OnCalendarShowSidebarScrollbarModeChanged(bool value) => Calendar!.ShowSidebarScrollbar = value;
 
@@ -314,6 +321,15 @@ public sealed partial class MainWindowViewModel
 
     private void OnVaultChanged()
     {
+        // Ninguna sesión cifrada del vault anterior puede seguir desbloqueada al otro lado del cambio, ni
+        // dejar un temporal en claro por el camino (T4, .docs/project-info/multi-vault-en-caliente.md).
+        // Aquí y no en SwitchToVaultAsync porque este método es el punto por el que pasan *todos* los
+        // cambios de vault, incluido el de "restaurar copia de seguridad" de Ajustes. Las DEK viven en
+        // memoria indexadas por la raíz de su sesión, así que soltarlas después de adoptar la ruta nueva
+        // es igual de efectivo que antes y cubre un camino más.
+        _vaultService.EncryptionService.LockAll();
+        VaultService.CleanupStaleDecryptedTempFiles();
+
         Kanban?.CloseForVaultChange();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
@@ -323,6 +339,11 @@ public sealed partial class MainWindowViewModel
 
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
+        QuickCapture.RefreshLocalizedLabels();
+        QuickCapture.ReloadDestinations();
+        // Libera el vigilante del vault anterior y crea el del nuevo: sus notas registradas eran las
+        // pestañas que se cierran unas líneas más abajo.
+        _vaultChangeWatcher.Start(_vaultService.VaultPath);
         ApplyVaultPreferences();
         _habitService.Reload();
 
@@ -367,6 +388,8 @@ public sealed partial class MainWindowViewModel
         UseCustomTitleBar = settings.UseCustomTitleBar;
         NotificationsPanelEnabled = settings.NotificationsPanelEnabled;
         RemindersPanelEnabled = settings.RemindersPanelEnabled;
+        InboxPanelEnabled = settings.InboxPanelEnabled;
+        VaultSwitcherEnabled = settings.VaultSwitcherEnabled;
         NotificationsSidebarEnabled = settings.NotificationsSidebarEnabled;
         RemindersSidebarEnabled = settings.RemindersSidebarEnabled;
         DashboardPanelEnabled = settings.DashboardPanelEnabled;
@@ -401,6 +424,7 @@ public sealed partial class MainWindowViewModel
         _polarTaskService.Reload();
         _reminderService.Reload();
         _dismissedReminderService.Reload();
+        _snoozedReminderService.Reload();
         _notificationService.Reload();
     }
 
@@ -410,17 +434,97 @@ public sealed partial class MainWindowViewModel
     /// reminder that came due while the app was closed still fires as soon as it launches.</summary>
     private void CheckDueReminders()
     {
+        CheckDueSnoozes();
+
         var due = _reminderService.PopDueReminders();
         if (due.Count == 0) return;
 
         foreach (var reminder in due)
-            _notificationService.PushLocalized(
+            _notificationService.PushDue(
                 LocalizedTextFormatter.Format("Notification_ReminderDue_Title", reminder.Title),
                 LocalizedTextFormatter.Literal(reminder.Description),
-                NotificationSeverity.Info);
+                new SnoozeTarget(SnoozeSourceKind.Reminder, reminder.Id, reminder.NotifyAtUtc));
 
         Reminders?.Reload();
         Notifications?.Reload();
+    }
+
+    /// <summary>Contrapartida de <see cref="CheckDueReminders"/> para los avisos aplazados (T5): vuelve a
+    /// anunciar cada aplazamiento cuya hora ha llegado, en el mismo ciclo de 30 s del temporizador — ni
+    /// un segundo temporizador ni un segundo motor de avisos.
+    ///
+    /// <para>Antes de reavisar se limpian los aplazamientos huérfanos: el criterio EARS "si el elemento de
+    /// origen se elimina o se completa, el sistema deberá descartar su aplazamiento" no lo cubre solo el
+    /// <c>CardPermanentlyDeleted</c> cableado en la composición —una tarjeta completada, un recordatorio
+    /// borrado o una fecha reprogramada desde el calendario también dejan el aplazamiento sin sentido—,
+    /// así que aquí se revalida contra los almacenes reales, que son los que mandan.</para></summary>
+    private void CheckDueSnoozes()
+    {
+        _snoozedReminderService.PruneWhere(snooze => ResolveSnoozeTitle(snooze) is null);
+
+        var due = _snoozedReminderService.PopDue();
+        if (due.Count == 0) return;
+
+        foreach (var snooze in due)
+        {
+            if (ResolveSnoozeTitle(snooze) is not { } title) continue;
+
+            _notificationService.PushDue(
+                LocalizedTextFormatter.Format("Notification_ReminderSnoozeElapsed_Title", title),
+                LocalizedTextFormatter.Format("Notification_ReminderSnoozeElapsed_Message"),
+                new SnoozeTarget(snooze.SourceKind, snooze.SourceId, snooze.DueUtcSnapshot));
+        }
+
+        ReminderInbox?.Reload();
+        Notifications?.Reload();
+    }
+
+    /// <summary>Título vigente del origen de un aplazamiento, o <see langword="null"/> si ese origen ya no
+    /// existe, está completado/borrado, o su fecha ha cambiado desde que se aplazó — en cuyo caso el
+    /// aplazamiento ya no corresponde al aviso que el usuario pospuso (ver
+    /// <see cref="Models.SnoozedReminder.DueUtcSnapshot"/>). Se resuelve contra la entidad real en cada
+    /// pasada en vez de copiar el título al aplazar, para que un renombrado se refleje en el reaviso.</summary>
+    private string? ResolveSnoozeTitle(SnoozedReminder snooze)
+    {
+        if (snooze.SourceKind == SnoozeSourceKind.Reminder)
+        {
+            var reminder = _reminderService.ActiveReminders.FirstOrDefault(r => r.Id == snooze.SourceId);
+            return reminder is { IsCompleted: false } && reminder.NotifyAtUtc == snooze.DueUtcSnapshot
+                ? reminder.Title
+                : null;
+        }
+
+        var card = _kanbanService.Board.Columns
+            .SelectMany(column => column.Cards)
+            .FirstOrDefault(c => c.Id == snooze.SourceId);
+        return card is { CompletedAtUtc: null } && card.DueDateUtc == snooze.DueUtcSnapshot
+            ? card.Title
+            : null;
+    }
+
+    /// <summary>Comprobación de versión nueva del arranque (T9). Tres reglas del criterio de aceptación
+    /// viven aquí y no en <see cref="UpdateCheckService"/>, que solo sabe de red y de versiones:
+    ///
+    /// <list type="bullet">
+    /// <item>"no deberá interrumpir el arranque ni mostrar errores en la comprobación automática": el
+    /// resultado que no sea "hay novedad" no produce absolutamente nada visible, ni siquiera un fallo de
+    /// red.</item>
+    /// <item>El aviso lleva el enlace de descarga a la página de la release, que el servicio ya validó
+    /// contra el repositorio oficial.</item>
+    /// <item>Ajustes se queda sembrado con la misma release, para que abrirlo después del aviso la enseñe
+    /// sin volver a pedirla.</item>
+    /// </list></summary>
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        var result = await _updateCheckService.CheckOnStartupAsync();
+        if (result is not { Outcome: UpdateCheckOutcome.UpdateAvailable, Update: { } update }) return;
+
+        _notificationService.PushWithLink(
+            LocalizedTextFormatter.Format("Notification_UpdateAvailable_Title", update.Version),
+            LocalizedTextFormatter.Format("Notification_UpdateAvailable_Message"),
+            update.Url);
+
+        Settings?.ShowAvailableUpdate(update);
     }
 
     /// <summary>Callback pasado a <see cref="SettingsViewModel"/> (mismo patrón que

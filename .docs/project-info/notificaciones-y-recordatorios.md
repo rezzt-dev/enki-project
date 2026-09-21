@@ -27,6 +27,21 @@ que se dispara sigue empujando además un aviso a la campana (comportamiento sin
 puntual de que algo acaba de pasar), pero mientras siga activo y no completado también aparece listado en
 la bandeja 📥 hasta que se completa o se descarta, igual que una tarjeta de Kanban vencida.
 
+**Actualización (iconos y bandeja de entrada):** la barra de título tiene ahora cuatro botones de
+contenido, en este orden fijo: **buscar · notificaciones · recordatorios · bandeja de entrada**. El panel
+de recordatorios descrito arriba pasó de `InboxOutline` a `CalendarClockOutline`, el mismo icono que la
+entrada "Recordatorios" del sidebar (`SidebarSectionCatalog`), para que el botón y la página a la que
+lleva se reconozcan como la misma cosa; `InboxOutline` quedó libre y es ahora el icono del botón nuevo.
+
+Ese botón nuevo, la **bandeja de entrada**, no es un panel más de lectura: es la captura rápida. Abre un
+popup con el mismo `QuickCaptureViewModel` que la mini-ventana global (`Ctrl+Alt+Space`) y que la entrada
+"Captura rápida" de la paleta de comandos — un solo viewmodel, un solo borrador, un solo destino
+recordado (`VaultSettings.QuickCaptureDestination`), así que lo escrito en cualquiera de las tres puertas
+sigue ahí al abrir otra. La idea acaba donde ya acababa: nota en `Inbox/` del vault o tarjeta de Kanban,
+vía `QuickCaptureService`. Es un popup y no una ventana porque el gesto nace desde la ventana de Enki,
+que ya está a la vista. Se oculta por separado con `AppSettings.InboxPanelEnabled` (Ajustes ›
+Notificaciones), igual que la campana y los recordatorios.
+
 ## Modelo y persistencia
 
 - **`models/AppNotification.cs`** — `Id`, `Title`, `Message`, `Severity` (`Info/Success/Warning/Error`),
@@ -46,6 +61,10 @@ la bandeja 📥 hasta que se completa o se descarta, igual que una tarjeta de Ka
   `models/DismissedReminder.cs` + `services/DismissedReminderService.cs`
   (`%AppData%/Enki/dismissed-reminders.json`), keyed por `{ cardId, dueDateUtcSnapshot }` así una tarjeta
   reprogramada vuelve a aparecer en vez de quedar oculta para siempre.
+- **Aplazamientos (T5)** — `models/SnoozedReminder.cs` + `services/SnoozedReminderService.cs`
+  (`<vault>/.tasks/snoozed-reminders.json`), gemelo exacto del almacén de descartes y con el mismo tope
+  de entradas: uno guarda "no me lo vuelvas a enseñar", el otro "vuélvemelo a enseñar a tal hora". Keyed
+  por `{ sourceId, dueUtcSnapshot }` por el mismo motivo, y con un `Count` de aplazamientos consecutivos.
 
 ## ViewModels (`viewmodels/shell/`)
 
@@ -85,10 +104,11 @@ la bandeja 📥 hasta que se completa o se descarta, igual que una tarjeta de Ka
 
 ## Vista (`views/shell/MainWindow.axaml` + `styles/Styles.axaml`)
 
-- Los dos botones viven en el mismo `StackPanel` flotante que ya dibujaba minimizar/maximizar/cerrar,
+- Los botones viven en el mismo `StackPanel` flotante que ya dibujaba minimizar/maximizar/cerrar,
   pero no dependen de `UseCustomTitleBar` — ese flag solo oculta minimizar/maximizar/cerrar cuando el SO
-  dibuja sus propios botones. Campana y bandeja tienen su propio toggle independiente en Ajustes
-  (`NotificationsPanelEnabled`/`RemindersPanelEnabled`).
+  dibuja sus propios botones. Campana, recordatorios y bandeja de entrada tienen cada uno su toggle
+  independiente en Ajustes
+  (`NotificationsPanelEnabled`/`RemindersPanelEnabled`/`InboxPanelEnabled`).
 - Cada botón es un `Button.titlebar-btn` con un `Border.titlebar-badge` superpuesto — cuadrado, no
   redondo, visible solo cuando el contador es > 0 (`CountToBoolConverter`).
 - El panel emergente reutiliza el patrón `Popup` + `Border.dropdown-popover` que ya usaba el selector de
@@ -102,8 +122,8 @@ la bandeja 📥 hasta que se completa o se descarta, igual que una tarjeta de Ka
 Nueva sección en `SettingsViewModel`/`SettingsView.axaml`, mismo patrón de las demás
 (`SettingsSectionViewModel` + `partial void On<Prop>Changed` que escribe a `AppSettings` y guarda):
 
-- **Paneles**: mostrar/ocultar campana y bandeja por separado; activar/desactivar el aviso emergente
-  (toast) del sistema.
+- **Paneles**: mostrar/ocultar campana, recordatorios y bandeja de entrada por separado;
+  activar/desactivar el aviso emergente (toast) del sistema.
 - **Silenciar por categoría**: un toggle por severidad (`Info/Success/Warning/Error`) — una categoría
   silenciada ni se guarda ni aparece en la campana (ver `NotificationService.Push`/`IsMuted`).
 - **Recordatorios**: slider para la ventana de "próxima a vencer" (`ReminderSoonWindowDays`, 1–30 días).
@@ -125,6 +145,46 @@ opcional (visible una vez elegida la fecha) suma `DueHour`/`DueMinute` encima de
 lo que faltaba era la UI, y el criterio de "vencida" en `KanbanCard.IsPastDue` para no tratar una
 tarjeta con hora futura de hoy como si ya hubiera vencido.
 
+## Aplazar recordatorios (T5)
+
+"Aplazar" está en la fila de la bandeja de recordatorios (icono `AlarmSnooze`, junto al de descartar) y en
+la fila del centro de notificaciones de los avisos nacidos de un vencimiento. Ofrece dos duraciones rápidas
+configurables (10 min y 1 h de fábrica), "Esta tarde" (hoy a las 18:00), "Mañana" (mañana a las 09:00) y
+"Personalizado…" (minutos a mano, de 1 minuto a 7 días).
+
+**Aplazar no es reprogramar.** Un aplazamiento nunca toca la entidad de origen: ni la fecha límite de una
+`KanbanCard`, ni el `NotifyAtUtc` de un `Reminder`, ni la serie de uno recurrente. Se registra aparte en
+`SnoozedReminderService` y se resuelve contra la entidad real cada vez que hace falta. El documento de la
+funcionalidad proponía reescribir `NotifyAtUtc` para los recordatorios propios y usar el almacén solo para
+tarjetas; se descartó porque su propio criterio de aceptación —"aplazar una ocurrencia de un recordatorio
+recurrente no deberá alterar las ocurrencias futuras de la serie"— lo contradice: cuando un recordatorio
+recurrente se dispara, `ReminderService.Fire` ya ha avanzado `NotifyAtUtc` a la siguiente ocurrencia, así
+que reescribirlo *sería* mover la serie. Un solo motor para los dos orígenes es además el que deja el
+aplazamiento como algo puramente local, que es lo que decidió §9 del documento de funcionalidades.
+
+**Piezas:**
+
+- `services/SnoozeSchedule.cs` — lógica pura (sin estado, sin disco, sin UI, como `DoNotDisturbSchedule`):
+  traduce una `SnoozeOption` al instante UTC concreto. Las duraciones relativas son aritmética de UTC; las
+  opciones con hora de pared ("esta tarde", "mañana") se calculan en hora local y se convierten al final,
+  por el mismo motivo que `PolarTaskService.CalculateNextDueDate` — "mañana a las 09:00" sigue siendo las
+  09:00 de reloj aunque entre medias haya una transición de horario de verano. La hora local inexistente
+  del salto de primavera se desplaza en pasos de 15 minutos en vez de lanzar.
+- `DoNotDisturbSchedule.NextInstantOutside` — si el instante elegido cae en la franja "no molestar", el
+  aviso se difiere al final de la franja en vez de tragárselo.
+- `services/SnoozedReminderService.cs` — persistencia, `PopDue(nowUtc)` (devuelve y retira los vencidos,
+  mismo contrato que `ReminderService.PopDueReminders`) y `PruneWhere` para soltar los huérfanos.
+- `MainWindowViewModel.CheckDueSnoozes` — en el mismo ciclo de 30 s del temporizador que ya existía, ni un
+  segundo temporizador ni un segundo motor de avisos. Antes de reavisar revalida cada aplazamiento contra
+  los almacenes reales: origen borrado, completado o con la fecha cambiada ⇒ el aplazamiento se descarta.
+- `AppNotification.SnoozeTarget` — a qué vencimiento apunta un aviso, para que el centro de notificaciones
+  pueda ofrecer "Aplazar" sin adivinar el origen a partir del texto. Null en todo lo demás: un fallo de
+  sincronización no es algo que se pueda posponer.
+
+En la bandeja, un ítem aplazado no desaparece: sale del recuento de vencidos (cubo `ReminderBucket.Snoozed`),
+se ordena al final, se atenúa y muestra "Aplazado hasta 15:40" y, a partir del segundo, el contador de
+aplazamientos. No hay tope de aplazamientos consecutivos (§9), pero el contador los hace visibles.
+
 ## Pruebas (`tests/enki.Tests/`)
 
 Proyecto xUnit nuevo, referenciando `enki.csproj` vía `ProjectReference`. Cubre los dos puntos con
@@ -134,6 +194,15 @@ lógica no trivial que el propio diseño original señalaba como los más valios
   de fecha sin hora (comparación de todo el día) contra fecha con hora (comparación de instante).
 - **`Services/NotificationServiceTests.cs`** — `Push` inserta al principio, recorta a 50, persiste entre
   instancias y dispara `NotificationAdded`.
+- **`Services/SnoozeScheduleTests.cs`** — la aritmética de "Aplazar" con zona horaria inyectada
+  (Europe/Madrid, para que el resultado no dependa de la máquina): duraciones, "esta tarde" antes y después
+  de la hora, rodar al día siguiente, DST de primavera, hora local inexistente, franja "no molestar" y
+  valores fuera de rango.
+- **`Services/SnoozedReminderServiceTests.cs`** — aplazar, renovar contando el repetido, `PopDue`,
+  cancelar, podar huérfanos, persistir entre instancias y el tope de 100 entradas.
+- **`ViewModels/ReminderInboxViewModelTests.cs`** — que aplazar no toque la tarjeta ni la serie de un
+  recordatorio recurrente, el valor rápido configurado, el personalizado, el contador, cancelar, que
+  descartar tire el aplazamiento pendiente, un solo menú abierto a la vez y el orden de la lista.
 
 `NotificationService`/`SettingsService` aceptan un parámetro opcional `storageDirectory` (por defecto
 `null` → `%AppData%/Enki`, igual que antes) para que los tests apunten a una carpeta temporal en vez de
@@ -161,7 +230,5 @@ Ninguno bloqueante; ideas para seguir puliendo si hace falta más adelante:
 
 - **Silenciar por origen**, no solo por severidad — p. ej. "no avisarme de sesiones nuevas" sin apagar
   también los errores de vault, que hoy comparten la misma severidad `Success`/`Error`.
-- **Snooze con plazo elegible** (hoy el descarte es "hasta que cambie la fecha"; podría sumarse "ocúltalo
-  N días" sin esperar a un cambio real de la tarjeta).
 - Notificaciones del **SO nativo** (más allá del toast in-app de `WindowNotificationManager`) si se
   justifica para eventos realmente urgentes con la app en segundo plano.
