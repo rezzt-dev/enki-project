@@ -89,6 +89,17 @@ public sealed class NoteDiskStampsTests : IDisposable
     }
 
     [Fact]
+    public void Check_WhenContentChangesKeepingTimestampAndSize_ReportsModified()
+    {
+        var path = WriteNote("Nota.md", "AAAA");
+        var baseline = NoteDiskStamps.TryRead(path)!.Value;
+        File.WriteAllText(path, "BBBB");
+        File.SetLastWriteTimeUtc(path, baseline.LastWriteUtc);
+
+        Assert.Equal(NoteDiskState.Modified, NoteDiskStamps.Check(path, baseline, out _));
+    }
+
+    [Fact]
     public void Check_WhenTheFileIsGone_ReportsMissing()
     {
         var path = WriteNote("Nota.md", "# Nota");

@@ -31,18 +31,17 @@ autoguardado la pisaba con el contenido que Enki tenía en memoria. El historial
 pisado era recuperable, pero solo si el usuario llegaba a enterarse de que había pasado algo. Normalmente
 no.
 
-Es el único punto de la app con impacto sobre la integridad de los datos del usuario, y por eso se resuelve
-con dos mecanismos independientes en vez de con uno.
+Es un punto de impacto directo sobre la integridad de las notas y se protege con dos mecanismos independientes.
 
 ## 2. Las dos capas
 
 | Capa | Quién | Qué garantiza | Cuándo falla |
 | --- | --- | --- | --- |
 | Vigilancia activa | `VaultChangeWatcher` (`FileSystemWatcher`) | Que el usuario se **entere en el momento** de un cambio ajeno sobre una nota abierta | Desbordamiento del búfer de eventos, unidad de red, `inotify` agotado, equipo suspendido |
-| Comprobación previa a guardar | `VaultService.WriteContentChecked` | Que un guardado **nunca** pise un cambio ajeno | No falla: mira el disco en el mismo instante de escribir |
+| Comprobación previa a guardar | `VaultService.WriteContentChecked` | Rechaza el guardado si el contenido leído ya no coincide con la referencia | Sigue existiendo una ventana entre comparar y reemplazar el archivo; no es una transacción con editores externos |
 
-La segunda no depende de la primera. Se puede apagar la vigilancia entera desde Ajustes y la garantía de
-"no pisar" sigue en pie; lo que se pierde es el aviso inmediato.
+La segunda no depende de la primera. Se puede apagar la vigilancia desde Ajustes y se mantiene la
+comprobación previa a escribir; lo que se pierde es el aviso inmediato.
 
 ## 3. Detectar: la huella en disco
 
@@ -57,9 +56,11 @@ Tres campos y no solo la fecha porque:
   el hash, cada una de esas reescrituras abriría un diálogo de conflicto injustificado.
 - Dos contenidos distintos pueden ocupar exactamente lo mismo. Sin el hash, ese cambio pasaría por igual.
 
-`NoteDiskStamps.Check` explota esa jerarquía: primero compara fecha y tamaño, que `FileInfo` ya trae sin
-abrir el archivo; solo si difieren lee y hashea. El camino habitual —nada ha cambiado— no toca el disco más
-allá de un `stat`.
+`NoteDiskStamps.Check` compara siempre el hash. Dos textos diferentes pueden conservar tanto fecha como
+tamaño, por lo que esos metadatos no autorizan por sí solos una escritura. Al abrir o recargar una nota,
+`ReadFromDisk` obtiene el texto y la huella de los mismos bytes, sin reutilizar contenido de la caché.
+Combinar la plantilla diaria, restaurar el historial y reescribir etiquetas o wikilinks también pasan por
+`WriteContentChecked`. Renombrar una pestaña conserva su referencia hasta leer o guardar el contenido.
 
 El hash es de los **bytes del archivo**, no del texto. Para una nota de una sesión cifrada eso significa
 hashear el criptograma, que es exactamente lo que interesa: permite saber que el archivo cambió sin
@@ -258,3 +259,14 @@ porque quien resuelve un cambio externo es el editor.
 
 Lo que no cubren las pruebas automáticas —un sincronizador de verdad y edición simultánea en otro
 editor— está en `qa-manual-release-candidate.md`.
+
+## Protección al cerrar y resolver conflictos
+
+`TryPrepareClose` vuelca primero el guardado pendiente. Si descubre un conflicto durante ese guardado,
+conserva el borrador en el historial antes de permitir el cierre. Si fallan tanto el guardado como la
+conservación del borrador, la pestaña permanece abierta; la ventana tampoco se cierra y una sesión
+cifrada no se bloquea mientras no se puedan conservar sus cambios.
+
+«Conservar la mía» y «Cargar la de disco» también requieren que la versión descartada quede realmente
+persistida. Una copia idéntica ya existente cuenta como respaldo; un fallo al escribir el historial no.
+La restauración de una versión protege tanto el contenido del disco como el borrador aún sin autoguardar.

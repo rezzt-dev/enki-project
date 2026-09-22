@@ -39,6 +39,30 @@ public class NotesViewModelOpenTabsTests : IDisposable
     }
 
     [Fact]
+    public void CloseTab_WhenSaveFails_KeepsDraftOpenUntilRetrySucceeds()
+    {
+        var (notes, _, vault, _) = CreateSetup();
+        var note = vault.CreateNote("Nota");
+        notes.OpenNote(note);
+        var editor = notes.ActiveEditor!;
+        editor.Document.Text = "Borrador pendiente";
+        editor.OnTextChanged(editor.Document.Text);
+        Directory.Move(_vaultDir, _vaultDir + "-offline");
+
+        notes.CloseEditorTabCommand.Execute(editor);
+
+        Assert.Same(editor, Assert.Single(notes.OpenEditors));
+        Assert.True(editor.IsDirty);
+        Assert.False(editor.TryPrepareClose());
+
+        Directory.Move(_vaultDir + "-offline", _vaultDir);
+        notes.CloseEditorTabCommand.Execute(editor);
+
+        Assert.Empty(notes.OpenEditors);
+        Assert.Equal("Borrador pendiente", File.ReadAllText(note.FullPath));
+    }
+
+    [Fact]
     public void OpenNote_PersistsOpenPathsAndActivePath()
     {
         var (notes, settings, vault, _) = CreateSetup();

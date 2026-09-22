@@ -96,7 +96,6 @@ public sealed partial class EditorViewModel
     /// movimiento hecho desde la propia Enki.</summary>
     private void TrackForExternalChanges()
     {
-        _diskStamp = NoteDiskStamps.TryRead(Note.FullPath);
         if (_changeWatcher is null) return;
 
         if (_diskStamp is { } stamp) _changeWatcher.Track(Note.FullPath, stamp);
@@ -279,7 +278,7 @@ public sealed partial class EditorViewModel
     {
         if (_conflicting is not { } theirs) return;
 
-        _vaultService.CaptureSnapshot(Note, theirs.Content, NoteVersionTrigger.ExternalConflict);
+        if (!TryPreserveConflictSnapshot(theirs.Content)) return;
         // Adoptar la huella de la versión externa es lo que deja pasar la comprobación previa del
         // guardado de abajo: ya se ha visto ese contenido y se ha decidido descartarlo a conciencia.
         AdoptDiskStamp(theirs.Stamp);
@@ -287,6 +286,7 @@ public sealed partial class EditorViewModel
 
         Save(Document.Text);
         History.Reload();
+        if (IsDirty || IsAutosavePaused) return;
 
         _notificationService?.PushLocalized(
             LocalizedTextFormatter.Format("Notification_NoteConflictKeptMine_Title"),
@@ -301,7 +301,7 @@ public sealed partial class EditorViewModel
     {
         if (_conflicting is not { } theirs) return;
 
-        _vaultService.CaptureSnapshot(Note, Document.Text, NoteVersionTrigger.ExternalConflict);
+        if (!TryPreserveConflictSnapshot(Document.Text)) return;
 
         var caret = LastCaretOffset;
         ResolveConflict();
@@ -373,6 +373,8 @@ public sealed partial class EditorViewModel
         }
 
         SyncRenamedNote(recreated);
+        AdoptDiskStamp(NoteDiskStamps.TryRead(recreated.FullPath));
+        TrackForExternalChanges();
         _lastSavedContent = Document.Text;
         _pendingText = null;
         IsDirty = false;
@@ -444,17 +446,33 @@ public sealed partial class EditorViewModel
     /// conflicto aún pendiente y texto sin guardar, ese texto no se puede escribir sobre la nota —es
     /// justo lo que la pausa impide— pero tampoco se puede perder. Se guarda como versión del historial
     /// con el motivo "conflicto externo", que es exactamente donde el usuario ya sabe buscarlo.</summary>
-    private void PreserveUnsavedTextOnClose()
+    private bool PreserveUnsavedTextOnClose()
     {
-        if (!IsAutosavePaused || !IsDirty) return;
-
         var unsaved = _pendingText ?? Document.Text;
-        if (_vaultService.CaptureSnapshot(Note, unsaved, NoteVersionTrigger.ExternalConflict) is null) return;
+        if (!TryPreserveConflictSnapshot(unsaved)) return false;
 
         _notificationService?.PushLocalized(
             LocalizedTextFormatter.Format("Notification_NoteUnsavedKeptInHistory_Title"),
             LocalizedTextFormatter.Format("Notification_NoteUnsavedKeptInHistory_Message", Title),
             NotificationSeverity.Warning);
+        return true;
+    }
+
+    private bool TryPreserveConflictSnapshot(string content)
+    {
+        try
+        {
+            _vaultService.CaptureSnapshotChecked(Note, content, NoteVersionTrigger.ExternalConflict);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteSaveFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteSaveFailed_Message", Title,
+                    VaultFailureReasons.DescribeLocalized(ex)), NotificationSeverity.Error);
+            return false;
+        }
     }
 
     /// <summary>Deja de atender avisos del vigilante — lo llama <c>Close</c> al cerrar la pestaña.</summary>

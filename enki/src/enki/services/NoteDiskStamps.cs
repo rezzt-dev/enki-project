@@ -33,10 +33,9 @@ public static class NoteDiskStamps
         }
     }
 
-    /// <summary>Compara el archivo con <paramref name="baseline"/>. El camino habitual —nada ha
-    /// cambiado— se resuelve con los metadatos que <see cref="FileInfo"/> ya trae, sin abrir el archivo;
-    /// solo cuando fecha o tamaño difieren se lee y se hashea, para distinguir un cambio real de un
-    /// <c>touch</c> de un sincronizador que reescribe bytes idénticos.</summary>
+    /// <summary>Compara los bytes del archivo con <paramref name="baseline"/>. Fecha y tamaño pueden
+    /// coincidir tras una edición externa (sincronización o marcas de tiempo de baja resolución), así
+    /// que nunca bastan para autorizar una escritura sobre el contenido del usuario.</summary>
     /// <param name="current">La huella recién leída, que el llamante debería adoptar como nueva
     /// referencia salvo que el resultado sea <see cref="NoteDiskState.Missing"/>.</param>
     /// <exception cref="IOException">El archivo existe pero no se pudo leer (otro proceso lo tiene
@@ -51,18 +50,12 @@ public static class NoteDiskStamps
             return NoteDiskState.Missing;
         }
 
-        current = new NoteDiskStamp(info.LastWriteTimeUtc, info.Length, baseline.ContentHash);
-        if (current.HasSameMetadataAs(baseline)) return NoteDiskState.Unchanged;
-
         current = Read(info);
         return current.HasSameContentAs(baseline) ? NoteDiskState.Unchanged : NoteDiskState.Modified;
     }
 
-    /// <summary>Los metadatos se toman <em>antes</em> de hashear, no después, y es deliberado: si el
-    /// archivo cambia justo mientras se lee, la huella queda con la fecha vieja junto al hash nuevo, y la
-    /// siguiente comprobación verá metadatos distintos y volverá a leer. Al revés (fecha nueva con hash
-    /// viejo) el atajo por metadatos de <see cref="Check"/> daría por bueno un archivo que ya no lo es,
-    /// que es exactamente el falso negativo que esta funcionalidad existe para evitar.</summary>
+    /// <summary>Lee la huella de los bytes actuales. Los metadatos se toman antes de leer para no
+    /// atribuir al contenido leído la fecha de una escritura posterior.</summary>
     public static NoteDiskStamp Read(FileInfo info)
     {
         var lastWriteUtc = info.LastWriteTimeUtc;

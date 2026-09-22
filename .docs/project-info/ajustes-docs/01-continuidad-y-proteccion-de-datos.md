@@ -85,27 +85,18 @@ Complemento opcional y apagado por defecto (`AutoBackupEnabled = false`) al back
 de arriba: sin él, una edición destructiva entre dos backups manuales no tenía ninguna versión anterior
 a la que volver.
 
-- `AutoBackupIntervalDays` (por defecto `1`) y `AutoBackupRetentionCount` (por defecto `5`) —
-  **ninguno de los dos tiene control en la UI**: no hay slider, campo numérico ni binding hacia ellos en
-  `SettingsView.axaml` ni propiedad expuesta en `SettingsViewModel` más allá del propio `bool`
-  `AutoBackupEnabled`. Son ajustables en el modelo (`AppSettings.cs:238-245`) y respetados por
-  `VaultBackupService`, pero hoy están fijos a sus valores por defecto para cualquier usuario — la copia
-  descriptiva del toggle ("una vez al día... conserva las últimas 5") es en realidad texto fijo, no una
-  lectura en vivo de esos dos campos.
-- Se comprueba con `VaultBackupService.RunScheduledBackupIfDue(settingsService)`
-  (`VaultBackupService.cs:84-110`): no-op si `AutoBackupEnabled` está apagado o si todavía no han pasado
-  `AutoBackupIntervalDays` desde `LastAutoBackupUtc`. El compositor
-  (`MainWindowViewModel.Composition.cs:112-116`) lo invoca una vez al arrancar (por si Enki llevaba días
-  cerrado) y luego cada 6 horas mediante un `DispatcherTimer`, para que el intervalo configurado se
-  respete aunque la app permanezca abierta varios días seguidos.
-- Los backups automáticos se escriben en `%AppData%/Enki/backups/Enki-AutoBackup-{yyyy-MM-dd-HHmmss}.zip`
-  usando el mismo `CreateBackup` (misma redacción de tokens Polar) y luego se rota: se conservan los
-  `AutoBackupRetentionCount` más recientes por fecha de creación y el resto se borra
-  (`RotateOldBackups`, `VaultBackupService.cs:117-133`). Un backup antiguo bloqueado/no borrable se
-  registra en el log y se salta, sin abortar la rotación de los demás.
-- `RunScheduledBackupIfDue` nunca lanza — un `IOException`/`UnauthorizedAccessException` se registra en
-  el log (`LogService.Error`) y el método devuelve `false`, pensado para llamarse desde un timer de
-  fondo donde un fallo no debe tumbar nada más.
+- `AutoBackupIntervalDays` (por defecto `1`) y `AutoBackupRetentionCount` (por defecto `5`) se
+  configuran en Ajustes mediante campos numéricos.
+- `RunScheduledBackupIfDue` comprueba el vencimiento al arrancar y cada seis horas. Una copia incompleta
+  no actualiza `LastAutoBackupUtc`: se reintenta en una comprobación posterior.
+- Los archivos se escriben primero como `Enki-IncompleteBackup-{fecha-UTC}-{id}.zip` dentro de
+  `%AppData%/Enki/backups/` (o el directorio de desarrollo correspondiente). Solo una copia completa pasa
+  a llamarse `Enki-AutoBackup-{fecha-UTC}-{id}.zip` y permite rotar las copias completas anteriores.
+  Las copias parciales se conservan por separado y no participan en esa rotación.
+- Un vault ausente se registra como entrada fallida `vault/`; respaldar únicamente los ajustes no se
+  considera un éxito. Los fallos y las copias incompletas se anuncian mediante `NotificationService`.
+- El ZIP temporal nace con permisos privados en Unix y se fuerza a disco antes de sustituir el destino.
+  Los fallos de E/S, permisos o bloqueo se registran y devuelven `false` en la ejecución programada.
 
 ## §1 — Exportar / Importar ajustes
 

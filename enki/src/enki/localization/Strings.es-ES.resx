@@ -5922,4 +5922,7 @@ A disfrutar escribiendo.</value>
   <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Mostrar el botón de bandeja de entrada en la barra de título, para apuntar una idea directamente en el vault.</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Selector de vault</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Mostrar la fila para cambiar de vault encima de las secciones de la barra lateral. Oculta, la paleta de comandos sigue cambiando de vault.</value></data>
+  <data name="Notification_NoteOpenFailed_Title" xml:space="preserve">
+    <value>No se pudo abrir la nota</value>
+  </data>
 </root>

@@ -26,9 +26,9 @@ public enum NoteDiskState
 /// <para><b>Por qué tres campos y no solo la fecha.</b> La granularidad de <c>LastWriteTimeUtc</c> no es la
 /// misma en todos los sistemas de archivos (FAT/exFAT redondean a 2 s, NTFS y ext4 no coinciden entre sí),
 /// y un sincronizador puede reescribir un archivo byte a byte idéntico solo para refrescar su marca de
-/// tiempo. Comparar fecha <em>y</em> tamaño descarta el caso común sin leer nada; el hash es el desempate
-/// que evita el falso positivo —y el diálogo de conflicto injustificado— cuando los metadatos cambian pero
-/// el contenido no.</para>
+/// tiempo. Fecha y tamaño sirven como metadatos de diagnóstico; el hash decide siempre si el contenido
+/// cambió, incluso cuando el sincronizador conserva ambos metadatos. También evita un diálogo de
+/// conflicto injustificado cuando solo cambia la fecha.</para>
 ///
 /// <para><b>El hash es de los bytes del archivo, no del texto.</b> Para una nota dentro de una sesión
 /// cifrada eso significa hashear el criptograma, que es exactamente lo que interesa: permite saber que el
@@ -36,7 +36,7 @@ public enum NoteDiskState
 public readonly record struct NoteDiskStamp(DateTime LastWriteUtc, long SizeBytes, string ContentHash)
 {
     /// <summary>Comparación barata (sin tocar el disco) de los metadatos que <see cref="System.IO.FileInfo"/>
-    /// ya trae consigo. Cuando devuelve <see langword="true"/> no hace falta releer ni hashear nada.</summary>
+    /// ya trae consigo. La igualdad no garantiza que el contenido siga siendo el mismo.</summary>
     public bool HasSameMetadataAs(NoteDiskStamp other) =>
         LastWriteUtc == other.LastWriteUtc && SizeBytes == other.SizeBytes;
 

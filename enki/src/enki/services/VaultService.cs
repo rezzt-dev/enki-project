@@ -1408,27 +1408,20 @@ public sealed partial class VaultService
         var newDir = Path.GetDirectoryName(oldPath)!;
         var renamedNotePath = Path.Combine(newDir, newLinkName + ".md");
 
-        foreach (var (noteFile, content) in notesBeforeRename)
+        foreach (var (noteFile, _) in notesBeforeRename)
         {
-            var rewritten = RewriteLinksTo(content, notesSnapshot, oldPath, newLinkName);
-            if (rewritten == content) continue;
-
             // The renamed note itself now lives at its new path on disk; every other note keeps its own.
             var writePath = PathsEqual(noteFile.FullPath, oldPath) ? renamedNotePath : noteFile.FullPath;
-
-            // This rewrite can silently touch every note in the vault that linked to the renamed one — none
-            // of them go through EditorViewModel.Save, so none get the usual autosave-triggered history
-            // checkpoint. Snapshot each one's pre-rewrite content here instead, so a rename's link-fixup
-            // cascade is recoverable the same way a bad restore is (historial local de versiones).
-            var snapshotTarget = noteFile.Clone();
-            snapshotTarget.FullPath = writePath;
-            CaptureSnapshot(snapshotTarget, content, NoteVersionTrigger.PreBulkOperation);
-
             try
             {
-                WriteFileAtomic(writePath, rewritten);
+                var disk = ReadFromDisk(writePath);
+                if (disk is not { } fresh) continue;
+                var rewritten = RewriteLinksTo(fresh.Content, notesSnapshot, oldPath, newLinkName);
+                if (rewritten == fresh.Content) continue;
+                CaptureSnapshot(fresh.Note, fresh.Content, NoteVersionTrigger.PreBulkOperation);
+                WriteContentChecked(fresh.Note, rewritten, fresh.Stamp);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
             {
                 LogService.Error($"No se pudo actualizar wikilinks en '{writePath}' tras renombrar '{oldPath}'", ex);
             }

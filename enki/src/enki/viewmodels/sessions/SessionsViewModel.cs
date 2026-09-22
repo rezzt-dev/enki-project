@@ -32,7 +32,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
     /// <summary>Notifies Notas so it can close/flush any tab open on one of the just-locked session's notes
     /// (análisis §4.1) — invoked from <see cref="LockSession"/> while the DEK is still unlocked. Optional so
     /// existing tests/call sites that don't care about this coupling keep compiling unchanged.</summary>
-    private readonly Action<Session>? _onSessionLocked;
+    private readonly Func<Session, bool>? _onSessionLocked;
 
     public ObservableCollection<SessionListItemViewModel> Sessions { get; } = [];
 
@@ -291,7 +291,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
         Action onSessionsChanged,
         KanbanService? kanbanService = null,
         Action<string>? onOpenLinkedCard = null,
-        Action<Session>? onSessionLocked = null)
+        Func<Session, bool>? onSessionLocked = null)
     {
         _vaultService = vaultService;
         _sessionService = sessionService;
@@ -678,7 +678,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
         // Must run before the DEK is actually dropped below — CloseEditorsForLockedSession flushes any
         // dirty open tab on this session's notes, which needs to still be able to encrypt+write
         // (análisis §4.1: locking used to leave those tabs open, editable, and silently failing to save).
-        _onSessionLocked?.Invoke(item.Session);
+        if (_onSessionLocked?.Invoke(item.Session) == false) return;
         _sessionService.Lock(item.Session);
         item.IsUnlocked = false;
         if (SelectedSession == item) LoadGraph();

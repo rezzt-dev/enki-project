@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using enki.Models;
+using enki.Localization;
 
 namespace enki.Services;
 
@@ -59,41 +60,52 @@ public sealed class VaultBackupService
         var failedEntries = new List<string>();
         try
         {
-            using (var archive = ZipFile.Open(temporary, ZipArchiveMode.Create))
+            var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.ReadWrite, Share = FileShare.None };
+            if (!OperatingSystem.IsWindows()) options.UnixCreateMode = PrivateDataPermissions.FileMode;
+            using (var stream = new FileStream(temporary, options))
             {
-                if (!string.IsNullOrWhiteSpace(_vaultService.VaultPath) && Directory.Exists(_vaultService.VaultPath))
+                using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
                 {
-                    // Un enlace a ~/ o un ciclo no forma parte del vault y no puede ampliar el backup a
-                    // datos arbitrarios del equipo. ReparsePoint cubre enlaces de archivos y carpetas.
-                    foreach (var file in Directory.EnumerateFiles(_vaultService.VaultPath, "*", VaultEnumerationOptions))
+                    if (!string.IsNullOrWhiteSpace(_vaultService.VaultPath) && Directory.Exists(_vaultService.VaultPath))
                     {
-                        var fullFile = Path.GetFullPath(file);
-                        if (string.Equals(fullFile, destination, VaultService.PathComparison)
-                            || string.Equals(fullFile, temporary, VaultService.PathComparison))
-                            continue;
-                        var relative = Path.GetRelativePath(_vaultService.VaultPath, file).Replace(Path.DirectorySeparatorChar, '/');
-                        var entryName = "vault/" + relative;
-                        var isVaultSettings = string.Equals(relative, ".enki/settings.json", StringComparison.OrdinalIgnoreCase);
-                        var added = isVaultSettings
-                            ? TryAddRedactedSettingsFile(archive, file, entryName)
-                            : TryAddFile(archive, file, entryName);
-                        if (!added) failedEntries.Add(entryName);
+                        // Un enlace a ~/ o un ciclo no forma parte del vault y no puede ampliar el backup a
+                        // datos arbitrarios del equipo. ReparsePoint cubre enlaces de archivos y carpetas.
+                        foreach (var file in Directory.EnumerateFiles(_vaultService.VaultPath, "*", VaultEnumerationOptions))
+                        {
+                            var fullFile = Path.GetFullPath(file);
+                            if (string.Equals(fullFile, destination, VaultService.PathComparison)
+                                || string.Equals(fullFile, temporary, VaultService.PathComparison))
+                                continue;
+                            var relative = Path.GetRelativePath(_vaultService.VaultPath, file).Replace(Path.DirectorySeparatorChar, '/');
+                            var entryName = "vault/" + relative;
+                            var isVaultSettings = string.Equals(relative, ".enki/settings.json", StringComparison.OrdinalIgnoreCase);
+                            var added = isVaultSettings
+                                ? TryAddRedactedSettingsFile(archive, file, entryName)
+                                : TryAddFile(archive, file, entryName);
+                            if (!added) failedEntries.Add(entryName);
+                        }
                     }
-                }
+                    else
+                    {
+                        // Una unidad desconectada nunca equivale a un vault respaldado correctamente.
+                        failedEntries.Add("vault/");
+                    }
 
-                if (Directory.Exists(_appDataDirectory))
-                {
-                    foreach (var file in Directory.EnumerateFiles(_appDataDirectory, "*.json", SearchOption.TopDirectoryOnly))
+                    if (Directory.Exists(_appDataDirectory))
                     {
-                        var entryName = "app-data/" + Path.GetFileName(file);
-                        // Un settings.json heredado puede conservar una sesión Polar si todavía no se pudo
-                        // migrar. El backup siempre redacta sus tokens, igual que los del vault.
-                        var added = string.Equals(Path.GetFileName(file), "settings.json", StringComparison.OrdinalIgnoreCase)
-                            ? TryAddRedactedSettingsFile(archive, file, entryName)
-                            : TryAddFile(archive, file, entryName);
-                        if (!added) failedEntries.Add(entryName);
+                        foreach (var file in Directory.EnumerateFiles(_appDataDirectory, "*.json", SearchOption.TopDirectoryOnly))
+                        {
+                            var entryName = "app-data/" + Path.GetFileName(file);
+                            // Un settings.json heredado puede conservar una sesión Polar si todavía no se pudo
+                            // migrar. El backup siempre redacta sus tokens, igual que los del vault.
+                            var added = string.Equals(Path.GetFileName(file), "settings.json", StringComparison.OrdinalIgnoreCase)
+                                ? TryAddRedactedSettingsFile(archive, file, entryName)
+                                : TryAddFile(archive, file, entryName);
+                            if (!added) failedEntries.Add(entryName);
+                        }
                     }
                 }
+                stream.Flush(flushToDisk: true);
             }
 
             // El backup anterior sigue intacto durante toda la compresión. Solo se reemplaza cuando el
@@ -258,7 +270,7 @@ public sealed class VaultBackupService
     /// <see cref="AppSettings.AutoBackupIntervalDays"/> desde <see cref="AppSettings.LastAutoBackupUtc"/>.
     /// Nunca lanza — pensado para llamarse desde un timer periódico de fondo (<c>MainWindowViewModel</c>),
     /// donde un fallo debe quedar en el log en vez de tumbar cualquier otra cosa.</summary>
-    public bool RunScheduledBackupIfDue(SettingsService settingsService)
+    public bool RunScheduledBackupIfDue(SettingsService settingsService, NotificationService? notificationService = null)
     {
         var settings = settingsService.Settings;
         if (!settings.AutoBackupEnabled) return false;
@@ -270,8 +282,22 @@ public sealed class VaultBackupService
         try
         {
             PrivateDataPermissions.EnsurePrivateDirectory(AutoBackupDirectory);
-            var destination = Path.Combine(AutoBackupDirectory, $"Enki-AutoBackup-{DateTime.Now:yyyy-MM-dd-HHmmss}.zip");
-            CreateBackup(destination);
+            var suffix = $"{DateTime.UtcNow:yyyy-MM-dd-HHmmss}-{Guid.NewGuid():N}.zip";
+            // Las copias parciales quedan fuera de la rotación de copias completas incluso si el
+            // proceso termina antes de evaluar el resultado.
+            var destination = Path.Combine(AutoBackupDirectory, "Enki-IncompleteBackup-" + suffix);
+            var result = CreateBackup(destination);
+            if (!result.IsComplete)
+            {
+                LogService.Warning($"Backup automático incompleto: {string.Join(", ", result.FailedEntries)}");
+                notificationService?.PushLocalized(
+                    LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupIncompleteTitle"),
+                    LocalizedTextFormatter.PluralFormat("Settings_General_DangerZone_BackupIncompleteMessage",
+                        result.FailedEntries.Count, result.FailedEntries.Count, destination),
+                    NotificationSeverity.Warning);
+                return false;
+            }
+            File.Move(destination, Path.Combine(AutoBackupDirectory, "Enki-AutoBackup-" + suffix));
 
             settings.LastAutoBackupUtc = DateTime.UtcNow;
             settingsService.Save();
@@ -279,9 +305,12 @@ public sealed class VaultBackupService
             RotateOldBackups(AutoBackupDirectory, Math.Max(1, settings.AutoBackupRetentionCount));
             return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or TimeoutException)
         {
             LogService.Error("No se pudo crear el backup automático", ex);
+            notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_DangerZone_BackupFailedTitle"),
+                VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
             return false;
         }
     }

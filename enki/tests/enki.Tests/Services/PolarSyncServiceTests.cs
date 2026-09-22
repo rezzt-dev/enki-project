@@ -1,6 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
 using enki.Models;
 using enki.Services;
 using Xunit;
@@ -18,13 +21,47 @@ namespace enki.Tests.Services;
 /// in any environment without a real Supabase account linked (including this test project's own CI/fresh
 /// checkout, where <c>local.properties</c> doesn't exist).</item>
 /// </list>
-/// Full push/pull HTTP orchestration against a live (or mocked) Supabase endpoint is intentionally not
-/// covered here — <see cref="SupabaseRestClient"/> always opens a real <see cref="System.Net.Http.HttpClient"/>
-/// with no injectable transport, so exercising it would mean either a live network dependency or a larger
-/// refactor than this test-coverage pass justifies; see docs/analisis-proyecto/03-problemas-y-deuda-tecnica.md
-/// §8.</summary>
+/// También verifica el avance del cursor con el transporte HTTP simulado de SupabaseRestClient,
+/// sin credenciales reales ni peticiones de red.</summary>
 public class PolarSyncServiceTests : IDisposable
 {
+    [Fact]
+    public async System.Threading.Tasks.Task SyncNowAsync_CursorDoesNotSkipChangesArrivingDuringPull()
+    {
+        var settings = new SettingsService(_storageDirectory, new TestPolarCredentialStore());
+        settings.Settings.PolarLinked = true;
+        settings.Settings.PolarUserId = "user";
+        settings.Settings.PolarAccessToken = "test-token";
+        using var handler = new FakeHttpMessageHandler();
+        var auth = new PolarAuthService(settings, handler, "https://fake.supabase.test", "test-key");
+        var rest = new SupabaseRestClient(auth, handler, "https://fake.supabase.test", "test-key");
+        var tasks = new PolarTaskService(_storageDirectory);
+        var reminders = new ReminderService(_storageDirectory);
+        var sync = new PolarSyncService(auth, rest, tasks, reminders, settings);
+        long firstPullAt = 0;
+        handler.Enqueue(_ =>
+        {
+            firstPullAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("[]") };
+        });
+        handler.Enqueue(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("[]") });
+        handler.Enqueue(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("[]") });
+        handler.Enqueue(_ =>
+        {
+            // Distingue el comienzo y el final del ciclo, sin depender de una cuenta ni de la red.
+            Thread.Sleep(20);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("[]") };
+        });
+
+        await sync.SyncNowAsync();
+
+        Assert.Null(sync.LastError);
+        Assert.Equal(4, handler.Requests.Count);
+        Assert.InRange(settings.Settings.PolarLastSyncAtUtcMs, 1, firstPullAt - 1);
+        Assert.Equal(settings.Settings.PolarLastSyncAtUtcMs,
+            new SettingsService(_storageDirectory, new TestPolarCredentialStore()).Settings.PolarLastSyncAtUtcMs);
+    }
+
     private readonly string _storageDirectory =
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
 

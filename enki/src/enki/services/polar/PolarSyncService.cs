@@ -151,6 +151,10 @@ public sealed class PolarSyncService
         var overwrittenTitles = new List<string>();
         try
         {
+            // El siguiente ciclo debe volver a leer cambios que aparezcan mientras este está
+            // recorriendo las cuatro tablas. Usar la hora de finalización dejaba un hueco permanente
+            // entre la consulta de cada tabla y el final. gt requiere solapar el milisegundo inicial.
+            var syncedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 1;
             var userId = _auth.UserId!;
             var cursor = SyncCursor;
 
@@ -173,7 +177,6 @@ public sealed class PolarSyncService
             // common case, not an edge case.
             if (_taskService.RollRecurringTasks()) tasksChanged = true;
 
-            var syncedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (_vaultSettingsService is not null)
             {
                 _vaultSettingsService.Settings.PolarLastSyncAtUtcMs = syncedAt;

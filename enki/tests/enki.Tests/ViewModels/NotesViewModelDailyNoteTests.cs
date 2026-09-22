@@ -253,4 +253,30 @@ public class NotesViewModelDailyNoteTests : IDisposable
         Assert.False(editor.HasPendingDailyTemplateSections);
         Assert.Contains("## Mañana", File.ReadAllText(Path.Combine(_vaultPath, FileNameFor(Today))));
     }
+
+    [Fact]
+    public void MergeDailyTemplate_AfterExternalEdit_PreservesBothVersionsAndOpensConflict()
+    {
+        var h = CreateViewModel();
+        var path = Path.Combine(_vaultPath, FileNameFor(Today));
+        File.WriteAllText(path, "## Hoy\n\nTexto original\n");
+        var templatesDirectory = Path.Combine(_vaultPath, ".enki", NoteTemplateService.TemplatesFolderName);
+        Directory.CreateDirectory(templatesDirectory);
+        File.WriteAllText(Path.Combine(templatesDirectory, "daily.md"),
+            "---\nname: Diario\n---\n\n## Hoy\n\n## Mañana\n");
+        h.VaultSettings.Settings.DailyNoteTemplate = "daily.md";
+        h.VaultSettings.Save();
+        h.Notes.OpenDailyNoteCommand.Execute(null);
+        var editor = h.Notes.ActiveEditor!;
+        editor.Document.Text = "## Hoy\n\nBorrador local\n";
+        editor.OnTextChanged(editor.Document.Text);
+        File.WriteAllText(path, "## Hoy\n\nEdición externa\n");
+
+        editor.MergeDailyTemplateCommand.Execute(null);
+
+        Assert.Equal("## Hoy\n\nEdición externa\n", File.ReadAllText(path));
+        Assert.Contains("Borrador local", editor.Document.Text);
+        Assert.True(editor.IsExternalConflictOpen);
+        Assert.True(editor.IsAutosavePaused);
+    }
 }

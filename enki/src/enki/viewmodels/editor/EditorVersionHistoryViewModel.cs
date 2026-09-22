@@ -21,6 +21,7 @@ public sealed partial class EditorVersionHistoryViewModel : ObservableObject
     private readonly NotificationService? _notificationService;
     private readonly Func<string> _getCurrentText;
     private readonly Action<string> _applyRestoredContent;
+    private readonly Func<string, bool>? _restoreVersion;
     private NoteFile _note;
 
     public ObservableCollection<NoteVersionItemViewModel> Items { get; } = [];
@@ -49,13 +50,14 @@ public sealed partial class EditorVersionHistoryViewModel : ObservableObject
     private bool _isPendingRestore;
 
     public EditorVersionHistoryViewModel(VaultService vaultService, NoteFile note, NotificationService? notificationService,
-        Func<string> getCurrentText, Action<string> applyRestoredContent)
+        Func<string> getCurrentText, Action<string> applyRestoredContent, Func<string, bool>? restoreVersion = null)
     {
         _vaultService = vaultService;
         _note = note;
         _notificationService = notificationService;
         _getCurrentText = getCurrentText;
         _applyRestoredContent = applyRestoredContent;
+        _restoreVersion = restoreVersion;
         Reload();
     }
 
@@ -124,7 +126,14 @@ public sealed partial class EditorVersionHistoryViewModel : ObservableObject
 
         try
         {
-            _vaultService.RestoreVersion(_note, item.Id);
+            if (_restoreVersion is not null)
+            {
+                if (!_restoreVersion(item.Id)) return;
+            }
+            else
+            {
+                _vaultService.RestoreVersion(_note, item.Id, unsavedContent: _getCurrentText());
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {

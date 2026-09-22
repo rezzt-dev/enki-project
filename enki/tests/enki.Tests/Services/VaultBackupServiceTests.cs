@@ -315,6 +315,37 @@ public class VaultBackupServiceTests : IDisposable
     }
 
     [Fact]
+    public void RunScheduledBackupIfDue_WithIncompleteBackup_PreservesPreviousCopiesAndDueDate()
+    {
+        var service = CreateService();
+        var settings = new SettingsService(_appDataDirectory);
+        settings.Settings.AutoBackupEnabled = true;
+        settings.Settings.AutoBackupRetentionCount = 1;
+        var backups = Path.Combine(_appDataDirectory, "backups");
+        Directory.CreateDirectory(backups);
+        var previous = Path.Combine(backups, "Enki-AutoBackup-old.zip");
+        File.WriteAllText(previous, "copia anterior");
+        // Provoca una omisión determinista: los ajustes ilegibles nunca se copian sin redactar.
+        File.WriteAllText(Path.Combine(_appDataDirectory, "settings.json"), "{invalid");
+
+        Assert.False(service.RunScheduledBackupIfDue(settings));
+        Assert.Null(settings.Settings.LastAutoBackupUtc);
+        Assert.Equal("copia anterior", File.ReadAllText(previous));
+    }
+
+    [Fact]
+    public void RunScheduledBackupIfDue_WithMissingVault_PreservesPreviousCopiesAndDueDate()
+    {
+        var service = CreateService();
+        var settings = new SettingsService(_appDataDirectory);
+        settings.Settings.AutoBackupEnabled = true;
+        Directory.Delete(_vaultPath, recursive: true);
+
+        Assert.False(service.RunScheduledBackupIfDue(settings));
+        Assert.Null(settings.Settings.LastAutoBackupUtc);
+    }
+
+    [Fact]
     public void RunScheduledBackupIfDue_RotatesOldBackupsBeyondRetentionCount()
     {
         var service = CreateService();

@@ -80,6 +80,7 @@ public sealed partial class VaultService
     {
         try
         {
+            EnsureVaultAvailable();
             var folder = VersionsFolderFor(note.FullPath);
             var manifest = LoadManifest(folder);
             var latest = manifest.OrderByDescending(v => v.CreatedUtc).FirstOrDefault();
@@ -87,7 +88,7 @@ public sealed partial class VaultService
             if (latest is not null)
             {
                 var latestPath = SnapshotFilePath(folder, latest.Id);
-                if (File.Exists(latestPath) && SafeReadContent(latestPath) == content) return null;
+                if (File.Exists(latestPath) && ReadFromDisk(latestPath)?.Content == content) return null;
 
                 if (trigger == NoteVersionTrigger.Autosave &&
                     DateTime.UtcNow - latest.CreatedUtc < MinimumAutosaveInterval)
@@ -124,14 +125,27 @@ public sealed partial class VaultService
     /// snapshot — so restoring the wrong version by mistake is itself just another entry in the list to
     /// restore back from, never a dead end. Throws if the target version no longer exists, or if the note's
     /// session is locked (same failure modes as <see cref="WriteContent"/>).</summary>
-    public void RestoreVersion(NoteFile note, string versionId)
+    public void RestoreVersion(NoteFile note, string versionId, NoteDiskStamp? baseline = null, string? unsavedContent = null)
     {
-        var content = ReadVersionContent(note, versionId)
+        var content = ReadFromDisk(SnapshotFilePath(VersionsFolderFor(note.FullPath), versionId))?.Content
             ?? throw new FileNotFoundException($"La versión '{versionId}' ya no existe.", versionId);
 
-        var currentContent = ReadContent(note);
-        CaptureSnapshot(note, currentContent, NoteVersionTrigger.PreRestore);
-        WriteContent(note, content);
+        var disk = ReadFromDisk(note.FullPath)
+            ?? throw new FileNotFoundException("La nota que se quiere restaurar ya no existe.", note.FullPath);
+        CaptureSnapshotChecked(note, disk.Content, NoteVersionTrigger.PreRestore);
+        if (unsavedContent is not null && unsavedContent != disk.Content)
+            CaptureSnapshotChecked(note, unsavedContent, NoteVersionTrigger.PreRestore);
+        WriteContentChecked(note, content, baseline ?? disk.Stamp);
+    }
+
+    /// <summary>Una restauración destructiva solo continúa cuando su contenido anterior es recuperable.
+    /// CaptureSnapshot devuelve null tanto al fallar como si ya existía una copia idéntica.</summary>
+    internal void CaptureSnapshotChecked(NoteFile note, string content, NoteVersionTrigger trigger)
+    {
+        if (CaptureSnapshot(note, content, trigger) is not null) return;
+        if (GetVersionHistory(note).Any(version =>
+                ReadFromDisk(SnapshotFilePath(VersionsFolderFor(note.FullPath), version.Id))?.Content == content)) return;
+        throw new IOException("No se pudo conservar el contenido anterior en el historial de versiones.");
     }
 
     /// <summary>Deletes a single snapshot from <paramref name="note"/>'s history — lets the user prune an

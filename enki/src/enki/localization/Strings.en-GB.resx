@@ -5922,4 +5922,7 @@ Happy writing.</value>
   <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Show the inbox button in the title bar, for jotting an idea straight into the vault.</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Vault switcher</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Show the row that switches vault above the sidebar sections. Hidden, the command palette still switches vault.</value></data>
+  <data name="Notification_NoteOpenFailed_Title" xml:space="preserve">
+    <value>Could not open the note</value>
+  </data>
 </root>

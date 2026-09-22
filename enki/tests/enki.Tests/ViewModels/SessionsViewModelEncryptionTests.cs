@@ -32,7 +32,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
-    private (SessionsViewModel Vm, SessionService Sessions) CreateViewModel(Action<Session>? onSessionLocked = null)
+    private (SessionsViewModel Vm, SessionService Sessions) CreateViewModel(Func<Session, bool>? onSessionLocked = null)
     {
         var settings = new SettingsService(_storageDirectory);
         var vault = new VaultService(settings);
@@ -302,6 +302,19 @@ public class SessionsViewModelEncryptionTests : IDisposable
     /// while the session's DEK is still unlocked, not after — otherwise it couldn't flush a dirty open tab's
     /// pending save, which needs to encrypt+write before the key disappears.</summary>
     [Fact]
+    public void LockSession_WhenEditorCannotClose_KeepsSessionUnlocked()
+    {
+        var (vm, sessions) = CreateViewModel(onSessionLocked: _ => false);
+        var (session, _) = sessions.CreateEncrypted("Diario privado", "correcta-123");
+        var item = new SessionListItemViewModel(session) { IsUnlocked = true };
+
+        vm.LockSessionCommand.Execute(item);
+
+        Assert.True(sessions.IsUnlocked(session));
+        Assert.True(item.IsUnlocked);
+    }
+
+    [Fact]
     public void LockSession_InvokesOnSessionLockedCallback_WhileStillUnlocked()
     {
         Session? notifiedSession = null;
@@ -311,6 +324,7 @@ public class SessionsViewModelEncryptionTests : IDisposable
         {
             notifiedSession = s;
             wasUnlockedDuringCallback = sessionsRef!.IsUnlocked(s);
+            return true;
         });
         sessionsRef = sessions;
         var (session, _) = sessions.CreateEncrypted("Diario privado", "correcta-123");

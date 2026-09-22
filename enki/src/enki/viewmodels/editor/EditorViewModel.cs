@@ -388,7 +388,10 @@ public sealed partial class EditorViewModel : ViewModelBase
         _title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _tagsInput = string.Join(", ", note.Tags);
 
-        var content = vaultService.ReadContent(note);
+        var fresh = vaultService.ReadFromDisk(note.FullPath)
+            ?? throw new FileNotFoundException("La nota ya no existe.", note.FullPath);
+        var content = fresh.Content;
+        _diskStamp = fresh.Stamp;
         Document = new TextDocument(content);
         _lastSavedContent = content;
         // Antes que nada derivado del contenido: la huella de lo que se acaba de leer es la referencia
@@ -401,7 +404,8 @@ public sealed partial class EditorViewModel : ViewModelBase
         Outline = new EditorOutlineViewModel(Document);
         Backlinks = new EditorBacklinksViewModel(note, vaultService, onOpenNote ?? (_ => { }));
         Stats = new EditorStatsViewModel(Document, note.FullPath);
-        History = new EditorVersionHistoryViewModel(vaultService, note, notificationService, () => Document.Text, ApplyRestoredContent);
+        History = new EditorVersionHistoryViewModel(vaultService, note, notificationService, () => Document.Text,
+            ApplyRestoredContent, TryRestoreVersion);
         RefreshWikiLinkScopeNotes();
 
         _saveTimer = new DispatcherTimer { Interval = SaveDebounceDelay };
@@ -547,16 +551,21 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// pestaña, todas, las de una sesión que se bloquea); sustituye a llamar solo a
     /// <see cref="FlushPendingSave"/>, que volcaba el texto pero dejaba la nota vigilada como si la
     /// pestaña siguiera abierta.</summary>
-    public void Close()
+    public bool Close()
     {
-        // Antes de volcar: una decisión pendiente tiene el autoguardado en pausa, así que lo que quede sin
-        // guardar no se escribiría a disco y cerrar la pestaña lo tiraría a la basura. Ver
-        // EditorViewModel.ExternalChanges.cs.
-        PreserveUnsavedTextOnClose();
-        FlushPendingSave();
+        if (!TryPrepareClose()) return false;
         _saveTimer.Stop();
         UnsubscribeFromExternalChanges();
         _changeWatcher?.Untrack(Note.FullPath);
+        return true;
+    }
+
+    /// <summary>Permite cerrar solo si el borrador quedó guardado en la nota o, ante un conflicto,
+    /// en su historial. También lo usa la ventana antes de apagar servicios y claves de cifrado.</summary>
+    public bool TryPrepareClose()
+    {
+        FlushPendingSave();
+        return !IsDirty || (IsAutosavePaused && PreserveUnsavedTextOnClose());
     }
 
     /// <summary>Writes <paramref name="currentText"/> to disk. On an I/O failure (disco lleno, vault
@@ -567,6 +576,8 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// is restarted so the next automatic tick retries on its own, without requiring another keystroke.</summary>
     public void Save(string currentText)
     {
+        _pendingText = currentText;
+        IsDirty = currentText != _lastSavedContent;
         // Check-before-write, same criterion as FilesViewModel.IsSelectedSessionLocked (docs/version-alfa-3/
         // 01-analisis-detallado.md §4.1): this note's session can go from unlocked to locked while this tab
         // is still open (the user locks it from Sessions, or every session simply starts locked again on
@@ -640,6 +651,21 @@ public sealed partial class EditorViewModel : ViewModelBase
         _onChanged();
     }
 
+    private bool TryRestoreVersion(string versionId)
+    {
+        if (IsAutosavePaused) return false;
+        try
+        {
+            _vaultService.RestoreVersion(Note, versionId, _diskStamp, Document.Text);
+            return true;
+        }
+        catch (ExternalModificationException ex)
+        {
+            HandleExternalChange(new VaultExternalChange(Note.FullPath, ex.Kind), Document.Text);
+            return false;
+        }
+    }
+
     /// <summary>Reconcilia una pestaña abierta tras una reescritura de etiquetas desde otra vista.
     /// Evita que su siguiente autoguardado restaure el frontmatter anterior.</summary>
     public void ReloadAfterTagChange()
@@ -711,7 +737,6 @@ public sealed partial class EditorViewModel : ViewModelBase
 
         var newContent = NoteTagHelper.SetTags(Document.Text, parsed);
         Document.Text = newContent;
-        _lastSavedContent = newContent;
         Note.Tags = parsed;
         Save(Document.Text);
     }

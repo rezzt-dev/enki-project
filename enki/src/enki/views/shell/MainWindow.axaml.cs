@@ -91,12 +91,29 @@ public partial class MainWindow : Window
                 Hide();
                 return;
             }
-            viewModel.Notes?.FlushAllEditors();
+            if (viewModel.Notes is { } notes)
+            {
+                foreach (var editor in notes.OpenEditors)
+                {
+                    if (editor.TryPrepareClose()) continue;
+                    e.Cancel = true;
+                    _isExplicitExit = false;
+                    ShowFromTray();
+                    return;
+                }
+            }
             viewModel.Settings?.FlushPendingSave();
             // Fase 1 (docs/analisis-proyecto/roadmap.md): the Skills editor debounces its own autosave the
             // same 600ms as Notes/Ajustes but was never flushed here, so closing the app right after
             // editing a skill silently dropped the last pending change.
             viewModel.Skills?.ActiveEditor?.FlushPendingSave();
+            if (viewModel.Skills?.ActiveEditor?.IsDirty == true)
+            {
+                e.Cancel = true;
+                _isExplicitExit = false;
+                ShowFromTray();
+                return;
+            }
             // Fase 1 (docs/version-alfa-3/02-roadmap-implementacion.md): locks every unlocked session's DEK
             // and sweeps decrypted temp files, so nothing decrypted survives the process past this point.
             viewModel.Shutdown();

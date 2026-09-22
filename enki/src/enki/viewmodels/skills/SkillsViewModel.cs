@@ -631,6 +631,8 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
     private void OpenEditor(SkillViewModel skill)
     {
+        ActiveEditor?.FlushPendingSave();
+        if (ActiveEditor?.IsDirty == true) return;
         SelectedSkill = skill;
         ActiveEditor = new SkillEditorViewModel(_skillService, skill.Model, () =>
         {
@@ -643,6 +645,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
     private void CloseEditor()
     {
         ActiveEditor?.FlushPendingSave();
+        if (ActiveEditor?.IsDirty == true) return;
         ActiveEditor = null;
         Reload();
     }

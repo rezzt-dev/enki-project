@@ -101,6 +101,7 @@ public sealed partial class EditorViewModel
     private void MergeDailyTemplate()
     {
         if (!IsDailyNote || _dailyNoteService is null || _dailyNoteDate is not { } date) return;
+        if (IsAutosavePaused) return;
 
         var current = Document.Text;
         var merged = _dailyNoteService.BuildMergedContent(date, current);
@@ -114,7 +115,12 @@ public sealed partial class EditorViewModel
 
         try
         {
-            _vaultService.WriteContent(Note, merged);
+            AdoptDiskStamp(_vaultService.WriteContentChecked(Note, merged, _diskStamp));
+        }
+        catch (ExternalModificationException ex)
+        {
+            HandleExternalChange(new VaultExternalChange(Note.FullPath, ex.Kind), current);
+            return;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {

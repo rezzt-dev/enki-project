@@ -207,9 +207,9 @@ public sealed partial class MainWindowViewModel
         // comprobado ya al arrancar (por si Enki lleva días sin abrirse) y luego cada 6 horas, para que el
         // intervalo configurado se cumpla aunque la app se quede abierta varios días seguidos.
         _autoBackupTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
-        _autoBackupTimer.Tick += (_, _) => _vaultBackupService.RunScheduledBackupIfDue(_settingsService);
+        _autoBackupTimer.Tick += (_, _) => _vaultBackupService.RunScheduledBackupIfDue(_settingsService, _notificationService);
         _autoBackupTimer.Start();
-        _vaultBackupService.RunScheduledBackupIfDue(_settingsService);
+        _vaultBackupService.RunScheduledBackupIfDue(_settingsService, _notificationService);
 
         // Aviso de versión nueva (T9). No bloquea el arranque —se lanza y se olvida— y, con el ajuste
         // apagado (lo de fábrica), ni siquiera construye el cliente HTTP: CheckOnStartupAsync sale antes

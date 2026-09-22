@@ -5922,4 +5922,7 @@ Bonne rédaction.</value>
   <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Afficher le bouton de boîte de réception dans la barre de titre, pour noter une idée directement dans le coffre.</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Sélecteur de coffre</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Afficher la ligne de changement de coffre au-dessus des sections de la barre latérale. Masquée, la palette de commandes change toujours de coffre.</value></data>
+  <data name="Notification_NoteOpenFailed_Title" xml:space="preserve">
+    <value>Impossible d’ouvrir la note</value>
+  </data>
 </root>

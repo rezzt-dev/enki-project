@@ -604,7 +604,8 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         try
         {
-            content = _vaultService.ReadContent(note);
+            content = _vaultService.ReadFromDisk(note.FullPath)?.Content
+                ?? throw new FileNotFoundException("La nota ya no existe.", note.FullPath);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
@@ -642,11 +643,22 @@ public sealed partial class NotesViewModel : ViewModelBase
         // null) — by the time Back/Delete actually invoke it, the assignment on the next line has already
         // run, so it correctly closes this specific tab rather than whichever one was active at the time.
         EditorViewModel? editor = null;
-        editor = new EditorViewModel(_vaultService, note, () => CloseEditor(editor!), Reload,
-            target => OpenNote(target), _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
-            onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService,
-            dailyNoteService: _dailyNoteService, onOpenDailyNoteFor: OpenDailyNoteFor,
-            changeWatcher: _changeWatcher);
+        try
+        {
+            editor = new EditorViewModel(_vaultService, note, () => CloseEditor(editor!), Reload,
+                target => OpenNote(target), _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
+                onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService,
+                dailyNoteService: _dailyNoteService, onOpenDailyNoteFor: OpenDailyNoteFor,
+                changeWatcher: _changeWatcher);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            LogService.Error($"No se pudo abrir la nota '{note.FullPath}'", ex);
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteOpenFailed_Title"),
+                VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
+            return;
+        }
         // Antes de añadir la pestaña: EditorView lee LastCaretOffset al enlazarse con el viewmodel, y ese
         // enlace ocurre como consecuencia de las dos líneas siguientes.
         if (caretOffset is { } newTabOffset) editor.RequestCaretAt(newTabOffset);
@@ -685,9 +697,10 @@ public sealed partial class NotesViewModel : ViewModelBase
     private void CloseAllEditors()
     {
         if (OpenEditors.Count == 0) return;
-        foreach (var editor in OpenEditors) editor.Close();
-        OpenEditors.Clear();
-        ActiveEditor = null;
+        foreach (var editor in OpenEditors.ToList())
+            if (editor.Close()) OpenEditors.Remove(editor);
+        if (ActiveEditor is not null && !OpenEditors.Contains(ActiveEditor))
+            ActiveEditor = OpenEditors.FirstOrDefault();
         PersistOpenTabs();
         Reload();
     }
@@ -708,14 +721,18 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// padlock in Sesiones looked closed while an already-open tab kept showing and letting the user edit
     /// plain-text content underneath it). Flushing first, while still unlocked, means nothing typed in an
     /// affected tab is lost by being closed out from under the user.</summary>
-    public void CloseEditorsForLockedSession(Session session)
+    public bool CloseEditorsForLockedSession(Session session)
     {
         var affected = OpenEditors.Where(e => IsUnderSessionRoot(e.Note.FullPath, session.RootPath)).ToList();
-        if (affected.Count == 0) return;
+        if (affected.Count == 0) return true;
+
+        // No se elimina la clave si algún borrador no pudo persistirse. Los editores siguen vivos.
+        foreach (var editor in affected)
+            if (!editor.TryPrepareClose()) return false;
 
         foreach (var editor in affected)
         {
-            editor.Close();
+            if (!editor.Close()) return false;
             OpenEditors.Remove(editor);
         }
 
@@ -729,6 +746,7 @@ public sealed partial class NotesViewModel : ViewModelBase
             LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Title"),
             LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Message", session.Name),
             NotificationSeverity.Info);
+        return true;
     }
 
     private static bool IsUnderSessionRoot(string fullPath, string sessionRootPath)
@@ -768,7 +786,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         var index = OpenEditors.IndexOf(editor);
         if (index < 0) return;
 
-        editor.Close();
+        if (!editor.Close()) return;
         OpenEditors.RemoveAt(index);
         if (ActiveEditor == editor)
         {

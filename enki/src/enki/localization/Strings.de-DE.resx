@@ -5922,4 +5922,7 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Notifications_Inbox_Description" xml:space="preserve"><value>Die Posteingang-Schaltfläche in der Titelleiste anzeigen, um eine Idee direkt im Vault zu notieren.</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Label" xml:space="preserve"><value>Vault-Auswahl</value></data>
   <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Die Zeile zum Wechseln des Vaults über den Abschnitten der Seitenleiste anzeigen. Ausgeblendet wechselt die Befehlspalette weiterhin den Vault.</value></data>
+  <data name="Notification_NoteOpenFailed_Title" xml:space="preserve">
+    <value>Die Notiz konnte nicht geöffnet werden</value>
+  </data>
 </root>

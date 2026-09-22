@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Security.Cryptography;
 using enki.Models;
 
 namespace enki.Services;
@@ -82,8 +83,20 @@ public sealed partial class VaultService
         var info = new FileInfo(fullPath);
         if (!info.Exists) return null;
 
-        var stamp = NoteDiskStamps.Read(info);
-        var content = ReadContentOrThrow(fullPath);
+        // Contenido y hash proceden de la misma lectura, también en sesiones cifradas. Dos lecturas
+        // independientes podrían asociar el texto viejo con la huella de una edición externa nueva.
+        var lastWriteUtc = info.LastWriteTimeUtc;
+        var raw = File.ReadAllBytes(fullPath);
+        var stamp = new NoteDiskStamp(lastWriteUtc, raw.LongLength, Convert.ToHexString(SHA256.HashData(raw)));
+        var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
+        byte[] plaintext;
+        try { plaintext = encryptedRoot is null ? raw : _encryptionService.Decrypt(encryptedRoot, raw); }
+        catch (CryptographicException ex)
+        {
+            throw new IOException($"No se pudo descifrar la nota '{fullPath}'.", ex);
+        }
+        using var reader = new StreamReader(new MemoryStream(plaintext), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        var content = reader.ReadToEnd();
         return (ReadNoteMetadata(info, content), content, stamp);
     }
 
@@ -98,16 +111,4 @@ public sealed partial class VaultService
         ExternalChangeApplied?.Invoke(fullPath);
     }
 
-    /// <summary>Lee el contenido de una nota propagando el fallo en vez de degradarlo a cadena vacía —
-    /// lo contrario de <see cref="SafeReadContent"/>, cuyo contrato tolerante ("si no se puede leer,
-    /// devuelve '', que ya se verá") es exactamente lo que no se puede hacer aquí: una nota que se lee
-    /// como vacía por un error transitorio y se ofrece al usuario como "la versión de disco" le haría
-    /// descartar su texto a cambio de nada.</summary>
-    private string ReadContentOrThrow(string fullPath)
-    {
-        var encryptedRoot = ResolveEncryptedSessionRoot(fullPath);
-        var raw = File.ReadAllBytes(fullPath);
-        var plaintext = encryptedRoot is null ? raw : _encryptionService.Decrypt(encryptedRoot, raw);
-        return Encoding.UTF8.GetString(plaintext);
-    }
 }

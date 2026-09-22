@@ -36,6 +36,36 @@ public sealed class VaultServiceExternalChangesTests : IDisposable
     }
 
     [Fact]
+    public void RenameNote_WithStaleBacklinkCache_PreservesExternalText()
+    {
+        var vault = CreateVault(out _);
+        var target = vault.CreateNote("Destino");
+        var source = vault.CreateNote("Origen", initialContent: "[[Destino]] antes");
+        var timestamp = File.GetLastWriteTimeUtc(source.FullPath);
+        File.WriteAllText(source.FullPath, "[[Destino]] nuevo");
+        File.SetLastWriteTimeUtc(source.FullPath, timestamp);
+
+        vault.RenameNote(target, "Renombrada");
+
+        Assert.Equal("[[Renombrada]] nuevo", File.ReadAllText(source.FullPath));
+    }
+
+    [Fact]
+    public void ReplaceTags_WithStaleCache_PreservesExternalText()
+    {
+        var vault = CreateVault(out _);
+        var note = vault.CreateNote("Nota", initialContent: "---\ntags: [antes]\n---\nTexto antes");
+        var timestamp = File.GetLastWriteTimeUtc(note.FullPath);
+        File.WriteAllText(note.FullPath, "---\ntags: [antes]\n---\nTexto nuevo");
+        File.SetLastWriteTimeUtc(note.FullPath, timestamp);
+
+        vault.ReplaceTagAcrossVault(new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "antes" }, "despues");
+
+        Assert.Contains("Texto nuevo", File.ReadAllText(note.FullPath));
+        Assert.Contains("despues", File.ReadAllText(note.FullPath));
+    }
+
+    [Fact]
     public void WriteContentChecked_WhenNothingChangedOnDisk_Writes_AndReturnsTheNewStamp()
     {
         var vault = CreateVault(out var vaultDir);

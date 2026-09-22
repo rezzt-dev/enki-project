@@ -105,6 +105,7 @@ public sealed partial class MainWindowViewModel
         Notes?.FlushAllEditors();
 
         var unsaved = Notes?.OpenEditors.Where(editor => editor.IsDirty).Select(editor => editor.Title).ToList() ?? [];
+        if (Skills?.ActiveEditor is { IsDirty: true } skillEditor) unsaved.Add(skillEditor.Title);
         if (unsaved.Count == 0) return true;
 
         _notificationService.PushLocalized(

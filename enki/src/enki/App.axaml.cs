@@ -119,6 +119,6 @@ public partial class App : Application
     private void TrayExit_Click(object? sender, EventArgs e)
     {
         if (MainWindowRef is MainWindow window) window.PrepareForExplicitExit();
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.Shutdown();
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.TryShutdown();
     }
 }

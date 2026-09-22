@@ -58,6 +58,147 @@ public sealed class EditorViewModelExternalChangeTests : IDisposable
     // ===================== Sin cambios locales =====================
 
     [Fact]
+    public void ApplyTagsInput_AfterExternalEdit_KeepsLocalTextAndOpensConflict()
+    {
+        var f = CreateEditor();
+        File.WriteAllText(f.Note.FullPath, "Texto externo");
+        f.Editor.TagsInput = "urgente";
+
+        f.Editor.ApplyTagsInput();
+
+        Assert.Equal("Texto externo", File.ReadAllText(f.Note.FullPath));
+        Assert.Contains("urgente", f.Editor.Document.Text);
+        Assert.True(f.Editor.IsDirty);
+        Assert.True(f.Editor.IsExternalConflictOpen);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResolveConflict_WhenHistoryCannotBeWritten_PreservesBothVersions(bool keepMine)
+    {
+        var f = CreateEditor();
+        f.Editor.Document.Text = "Borrador local";
+        f.Editor.OnTextChanged(f.Editor.Document.Text);
+        File.WriteAllText(f.Note.FullPath, "Texto externo");
+        f.Editor.HandleExternalChange(Modified(f.Note));
+        var metadata = Path.Combine(Path.GetDirectoryName(f.Note.FullPath)!, ".enki");
+        Directory.CreateDirectory(metadata);
+        File.WriteAllText(Path.Combine(metadata, "history"), "impide crear el historial");
+
+        if (keepMine) f.Editor.KeepMineCommand.Execute(null);
+        else f.Editor.LoadFromDiskCommand.Execute(null);
+
+        Assert.Equal("Texto externo", File.ReadAllText(f.Note.FullPath));
+        Assert.Equal("Borrador local", f.Editor.Document.Text);
+        Assert.True(f.Editor.IsExternalConflictOpen);
+        Assert.False(f.Editor.TryPrepareClose());
+        Assert.DoesNotContain(f.Notifications.Notifications, n => n.Severity == NotificationSeverity.Success);
+    }
+
+    [Fact]
+    public void RenameNote_WithLocalAndExternalEdits_DoesNotAdoptUnreadContentAsSaved()
+    {
+        var f = CreateEditor();
+        f.Editor.Document.Text = "Borrador local";
+        f.Editor.OnTextChanged(f.Editor.Document.Text);
+        File.WriteAllText(f.Note.FullPath, "Texto externo");
+
+        f.Editor.Title = "Renombrada";
+        f.Editor.FlushPendingSave();
+
+        Assert.Equal("Texto externo", File.ReadAllText(f.Editor.Note.FullPath));
+        Assert.Equal("Borrador local", f.Editor.Document.Text);
+        Assert.True(f.Editor.IsExternalConflictOpen);
+    }
+
+    [Fact]
+    public void OpenEditor_WithStaleCachedContent_ReadsFreshTextAndMatchingStamp()
+    {
+        var f = CreateEditor("AAAA");
+        var timestamp = File.GetLastWriteTimeUtc(f.Note.FullPath);
+        File.WriteAllText(f.Note.FullPath, "BBBB");
+        File.SetLastWriteTimeUtc(f.Note.FullPath, timestamp);
+
+        var editor = new EditorViewModel(f.Vault, f.Note, () => { }, () => { });
+
+        Assert.Equal("BBBB", editor.Document.Text);
+        editor.Save("CCCC");
+        Assert.False(editor.IsAutosavePaused);
+        Assert.Equal("CCCC", File.ReadAllText(f.Note.FullPath));
+    }
+
+    [Fact]
+    public void PrepareClose_WhenFlushDiscoversConflict_PreservesPendingText()
+    {
+        var f = CreateEditor();
+        f.Editor.Document.Text = "Borrador local";
+        f.Editor.OnTextChanged(f.Editor.Document.Text);
+        File.WriteAllText(f.Note.FullPath, "Texto externo");
+
+        Assert.True(f.Editor.TryPrepareClose());
+
+        Assert.Equal("Texto externo", File.ReadAllText(f.Note.FullPath));
+        Assert.Contains(f.Vault.GetVersionHistory(f.Note),
+            version => f.Vault.ReadVersionContent(f.Note, version.Id) == "Borrador local");
+        Assert.True(f.Editor.TryPrepareClose()); // Una copia idéntica ya guardada también permite salir.
+    }
+
+    [Fact]
+    public void RestoreHistory_WithUnsavedDraft_PreservesDraftBeforeReplacingIt()
+    {
+        var f = CreateEditor();
+        var version = f.Vault.CaptureSnapshot(f.Note, "Versión antigua", NoteVersionTrigger.Manual)!;
+        f.Editor.Document.Text = "Borrador sin autoguardar";
+        f.Editor.OnTextChanged(f.Editor.Document.Text);
+        f.Editor.History.Reload();
+        f.Editor.History.OpenPreviewCommand.Execute(f.Editor.History.Items.Single(v => v.Id == version.Id));
+
+        f.Editor.History.ConfirmRestoreCommand.Execute(null);
+
+        Assert.Equal("Versión antigua", File.ReadAllText(f.Note.FullPath));
+        Assert.Equal("Versión antigua", f.Editor.Document.Text);
+        Assert.Contains(f.Vault.GetVersionHistory(f.Note),
+            item => f.Vault.ReadVersionContent(f.Note, item.Id) == "Borrador sin autoguardar");
+    }
+
+    [Fact]
+    public void RestoreHistory_AfterExternalEdit_LeavesDiskUntouchedAndOpensConflict()
+    {
+        var f = CreateEditor();
+        var version = f.Vault.CaptureSnapshot(f.Note, "Versión antigua", NoteVersionTrigger.Manual)!;
+        f.Editor.Document.Text = "Borrador local";
+        f.Editor.OnTextChanged(f.Editor.Document.Text);
+        f.Editor.History.Reload();
+        f.Editor.History.OpenPreviewCommand.Execute(f.Editor.History.Items.Single(v => v.Id == version.Id));
+        File.WriteAllText(f.Note.FullPath, "Texto externo");
+
+        f.Editor.History.ConfirmRestoreCommand.Execute(null);
+
+        Assert.Equal("Texto externo", File.ReadAllText(f.Note.FullPath));
+        Assert.Equal("Borrador local", f.Editor.Document.Text);
+        Assert.True(f.Editor.IsExternalConflictOpen);
+        Assert.DoesNotContain(f.Notifications.Notifications, n => n.Severity == NotificationSeverity.Success);
+    }
+
+    [Fact]
+    public void KeepMine_WhenDiskChangesAgain_DoesNotAnnounceSuccess()
+    {
+        var f = CreateEditor();
+        f.Editor.Document.Text = "Borrador local";
+        f.Editor.OnTextChanged(f.Editor.Document.Text);
+        File.WriteAllText(f.Note.FullPath, "Texto externo");
+        f.Editor.HandleExternalChange(Modified(f.Note));
+        File.WriteAllText(f.Note.FullPath, "Otra edición externa");
+
+        f.Editor.KeepMineCommand.Execute(null);
+
+        Assert.Equal("Otra edición externa", File.ReadAllText(f.Note.FullPath));
+        Assert.True(f.Editor.IsExternalConflictOpen);
+        Assert.DoesNotContain(f.Notifications.Notifications, n => n.Severity == NotificationSeverity.Success);
+    }
+
+    [Fact]
     public void ExternalChange_WithoutLocalEdits_ReloadsSilently()
     {
         var f = CreateEditor();

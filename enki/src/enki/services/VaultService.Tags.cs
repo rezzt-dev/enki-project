@@ -31,8 +31,12 @@ public sealed partial class VaultService
         EnsureVaultAvailable();
 
         var touched = 0;
-        foreach (var (note, content) in GetAllNotesAcrossVaultWithContent())
+        foreach (var (cachedNote, _) in GetAllNotesAcrossVaultWithContent())
         {
+            var disk = ReadFromDisk(cachedNote.FullPath);
+            if (disk is not { } fresh) continue;
+            var note = fresh.Note;
+            var content = fresh.Content;
             if (!TagListRewriter.Matches(note.Tags, sourceTags)) continue;
 
             var newTags = TagListRewriter.Apply(note.Tags, sourceTags, targetTag);
@@ -40,8 +44,7 @@ public sealed partial class VaultService
             if (newContent == content) continue;
 
             CaptureSnapshot(note.Clone(), content, NoteVersionTrigger.PreBulkOperation);
-            WriteFileAtomic(note.FullPath, newContent);
-            _noteCache.Invalidate(note.FullPath);
+            WriteContentChecked(note, newContent, fresh.Stamp);
             touched++;
         }
 

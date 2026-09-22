@@ -48,6 +48,26 @@ public class SkillsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void CloseEditor_WhenSaveFails_PreservesEditorAndDraft()
+    {
+        var (viewModel, path) = CreateViewModelWithOneSkill();
+        viewModel.EditSkillCommand.Execute(viewModel.Skills.Single());
+        var editor = viewModel.ActiveEditor!;
+        editor.Text = "Borrador pendiente";
+        File.Delete(path);
+        Directory.CreateDirectory(path); // El destino no se puede sustituir por un archivo.
+
+        viewModel.CloseEditorCommand.Execute(null);
+
+        Assert.Same(editor, viewModel.ActiveEditor);
+        Assert.True(editor.IsDirty);
+        Directory.Delete(path);
+        viewModel.CloseEditorCommand.Execute(null);
+        Assert.Null(viewModel.ActiveEditor);
+        Assert.Contains("Borrador pendiente", File.ReadAllText(path));
+    }
+
+    [Fact]
     public void CloseEditor_FlushesAPendingEdit_InsteadOfLosingIt()
     {
         var (viewModel, skillPath) = CreateViewModelWithOneSkill();
