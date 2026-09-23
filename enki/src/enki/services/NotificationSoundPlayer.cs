@@ -46,9 +46,10 @@ public static class NotificationSoundPlayer
             {
                 if (attempt()) return true;
             }
-            catch
+            catch (Exception ex)
             {
                 // Este eslabón no está disponible en esta máquina; pasar al siguiente.
+                LogService.Debug($"Un método de reproducción de sonido no está disponible: {ex}");
             }
         }
 
@@ -97,14 +98,29 @@ public static class NotificationSoundPlayer
     }
 #pragma warning restore CA1416
 
+    /// <summary>Extrae el WAV empaquetado a un archivo real, porque los tres mecanismos de reproducción
+    /// (winmm, afplay, paplay/aplay) reciben una <b>ruta</b>, no un flujo. Se hace una sola vez por proceso
+    /// y se reutiliza en cada aviso posterior.
+    ///
+    /// <para>Vive en el directorio temporal privado de <see cref="PrivateTempFile"/> y no en la raíz del
+    /// temporal del sistema: allí el nombre era fijo y el directorio compartido, así que otra cuenta local
+    /// podía dejar <c>enki-notification-sound.wav</c> creado como enlace simbólico a un archivo del usuario
+    /// de Enki para que <c>File.Create</c> lo truncara, o sustituir el WAV por otro contenido que la app
+    /// reproduciría (.docs/auditoria-seguridad-y-fallos-criticos.md, SEC-03). Dentro de un directorio
+    /// <c>0700</c> nadie más puede poner ni leer nada, así que el nombre puede seguir siendo fijo — y eso
+    /// es lo que evita que cada arranque deje un archivo suelto más: <b>no hay limpieza al salir, y no hace
+    /// falta</b>, porque es siempre el mismo archivo, de unos pocos KB, y no contiene nada del usuario.
+    /// Borrarlo al cerrar solo obligaría a volver a extraerlo en el arranque siguiente.</para>
+    ///
+    /// <para>Si ese directorio no es utilizable en esta máquina, <see cref="PrivateTempFile"/> lanza; el
+    /// try/catch por eslabón de <see cref="TryPlay"/> lo convierte en "este eslabón no está disponible" y
+    /// pasa al sonido del sistema, que es justo para lo que esa cadena de fallback existe.</para></summary>
     private static string? EnsureAssetExtracted()
     {
         if (s_extractedAssetPath is { } cached && File.Exists(cached)) return cached;
 
         using var stream = AssetLoader.Open(new Uri(EmbeddedAssetUri));
-        var path = Path.Combine(Path.GetTempPath(), "enki-notification-sound.wav");
-        using (var file = File.Create(path))
-            stream.CopyTo(file);
+        var path = PrivateTempFile.WriteStable("enki-notification-sound.wav", stream);
 
         s_extractedAssetPath = path;
         return path;

@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.LogicalTree;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Services;
 using enki.ViewModels;
@@ -35,8 +38,9 @@ public class CalendarViewUiTests : IDisposable
         var polarTaskService = new PolarTaskService(_tempDir);
         var reminderService = new ReminderService(_tempDir);
         var notificationService = new NotificationService(settings, _tempDir);
-        var aggregationService = new CalendarAggregationService(kanbanService, polarTaskService, reminderService, authService);
-        var viewModel = new CalendarViewModel(aggregationService, kanbanService, polarTaskService, reminderService,
+        var layerColorService = new CalendarLayerColorService(kanbanService, polarTaskService, authService, settings);
+        var aggregationService = new CalendarAggregationService(kanbanService, polarTaskService, reminderService, authService, layerColorService);
+        var viewModel = new CalendarViewModel(aggregationService, layerColorService, kanbanService, polarTaskService, reminderService,
             authService, settings, notificationService, _ => { });
 
         var view = new CalendarView { DataContext = viewModel };
@@ -44,6 +48,81 @@ public class CalendarViewUiTests : IDisposable
         window.Show();
 
         return (view, viewModel, window);
+    }
+
+    [Fact]
+    public void SidebarSections_ToggleContent_AndRestoreAfterRestart()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            foreach (var section in new[] { "Layers", "Search", "Filters" })
+            {
+                var toggle = view.FindControl<ToggleButton>(section + "SectionToggle")!;
+                var content = view.FindControl<StackPanel>(section + "SectionContent")!;
+                Assert.False(content.IsVisible);
+                toggle.IsChecked = true;
+                Assert.True(content.IsVisible);
+            }
+            vm.IsMiniCalendarExpanded = false;
+            vm.IsUnscheduledExpanded = true;
+            vm.IsSidebarCollapsed = true;
+        }
+        finally { window.Close(); }
+
+        var (_, restored, restoredWindow) = CreateView();
+        try
+        {
+            Assert.False(restored.IsMiniCalendarExpanded);
+            Assert.True(restored.IsLayersExpanded);
+            Assert.True(restored.IsSearchExpanded);
+            Assert.True(restored.IsFiltersExpanded);
+            Assert.True(restored.IsUnscheduledExpanded);
+            Assert.True(restored.IsSidebarCollapsed);
+        }
+        finally { restoredWindow.Close(); }
+    }
+
+    /// <summary>El selector de color de una capa (docs/calendar-feature/07-filtros-busqueda-y-capas.md
+    /// §1b) vive dentro de un <see cref="Popup"/>, así que su plantilla no se materializa hasta que se
+    /// abre: sin abrirlo, un error de enlace en la rejilla de muestras pasaría desapercibido (un
+    /// <c>{Binding}</c> roto en Avalonia no lanza, solo deja el control muerto).</summary>
+    [Fact]
+    public void LayerColorPopover_RendersItsSwatches_AndApplyingOneRepaintsTheLayer()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            view.FindControl<ToggleButton>("LayersSectionToggle")!.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+
+            var row = vm.Layers.First(l => l.CanEditColor);
+            var originalColor = row.ColorHex;
+            row.OpenColorPickerCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+
+            var popup = view.GetLogicalDescendants().OfType<Popup>().Single(p => ReferenceEquals(p.DataContext, row));
+            Assert.True(popup.IsOpen);
+            var swatches = popup.Child!.GetVisualDescendants().OfType<Button>()
+                .Where(b => b.Classes.Contains("calendar-layer-swatch"))
+                .ToList();
+
+            Assert.Equal(row.PaletteSwatches.Count, swatches.Count);
+            Assert.Equal(row.PaletteSwatches, swatches.Select(b => (string)b.DataContext!).ToList());
+            // Un {Binding} roto deja Command a null en vez de lanzar, así que esto es la comprobación real.
+            Assert.All(swatches, b => Assert.NotNull(b.Command));
+
+            // Pulsar una muestra la aplica y cierra el emergente, sin pasar por ningún "guardar".
+            var target = swatches.First(b => (string)b.DataContext! == CalendarLayerPalette.AccentPool[0]);
+            target.Command!.Execute(target.CommandParameter);
+
+            Assert.Equal(CalendarLayerPalette.AccentPool[0], row.ColorHex);
+            Assert.NotEqual(originalColor, row.ColorHex);
+            Assert.False(row.IsColorPickerOpen);
+        }
+        finally { window.Close(); }
     }
 
     [Fact]

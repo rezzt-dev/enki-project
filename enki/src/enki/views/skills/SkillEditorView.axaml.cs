@@ -17,6 +17,7 @@ namespace enki.Views;
 public partial class SkillEditorView : UserControl
 {
     private static readonly FontFamily BundledEditorFontFamily = new("avares://enki/assets/fonts#Space Grotesk");
+    private static readonly FontFamily BundledCodeFontFamily = new("avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono");
 
     private readonly LivePreviewState _livePreviewState = new();
     private readonly MarkdownStyle _style;
@@ -26,18 +27,20 @@ public partial class SkillEditorView : UserControl
     {
         InitializeComponent();
 
-        var monoFont = Application.Current is { } app && app.TryFindResource("MonoFontFamily", out var monoRes) && monoRes is FontFamily mf
-            ? mf
-            : FontFamily.Default;
-        _style = MarkdownStyle.FromApp(ResolveEditorFontFamily(), monoFont, EditorPreferences.FontSize);
+        _style = MarkdownStyle.FromApp(ResolveEditorFontFamily(), ResolveCodeFontFamily(), EditorPreferences.FontSize);
 
         var textArea = Editor.TextArea;
         var textView = textArea.TextView;
 
+        // Igual que en EditorView: quien pliega la fila separadora de una tabla dibujada, construido antes
+        // del generador de elementos porque este le pregunta qué hay plegado.
+        _livePreviewState.TableFolding = new MarkdownTableFolding(textView, _livePreviewState, _style);
+
         textView.LineTransformers.Add(new MarkdownLivePreviewColorizer(_livePreviewState, _style));
-        textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea));
+        textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
-        textView.CurrentLineBackground = new SolidColorBrush(Colors.White, 0.035);
+
+        textView.CurrentLineBackground = ResolveCurrentLineBrush();
         textView.CurrentLineBorder = null;
 
         if (Application.Current is { } currentApp)
@@ -52,6 +55,7 @@ public partial class SkillEditorView : UserControl
 
         Editor.FontFamily = _style.BodyFontFamily;
         Editor.FontSize = EditorPreferences.FontSize;
+        Editor.Options.InheritWordWrapIndentation = true;
 
         SearchPanel.Install(Editor);
 
@@ -60,12 +64,47 @@ public partial class SkillEditorView : UserControl
 
         Editor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
+        AttachedToVisualTree += (_, _) =>
+        {
+            EditorPreferences.Changed -= OnEditorPreferencesChanged;
+            EditorPreferences.Changed += OnEditorPreferencesChanged;
+            OnEditorPreferencesChanged();
+        };
+        DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
+    }
+
+    private static IBrush ResolveCurrentLineBrush()
+    {
+        if (Application.Current is { } app
+            && app.TryFindResource("InkBrush", out var ink) && ink is IBrush inkBrush)
+        {
+            return inkBrush is ISolidColorBrush solid
+                ? new SolidColorBrush(solid.Color, 0.035)
+                : inkBrush;
+        }
+        return new SolidColorBrush(Colors.White, 0.035);
     }
 
     private static FontFamily ResolveEditorFontFamily()
     {
         var name = EditorPreferences.FontFamily;
         return string.IsNullOrWhiteSpace(name) ? BundledEditorFontFamily : new FontFamily(name);
+    }
+
+    private static FontFamily ResolveCodeFontFamily()
+    {
+        var name = EditorPreferences.CodeFontFamily;
+        return string.IsNullOrWhiteSpace(name) ? BundledCodeFontFamily : new FontFamily(name);
+    }
+
+    private void OnEditorPreferencesChanged()
+    {
+        Editor.FontFamily = _style.BodyFontFamily = ResolveEditorFontFamily();
+        Editor.FontSize = _style.BaseFontSize = EditorPreferences.FontSize;
+        _style.MonoFontFamily = ResolveCodeFontFamily();
+        _livePreviewState.TableFolding?.Refresh();
+        Editor.TextArea.TextView.InvalidateMeasure();
+        Editor.TextArea.TextView.Redraw();
     }
 
     private void OnCaretOrSelectionChanged()
@@ -80,10 +119,17 @@ public partial class SkillEditorView : UserControl
         }
         _livePreviewState.Selections = selections;
 
+        _livePreviewState.TableFolding?.Refresh();
         textArea.TextView.Redraw();
     }
 
-    private void RecomputeFences() => _livePreviewState.Fences = MarkdownLineParser.ComputeFences(Editor.Text ?? string.Empty);
+    private void RecomputeFences()
+    {
+        var text = Editor.Text ?? string.Empty;
+        _livePreviewState.Fences = MarkdownLineParser.ComputeFences(text);
+        _livePreviewState.HtmlLines = MarkdownHtmlParser.ComputeLineStates(text, _livePreviewState.Fences);
+        _livePreviewState.Tables.SetRows(MarkdownTableParser.Scan(text, _livePreviewState.Fences));
+    }
 
     /// <summary>Cada vez que <c>SkillsView</c> abre una skill distinta, este control se reutiliza con un
     /// nuevo <see cref="SkillEditorViewModel"/> como DataContext — a diferencia de EditorView no hace
@@ -93,6 +139,8 @@ public partial class SkillEditorView : UserControl
         if (DataContext is not SkillEditorViewModel vm) return;
 
         _suppressTextChanged = true;
+        // Una skill distinta es otro texto entero: los pliegues de la anterior ya no significan nada.
+        _livePreviewState.TableFolding?.Reset();
         Editor.Text = vm.Text;
         RecomputeFences();
         OnCaretOrSelectionChanged();
@@ -102,6 +150,7 @@ public partial class SkillEditorView : UserControl
     private void OnEditorTextChanged(object? sender, EventArgs e)
     {
         RecomputeFences();
+        _livePreviewState.TableFolding?.Refresh();
         if (_suppressTextChanged) return;
         if (DataContext is SkillEditorViewModel vm) vm.Text = Editor.Text ?? string.Empty;
     }

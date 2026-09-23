@@ -1,0 +1,70 @@
+name: Web
+
+# Landing de Enki (enki-webpage/). Solo corre cuando cambia la web o este workflow, para no mezclarse con
+# el CI de la app .NET (ci.yml). Ver enki-webpage/docs/roadmap/02-arquitectura-tecnica.md §5.
+on:
+  push:
+    branches: [main]
+    paths: ["enki-webpage/**", ".github/workflows/web.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["enki-webpage/**", ".github/workflows/web.yml"]
+
+concurrency:
+  group: web-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: enki-webpage
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # La versión de pnpm sale del campo `packageManager` de enki-webpage/package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: enki-webpage/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: enki-webpage/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Type-check
+        run: pnpm check
+
+      - name: Build
+        run: pnpm build
+
+      - name: Performance budgets
+        run: node scripts/check-performance-budgets.mjs
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Locate Chromium for Lighthouse
+        run: echo "CHROME_PATH=$(node --input-type=module -e 'import { chromium } from \"playwright\"; process.stdout.write(chromium.executablePath())')" >> "$GITHUB_ENV"
+
+      - name: Accessibility (axe)
+        run: pnpm test:a11y
+
+      - name: Lighthouse
+        run: pnpm lighthouse

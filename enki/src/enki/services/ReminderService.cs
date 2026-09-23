@@ -6,7 +6,7 @@ using enki.Models;
 
 namespace enki.Services;
 
-/// <summary>Persists user-created reminders to <c>%AppData%/Enki/reminders.json</c> — same load/save shape
+/// <summary>Persists user-created reminders to <c>&lt;vault&gt;/.tasks/reminders.json</c> — same load/save shape
 /// as <see cref="NotificationService"/>. Kept deliberately "dumb": it doesn't know about
 /// <see cref="NotificationService"/> or toasts, it just tracks which reminders exist and which of them have
 /// come due (see <see cref="PopDueReminders"/>) — the shell (<c>MainWindowViewModel</c>) is the one that
@@ -14,7 +14,11 @@ namespace enki.Services;
 /// cross-service interaction in the app.</summary>
 public sealed class ReminderService
 {
-    private readonly string _path;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _path => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "reminders.json")
+        : Path.Combine(_storageDirectory!, "reminders.json");
     private readonly Func<string?> _currentUserIdProvider;
 
     public List<Reminder> Reminders { get; private set; }
@@ -38,14 +42,28 @@ public sealed class ReminderService
     /// (docs/analisis-proyecto/roadmap.md, Fase 4); defaults to "always null" for callers that don't care.</param>
     public ReminderService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
-        Directory.CreateDirectory(configDir);
-        _path = Path.Combine(configDir, "reminders.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);
         Reminders = Load();
         PurgeOldTombstones();
+    }
+
+    public ReminderService(VaultService vaultService, Func<string?>? currentUserIdProvider = null)
+    {
+        _vaultService = vaultService;
+        _currentUserIdProvider = currentUserIdProvider ?? (() => null);
+        Reminders = Load();
+        PurgeOldTombstones();
+    }
+
+    /// <summary>Recarga los recordatorios del vault activo.</summary>
+    public void Reload()
+    {
+        LoadedFromCorruptData = false;
+        Reminders = Load();
+        PurgeOldTombstones();
+        RemindersChanged?.Invoke();
     }
 
     /// <summary>Non-deleted reminders — every UI consumer (the Recordatorios page, the due-reminder
@@ -60,7 +78,14 @@ public sealed class ReminderService
 
     private List<Reminder> Load()
     {
-        if (JsonFileStore.TryLoad<List<Reminder>>(_path, out var loaded)) return loaded!;
+        if (JsonFileStore.TryLoad<List<Reminder>>(_path, out var loaded))
+        {
+            // Ver PolarTaskService.NormalizeRecurrence: un valor de enum fuera de rango en el JSON no es
+            // un error de deserialización para System.Text.Json, pero sí lo es para todo lo que después
+            // hace switch sobre él.
+            foreach (var reminder in loaded!) reminder.Recurrence = PolarTaskService.NormalizeRecurrence(reminder.Recurrence);
+            return loaded;
+        }
 
         if (File.Exists(_path)) LoadedFromCorruptData = true;
         return [];
@@ -68,6 +93,7 @@ public sealed class ReminderService
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         JsonFileStore.Save(_path, Reminders);
         RemindersChanged?.Invoke();
     }
@@ -291,23 +317,23 @@ public sealed class ReminderService
     /// preexistente). Para uno recurrente (Fase 10, docs/analisis-proyecto/roadmap.md — "recurrencia nativa
     /// a Reminder"), se reprograma en su lugar a la siguiente ocurrencia y se deja armado
     /// (<see cref="Reminder.IsTriggered"/> en <see langword="false"/>), igual que <see cref="Reschedule"/> ya
-    /// rearma un recordatorio arrastrado a otra fecha — así no hace falta recrearlo a mano cada vez. El
-    /// <c>while</c> avanza más de una ocurrencia si hiciera falta (p. ej. la app estuvo cerrada varios días),
-    /// mismo criterio que <c>PolarTaskService.RollRecurringTasks</c>, cuya aritmética de avance (con DST)
-    /// reutiliza directamente en vez de duplicarla.</summary>
+    /// rearma un recordatorio arrastrado a otra fecha — así no hace falta recrearlo a mano cada vez.
+    /// <c>PolarTaskService.AdvanceUntilAfter</c> avanza más de una ocurrencia si hiciera falta (p. ej. la
+    /// app estuvo cerrada varios días), mismo criterio y misma aritmética de avance (con DST) que
+    /// <c>PolarTaskService.RollRecurringTasks</c>, en vez de duplicarla.
+    ///
+    /// <para>Si el avance no es posible —recurrencia desconocida por un <c>reminders.json</c> dañado, o
+    /// fecha desbordada— el recordatorio se marca disparado y se comporta como uno normal. Degradar a "una
+    /// sola vez" es lo peor que puede pasar aquí; el bucle sin tope que había antes colgaba la app entera
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-01).</para></summary>
     private void Fire(Reminder reminder, DateTime nowUtc)
     {
-        if (reminder.Recurrence == PolarRecurrence.None)
+        if (reminder.Recurrence == PolarRecurrence.None ||
+            PolarTaskService.AdvanceUntilAfter(reminder.NotifyAtUtc, reminder.Recurrence, nowUtc) is not { } next)
         {
             reminder.IsTriggered = true;
             return;
         }
-
-        var next = reminder.NotifyAtUtc;
-        do
-        {
-            next = PolarTaskService.CalculateNextDueDate(next, reminder.Recurrence);
-        } while (next <= nowUtc);
 
         reminder.NotifyAtUtc = next;
         Touch(reminder);

@@ -19,6 +19,7 @@ public enum TrashEmptyTarget
     Documents,
     Tasks,
     Files,
+    PolarTasks,
     Reminders,
     Sessions,
     All
@@ -28,6 +29,7 @@ public sealed partial class TrashViewModel : ViewModelBase
 {
     private readonly VaultService _vaultService;
     private readonly KanbanService _kanbanService;
+    private readonly PolarTaskService _polarTaskService;
     private readonly ReminderService _reminderService;
     private readonly NotificationService _notificationService;
     private readonly SessionService _sessionService;
@@ -36,6 +38,14 @@ public sealed partial class TrashViewModel : ViewModelBase
     public ObservableCollection<NoteCardViewModel> Notes { get; } = [];
     public ObservableCollection<TrashedTaskCardViewModel> Tasks { get; } = [];
     public ObservableCollection<FileCardViewModel> Files { get; } = [];
+
+    /// <summary>Categoría "Tareas Polar" (análisis alfa-3 §4.3, Alta: antes no existía ningún camino de
+    /// recuperación). Ofrece restaurar y borrar permanentemente (individual y por categoría), con la misma
+    /// advertencia que Recordatorios: si el tombstone aún no llegó a Supabase, purgarlo en local hará que el
+    /// servidor no se entere del borrado, así que la acción solo se ejecuta tras confirmación explícita del
+    /// usuario.</summary>
+    public ObservableCollection<TrashedPolarListCardViewModel> PolarLists { get; } = [];
+    public ObservableCollection<TrashedPolarTaskCardViewModel> PolarTasks { get; } = [];
     public ObservableCollection<TrashedReminderCardViewModel> Reminders { get; } = [];
     public ObservableCollection<TrashedSessionCardViewModel> Sessions { get; } = [];
 
@@ -48,20 +58,38 @@ public sealed partial class TrashViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isFilesEmpty;
 
+    /// <summary>Whether both <see cref="PolarLists"/> and <see cref="PolarTasks"/> are empty.</summary>
+    [ObservableProperty]
+    private bool _isPolarTasksEmpty;
+
+    /// <summary>Elementos de la sección "Tareas Polar" (listas + tareas) para su contador de cabecera —
+    /// es la única sección que agrupa dos colecciones, así que su número no sale de un solo
+    /// <c>Count</c> como en las demás. Se refresca desde <see cref="Reload"/>, por donde pasan todas
+    /// las mutaciones de ambas colecciones.</summary>
+    public int PolarTotalCount => PolarLists.Count + PolarTasks.Count;
+
     [ObservableProperty]
     private bool _isRemindersEmpty;
 
     [ObservableProperty]
     private bool _isSessionsEmpty;
 
-    /// <summary>Drives the "VACIAR PAPELERA" button, which purges documentos, tareas, archivos,
-    /// recordatorios y sesiones.</summary>
-    public bool IsFullyEmpty => IsEmpty && IsTasksEmpty && IsFilesEmpty && IsRemindersEmpty && IsSessionsEmpty;
+    /// <summary>Drives the "VACIAR PAPELERA" button, which purges documentos, tareas, archivos, tareas de
+    /// Polar, recordatorios y sesiones.</summary>
+    public bool IsFullyEmpty => IsEmpty && IsTasksEmpty && IsFilesEmpty && IsPolarTasksEmpty && IsRemindersEmpty && IsSessionsEmpty;
 
     /// <summary>Combined item count across every section — drives the "Papelera" nav badge so the user
     /// can tell there's something to review without opening the page.</summary>
     [ObservableProperty]
     private int _totalCount;
+
+    /// <summary>"12 elementos" — el mismo total que la insignia del nav, pero escrito, para la cabecera
+    /// de la página. Pluralizado en el viewmodel (no con StringFormat en XAML) porque la forma singular/
+    /// plural no se deduce del formato en las 6 lenguas soportadas — ver
+    /// docs/agent-docs/internacionalizacion-i18n.md §1.4.</summary>
+    public string TotalCountLabel => Plural.Get("Trash_ItemCount", TotalCount, TotalCount);
+
+    partial void OnTotalCountChanged(int value) => OnPropertyChanged(nameof(TotalCountLabel));
 
     /// <summary>Non-null while the "vaciar" confirmation dialog is open — same request/cancel/confirm
     /// shape as KanbanViewModel.CardPendingDelete, just parameterized by which section is being cleared
@@ -69,8 +97,8 @@ public sealed partial class TrashViewModel : ViewModelBase
     [ObservableProperty]
     private TrashEmptyTarget? _pendingEmptyTarget;
 
-    /// <summary>Elemento individual pendiente de borrado permanente (una nota, tarea, archivo o sesión de
-    /// la papelera) mientras su diálogo de confirmación está abierto — Fase 3 de
+    /// <summary>Elemento individual pendiente de borrado permanente (una nota, tarea, lista/tarea Polar,
+    /// archivo o sesión de la papelera) mientras su diálogo de confirmación está abierto — Fase 3 de
     /// docs/analisis-proyecto/roadmap.md: antes estos borrados se disparaban al primer clic, mientras que
     /// "vaciar papelera" sí pasaba por un modal. Mismo patrón request/cancel/confirm que
     /// <see cref="_pendingEmptyTarget"/>, pero para un solo elemento.</summary>
@@ -89,6 +117,8 @@ public sealed partial class TrashViewModel : ViewModelBase
         NoteCardViewModel note => note.Title,
         FileCardViewModel file => file.FileName,
         TrashedTaskCardViewModel task => task.Title,
+        TrashedPolarListCardViewModel polarList => polarList.Title,
+        TrashedPolarTaskCardViewModel polarTask => polarTask.Title,
         TrashedSessionCardViewModel session => session.Name,
         _ => string.Empty
     };
@@ -101,6 +131,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         TrashEmptyTarget.Documents => LocalizationService.Instance["Trash_EmptyDocumentsModal_Title"],
         TrashEmptyTarget.Tasks => LocalizationService.Instance["Trash_EmptyTasksModal_Title"],
         TrashEmptyTarget.Files => LocalizationService.Instance["Trash_EmptyFilesModal_Title"],
+        TrashEmptyTarget.PolarTasks => LocalizationService.Instance["Trash_EmptyPolarTasksModal_Title"],
         TrashEmptyTarget.Reminders => LocalizationService.Instance["Trash_EmptyRemindersModal_Title"],
         TrashEmptyTarget.Sessions => LocalizationService.Instance["Trash_EmptySessionsModal_Title"],
         TrashEmptyTarget.All => LocalizationService.Instance["Trash_EmptyAllModal_Title"],
@@ -112,17 +143,20 @@ public sealed partial class TrashViewModel : ViewModelBase
         TrashEmptyTarget.Documents => LocalizationService.Instance["Trash_EmptyDocumentsModal_Message"],
         TrashEmptyTarget.Tasks => LocalizationService.Instance["Trash_EmptyTasksModal_Message"],
         TrashEmptyTarget.Files => LocalizationService.Instance["Trash_EmptyFilesModal_Message"],
+        TrashEmptyTarget.PolarTasks => LocalizationService.Instance["Trash_EmptyPolarTasksModal_Message"],
         TrashEmptyTarget.Reminders => LocalizationService.Instance["Trash_EmptyRemindersModal_Message"],
         TrashEmptyTarget.Sessions => LocalizationService.Instance["Trash_EmptySessionsModal_Message"],
         TrashEmptyTarget.All => LocalizationService.Instance["Trash_EmptyAllModal_Message"],
         _ => string.Empty
     };
 
-    public TrashViewModel(VaultService vaultService, KanbanService kanbanService, ReminderService reminderService,
-        NotificationService notificationService, SessionService sessionService, Action? onSessionsChanged = null)
+    public TrashViewModel(VaultService vaultService, KanbanService kanbanService, PolarTaskService polarTaskService,
+        ReminderService reminderService, NotificationService notificationService, SessionService sessionService,
+        Action? onSessionsChanged = null)
     {
         _vaultService = vaultService;
         _kanbanService = kanbanService;
+        _polarTaskService = polarTaskService;
         _reminderService = reminderService;
         _notificationService = notificationService;
         _sessionService = sessionService;
@@ -139,6 +173,9 @@ public sealed partial class TrashViewModel : ViewModelBase
         OnPropertyChanged(nameof(PendingEmptyMessage));
         OnPropertyChanged(nameof(PendingPermanentDeleteMessage));
         Reload();
+        // Reload() solo dispara OnTotalCountChanged si el número cambia, y en un cambio de idioma no
+        // cambia — así que la etiqueta hay que refrescarla explícitamente.
+        OnPropertyChanged(nameof(TotalCountLabel));
     }
 
     partial void OnPendingEmptyTargetChanged(TrashEmptyTarget? value)
@@ -155,6 +192,8 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     partial void OnIsRemindersEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
 
+    partial void OnIsPolarTasksEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
+
     partial void OnIsSessionsEmptyChanged(bool value) => OnPropertyChanged(nameof(IsFullyEmpty));
 
     public void Reload()
@@ -168,8 +207,15 @@ public sealed partial class TrashViewModel : ViewModelBase
         IsTasksEmpty = Tasks.Count == 0;
 
         Files.Clear();
-        foreach (var file in _vaultService.GetTrashedFiles()) Files.Add(new FileCardViewModel(file));
+        foreach (var file in _vaultService.GetTrashedFiles()) Files.Add(new FileCardViewModel(_vaultService, file));
         IsFilesEmpty = Files.Count == 0;
+
+        PolarLists.Clear();
+        foreach (var list in _polarTaskService.Store.Lists.Where(l => l.IsDeleted)) PolarLists.Add(new TrashedPolarListCardViewModel(list));
+        PolarTasks.Clear();
+        foreach (var task in _polarTaskService.Store.Tasks.Where(t => t.IsDeleted)) PolarTasks.Add(new TrashedPolarTaskCardViewModel(task));
+        IsPolarTasksEmpty = PolarLists.Count == 0 && PolarTasks.Count == 0;
+        OnPropertyChanged(nameof(PolarTotalCount));
 
         Reminders.Clear();
         foreach (var reminder in _reminderService.DeletedReminders) Reminders.Add(new TrashedReminderCardViewModel(reminder));
@@ -179,7 +225,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         foreach (var session in _sessionService.ListTrashedSessions()) Sessions.Add(new TrashedSessionCardViewModel(session));
         IsSessionsEmpty = Sessions.Count == 0;
 
-        TotalCount = Notes.Count + Tasks.Count + Files.Count + Reminders.Count + Sessions.Count;
+        TotalCount = Notes.Count + Tasks.Count + Files.Count + PolarLists.Count + PolarTasks.Count + Reminders.Count + Sessions.Count;
     }
 
     [RelayCommand]
@@ -211,6 +257,12 @@ public sealed partial class TrashViewModel : ViewModelBase
     private void RequestDeleteTaskForever(TrashedTaskCardViewModel task) => PendingPermanentDelete = task;
 
     [RelayCommand]
+    private void RequestDeletePolarListForever(TrashedPolarListCardViewModel list) => PendingPermanentDelete = list;
+
+    [RelayCommand]
+    private void RequestDeletePolarTaskForever(TrashedPolarTaskCardViewModel task) => PendingPermanentDelete = task;
+
+    [RelayCommand]
     private void RequestDeleteSessionForever(TrashedSessionCardViewModel session) => PendingPermanentDelete = session;
 
     [RelayCommand]
@@ -229,6 +281,12 @@ public sealed partial class TrashViewModel : ViewModelBase
                 break;
             case TrashedTaskCardViewModel task:
                 _kanbanService.PermanentlyDeleteTrashedCard(task.TrashedCard);
+                break;
+            case TrashedPolarListCardViewModel polarList:
+                _polarTaskService.PurgeList(polarList.List);
+                break;
+            case TrashedPolarTaskCardViewModel polarTask:
+                _polarTaskService.PurgeTask(polarTask.Task);
                 break;
             case TrashedSessionCardViewModel session:
                 SessionService.PermanentlyDeleteTrashedSession(session.Session);
@@ -254,9 +312,9 @@ public sealed partial class TrashViewModel : ViewModelBase
             ?? _kanbanService.Board.Columns.FirstOrDefault();
         if (targetColumn is null)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Trash_Notify_CardRestoreFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_CardRestoreFailed_Message"], trashed.Card.Title),
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Title"),
+                LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Message", trashed.Card.Title),
                 NotificationSeverity.Warning);
             return;
         }
@@ -268,14 +326,17 @@ public sealed partial class TrashViewModel : ViewModelBase
             : targetColumn.Cards.Count;
         targetColumn.Cards.Insert(insertIndex, trashed.Card);
 
+        // Restaurar significa "vuelve al tablero", así que una tarjeta que estaba archivada cuando se
+        // borró (docs/agent-docs/kanban-tareas-archivadas.md) pierde aquí esa marca: si no, la
+        // restauración la dejaría en una columna que no la dibuja y habría que ir a buscarla a la ventana
+        // de archivadas para verla. Se decide en este único sitio y no en cada camino de borrado, que son
+        // varios (el tablero y el propio Calendario).
+        trashed.Card.ArchivedAtUtc = null;
+
         _kanbanService.Save();
-        _notificationService.Push(
-            LocalizationService.Instance["Trash_Notify_CardRestored_Title"],
-            string.Format(
-                CultureInfo.CurrentCulture,
-                LocalizationService.Instance["Trash_Notify_CardRestored_Message"],
-                trashed.Card.Title,
-                targetColumn.Title),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Title"),
+            LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Message", trashed.Card.Title, targetColumn.Title),
             NotificationSeverity.Success);
         Reload();
     }
@@ -296,11 +357,25 @@ public sealed partial class TrashViewModel : ViewModelBase
             return;
         }
 
-        _notificationService.Push(
-            LocalizationService.Instance["Trash_Notify_SessionRestored_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_SessionRestored_Message"], card.Name),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Trash_Notify_SessionRestored_Title"),
+            LocalizedTextFormatter.Format("Trash_Notify_SessionRestored_Message", card.Name),
             NotificationSeverity.Success);
         _onSessionsChanged?.Invoke();
+        Reload();
+    }
+
+    [RelayCommand]
+    private void RestorePolarList(TrashedPolarListCardViewModel card)
+    {
+        _polarTaskService.RestoreList(card.List);
+        Reload();
+    }
+
+    [RelayCommand]
+    private void RestorePolarTask(TrashedPolarTaskCardViewModel card)
+    {
+        _polarTaskService.RestoreTask(card.Task);
         Reload();
     }
 
@@ -313,9 +388,9 @@ public sealed partial class TrashViewModel : ViewModelBase
     private void RestoreReminder(TrashedReminderCardViewModel reminder)
     {
         _reminderService.Restore(reminder.Reminder.Id);
-        _notificationService.Push(
-            LocalizationService.Instance["Trash_Notify_ReminderRestored_Title"],
-            string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_ReminderRestored_Message"], reminder.Title),
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Trash_Notify_ReminderRestored_Title"),
+            LocalizedTextFormatter.Format("Trash_Notify_ReminderRestored_Message", reminder.Title),
             NotificationSeverity.Success);
         Reload();
     }
@@ -330,6 +405,9 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     [RelayCommand]
     private void RequestEmptyFiles() => PendingEmptyTarget = TrashEmptyTarget.Files;
+
+    [RelayCommand]
+    private void RequestEmptyPolarTasks() => PendingEmptyTarget = TrashEmptyTarget.PolarTasks;
 
     [RelayCommand]
     private void RequestEmptyReminders() => PendingEmptyTarget = TrashEmptyTarget.Reminders;
@@ -356,6 +434,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         var notesDeleted = 0;
         var tasksDeleted = 0;
         var filesDeleted = 0;
+        var polarTasksDeleted = 0;
         var remindersDeleted = 0;
         var sessionsDeleted = 0;
 
@@ -378,6 +457,13 @@ public sealed partial class TrashViewModel : ViewModelBase
             foreach (var file in trashedFiles) _vaultService.PermanentlyDelete(file);
         }
 
+        if (PendingEmptyTarget is TrashEmptyTarget.PolarTasks or TrashEmptyTarget.All)
+        {
+            polarTasksDeleted = _polarTaskService.Store.Lists.Count(l => l.IsDeleted)
+                              + _polarTaskService.Store.Tasks.Count(t => t.IsDeleted);
+            _polarTaskService.PurgeAllDeleted();
+        }
+
         if (PendingEmptyTarget is TrashEmptyTarget.Reminders or TrashEmptyTarget.All)
         {
             remindersDeleted = _reminderService.DeletedReminders.Count();
@@ -391,10 +477,10 @@ public sealed partial class TrashViewModel : ViewModelBase
             foreach (var session in trashedSessions) SessionService.PermanentlyDeleteTrashedSession(session);
         }
 
-        if (notesDeleted + tasksDeleted + filesDeleted + remindersDeleted + sessionsDeleted > 0)
-            _notificationService.Push(
-                LocalizationService.Instance["Trash_Notify_TrashEmptied_Title"],
-                BuildEmptyPushMessage(notesDeleted, tasksDeleted, filesDeleted, remindersDeleted, sessionsDeleted),
+        if (notesDeleted + tasksDeleted + filesDeleted + polarTasksDeleted + remindersDeleted + sessionsDeleted > 0)
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Trash_Notify_TrashEmptied_Title"),
+                BuildEmptyPushMessage(notesDeleted, tasksDeleted, filesDeleted, polarTasksDeleted, remindersDeleted, sessionsDeleted),
                 NotificationSeverity.Warning);
 
         PendingEmptyTarget = null;
@@ -407,19 +493,22 @@ public sealed partial class TrashViewModel : ViewModelBase
     /// the correct singular/plural form per locale instead of the old hand-rolled "s" suffix, and the
     /// per-category fragments are joined into the final sentence via a resource-keyed template (see
     /// docs/agent-docs/internacionalizacion-i18n.md §1.3/§1.4) instead of a fixed-word-order concatenation.</summary>
-    private static string BuildEmptyPushMessage(int notesDeleted, int tasksDeleted, int filesDeleted, int remindersDeleted, int sessionsDeleted)
+    private static LocalizedText BuildEmptyPushMessage(int notesDeleted, int tasksDeleted, int filesDeleted, int polarTasksDeleted, int remindersDeleted, int sessionsDeleted)
     {
-        var parts = new List<string>();
-        if (notesDeleted > 0) parts.Add(Plural.Get("Trash_Notify_DocumentsCount", notesDeleted, notesDeleted));
-        if (tasksDeleted > 0) parts.Add(Plural.Get("Trash_Notify_TasksCount", tasksDeleted, tasksDeleted));
-        if (filesDeleted > 0) parts.Add(Plural.Get("Trash_Notify_FilesCount", filesDeleted, filesDeleted));
-        if (remindersDeleted > 0) parts.Add(Plural.Get("Trash_Notify_RemindersCount", remindersDeleted, remindersDeleted));
-        if (sessionsDeleted > 0) parts.Add(Plural.Get("Trash_Notify_SessionsCount", sessionsDeleted, sessionsDeleted));
+        var parts = new List<LocalizedText>();
+        if (notesDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_DocumentsCount", notesDeleted, notesDeleted));
+        if (tasksDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_TasksCount", tasksDeleted, tasksDeleted));
+        if (filesDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_FilesCount", filesDeleted, filesDeleted));
+        if (polarTasksDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_PolarTasksCount", polarTasksDeleted, polarTasksDeleted));
+        if (remindersDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_RemindersCount", remindersDeleted, remindersDeleted));
+        if (sessionsDeleted > 0) parts.Add(LocalizedTextFormatter.PluralFormat("Trash_Notify_SessionsCount", sessionsDeleted, sessionsDeleted));
 
         var itemsList = parts.Count <= 1
-            ? string.Join(string.Empty, parts)
-            : string.Join(", ", parts.Take(parts.Count - 1)) + $" {LocalizationService.Instance["Trash_Notify_ListConjunction"]} " + parts[^1];
+            ? LocalizedTextFormatter.Join(string.Empty, parts.ToArray())
+            : LocalizedTextFormatter.Join(" ",
+                LocalizedTextFormatter.Join(", ", parts.Take(parts.Count - 1).ToArray()),
+                LocalizedTextFormatter.Format("Trash_Notify_ListConjunction"), parts[^1]);
 
-        return string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Trash_Notify_TrashEmptied_Message"], itemsList);
+        return LocalizedTextFormatter.Format("Trash_Notify_TrashEmptied_Message", itemsList);
     }
 }

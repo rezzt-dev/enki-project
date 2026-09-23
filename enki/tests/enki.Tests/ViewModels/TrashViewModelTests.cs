@@ -29,23 +29,24 @@ public class TrashViewModelTests : IDisposable
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
-    private (TrashViewModel Trash, VaultService Vault, KanbanService Kanban, ReminderService Reminders, SessionService Sessions) CreateViewModel()
+    private (TrashViewModel Trash, VaultService Vault, KanbanService Kanban, PolarTaskService Polar, ReminderService Reminders, SessionService Sessions) CreateViewModel()
     {
         var settings = new SettingsService(_storageDirectory);
         var vault = new VaultService(settings);
         vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
         var kanban = new KanbanService(_storageDirectory);
+        var polar = new PolarTaskService(_storageDirectory);
         var reminders = new ReminderService(_storageDirectory);
         var notifications = new NotificationService(settings, _storageDirectory);
         var sessions = new SessionService(vault);
-        var trash = new TrashViewModel(vault, kanban, reminders, notifications, sessions);
-        return (trash, vault, kanban, reminders, sessions);
+        var trash = new TrashViewModel(vault, kanban, polar, reminders, notifications, sessions);
+        return (trash, vault, kanban, polar, reminders, sessions);
     }
 
     [Fact]
     public void Reload_StartsEmpty_ForFreshVault()
     {
-        var (trash, _, _, _, _) = CreateViewModel();
+        var (trash, _, _, _, _, _) = CreateViewModel();
 
         Assert.True(trash.IsEmpty);
         Assert.True(trash.IsTasksEmpty);
@@ -59,7 +60,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void Reload_PopulatesTrashedNote()
     {
-        var (trash, vault, _, _, _) = CreateViewModel();
+        var (trash, vault, _, _, _, _) = CreateViewModel();
         var path = Path.Combine(_vaultPath, "Nota.md");
         File.WriteAllText(path, "# Nota");
         var note = vault.GetNotes().Single();
@@ -74,7 +75,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void TotalCount_ReflectsCombinedItemsAcrossSections_AndUpdatesAfterRestore()
     {
-        var (trash, vault, _, _, _) = CreateViewModel();
+        var (trash, vault, _, _, _, _) = CreateViewModel();
         var path = Path.Combine(_vaultPath, "Nota.md");
         File.WriteAllText(path, "# Nota");
         var note = vault.GetNotes().Single();
@@ -91,7 +92,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void RestoreCommand_RestoresNote_AndReloads()
     {
-        var (trash, vault, _, _, _) = CreateViewModel();
+        var (trash, vault, _, _, _, _) = CreateViewModel();
         var path = Path.Combine(_vaultPath, "Nota.md");
         File.WriteAllText(path, "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
@@ -109,7 +110,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void RequestDeleteForever_OpensDialog_WithoutDeleting()
     {
-        var (trash, vault, _, _, _) = CreateViewModel();
+        var (trash, vault, _, _, _, _) = CreateViewModel();
         var path = Path.Combine(_vaultPath, "Nota.md");
         File.WriteAllText(path, "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
@@ -125,7 +126,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void ConfirmPermanentDelete_ForNote_RemovesItPermanently()
     {
-        var (trash, vault, _, _, _) = CreateViewModel();
+        var (trash, vault, _, _, _, _) = CreateViewModel();
         var path = Path.Combine(_vaultPath, "Nota.md");
         File.WriteAllText(path, "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
@@ -143,7 +144,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void CancelPermanentDelete_ClearsPending_WithoutDeleting()
     {
-        var (trash, vault, _, _, _) = CreateViewModel();
+        var (trash, vault, _, _, _, _) = CreateViewModel();
         var path = Path.Combine(_vaultPath, "Nota.md");
         File.WriteAllText(path, "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
@@ -160,7 +161,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void RestoreTaskCommand_MovesCardBackToItsOriginalColumn()
     {
-        var (trash, _, kanban, _, _) = CreateViewModel();
+        var (trash, _, kanban, _, _, _) = CreateViewModel();
         var column = kanban.Board.Columns[0];
         var card = new KanbanCard { Id = "trashed-card", Title = "Tarjeta" };
         kanban.Board.TrashedCards.Add(new KanbanTrashedCard
@@ -178,10 +179,40 @@ public class TrashViewModelTests : IDisposable
         Assert.Contains(column.Cards, c => c.Id == "trashed-card");
     }
 
+    /// <summary>Restaurar significa "vuelve al tablero": una tarjeta que estaba archivada cuando se borró
+    /// (docs/agent-docs/kanban-tareas-archivadas.md) pierde esa marca al restaurarla, porque si no
+    /// aparecería en su columna sin que el tablero llegara a dibujarla.</summary>
+    [Fact]
+    public void RestoreTaskCommand_ClearsTheArchivedMark()
+    {
+        var (trash, _, kanban, _, _, _) = CreateViewModel();
+        var column = kanban.Board.Columns[0];
+        var card = new KanbanCard
+        {
+            Id = "archived-card",
+            Title = "Tarjeta archivada",
+            ArchivedAtUtc = DateTime.UtcNow.AddDays(-3),
+            CompletedAtUtc = DateTime.UtcNow.AddDays(-3)
+        };
+        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        {
+            Card = card,
+            ColumnId = column.Id,
+            ColumnTitle = column.Title
+        });
+        trash.Reload();
+
+        trash.RestoreTaskCommand.Execute(trash.Tasks.Single());
+
+        Assert.Contains(column.Cards, c => c.Id == "archived-card");
+        Assert.False(card.IsArchived);
+        Assert.NotNull(card.CompletedAtUtc);
+    }
+
     [Fact]
     public void RestoreTaskCommand_InsertsCardAtOriginalIndex()
     {
-        var (trash, _, kanban, _, _) = CreateViewModel();
+        var (trash, _, kanban, _, _, _) = CreateViewModel();
         var column = kanban.Board.Columns[0];
         column.Cards.Clear();
         column.Cards.Add(new KanbanCard { Id = "existing", Title = "Existente" });
@@ -215,7 +246,8 @@ public class TrashViewModelTests : IDisposable
         var kanban = new KanbanService(_storageDirectory);
         var notifications = new NotificationService(settings, _storageDirectory);
         var trash = new TrashViewModel(
-            vault, kanban, new ReminderService(_storageDirectory), notifications, new SessionService(vault));
+            vault, kanban, new PolarTaskService(_storageDirectory), new ReminderService(_storageDirectory),
+            notifications, new SessionService(vault));
 
         kanban.Board.Columns.Clear();
         var card = new KanbanCard { Id = "stuck", Title = "Sin destino" };
@@ -238,7 +270,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void ConfirmPermanentDelete_ForTask_RemovesFromTrashedCards()
     {
-        var (trash, _, kanban, _, _) = CreateViewModel();
+        var (trash, _, kanban, _, _, _) = CreateViewModel();
         var column = kanban.Board.Columns[0];
         kanban.Board.TrashedCards.Add(new KanbanTrashedCard
         {
@@ -256,10 +288,168 @@ public class TrashViewModelTests : IDisposable
         Assert.Empty(kanban.Board.TrashedCards);
     }
 
+    // ===================== Categoría Tareas Polar (análisis alfa-3 §4.3) =====================
+
+    [Fact]
+    public void Reload_PopulatesTrashedPolarListsAndTasks()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteTask(task);
+        var otherList = polar.CreateList("Otra lista", "ic_list", "#000", isDependencyChain: false);
+        polar.DeleteList(otherList);
+
+        trash.Reload();
+
+        Assert.False(trash.IsPolarTasksEmpty);
+        Assert.Contains(trash.PolarTasks, t => t.Task.Id == task.Id);
+        Assert.Contains(trash.PolarLists, l => l.List.Id == otherList.Id);
+    }
+
+    [Fact]
+    public void RestorePolarListCommand_UndeletesTheList()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.DeleteList(list);
+        trash.Reload();
+        var trashedList = trash.PolarLists.Single();
+
+        trash.RestorePolarListCommand.Execute(trashedList);
+
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.False(polar.Store.Lists.Single(l => l.Id == list.Id).IsDeleted);
+    }
+
+    [Fact]
+    public void RestorePolarTaskCommand_UndeletesTheTask()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteTask(task);
+        trash.Reload();
+        var trashedTask = trash.PolarTasks.Single();
+
+        trash.RestorePolarTaskCommand.Execute(trashedTask);
+
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.False(polar.Store.Tasks.Single(t => t.Id == task.Id).IsDeleted);
+    }
+
+    [Fact]
+    public void RequestDeletePolarTaskForever_OpensDialog_WithoutDeleting()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteTask(task);
+        trash.Reload();
+        var trashedTask = trash.PolarTasks.Single();
+
+        trash.RequestDeletePolarTaskForeverCommand.Execute(trashedTask);
+
+        Assert.Same(trashedTask, trash.PendingPermanentDelete);
+        Assert.Single(polar.Store.Tasks, t => t.IsDeleted);
+    }
+
+    [Fact]
+    public void ConfirmPermanentDelete_ForPolarTask_RemovesItPermanently()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteTask(task);
+        trash.Reload();
+        var trashedTask = trash.PolarTasks.Single();
+
+        trash.RequestDeletePolarTaskForeverCommand.Execute(trashedTask);
+        trash.ConfirmPermanentDeleteCommand.Execute(null);
+
+        Assert.Null(trash.PendingPermanentDelete);
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.DoesNotContain(polar.Store.Tasks, t => t.Id == task.Id);
+    }
+
+    [Fact]
+    public void ConfirmPermanentDelete_ForPolarList_RemovesListAndItsTasksPermanently()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        polar.DeleteList(list);
+        trash.Reload();
+        var trashedList = trash.PolarLists.Single();
+
+        trash.RequestDeletePolarListForeverCommand.Execute(trashedList);
+        trash.ConfirmPermanentDeleteCommand.Execute(null);
+
+        Assert.Null(trash.PendingPermanentDelete);
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.DoesNotContain(polar.Store.Lists, l => l.Id == list.Id);
+        Assert.Empty(polar.Store.Tasks);
+    }
+
+    [Fact]
+    public void ConfirmEmpty_WithPolarTasksTarget_PurgesOnlyPolarTasks()
+    {
+        var (trash, vault, kanban, polar, _, _) = CreateViewModel();
+        File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
+        vault.DeleteNote(vault.GetNotes().Single());
+        var column = kanban.Board.Columns[0];
+        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        {
+            Card = new KanbanCard { Id = "t1", Title = "T" },
+            ColumnId = column.Id,
+            ColumnTitle = column.Title
+        });
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.DeleteList(list);
+        trash.Reload();
+
+        trash.RequestEmptyPolarTasksCommand.Execute(null);
+        trash.ConfirmEmptyCommand.Execute(null);
+
+        Assert.True(trash.IsPolarTasksEmpty);
+        Assert.DoesNotContain(polar.Store.Lists, l => l.Id == list.Id);
+        Assert.Single(vault.GetTrashedNotes());
+        Assert.Single(kanban.Board.TrashedCards);
+        Assert.False(trash.IsFullyEmpty);
+    }
+
+    [Fact]
+    public void ConfirmEmpty_WithAllTarget_PurgesPolarTasksToo()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.DeleteList(list);
+        trash.Reload();
+
+        trash.RequestEmptyTrashCommand.Execute(null);
+        trash.ConfirmEmptyCommand.Execute(null);
+
+        Assert.True(trash.IsFullyEmpty);
+        Assert.DoesNotContain(polar.Store.Lists, l => l.Id == list.Id);
+    }
+
+    [Fact]
+    public void PolarTasksCategory_AffectsIsFullyEmpty()
+    {
+        var (trash, _, _, polar, _, _) = CreateViewModel();
+        var list = polar.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        polar.DeleteList(list);
+
+        trash.Reload();
+
+        Assert.False(trash.IsPolarTasksEmpty);
+        Assert.False(trash.IsFullyEmpty);
+    }
+
     [Fact]
     public void RestoreReminderCommand_ClearsTombstone()
     {
-        var (trash, _, _, reminders, _) = CreateViewModel();
+        var (trash, _, _, _, reminders, _) = CreateViewModel();
         var reminder = reminders.Create("Recordatorio", "", DateTime.UtcNow.AddDays(1), "BellRingOutline");
         reminders.Delete(reminder.Id);
         trash.Reload();
@@ -276,7 +466,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void Reload_PopulatesTrashedSession_WithItsNoteCount()
     {
-        var (trash, _, _, _, sessions) = CreateViewModel();
+        var (trash, _, _, _, _, sessions) = CreateViewModel();
         var session = sessions.Create("Descartable");
         File.WriteAllText(Path.Combine(session.RootPath, "Nota.md"), "# Nota");
         sessions.Delete(session);
@@ -299,8 +489,8 @@ public class TrashViewModelTests : IDisposable
         var sessions = new SessionService(vault);
         var sessionsChangedCount = 0;
         var trash = new TrashViewModel(
-            vault, new KanbanService(_storageDirectory), new ReminderService(_storageDirectory),
-            new NotificationService(settings, _storageDirectory), sessions,
+            vault, new KanbanService(_storageDirectory), new PolarTaskService(_storageDirectory),
+            new ReminderService(_storageDirectory), new NotificationService(settings, _storageDirectory), sessions,
             onSessionsChanged: () => sessionsChangedCount++);
 
         var session = sessions.Create("Recuperable");
@@ -319,7 +509,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void ConfirmPermanentDelete_ForSession_RemovesFolderFromDisk()
     {
-        var (trash, _, _, _, sessions) = CreateViewModel();
+        var (trash, _, _, _, _, sessions) = CreateViewModel();
         var session = sessions.Create("Purgable");
         File.WriteAllText(Path.Combine(session.RootPath, "Nota.md"), "# Nota");
         sessions.Delete(session);
@@ -337,7 +527,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void ConfirmEmpty_WithSessionsTarget_PurgesOnlySessions()
     {
-        var (trash, vault, kanban, _, sessions) = CreateViewModel();
+        var (trash, vault, kanban, _, _, sessions) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
         var column = kanban.Board.Columns[0];
@@ -364,7 +554,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void ConfirmEmpty_WithAllTarget_PurgesNotesTasksFilesAndReminders()
     {
-        var (trash, vault, kanban, reminders, _) = CreateViewModel();
+        var (trash, vault, kanban, _, reminders, _) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
         var column = kanban.Board.Columns[0];
@@ -390,7 +580,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void ConfirmEmpty_WithRemindersTarget_PurgesOnlyReminders()
     {
-        var (trash, vault, kanban, reminders, _) = CreateViewModel();
+        var (trash, vault, kanban, _, reminders, _) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
         var column = kanban.Board.Columns[0];
@@ -417,7 +607,7 @@ public class TrashViewModelTests : IDisposable
     [Fact]
     public void CancelEmpty_ClearsPendingTarget_WithoutDeletingAnything()
     {
-        var (trash, vault, _, _, _) = CreateViewModel();
+        var (trash, vault, _, _, _, _) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
         trash.Reload();

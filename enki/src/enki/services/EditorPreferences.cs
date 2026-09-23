@@ -60,6 +60,19 @@ public static class EditorPreferences
         }
     }
 
+    /// <summary>Fuente de los bloques y fragmentos de código. Null usa la fuente incluida.</summary>
+    private static string? _codeFontFamily;
+    public static string? CodeFontFamily
+    {
+        get => _codeFontFamily;
+        set
+        {
+            if (_codeFontFamily == value) return;
+            _codeFontFamily = value;
+            Changed?.Invoke();
+        }
+    }
+
     /// <summary>Whether the editor's (and preview's) scrollbar is visible.</summary>
     private static bool _showScrollbar = true;
     public static bool ShowScrollbar
@@ -100,6 +113,37 @@ public static class EditorPreferences
         }
     }
 
+    /// <summary>Justifica el texto de las notas (Ajustes › Editor › "Alineación del texto"). Qué bloques
+    /// abarca y cómo se reparte el blanco lo decide
+    /// <c>Views.Editor.Markdown.MarkdownJustification</c>.</summary>
+    private static bool _justifyParagraphs = true;
+    public static bool JustifyParagraphs
+    {
+        get => _justifyParagraphs;
+        set
+        {
+            if (_justifyParagraphs == value) return;
+            _justifyParagraphs = value;
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>Si escribir un paréntesis, un corchete o unas comillas con texto seleccionado lo envuelve,
+    /// y si sin selección se cierra solo (ver <c>EditorView.Editing.cs</c>). Es una preferencia y no una
+    /// constante porque el autocierre divide a la gente: a quien escribe código dentro de las notas le
+    /// ahorra medio teclado, y a quien escribe prosa con paréntesis sueltos le estorba.</summary>
+    private static bool _autoPairs = true;
+    public static bool AutoPairs
+    {
+        get => _autoPairs;
+        set
+        {
+            if (_autoPairs == value) return;
+            _autoPairs = value;
+            Changed?.Invoke();
+        }
+    }
+
     private static bool _wordWrap = true;
     public static bool WordWrap
     {
@@ -108,6 +152,23 @@ public static class EditorPreferences
         {
             if (_wordWrap == value) return;
             _wordWrap = value;
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>Si el live preview descarga y dibuja las imágenes escritas con una URL <c>http(s)</c>
+    /// (Ajustes › Editor). Las imágenes del propio vault y las <c>data:</c> incrustadas en la nota se
+    /// dibujan siempre; estas otras no, porque abrir la nota implicaría una petición a un servidor de
+    /// terceros — que revela la IP del usuario y el momento exacto en que la lee. Por defecto activo,
+    /// como en cualquier editor Markdown, pero desactivable de una sola casilla.</summary>
+    private static bool _remoteImages = true;
+    public static bool RemoteImages
+    {
+        get => _remoteImages;
+        set
+        {
+            if (_remoteImages == value) return;
+            _remoteImages = value;
             Changed?.Invoke();
         }
     }
@@ -201,6 +262,42 @@ public static class EditorPreferences
         {
             if (_toolbarCodeExpanded == value) return;
             _toolbarCodeExpanded = value;
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>Vista simplificada de la página de Notas (Ajustes › Editor › Vista del editor): árbol de
+    /// carpetas y notas a la izquierda, pestañas y editor a la derecha, sin barra de formato ni panel
+    /// lateral de esquema/enlaces/estadísticas. Vive aquí, y no solo en <c>AppSettings</c>, por el mismo
+    /// motivo que <see cref="SidePanelVisible"/>: <c>NotesViewModel</c> y cada <c>EditorViewModel</c>
+    /// abierto la reflejan al vuelo cuando se cambia desde Ajustes, sin cerrar y reabrir la nota.</summary>
+    private static bool _simplifiedNotesView;
+    public static bool SimplifiedNotesView
+    {
+        get => _simplifiedNotesView;
+        set
+        {
+            if (_simplifiedNotesView == value) return;
+            _simplifiedNotesView = value;
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — oculta la
+    /// cabecera, la barra de formato, las tarjetas vinculadas y el panel lateral del editor, además de la
+    /// barra de pestañas y el sidebar del shell (ver <c>NotesViewModel.IsZenMode</c>/
+    /// <c>MainWindowViewModel.IsZenMode</c>, que se resincronizan con este mismo valor). A diferencia de
+    /// <see cref="ToolbarVisible"/>/<see cref="SidePanelVisible"/>, deliberadamente no se persiste en
+    /// <c>AppSettings</c> — siempre arranca en <c>false</c> en cada sesión, coherente con ser un modo
+    /// transitorio de "ahora mismo quiero concentrarme" y no una preferencia duradera.</summary>
+    private static bool _isZenMode;
+    public static bool IsZenMode
+    {
+        get => _isZenMode;
+        set
+        {
+            if (_isZenMode == value) return;
+            _isZenMode = value;
             Changed?.Invoke();
         }
     }

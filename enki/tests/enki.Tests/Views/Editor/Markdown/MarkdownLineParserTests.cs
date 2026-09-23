@@ -64,40 +64,48 @@ public class MarkdownLineParserTests
     }
 
     [Theory]
-    [InlineData("| --- | --- |", true)]
-    [InlineData("| :-: | ---: | :--- |", true)]
-    [InlineData("| -- | -- |", false)]
-    [InlineData("| a | b |", false)]
-    [InlineData("| - | - |", false)]
-    [InlineData("| --- | texto |", false)]
-    public void Parse_TableSeparatorDetection(string text, bool expected)
+    [InlineData("![[Nota A]]", "Nota A")]
+    [InlineData("![[Nota A#Sección útil]]", "Nota A#Sección útil")]
+    [InlineData("![[Nota A#^bloque-1|Alias]]", "Nota A#^bloque-1")]
+    public void Parse_NoteEmbed_IsATransclusion(string text, string target)
     {
         var model = MarkdownLineParser.Parse(text, 0, NoFence);
 
-        Assert.Equal(MdBlockKind.Table, model.Kind);
-        Assert.Equal(expected, model.IsTableSeparator);
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Transclusion, span.Kind);
+        Assert.Equal(target, span.LinkTarget);
+        Assert.Equal(text.Length, span.End);
     }
 
     [Fact]
-    public void Parse_TableDataRow_IsDetectedAsTable()
+    public void Parse_ObsidianImageEmbed_StillHasPrecedenceOverTransclusion()
     {
-        var text = "| Celda 1 | Celda 2 |";
-        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+        var model = MarkdownLineParser.Parse("![[diagrama.svg]]", 0, NoFence);
 
-        Assert.Equal(MdBlockKind.Table, model.Kind);
-        Assert.False(model.IsTableSeparator);
+        Assert.Equal(MdSpanKind.Image, Assert.Single(model.Spans).Kind);
     }
 
-    [Fact]
-    public void Parse_TableRow_InlineSpansStillParsed()
+    [Theory]
+    [InlineData("La energía es $E=mc^2$.", false, "E=mc^2")]
+    [InlineData("$$\\int_0^1 x^2 dx$$", true, "\\int_0^1 x^2 dx")]
+    public void Parse_LatexSpan_ReportsDisplayMode(string text, bool display, string latex)
     {
-        var text = "| **bold** | `code` |";
         var model = MarkdownLineParser.Parse(text, 0, NoFence);
 
-        Assert.Equal(MdBlockKind.Table, model.Kind);
-        Assert.Equal(2, model.Spans.Count);
-        Assert.Contains(model.Spans, s => s.Kind == MdSpanKind.Bold);
-        Assert.Contains(model.Spans, s => s.Kind == MdSpanKind.InlineCode);
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Math, span.Kind);
+        Assert.Equal(display, span.IsDisplayMath);
+        Assert.Equal(latex, text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Theory]
+    [InlineData("El precio es $20 y nada más")]
+    [InlineData("Un dólar escapado: \\$x$")]
+    [InlineData("$ fórmula $")]
+    public void Parse_CurrencyEscapesAndWhitespace_AreNotLatex(string text)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+        Assert.DoesNotContain(model.Spans, span => span.Kind == MdSpanKind.Math);
     }
 
     [Fact]
@@ -137,16 +145,35 @@ public class MarkdownLineParserTests
     }
 
     [Theory]
-    [InlineData("- Item", 0, 2, 2)]
-    [InlineData("-  Item", 0, 2, 3)]
-    [InlineData("-   Item", 0, 2, 4)]
-    public void Parse_BulletList_PreservesExtraSpaces(string text, int markerStart, int markerEnd, int contentStart)
+    [InlineData("> cita", 1, 0, 2)]
+    [InlineData(">> cita", 2, 0, 3)]
+    [InlineData("> > cita", 2, 0, 4)]
+    [InlineData("  >> cita", 2, 2, 5)]
+    public void Parse_Blockquote_ReportsEveryNestedLevel(string text, int depth, int markerStart, int contentStart)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(MdBlockKind.Blockquote, model.Kind);
+        Assert.Equal(depth, model.QuoteDepth);
+        Assert.Equal(markerStart, model.MarkerStart);
+        Assert.Equal(contentStart, model.MarkerEnd);
+        Assert.Equal(contentStart, model.ContentStart);
+    }
+
+    /// <summary>A diferencia de encabezados y citas, la viñeta se traga los espacios extra: la "• " que
+    /// se pinta en su lugar ya reserva su propia separación, así que conservarlos visibles duplicaría el
+    /// hueco entre el marcador y el texto.</summary>
+    [Theory]
+    [InlineData("- Item", 0, 2)]
+    [InlineData("-  Item", 0, 3)]
+    [InlineData("-   Item", 0, 4)]
+    public void Parse_BulletList_AbsorbsExtraSpacesIntoTheMarker(string text, int markerStart, int contentStart)
     {
         var model = MarkdownLineParser.Parse(text, 0, NoFence);
 
         Assert.Equal(MdBlockKind.BulletList, model.Kind);
         Assert.Equal(markerStart, model.MarkerStart);
-        Assert.Equal(markerEnd, model.MarkerEnd);
+        Assert.Equal(contentStart, model.MarkerEnd);
         Assert.Equal(contentStart, model.ContentStart);
     }
 
@@ -177,4 +204,280 @@ public class MarkdownLineParserTests
         Assert.Equal(markerEnd, model.MarkerEnd);
         Assert.Equal(contentStart, model.ContentStart);
     }
+
+    // ===================== Énfasis: negrita, cursiva, negrita+cursiva =====================
+
+    [Theory]
+    [InlineData("*cursiva*", MdSpanKind.Italic, "cursiva")]
+    [InlineData("_cursiva_", MdSpanKind.Italic, "cursiva")]
+    [InlineData("**negrita**", MdSpanKind.Bold, "negrita")]
+    [InlineData("__negrita__", MdSpanKind.Bold, "negrita")]
+    [InlineData("***negrita cursiva***", MdSpanKind.BoldItalic, "negrita cursiva")]
+    [InlineData("___negrita cursiva___", MdSpanKind.BoldItalic, "negrita cursiva")]
+    public void Parse_Emphasis_IsParsedWithCorrectKindAndContent(string text, MdSpanKind expectedKind, string expectedContent)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(expectedKind, span.Kind);
+        Assert.Equal(expectedContent, text[span.ContentStart..span.ContentEnd]);
+        Assert.Equal(text, text[span.Start..span.End]);
+    }
+
+    [Fact]
+    public void Parse_BoldAndItalic_TogetherOnOneLine_ProducesTwoSeparateSpans()
+    {
+        var text = "Esto es **negrita** y esto *cursiva*.";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(2, model.Spans.Count);
+        Assert.Equal(MdSpanKind.Bold, model.Spans[0].Kind);
+        Assert.Equal("negrita", text[model.Spans[0].ContentStart..model.Spans[0].ContentEnd]);
+        Assert.Equal(MdSpanKind.Italic, model.Spans[1].Kind);
+        Assert.Equal("cursiva", text[model.Spans[1].ContentStart..model.Spans[1].ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_UnclosedEmphasisMarker_ProducesNoSpan()
+    {
+        var text = "esto tiene un *asterisco suelto sin cerrar";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.DoesNotContain(model.Spans, s => s.Kind is MdSpanKind.Italic or MdSpanKind.Bold or MdSpanKind.BoldItalic);
+    }
+
+    [Fact]
+    public void Parse_EmphasisMarkerImmediatelyFollowedByWhitespace_DoesNotOpen()
+    {
+        // "* " with a trailing space right after the marker is not emphasis (it would also collide with
+        // "* " as a bullet-list marker at the start of a line, but this asserts the inline case).
+        var text = "esto no es * cursiva *";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.DoesNotContain(model.Spans, s => s.Kind == MdSpanKind.Italic);
+    }
+
+    // ===================== snake_case: el guion bajo intra-palabra no debe abrir énfasis =====================
+    // análisis §4.2 — antes de esta corrección, "mi_variable_de_ejemplo" se parseaba como texto en
+    // cursiva empezando en el primer "_" (siguiendo la misma regla que abrir/cerrar con un solo
+    // asterisco), dejando "variable" en itálica y el resto literal. La regla de CommonMark para "_"
+    // (no puede abrir ni cerrar entre dos caracteres alfanuméricos) evita justamente ese caso sin tocar
+    // el comportamiento de "*", que sí soporta énfasis intra-palabra.
+
+    [Theory]
+    [InlineData("mi_variable_de_ejemplo")]
+    [InlineData("snake_case_identifier")]
+    [InlineData("un_solo_guion_no_deberia_marcar_nada")]
+    public void Parse_SnakeCaseIdentifier_IsNotParsedAsEmphasis(string text)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.DoesNotContain(model.Spans, s => s.Kind is MdSpanKind.Italic or MdSpanKind.Bold or MdSpanKind.BoldItalic);
+    }
+
+    [Fact]
+    public void Parse_UnderscoreEmphasis_StillWorksWhenSurroundedByWhitespaceOrPunctuation()
+    {
+        var text = "esto es _cursiva_ de verdad.";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Italic, span.Kind);
+        Assert.Equal("cursiva", text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_AsteriskEmphasis_StillWorksIntraword()
+    {
+        // Only "_" gets the intraword restriction — "*" keeps CommonMark's more permissive behavior,
+        // matching this parser's pre-existing support for e.g. "un*fitt*ing".
+        var text = "un*fitt*ing";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Italic, span.Kind);
+        Assert.Equal("fitt", text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_HtmlTags_BecomeConcealableSpans()
+    {
+        var text = "<div align=\"center\">Hola</div>";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(2, model.HtmlTags.Count);
+        Assert.Equal(2, model.Spans.Count);
+        Assert.All(model.Spans, span => Assert.Equal(MdSpanKind.HtmlTag, span.Kind));
+        // Un span de etiqueta no tiene contenido: se oculta entero, como cualquier marcador Markdown.
+        Assert.All(model.Spans, span => Assert.Equal(span.End, span.ContentStart));
+        Assert.Equal("<div align=\"center\">", text[model.Spans[0].Start..model.Spans[0].End]);
+        Assert.Equal("</div>", text[model.Spans[1].Start..model.Spans[1].End]);
+    }
+
+    [Fact]
+    public void Parse_MarkdownInsideAnHtmlBlock_StillParses()
+    {
+        var text = "<div align=\"center\">**negrita**</div>";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var bold = Assert.Single(model.Spans, span => span.Kind == MdSpanKind.Bold);
+        Assert.Equal("negrita", text[bold.ContentStart..bold.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_HtmlInsideInlineCode_StaysLiteral()
+    {
+        // `<div>` entre comillas invertidas es texto de ejemplo: ocultarlo dejaría la línea vacía.
+        var text = "usa `<div>` para agrupar";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Empty(model.HtmlTags);
+        Assert.DoesNotContain(model.Spans, span => span.Kind == MdSpanKind.HtmlTag);
+    }
+
+    [Fact]
+    public void Parse_HtmlInsideCodeFence_IsNotMarkup()
+    {
+        var model = MarkdownLineParser.Parse("<div align=\"center\">", 0, new FenceInfo(isDelimiter: false, isInside: true, language: "html"));
+
+        Assert.Empty(model.HtmlTags);
+        Assert.Equal(MdBlockKind.CodeFence, model.Kind);
+    }
+
+    [Fact]
+    public void Parse_UnknownTag_IsPlainText()
+    {
+        var model = MarkdownLineParser.Parse("un <cualquiercosa> suelto", 0, NoFence);
+
+        Assert.Empty(model.HtmlTags);
+        Assert.Empty(model.Spans);
+    }
+
+    [Fact]
+    public void Parse_AttributePunctuation_DoesNotOpenEmphasis()
+    {
+        // El '*' vive dentro de la etiqueta: es markup, no una cursiva a medio abrir.
+        var model = MarkdownLineParser.Parse("<div style=\"a*b\">texto *cursiva* fin</div>", 0, NoFence);
+
+        var italic = Assert.Single(model.Spans, span => span.Kind == MdSpanKind.Italic);
+        Assert.Equal(2, model.HtmlTags.Count);
+        Assert.True(italic.Start > model.HtmlTags[0].End);
+    }
+
+    // ===================== Imágenes =====================
+
+    [Fact]
+    public void Parse_Image_SpanCoversTheExclamationMark()
+    {
+        var text = "Antes ![captura](adjuntos/foto.png) después";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal("adjuntos/foto.png", span.LinkTarget);
+        Assert.Equal("captura", text[span.ContentStart..span.ContentEnd]);
+        // El '!' entra en el span: si quedara fuera, ocultar la imagen dejaría un '!' suelto en la línea.
+        Assert.Equal("![captura](adjuntos/foto.png)", text[span.Start..span.End]);
+    }
+
+    [Fact]
+    public void Parse_LinkAfterImage_StillParsedAsLink()
+    {
+        var text = "![foto](a.png) y [enlace](https://ejemplo.test)";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        Assert.Equal(2, model.Spans.Count);
+        Assert.Equal(MdSpanKind.Image, model.Spans[0].Kind);
+        Assert.Equal(MdSpanKind.Link, model.Spans[1].Kind);
+    }
+
+    [Theory]
+    [InlineData("![alt|300](a.png)", 300, 0, "alt")]
+    [InlineData("![alt|300x200](a.png)", 300, 200, "alt")]
+    [InlineData("![|420](a.png)", 420, 0, "")]
+    public void Parse_ImageWithExplicitSize_SplitsSizeOutOfAltText(string text, int width, int height, string alt)
+    {
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal(width, span.ImageWidth);
+        Assert.Equal(height, span.ImageHeight);
+        Assert.Equal(alt, text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_ImageWithNonNumericPipeSuffix_KeepsItAsAltText()
+    {
+        var text = "![diagrama|versión 2](a.png)";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(0, span.ImageWidth);
+        Assert.Equal("diagrama|versión 2", text[span.ContentStart..span.ContentEnd]);
+    }
+
+    [Fact]
+    public void Parse_ImageWithTitle_TargetStopsAtFirstSpace()
+    {
+        var text = "![alt](foto.png \"Un título\")";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal("foto.png", span.LinkTarget);
+    }
+
+    [Fact]
+    public void Parse_EmbeddedImageWikiLink_IsAnImageSpan()
+    {
+        var text = "![[captura.png]]";
+        var model = MarkdownLineParser.Parse(text, 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal("captura.png", span.LinkTarget);
+        Assert.Equal(text, text[span.Start..span.End]);
+    }
+
+    [Fact]
+    public void Parse_EmbeddedImageWikiLinkWithSize_ReadsWidth()
+    {
+        var model = MarkdownLineParser.Parse("![[captura.png|300]]", 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Image, span.Kind);
+        Assert.Equal("captura.png", span.LinkTarget);
+        Assert.Equal(300, span.ImageWidth);
+    }
+
+    [Fact]
+    public void Parse_EmbeddedNoteWikiLink_IsATransclusion()
+    {
+        // `![[Otra nota]]` no apunta a un archivo con extensión de imagen: es una transclusión de nota,
+        // que el generador resuelve y dibuja embebida (ver MarkdownTransclusionPresenter).
+        var model = MarkdownLineParser.Parse("![[Otra nota]]", 0, NoFence);
+
+        var span = Assert.Single(model.Spans);
+        Assert.Equal(MdSpanKind.Transclusion, span.Kind);
+        Assert.Equal("Otra nota", span.LinkTarget);
+    }
+
+    [Fact]
+    public void Parse_ImageInsideCodeFence_IsNotParsed()
+    {
+        var fence = new FenceInfo(isDelimiter: false, isInside: true, language: "md");
+        var model = MarkdownLineParser.Parse("![alt](foto.png)", 0, fence);
+
+        Assert.Empty(model.Spans);
+    }
+
+    [Theory]
+    [InlineData("foto.png", true)]
+    [InlineData("FOTO.PNG", true)]
+    [InlineData("https://ejemplo.test/foto.jpg?v=2", true)]
+    [InlineData("data:image/png;base64,AAAA", true)]
+    [InlineData("Otra nota", false)]
+    [InlineData("documento.pdf", false)]
+    public void LooksLikeImage_JudgesByExtension(string target, bool expected) =>
+        Assert.Equal(expected, MarkdownLineParser.LooksLikeImage(target));
 }

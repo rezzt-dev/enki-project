@@ -4,9 +4,9 @@ namespace enki.Models;
 
 /// <summary>A user-created reminder, independent of any Kanban card — pull-driven by the user setting a
 /// date/time, but push-driven once that time arrives: see <see cref="Services.ReminderService.PopDueReminders"/>,
-/// which turns a due reminder into a real <see cref="AppNotification"/>. Distinct from the Kanban due-date
-/// inbox (<see cref="ViewModels.ReminderInboxViewModel"/>), which is derived from card data and never persisted
-/// as its own entity.</summary>
+/// which turns a due reminder into a real <see cref="AppNotification"/>. Also surfaced (merged with Kanban
+/// due dates) by the title-bar inbox (<see cref="ViewModels.ReminderInboxViewModel"/>) — that panel is a
+/// read projection only, this is the actual persisted entity.</summary>
 public sealed class Reminder
 {
     public required string Id { get; set; }

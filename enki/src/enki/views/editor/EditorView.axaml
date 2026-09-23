@@ -7,16 +7,78 @@
              xmlns:models="clr-namespace:enki.Models"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:services="clr-namespace:enki.Services"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.EditorView"
              x:DataType="vm:EditorViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.linked-card-row">
+      <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Button.linked-card-row:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
 
-  <Grid RowDefinitions="Auto,Auto,*" Margin="36,26,36,26">
+    <!-- Historial de versiones: líneas del comparador (Editor_History_*) — un acento de color a la
+         izquierda en vez de un fondo teñido, para que el texto siga leyéndose con el mismo contraste
+         que el resto del panel en ambos temas. -->
+    <Style Selector="Border.diff-line">
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="BorderThickness" Value="3,0,0,0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-added">
+      <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-removed">
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-added TextBlock.diff-text">
+      <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-removed TextBlock.diff-text">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="TextDecorations" Value="Strikethrough" />
+    </Style>
+    <Style Selector="TextBlock.diff-marker">
+      <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Width" Value="12" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-added TextBlock.diff-marker">
+      <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+    </Style>
+    <Style Selector="Border.diff-line.diff-removed TextBlock.diff-marker">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+    </Style>
+  </UserControl.Styles>
 
-    <!-- Header: título a la izquierda, metadatos/acciones a la derecha en una sola fila -->
-    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,20">
-      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="{Binding RootMargin}">
+
+    <!-- Header: título a la izquierda, metadatos/acciones a la derecha en una sola fila. Oculta por
+         completo en modo enfoque/zen (propuesta 7) — junto con la barra de formato y el panel lateral,
+         es lo que deja "solo el texto centrado" que pide esa propuesta. -->
+    <Grid x:Name="EditorHeader" Grid.Row="0" Margin="{Binding HeaderMargin}" IsVisible="{Binding !IsZenMode}">
+      <!-- Columna 0 elástica y columnas 1-3 al tamaño de su contenido: lo que cede espacio al estrechar
+           el editor es el título —que se recorta y sigue estando entero en la pestaña— y no las acciones,
+           que dejarían de poder pulsarse. -->
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MinWidth="80" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center"
+                  ClipToBounds="True" Margin="0,0,12,0">
         <Button Classes="icon-btn" Command="{Binding BackCommand}"
+                IsVisible="{Binding ShowFullViewChrome}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_Back_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_Back_Tooltip}">
           <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
@@ -28,7 +90,8 @@
              keystroke while typing a new title, hammering disk I/O and reloading the note grid mid-word.
              "ghost title-edit" layers a rename-specific affordance on top of the chrome-less ghost base
              (§ Styles.axaml) — a hairline underline that only shows on hover/focus. -->
-        <TextBox Classes="ghost title-edit" FontSize="24" FontWeight="Bold" LetterSpacing="-0.5"
+        <TextBox Classes="ghost title-edit" FontSize="{Binding TitleFontSize}" FontWeight="Bold"
+                 LetterSpacing="-0.5"
                  Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                  PlaceholderText="{loc:Tr Editor_Title_Placeholder}" VerticalAlignment="Center"
                  AutomationProperties.Name="{loc:Tr Editor_Title_Placeholder}"
@@ -36,32 +99,147 @@
                  KeyDown="OnTitleKeyDown" GotFocus="OnTitleGotFocus" />
       </StackPanel>
 
-      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-        <!-- Etiquetas con icono y fondo de tarjeta para agrupar visualmente -->
-        <Border Classes="card" Padding="8,5" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="TagOutline" Width="14" Height="14"
-                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-            <TextBox Classes="search tag-input"
-                     Width="180" VerticalAlignment="Center"
-                     Text="{Binding TagsInput, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                     PlaceholderText="{loc:Tr Editor_Tags_Placeholder}"
-                     AutomationProperties.Name="{loc:Tr Editor_Tags_Placeholder}"
-                     KeyDown="OnTagsKeyDown" LostFocus="OnTagsLostFocus" />
-          </StackPanel>
+      <!-- ===================== Nota diaria (propuesta 8) =====================
+           Solo aparece cuando la nota abierta es la nota diaria de un día (ver
+           EditorViewModel.DailyNote.cs): día anterior, la fecha escrita para leerse, día siguiente y,
+           cuando toca, volver a hoy y combinar con la plantilla. En cualquier otra nota la columna se
+           colapsa y la cabecera queda exactamente como estaba. -->
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="8,0" VerticalAlignment="Center"
+                  IsVisible="{Binding IsDailyNote}">
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenPreviousDayCommand}"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_PreviousDay}"
+                AutomationProperties.Name="{loc:Tr Editor_DailyNote_PreviousDay}">
+          <mi:MaterialIcon Kind="CalendarArrowLeft" Width="15" Height="15" />
+        </Button>
+
+        <Border Classes="card" Padding="9,5" VerticalAlignment="Center"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_DateTooltip}">
+          <TextBlock Text="{Binding DailyNoteDateLabel}" FontSize="11" FontWeight="Bold"
+                     FontFamily="{DynamicResource InterfaceLabelFontFamily}" VerticalAlignment="Center" />
         </Border>
 
-        <!-- Indicador de guardado prominente (Fase 2 §2) -->
-        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenNextDayCommand}"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_NextDay}"
+                AutomationProperties.Name="{loc:Tr Editor_DailyNote_NextDay}">
+          <mi:MaterialIcon Kind="CalendarArrowRight" Width="15" Height="15" />
+        </Button>
+
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenTodayNoteCommand}"
+                IsVisible="{Binding CanReturnToToday}"
+                ToolTip.Tip="{loc:Tr Editor_DailyNote_Today}"
+                AutomationProperties.Name="{loc:Tr Editor_DailyNote_Today}">
+          <mi:MaterialIcon Kind="CalendarTodayOutline" Width="15" Height="15" />
+        </Button>
+
+        <!-- Combinar con la plantilla: solo cuando hay algo que añadir, y con el tooltip enumerando qué
+             secciones se van a añadir antes de pulsarlo. -->
+        <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding MergeDailyTemplateCommand}"
+                IsVisible="{Binding HasPendingDailyTemplateSections}"
+                ToolTip.Tip="{Binding PendingDailyTemplateTooltip}"
+                AutomationProperties.Name="{Binding PendingDailyTemplateTooltip}">
+          <mi:MaterialIcon Kind="FileDocumentPlusOutline" Width="15" Height="15" />
+        </Button>
+      </StackPanel>
+
+      <!-- Tareas vinculadas en la cabecera; el desplegable no desplaza el editor. -->
+      <Panel Grid.Column="2" Margin="8,0" VerticalAlignment="Center" IsVisible="{Binding ShowLinkedCards}">
+        <ToggleButton x:Name="LinkedCardsTrigger" Classes="tag-chip toolbar-chip" Padding="9,5" MinHeight="30" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                      IsChecked="{Binding IsLinkedCardsExpanded, Mode=TwoWay}"
+                      AutomationProperties.Name="{loc:Tr Editor_LinkedCards_Label}"
+                      ToolTip.Tip="{loc:Tr Editor_LinkedCards_Label}">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LinkedCards.Count}" FontSize="11" FontFamily="{DynamicResource InterfaceLabelFontFamily}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="ChevronDown" Width="12" Height="12" VerticalAlignment="Center" IsVisible="{Binding !IsLinkedCardsExpanded}" />
+            <mi:MaterialIcon Kind="ChevronUp" Width="12" Height="12" VerticalAlignment="Center" IsVisible="{Binding IsLinkedCardsExpanded}" />
+          </StackPanel>
+        </ToggleButton>
+        <Popup x:Name="LinkedCardsPopup" PlacementTarget="{Binding #LinkedCardsTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
+               IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #LinkedCardsTrigger}"
+               IsOpen="{Binding IsLinkedCardsExpanded, Mode=TwoWay}">
+          <Border Classes="dropdown-popover" MinWidth="200" MaxWidth="320">
+            <StackPanel Spacing="10">
+              <TextBlock Text="{loc:Tr Editor_LinkedCards_Label}" Classes="eyebrow" FontSize="9" />
+              <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding LinkedCards}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="1" Background="{DynamicResource Ink10}" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LinkedCardItemViewModel">
+                      <Button Classes="linked-card-row" Padding="10,9" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).OpenLinkedCardCommand}"
+                              CommandParameter="{Binding Id}">
+                        <TextBlock Text="{Binding Title}" FontSize="12" TextWrapping="Wrap" />
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </StackPanel>
+          </Border>
+        </Popup>
+      </Panel>
+
+      <!-- Etiquetas con icono y fondo de tarjeta para agrupar visualmente. Columna propia (ya no dentro
+           del grupo de acciones) con un ancho acotado por los dos lados: el MinWidth garantiza que siga
+           siendo una caja en la que se puede escribir por estrecho que vaya el editor, y el MaxWidth que
+           no se estire a lo largo de media cabecera en una ventana ancha. Fuera de la vista simplificada
+           (ver ShowFullViewChrome): allí la cabecera se queda en el nombre de la nota y las acciones. -->
+      <Border x:Name="TagsBox" Grid.Column="3" Margin="12,0"
+              IsVisible="{Binding ShowFullViewChrome}"
+              Classes="card" Padding="8,5" VerticalAlignment="Center" HorizontalAlignment="Left"
+              MinWidth="150" MaxWidth="240">
+        <Grid ColumnDefinitions="Auto,*">
+          <mi:MaterialIcon Grid.Column="0" Kind="TagOutline" Width="14" Height="14" Margin="0,0,8,0"
+                           Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" Classes="search tag-input"
+                   MinWidth="0" VerticalAlignment="Center"
+                   Text="{Binding TagsInput, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                   PlaceholderText="{loc:Tr Editor_Tags_Placeholder}"
+                   AutomationProperties.Name="{loc:Tr Editor_Tags_Placeholder}"
+                   KeyDown="OnTagsKeyDown" LostFocus="OnTagsLostFocus" />
+        </Grid>
+      </Border>
+
+      <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <!-- Cambio externo sin resolver (.docs/project-info/cambios-externos-en-el-vault.md): mientras
+             haya una decisión pendiente el autoguardado de esta nota está en pausa, y eso no puede ser un
+             estado invisible. Se muestra también en la vista simplificada, a diferencia del resto de
+             adornos de la cabecera: es lo contrario de un adorno. -->
+        <Button Classes="pill pill-compact"
+                IsVisible="{Binding ShowExternalConflictBadge}"
+                Command="{Binding ReopenExternalConflictCommand}"
+                ToolTip.Tip="{loc:Tr Editor_External_Badge_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_External_Badge_Tooltip}">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14"
+                             Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr Editor_External_Badge, Converter={StaticResource UpperCaseConverter}}"
+                       Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <!-- Indicador de guardado prominente (Fase 2 §2). En la vista simplificada se queda solo el
+             icono: la pestaña ya lleva su propio punto de "sin guardar", y esos ~70px de etiqueta son la
+             diferencia entre que la cabecera quepa o no en un panel de editor estrecho. -->
+        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding SaveStatus}">
           <mi:MaterialIcon Width="14" Height="14" Kind="CheckCircleOutline" Classes="severity-icon success"
                            IsVisible="{Binding ShowSavedIcon}" />
           <mi:MaterialIcon Width="14" Height="14" Kind="CircleMedium" Classes="severity-icon warning"
                            IsVisible="{Binding !ShowSavedIcon}" />
           <TextBlock Text="{Binding SaveStatus, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" FontSize="11"
-                     VerticalAlignment="Center" />
+                     VerticalAlignment="Center" IsVisible="{Binding ShowFullViewChrome}" />
         </StackPanel>
 
+        <!-- Barra de formato y panel lateral no existen en la vista simplificada de Notas (Ajustes ›
+             Editor › Vista del editor), así que sus interruptores desaparecen con ellos en vez de
+             quedarse como botones que no hacen nada. -->
         <Button Classes="icon-btn" Classes.active="{Binding IsToolbarVisible}"
+                IsVisible="{Binding ShowFullViewChrome}"
                 Command="{Binding ToggleToolbarCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleToolbar_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleToolbar_Tooltip}">
@@ -69,13 +247,32 @@
         </Button>
 
         <Button Classes="icon-btn" Classes.active="{Binding IsSidePanelVisible}"
+                IsVisible="{Binding ShowFullViewChrome}"
                 Command="{Binding ToggleSidePanelCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleSidePanel_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleSidePanel_Tooltip}">
           <mi:MaterialIcon Kind="{Binding SidePanelToggleIcon}" Width="17" Height="17" />
         </Button>
 
-        <Button Classes="icon-btn icon-btn-danger" Command="{Binding DeleteCommand}"
+        <!-- Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md): oculta cabecera,
+             barra de formato, tarjetas vinculadas y panel lateral, dejando solo el cuerpo de la nota.
+             Ctrl+Shift+Enter (ver NotesView.axaml) lo activa/desactiva desde cualquier punto de la
+             pestaña; Escape lo desactiva (ver EditorView.axaml.cs, OnEditorKeyDown). -->
+        <Button Classes="icon-btn" Classes.active="{Binding IsZenMode}"
+                Command="{Binding ToggleZenModeCommand}"
+                ToolTip.Tip="{loc:Tr Editor_Toolbar_ToggleZenMode_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Editor_Toolbar_ToggleZenMode_Tooltip}">
+          <mi:MaterialIcon Kind="{Binding ZenModeToggleIcon}" Width="17" Height="17" />
+        </Button>
+
+        <!-- Exportar (propuesta 6, docs/propuesta-nuevas-funcionalidades.md): HTML directo autónomo. -->
+        <Button Classes="icon-btn" Command="{Binding ExportAsHtmlCommand}"
+                ToolTip.Tip="{loc:Tr Notes_ExportHtmlMenuItem}"
+                AutomationProperties.Name="{loc:Tr Notes_ExportHtmlMenuItem}">
+          <mi:MaterialIcon Kind="FileExportOutline" Width="17" Height="17" />
+        </Button>
+
+        <Button Classes="icon-btn icon-btn-danger" Command="{Binding RequestDeleteCommand}"
                 ToolTip.Tip="{loc:Tr Editor_Toolbar_Delete_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Editor_Toolbar_Delete_Tooltip}">
           <mi:MaterialIcon Kind="TrashCanOutline" Width="17" Height="17" />
@@ -87,7 +284,7 @@
          gap 17). Each group's own chevron button stays put whether or not the group is expanded, so it's
          always where the user left it; only the ButtonsPanel underneath collapses/expands. -->
     <StackPanel x:Name="FormattingToolbar" Grid.Row="1" Orientation="Horizontal" Spacing="2" Margin="0,0,0,16"
-                HorizontalAlignment="Center" IsVisible="{Binding IsToolbarVisible}">
+                HorizontalAlignment="Center" IsVisible="{Binding ShowFormattingToolbar}">
       <StackPanel Orientation="Horizontal" Spacing="2">
         <Button Classes="icon-btn toolbar-group-toggle" Classes.active="{Binding !IsToolbarTextStyleExpanded}" Width="16" Height="26"
                 Command="{Binding ToggleToolbarGroupCommand}" CommandParameter="TextStyle"
@@ -98,14 +295,23 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarTextStyleExpanded}">
-          <Button Classes="icon-btn" Click="OnBoldClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Bold_Tooltip}">
+          <Button Classes="icon-btn" Click="OnBoldClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Bold_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Bold_Tooltip}">
             <mi:MaterialIcon Kind="FormatBold" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnItalicClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Italic_Tooltip}">
+          <Button Classes="icon-btn" Click="OnItalicClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Italic_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Italic_Tooltip}">
             <mi:MaterialIcon Kind="FormatItalic" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnStrikethroughClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}">
+          <Button Classes="icon-btn" Click="OnStrikethroughClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Strikethrough_Tooltip}">
             <mi:MaterialIcon Kind="FormatStrikethrough" Width="16" Height="16" />
+          </Button>
+          <!-- Resaltado (==texto==): el live preview ya lo pintaba, pero no había forma de escribirlo sin
+               saberse la sintaxis de memoria. -->
+          <Button Classes="icon-btn" Click="OnHighlightClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Highlight_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Highlight_Tooltip}">
+            <mi:MaterialIcon Kind="Marker" Width="16" Height="16" />
           </Button>
         </StackPanel>
       </StackPanel>
@@ -121,16 +327,20 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarHeadingsExpanded}">
-          <Button Classes="icon-btn" Click="OnH1Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H1_Tooltip}">
+          <Button Classes="icon-btn" Click="OnH1Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H1_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_H1_Tooltip}">
             <mi:MaterialIcon Kind="FormatHeader1" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnH2Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H2_Tooltip}">
+          <Button Classes="icon-btn" Click="OnH2Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H2_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_H2_Tooltip}">
             <mi:MaterialIcon Kind="FormatHeader2" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnH3Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H3_Tooltip}">
+          <Button Classes="icon-btn" Click="OnH3Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H3_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_H3_Tooltip}">
             <mi:MaterialIcon Kind="FormatHeader3" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnQuoteClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Quote_Tooltip}">
+          <Button Classes="icon-btn" Click="OnQuoteClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Quote_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Quote_Tooltip}">
             <mi:MaterialIcon Kind="FormatQuoteClose" Width="16" Height="16" />
           </Button>
         </StackPanel>
@@ -147,13 +357,16 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarListsExpanded}">
-          <Button Classes="icon-btn" Click="OnBulletClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_BulletList_Tooltip}">
+          <Button Classes="icon-btn" Click="OnBulletClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_BulletList_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_BulletList_Tooltip}">
             <mi:MaterialIcon Kind="FormatListBulleted" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnOrderedClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_OrderedList_Tooltip}">
+          <Button Classes="icon-btn" Click="OnOrderedClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_OrderedList_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_OrderedList_Tooltip}">
             <mi:MaterialIcon Kind="FormatListNumbered" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnTaskListClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_TaskList_Tooltip}">
+          <Button Classes="icon-btn" Click="OnTaskListClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_TaskList_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_TaskList_Tooltip}">
             <mi:MaterialIcon Kind="FormatListChecks" Width="16" Height="16" />
           </Button>
         </StackPanel>
@@ -170,11 +383,21 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarInsertExpanded}">
-          <Button Classes="icon-btn" Click="OnLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Link_Tooltip}">
+          <Button Classes="icon-btn" Click="OnLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Link_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Link_Tooltip}">
             <mi:MaterialIcon Kind="LinkVariant" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}">
+          <Button Classes="icon-btn" Click="OnNoteLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_NoteLink_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_NoteLink_Tooltip}">
+            <mi:MaterialIcon Kind="FileLinkOutline" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Image_Tooltip}">
             <mi:MaterialIcon Kind="ImageOutline" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnTableClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Table_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_Table_Tooltip}">
+            <mi:MaterialIcon Kind="Table" Width="16" Height="16" />
           </Button>
         </StackPanel>
       </StackPanel>
@@ -190,41 +413,20 @@
           </Panel>
         </Button>
         <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsToolbarCodeExpanded}">
-          <Button Classes="icon-btn" Click="OnCodeClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_InlineCode_Tooltip}">
+          <Button Classes="icon-btn" Click="OnCodeClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_InlineCode_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_InlineCode_Tooltip}">
             <mi:MaterialIcon Kind="CodeTags" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnCodeBlockClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}">
+          <Button Classes="icon-btn" Click="OnCodeBlockClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}">
             <mi:MaterialIcon Kind="CodeBraces" Width="16" Height="16" />
           </Button>
-          <Button Classes="icon-btn" Click="OnHorizontalRuleClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_HorizontalRule_Tooltip}">
+          <Button Classes="icon-btn" Click="OnHorizontalRuleClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_HorizontalRule_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Editor_Toolbar_HorizontalRule_Tooltip}">
             <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />
           </Button>
         </StackPanel>
       </StackPanel>
-    </StackPanel>
-
-    <!-- Tareas vinculadas (enlace nota↔tarea, "Capa 1") — lado inverso, derivado, del enlace nota↔tarea
-         que se fija desde el editor de tarjeta Kanban. -->
-    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,14"
-                VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                IsVisible="{Binding HasLinkedCards}">
-      <TextBlock Text="{loc:Tr Editor_LinkedCards_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" VerticalAlignment="Center" />
-      <ItemsControl ItemsSource="{Binding LinkedCards}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="6" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate DataType="vm:LinkedCardItemViewModel">
-            <Button Classes="pill" Padding="10,4"
-                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).OpenLinkedCardCommand}"
-                    CommandParameter="{Binding Id}">
-              <TextBlock Text="{Binding Title}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="160" />
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
     </StackPanel>
 
     <!-- Body -->
@@ -256,21 +458,26 @@
                 <ToggleButton Classes="tag-chip"
                               IsChecked="{Binding FindReplace.MatchCase}"
                               Content="Aa" />
-                <Button Classes="icon-btn" Command="{Binding FindReplace.FindPreviousCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_PreviousTooltip}">
+                <Button Classes="icon-btn" Command="{Binding FindReplace.FindPreviousCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_PreviousTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_PreviousTooltip}">
                   <mi:MaterialIcon Kind="ChevronUp" Width="16" Height="16" />
                 </Button>
-                <Button Classes="icon-btn" Command="{Binding FindReplace.FindNextCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_NextTooltip}">
+                <Button Classes="icon-btn" Command="{Binding FindReplace.FindNextCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_NextTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_NextTooltip}">
                   <mi:MaterialIcon Kind="ChevronDown" Width="16" Height="16" />
                 </Button>
                 <Button Classes="icon-btn" Command="{Binding FindReplace.ReplaceCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_ReplaceTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_ReplaceTooltip}"
                         IsVisible="{Binding FindReplace.IsReplaceMode}">
                   <mi:MaterialIcon Kind="PencilOutline" Width="16" Height="16" />
                 </Button>
                 <Button Classes="icon-btn" Command="{Binding FindReplace.ReplaceAllCommand}" ToolTip.Tip="{loc:Tr Editor_FindReplace_ReplaceAllTooltip}"
+                        AutomationProperties.Name="{loc:Tr Editor_FindReplace_ReplaceAllTooltip}"
                         IsVisible="{Binding FindReplace.IsReplaceMode}">
                   <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" />
                 </Button>
-                <Button Classes="icon-btn" Command="{Binding FindReplace.CloseCommand}" ToolTip.Tip="{loc:Tr Common_Close}">
+                <Button Classes="icon-btn" Command="{Binding FindReplace.CloseCommand}" ToolTip.Tip="{loc:Tr Common_Close}"
+                        AutomationProperties.Name="{loc:Tr Common_Close}">
                   <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
                 </Button>
               </StackPanel>
@@ -288,14 +495,31 @@
                to fill it. Constraining a plain Border this way is more reliable than constraining the
                ae:TextEditor directly, since TextEditor is a templated control. The 8px margin keeps the
                text off the card's edges even when the column is left-aligned or its width fills the card. -->
-          <Border Grid.Row="1" x:Name="EditorColumnHost" Margin="8">
-            <ae:TextEditor x:Name="Editor"
-                           Background="Transparent"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           FontSize="14.5"
-                           Padding="20"
-                           LineNumbersForeground="{DynamicResource TextMutedBrush}" />
-          </Border>
+          <!-- El editor y, superpuesto en el mismo hueco, el lienzo donde se colocan los botones de copiar
+               de los bloques de código (ver CodeBlockCopyOverlay). Va aquí fuera y no en una capa del
+               propio AvaloniaEdit porque sus capas no entran en el árbol lógico y un botón dentro de ellas
+               no llega a recibir estilo ni plantilla. Sin Background no entra en el hit-test: todo clic que
+               no caiga en un botón atraviesa el lienzo y llega al editor. -->
+          <Grid x:Name="CodeBlockInputHost" Grid.Row="1">
+            <!-- Motor único y oculto que convierte Mermaid a SVG. Mide 1 px porque algunos backends no
+                 inicializan un NativeWebView desconectado o sin tamaño; nunca recibe entrada ni navega. -->
+            <ContentControl x:Name="MermaidEngineHost" Width="1" Height="1" Opacity="0"
+                            IsHitTestVisible="False" ClipToBounds="True" ZIndex="-1"
+                            HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <Border x:Name="EditorColumnHost" Margin="8">
+              <!-- Both horizontal paddings must stay >= MarkdownStyle.CodeBlockHorizontalPadding: a fenced
+                   code block's box is painted that far outside the text column on each side, into the left
+                   and right padding, so the code text inside it clears the border on every
+                   row - see EditorView.axaml.cs's UpdateCodeBlockBleed(). -->
+              <ae:TextEditor x:Name="Editor"
+                             Background="Transparent"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             FontSize="14.5"
+                             Padding="20"
+                             LineNumbersForeground="{DynamicResource TextMutedBrush}" />
+            </Border>
+            <Canvas x:Name="CodeBlockOverlay" ClipToBounds="True" Panel.ZIndex="1" />
+          </Grid>
         </Grid>
       </Border>
 
@@ -325,7 +549,7 @@
             <!-- Barra de tabs con acento inferior. Cada opción ocupa un tercio del ancho para evitar
                  que etiquetas largas choquen con el borde; el estilo .side-panel-tab dibuja solo la
                  línea inferior, eliminando los bordes dobles del segmented control genérico. -->
-            <Grid Grid.Row="0" ColumnDefinitions="*,*,*">
+            <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*">
               <RadioButton Grid.Column="0" Classes="side-panel-tab" GroupName="SidePanelTab"
                            IsChecked="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Outline}"
                            Command="{Binding SelectSidePanelTabCommand}" CommandParameter="Outline"
@@ -351,6 +575,15 @@
                 <StackPanel Orientation="Horizontal" Spacing="5">
                   <mi:MaterialIcon Kind="ChartBoxOutline" Width="13" Height="13" />
                   <TextBlock Text="{loc:Tr Editor_Stats_TabLabel, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </RadioButton>
+              <RadioButton Grid.Column="3" Classes="side-panel-tab" GroupName="SidePanelTab"
+                           IsChecked="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=History}"
+                           Command="{Binding SelectSidePanelTabCommand}" CommandParameter="History"
+                           ToolTip.Tip="{loc:Tr Editor_History_Tooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <mi:MaterialIcon Kind="RestoreClock" Width="13" Height="13" />
+                  <TextBlock Text="{loc:Tr Editor_History_TabLabel, Converter={StaticResource UpperCaseConverter}}" />
                 </StackPanel>
               </RadioButton>
             </Grid>
@@ -472,6 +705,52 @@
                   </Border>
                 </StackPanel>
 
+                <!-- Historial de versiones -->
+                <StackPanel IsVisible="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=History}" Spacing="8">
+                  <ItemsControl ItemsSource="{Binding History.Items}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Spacing="6" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:NoteVersionItemViewModel">
+                        <Border Classes="card" Padding="10,9">
+                          <Grid ColumnDefinitions="*,Auto,Auto">
+                            <StackPanel Grid.Column="0" Spacing="2">
+                              <TextBlock Text="{Binding CreatedLabel}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding TriggerLabel}" Classes="muted" FontSize="10.5" />
+                                <TextBlock Text="•" Classes="muted" FontSize="10.5" />
+                                <TextBlock Text="{Binding SizeLabel}" Classes="muted" FontSize="10.5" />
+                              </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="icon-btn" Width="26" Height="26"
+                                    ToolTip.Tip="{loc:Tr Editor_History_ViewTooltip}"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).History.OpenPreviewCommand}"
+                                    CommandParameter="{Binding .}">
+                              <mi:MaterialIcon Kind="FileCompare" Width="14" Height="14" />
+                            </Button>
+                            <Button Grid.Column="2" Classes="icon-btn icon-btn-danger" Width="26" Height="26"
+                                    ToolTip.Tip="{loc:Tr Editor_History_DeleteVersionTooltip}"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).History.DeleteVersionCommand}"
+                                    CommandParameter="{Binding .}">
+                              <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                            </Button>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <Border IsVisible="{Binding History.IsEmpty}" Classes="card" Padding="14">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="RestoreClock" Width="22" Height="22" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                      <TextBlock Text="{loc:Tr Editor_History_Empty}" Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" FontSize="11" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+
               </StackPanel>
             </ScrollViewer>
           </Grid>
@@ -525,6 +804,261 @@
         </Grid>
       </Border>
     </Popup>
+
+    <!-- Note-link picker popup — abierto al escribir "[[", desde el botón "enlazar nota" de la barra de
+         herramientas, o desde el comando slash "/nota" (EditorView.axaml.cs, GetNoteLinkPickerContext /
+         UpdateNoteLinkPicker). A diferencia del popup de slash commands de arriba (anclado al cursor), este
+         se centra en la ventana de la app — PlacementTarget se reapunta al TopLevel y HorizontalOffset/
+         VerticalOffset se recalculan en PositionNoteLinkPickerPopup cada vez que se abre o se filtra; los
+         valores de aquí son solo el estado inicial antes de la primera reposición. -->
+    <Popup x:Name="NoteLinkPickerPopup"
+           PlacementTarget="{Binding #EditorBorder}"
+           Placement="AnchorAndGravity"
+           PlacementAnchor="TopLeft"
+           PlacementGravity="BottomRight"
+           IsLightDismissEnabled="False"
+           IsOpen="{Binding NoteLinkPicker.IsOpen, Mode=TwoWay}"
+           Width="360" MaxHeight="340">
+      <Border Classes="dropdown-popover" Width="360" MaxHeight="340">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <!-- Refleja en vivo lo que se ha escrito tras "[[" en el documento (ver GetNoteLinkPickerContext/
+               UpdateNoteLinkPicker) — mismo patrón exacto que SlashCommandFilter arriba: el usuario escribe
+               en el documento, no aquí dentro, pero antes esto era un TextBlock fijo con el placeholder que
+               nunca cambiaba, sin dar ninguna confirmación visual de qué se estaba filtrando. -->
+          <TextBox Grid.Row="0" x:Name="NoteLinkFilter"
+                   Classes="search"
+                   Text="{Binding NoteLinkPicker.Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                   PlaceholderText="{loc:Tr Kanban_NotePicker_SearchPlaceholder}"
+                   Margin="12,12,12,0" />
+          <ScrollViewer Grid.Row="1" Margin="0,8,0,0">
+            <ItemsControl ItemsSource="{Binding NoteLinkPicker.FilteredResults}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="2" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:NotePickerItemViewModel">
+                  <Button Classes="dropdown-item"
+                          Classes.active="{Binding IsSelected}"
+                          Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).NoteLinkPicker.SelectCommand}"
+                          CommandParameter="{Binding .}"
+                          ToolTip.Tip="{Binding Title}">
+                    <StackPanel Spacing="1">
+                      <TextBlock Text="{Binding Title}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding WorkspaceLabel}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <TextBlock Grid.Row="2" Text="{loc:Tr Kanban_NotePicker_NoResults}" Classes="muted" FontSize="11.5"
+                     Margin="12,8,12,12" IsVisible="{Binding !NoteLinkPicker.FilteredResults.Count}" />
+        </Grid>
+      </Border>
+    </Popup>
+
+    <!-- ===================== Diálogo: eliminar nota (barra de herramientas del editor, análisis alfa-3 §4.5) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsPendingDelete}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Notes_DeleteNote_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Notes_DeleteNote_Message}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Title}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelDeleteCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmDeleteCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: historial de versiones — comparar y restaurar (historial local
+         de versiones por nota) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding History.IsPreviewOpen}">
+      <Border Classes="modal-card" MaxWidth="720" Width="680" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" MaxHeight="560">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="FileCompare" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Editor_History_CompareTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,10,0,14">
+            <TextBlock Text="{Binding History.SelectedVersion.CreatedLabel}" FontWeight="Bold" FontSize="13" />
+            <TextBlock Text="•" Classes="muted" />
+            <TextBlock Text="{Binding History.SelectedVersion.TriggerLabel}" Classes="muted" FontSize="12" />
+            <TextBlock Text="•" Classes="muted" />
+            <TextBlock Text="{Binding History.SelectedVersion.SizeLabel}" Classes="muted" FontSize="12" />
+          </StackPanel>
+
+          <Border Grid.Row="2" Classes="card" Padding="2" MinHeight="220">
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding History.DiffLines}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="0" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="services:DiffLine">
+                    <Border Classes="diff-line"
+                            Classes.diff-added="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}"
+                            Classes.diff-removed="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="diff-marker" Text="+"
+                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}" />
+                        <TextBlock Classes="diff-marker" Text="−"
+                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}" />
+                        <TextBlock Classes="diff-text" Text="{Binding Text}"
+                                   FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
+
+          <!-- Acciones normales: cerrar o pasar a la confirmación de restaurar -->
+          <Grid Grid.Row="3" Margin="0,16,0,0" ColumnDefinitions="*,Auto,Auto" IsVisible="{Binding !History.IsPendingRestore}">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding History.ClosePreviewCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding History.RequestRestoreCommand}">
+              <TextBlock Text="{loc:Tr Editor_History_RestoreButton, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+
+          <!-- Confirmación de restaurar, dentro del mismo diálogo — restaurar siempre crea antes un
+               snapshot "PreRestore" del contenido actual (VaultService.RestoreVersion), así que esta
+               acción nunca es un callejón sin salida. -->
+          <StackPanel Grid.Row="3" Margin="0,16,0,0" Spacing="14" IsVisible="{Binding History.IsPendingRestore}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DangerBrush}" />
+              <TextBlock Text="{loc:Tr Editor_History_ConfirmRestore_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{Binding History.ConfirmRestoreMessage}" FontSize="13" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding History.CancelRestoreCommand}" Margin="0,0,18,0">
+                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding History.ConfirmRestoreCommand}">
+                <TextBlock Text="{loc:Tr Editor_History_ConfirmRestore_Confirm, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: la nota cambió fuera de Enki
+         (.docs/project-info/cambios-externos-en-el-vault.md) =====================
+         Ninguna de las dos opciones destruye nada: la versión descartada se guarda antes en el historial
+         local con el motivo "conflicto externo". Escape equivale a "decidir luego", que cierra el diálogo
+         y deja el autoguardado en pausa hasta que haya decisión. -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsExternalConflictOpen}">
+      <Border Classes="modal-card" MaxWidth="720" Width="680" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Border.KeyBindings>
+          <KeyBinding Gesture="Escape" Command="{Binding PostponeExternalDecisionCommand}" />
+        </Border.KeyBindings>
+        <Grid RowDefinitions="Auto,Auto,*,Auto" MaxHeight="560">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="FileSyncOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Editor_External_Conflict_Title, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Spacing="6" Margin="0,12,0,14">
+            <TextBlock Text="{Binding ExternalConflictMessage}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Editor_External_Conflict_Reassurance}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Border Grid.Row="2" Classes="card" Padding="2" MinHeight="180" IsVisible="{Binding IsExternalDiffVisible}">
+            <ScrollViewer>
+              <StackPanel Spacing="0">
+                <TextBlock Text="{loc:Tr Editor_External_Conflict_DiffLegend}" Classes="muted" FontSize="11" Margin="10,8" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding ExternalDiffLines}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="0" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="services:DiffLine">
+                      <Border Classes="diff-line"
+                              Classes.diff-added="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}"
+                              Classes.diff-removed="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="diff-marker" Text="+"
+                                     IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}" />
+                          <TextBlock Classes="diff-marker" Text="&#x2212;"
+                                     IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}" />
+                          <TextBlock Classes="diff-text" Text="{Binding Text}"
+                                     FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+
+          <Grid Grid.Row="3" Margin="0,16,0,0" ColumnDefinitions="Auto,*,Auto,Auto">
+            <Button Grid.Column="0" Classes="ghost" Command="{Binding ToggleExternalDiffCommand}">
+              <TextBlock Text="{Binding ExternalDiffToggleLabel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="ghost modal-cancel" Command="{Binding LoadFromDiskCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Editor_External_Conflict_LoadFromDisk, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="3" Classes="pill-primary" Command="{Binding KeepMineCommand}">
+              <TextBlock Text="{loc:Tr Editor_External_Conflict_KeepMine, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: la nota se borró fuera de Enki =====================
+         El contenido sigue en pantalla y el autoguardado en pausa: escribirlo recrearía en silencio un
+         archivo que alguien borró a propósito. -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsExternallyDeleted}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="FileRemoveOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Editor_External_Deleted_Title, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding ExternalDeletedMessage}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Editor_External_Deleted_Hint}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding DiscardAfterExternalDeleteCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Editor_External_Deleted_Discard, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding SaveAfterExternalDeleteCommand}">
+              <TextBlock Text="{loc:Tr Editor_External_Deleted_SaveAsNew, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

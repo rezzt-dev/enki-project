@@ -3,15 +3,23 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
+using enki.Services;
 
 namespace enki.ViewModels;
 
 /// <summary>Panel de búsqueda y reemplazo del editor Markdown.</summary>
 public sealed partial class FindReplaceViewModel : ObservableObject
 {
+    /// <summary>Debounces <see cref="RefreshStatus"/> against every keystroke in the search box — it
+    /// triggers a full-document scan for match count/position, which on a long note added up on each
+    /// character typed (análisis §4.2, Fase 8). Same delay/restart-on-Tick pattern as
+    /// <see cref="EditorOutlineViewModel"/>'s own debounce timer.</summary>
+    private readonly DispatcherTimer _refreshStatusTimer;
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -39,18 +47,30 @@ public sealed partial class FindReplaceViewModel : ObservableObject
 
     public FindReplaceViewModel()
     {
+        _refreshStatusTimer = new DispatcherTimer { Interval = EditorDebounce.Delay };
+        _refreshStatusTimer.Tick += (_, _) =>
+        {
+            _refreshStatusTimer.Stop();
+            RefreshStatus();
+        };
     }
 
     /// <summary>Refresca las etiquetas localizadas cuando <see cref="MainWindowViewModel"/> coordina
     /// un cambio de idioma en tiempo real (i18n Fase 4).</summary>
     public void RefreshLocalizedLabels() => OnPropertyChanged(nameof(StatusLabel));
 
-    partial void OnSearchTextChanged(string value) => RefreshStatus();
-    partial void OnMatchCaseChanged(bool value) => RefreshStatus();
-    partial void OnIsOpenChanged(bool value)
+    private void ScheduleRefreshStatus()
     {
-        if (value) RefreshStatus();
+        _refreshStatusTimer.Stop();
+        _refreshStatusTimer.Start();
     }
+
+    partial void OnSearchTextChanged(string value) => ScheduleRefreshStatus();
+    partial void OnMatchCaseChanged(bool value) => ScheduleRefreshStatus();
+    // Runs on both open (to show the initial match count) and close (so the code-behind clears the
+    // "highlight all matches" overlay instead of leaving it shading a panel that's no longer open) —
+    // immediate, not debounced, since neither is a per-keystroke event.
+    partial void OnIsOpenChanged(bool value) => RefreshStatus();
 
     /// <summary>Se dispara cuando el panel necesita interactuar con el editor (buscar siguiente,
     /// reemplazar, etc.). El código detrás de la vista responde ejecutando la operación sobre

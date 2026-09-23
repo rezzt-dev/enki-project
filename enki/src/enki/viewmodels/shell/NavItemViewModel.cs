@@ -20,6 +20,9 @@ public sealed partial class NavItemViewModel : ObservableObject
 
     public bool HasCount => Count > 0;
 
+    /// <summary>True para la entrada "Papelera", que se pinta con el color de peligro del tema.</summary>
+    public bool IsDanger => Page == AppPage.Trash;
+
     partial void OnCountChanged(int value) => OnPropertyChanged(nameof(HasCount));
 }
 
@@ -35,5 +38,8 @@ public enum AppPage
     Notifications,
     Calendar,
     Files,
-    Skills
+    Skills,
+    Habits,
+    Statistics,
+    TagManager
 }

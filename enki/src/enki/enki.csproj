@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -28,6 +28,11 @@
        tombstone round-trip) directly, without needing a live Supabase connection. -->
   <ItemGroup>
     <InternalsVisibleTo Include="enki.Tests" />
+    <!-- Deja que enki.UITests compruebe el pipeline interno de imágenes del live preview
+         (Views/Editor/Markdown/MarkdownImageCache y compañía, internal por vivir dentro de la vista):
+         es la única capa con una plataforma Avalonia levantada, y por tanto la única donde decodificar
+         un bitmap de verdad significa algo. -->
+    <InternalsVisibleTo Include="enki.UITests" />
   </ItemGroup>
 
   <!-- Supabase credentials (SUPABASE_URL/SUPABASE_ANON_KEY) — never committed, see root .gitignore and
@@ -35,17 +40,14 @@
        Services.SupabaseConfig can read it at runtime; absent on a fresh checkout, in which case every
        Polar-linking feature just stays disabled (SupabaseConfig.IsConfigured is false). -->
   <ItemGroup>
-    <None Include="../../local.properties" Link="local.properties" CopyToOutputDirectory="PreserveNewest"
-          Condition="Exists('../../local.properties')" />
+    <None Include="../../local.properties" Link="local.properties" CopyToOutputDirectory="PreserveNewest" Condition="Exists('../../local.properties')" />
   </ItemGroup>
 
-  <!-- Skills de IA por defecto (docs/ia-skills/especificacion-desarrollo.md §2) — copiadas junto al
+  <!-- Skills de IA por defecto (docs/agent-docs/ia-skills/especificacion-desarrollo.md §2) — copiadas junto al
        ejecutable para que SkillService.EnsureDefaultSkills las encuentre en runtime vía
        Path.Combine(AppContext.BaseDirectory, "default-skills"). -->
   <ItemGroup>
-    <Content Include="../../../docs/ia-skills/default-skills/*.md"
-             CopyToOutputDirectory="PreserveNewest"
-             TargetPath="default-skills/%(Filename)%(Extension)" />
+    <Content Include="../../../.docs/project-info/ia-skills/default-skills/*.md" CopyToOutputDirectory="PreserveNewest" TargetPath="default-skills/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,6 +55,7 @@
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="12.1.0" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
     <PackageReference Include="Avalonia.Controls.WebView" Version="12.0.1" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
@@ -61,11 +64,14 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="CSharpMath.SkiaSharp" Version="1.0.0-pre.2" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <PackageReference Include="Material.Icons.Avalonia" Version="3.0.2" />
     <PackageReference Include="PDFtoImage" Version="5.2.1" />
     <!-- Postgres Realtime (postgres_changes over websocket) for PolarRealtimeService — pulls in
          Supabase.Core, Supabase.Postgrest, Websocket.Client and Newtonsoft.Json transitively. -->
     <PackageReference Include="Supabase.Realtime" Version="7.4.0" />
+    <PackageReference Include="Svg.Skia" Version="2.0.0.4" />
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.4" />
     <PackageReference Include="YamlDotNet" Version="16.1.3" />
   </ItemGroup>

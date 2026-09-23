@@ -256,24 +256,49 @@ public class VaultServiceTests : IDisposable
     }
 
     [Fact]
-    public void ResolveWikiLinkScopeRoot_ForNoteOutsideSessions_ReturnsVaultPath()
+    public void RenameNote_AlsoRewritesWikilinksFromNotesInsideASessionFolder()
     {
         var vault = CreateVault();
-        var note = vault.CreateNote("Suelta");
+        var target = vault.CreateNote("Objetivo");
+        var sessionFolder = Path.Combine(_vaultPath, ".sessions", "mi-sesion");
+        Directory.CreateDirectory(sessionFolder);
+        File.WriteAllText(Path.Combine(sessionFolder, "Enlazadora.md"), "Ver [[Objetivo]] para más info.");
 
-        Assert.Equal(_vaultPath, vault.ResolveWikiLinkScopeRoot(note.FullPath));
+        vault.RenameNote(target, "Objetivo Renombrado");
+
+        var linkerContent = File.ReadAllText(Path.Combine(sessionFolder, "Enlazadora.md"));
+        Assert.Contains("[[Objetivo Renombrado]]", linkerContent, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ResolveWikiLinkScopeRoot_ForNoteInsideSession_ReturnsSessionFolder()
+    public void GetAllNotesAcrossVault_WithNoSessions_OnlyReturnsRootNotes()
     {
         var vault = CreateVault();
+        vault.CreateNote("Suelta");
+
+        var notes = vault.GetAllNotesAcrossVault();
+
+        Assert.Single(notes);
+        Assert.Equal("Suelta", notes[0].Title);
+    }
+
+    /// <summary>No wiring needed for this: <c>.sessions/&lt;folder&gt;</c> is the session-root convention on
+    /// disk (the same one <see cref="SessionService"/> itself uses), so a session shows up here purely by
+    /// existing under the vault, regardless of who constructed this <see cref="VaultService"/>.</summary>
+    [Fact]
+    public void GetAllNotesAcrossVault_AlsoReturnsNotesFromEverySessionFolder_Automatically()
+    {
+        var vault = CreateVault();
+        vault.CreateNote("Suelta");
         var sessionFolder = Path.Combine(_vaultPath, ".sessions", "mi-sesion");
         Directory.CreateDirectory(sessionFolder);
-        var notePath = Path.Combine(sessionFolder, "Nota.md");
-        File.WriteAllText(notePath, "# Nota");
+        File.WriteAllText(Path.Combine(sessionFolder, "Nota.md"), "# De sesión");
 
-        Assert.Equal(sessionFolder, vault.ResolveWikiLinkScopeRoot(notePath));
+        var notes = vault.GetAllNotesAcrossVault();
+
+        Assert.Equal(2, notes.Count);
+        Assert.Contains(notes, n => n.Title == "Suelta");
+        Assert.Contains(notes, n => n.Title == "De sesión");
     }
 
     [Fact]
@@ -302,7 +327,8 @@ public class VaultServiceTests : IDisposable
 
         await vault.RefreshVaultSizeBytesAsync();
 
-        Assert.Equal(150, vault.GetVaultSizeBytes());
+        Assert.Equal(150 + new FileInfo(Path.Combine(_vaultPath, ".enki", "settings.json")).Length,
+            vault.GetVaultSizeBytes());
         Assert.False(vault.LastVaultSizeCalculationIncomplete);
     }
 
@@ -325,7 +351,8 @@ public class VaultServiceTests : IDisposable
         var vault = CreateVault();
         File.WriteAllText(Path.Combine(_vaultPath, "a.md"), new string('a', 100));
         await vault.RefreshVaultSizeBytesAsync();
-        Assert.Equal(100, vault.GetVaultSizeBytes());
+        Assert.Equal(100 + new FileInfo(Path.Combine(_vaultPath, ".enki", "settings.json")).Length,
+            vault.GetVaultSizeBytes());
 
         vault.CreateNote("Otra nota");
 
@@ -346,7 +373,8 @@ public class VaultServiceTests : IDisposable
         await vault.RefreshVaultSizeBytesAsync();
 
         Assert.True(raised);
-        Assert.Equal(100, vault.GetVaultSizeBytes());
+        Assert.Equal(100 + new FileInfo(Path.Combine(_vaultPath, ".enki", "settings.json")).Length,
+            vault.GetVaultSizeBytes());
     }
 
     /// <summary>The vault-wide note-metadata cache backing <see cref="VaultService.GetAllNotesRecursive"/>/
@@ -571,7 +599,7 @@ public class VaultServiceTests : IDisposable
         var destination = VaultService.CreateFolder(_vaultPath, "Destino").FullPath;
         File.WriteAllBytes(Path.Combine(destination, "movida.png"), [2]);
 
-        var moved = VaultService.MoveFile(file, destination);
+        var moved = vault.MoveFile(file, destination);
 
         Assert.Equal(destination, Path.GetDirectoryName(moved.FullPath));
         Assert.Equal("movida 2.png", Path.GetFileName(moved.FullPath));
@@ -669,5 +697,103 @@ public class VaultServiceTests : IDisposable
 
         var ex = Assert.Throws<VaultUnavailableException>(() => vault.CreateNote("Nota", _vaultPath));
         Assert.IsAssignableFrom<IOException>(ex);
+    }
+
+    // ===================== ResolveVaultFolder =====================
+    // Covers the fix for a folder-picker vault (or "Cambiar carpeta del vault") turning a general-purpose
+    // folder like "Documents" into the vault itself instead of nesting Enki's own files inside it.
+
+    [Fact]
+    public void ResolveVaultFolder_OnPlainEmptyFolder_NestsEnkiDocumentsSubfolder()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "Documentos");
+        Directory.CreateDirectory(picked);
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(Path.Combine(picked, "enki-documents"), resolved);
+    }
+
+    [Fact]
+    public void ResolveVaultFolder_OnFolderAlreadyNamedEnkiDocuments_UsesItAsIs()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "enki-documents");
+        Directory.CreateDirectory(picked);
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(picked, resolved);
+    }
+
+    [Fact]
+    public void ResolveVaultFolder_OnExistingFlatVaultWithNotes_UsesItAsIs()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "MisNotas");
+        Directory.CreateDirectory(picked);
+        File.WriteAllText(Path.Combine(picked, "nota.md"), "# Nota");
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(picked, resolved);
+    }
+
+    [Fact]
+    public void ResolveVaultFolder_WhenParentAlreadyHasNestedVault_ReusesTheNestedFolder()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "Documentos");
+        var nested = Path.Combine(picked, "enki-documents");
+        Directory.CreateDirectory(nested);
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(nested, resolved);
+    }
+
+    /// <summary>The exact repro from docs/version-alfa-3/01-analisis-detallado.md §4.5 (hallazgo crítico):
+    /// a real vault organized entirely into subfolders ("Trabajo/", "Personal/"), never having used
+    /// sessions or the trash, and with zero top-level <c>.md</c> files. Before the fix, none of the vault
+    /// root heuristic's checks matched — re-selecting this exact folder as "open existing vault" (after
+    /// syncing it to a new machine, or reinstalling) silently nested a brand-new, empty
+    /// <c>enki-documents/</c> inside it instead of recognizing the folder itself as the vault.</summary>
+    [Fact]
+    public void ResolveVaultFolder_OnExistingVaultWithNotesOnlyInSubfolders_UsesItAsIs()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        var picked = Path.Combine(_storageDirectory, "MiVault");
+        Directory.CreateDirectory(Path.Combine(picked, "Trabajo"));
+        Directory.CreateDirectory(Path.Combine(picked, "Personal"));
+        File.WriteAllText(Path.Combine(picked, "Trabajo", "Proyecto.md"), "# Proyecto");
+        File.WriteAllText(Path.Combine(picked, "Personal", "Diario.md"), "# Diario");
+
+        var resolved = VaultService.ResolveVaultFolder(picked);
+
+        Assert.Equal(picked, resolved);
+    }
+    [Theory]
+    [InlineData(".notas", "notas")]
+    [InlineData("CON", "_CON")]
+    [InlineData("aux.txt", "_aux.txt")]
+    [InlineData("informe. ", "informe")]
+    [InlineData("a:b?c", "abc")]
+    public void SanitizeFileName_ProducesPortableVisibleNames(string input, string expected) =>
+        Assert.Equal(expected, VaultService.SanitizeFileName(input, "fallback"));
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("..")]
+    [InlineData("...")]
+    public void SanitizeFileName_DotOnlyNamesUseFallback(string input) =>
+        Assert.Equal("fallback", VaultService.SanitizeFileName(input, "fallback"));
+
+    [Fact]
+    public void SanitizeFileName_LimitsUtf8ComponentLength()
+    {
+        var sanitized = VaultService.SanitizeFileName(new string('\u00f1', 200));
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(sanitized) <= 200);
     }
 }

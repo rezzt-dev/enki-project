@@ -24,15 +24,19 @@ namespace enki.Services;
 /// file.</summary>
 internal static class JsonFileStore
 {
-    private static readonly JsonSerializerOptions IndentedOptions = new() { WriteIndented = true };
+    private static readonly TimeSpan MutexTimeout = TimeSpan.FromSeconds(5);
+
+    internal static readonly JsonSerializerOptions IndentedOptions = new() { WriteIndented = true };
 
     /// <summary>Reads and deserializes <paramref name="path"/> under the file's lock. Returns
     /// <see langword="false"/> — instead of throwing — when the file doesn't exist, is empty, or fails to
     /// parse, so every caller falls back to its own seed/default value exactly like it did before this
     /// helper existed.</summary>
-    public static bool TryLoad<T>(string path, out T? value)
+    public static bool TryLoad<T>(string path, out T? value, TimeSpan? mutexTimeout = null)
     {
-        using var _ = Lock(path);
+        using var fileLock = TryLock(path, mutexTimeout ?? MutexTimeout);
+        if (fileLock is null)
+            LogService.Warning($"Se agotó la espera del bloqueo al leer '{Path.GetFullPath(path)}'; se continúa en modo solo lectura sin mutex");
         try
         {
             if (File.Exists(path))
@@ -46,9 +50,9 @@ internal static class JsonFileStore
                 }
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            // fall through — caller substitutes its own default, same as every Load() before this helper
+            LogService.Warning($"No se pudo leer o deserializar el JSON '{Path.GetFullPath(path)}'", ex);
         }
 
         value = default;
@@ -58,13 +62,11 @@ internal static class JsonFileStore
     /// <summary>Serializes <paramref name="value"/> and atomically replaces <paramref name="path"/>, under
     /// the same per-path lock <see cref="TryLoad{T}"/> uses — a concurrent writer either sees the file
     /// entirely before or entirely after this call, never a half-written one.</summary>
-    public static void Save<T>(string path, T value)
+    public static void Save<T>(string path, T value, TimeSpan? mutexTimeout = null)
     {
-        using var _ = Lock(path);
+        using var fileLock = LockForWrite(path, mutexTimeout ?? MutexTimeout);
         var json = JsonSerializer.Serialize(value, IndentedOptions);
-        var tempPath = $"{path}.tmp-{Guid.NewGuid():N}";
-        File.WriteAllText(tempPath, json);
-        File.Move(tempPath, path, overwrite: true);
+        DurableFile.WriteAllTextAtomic(path, json, privateFile: true);
     }
 
     /// <summary>Runs <paramref name="action"/> under the same per-path lock <see cref="TryLoad{T}"/>/
@@ -73,18 +75,25 @@ internal static class JsonFileStore
     /// <c>VaultPath</c> off disk before deciding what to write back.</summary>
     public static void WithLock(string path, Action action)
     {
-        using var _ = Lock(path);
+        using var fileLock = LockForWrite(path, MutexTimeout);
         action();
     }
 
-    private static LockHandle Lock(string path)
+    private static LockHandle LockForWrite(string path, TimeSpan timeout) => TryLock(path, timeout)
+        ?? throw new TimeoutException(
+            $"No se pudo adquirir en {timeout.TotalSeconds:0.###} segundos el bloqueo para escribir '{Path.GetFullPath(path)}'.");
+
+    private static LockHandle? TryLock(string path, TimeSpan timeout)
     {
         var fullPath = Path.GetFullPath(path);
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fullPath)));
-        var mutex = new Mutex(initiallyOwned: false, $"Enki-File-{hash}");
+        var mutex = new Mutex(initiallyOwned: false, MutexName(fullPath));
         try
         {
-            mutex.WaitOne();
+            if (!mutex.WaitOne(timeout))
+            {
+                mutex.Dispose();
+                return null;
+            }
         }
         catch (AbandonedMutexException)
         {
@@ -95,10 +104,21 @@ internal static class JsonFileStore
         return new LockHandle(mutex);
     }
 
-    private readonly struct LockHandle(Mutex mutex) : IDisposable
+    internal static string MutexName(string path)
     {
+        var fullPath = Path.GetFullPath(path);
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fullPath)));
+        return $"Enki-File-{hash}";
+    }
+
+    private sealed class LockHandle(Mutex mutex) : IDisposable
+    {
+        private bool _disposed;
+
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
             mutex.ReleaseMutex();
             mutex.Dispose();
         }

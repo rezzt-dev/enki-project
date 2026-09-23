@@ -1,8 +1,10 @@
+using System;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using enki.Localization;
 using enki.Models;
-using Material.Icons;
+using enki.Services;
 
 namespace enki.ViewModels;
 
@@ -31,27 +33,81 @@ public sealed partial class MainWindowViewModel
         Kanban?.RefreshLocalizedLabels();
         Kanban?.TaskManagement.RefreshLocalizedLabels();
         Trash?.RefreshLocalizedLabels();
+        TagManager?.RefreshLocalizedLabels();
         Reminders?.RefreshLocalizedLabels();
         Notifications?.RefreshLocalizedLabels();
         Settings?.RefreshLocalizedLabels();
+        Habits?.RefreshLocalizedLabels();
+        Statistics?.RefreshLocalizedLabels();
         NotificationCenter.RefreshLocalizedLabels();
         ReminderInbox.RefreshLocalizedLabels();
+        VaultSwitcher.RefreshLocalizedLabels();
+        QuickCapture.RefreshLocalizedLabels();
 
-        var activePages = NavItems.Where(n => n.IsActive).Select(n => n.Page).ToHashSet();
+        RebuildNavItems();
+        CommandPalette.RefreshLocalizedLabels();
+        GlobalSearch.RefreshLocalizedLabels();
+    }
+
+    /// <summary>Whether the sidebar section for <paramref name="page"/> is currently shown — one flag per
+    /// key in <see cref="SidebarSectionCatalog.AllKeys"/>, read by <see cref="RebuildNavItems"/> regardless
+    /// of which group (main or bottom) the section currently lives in.</summary>
+    private bool IsSidebarSectionEnabled(AppPage page) => page switch
+    {
+        AppPage.Dashboard => DashboardPanelEnabled,
+        AppPage.Calendar => CalendarPanelEnabled,
+        AppPage.Kanban => KanbanPanelEnabled,
+        AppPage.Notes => NotesPanelEnabled,
+        AppPage.Files => FilesPanelEnabled,
+        AppPage.Skills => SkillsPanelEnabled,
+        AppPage.Sessions => SessionsPanelEnabled,
+        AppPage.Trash => TrashPanelEnabled,
+        AppPage.TagManager => TagManagerPanelEnabled,
+        AppPage.Habits => HabitsPanelEnabled,
+        AppPage.Reminders => RemindersSidebarEnabled,
+        AppPage.Notifications => NotificationsSidebarEnabled,
+        AppPage.Statistics => StatisticsPanelEnabled,
+        _ => true
+    };
+
+    /// <summary>Rebuilds <see cref="NavItems"/>/<see cref="BottomNavItems"/> from scratch off
+    /// <see cref="Models.AppSettings.SidebarMainSectionOrder"/>/<see cref="Models.AppSettings.SidebarBottomSectionOrder"/>
+    /// (resolved via <see cref="SidebarSectionCatalog.Resolve"/>, so a missing/stale order list still falls
+    /// back to sane defaults) and the current *PanelEnabled/*SidebarEnabled flags — used at startup
+    /// (<see cref="InitializeShell"/>), every time a visibility toggle changes
+    /// (<see cref="OnSidebarSectionChanged"/>), every drag/pin reorder in Ajustes › General › Secciones de
+    /// la barra lateral (<see cref="SettingsViewModel"/>'s own <c>_onSidebarSectionOrderChanged</c>
+    /// callback), and the UI language changes (<see cref="RefreshAllLocalizedLabels"/>).</summary>
+    private void RebuildNavItems()
+    {
+        var (mainOrder, bottomOrder) = SidebarSectionCatalog.Resolve(
+            _settingsService.Settings.SidebarMainSectionOrder, _settingsService.Settings.SidebarBottomSectionOrder);
+        var activePages = NavItems.Concat(BottomNavItems).Where(n => n.IsActive).Select(n => n.Page).ToHashSet();
+
         NavItems.Clear();
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Dashboard"], Icon = MaterialIconKind.ViewDashboardOutline, Page = AppPage.Dashboard });
-        if (CalendarPanelEnabled)
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Calendar"], Icon = MaterialIconKind.CalendarBlankOutline, Page = AppPage.Calendar });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Kanban"], Icon = MaterialIconKind.ViewColumnOutline, Page = AppPage.Kanban });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Documents"], Icon = MaterialIconKind.NoteTextOutline, Page = AppPage.Notes });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Files"], Icon = MaterialIconKind.FileImageOutline, Page = AppPage.Files });
-        if (SkillsPanelEnabled)
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Skills"], Icon = MaterialIconKind.Brain, Page = AppPage.Skills });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Sessions"], Icon = MaterialIconKind.SitemapOutline, Page = AppPage.Sessions });
-        NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance["Nav_Trash"], Icon = MaterialIconKind.TrashCanOutline, Page = AppPage.Trash });
+        foreach (var key in mainOrder)
+        {
+            var page = Enum.Parse<AppPage>(key);
+            if (!IsSidebarSectionEnabled(page)) continue;
+            var meta = SidebarSectionCatalog.Meta[key];
+            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
+        }
+
+        BottomNavItems.Clear();
+        foreach (var key in bottomOrder)
+        {
+            var page = Enum.Parse<AppPage>(key);
+            if (!IsSidebarSectionEnabled(page)) continue;
+            var meta = SidebarSectionCatalog.Meta[key];
+            BottomNavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
+        }
+
         foreach (var item in NavItems) item.IsActive = activePages.Contains(item.Page);
+        foreach (var item in BottomNavItems) item.IsActive = activePages.Contains(item.Page);
         UpdateCalendarBadge();
         UpdateTrashBadge();
+        UpdateRemindersBadge();
+        UpdateNotificationsBadge();
     }
 
     private void OpenNoteFromDashboard(NoteFile note)
@@ -60,12 +116,14 @@ public sealed partial class MainWindowViewModel
         Notes!.OpenNote(note);
     }
 
-    /// <summary>A node in the session graph was clicked (open that note), or "Abrir en notas" was pressed
-    /// (just switch context) — either way, land on the Notes page scoped to that session.</summary>
-    private void OpenSessionInNotes(Session session, NoteFile? note)
+    /// <summary>A node in the global vault graph was clicked (open that note), or "Abrir en notas" was
+    /// pressed (just switch context) — either way, land on the Notes page scoped to that session. A null
+    /// <paramref name="session"/> means the note lives at the vault root outside any session — the Notes
+    /// page already treats a null session id as "select the vault workspace" (<c>NotesViewModel.SelectSession</c>).</summary>
+    private void OpenSessionInNotes(Session? session, NoteFile? note)
     {
         Navigate(AppPage.Notes);
-        Notes!.SelectSession(session.Id);
+        Notes!.SelectSession(session?.Id);
         if (note is not null) Notes!.OpenNote(note);
     }
 
@@ -81,58 +139,68 @@ public sealed partial class MainWindowViewModel
 
     private void OnRemindersPanelModeChanged(bool value) => RemindersPanelEnabled = value;
 
+    private void OnInboxPanelModeChanged(bool value) => InboxPanelEnabled = value;
+
+    private void OnVaultSwitcherModeChanged(bool value) => VaultSwitcherEnabled = value;
+
     private void OnCalendarShowSidebarScrollbarModeChanged(bool value) => Calendar!.ShowSidebarScrollbar = value;
 
     private void OnDashboardShowScrollbarModeChanged(bool value) => Dashboard!.ShowScrollbar = value;
 
+    private void OnKanbanBoardOrientationChanged(string value)
+    {
+        if (Enum.TryParse<KanbanBoardOrientation>(value, out var parsed)) Kanban!.BoardOrientation = parsed;
+    }
+
     private void OnPolarShowTaskTagsChanged(bool value) => Kanban!.TaskManagement.ShowTagFilter = value;
 
-    /// <summary>Shows/hides the "Calendario" nav entry entirely (docs/calendar-feature/
-    /// 09-configuracion-y-ajustes.md §1) — filters <see cref="NavItems"/> itself rather than adding a
-    /// per-item visibility flag to <see cref="NavItemViewModel"/>, since that's the only member of the
-    /// collection that's ever conditionally shown; every other entry is unconditional. Redirects to
-    /// Dashboard if the user happened to be on the Calendario page when it gets disabled.</summary>
-    private void OnCalendarPanelModeChanged(bool value)
+    /// <summary>Single callback for every sidebar-section visibility toggle (Ajustes › General › Secciones
+    /// de la barra lateral) — applies the page-specific side effect a couple of sections need (Calendario
+    /// tells Dashboard's own calendar widget to hide too; Skills seeds the vault's default skills the first
+    /// time it's turned on), then rebuilds <see cref="NavItems"/>/<see cref="BottomNavItems"/> and, if the
+    /// section that just got hidden was the one on screen, redirects to whichever section is now first
+    /// (main group, then bottom group) — or does nothing if the user somehow got down to zero
+    /// (<see cref="SettingsViewModel"/> already blocks disabling the last one in the main group, so that's
+    /// only a defensive fallback here).</summary>
+    private void OnSidebarSectionChanged(AppPage page, bool value)
     {
-        CalendarPanelEnabled = value;
-        Dashboard!.SetCalendarEnabled(value);
-        var existing = NavItems.FirstOrDefault(n => n.Page == AppPage.Calendar);
+        switch (page)
+        {
+            case AppPage.Dashboard: DashboardPanelEnabled = value; break;
+            case AppPage.Calendar:
+                CalendarPanelEnabled = value;
+                Dashboard!.SetCalendarEnabled(value);
+                break;
+            case AppPage.Kanban: KanbanPanelEnabled = value; break;
+            case AppPage.Notes: NotesPanelEnabled = value; break;
+            case AppPage.Files: FilesPanelEnabled = value; break;
+            case AppPage.Skills:
+                SkillsPanelEnabled = value;
+                if (value) Skills?.EnsureDefaultSkills();
+                break;
+            case AppPage.Sessions: SessionsPanelEnabled = value; break;
+            case AppPage.Trash: TrashPanelEnabled = value; break;
+            case AppPage.TagManager: TagManagerPanelEnabled = value; break;
+            case AppPage.Habits: HabitsPanelEnabled = value; break;
+            case AppPage.Reminders: RemindersSidebarEnabled = value; break;
+            case AppPage.Notifications: NotificationsSidebarEnabled = value; break;
+            case AppPage.Statistics: StatisticsPanelEnabled = value; break;
+        }
 
-        if (value && existing is null)
-        {
-            NavItems.Insert(1, new NavItemViewModel { Label = LocalizationService.Instance["Nav_Calendar"], Icon = MaterialIconKind.CalendarBlankOutline, Page = AppPage.Calendar });
-            UpdateCalendarBadge();
-        }
-        else if (!value && existing is not null)
-        {
-            var wasActive = existing.IsActive;
-            NavItems.Remove(existing);
-            if (wasActive) Navigate(AppPage.Dashboard);
-        }
+        var wasActive = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == page)?.IsActive ?? false;
+
+        RebuildNavItems();
+
+        if (!value && wasActive && (NavItems.FirstOrDefault() ?? BottomNavItems.FirstOrDefault())?.Page is { } fallback)
+            Navigate(fallback);
     }
 
-    /// <summary>Shows/hides la entrada "Skills" del sidebar (docs/ia-skills/especificacion-desarrollo.md
-    /// §8/§9) — mismo patrón "filtra NavItems directamente" que <see cref="OnCalendarPanelModeChanged"/>.
-    /// La primera vez que se activa, copia las skills por defecto al vault activo.</summary>
-    private void OnSkillsPanelModeChanged(bool value)
-    {
-        SkillsPanelEnabled = value;
-        var existing = NavItems.FirstOrDefault(n => n.Page == AppPage.Skills);
-
-        if (value && existing is null)
-        {
-            var filesIndex = NavItems.ToList().FindIndex(n => n.Page == AppPage.Files);
-            var insertAt = filesIndex >= 0 ? filesIndex + 1 : NavItems.Count;
-            NavItems.Insert(insertAt, new NavItemViewModel { Label = LocalizationService.Instance["Nav_Skills"], Icon = MaterialIconKind.Brain, Page = AppPage.Skills });
-            Skills?.EnsureDefaultSkills();
-        }
-        else if (!value && existing is not null)
-        {
-            var wasActive = existing.IsActive;
-            NavItems.Remove(existing);
-            if (wasActive) Navigate(AppPage.Dashboard);
-        }
-    }
+    /// <summary>A drag/pin reorder in Ajustes › General › Secciones de la barra lateral changed which
+    /// section lives in which group, or their order within it, without touching any single section's own
+    /// visibility flag — so <see cref="OnSidebarSectionChanged"/>'s rebuild wouldn't otherwise fire. Simply
+    /// rebuilds <see cref="NavItems"/>/<see cref="BottomNavItems"/> off the freshly-saved order; no active-page
+    /// redirect needed since a pure reorder never hides the page currently on screen.</summary>
+    private void OnSidebarSectionOrderChanged() => RebuildNavItems();
 
     /// <summary>Pushes every other live-reactive Calendario setting (docs/calendar-feature/
     /// 09-configuracion-y-ajustes.md §1) into the already-open <see cref="CalendarViewModel"/> — each
@@ -160,6 +228,16 @@ public sealed partial class MainWindowViewModel
         Kanban?.OpenCardById(cardId);
     }
 
+    /// <summary>Lands on the Recordatorios page with a standalone reminder's own detail dialog already
+    /// open — the inbox's ("<see cref="ReminderInbox"/>") equivalent of <see cref="OpenKanbanCard"/> for the
+    /// items it now also surfaces that come from <see cref="RemindersViewModel"/> instead of the Kanban
+    /// board (docs/agent-docs/notificaciones-y-recordatorios.md).</summary>
+    private void OpenReminder(string reminderId)
+    {
+        Navigate(AppPage.Reminders);
+        Reminders?.OpenReminderById(reminderId);
+    }
+
     /// <summary>"Ver nota vinculada" from the Kanban card editor/detail — opens the linked note on the
     /// Notes page, or surfaces a notification instead of failing silently if the saved path no
     /// longer points to a real file (the note was deleted, or moved outside what
@@ -169,9 +247,9 @@ public sealed partial class MainWindowViewModel
         var note = _vaultService.GetNote(notePath);
         if (note is null)
         {
-            _notificationService.Push(
-                LocalizationService.Instance["Notification_LinkedNoteMissing_Title"],
-                LocalizationService.Instance["Notification_LinkedNoteMissing_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_LinkedNoteMissing_Title"),
+                LocalizedTextFormatter.Format("Notification_LinkedNoteMissing_Message"),
                 NotificationSeverity.Warning);
             return;
         }
@@ -221,7 +299,9 @@ public sealed partial class MainWindowViewModel
         {
             case GlobalSearchResultType.Note:
                 Navigate(AppPage.Notes);
-                if (result.Payload is NoteFile note) Notes?.OpenNote(note);
+                // CaretOffset viene relleno cuando la coincidencia estaba en el cuerpo de la nota, para
+                // abrirla directamente en esa línea (ver GlobalSearchResultViewModel.CaretOffset).
+                if (result.Payload is NoteFile note) Notes?.OpenNote(note, result.CaretOffset);
                 break;
             case GlobalSearchResultType.KanbanCard:
                 Navigate(AppPage.Kanban);
@@ -241,12 +321,31 @@ public sealed partial class MainWindowViewModel
 
     private void OnVaultChanged()
     {
+        // Ninguna sesión cifrada del vault anterior puede seguir desbloqueada al otro lado del cambio, ni
+        // dejar un temporal en claro por el camino (T4, .docs/project-info/multi-vault-en-caliente.md).
+        // Aquí y no en SwitchToVaultAsync porque este método es el punto por el que pasan *todos* los
+        // cambios de vault, incluido el de "restaurar copia de seguridad" de Ajustes. Las DEK viven en
+        // memoria indexadas por la raíz de su sesión, así que soltarlas después de adoptar la ruta nueva
+        // es igual de efectivo que antes y cubre un camino más.
+        _vaultService.EncryptionService.LockAll();
+        VaultService.CleanupStaleDecryptedTempFiles();
+
+        Kanban?.CloseForVaultChange();
+        Reminders?.CloseForVaultChange();
+        ReloadVaultData();
         // Settings' "change vault folder" can point at any folder, old-version vault included — same
         // guarantee as a fresh app startup.
         _sessionService.EnsureDefaultSession();
 
         _vaultSettingsService.Reload();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
+        QuickCapture.RefreshLocalizedLabels();
+        QuickCapture.ReloadDestinations();
+        // Libera el vigilante del vault anterior y crea el del nuevo: sus notas registradas eran las
+        // pestañas que se cierran unas líneas más abajo.
+        _vaultChangeWatcher.Start(_vaultService.VaultPath);
+        ApplyVaultPreferences();
+        _habitService.Reload();
 
         // Any open editor tabs belong to the previous vault; keeping them open would show stale or
         // missing notes after the switch. Close them before reloading so the new vault starts clean.
@@ -256,17 +355,77 @@ public sealed partial class MainWindowViewModel
         Notes!.Reload();
         Notes!.ReloadSessions();
         Kanban!.Reload();
+        Kanban.TaskManagement.Reload();
+        Reminders?.Reload();
+        Notifications?.Reload();
         Files!.Reload();
         Files!.ReloadSessions();
         Skills!.Reload();
         Sessions!.Reload();
         Trash!.Reload();
+        TagManager!.Reload();
+        Habits!.Reload();
+        Statistics!.Reload();
+        Calendar!.ReloadPreferences();
         UpdateTrashBadge();
 
-        _notificationService.Push(
-            LocalizationService.Instance["Notification_VaultChanged_Title"],
-            LocalizationService.Instance["Notification_VaultChanged_Message"],
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_VaultChanged_Title"),
+            LocalizedTextFormatter.Format("Notification_VaultChanged_Message"),
             NotificationSeverity.Success);
+    }
+
+    /// <summary>Aplica las preferencias del vault recién abierto a la shell y a Ajustes.</summary>
+    private void ApplyVaultPreferences()
+    {
+        var settings = _settingsService.Settings;
+        if (!string.IsNullOrWhiteSpace(settings.Language))
+            LocalizationService.Instance.SetLanguage(settings.Language);
+        ShortcutRegistry.Initialize(settings.ShortcutOverrides);
+        _customThemeService.ApplyActiveOnStartup();
+        IsSidebarExpanded = settings.SidebarExpanded;
+        SidebarWidth = IsSidebarExpanded ? 248 : 76;
+        UseCustomTitleBar = settings.UseCustomTitleBar;
+        NotificationsPanelEnabled = settings.NotificationsPanelEnabled;
+        RemindersPanelEnabled = settings.RemindersPanelEnabled;
+        InboxPanelEnabled = settings.InboxPanelEnabled;
+        VaultSwitcherEnabled = settings.VaultSwitcherEnabled;
+        NotificationsSidebarEnabled = settings.NotificationsSidebarEnabled;
+        RemindersSidebarEnabled = settings.RemindersSidebarEnabled;
+        DashboardPanelEnabled = settings.DashboardPanelEnabled;
+        CalendarPanelEnabled = settings.CalendarPanelEnabled;
+        KanbanPanelEnabled = settings.KanbanPanelEnabled;
+        NotesPanelEnabled = settings.NotesPanelEnabled;
+        FilesPanelEnabled = settings.FilesPanelEnabled;
+        SkillsPanelEnabled = settings.SkillsPanelEnabled;
+        SessionsPanelEnabled = settings.SessionsPanelEnabled;
+        TrashPanelEnabled = settings.TrashPanelEnabled;
+        TagManagerPanelEnabled = settings.TagManagerPanelEnabled;
+        HabitsPanelEnabled = settings.HabitsPanelEnabled;
+        StatisticsPanelEnabled = settings.StatisticsPanelEnabled;
+        Dashboard!.ShowScrollbar = settings.DashboardShowScrollbar;
+        Dashboard.SetCalendarEnabled(settings.CalendarPanelEnabled);
+        OnKanbanBoardOrientationChanged(settings.KanbanBoardOrientation);
+        Kanban!.TaskManagement.ShowTagFilter = settings.PolarShowTaskTags;
+        Settings!.ReloadForVault();
+        if (Avalonia.Application.Current is not null && settings.ActiveCustomThemeId is null)
+            Avalonia.Application.Current.RequestedThemeVariant = settings.Theme == "Light"
+                ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+        ReloadBrandLogo();
+        RefreshAllLocalizedLabels();
+        RebuildNavItems();
+    }
+
+    /// <summary>Carga los datos propios del vault antes de refrescar sus vistas.</summary>
+    private void ReloadVaultData()
+    {
+        VaultDataStorage.MigrateLegacyFiles(_vaultService);
+        _kanbanService.Reload();
+        _polarTaskService.Reload();
+        _reminderService.Reload();
+        _dismissedReminderService.Reload();
+        _snoozedReminderService.Reload();
+        _notificationService.Reload();
     }
 
     /// <summary>Pops every reminder whose scheduled time has arrived and turns each into a real
@@ -275,17 +434,97 @@ public sealed partial class MainWindowViewModel
     /// reminder that came due while the app was closed still fires as soon as it launches.</summary>
     private void CheckDueReminders()
     {
+        CheckDueSnoozes();
+
         var due = _reminderService.PopDueReminders();
         if (due.Count == 0) return;
 
         foreach (var reminder in due)
-            _notificationService.Push(
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_ReminderDue_Title"], reminder.Title),
-                reminder.Description,
-                NotificationSeverity.Info);
+            _notificationService.PushDue(
+                LocalizedTextFormatter.Format("Notification_ReminderDue_Title", reminder.Title),
+                LocalizedTextFormatter.Literal(reminder.Description),
+                new SnoozeTarget(SnoozeSourceKind.Reminder, reminder.Id, reminder.NotifyAtUtc));
 
         Reminders?.Reload();
         Notifications?.Reload();
+    }
+
+    /// <summary>Contrapartida de <see cref="CheckDueReminders"/> para los avisos aplazados (T5): vuelve a
+    /// anunciar cada aplazamiento cuya hora ha llegado, en el mismo ciclo de 30 s del temporizador — ni
+    /// un segundo temporizador ni un segundo motor de avisos.
+    ///
+    /// <para>Antes de reavisar se limpian los aplazamientos huérfanos: el criterio EARS "si el elemento de
+    /// origen se elimina o se completa, el sistema deberá descartar su aplazamiento" no lo cubre solo el
+    /// <c>CardPermanentlyDeleted</c> cableado en la composición —una tarjeta completada, un recordatorio
+    /// borrado o una fecha reprogramada desde el calendario también dejan el aplazamiento sin sentido—,
+    /// así que aquí se revalida contra los almacenes reales, que son los que mandan.</para></summary>
+    private void CheckDueSnoozes()
+    {
+        _snoozedReminderService.PruneWhere(snooze => ResolveSnoozeTitle(snooze) is null);
+
+        var due = _snoozedReminderService.PopDue();
+        if (due.Count == 0) return;
+
+        foreach (var snooze in due)
+        {
+            if (ResolveSnoozeTitle(snooze) is not { } title) continue;
+
+            _notificationService.PushDue(
+                LocalizedTextFormatter.Format("Notification_ReminderSnoozeElapsed_Title", title),
+                LocalizedTextFormatter.Format("Notification_ReminderSnoozeElapsed_Message"),
+                new SnoozeTarget(snooze.SourceKind, snooze.SourceId, snooze.DueUtcSnapshot));
+        }
+
+        ReminderInbox?.Reload();
+        Notifications?.Reload();
+    }
+
+    /// <summary>Título vigente del origen de un aplazamiento, o <see langword="null"/> si ese origen ya no
+    /// existe, está completado/borrado, o su fecha ha cambiado desde que se aplazó — en cuyo caso el
+    /// aplazamiento ya no corresponde al aviso que el usuario pospuso (ver
+    /// <see cref="Models.SnoozedReminder.DueUtcSnapshot"/>). Se resuelve contra la entidad real en cada
+    /// pasada en vez de copiar el título al aplazar, para que un renombrado se refleje en el reaviso.</summary>
+    private string? ResolveSnoozeTitle(SnoozedReminder snooze)
+    {
+        if (snooze.SourceKind == SnoozeSourceKind.Reminder)
+        {
+            var reminder = _reminderService.ActiveReminders.FirstOrDefault(r => r.Id == snooze.SourceId);
+            return reminder is { IsCompleted: false } && reminder.NotifyAtUtc == snooze.DueUtcSnapshot
+                ? reminder.Title
+                : null;
+        }
+
+        var card = _kanbanService.Board.Columns
+            .SelectMany(column => column.Cards)
+            .FirstOrDefault(c => c.Id == snooze.SourceId);
+        return card is { CompletedAtUtc: null } && card.DueDateUtc == snooze.DueUtcSnapshot
+            ? card.Title
+            : null;
+    }
+
+    /// <summary>Comprobación de versión nueva del arranque (T9). Tres reglas del criterio de aceptación
+    /// viven aquí y no en <see cref="UpdateCheckService"/>, que solo sabe de red y de versiones:
+    ///
+    /// <list type="bullet">
+    /// <item>"no deberá interrumpir el arranque ni mostrar errores en la comprobación automática": el
+    /// resultado que no sea "hay novedad" no produce absolutamente nada visible, ni siquiera un fallo de
+    /// red.</item>
+    /// <item>El aviso lleva el enlace de descarga a la página de la release, que el servicio ya validó
+    /// contra el repositorio oficial.</item>
+    /// <item>Ajustes se queda sembrado con la misma release, para que abrirlo después del aviso la enseñe
+    /// sin volver a pedirla.</item>
+    /// </list></summary>
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        var result = await _updateCheckService.CheckOnStartupAsync();
+        if (result is not { Outcome: UpdateCheckOutcome.UpdateAvailable, Update: { } update }) return;
+
+        _notificationService.PushWithLink(
+            LocalizedTextFormatter.Format("Notification_UpdateAvailable_Title", update.Version),
+            LocalizedTextFormatter.Format("Notification_UpdateAvailable_Message"),
+            update.Url);
+
+        Settings?.ShowAvailableUpdate(update);
     }
 
     /// <summary>Callback pasado a <see cref="SettingsViewModel"/> (mismo patrón que

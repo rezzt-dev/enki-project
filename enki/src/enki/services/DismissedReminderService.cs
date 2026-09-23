@@ -8,7 +8,7 @@ namespace enki.Services;
 
 /// <summary>Persists which reminders the user dismissed from the inbox panel — same load/save shape as
 /// <see cref="SettingsService"/>/<see cref="KanbanService"/>, stored at
-/// <c>%AppData%/Enki/dismissed-reminders.json</c>. See <see cref="DismissedReminder"/> for why entries are
+/// <c>&lt;vault&gt;/.tasks/dismissed-reminders.json</c>. See <see cref="DismissedReminder"/> for why entries are
 /// keyed by card id *and* the due date snapshot rather than just card id.</summary>
 public sealed class DismissedReminderService
 {
@@ -21,18 +21,33 @@ public sealed class DismissedReminderService
     /// reciente.</summary>
     private const int MaxItems = 50;
 
-    private readonly string _path;
-    private readonly List<DismissedReminder> _dismissed;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _path => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "dismissed-reminders.json")
+        : Path.Combine(_storageDirectory!, "dismissed-reminders.json");
+    private List<DismissedReminder> _dismissed;
 
     /// <param name="storageDirectory">Overrides the default <c>%AppData%/Enki</c> folder — unused in the
     /// running app, lets tests point persistence at a throwaway directory (see enki.Tests).</param>
     public DismissedReminderService(string? storageDirectory = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
-        Directory.CreateDirectory(configDir);
-        _path = Path.Combine(configDir, "dismissed-reminders.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
+        _dismissed = Load();
+        if (TrimExcess()) Save();
+    }
+
+    public DismissedReminderService(VaultService vaultService)
+    {
+        _vaultService = vaultService;
+        _dismissed = Load();
+        if (TrimExcess()) Save();
+    }
+
+    /// <summary>Recarga los descartes del vault activo.</summary>
+    public void Reload()
+    {
         _dismissed = Load();
         if (TrimExcess()) Save();
     }
@@ -40,7 +55,11 @@ public sealed class DismissedReminderService
     private List<DismissedReminder> Load() =>
         JsonFileStore.TryLoad<List<DismissedReminder>>(_path, out var loaded) ? loaded! : [];
 
-    private void Save() => JsonFileStore.Save(_path, _dismissed);
+    private void Save()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        JsonFileStore.Save(_path, _dismissed);
+    }
 
     public bool IsDismissed(string cardId, DateTime dueDateUtc) =>
         _dismissed.Any(d => d.CardId == cardId && d.DueDateUtcSnapshot == dueDateUtc);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace enki.Models;
 
@@ -12,6 +13,29 @@ public sealed class KanbanCard
     public KanbanPriority Priority { get; set; } = KanbanPriority.Medium;
     public DateTime? DueDateUtc { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>When this card was last moved into the "Hecho" core column (<see cref="CoreColumnRole.Done"/>),
+    /// or <c>null</c> if it isn't there right now — set/cleared by <c>ViewModels.KanbanViewModel.MoveCard</c>,
+    /// the single chokepoint every card move (drag&amp;drop and subtask automation alike) already goes
+    /// through. Feeds "tareas completadas por semana" in <see cref="Services.StatisticsAggregationService"/>;
+    /// before this field existed, completion was only inferable from which column a card currently sits in,
+    /// with no record of *when* it got there.</summary>
+    public DateTime? CompletedAtUtc { get; set; }
+
+    /// <summary>Fecha en la que la tarjeta se archivó desde la columna "Hecho"
+    /// (<see cref="CoreColumnRole.Done"/>), o <c>null</c> si no está archivada — ver
+    /// docs/agent-docs/kanban-tareas-archivadas.md. Archivar no mueve ni copia la tarjeta a ningún otro
+    /// sitio: sigue viviendo en <see cref="KanbanColumn.Cards"/> de su columna, y es el tablero
+    /// (<see cref="ViewModels.KanbanColumnViewModel"/>) el que deja de dibujarla. Por eso el Calendario,
+    /// las Estadísticas, la búsqueda global y las "tareas vinculadas" de una nota la siguen viendo sin
+    /// tener que consultar una segunda lista: solo el tablero conoce la distinción.</summary>
+    public DateTime? ArchivedAtUtc { get; set; }
+
+    /// <summary>Atajo de lectura de <see cref="ArchivedAtUtc"/>. <see cref="JsonIgnoreAttribute"/> porque
+    /// es derivada: lo que se persiste es la fecha, no este booleano.</summary>
+    [JsonIgnore]
+    public bool IsArchived => ArchivedAtUtc is not null;
+
     public List<KanbanSubtask> Subtasks { get; set; } = [];
 
     /// <summary>Etiquetas de texto libre compartidas con el resto del sistema (Notas, Polar). La

@@ -93,6 +93,44 @@ public class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public void SetColor_NormalizesAndPersistsTheExplicitColor()
+    {
+        var service = CreateService();
+        var session = service.Create("Proyecto");
+
+        var updated = service.SetColor(session, "#3af");
+
+        Assert.Equal("#33AAFF", updated.Color);
+        Assert.Equal("#33AAFF", service.List().Single().Color);
+    }
+
+    [Fact]
+    public void SetColor_WithNull_RestoresTheAutomaticColor()
+    {
+        var service = CreateService();
+        var session = service.Create("Proyecto");
+        service.SetColor(session, "#33AAFF");
+
+        service.SetColor(session, null);
+
+        Assert.Null(session.Color);
+        Assert.Null(service.List().Single().Color);
+    }
+
+    [Fact]
+    public void SetColor_WithInvalidHex_DoesNotOverwriteTheManifest()
+    {
+        var service = CreateService();
+        var session = service.Create("Proyecto");
+        service.SetColor(session, "#33AAFF");
+
+        Assert.Throws<ArgumentException>(() => service.SetColor(session, "azul"));
+
+        Assert.Equal("#33AAFF", session.Color);
+        Assert.Equal("#33AAFF", service.List().Single().Color);
+    }
+
+    [Fact]
     public void Delete_OnDefaultSession_IsNoOp()
     {
         var service = CreateService();
@@ -179,6 +217,109 @@ public class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public void ToggleGlobalManualLink_BetweenTwoDifferentSessions_AddsThenRemovesTheSameEdge()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "# Origen");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Destino.md"), "# Destino");
+
+        var nowLinked = service.ToggleGlobalManualLink(sessionA.Id, "Origen.md", sessionB.Id, "Destino.md");
+        Assert.True(nowLinked);
+        var edge = Assert.Single(service.LoadGlobalGraph().Edges);
+        Assert.True(edge.IsManual);
+        Assert.Equal(sessionA.Id, edge.FromSessionId);
+        Assert.Equal(sessionB.Id, edge.ToSessionId);
+
+        var nowUnlinked = service.ToggleGlobalManualLink(sessionA.Id, "Origen.md", sessionB.Id, "Destino.md");
+        Assert.False(nowUnlinked);
+        Assert.Empty(service.LoadGlobalGraph().Edges);
+    }
+
+    [Fact]
+    public void ToggleGlobalManualLink_BetweenASessionNoteAndAVaultRootNote_Persists()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "Origen.md"), "# Origen");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+
+        service.ToggleGlobalManualLink(session.Id, "Origen.md", SessionGraph.RootGroupId, "Suelta.md");
+
+        var edge = Assert.Single(service.LoadGlobalGraph().Edges);
+        Assert.True(edge.IsManual);
+        Assert.Equal(SessionGraph.RootGroupId, edge.ToSessionId);
+    }
+
+    [Fact]
+    public void ToggleGlobalManualLink_BetweenTwoVaultRootNotes_Persists()
+    {
+        var service = CreateService();
+        File.WriteAllText(Path.Combine(_vaultPath, "Uno.md"), "# Uno");
+        File.WriteAllText(Path.Combine(_vaultPath, "Dos.md"), "# Dos");
+
+        service.ToggleGlobalManualLink(SessionGraph.RootGroupId, "Uno.md", SessionGraph.RootGroupId, "Dos.md");
+
+        var edge = Assert.Single(service.LoadGlobalGraph().Edges);
+        Assert.True(edge.IsManual);
+        Assert.Equal(SessionGraph.RootGroupId, edge.FromSessionId);
+        Assert.Equal(SessionGraph.RootGroupId, edge.ToSessionId);
+    }
+
+    /// <summary>A cross-scope manual link whose target note has since been deleted must not survive forever
+    /// in <c>.graph.json</c> — same reconciliation a within-session <c>ManualLinks</c> entry already gets in
+    /// <see cref="ToggleManualLink_AddsThenRemoves_TheSameEdge"/>'s session-scoped counterpart.</summary>
+    [Fact]
+    public void LoadGlobalGraph_PrunesCrossScopeManualLink_WhenTargetNoteIsDeleted()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        var destinoPath = Path.Combine(sessionB.RootPath, "Destino.md");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "# Origen");
+        File.WriteAllText(destinoPath, "# Destino");
+        service.ToggleGlobalManualLink(sessionA.Id, "Origen.md", sessionB.Id, "Destino.md");
+        Assert.Single(service.LoadGlobalGraph().Edges);
+
+        File.Delete(destinoPath);
+
+        Assert.Empty(service.LoadGlobalGraph().Edges);
+    }
+
+    [Fact]
+    public void ListAllNotesByWorkspace_IncludesRootAndEverySessionNote_LabeledByWorkspace()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "En sesión.md"), "# En sesión");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+
+        var results = service.ListAllNotesByWorkspace().ToList();
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains(results, r => r.Note.Title == "En sesión" && r.WorkspaceLabel == "Sesión");
+        Assert.Contains(results, r => r.Note.Title == "Suelta");
+    }
+
+    /// <summary>Companion regression test to <c>KanbanCardEditorViewModelTests</c>'s at the ViewModel layer —
+    /// this asserts the same fix at the source: a locked encrypted session must be skipped, not enumerated
+    /// (which would throw <see cref="SessionLockedException"/> partway through reading its notes).</summary>
+    [Fact]
+    public void ListAllNotesByWorkspace_SkipsALockedSession_WithoutThrowing()
+    {
+        var service = CreateService();
+        var (locked, _) = service.CreateEncrypted("Privada", "super-secreta-123");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+        service.Lock(locked);
+
+        var results = service.ListAllNotesByWorkspace().ToList();
+
+        Assert.Single(results);
+        Assert.Equal("Suelta", results[0].Note.Title);
+    }
+
+    [Fact]
     public void SavePositions_UpdatesStoredCoordinates()
     {
         var service = CreateService();
@@ -196,7 +337,7 @@ public class SessionServiceTests : IDisposable
     }
 
     [Fact]
-    public void LoadCombinedGraph_KeepsEachSessionAsASeparateCluster()
+    public void LoadGlobalGraph_KeepsEachSessionAsASeparateCluster()
     {
         var service = CreateService();
         var sessionA = service.Create("A");
@@ -204,10 +345,114 @@ public class SessionServiceTests : IDisposable
         File.WriteAllText(Path.Combine(sessionA.RootPath, "Nota.md"), "# Nota");
         File.WriteAllText(Path.Combine(sessionB.RootPath, "Nota.md"), "# Nota");
 
-        var combined = service.LoadCombinedGraph();
+        var combined = service.LoadGlobalGraph();
 
         Assert.Equal(2, combined.Nodes.Count);
         Assert.Equal(2, combined.Nodes.Select(n => n.SessionId).Distinct().Count());
+    }
+
+    [Fact]
+    public void LoadGlobalGraph_IncludesVaultRootNotes_UnderTheRootGroup()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "En sesión.md"), "# En sesión");
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+
+        var graph = service.LoadGlobalGraph();
+
+        Assert.Equal(2, graph.Nodes.Count);
+        var rootNode = Assert.Single(graph.Nodes, n => n.SessionId == SessionGraph.RootGroupId);
+        Assert.Equal("Suelta.md", rootNode.RelativePath);
+    }
+
+    [Fact]
+    public void LoadGlobalGraph_DerivesEdge_BetweenASessionNoteAndAVaultRootNote()
+    {
+        var service = CreateService();
+        var session = service.Create("Sesión");
+        File.WriteAllText(Path.Combine(session.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(_vaultPath, "Destino.md"), "# Destino");
+
+        var graph = service.LoadGlobalGraph();
+
+        var edge = Assert.Single(graph.Edges);
+        Assert.Equal(session.Id, edge.FromSessionId);
+        Assert.Equal(SessionGraph.RootGroupId, edge.ToSessionId);
+    }
+
+    [Fact]
+    public void LoadGlobalGraph_DerivesEdge_BetweenNotesInTwoDifferentSessions()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Destino.md"), "# Destino");
+
+        var graph = service.LoadGlobalGraph();
+
+        var edge = Assert.Single(graph.Edges);
+        Assert.Equal(sessionA.Id, edge.FromSessionId);
+        Assert.Equal(sessionB.Id, edge.ToSessionId);
+    }
+
+    /// <summary>Covers the ambiguity-aware branch of <c>ComputeGlobalWikiLinkEdges</c> that couldn't be
+    /// exercised before the global graph existed — two notes in different sessions can now share the same
+    /// title (every fresh note starts as "# Nueva nota"), and a title held by more than one note vault-wide
+    /// must resolve to nothing rather than an arbitrary guess (docs/version-alfa-3/01-analisis-detallado.md
+    /// §4.1, Media).</summary>
+    [Fact]
+    public void LoadGlobalGraph_DoesNotResolveWikiLink_WhenTargetTitleIsAmbiguousAcrossSessions()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        var sessionC = service.Create("C");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Nota1.md"), "# Destino");
+        File.WriteAllText(Path.Combine(sessionC.RootPath, "Nota2.md"), "# Destino");
+
+        var graph = service.LoadGlobalGraph();
+
+        Assert.Equal(3, graph.Nodes.Count);
+        Assert.Empty(graph.Edges);
+    }
+
+    /// <summary>Same ambiguity guard as above, but for the filename fallback — a filename held by more than
+    /// one note vault-wide (not just within one session) must also resolve to nothing.</summary>
+    [Fact]
+    public void LoadGlobalGraph_DoesNotResolveWikiLink_WhenTargetFileNameIsAmbiguousAcrossSessions()
+    {
+        var service = CreateService();
+        var sessionA = service.Create("A");
+        var sessionB = service.Create("B");
+        var sessionC = service.Create("C");
+        File.WriteAllText(Path.Combine(sessionA.RootPath, "Origen.md"), "Ver [[Destino]].");
+        File.WriteAllText(Path.Combine(sessionB.RootPath, "Destino.md"), "# Título distinto B");
+        File.WriteAllText(Path.Combine(sessionC.RootPath, "Destino.md"), "# Título distinto C");
+
+        var graph = service.LoadGlobalGraph();
+
+        Assert.Equal(3, graph.Nodes.Count);
+        Assert.Empty(graph.Edges);
+    }
+
+    [Fact]
+    public void SaveRootPositions_UpdatesStoredCoordinates_ForVaultRootNotes()
+    {
+        var service = CreateService();
+        File.WriteAllText(Path.Combine(_vaultPath, "Suelta.md"), "# Suelta");
+        service.LoadGlobalGraph(); // seeds .graph.json with an initial node entry
+
+        service.SaveRootPositions([("Suelta.md", 1.5, 2.5, 3.5)]);
+        var reloaded = service.LoadGlobalGraph();
+
+        var node = Assert.Single(reloaded.Nodes);
+        Assert.True(node.HasStoredPosition);
+        Assert.Equal(1.5, node.X);
+        Assert.Equal(2.5, node.Y);
+        Assert.Equal(3.5, node.Z);
     }
 
     [Fact]

@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Enki
+GenericName=Notas, tareas y calendario
+Comment=Tu segundo cerebro, en tu escritorio
+Comment[en]=Your second brain, on your desktop
+Exec=enki %U
+Icon=enki
+Terminal=false
+StartupWMClass=enki
+StartupNotify=true
+Categories=Office;
+Keywords=notas;markdown;kanban;calendario;productividad;segundo cerebro;notes;tasks;

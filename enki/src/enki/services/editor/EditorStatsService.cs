@@ -33,9 +33,10 @@ public static class EditorStatsService
                 modifiedUtc = info.LastWriteTimeUtc;
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             // Si la ruta no es válida o no existe, usamos DateTime.MinValue.
+            LogService.Debug($"No se pudieron leer las fechas de '{fullPath}': {ex}");
         }
 
         return new EditorStats
@@ -51,6 +52,10 @@ public static class EditorStatsService
         };
     }
 
+    /// <summary>Cuenta palabras delimitadas por espacios como antes, salvo en scripts CJK (chino/japonés/
+    /// coreano) — que no usan espacios entre palabras — donde cada carácter cuenta como su propia
+    /// "palabra" en vez de que un párrafo entero se cuente como una sola (análisis §4.2, Fase 8: sin este
+    /// tratamiento, el tiempo de lectura de una nota en CJK salía completamente erróneo).</summary>
     private static int CountWords(string text)
     {
         var span = text.AsSpan();
@@ -58,7 +63,12 @@ public static class EditorStatsService
         var inWord = false;
         foreach (var c in span)
         {
-            if (char.IsWhiteSpace(c))
+            if (IsCjkCharacter(c))
+            {
+                count++;
+                inWord = false;
+            }
+            else if (char.IsWhiteSpace(c))
             {
                 inWord = false;
             }
@@ -70,4 +80,11 @@ public static class EditorStatsService
         }
         return count;
     }
+
+    private static bool IsCjkCharacter(char c) =>
+        (c >= '぀' && c <= 'ヿ')   // Hiragana, Katakana
+        || (c >= '㐀' && c <= '䶿') // CJK Unified Ideographs Extension A
+        || (c >= '一' && c <= '鿿') // CJK Unified Ideographs
+        || (c >= '豈' && c <= '﫿') // CJK Compatibility Ideographs
+        || (c >= '가' && c <= '힣'); // Hangul Syllables
 }

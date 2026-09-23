@@ -36,4 +36,18 @@ public class NavItemViewModelTests
 
         Assert.True(raised);
     }
+
+    [Fact]
+    public void IsDanger_IsTrue_ForTrashPage()
+    {
+        var item = new NavItemViewModel { Label = "Papelera", Icon = Material.Icons.MaterialIconKind.TrashCanOutline, Page = AppPage.Trash };
+        Assert.True(item.IsDanger);
+    }
+
+    [Fact]
+    public void IsDanger_IsFalse_ForNonTrashPage()
+    {
+        var item = new NavItemViewModel { Label = "Dashboard", Icon = Material.Icons.MaterialIconKind.ViewDashboardOutline, Page = AppPage.Dashboard };
+        Assert.False(item.IsDanger);
+    }
 }

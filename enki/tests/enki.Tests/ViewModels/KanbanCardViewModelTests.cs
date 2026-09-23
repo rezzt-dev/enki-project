@@ -8,8 +8,9 @@ namespace enki.Tests.ViewModels;
 
 public class KanbanCardViewModelTests
 {
-    private static KanbanCard NewCard(string id = "id", string title = "Card") =>
-        new() { Id = id, Title = title };
+    private static KanbanCard NewCard(string id = "id", string title = "Card",
+        KanbanPriority priority = KanbanPriority.Medium) =>
+        new() { Id = id, Title = title, Priority = priority };
 
     [Fact]
     public void CyclePriority_GoesLowMediumHighLow()
@@ -149,24 +150,89 @@ public class KanbanCardViewModelTests
     }
 
     [Fact]
-    public void SubtaskProgressWidth_IsZero_WithoutSubtasks()
+    public void SubtaskProgressStars_AreBothZero_WithoutSubtasks()
     {
         var vm = new KanbanCardViewModel(NewCard());
-        Assert.Equal(0, vm.SubtaskProgressWidth);
+
+        Assert.Equal(0, vm.SubtaskProgressDoneStar.Value);
+        Assert.Equal(0, vm.SubtaskProgressRemainingStar.Value);
     }
 
     [Fact]
-    public void SubtaskProgressWidth_ScalesWithDoneFraction()
+    public void SubtaskProgressStars_SplitTheTrack_ByDoneFraction()
     {
         var card = NewCard();
         card.Subtasks =
         [
             new KanbanSubtask { Id = "s1", Title = "a", IsDone = true },
-            new KanbanSubtask { Id = "s2", Title = "b", IsDone = false }
+            new KanbanSubtask { Id = "s2", Title = "b", IsDone = false },
+            new KanbanSubtask { Id = "s3", Title = "c", IsDone = false }
         ];
         var vm = new KanbanCardViewModel(card);
 
-        Assert.Equal(27, vm.SubtaskProgressWidth);
+        Assert.Equal(1, vm.SubtaskProgressDoneStar.Value);
+        Assert.Equal(2, vm.SubtaskProgressRemainingStar.Value);
+        Assert.True(vm.SubtaskProgressDoneStar.IsStar);
+        Assert.True(vm.SubtaskProgressRemainingStar.IsStar);
+    }
+
+    [Fact]
+    public void IsHighPriority_OnlyTrue_ForHighPriority()
+    {
+        Assert.True(new KanbanCardViewModel(NewCard(priority: KanbanPriority.High)).IsHighPriority);
+        Assert.False(new KanbanCardViewModel(NewCard(priority: KanbanPriority.Medium)).IsHighPriority);
+        Assert.False(new KanbanCardViewModel(NewCard(priority: KanbanPriority.Low)).IsHighPriority);
+    }
+
+    [Fact]
+    public void HasMeta_IsFalse_ForACardWithOnlyATitle()
+    {
+        Assert.False(new KanbanCardViewModel(NewCard()).HasMeta);
+    }
+
+    [Theory]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, false, false, true)]
+    public void HasMeta_IsTrue_WhenAnySingleMetadataFieldIsSet(bool subtask, bool dueDate, bool tag, bool linkedNote)
+    {
+        var card = NewCard();
+        if (subtask) card.Subtasks.Add(new KanbanSubtask { Id = "s1", Title = "a" });
+        if (dueDate) card.DueDateUtc = DateTime.UtcNow.AddDays(3);
+        if (tag) card.Tags.Add("urgente");
+        if (linkedNote) card.LinkedNotePath = "/vault/nota.md";
+
+        Assert.True(new KanbanCardViewModel(card).HasMeta);
+    }
+
+    [Fact]
+    public void MatchesQuickFilter_None_LetsEveryCardThrough()
+    {
+        var vm = new KanbanCardViewModel(NewCard(priority: KanbanPriority.Low));
+        Assert.True(vm.MatchesQuickFilter(KanbanQuickFilter.None));
+    }
+
+    [Fact]
+    public void MatchesQuickFilter_HighPriority_KeepsOnlyHighPriorityCards()
+    {
+        Assert.True(new KanbanCardViewModel(NewCard(priority: KanbanPriority.High))
+            .MatchesQuickFilter(KanbanQuickFilter.HighPriority));
+        Assert.False(new KanbanCardViewModel(NewCard(priority: KanbanPriority.Medium))
+            .MatchesQuickFilter(KanbanQuickFilter.HighPriority));
+    }
+
+    [Fact]
+    public void MatchesQuickFilter_Overdue_KeepsOnlyPastDueCards()
+    {
+        var overdue = NewCard();
+        overdue.DueDateUtc = DateTime.UtcNow.AddDays(-2);
+        var upcoming = NewCard();
+        upcoming.DueDateUtc = DateTime.UtcNow.AddDays(5);
+
+        Assert.True(new KanbanCardViewModel(overdue).MatchesQuickFilter(KanbanQuickFilter.Overdue));
+        Assert.False(new KanbanCardViewModel(upcoming).MatchesQuickFilter(KanbanQuickFilter.Overdue));
+        Assert.False(new KanbanCardViewModel(NewCard()).MatchesQuickFilter(KanbanQuickFilter.Overdue));
     }
 
     [Fact]

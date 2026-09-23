@@ -24,6 +24,18 @@ public sealed partial class SkillViewModel : ObservableObject
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
     public bool HasTags => Model.Tags.Count > 0;
 
+    /// <summary>Identidad estable de la skill dentro de la biblioteca. Desde que hay carpetas,
+    /// <see cref="Id"/> (el nombre de archivo) ya no es único —dos temas pueden tener su propio
+    /// <c>redactor.md</c>— así que todo lo que compare skills entre recargas (restaurar la selección,
+    /// localizar la copia recién duplicada) usa la ruta completa.</summary>
+    public string FilePath => Model.FilePath;
+
+    /// <summary>Carpeta en la que vive la skill, relativa a la biblioteca y vacía en la raíz. La tarjeta
+    /// la muestra solo cuando la rejilla está enseñando resultados de toda la biblioteca (búsqueda o
+    /// filtro de etiquetas activos), donde sin ella no se sabría de qué tema viene cada resultado.</summary>
+    public string RelativeFolderPath => Model.RelativeFolderPath;
+    public bool HasFolder => !Model.IsAtRoot;
+
     /// <summary>Etiquetas de la tarjeta ya recortadas para la rejilla — si sobran, la última entrada
     /// es un marcador "+N" en vez de un nombre de etiqueta real, para no desbordar la altura fija de
     /// la tarjeta. El panel de detalle usa <see cref="SkillFile.Tags"/> directamente, sin este límite.</summary>
@@ -57,5 +69,8 @@ public sealed partial class SkillViewModel : ObservableObject
         OnPropertyChanged(nameof(HasDescription));
         OnPropertyChanged(nameof(HasTags));
         OnPropertyChanged(nameof(TagChips));
+        OnPropertyChanged(nameof(FilePath));
+        OnPropertyChanged(nameof(RelativeFolderPath));
+        OnPropertyChanged(nameof(HasFolder));
     }
 }

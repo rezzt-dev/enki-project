@@ -12,6 +12,12 @@ public sealed class MarkdownStyle
     public required IBrush TextMuted { get; init; }
     public required IBrush Accent { get; init; }
     public required IBrush Danger { get; init; }
+
+    /// <summary>Tonos de los avisos (<see cref="MarkdownCallouts"/>). Son los mismos verdes/ámbar/rojos
+    /// con los que la aplicación marca ya un guardado correcto o un fallo de sincronización: un aviso
+    /// dentro de una nota se lee con el mismo código de color que el resto del programa.</summary>
+    public required IBrush Success { get; init; }
+    public required IBrush Warning { get; init; }
     /// <summary>Foreground the colorizer must switch styled text to wherever it overlaps the selection —
     /// otherwise a heading/link/code span keeps its own color while the selection highlight behind it
     /// turns the same near-white shade the app uses for selected-text background, and the run reads as
@@ -23,9 +29,34 @@ public sealed class MarkdownStyle
     public required IBrush HighlightBackground { get; init; }
     public required IBrush QuoteBar { get; init; }
     public required IBrush RuleLine { get; init; }
+
+    /// <summary>Líneas de la rejilla de una tabla — el mismo 10 % de tinta con el que el resto de la app
+    /// dibuja sus separadores de 1px (ver docs/agent-docs/sistema-diseno-web.md §3.2), para que una tabla
+    /// dentro de una nota se lea como una tabla de la interfaz y no como un elemento traído de fuera.</summary>
+    public required IBrush TableBorder { get; init; }
+
+    /// <summary>Fondo de la fila de encabezados de una tabla.</summary>
+    public required IBrush TableHeaderBackground { get; init; }
+
     public required FontFamily BodyFontFamily { get; set; }
-    public required FontFamily MonoFontFamily { get; init; }
+    public required FontFamily MonoFontFamily { get; set; }
     public double BaseFontSize { get; set; } = 14.5;
+
+    /// <summary>Horizontal breathing room (px) between a fenced code block's border and the code text
+    /// inside it. The box is painted this far OUTSIDE the text column on both sides rather than inset
+    /// into it — see <see cref="MarkdownBackgroundRenderer"/> for why that's the only placement that
+    /// also keeps a wrapped code line's continuation rows inside the box. Both the reserved space it
+    /// bleeds into and the clip that lets it paint there live in EditorView.axaml/.axaml.cs, so this
+    /// constant can't grow past the editor's own horizontal padding without them growing too.</summary>
+    public const double CodeBlockHorizontalPadding = 8;
+
+    /// <summary>Alto (px) al que se encoge la línea de un delimitador <c>```</c> mientras está oculto. La
+    /// línea no desaparece —sigue siendo una línea del documento donde se puede poner el cursor, y al
+    /// hacerlo recupera su alto normal para enseñar el delimitador en crudo—, pero como no dibuja nada,
+    /// dejarla con el alto de una línea de texto metía una banda vacía de ~20px arriba y otra abajo dentro
+    /// del recuadro. Encogida hace de relleno vertical del bloque: el aire justo para que el código no
+    /// toque el borde, el mismo papel que <see cref="CodeBlockHorizontalPadding"/> hace a los lados.</summary>
+    public const double CodeFenceLineHeight = 7;
 
     public static MarkdownStyle FromApp(FontFamily bodyFont, FontFamily monoFont, double baseFontSize)
     {
@@ -43,12 +74,15 @@ public sealed class MarkdownStyle
         // markdown emphasis is the monochrome ink color, not a hue.
         var accent = FindBrush("InkBrush", "#F5F5F5");
         var danger = FindBrush("DangerBrush", "#F76B6B");
+        var highlight = FindBrush("HighlightBrush", "#F5C542");
+        var success = FindBrush("SuccessBrush", "#5FBF7F");
         var border = FindBrush("BorderSubtleBrush", "#1A1A1E");
         var selectionForeground = FindBrush("SelectionForegroundBrush", "#000000");
         // PanelBackgroundBrush is the same color as the editor card behind it, so filling code blocks
         // with it was invisible — InputBackgroundBrush plus a visible border is what actually reads as a box.
         var codeBackground = FindBrush("InputBackgroundBrush", "#141414");
         var codeBorder = FindBrush("Ink10", "#2A2A2E");
+        var tableHeader = FindBrush("Ink05", "#1A1A1A");
 
         return new MarkdownStyle
         {
@@ -57,13 +91,19 @@ public sealed class MarkdownStyle
             TextMuted = textMuted,
             Accent = accent,
             Danger = danger,
+            Success = success,
+            Warning = highlight,
             SelectionForeground = selectionForeground,
             CodeInlineBackground = codeBackground,
             CodeBlockBackground = codeBackground,
             CodeBlockBorder = codeBorder,
-            HighlightBackground = new SolidColorBrush(Color.Parse("#F5C542"), 0.28),
+            HighlightBackground = highlight is SolidColorBrush solid
+                ? new SolidColorBrush(solid.Color, 0.28)
+                : new SolidColorBrush(Color.Parse("#F5C542"), 0.28),
             QuoteBar = accent,
             RuleLine = border,
+            TableBorder = codeBorder,
+            TableHeaderBackground = tableHeader,
             BodyFontFamily = bodyFont,
             MonoFontFamily = monoFont,
             BaseFontSize = baseFontSize

@@ -8,7 +8,12 @@ namespace enki.Services;
 
 public sealed class KanbanService
 {
-    private readonly string _boardPath;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _boardPath => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "kanban.json")
+        : Path.Combine(_storageDirectory!, "kanban.json");
+    private bool _seedPending;
     public KanbanBoard Board { get; private set; }
 
     /// <summary>True cuando <see cref="Board"/> tuvo que reemplazarse por el tablero semilla porque
@@ -35,15 +40,30 @@ public sealed class KanbanService
     /// <param name="storageDirectory">Overrides the default <c>%AppData%/Enki</c> folder — unused in the
     /// running app, but lets tests point persistence at a throwaway directory instead of the developer's
     /// real kanban file.</param>
-    public KanbanService(string? storageDirectory = null)
+    public KanbanService(string? storageDirectory = null, bool deferSeedCreation = false)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
-        Directory.CreateDirectory(configDir);
-        _boardPath = Path.Combine(configDir, "kanban.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
+        _seedPending = deferSeedCreation;
         Board = Load();
         PurgeOldTrashedCards();
+    }
+
+    public KanbanService(VaultService vaultService, bool deferSeedCreation = false)
+    {
+        _vaultService = vaultService;
+        _seedPending = deferSeedCreation;
+        Board = Load();
+        PurgeOldTrashedCards();
+    }
+
+    /// <summary>Lee el tablero del vault activo después de cambiar de carpeta.</summary>
+    public void Reload()
+    {
+        LoadedFromCorruptData = false;
+        Board = Load();
+        PurgeOldTrashedCards();
+        BoardChanged?.Invoke();
     }
 
     /// <summary>Purga automática de la papelera del tablero (Fase 3 de docs/analisis-proyecto/roadmap.md):
@@ -97,6 +117,7 @@ public sealed class KanbanService
     {
         if (JsonFileStore.TryLoad<KanbanBoard>(_boardPath, out var loaded) && loaded is not null)
         {
+            _seedPending = false;
             MergeLegacyReviewColumn(loaded);
             Board = loaded;
             if (MigrateCoreColumnRoles(loaded)) Save();
@@ -104,11 +125,22 @@ public sealed class KanbanService
         }
 
         if (File.Exists(_boardPath)) LoadedFromCorruptData = true;
-        return CreateSeedBoard();
+        return _seedPending ? new KanbanBoard { Name = string.Empty } : CreateSeedBoard();
+    }
+
+    /// <summary>Crea los datos de bienvenida cuando ya se conoce el idioma de primer arranque.
+    /// Un tablero existente, aunque tenga nombres predeterminados, nunca se retraduce.</summary>
+    public void EnsureSeedBoard()
+    {
+        if (!_seedPending) return;
+        Board = CreateSeedBoard();
+        Save();
+        _seedPending = false;
     }
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(_boardPath)!);
         JsonFileStore.Save(_boardPath, Board);
         BoardChanged?.Invoke();
     }

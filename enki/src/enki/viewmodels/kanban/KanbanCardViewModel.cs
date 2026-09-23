@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Material.Icons;
 using enki.Localization;
@@ -25,25 +27,46 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         _ => LocalizationService.Instance["Kanban_Priority_Medium"]
     };
 
+    /// <summary>La tarjeta solo escribe la palabra "alta" cuando de verdad lo es: repetir "MEDIA" en
+    /// veinte tarjetas seguidas es ruido, y baja/media ya se distinguen por la intensidad del punto
+    /// (docs/agent-docs/sistema-diseno-web.md §1.3, "más opaco = más prioridad"). Lo excepcional se
+    /// nombra, lo normal se insinúa.</summary>
+    public bool IsHighPriority => Card.Priority == KanbanPriority.High;
+
+    /// <summary>Contrapartida de esconder la etiqueta en baja/media: el tooltip del punto siempre dice la
+    /// prioridad actual además de qué hace el clic, así que la información sigue disponible sin abrir la
+    /// tarjeta y sin depender de distinguir dos grises.</summary>
+    public string PriorityTooltip => string.Format(
+        CultureInfo.CurrentCulture,
+        LocalizationService.Instance["Kanban_Card_PriorityTooltip"],
+        PriorityLabel);
+
     public bool HasDueDate => Card.DueDateUtc is not null;
     public bool IsOverdue => Card.DueDateUtc is { } due && KanbanCard.IsPastDue(due);
     public string DueDateLabel => Card.DueDateUtc is { } due ? KanbanCard.FormatDueLabel(due) : string.Empty;
 
     public bool HasSubtasks => Card.Subtasks.Count > 0;
-    public string SubtaskProgressLabel => $"{Card.Subtasks.Count(s => s.IsDone)}/{Card.Subtasks.Count}";
+    private int DoneSubtaskCount => Card.Subtasks.Count(s => s.IsDone);
+    public string SubtaskProgressLabel => $"{DoneSubtaskCount}/{Card.Subtasks.Count}";
 
-    /// <summary>Track width (px) for the proportional subtask-progress bar in the card — matches the
-    /// fixed 54px track drawn in
-    /// KanbanView.axaml, so this stays a plain pixel width instead of needing a fraction-to-GridLength
-    /// converter.</summary>
-    private const double SubtaskProgressTrackWidth = 54;
-
-    public double SubtaskProgressWidth => Card.Subtasks.Count == 0
-        ? 0
-        : (double)Card.Subtasks.Count(s => s.IsDone) / Card.Subtasks.Count * SubtaskProgressTrackWidth;
+    /// <summary>Star weights for the two-column grid that draws the subtask-progress bar in the card:
+    /// column 0 (hecho) vs column 1 (restante). The track itself stretches to the full card width
+    /// (respetando el padding de la tarjeta), so the fill is proportional rather than a fixed 54px stub —
+    /// GridLength keeps the split declarative without a fraction converter.</summary>
+    public GridLength SubtaskProgressDoneStar => new(DoneSubtaskCount, GridUnitType.Star);
+    public GridLength SubtaskProgressRemainingStar => new(Card.Subtasks.Count - DoneSubtaskCount, GridUnitType.Star);
 
     public bool HasTags => Card.Tags.Count > 0;
+    /// <summary>Instantánea de presentación, renovada cuando se edita la entidad real.</summary>
+    public IReadOnlyList<string> Tags => Card.Tags.ToArray();
+
     public string TagsLabel => string.Join(", ", Card.Tags);
+
+    /// <summary>La tarjeta tiene algo que enseñar en la línea de metadatos del pie. Sin esta comprobación,
+    /// una tarjeta que solo tiene título arrastraba el margen de una fila vacía debajo del texto.</summary>
+    public bool HasStatusMetadata => HasSubtasks || HasDueDate || HasLinkedNote;
+
+    public bool HasMeta => HasSubtasks || HasDueDate || HasTags || HasLinkedNote;
 
     /// <summary>Enlace nota↔tarea, "Capa 1". El label es el nombre de archivo derivado de la ruta, no el
     /// título real de la nota: resolverlo
@@ -75,6 +98,21 @@ public sealed partial class KanbanCardViewModel : ObservableObject
     /// itself fails, instead of adding a second string for the same fact.</summary>
     public string? LinkedNoteTooltip => IsLinkedNoteMissing ? LocalizationService.Instance["Notification_LinkedNoteMissing_Title"] : null;
 
+    /// <summary>Archivada (docs/agent-docs/kanban-tareas-archivadas.md): el tablero no la dibuja, pero la
+    /// tarjeta sigue en su columna del modelo y por tanto en el Calendario y en las Estadísticas.</summary>
+    public bool IsArchived => Card.IsArchived;
+
+    public string ArchivedAtLabel => Card.ArchivedAtUtc is { } archived
+        ? archived.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture)
+        : string.Empty;
+
+    /// <summary>Solo se archiva desde la columna "Hecho". La tarjeta no conoce su columna —
+    /// <see cref="KanbanColumnViewModel"/> sella esta bandera sobre todas las suyas cada vez que su
+    /// colección cambia, que es el único punto por el que una tarjeta entra o sale de una columna, venga
+    /// del arrastre, del editor o de desarchivar.</summary>
+    [ObservableProperty]
+    private bool _canArchive;
+
     [ObservableProperty]
     private bool _isDropTarget;
 
@@ -97,6 +135,16 @@ public sealed partial class KanbanCardViewModel : ObservableObject
             selectedList.Contains(tag, StringComparer.OrdinalIgnoreCase));
     }
 
+    /// <summary>Filtro rápido de la barra de herramientas (alta prioridad / vencidas). Es un filtro más
+    /// del mismo <see cref="KanbanColumnViewModel.ApplyFilters"/>, no un modo aparte: se combina en AND
+    /// con el buscador y las etiquetas, igual que ellos entre sí.</summary>
+    public bool MatchesQuickFilter(KanbanQuickFilter filter) => filter switch
+    {
+        KanbanQuickFilter.HighPriority => Card.Priority == KanbanPriority.High,
+        KanbanQuickFilter.Overdue => IsOverdue,
+        _ => true
+    };
+
     /// <summary>Buscador interno del tablero —
     /// coincide por título, descripción o título de cualquier subtarea, insensible a mayúsculas.</summary>
     public bool MatchesSearch(string query) =>
@@ -115,6 +163,8 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         };
         OnPropertyChanged(nameof(Priority));
         OnPropertyChanged(nameof(PriorityLabel));
+        OnPropertyChanged(nameof(IsHighPriority));
+        OnPropertyChanged(nameof(PriorityTooltip));
     }
 
     /// <summary>Every display property above reads straight through to <see cref="Card"/>, so mutating
@@ -127,18 +177,26 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         OnPropertyChanged(nameof(HasDescription));
         OnPropertyChanged(nameof(Priority));
         OnPropertyChanged(nameof(PriorityLabel));
+        OnPropertyChanged(nameof(IsHighPriority));
+        OnPropertyChanged(nameof(PriorityTooltip));
         OnPropertyChanged(nameof(HasDueDate));
         OnPropertyChanged(nameof(IsOverdue));
         OnPropertyChanged(nameof(DueDateLabel));
         OnPropertyChanged(nameof(HasSubtasks));
         OnPropertyChanged(nameof(SubtaskProgressLabel));
-        OnPropertyChanged(nameof(SubtaskProgressWidth));
+        OnPropertyChanged(nameof(SubtaskProgressDoneStar));
+        OnPropertyChanged(nameof(SubtaskProgressRemainingStar));
         OnPropertyChanged(nameof(HasTags));
         OnPropertyChanged(nameof(TagsLabel));
+        OnPropertyChanged(nameof(Tags));
+        OnPropertyChanged(nameof(HasMeta));
+        OnPropertyChanged(nameof(HasStatusMetadata));
         OnPropertyChanged(nameof(HasLinkedNote));
         OnPropertyChanged(nameof(LinkedNoteLabel));
         OnPropertyChanged(nameof(IsLinkedNoteMissing));
         OnPropertyChanged(nameof(LinkedNoteIcon));
         OnPropertyChanged(nameof(LinkedNoteTooltip));
+        OnPropertyChanged(nameof(IsArchived));
+        OnPropertyChanged(nameof(ArchivedAtLabel));
     }
 }

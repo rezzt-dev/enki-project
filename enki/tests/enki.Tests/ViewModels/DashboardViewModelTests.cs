@@ -31,13 +31,15 @@ public class DashboardViewModelTests : IDisposable
 
     private sealed record Harness(
         DashboardViewModel Dashboard, VaultService Vault, KanbanService Kanban,
-        ReminderService Reminders, NotificationService Notifications);
+        ReminderService Reminders, NotificationService Notifications, VaultSettingsService VaultSettings,
+        HabitService Habits);
 
     private Harness CreateViewModel()
     {
         var settingsService = new SettingsService(_storageDirectory);
         var vault = new VaultService(settingsService);
         vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        var vaultSettingsService = new VaultSettingsService(vault);
         var sessionService = new SessionService(vault);
         var kanbanService = new KanbanService(_storageDirectory);
         var authService = new PolarAuthService(settingsService);
@@ -45,14 +47,17 @@ public class DashboardViewModelTests : IDisposable
         var reminderService = new ReminderService(_storageDirectory);
         var notificationService = new NotificationService(settingsService, _storageDirectory);
         var calendarAggregationService = new CalendarAggregationService(kanbanService, taskService, reminderService, authService);
+        var habitService = new HabitService(vault);
 
         var dashboard = new DashboardViewModel(
             vault, sessionService, kanbanService, taskService, authService, notificationService, calendarAggregationService,
+            habitService,
             openNote: _ => { }, newNote: () => { }, navigateToKanban: () => { }, navigateToSessions: () => { },
             navigateToNotes: () => { }, navigateToTrash: () => { }, calendarEnabled: true, navigateToCalendar: () => { },
-            openReminders: () => { }, openNotifications: () => { }, openSettings: () => { }, showScrollbar: true);
+            openReminders: () => { }, openNotifications: () => { }, openSettings: () => { }, navigateToHabits: () => { },
+            showScrollbar: true, vaultSettingsService);
 
-        return new Harness(dashboard, vault, kanbanService, reminderService, notificationService);
+        return new Harness(dashboard, vault, kanbanService, reminderService, notificationService, vaultSettingsService, habitService);
     }
 
     [Fact]
@@ -182,12 +187,15 @@ public class DashboardViewModelTests : IDisposable
         var reminderService = new ReminderService(_storageDirectory);
         var notificationService = new NotificationService(settingsService, _storageDirectory);
         var calendarAggregationService = new CalendarAggregationService(kanbanService, taskService, reminderService, authService);
+        var habitService = new HabitService(vault);
 
         var dashboard = new DashboardViewModel(
             vault, sessionService, kanbanService, taskService, authService, notificationService, calendarAggregationService,
+            habitService,
             openNote: _ => { }, newNote: () => called = true, navigateToKanban: () => { }, navigateToSessions: () => { },
             navigateToNotes: () => { }, navigateToTrash: () => { }, calendarEnabled: true, navigateToCalendar: () => { },
-            openReminders: () => { }, openNotifications: () => { }, openSettings: () => { }, showScrollbar: true);
+            openReminders: () => { }, openNotifications: () => { }, openSettings: () => { }, navigateToHabits: () => { },
+            showScrollbar: true);
 
         dashboard.NewNoteCommand.Execute(null);
 
@@ -204,5 +212,112 @@ public class DashboardViewModelTests : IDisposable
 
         h.Dashboard.SetCalendarEnabled(true);
         Assert.True(h.Dashboard.IsCalendarEnabled);
+    }
+
+    [Fact]
+    public void Reload_Sections_AreInDefaultOrder_WhenNoVaultSetting()
+    {
+        var h = CreateViewModel();
+
+        var keys = h.Dashboard.Sections.Select(s => s.Key).ToList();
+
+        Assert.Equal(["QuickAccess", "Today", "Vault", "Activity", "Sessions", "BoardTasks", "RecentNotes", "Habits"], keys);
+        Assert.All(h.Dashboard.Sections, s => Assert.True(s.IsVisible));
+    }
+
+    [Fact]
+    public void Reload_Sections_FollowCustomOrder_FromVaultSettings()
+    {
+        var h = CreateViewModel();
+        h.VaultSettings.Settings.DashboardSectionOrder = ["RecentNotes", "BoardTasks", "Today"];
+        h.VaultSettings.Save();
+
+        h.Dashboard.Reload();
+
+        Assert.Equal(["RecentNotes", "BoardTasks", "Today", "QuickAccess", "Vault", "Activity", "Sessions", "Habits"], h.Dashboard.Sections.Select(s => s.Key));
+    }
+
+    [Fact]
+    public void Reload_Sections_SkipsHiddenSections_FromVaultSettings()
+    {
+        var h = CreateViewModel();
+        h.VaultSettings.Settings.DashboardHiddenSections = ["Vault", "Activity", "Sessions"];
+        h.VaultSettings.Save();
+
+        h.Dashboard.Reload();
+
+        var keys = h.Dashboard.Sections.Select(s => s.Key).ToList();
+        Assert.DoesNotContain("Vault", keys);
+        Assert.DoesNotContain("Activity", keys);
+        Assert.DoesNotContain("Sessions", keys);
+        Assert.Contains("QuickAccess", keys);
+        Assert.Contains("Today", keys);
+        Assert.Contains("BoardTasks", keys);
+        Assert.Contains("RecentNotes", keys);
+    }
+
+    // ===================== Fase 3: TodayItems no lo eclipsa el backlog vencido antiguo (análisis §4.4, Alta) =====================
+
+    [Fact]
+    public void Reload_TodayItems_AlwaysIncludesItemsDueToday_EvenWithOldOverdueBacklog()
+    {
+        var h = CreateViewModel();
+        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        for (var i = 0; i < 6; i++)
+        {
+            backlogColumn.Cards.Add(new KanbanCard
+            {
+                Id = $"old-{i}", Title = $"Vieja {i}", DueDateUtc = DateTime.UtcNow.AddDays(-100 - i)
+            });
+        }
+        var dueTodayCard = new KanbanCard { Id = "today-1", Title = "Vence hoy", DueDateUtc = DateTime.UtcNow };
+        backlogColumn.Cards.Add(dueTodayCard);
+
+        h.Dashboard.Reload();
+
+        Assert.Contains(h.Dashboard.TodayItems, i => i.SourceId == dueTodayCard.Id);
+    }
+
+    [Fact]
+    public void Reload_TodayItems_ExcludesOverdueBacklog_OlderThanBacklogWindow()
+    {
+        var h = CreateViewModel();
+        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var ancientCard = new KanbanCard { Id = "ancient-1", Title = "Muy vieja", DueDateUtc = DateTime.UtcNow.AddDays(-400) };
+        backlogColumn.Cards.Add(ancientCard);
+
+        h.Dashboard.Reload();
+
+        Assert.DoesNotContain(h.Dashboard.TodayItems, i => i.SourceId == ancientCard.Id);
+    }
+
+    [Fact]
+    public void Reload_TodayItems_ExcludesCompletedKanbanCards()
+    {
+        var h = CreateViewModel();
+        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var completedCard = new KanbanCard
+        {
+            Id = "completed-1", Title = "Terminada", DueDateUtc = DateTime.UtcNow.AddDays(-1),
+            CompletedAtUtc = DateTime.UtcNow.AddHours(-1)
+        };
+        backlogColumn.Cards.Add(completedCard);
+
+        h.Dashboard.Reload();
+
+        Assert.DoesNotContain(h.Dashboard.TodayItems, i => i.SourceId == completedCard.Id);
+    }
+
+    [Fact]
+    public void Reload_Sections_AppendsMissingKeysAtEnd()
+    {
+        var h = CreateViewModel();
+        h.VaultSettings.Settings.DashboardSectionOrder = ["RecentNotes"];
+        h.VaultSettings.Save();
+
+        h.Dashboard.Reload();
+
+        Assert.Equal("RecentNotes", h.Dashboard.Sections.Select(s => s.Key).First());
+        Assert.Equal(8, h.Dashboard.Sections.Count);
     }
 }

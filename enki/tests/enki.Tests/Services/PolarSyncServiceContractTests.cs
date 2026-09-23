@@ -24,6 +24,7 @@ public class PolarSyncServiceContractTests : IDisposable
     private const string BaseUrl = "https://fake.supabase.test";
     private const string AnonKey = "anon-key-123";
 
+    private readonly TestPolarCredentialStore _credentialStore = new();
     private readonly string _storageDirectory =
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
     private readonly FakeHttpMessageHandler _handler = new();
@@ -34,7 +35,7 @@ public class PolarSyncServiceContractTests : IDisposable
 
     public PolarSyncServiceContractTests()
     {
-        _settingsService = new SettingsService(_storageDirectory);
+        _settingsService = new SettingsService(_storageDirectory, _credentialStore);
         _settingsService.Settings.PolarLinked = true;
         _settingsService.Settings.PolarUserId = "user-1";
         _settingsService.Settings.PolarAccessToken = "test-access-token";

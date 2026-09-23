@@ -6,9 +6,11 @@
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:controls="clr-namespace:enki.Controls"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.SessionsView"
-             x:DataType="vm:SessionsViewModel">
+             x:DataType="vm:SessionsViewModel"
+             Focusable="True" Loaded="SessionsView_Loaded" KeyDown="SessionsView_KeyDown">
 
   <Grid>
 
@@ -53,7 +55,7 @@
 
         <Border Grid.Column="3" Classes="card" Padding="14,9" VerticalAlignment="Center">
           <TextBlock Text="{Binding SessionsCountLabel}" Classes="faint" FontSize="10.5" />
-        </Border>
+   </Border>
       </Grid>
 
       <Grid Grid.Row="2" ColumnDefinitions="220,*" Margin="24,0,24,24">
@@ -73,10 +75,18 @@
                   <DataTemplate DataType="vm:SessionListItemViewModel">
                     <Border Classes="folder-row" Classes.active="{Binding IsSelected}"
                             Padding="14,9" PointerPressed="SessionRow_PointerPressed">
-                      <Grid ColumnDefinitions="*,Auto,Auto">
+                      <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                         <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis"
-                                     IsVisible="{Binding !IsRenaming}" />
+                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !IsRenaming}">
+                            <Button Classes="icon-btn" Width="20" Height="20" Padding="0"
+                                    Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginChangeSessionColorCommand}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip.Tip="{loc:Tr Sessions_Color_Tooltip}"
+                                    AutomationProperties.Name="{loc:Tr Sessions_Color_Tooltip}">
+                              <Ellipse Width="9" Height="9" Fill="{Binding SessionColorBrush}" />
+                            </Button>
+                            <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
                           <TextBox Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
                                     FontSize="12" Padding="4,2"
                                     KeyDown="SessionNameEdit_KeyDown" LostFocus="SessionNameEdit_LostFocus"
@@ -86,24 +96,38 @@
                                      IsVisible="{Binding !IsRenaming}" />
                         </StackPanel>
                         <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20"
+                                IsVisible="{Binding ShowLockedIndicator}"
+                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestUnlockSessionCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Locked_Tooltip}"
+                                AutomationProperties.Name="{loc:Tr Sessions_Locked_Tooltip}">
+                          <mi:MaterialIcon Kind="LockOutline" Width="12" Height="12" />
+                        </Button>
+                        <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20"
+                                IsVisible="{Binding ShowUnlockedIndicator}"
+                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).LockSessionCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_LockAction_Label}"
+                                AutomationProperties.Name="{loc:Tr Sessions_LockAction_Label}">
+                          <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="12" Height="12" />
+                        </Button>
+                        <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20"
                                 Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginRenameSessionCommand}"
                                 CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_RenameTooltip}"
                                 AutomationProperties.Name="{loc:Tr Sessions_RenameTooltip}">
                           <mi:MaterialIcon Kind="PencilOutline" Width="12" Height="12" />
                         </Button>
-                        <Button Grid.Column="2" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
+                        <Button Grid.Column="3" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
                                 IsVisible="{Binding !IsDefault}"
                                 Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestDeleteSessionCommand}"
                                 CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_DeleteTooltip}"
                                 AutomationProperties.Name="{loc:Tr Sessions_DeleteTooltip}">
                           <mi:MaterialIcon Kind="TrashCanOutline" Width="12" Height="12" />
                         </Button>
-                        <mi:MaterialIcon Grid.Column="2" Kind="ShieldCheckOutline" Width="14" Height="14"
+                        <mi:MaterialIcon Grid.Column="3" Kind="ShieldCheckOutline" Width="14" Height="14"
                                           Foreground="{DynamicResource Ink30}"
                                           IsVisible="{Binding IsDefault}"
                                           ToolTip.Tip="{loc:Tr Sessions_DefaultBadgeTooltip}" />
                       </Grid>
-                    </Border>
+                </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -136,7 +160,7 @@
               </ItemsControl>
             </StackPanel>
           </Grid>
-        </Border>
+    </Border>
 
         <!-- ===================== Grafo (WebView + overlay nativo) ===================== -->
         <Border Grid.Column="1" x:Name="GraphHostPanel" ClipToBounds="True"
@@ -148,42 +172,129 @@
                  and only after confirming the platform's WebView runtime is actually installed. -->
             <ContentControl x:Name="GraphContentHost" />
 
-            <!-- Skeleton shown from the moment the graph document is handed to the WebView until it
+            <!-- Loading screen shown from the moment the graph document is handed to the WebView until it
                  reports its nodes/edges are actually painted (Fase 4 §"Sesiones y grafo", gap 23) — a
                  vault with hundreds of notes could otherwise sit on a blank panel for a beat with no
-                 indication anything is happening. -->
-            <StackPanel x:Name="GraphLoadingOverlay" IsVisible="False" HorizontalAlignment="Center"
-                        VerticalAlignment="Center" Spacing="12" IsHitTestVisible="False">
-              <mi:MaterialIcon Classes="spin" Kind="Loading" Width="26" Height="26"
-                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-              <TextBlock Text="{loc:Tr Sessions_Graph_LoadingLabel}" Classes="muted" HorizontalAlignment="Center" />
-            </StackPanel>
+                 indication anything is happening. It covers the whole panel with the graph's own backdrop
+                 (GraphBackdrop* brushes, aligned with the WebView's) so a half-laid-out graph never shows
+                 through, and fades in/out via the Opacity transition driven from SessionsView.axaml.cs. -->
+            <Grid x:Name="GraphLoadingOverlay" IsVisible="False" Opacity="0" IsHitTestVisible="False">
+              <Grid.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="0:0:0.36" Easing="CubicEaseOut" />
+                </Transitions>
+              </Grid.Transitions>
+              <Border Background="{DynamicResource AppBackgroundAltBrush}" />
+              <Border Background="{DynamicResource GraphBackdropDotsBrush}" />
+              <Border Background="{DynamicResource GraphBackdropBloomBrush}" />
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="22">
+                <controls:GraphLoadingIndicator x:Name="GraphLoadingAnimation" Width="200" Height="176"
+                                                Ink="{DynamicResource InkBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_LoadingLabel, Converter={StaticResource UpperCaseConverter}}"
+                           Classes="eyebrow" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
 
-            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left" VerticalAlignment="Top"
-                        Margin="16" IsHitTestVisible="False">
-              <Border Classes="graph-chip">
-                <TextBlock Text="{Binding GraphSummaryLabel}" Classes="faint" FontSize="10.5" />
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Top" Margin="16">
+              <Border Grid.Column="0" Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,12,0"
+                      ToolTip.Tip="{Binding GraphSummaryLabel}">
+                <TextBlock Text="{Binding GraphSummaryLabel}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" />
               </Border>
-            </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Button Classes="icon-btn" Command="{Binding RefreshGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_RefreshGraphTooltip}"
+                        AutomationProperties.Name="{loc:Tr Sessions_RefreshGraphTooltip}">
+                  <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" />
+                </Button>
+                <Button x:Name="GraphFilterTrigger" Classes="link-mode-toggle" Classes.active="{Binding IsGraphFiltered}"
+                        Command="{Binding ToggleGraphFilterPopoverCommand}" ToolTip.Tip="{loc:Tr Sessions_Graph_FilterTooltip}"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_FilterButton}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="FilterVariant" Width="14" Height="14" />
+                    <TextBlock Text="{loc:Tr Sessions_Graph_FilterButton, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Grid>
 
-            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16">
-              <Button Classes="icon-btn" Command="{Binding RefreshGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_RefreshGraphTooltip}"
-                      AutomationProperties.Name="{loc:Tr Sessions_RefreshGraphTooltip}">
-                <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" />
-              </Button>
-              <Button Classes="link-mode-toggle" Classes.active="{Binding IsLinkMode}" Command="{Binding ToggleLinkModeCommand}"
-                      ToolTip.Tip="{loc:Tr Sessions_LinkModeInstructions}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="VectorPolyline" Width="14" Height="14" />
-                  <TextBlock Text="{loc:Tr Sessions_LinkModeButton, Converter={StaticResource UpperCaseConverter}}" />
-                </StackPanel>
-              </Button>
-            </StackPanel>
+            <Popup PlacementTarget="{Binding #GraphFilterTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
+                   IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #GraphFilterTrigger}"
+                   IsOpen="{Binding IsGraphFilterOpen}">
+              <Border Classes="dropdown-popover" Width="340" CornerRadius="0">
+                <Grid RowDefinitions="Auto,*,Auto" Margin="4" MaxHeight="520">
+                  <TextBlock Grid.Row="0" Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontWeight="Bold" FontSize="15" Margin="0,0,0,14" />
+                  <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Explore}" FontSize="12" FontWeight="Bold" />
+                      <ComboBox ItemsSource="{Binding GraphExplorationOptions}" SelectedIndex="{Binding GraphExplorationIndex}"
+                                HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Sessions_Graph_Explore}" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Clusters}" FontSize="12" FontWeight="Bold" />
+                      <ComboBox ItemsSource="{Binding GraphClusters}" SelectedItem="{Binding SelectedGraphCluster}"
+                                IsEnabled="{Binding HasGraphClusters}" HorizontalAlignment="Stretch"
+                                AutomationProperties.Name="{loc:Tr Sessions_Graph_Clusters}">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate DataType="vm:GraphClusterFilterItemViewModel">
+                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+                      <TextBlock Text="{loc:Tr Sessions_Graph_ClustersHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
+                                 FontSize="12" FontWeight="Bold" />
+                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                              AutomationProperties.Name="{Binding Label}" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Tags}" FontSize="12" FontWeight="Bold" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_TagsHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_NoTags}" Classes="muted" FontSize="12" IsVisible="{Binding !HasGraphTags}" />
+                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGraphTags}">
+                        <ItemsControl ItemsSource="{Binding GraphTagFilters}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                              AutomationProperties.Name="{Binding Label}" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </StackPanel>
+                  </ScrollViewer>
+                  <Button Grid.Row="2" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
+                          Margin="0,14,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                          Content="{loc:Tr Sessions_Graph_ResetFilters}" />
+                </Grid>
+              </Border>
+            </Popup>
 
             <Border Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16"
-                    IsVisible="{Binding IsLinkMode}" MaxWidth="260" IsHitTestVisible="False">
-              <TextBlock Classes="muted" FontSize="11" TextWrapping="Wrap"
-                         Text="{loc:Tr Sessions_LinkModeInstructions}" />
+                    IsHitTestVisible="False" MaxWidth="460">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontSize="12" FontWeight="Bold" />
+                <TextBlock Text="{Binding GraphDiscoverySummary}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_AccessibleScope}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="dropdown-popover" IsVisible="{Binding IsGraphEmpty}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="300" Margin="20" Padding="20">
+              <StackPanel Spacing="12">
+                <TextBlock Text="{Binding GraphEmptyMessage}" TextWrapping="Wrap" TextAlignment="Center" />
+                <Button Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsVisible="{Binding IsGraphFiltered}"
+                        HorizontalAlignment="Center" Content="{loc:Tr Sessions_Graph_ResetFilters}" />
+              </StackPanel>
             </Border>
           </Grid>
         </Border>
@@ -191,8 +302,7 @@
     </Grid>
 
     <!-- ===================== Diálogo: nueva sesión (§7.10) ===================== -->
-    <Border Classes="modal-overlay" IsVisible="{Binding IsCreateDialogOpen}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding IsCreateDialogOpen}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Spacing="6">
@@ -204,6 +314,24 @@
                     Text="{Binding NewSessionName}" Name="NewSessionNameBox"
                     KeyDown="NewSessionNameBox_KeyDown" />
 
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="{loc:Tr Sessions_CreateDialog_ProtectToggleLabel}" VerticalAlignment="Center" FontSize="13" />
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding NewSessionIsProtected}" OnContent="" OffContent=""
+                          AutomationProperties.Name="{loc:Tr Sessions_CreateDialog_ProtectToggleLabel}" />
+          </Grid>
+
+          <StackPanel Spacing="10" IsVisible="{Binding NewSessionIsProtected}">
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_CreateDialog_PasswordPlaceholder}"
+                      Text="{Binding NewSessionPassword}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_CreateDialog_PasswordPlaceholder}" />
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_CreateDialog_PasswordConfirmPlaceholder}"
+                      Text="{Binding NewSessionPasswordConfirm}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_CreateDialog_PasswordConfirmPlaceholder}" />
+            <TextBlock Text="{loc:Tr Sessions_CreateDialog_PasswordTooShort}" Classes="faint" TextWrapping="Wrap"
+                       IsVisible="{Binding IsNewSessionPasswordTooShort}" />
+            <TextBlock Text="{loc:Tr Sessions_CreateDialog_ProtectHint}" Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+
           <Grid ColumnDefinitions="*,Auto,Auto">
             <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelCreateSessionCommand}" Margin="0,0,18,0">
               <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
@@ -213,16 +341,194 @@
               <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
+
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                      IsVisible="{Binding IsProcessingSessionAction}">
+            <mi:MaterialIcon Classes="spin" Kind="Loading" Width="14" Height="14"
+                              Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Text="{loc:Tr Sessions_ProcessingIndicator}" Classes="muted" FontSize="12" />
+          </StackPanel>
+        </StackPanel>
+    </Border>
+  </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: color de sesión ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding SessionPendingColor, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" Width="360" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Sessions_Color_Eyebrow, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" />
+            <TextBlock Text="{Binding SessionPendingColor.Name}" FontSize="19" FontWeight="Bold"
+                       LetterSpacing="-0.3" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+
+          <Border Classes="card" Padding="14">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+              <Border Grid.Column="0" Width="44" Height="44"
+                      Background="{Binding SessionColorHex, Converter={StaticResource HexColorToBrushConverter}}"
+                      BorderBrush="{DynamicResource Ink20}" BorderThickness="1" />
+              <StackPanel Grid.Column="1" Spacing="8">
+                <controls:LocalizedColorPicker Color="{Binding SessionColorDraft, Mode=TwoWay}"
+                                               CornerRadius="0" HorizontalAlignment="Left" />
+                <TextBox Text="{Binding SessionColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Classes="search" FontFamily="{StaticResource MonoFontFamily}"
+                         AutomationProperties.Name="{loc:Tr ColorPicker_Hex}" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <Button Classes="ghost" Command="{Binding UseAutomaticSessionColorCommand}"
+                  HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="AutoFix" Width="14" Height="14" />
+              <TextBlock Text="{loc:Tr Sessions_Color_Automatic, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelSessionColorCommand}"
+                    Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmSessionColorCommand}"
+                    IsEnabled="{Binding CanConfirmSessionColor}">
+              <TextBlock Text="{loc:Tr Common_Save, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
         </StackPanel>
       </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: códigos de recuperación ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsRecoveryCodesDialogOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18" MaxWidth="360">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_Heading, Converter={StaticResource UpperCaseConverter}}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" />
+          </StackPanel>
+
+          <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_Body}" Classes="muted" TextWrapping="Wrap" />
+
+          <Border Classes="card" Padding="14">
+            <ItemsControl ItemsSource="{Binding PendingRecoveryCodes}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" FontFamily="{StaticResource MonoFontFamily}" FontSize="14" LetterSpacing="0.5" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+     </Border>
+
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Button Grid.Column="0" Classes="ghost" Command="{Binding CopyRecoveryCodesToClipboardCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_CopyButton, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="1" Classes="ghost" Command="{Binding DownloadRecoveryCodesCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Download" Width="14" Height="14" />
+                <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_DownloadButton, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <Button Classes="pill-primary" Command="{Binding CloseRecoveryCodesDialogCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <TextBlock Text="{loc:Tr Sessions_RecoveryCodes_CloseButton, Converter={StaticResource UpperCaseConverter}}" />
+          </Button>
+        </StackPanel>
     </Border>
+  </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: desbloquear sesión / olvidé mi contraseña ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding SessionPendingUnlock, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18" MaxWidth="340">
+
+          <!-- Modo normal: pedir la contraseña -->
+          <StackPanel Spacing="18" IsVisible="{Binding !IsForgotPasswordMode}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Tr Sessions_Unlock_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+              <TextBlock Text="{Binding SessionPendingUnlock.Name}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_PasswordPlaceholder}"
+                      Text="{Binding UnlockPasswordInput}" PasswordChar="●" Name="UnlockPasswordBox"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_PasswordPlaceholder}" />
+
+            <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                        TextWrapping="Wrap" IsVisible="{Binding UnlockError, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+            <Button Classes="dropdown-item" Command="{Binding BeginForgotPasswordCommand}" HorizontalAlignment="Left" Padding="0">
+              <TextBlock Text="{loc:Tr Sessions_Unlock_ForgotPasswordLink}" Classes="muted" TextDecorations="Underline" FontSize="12" />
+            </Button>
+
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelUnlockCommand}" Margin="0,0,18,0">
+                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmUnlockCommand}"
+                      IsEnabled="{Binding !IsProcessingSessionAction}">
+                <TextBlock Text="{loc:Tr Sessions_Unlock_ConfirmButton, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
+
+          <!-- Modo "olvidé mi contraseña": pedir un código de recuperación + nueva contraseña -->
+          <StackPanel Spacing="18" IsVisible="{Binding IsForgotPasswordMode}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Tr Sessions_Unlock_ForgotPasswordEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+              <TextBlock Text="{loc:Tr Sessions_Unlock_ForgotPasswordHeading, Converter={StaticResource UpperCaseConverter}}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" />
+            </StackPanel>
+
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_RecoveryCodePlaceholder}"
+                      Text="{Binding RecoveryCodeInput}" FontFamily="{StaticResource MonoFontFamily}"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_RecoveryCodePlaceholder}" />
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_NewPasswordPlaceholder}"
+                      Text="{Binding NewPasswordInput}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_NewPasswordPlaceholder}" />
+            <TextBox Classes="search" PlaceholderText="{loc:Tr Sessions_Unlock_NewPasswordConfirmPlaceholder}"
+                      Text="{Binding NewPasswordConfirmInput}" PasswordChar="●"
+                      AutomationProperties.Name="{loc:Tr Sessions_Unlock_NewPasswordConfirmPlaceholder}" />
+
+            <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                        TextWrapping="Wrap" IsVisible="{Binding UnlockError, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelUnlockCommand}" Margin="0,0,18,0">
+                <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmPasswordResetCommand}"
+                      IsEnabled="{Binding !IsProcessingSessionAction}">
+                <TextBlock Text="{loc:Tr Sessions_Unlock_ResetButton, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                      IsVisible="{Binding IsProcessingSessionAction}">
+            <mi:MaterialIcon Classes="spin" Kind="Loading" Width="14" Height="14"
+                              Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Text="{loc:Tr Sessions_ProcessingIndicator}" Classes="muted" FontSize="12" />
+          </StackPanel>
+
+        </StackPanel>
+    </Border>
+  </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: eliminar sesión (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que los diálogos de confirmación de Kanban/Papelera; el mensaje (nombre de la
          sesión + recuento de notas pluralizado) viene calculado del viewmodel porque el orden de palabras
          no es fijo entre idiomas. -->
-    <Border Classes="modal-overlay" IsVisible="{Binding SessionPendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <controls:ModalOverlayHost IsOpen="{Binding SessionPendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -241,8 +547,8 @@
             </Button>
           </Grid>
         </StackPanel>
-      </Border>
     </Border>
+  </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

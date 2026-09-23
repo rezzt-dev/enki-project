@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using enki.Models;
@@ -8,12 +9,16 @@ namespace enki.Services;
 /// <summary>Local persistence + CRUD for the Polar-compatible "Gestión de tareas" domain
 /// (<see cref="PolarTaskList"/>/<see cref="PolarTask"/>/<see cref="PolarSubtask"/>) — same
 /// load/save-a-single-JSON-file pattern as <see cref="KanbanService"/>, stored separately at
-/// <c>%AppData%/Enki/polar-tasks.json</c> since this is an entirely separate data domain from the local
+/// <c>&lt;vault&gt;/.tasks/polar-tasks.json</c> since this is an entirely separate data domain from the local
 /// Kanban board (docs/supabase-sync/). Every mutation here marks the row <c>Dirty</c> and stamps
 /// <c>UpdatedAtUtc</c> so <c>PolarSyncService</c> knows what to push next.</summary>
 public sealed class PolarTaskService
 {
-    private readonly string _path;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _path => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "polar-tasks.json")
+        : Path.Combine(_storageDirectory!, "polar-tasks.json");
     private readonly Func<string?> _currentUserIdProvider;
 
     public PolarTaskStore Store { get; private set; }
@@ -34,20 +39,51 @@ public sealed class PolarTaskService
     /// keep working unchanged.</param>
     public PolarTaskService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null)
     {
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
-        Directory.CreateDirectory(configDir);
-        _path = Path.Combine(configDir, "polar-tasks.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);
         Store = Load();
+        PurgeOldTombstones();
     }
 
-    private PolarTaskStore Load() =>
-        JsonFileStore.TryLoad<PolarTaskStore>(_path, out var loaded) ? loaded! : new PolarTaskStore();
+    public PolarTaskService(VaultService vaultService, Func<string?>? currentUserIdProvider = null)
+    {
+        _vaultService = vaultService;
+        _currentUserIdProvider = currentUserIdProvider ?? (() => null);
+        Store = Load();
+        PurgeOldTombstones();
+    }
+
+    /// <summary>Recarga las listas y tareas del vault activo.</summary>
+    public void Reload()
+    {
+        Store = Load();
+        PurgeOldTombstones();
+        DataChanged?.Invoke();
+    }
+
+    private PolarTaskStore Load()
+    {
+        if (!JsonFileStore.TryLoad<PolarTaskStore>(_path, out var loaded)) return new PolarTaskStore();
+
+        foreach (var task in loaded!.Tasks) task.Recurrence = NormalizeRecurrence(task.Recurrence);
+        return loaded;
+    }
+
+    /// <summary>Degrada a <see cref="PolarRecurrence.None"/> cualquier valor que no sea uno de los
+    /// definidos. <c>System.Text.Json</c> deserializa un entero arbitrario a un <c>enum</c> sin quejarse,
+    /// así que un archivo dañado o editado a mano puede meter un valor que ningún <c>switch</c> del
+    /// proyecto contempla: el formateador lo pintaría como etiqueta vacía y el motor de recurrencia no
+    /// sabría avanzarlo. Sanearlo al cargar deja el dato coherente desde el primer momento, además del
+    /// corte que ya hace <see cref="AdvanceUntilAfter"/> por su cuenta
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-01). Mismo criterio que
+    /// <see cref="PolarWire.RecurrenceFromWire"/> aplica a lo que llega de Supabase.</summary>
+    internal static PolarRecurrence NormalizeRecurrence(PolarRecurrence recurrence) =>
+        Enum.IsDefined(recurrence) ? recurrence : PolarRecurrence.None;
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         JsonFileStore.Save(_path, Store);
         DataChanged?.Invoke();
     }
@@ -61,6 +97,63 @@ public sealed class PolarTaskService
     {
         Store = new PolarTaskStore();
         Save();
+    }
+
+    // ===================== Borrado permanente desde la Papelera =====================
+
+    /// <summary>Physically removes a soft-deleted list and every task/subtask that belongs to it — the
+    /// Papelera's permanent-delete path for Polar lists. Dirty tombstones are dropped locally just like in
+    /// <see cref="PurgeAllDeleted"/>; the user already confirmed the action in the UI.</summary>
+    public void PurgeList(PolarTaskList list)
+    {
+        var removedTaskIds = Store.Tasks.Where(t => t.ListId == list.Id).Select(t => t.Id).ToHashSet();
+        Store.Subtasks.RemoveAll(s => s.TaskId is { } taskId && removedTaskIds.Contains(taskId));
+        Store.Tasks.RemoveAll(t => t.ListId == list.Id);
+        Store.Lists.RemoveAll(l => l.Id == list.Id);
+        Save();
+    }
+
+    /// <summary>Physically removes a soft-deleted task and its subtareas — the Papelera's permanent-delete
+    /// path for Polar tasks.</summary>
+    public void PurgeTask(PolarTask task)
+    {
+        Store.Subtasks.RemoveAll(s => s.TaskId == task.Id);
+        Store.Tasks.RemoveAll(t => t.Id == task.Id);
+        Save();
+    }
+
+    /// <summary>Physically removes every soft-deleted list/task/subtask from the local store — used by the
+    /// Papelera's section-specific "VACIAR" action for the Polar category. Because the row is dropped locally,
+    /// any tombstone that has not yet been pushed to Polar will not be synchronized; the action is therefore
+    /// only triggered after an explicit user confirmation, same trade-off already accepted by
+    /// <see cref="ReminderService.PurgeAllDeleted"/>.</summary>
+    public void PurgeAllDeleted()
+    {
+        var deletedTaskIds = Store.Tasks.Where(t => t.IsDeleted).Select(t => t.Id).ToHashSet();
+        Store.Subtasks.RemoveAll(s => s.IsDeleted || (s.TaskId is { } taskId && deletedTaskIds.Contains(taskId)));
+        Store.Tasks.RemoveAll(t => t.IsDeleted);
+        Store.Lists.RemoveAll(l => l.IsDeleted);
+        Save();
+    }
+
+    /// <summary>Mirrors <see cref="ReminderService"/>'s and <see cref="KanbanService"/>'s own tombstone
+    /// purge: physically drops lists/tasks/subtasks soft-deleted more than 30 days ago and already
+    /// confirmed synced (<c>!Dirty</c>) — never purges a tombstone that hasn't been pushed yet, so an
+    /// offline delete always gets at least one chance to reach Supabase before disappearing for good (see
+    /// docs/analisis-proyecto/roadmap.md, Fase 4). Users can also force an immediate purge from the
+    /// Papelera via <see cref="PurgeList"/>, <see cref="PurgeTask"/> or <see cref="PurgeAllDeleted"/>, with
+    /// the same explicit-confirmation trade-off as <see cref="ReminderService.PurgeAllDeleted"/>.</summary>
+    private void PurgeOldTombstones()
+    {
+        var cutoff = DateTime.UtcNow.AddDays(-30);
+        bool IsPurgeable(bool isDeleted, bool dirty, DateTime? deletedAt) =>
+            isDeleted && !dirty && deletedAt is { } deleted && deleted < cutoff;
+
+        var removedLists = Store.Lists.RemoveAll(l => IsPurgeable(l.IsDeleted, l.Dirty, l.DeletedAtUtc));
+        var removedTasks = Store.Tasks.RemoveAll(t => IsPurgeable(t.IsDeleted, t.Dirty, t.DeletedAtUtc));
+        var removedSubtasks = Store.Subtasks.RemoveAll(s => IsPurgeable(s.IsDeleted, s.Dirty, s.DeletedAtUtc));
+
+        if (removedLists + removedTasks + removedSubtasks > 0) Save();
     }
 
     // ===================== Listas =====================
@@ -106,6 +199,19 @@ public sealed class PolarTaskService
             SoftDeleteTaskCore(task, list.UpdatedAtUtc);
         }
 
+        Save();
+    }
+
+    /// <summary>Undoes <see cref="DeleteList"/> — the Papelera restore path (análisis alfa-3 §4.3: antes de
+    /// esto no existía ningún camino de recuperación para una lista Polar borrada). Deliberately doesn't
+    /// cascade to the list's tasks the way the delete did: those stay in their own trashed-tasks listing
+    /// and are restored independently, since some of them may have been deleted on their own before the
+    /// list itself was, and there's no stored signal here to tell the two cases apart.</summary>
+    public void RestoreList(PolarTaskList list)
+    {
+        list.IsDeleted = false;
+        list.DeletedAtUtc = null;
+        Touch(list);
         Save();
     }
 
@@ -167,6 +273,7 @@ public sealed class PolarTaskService
     public void SetTaskCompleted(PolarTask task, bool completed)
     {
         task.Completed = completed;
+        task.CompletedAtUtc = completed ? DateTime.UtcNow : null;
         Touch(task);
 
         foreach (var subtask in Store.Subtasks.Where(s => s.TaskId == task.Id && !s.IsDeleted))
@@ -200,6 +307,28 @@ public sealed class PolarTaskService
             subtask.IsDeleted = true;
             subtask.DeletedAtUtc = whenUtc;
         }
+    }
+
+    /// <summary>Undoes <see cref="DeleteTask"/> — the Papelera restore path (análisis alfa-3 §4.3). Unlike
+    /// <see cref="RestoreList"/>, this one DOES cascade to the task's subtasks: subtasks have no listing of
+    /// their own anywhere in the Papelera, so restoring the parent task is the only way they ever become
+    /// visible/editable again. If the task's own list is still soft-deleted, the task simply won't show up
+    /// in the list-scoped "Gestión de tareas" view until that list is restored too — it's already live
+    /// again everywhere else that reads tasks directly (Dashboard, Calendario, búsqueda global).</summary>
+    public void RestoreTask(PolarTask task)
+    {
+        Touch(task);
+        task.IsDeleted = false;
+        task.DeletedAtUtc = null;
+
+        foreach (var subtask in Store.Subtasks.Where(s => s.TaskId == task.Id && s.IsDeleted))
+        {
+            Touch(subtask);
+            subtask.IsDeleted = false;
+            subtask.DeletedAtUtc = null;
+        }
+
+        Save();
     }
 
     // ===================== Subtareas =====================
@@ -244,6 +373,37 @@ public sealed class PolarTaskService
         Save();
     }
 
+    // ===================== Gestor global de etiquetas (renombrar/fusionar/eliminar) =====================
+
+    /// <summary>Renombra, fusiona o elimina una etiqueta en todas las tareas activas (<c>!IsDeleted</c> —
+    /// las de la Papelera quedan fuera, igual que <see cref="VaultService.ReplaceTagAcrossVault"/> excluye
+    /// las notas borradas) para el Gestor global de etiquetas (<see cref="TagManagerService"/>). A
+    /// diferencia de mutar <see cref="PolarTask.Tags"/> directamente desde fuera, esto pasa cada tarea
+    /// tocada por el <see cref="Touch(PolarTask)"/> privado ya existente, así que <c>Dirty</c>/
+    /// <c>UpdatedAtUtc</c>/<c>UserId</c> quedan marcados exactamente igual que en cualquier otra edición y
+    /// <see cref="Services.PolarSyncService"/> empuja el cambio a Supabase sin tocar nada del motor de
+    /// sync.</summary>
+    /// <param name="sourceTags">Etiquetas a sustituir/eliminar — debe construirse con
+    /// <see cref="StringComparer.OrdinalIgnoreCase"/>.</param>
+    /// <param name="targetTag">Nombre destino (renombrar/fusionar), o <see langword="null"/> para eliminar
+    /// la etiqueta sin sustituirla.</param>
+    /// <returns>Número de tareas tocadas.</returns>
+    public int ReplaceTagAcrossTasks(IReadOnlySet<string> sourceTags, string? targetTag)
+    {
+        var touched = 0;
+        foreach (var task in Store.Tasks.Where(t => !t.IsDeleted))
+        {
+            if (!TagListRewriter.Matches(task.Tags, sourceTags)) continue;
+
+            task.Tags = TagListRewriter.Apply(task.Tags, sourceTags, targetTag);
+            Touch(task);
+            touched++;
+        }
+
+        if (touched > 0) Save();
+        return touched;
+    }
+
     // ===================== Cadena de dependencias (docs/supabase-sync/02) =====================
 
     /// <summary>True when <paramref name="task"/> belongs to a dependency-chain list and an earlier,
@@ -276,14 +436,12 @@ public sealed class PolarTaskService
         foreach (var task in Store.Tasks.Where(t =>
                      t.Completed && t.Recurrence != PolarRecurrence.None && t.DueDateUtc is not null && !t.IsDeleted))
         {
-            var nextDue = task.DueDateUtc!.Value;
-            var advanced = false;
-            while (nextDue <= now)
-            {
-                nextDue = CalculateNextDueDate(nextDue, task.Recurrence);
-                advanced = true;
-            }
-            if (!advanced) continue;
+            // Una tarea cuya próxima fecha ya está en el futuro no tiene nada que avanzar; el resto se
+            // adelanta con el avance acotado de AdvanceUntilAfter, que devuelve null en vez de girar para
+            // siempre si la recurrencia no sabe avanzar (ver su documentación).
+            var currentDue = task.DueDateUtc!.Value;
+            if (currentDue > now) continue;
+            if (AdvanceUntilAfter(currentDue, task.Recurrence, now) is not { } nextDue) continue;
 
             task.Completed = false;
             task.DueDateUtc = nextDue;
@@ -299,6 +457,57 @@ public sealed class PolarTaskService
 
         if (changed) Save();
         return changed;
+    }
+
+    /// <summary>Tope de avances encadenados de <see cref="CalculateNextDueDate"/> en una sola llamada a
+    /// <see cref="AdvanceUntilAfter"/>. 10.000 saltos son ~27 años en recurrencia diaria: de sobra para
+    /// recuperar una tarea olvidada tras años sin abrir la app, y barato de agotar (cada salto son dos
+    /// conversiones de zona horaria). Existe por lo mismo que
+    /// <c>CalendarAggregationService.MaxGhostOccurrenceIterations</c>, que ya acotaba su propio
+    /// encadenado — ver <see cref="AdvanceUntilAfter"/>.</summary>
+    private const int MaxRolloverIterations = 10_000;
+
+    /// <summary>Primera ocurrencia estrictamente posterior a <paramref name="threshold"/> partiendo de
+    /// <paramref name="start"/>, avanzando siempre al menos una vez. <see langword="null"/> significa "no se
+    /// puede avanzar", y el llamador debe tratarlo como "deja esto como está" en vez de insistir.
+    ///
+    /// <para>Es la red de seguridad de los dos bucles de rollover (<see cref="RollRecurringTasks"/> y
+    /// <c>ReminderService.Fire</c>), que antes eran <c>while (next &lt;= now)</c> sin tope. El caso que los
+    /// colgaba: <see cref="CalculateNextDueDate"/> devuelve la fecha <em>sin cambios</em> para cualquier
+    /// valor de <see cref="PolarRecurrence"/> que no esté en su <c>switch</c>, y
+    /// <c>System.Text.Json</c> deserializa sin quejarse un entero fuera de rango a un <c>enum</c> — así que
+    /// un <c>polar-tasks.json</c>/<c>reminders.json</c> dañado o editado a mano con <c>"Recurrence": 7</c>
+    /// bastaba para dejar la app girando para siempre al cargar o al sincronizar, sin salida desde la
+    /// interfaz. Aquí eso se detecta como "el candidato no avanzó" y se corta
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, BUG-01).</para></summary>
+    /// <param name="timeZone">Zona cuya hora de pared se preserva — ver <see cref="CalculateNextDueDate"/>.</param>
+    public static DateTime? AdvanceUntilAfter(DateTime start, PolarRecurrence recurrence, DateTime threshold, TimeZoneInfo? timeZone = null)
+    {
+        var next = start;
+        for (var i = 0; i < MaxRolloverIterations; i++)
+        {
+            DateTime candidate;
+            try
+            {
+                candidate = CalculateNextDueDate(next, recurrence, timeZone);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Una fecha almacenada pegada a DateTime.MaxValue desborda al sumarle el intervalo. No hay
+                // siguiente ocurrencia posible, así que es el mismo caso que "no avanza".
+                return null;
+            }
+
+            // Ningún valor conocido de PolarRecurrence se queda quieto: si el candidato no es posterior,
+            // la recurrencia es desconocida (o está corrupta) y seguir iterando no llegaría nunca.
+            if (candidate <= next) return null;
+
+            next = candidate;
+            if (next > threshold) return next;
+        }
+
+        LogService.Warning($"Recurrencia {recurrence} sin alcanzar {threshold:O} tras {MaxRolloverIterations} saltos desde {start:O}");
+        return null;
     }
 
     /// <summary>Exact algorithm from docs/supabase-sync/02-logica-de-negocio.md#motor-de-recurrencia —

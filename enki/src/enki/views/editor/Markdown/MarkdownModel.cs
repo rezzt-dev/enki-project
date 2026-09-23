@@ -11,8 +11,7 @@ public enum MdBlockKind
     OrderedList,
     TaskList,
     HorizontalRule,
-    CodeFence,
-    Table
+    CodeFence
 }
 
 public enum MdSpanKind
@@ -25,10 +24,34 @@ public enum MdSpanKind
     Highlight,
     Link,
 
+    /// <summary>Underline — has no Markdown marker of its own; produced only by the HTML
+    /// <c>&lt;u&gt;</c>/<c>&lt;ins&gt;</c> tags (see <see cref="MarkdownHtmlParser"/>).</summary>
+    Underline,
+
+    /// <summary>A recognized HTML tag (<c>&lt;div align="center"&gt;</c>, <c>&lt;b&gt;</c>, <c>&lt;/div&gt;</c>…),
+    /// concealed exactly like a Markdown marker: the span covers the tag itself and has no content, so the
+    /// live preview hides it whenever the caret is elsewhere and the exporter emits it as real HTML.</summary>
+    HtmlTag,
+
     /// <summary>Obsidian-style <c>[[Note]]</c> / <c>[[Note|Alias]]</c> reference — same concealment/click
     /// mechanics as <see cref="Link"/>, but resolved against the vault's notes instead of opened as a
     /// URL.</summary>
-    WikiLink
+    WikiLink,
+
+    /// <summary>Transclusión Obsidian <c>![[Nota]]</c>, incluida su variante de sección o bloque. El
+    /// rango sustituye la referencia completa por un bloque de solo lectura; no se confunde con
+    /// <see cref="Image"/>, que conserva la precedencia cuando el destino tiene extensión de imagen.</summary>
+    Transclusion,
+
+    /// <summary>Fórmula LaTeX en línea delimitada por <c>$…$</c> o <c>$$…$$</c>. Los bloques de varias
+    /// líneas se detectan a nivel de documento porque no caben en el parser orientado a líneas.</summary>
+    Math,
+
+    /// <summary>Imagen: <c>![alt](ruta)</c> o la forma incrustada de Obsidian <c>![[archivo.png]]</c>. A
+    /// diferencia del resto de spans, el live preview no oculta solo sus marcadores sino el span entero,
+    /// y dibuja la imagen real en su lugar (ver <see cref="MarkdownElementGenerator"/>); el rango cubre
+    /// desde el <c>!</c> hasta el paréntesis/corchete de cierre para que ocultarlo no deje residuos.</summary>
+    Image
 }
 
 /// <summary>An inline formatting span. Start/End include the markers; ContentStart/ContentEnd exclude them.</summary>
@@ -42,8 +65,25 @@ public sealed class MdSpan
 
     /// <summary>For <see cref="MdSpanKind.Link"/>: the URL to open. For <see cref="MdSpanKind.WikiLink"/>:
     /// the raw target text (note title or filename, alias/heading-anchor already stripped) to resolve —
-    /// see <see cref="Services.WikiLinkParser.ResolveTarget"/>.</summary>
+    /// see <see cref="Services.WikiLinkParser.ResolveTarget"/>. Para <see cref="MdSpanKind.Image"/>: la
+    /// ruta (relativa a la nota, absoluta, <c>data:</c> o URL) de la imagen.</summary>
     public string? LinkTarget { get; set; }
+
+    /// <summary>En <see cref="MdSpanKind.Math"/>, distingue una fórmula de bloque (<c>$$…$$</c>) de la
+    /// variante en línea (<c>$…$</c>).</summary>
+    public bool IsDisplayMath { get; set; }
+
+    /// <summary>Para <see cref="MdSpanKind.Image"/>: tamaño pedido explícitamente con la sintaxis de
+    /// Obsidian <c>![alt|300](ruta)</c> / <c>![alt|300x200](ruta)</c> / <c>![[archivo.png|300]]</c>, en
+    /// píxeles; 0 = sin especificar, y la imagen se dibuja a su tamaño natural limitada al ancho de la
+    /// columna. Con tamaño, el sufijo <c>|300</c> queda fuera de
+    /// <see cref="ContentStart"/>/<see cref="ContentEnd"/>, así que el texto alternativo es el mismo aquí
+    /// y en el HTML exportado.</summary>
+    public int ImageWidth { get; set; }
+
+    /// <summary>Alto explícito en píxeles de la imagen, o 0 — ver <see cref="ImageWidth"/>. Solo se
+    /// rellena con la forma <c>|anchoxalto</c>; <c>|ancho</c> deja el alto proporcional.</summary>
+    public int ImageHeight { get; set; }
 }
 
 /// <summary>Parsed structure of a single document line, in absolute document offsets.</summary>
@@ -51,6 +91,9 @@ public sealed class MdLine
 {
     public MdBlockKind Kind { get; set; } = MdBlockKind.Paragraph;
     public int HeadingLevel { get; set; }
+
+    /// <summary>Número de marcadores de cita consecutivos al inicio de la línea.</summary>
+    public int QuoteDepth { get; set; }
 
     /// <summary>Block-level marker range (e.g. "# ", "&gt; ", "- ", "1. ", "- [x] "), hideable/replaceable.</summary>
     public int MarkerStart { get; set; }
@@ -65,9 +108,28 @@ public sealed class MdLine
     public int CheckboxCharOffset { get; set; } = -1;
 
     public string? FenceLanguage { get; set; }
-    public bool IsTableSeparator { get; set; }
+
+    /// <summary>Si esta línea es la cabecera de un aviso (<c>&gt; [!warning] Título</c>), el tipo escrito
+    /// entre corchetes; null en cualquier otra línea — incluidas las del cuerpo del aviso, que son citas
+    /// normales y solo el escaneo del documento sabe a qué aviso pertenecen (ver
+    /// <see cref="MarkdownCallouts"/>).</summary>
+    public string? CalloutKind { get; set; }
+
+    /// <summary>Solo con <see cref="CalloutKind"/>: el rango del marcador <c>[!tipo]</c>, que el live
+    /// preview oculta y sustituye por el icono del aviso.</summary>
+    public int CalloutMarkerStart { get; set; }
+    public int CalloutMarkerEnd { get; set; }
+
+    /// <summary>Solo con <see cref="CalloutKind"/>: dónde empieza el título propio del aviso. Si coincide
+    /// con el final de la línea, el aviso no trae título y se enseña el nombre del tipo.</summary>
+    public int CalloutTitleStart { get; set; }
 
     public List<MdSpan> Spans { get; } = new();
+
+    /// <summary>Recognized HTML tags found on the line, in document order — the same tags that also appear
+    /// in <see cref="Spans"/> as <see cref="MdSpanKind.HtmlTag"/>, kept apart so consumers can reason about
+    /// them as tags (pairing, alignment, export) instead of as opaque concealed ranges.</summary>
+    public List<HtmlTagToken> HtmlTags { get; } = new();
 }
 
 /// <summary>Fence state for one document line, computed once per document over the whole text.</summary>

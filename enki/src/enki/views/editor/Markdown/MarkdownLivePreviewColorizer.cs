@@ -28,6 +28,11 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
     /// flashing broken for a frame.</summary>
     public Func<IReadOnlyList<NoteFile>>? WikiLinkNotesProvider { get; set; }
 
+    /// <summary>Quien colorea el interior de los bloques de código, o null en un contexto sin resaltado
+    /// (los tests de geometría, que no quieren cargar gramáticas). Sin él, el código se sigue viendo como
+    /// siempre: monoespaciado y en color de texto secundario.</summary>
+    public MarkdownCodeHighlighter? CodeHighlighter { get; set; }
+
     public MarkdownLivePreviewColorizer(LivePreviewState state, MarkdownStyle style)
     {
         _state = state;
@@ -47,6 +52,7 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
             var start = model.MarkerStart == model.MarkerEnd ? line.Offset : model.MarkerStart;
             Safe(start, line.EndOffset, el => el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily)));
             SetForeground(start, line.EndOffset, _style.TextSecondary);
+            ColorizeCode(line);
             return;
         }
 
@@ -64,9 +70,27 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                 SetForeground(model.MarkerStart, line.EndOffset, _style.TextPrimary);
                 break;
             }
+            case MdBlockKind.Blockquote when _state.GetCallout(line.LineNumber) is { } callout:
+            {
+                // El cuerpo de un aviso es texto que hay que leer, no una cita de otro: se queda en color
+                // de texto principal en vez de apagarse como una cita normal.
+                var accent = MarkdownCallouts.BrushOf(callout.Tone, _style);
+                Safe(model.ContentStart, line.EndOffset, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal)));
+                SetForeground(model.ContentStart, line.EndOffset, _style.TextPrimary);
+
+                if (!callout.IsHeader || model.CalloutKind is null) break;
+                // El título del aviso, en seminegrita y del color del tono, como su icono.
+                Safe(model.CalloutTitleStart, line.EndOffset, el => el.TextRunProperties.SetTypeface(
+                    new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.SemiBold)));
+                SetForeground(model.CalloutTitleStart, line.EndOffset, accent);
+                // El "[!tipo]" en crudo (cursor dentro) se lee como marcado, no como contenido.
+                SetForeground(model.CalloutMarkerStart, model.CalloutMarkerEnd, _style.TextMuted);
+                break;
+            }
             case MdBlockKind.Blockquote:
                 Safe(model.ContentStart, line.EndOffset, el =>
-                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic)));
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal)));
                 SetForeground(model.ContentStart, line.EndOffset, _style.TextSecondary);
                 break;
             case MdBlockKind.BulletList:
@@ -86,39 +110,30 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                 break;
         }
 
+        ColorizeTableRow(line, text);
+
         foreach (var span in model.Spans)
         {
-            if (_state.Intersects(span.Start, span.End)) continue;
+            // An HTML tag revealed by the caret reads as markup, not as content: muting it keeps the
+            // line's real text the thing that stands out while it is being edited.
+            if (span.Kind == MdSpanKind.HtmlTag)
+            {
+                SetForeground(span.Start, span.End, _style.TextMuted);
+                continue;
+            }
+
+            if (_state.IsSpanActive(span)) continue;
 
             switch (span.Kind)
             {
                 case MdSpanKind.Bold:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.Bold)));
-                    break;
                 case MdSpanKind.Italic:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic)));
-                    break;
                 case MdSpanKind.BoldItalic:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic, FontWeight.Bold)));
-                    break;
+                case MdSpanKind.Underline:
                 case MdSpanKind.Strikethrough:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                        el.TextRunProperties.SetTextDecorations(TextDecorations.Strikethrough));
-                    SetForeground(span.ContentStart, span.ContentEnd, _style.TextMuted);
-                    break;
                 case MdSpanKind.InlineCode:
-                    Safe(span.ContentStart, span.ContentEnd, el =>
-                    {
-                        el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily));
-                        el.BackgroundBrush = _style.CodeInlineBackground;
-                    });
-                    SetForeground(span.ContentStart, span.ContentEnd, _style.Accent);
-                    break;
                 case MdSpanKind.Highlight:
-                    Safe(span.ContentStart, span.ContentEnd, el => el.BackgroundBrush = _style.HighlightBackground);
+                    ApplyInlineStyle(span.Kind, span.ContentStart, span.ContentEnd);
                     break;
                 case MdSpanKind.Link:
                     Safe(span.ContentStart, span.ContentEnd, el =>
@@ -142,6 +157,116 @@ public sealed class MarkdownLivePreviewColorizer : DocumentColorizingTransformer
                     break;
                 }
             }
+        }
+
+        // HTML inline formatting (<b>, <em>, <mark>…). Unlike a Markdown span it stays styled while the
+        // caret is inside it: the tags around it are concealed on their own, so there is no raw marker to
+        // fall back to and dropping the style would just make the text flicker as the caret passes through.
+        var html = _state.GetHtml(line.LineNumber);
+        foreach (var (start, end, kind) in MarkdownHtmlParser.BuildStyleRanges(
+                     model.HtmlTags, line.Offset, line.EndOffset, html.OpenInlineTags))
+        {
+            ApplyInlineStyle(kind, start, end);
+        }
+    }
+
+    /// <summary>Colorea el interior de un bloque de código con su gramática (ver
+    /// <see cref="MarkdownCodeHighlighter"/>). Se aplica <em>encima</em> del color plano que acaba de
+    /// ponerse: así, mientras las gramáticas se cargan —o cuando el bloque no declara lenguaje— el código
+    /// se ve exactamente como se veía antes, y nunca a medio colorear.</summary>
+    private void ColorizeCode(DocumentLine line)
+    {
+        if (CodeHighlighter?.Tokens(CurrentContext.Document, line.LineNumber) is not { Count: > 0 } tokens) return;
+
+        foreach (var token in tokens)
+        {
+            var start = line.Offset + token.Start;
+            var end = Math.Min(line.Offset + token.End, line.EndOffset);
+            if (start >= end) continue;
+
+            if (token.Style != FontStyle.Normal || token.Weight != FontWeight.Normal || token.Underline)
+            {
+                Safe(start, end, el =>
+                {
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily, token.Style, token.Weight));
+                    if (token.Underline) el.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
+                });
+            }
+            if (token.Foreground is { } brush) SetForeground(start, end, brush);
+        }
+    }
+
+    /// <summary>Lo que el coloreado aporta a una tabla, que es poco porque casi todo lo hacen las otras
+    /// dos capas (los espaciadores que colocan las celdas y la rejilla del fondo): la fila de encabezados
+    /// va en seminegrita, y cuando la tabla se está editando en crudo sus barras y su fila separadora se
+    /// apagan a color de texto apagado — así, con la sintaxis a la vista, lo que sigue destacando es el
+    /// contenido de las celdas.</summary>
+    private void ColorizeTableRow(DocumentLine line, string text)
+    {
+        if (_state.Tables.GetRow(line.LineNumber) is not { } row) return;
+
+        if (!_state.IsTableActive(row.Table, CurrentContext.Document))
+        {
+            // Solo si la tabla se está dibujando de verdad: una que no cabe a lo ancho se muestra como
+            // texto, y ahí un encabezado en seminegrita sería un adorno suelto sobre Markdown en crudo.
+            if (row.Kind != MdTableRowKind.Header) return;
+            if (_state.Tables.GetGeometry(row.Table, CurrentContext.TextView, _style, _state) is null) return;
+
+            Safe(line.Offset, line.EndOffset, el => el.TextRunProperties.SetTypeface(
+                new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.SemiBold)));
+            SetForeground(line.Offset, line.EndOffset, _style.TextPrimary);
+            return;
+        }
+
+        if (row.Kind == MdTableRowKind.Delimiter)
+        {
+            SetForeground(line.Offset, line.EndOffset, _style.TextMuted);
+            return;
+        }
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (MarkdownTableParser.IsCellSeparator(text, i))
+                SetForeground(line.Offset + i, line.Offset + i + 1, _style.TextMuted);
+        }
+    }
+
+    /// <summary>Paints one inline style over [start,end) — shared by the Markdown spans and by the HTML
+    /// tags that mean the same thing (<c>&lt;b&gt;</c> = <c>**…**</c>), so the two can never drift apart.</summary>
+    private void ApplyInlineStyle(MdSpanKind kind, int start, int end)
+    {
+        switch (kind)
+        {
+            case MdSpanKind.Bold:
+                Safe(start, end, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Normal, FontWeight.Bold)));
+                break;
+            case MdSpanKind.Italic:
+                Safe(start, end, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic)));
+                break;
+            case MdSpanKind.BoldItalic:
+                Safe(start, end, el =>
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.BodyFontFamily, FontStyle.Italic, FontWeight.Bold)));
+                break;
+            case MdSpanKind.Underline:
+                Safe(start, end, el => el.TextRunProperties.SetTextDecorations(TextDecorations.Underline));
+                break;
+            case MdSpanKind.Strikethrough:
+                Safe(start, end, el => el.TextRunProperties.SetTextDecorations(TextDecorations.Strikethrough));
+                SetForeground(start, end, _style.TextMuted);
+                break;
+            case MdSpanKind.InlineCode:
+                Safe(start, end, el =>
+                {
+                    el.TextRunProperties.SetTypeface(new Typeface(_style.MonoFontFamily));
+                    el.BackgroundBrush = _style.CodeInlineBackground;
+                });
+                SetForeground(start, end, _style.Accent);
+                break;
+            case MdSpanKind.Highlight:
+                Safe(start, end, el => el.BackgroundBrush = _style.HighlightBackground);
+                break;
         }
     }
 

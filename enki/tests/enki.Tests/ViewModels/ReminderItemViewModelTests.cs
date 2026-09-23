@@ -70,4 +70,30 @@ public class ReminderItemViewModelTests
 
         Assert.Equal(ReminderBucket.Soon, item.Bucket);
     }
+
+    [Fact]
+    public void FromCard_HasKanbanCardSourceKind_AndCardIdAsSourceId()
+    {
+        var card = MakeCard(DateTime.UtcNow.AddDays(-2));
+
+        var item = new ReminderItemViewModel(card, "Columna");
+
+        Assert.Equal(ReminderItemSourceKind.KanbanCard, item.SourceKind);
+        Assert.Equal(card.Id, item.SourceId);
+    }
+
+    [Fact]
+    public void FromReminder_HasReminderSourceKind_AndBucketsLikeACard()
+    {
+        var reminder = new Reminder
+        {
+            Id = "reminder-1", Title = "Llamar al dentista", NotifyAtUtc = DateTime.UtcNow.AddDays(-2)
+        };
+
+        var item = new ReminderItemViewModel(reminder);
+
+        Assert.Equal(ReminderItemSourceKind.Reminder, item.SourceKind);
+        Assert.Equal(reminder.Id, item.SourceId);
+        Assert.Equal(ReminderBucket.Overdue, item.Bucket);
+    }
 }

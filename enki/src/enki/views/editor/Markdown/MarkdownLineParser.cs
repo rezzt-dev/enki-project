@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
+using enki.Services;
 
 namespace enki.Views.Editor.Markdown;
 
@@ -13,7 +15,8 @@ namespace enki.Views.Editor.Markdown;
 /// </summary>
 public static class MarkdownLineParser
 {
-    private static readonly Regex HorizontalRuleRegex = new(@"^([-*_])[ \t]*(\1[ \t]*){2,}$", RegexOptions.Compiled);
+    private static readonly Regex HorizontalRuleRegex = new(
+        @"^([-*_])[ \t]*(\1[ \t]*){2,}$", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     /// <summary>Scans the whole document text once to determine which lines sit inside/around fenced code blocks.</summary>
     public static Dictionary<int, FenceInfo> ComputeFences(string documentText)
@@ -69,6 +72,16 @@ public static class MarkdownLineParser
     public static MdLine Parse(string text, int lineOffset, FenceInfo fence)
     {
         var model = new MdLine();
+        // Tags first: the Markdown scan below has to know where they are to step over them, and inside a
+        // fenced code block there is no markup at all — everything there is literal sample text.
+        if (!fence.IsCode) model.HtmlTags.AddRange(MarkdownHtmlParser.ParseTags(text, lineOffset));
+        ParseInto(model, text, lineOffset, fence);
+        AddHtmlTagSpans(model);
+        return model;
+    }
+
+    private static void ParseInto(MdLine model, string text, int lineOffset, FenceInfo fence)
+    {
         var n = text.Length;
 
         if (fence.IsDelimiter)
@@ -78,7 +91,7 @@ public static class MarkdownLineParser
             model.MarkerStart = lineOffset;
             model.MarkerEnd = lineOffset + n;
             model.ContentStart = model.MarkerEnd;
-            return model;
+            return;
         }
 
         if (fence.IsInside)
@@ -88,7 +101,7 @@ public static class MarkdownLineParser
             model.MarkerStart = lineOffset;
             model.MarkerEnd = lineOffset;
             model.ContentStart = lineOffset;
-            return model;
+            return;
         }
 
         var indent = 0;
@@ -114,48 +127,69 @@ public static class MarkdownLineParser
                 model.MarkerEnd = lineOffset + markerEnd;
                 model.ContentStart = lineOffset + contentStart;
                 ScanInline(model, text, contentStart, n, lineOffset);
-                return model;
+                return;
             }
         }
 
         // Horizontal rule: ---, ***, ___ (optionally spaced), nothing else on the line.
-        if (indent <= 3 && n - indent >= 3 && HorizontalRuleRegex.IsMatch(text[indent..]))
+        var isHorizontalRule = false;
+        if (indent <= 3 && n - indent >= 3)
+        {
+            try { isHorizontalRule = HorizontalRuleRegex.IsMatch(text[indent..]); }
+            catch (RegexMatchTimeoutException ex)
+            {
+                LogService.Warning("La detección de regla horizontal agotó su tiempo; se conserva como texto", ex);
+            }
+        }
+        if (isHorizontalRule)
         {
             model.Kind = MdBlockKind.HorizontalRule;
             model.MarkerStart = lineOffset + indent;
             model.MarkerEnd = lineOffset + n;
             model.ContentStart = model.MarkerEnd;
-            return model;
-        }
-
-        // Table row: starts and ends with '|' outside fences.
-        var trimmedSpan = text.AsSpan().Trim();
-        if (trimmedSpan.Length >= 2 && trimmedSpan[0] == '|' && trimmedSpan[^1] == '|')
-        {
-            model.Kind = MdBlockKind.Table;
-            model.IsTableSeparator = IsTableSeparator(text);
-            model.MarkerStart = lineOffset;
-            model.MarkerEnd = lineOffset + n;
-            model.ContentStart = lineOffset;
-            ScanInline(model, text, 0, n, lineOffset);
-            return model;
+            return;
         }
 
         // Blockquote.
         if (indent <= 3 && indent < n && text[indent] == '>')
         {
-            var j = indent + 1;
-            if (j < n && text[j] == ' ') j++;
+            var j = indent;
+            var depth = 0;
+            while (j < n && text[j] == '>')
+            {
+                depth++;
+                j++;
+                if (j < n && text[j] == ' ') j++;
+            }
             model.Kind = MdBlockKind.Blockquote;
+            model.QuoteDepth = depth;
             model.MarkerStart = lineOffset + indent;
             model.MarkerEnd = lineOffset + j;
             model.ContentStart = lineOffset + j;
+
+            // Aviso al estilo de Obsidian: "> [!warning] Título". Se reconoce aquí y no en un bloque
+            // aparte porque sintácticamente ES una cita — ver MarkdownCallouts.
+            var content = text[j..];
+            if (MarkdownCallouts.HeaderRange(content, out var afterMarker) is { } marker)
+            {
+                model.CalloutKind = content[(marker.Start.Value + 2)..(marker.End.Value - 1)];
+                model.CalloutMarkerStart = lineOffset + j + marker.Start.Value;
+                model.CalloutMarkerEnd = lineOffset + j + afterMarker;
+                model.CalloutTitleStart = model.CalloutMarkerEnd;
+                // El título lleva formato en línea como cualquier otro texto; el marcador no.
+                ScanInline(model, text, j + afterMarker, n, lineOffset);
+                return;
+            }
+
             ScanInline(model, text, j, n, lineOffset);
-            return model;
+            return;
         }
 
-        // Bullet / task list.
-        if (indent <= 3 && indent < n && (text[indent] == '-' || text[indent] == '*' || text[indent] == '+') &&
+        // Bullet / task list. No indent cap (unlike headings/rules/blockquotes above, which keep the
+        // CommonMark-ish 3-space limit): nested list items are routinely indented 4+ spaces per level,
+        // and this parser has no indented-code-block construct to conflict with, so any indentation
+        // still counts as a list marker.
+        if (indent < n && (text[indent] == '-' || text[indent] == '*' || text[indent] == '+') &&
             indent + 1 < n && (text[indent + 1] == ' ' || text[indent + 1] == '\t'))
         {
             var spacesEnd = indent + 1;
@@ -178,38 +212,38 @@ public static class MarkdownLineParser
                 while (contentStart < n && (text[contentStart] == ' ' || text[contentStart] == '\t')) contentStart++;
                 model.ContentStart = lineOffset + contentStart;
                 ScanInline(model, text, contentStart, n, lineOffset);
-                return model;
+                return;
             }
 
             model.Kind = MdBlockKind.BulletList;
             model.MarkerStart = lineOffset + indent;
-            model.MarkerEnd = lineOffset + markerEnd;
             var contentStartBullet = markerEnd;
             while (contentStartBullet < n && (text[contentStartBullet] == ' ' || text[contentStartBullet] == '\t')) contentStartBullet++;
+            // A diferencia de encabezados/citas, aquí sí se traga todo el espacio extra tras el
+            // marcador: la viñeta renderizada ("• ") ya reserva un ancho fijo de 1 espacio, así
+            // que dejar visibles los espacios originales del usuario duplicaría la separación.
+            model.MarkerEnd = lineOffset + contentStartBullet;
             model.ContentStart = lineOffset + contentStartBullet;
             ScanInline(model, text, contentStartBullet, n, lineOffset);
-            return model;
+            return;
         }
 
-        // Ordered list.
-        if (indent <= 3)
+        // Ordered list. Same no-cap reasoning as the bullet/task branch above.
+        var jOrdered = indent;
+        while (jOrdered < n && char.IsDigit(text[jOrdered])) jOrdered++;
+        if (jOrdered > indent && jOrdered - indent <= 9 && jOrdered < n && (text[jOrdered] == '.' || text[jOrdered] == ')') &&
+            jOrdered + 1 < n && (text[jOrdered + 1] == ' ' || text[jOrdered + 1] == '\t'))
         {
-            var j = indent;
-            while (j < n && char.IsDigit(text[j])) j++;
-            if (j > indent && j - indent <= 9 && j < n && (text[j] == '.' || text[j] == ')') &&
-                j + 1 < n && (text[j + 1] == ' ' || text[j + 1] == '\t'))
-            {
-                // Marcador = número + puntuación + el primer espacio obligatorio.
-                var markerEnd = j + 2;
-                var contentStart = markerEnd;
-                while (contentStart < n && (text[contentStart] == ' ' || text[contentStart] == '\t')) contentStart++;
-                model.Kind = MdBlockKind.OrderedList;
-                model.MarkerStart = lineOffset + indent;
-                model.MarkerEnd = lineOffset + markerEnd;
-                model.ContentStart = lineOffset + contentStart;
-                ScanInline(model, text, contentStart, n, lineOffset);
-                return model;
-            }
+            // Marcador = número + puntuación + el primer espacio obligatorio.
+            var markerEnd = jOrdered + 2;
+            var contentStart = markerEnd;
+            while (contentStart < n && (text[contentStart] == ' ' || text[contentStart] == '\t')) contentStart++;
+            model.Kind = MdBlockKind.OrderedList;
+            model.MarkerStart = lineOffset + indent;
+            model.MarkerEnd = lineOffset + markerEnd;
+            model.ContentStart = lineOffset + contentStart;
+            ScanInline(model, text, contentStart, n, lineOffset);
+            return;
         }
 
         model.Kind = MdBlockKind.Paragraph;
@@ -217,7 +251,6 @@ public static class MarkdownLineParser
         model.MarkerEnd = lineOffset;
         model.ContentStart = lineOffset;
         ScanInline(model, text, 0, n, lineOffset);
-        return model;
     }
 
     private static void ScanInline(MdLine model, string text, int from, int to, int lineOffset)
@@ -225,6 +258,15 @@ public static class MarkdownLineParser
         var i = from;
         while (i < to)
         {
+            // A recognized HTML tag is opaque to the Markdown scanner: whatever punctuation its
+            // attributes contain ("<div style=\"a*b\">") is markup, not emphasis, and a span crossing
+            // into the tag would fight with the concealment that hides the tag as a whole.
+            if (text[i] == '<' && SkipTag(model, lineOffset + i) is { } tagEnd)
+            {
+                i = tagEnd - lineOffset;
+                continue;
+            }
+
             var c = text[i];
 
             if (c == '\\' && i + 1 < to)
@@ -256,11 +298,21 @@ public static class MarkdownLineParser
                 if (i + 2 < to && text[i + 1] == c && text[i + 2] == c) markerLen = 3;
                 else if (i + 1 < to && text[i + 1] == c) markerLen = 2;
 
-                if (i + markerLen < to && !char.IsWhiteSpace(text[i + markerLen]))
+                // Underscore emphasis never opens between two word characters (CommonMark's intraword
+                // rule) so identifiers like snake_case_name stay plain text instead of turning
+                // "case" italic — asterisks keep opening intraword since *that* markup has no such
+                // legitimate literal use to protect.
+                var opensIntraword = c == '_' && i > 0 && char.IsLetterOrDigit(text[i - 1]);
+
+                if (!opensIntraword && i + markerLen < to && !char.IsWhiteSpace(text[i + markerLen]))
                 {
                     var marker = new string(c, markerLen);
                     var searchFrom = i + markerLen;
                     var close = FindClosingMarker(text, searchFrom, to, marker);
+                    // Same intraword rule on the closing side: an underscore run immediately followed by
+                    // another word character can't close emphasis either.
+                    if (close != -1 && c == '_' && close + markerLen < to && char.IsLetterOrDigit(text[close + markerLen]))
+                        close = -1;
                     if (close != -1)
                     {
                         var kind = markerLen == 3 ? MdSpanKind.BoldItalic : markerLen == 2 ? MdSpanKind.Bold : MdSpanKind.Italic;
@@ -308,6 +360,35 @@ public static class MarkdownLineParser
                         ContentEnd = lineOffset + close
                     });
                     i = close + 2;
+                    continue;
+                }
+            }
+            else if (c == '!' && i + 1 < to && text[i + 1] == '[')
+            {
+                // Imagen antes que enlace: `![alt](ruta)` empieza por un `[` que la rama de enlace de
+                // abajo reconocería igual, dejando el `!` suelto como texto y el span una posición
+                // corrida — que es justo lo que obligaba al exportador a mirar el carácter anterior para
+                // saber si un Link era en realidad una imagen.
+                var imageEnd = ScanImage(model, text, i, to, lineOffset);
+                if (imageEnd > i)
+                {
+                    i = imageEnd;
+                    continue;
+                }
+
+                var transclusionEnd = ScanTransclusion(model, text, i, to, lineOffset);
+                if (transclusionEnd > i)
+                {
+                    i = transclusionEnd;
+                    continue;
+                }
+            }
+            else if (c == '$')
+            {
+                var mathEnd = ScanMath(model, text, i, to, lineOffset);
+                if (mathEnd > i)
+                {
+                    i = mathEnd;
                     continue;
                 }
             }
@@ -377,6 +458,236 @@ public static class MarkdownLineParser
         }
     }
 
+    /// <summary>Reconoce una transclusión de nota después de que <see cref="ScanImage"/> haya descartado
+    /// que el mismo texto sea una imagen. Conserva sección/bloque en <see cref="MdSpan.LinkTarget"/> para
+    /// que el resolvedor pueda extraer exactamente el fragmento solicitado.</summary>
+    private static int ScanTransclusion(MdLine model, string text, int start, int to, int lineOffset)
+    {
+        if (start + 3 >= to || text[start] != '!' || text[start + 1] != '[' || text[start + 2] != '[')
+            return start;
+
+        var innerStart = start + 3;
+        var close = text.IndexOf("]]", innerStart, Math.Max(0, to - innerStart), StringComparison.Ordinal);
+        if (close == -1) return start;
+
+        var inner = text[innerStart..close];
+        var pipe = inner.IndexOf('|');
+        var target = (pipe >= 0 ? inner[..pipe] : inner).Trim();
+        if (target.Length == 0) return start;
+
+        model.Spans.Add(new MdSpan
+        {
+            Kind = MdSpanKind.Transclusion,
+            Start = lineOffset + start,
+            End = lineOffset + close + 2,
+            ContentStart = lineOffset + innerStart,
+            ContentEnd = lineOffset + close,
+            LinkTarget = target
+        });
+        return close + 2;
+    }
+
+    /// <summary>Reconoce matemáticas en una sola línea. Un dólar escapado es literal; los delimitadores
+    /// vacíos y un dólar pegado a un dígito por ambos lados se dejan como texto para no convertir importes
+    /// habituales (<c>$20</c>) en fórmulas por accidente.</summary>
+    private static int ScanMath(MdLine model, string text, int start, int to, int lineOffset)
+    {
+        if (start > 0 && text[start - 1] == '\\') return start;
+
+        var delimiterLength = start + 1 < to && text[start + 1] == '$' ? 2 : 1;
+        var contentStart = start + delimiterLength;
+        if (contentStart >= to || char.IsWhiteSpace(text[contentStart])) return start;
+
+        var close = contentStart;
+        while (close < to)
+        {
+            close = text.IndexOf(delimiterLength == 2 ? "$$" : "$", close, StringComparison.Ordinal);
+            if (close < 0 || close >= to) return start;
+            if (close > contentStart && text[close - 1] != '\\') break;
+            close += delimiterLength;
+        }
+
+        if (close == contentStart || char.IsWhiteSpace(text[close - 1])) return start;
+        if (delimiterLength == 1 && start + 1 < to && char.IsDigit(text[start + 1])
+            && close + 1 < to && char.IsDigit(text[close + 1])) return start;
+
+        model.Spans.Add(new MdSpan
+        {
+            Kind = MdSpanKind.Math,
+            Start = lineOffset + start,
+            End = lineOffset + close + delimiterLength,
+            ContentStart = lineOffset + contentStart,
+            ContentEnd = lineOffset + close,
+            IsDisplayMath = delimiterLength == 2
+        });
+        return close + delimiterLength;
+    }
+
+    /// <summary>Extensiones que el editor sabe dibujar como imagen. Gobierna dos decisiones distintas:
+    /// si <c>![[algo]]</c> es una imagen incrustada o un wikilink normal, y qué se le pide al cargador de
+    /// imágenes que intente decodificar (ver <c>MarkdownImageCache</c>). Mismo juego que reconoce el
+    /// exportador a HTML (<see cref="Services.NoteExportRenderer"/>).</summary>
+    private static readonly string[] ImageExtensions =
+        [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".avif", ".ico", ".tif", ".tiff"];
+
+    /// <summary>Whether <paramref name="target"/> names a file this editor can render as an image, judged
+    /// only by its extension — el destino puede no existir todavía (una nota escrita a mano, un adjunto
+    /// aún sin copiar) y aun así merece tratarse como imagen para que el usuario vea el hueco.</summary>
+    public static bool LooksLikeImage(string target)
+    {
+        if (string.IsNullOrWhiteSpace(target)) return false;
+
+        // Una URL puede traer query/fragmento tras la extensión ("foto.png?v=2"), y `data:image/...` no
+        // tiene extensión ninguna pero es una imagen por definición.
+        if (target.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)) return true;
+
+        var end = target.IndexOfAny(['?', '#']);
+        var path = end >= 0 ? target[..end] : target;
+        foreach (var extension in ImageExtensions)
+        {
+            if (path.EndsWith(extension, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Reconoce una imagen que empieza en <paramref name="start"/> (el <c>!</c>) en cualquiera de
+    /// sus dos formas — <c>![alt](ruta)</c> y la incrustación de Obsidian <c>![[archivo.png]]</c> — y
+    /// devuelve el índice justo tras ella, o <paramref name="start"/> si allí no hay ninguna. La forma
+    /// <c>![[…]]</c> solo cuenta como imagen si su destino tiene extensión de imagen: <c>![[Otra nota]]</c>
+    /// es una transclusión de nota, que este editor no renderiza, y degradarla a wikilink normal la deja
+    /// al menos navegable.</summary>
+    private static int ScanImage(MdLine model, string text, int start, int to, int lineOffset)
+    {
+        var isEmbed = start + 2 < to && text[start + 2] == '[';
+
+        if (isEmbed)
+        {
+            var innerStart = start + 3;
+            var close = text.IndexOf("]]", innerStart, Math.Max(0, to - innerStart), StringComparison.Ordinal);
+            if (close == -1) return start;
+
+            var inner = text[innerStart..close];
+            var (target, size) = SplitImageSize(inner);
+            target = target.Trim();
+            if (target.Length == 0 || !LooksLikeImage(target)) return start;
+
+            model.Spans.Add(new MdSpan
+            {
+                Kind = MdSpanKind.Image,
+                Start = lineOffset + start,
+                End = lineOffset + close + 2,
+                ContentStart = lineOffset + innerStart,
+                ContentEnd = lineOffset + innerStart + (size.Width > 0 || size.Height > 0 ? inner.LastIndexOf('|') : inner.Length),
+                LinkTarget = target,
+                ImageWidth = size.Width,
+                ImageHeight = size.Height
+            });
+            return close + 2;
+        }
+
+        var bracketStart = start + 1;
+        var closeBracket = text.IndexOf(']', bracketStart + 1);
+        if (closeBracket == -1 || closeBracket >= to || closeBracket + 1 >= to || text[closeBracket + 1] != '(') return start;
+
+        var closeParen = text.IndexOf(')', closeBracket + 2);
+        if (closeParen == -1 || closeParen >= to) return start;
+
+        // El título opcional de Markdown (`![alt](foto.png "Título")`) se descarta con el mismo criterio
+        // que en los enlaces: la ruta es lo que va hasta el primer espacio.
+        var rawUrl = text[(closeBracket + 2)..closeParen];
+        var spaceIdx = rawUrl.IndexOf(' ');
+        var url = spaceIdx >= 0 ? rawUrl[..spaceIdx] : rawUrl;
+
+        var alt = text[(bracketStart + 1)..closeBracket];
+        var (altText, altSize) = SplitImageSize(alt);
+
+        model.Spans.Add(new MdSpan
+        {
+            Kind = MdSpanKind.Image,
+            Start = lineOffset + start,
+            End = lineOffset + closeParen + 1,
+            ContentStart = lineOffset + bracketStart + 1,
+            ContentEnd = lineOffset + bracketStart + 1 + altText.Length,
+            LinkTarget = url,
+            ImageWidth = altSize.Width,
+            ImageHeight = altSize.Height
+        });
+        return closeParen + 1;
+    }
+
+    /// <summary>Parte <c>"alt|300x200"</c> en su texto y su tamaño, tal y como lo escribe Obsidian. Un
+    /// sufijo que no sea un tamaño válido (<c>"alt|nota"</c>) se deja como parte del texto: es más
+    /// probable que sea contenido del usuario que un tamaño mal escrito.</summary>
+    private static (string Text, (int Width, int Height) Size) SplitImageSize(string value)
+    {
+        var pipe = value.LastIndexOf('|');
+        if (pipe < 0) return (value, (0, 0));
+
+        var suffix = value[(pipe + 1)..].Trim();
+        if (suffix.Length == 0) return (value, (0, 0));
+
+        var x = suffix.IndexOfAny(['x', 'X']);
+        if (x < 0)
+        {
+            return int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out var only) && only > 0
+                ? (value[..pipe], (only, 0))
+                : (value, (0, 0));
+        }
+
+        var widthOk = int.TryParse(suffix[..x], NumberStyles.None, CultureInfo.InvariantCulture, out var width) && width > 0;
+        var heightOk = int.TryParse(suffix[(x + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var height) && height > 0;
+        return widthOk && heightOk ? (value[..pipe], (width, height)) : (value, (0, 0));
+    }
+
+    /// <summary>End offset of the recognized HTML tag starting exactly at <paramref name="offset"/>, or
+    /// null when no tag starts there.</summary>
+    private static int? SkipTag(MdLine model, int offset)
+    {
+        foreach (var tag in model.HtmlTags)
+        {
+            if (tag.Start == offset) return tag.End;
+        }
+        return null;
+    }
+
+    /// <summary>Turns the line's recognized HTML tags into concealable <see cref="MdSpanKind.HtmlTag"/>
+    /// spans. Runs after <see cref="ScanInline"/> so a tag written inside inline code (<c>`&lt;div&gt;`</c>)
+    /// can be dropped: there it is quoted sample text the user wants to see verbatim, not markup.</summary>
+    private static void AddHtmlTagSpans(MdLine model)
+    {
+        if (model.HtmlTags.Count == 0) return;
+
+        for (var i = model.HtmlTags.Count - 1; i >= 0; i--)
+        {
+            var tag = model.HtmlTags[i];
+            if (IsInsideInlineCode(model, tag))
+            {
+                model.HtmlTags.RemoveAt(i);
+                continue;
+            }
+
+            model.Spans.Add(new MdSpan
+            {
+                Kind = MdSpanKind.HtmlTag,
+                Start = tag.Start,
+                End = tag.End,
+                ContentStart = tag.End,
+                ContentEnd = tag.End
+            });
+        }
+
+        model.Spans.Sort((a, b) => a.Start.CompareTo(b.Start));
+    }
+
+    private static bool IsInsideInlineCode(MdLine model, HtmlTagToken tag)
+    {
+        foreach (var span in model.Spans)
+        {
+            if (span.Kind == MdSpanKind.InlineCode && span.Start < tag.End && span.End > tag.Start) return true;
+        }
+        return false;
+    }
+
     private static int FindClosingMarker(string text, int from, int to, string marker)
     {
         var idx = from;
@@ -391,36 +702,4 @@ public static class MarkdownLineParser
         return -1;
     }
 
-    private static bool IsTableSeparator(string text)
-    {
-        var trimmed = text.Trim();
-        if (trimmed.Length < 2 || trimmed[0] != '|' || trimmed[^1] != '|') return false;
-
-        var cells = trimmed[1..^1].Split('|');
-        var hasNonEmpty = false;
-        foreach (var cell in cells)
-        {
-            var c = cell.Trim();
-            if (string.IsNullOrEmpty(c)) continue;
-
-            // Celda de separador válida: opcional ':' al inicio y/o final,
-            // longitud mínima 3 y todos los caracteres intermedios son guiones
-            // (p. ej. ---, :--, --:, :-:).
-            if (c.Length < 3) return false;
-            var start = 0;
-            var end = c.Length - 1;
-            if (c[start] == ':') start++;
-            if (c[end] == ':') end--;
-            if (start > end) return false;
-
-            for (var i = start; i <= end; i++)
-            {
-                if (c[i] != '-') return false;
-            }
-
-            hasNonEmpty = true;
-        }
-
-        return hasNonEmpty;
-    }
 }

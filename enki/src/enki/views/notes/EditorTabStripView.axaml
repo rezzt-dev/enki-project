@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="60"
+             x:Class="enki.Views.EditorTabStripView"
+             x:DataType="vm:NotesViewModel">
+
+  <!-- Barra de pestañas de notas, compartida por las dos disposiciones de la página de Notas (la vista
+       completa y la simplificada) — vive en su propio control en vez de duplicada en cada una, porque el
+       arrastrar-para-reordenar, el cierre con clic medio y el botón de cerrar todas son exactamente el
+       mismo comportamiento en ambas.
+
+       Cada nota abierta (desde una tarjeta, el árbol del panel lateral, el dashboard o un doble clic en el
+       grafo de sesiones — todos pasan por NotesViewModel.OpenNote, que reutiliza la pestaña si ya está
+       abierta en vez de duplicarla) queda visible aquí.
+
+       AppBackgroundBrush, not the AppBackgroundAltBrush this alt-panel pattern uses elsewhere: this bar
+       sits flush against the window's own top edge, right under the floating window controls' reserved
+       clearance (see MainWindow.axaml), so any shade other than the plain app background shows up as a
+       seam right at that boundary. -->
+  <Border x:Name="TabStripBar" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+          Background="{DynamicResource AppBackgroundBrush}"
+          IsVisible="{Binding !IsZenMode}">
+    <Grid ColumnDefinitions="*,Auto">
+      <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <!-- El botón "+" vive dentro de este mismo StackPanel horizontal, como un elemento más
+             después del ItemsControl — así queda pegado a la última pestaña (con el mismo
+             Spacing="8" de separación) y se desplaza con ellas al abrir/cerrar, en vez de quedar
+             fijo en el borde derecho del contenedor. -->
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,8,8,8">
+          <ItemsControl ItemsSource="{Binding OpenEditors}" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:EditorViewModel">
+                <Border Classes="editor-tab" Classes.active="{Binding IsActive}"
+                        Classes.drag-over="{Binding IsDropTarget}"
+                        ToolTip.Tip="{Binding Note.FullPath}"
+                        PointerPressed="EditorTab_PointerPressed">
+                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="12,0" VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="FileDocumentOutline" Width="14" Height="14"
+                                     Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                    <Ellipse Width="6" Height="6" Fill="{DynamicResource DangerBrush}"
+                             VerticalAlignment="Center"
+                             IsVisible="{Binding IsDirty}" ToolTip.Tip="{loc:Tr Notes_UnsavedTooltip}" />
+                    <TextBlock Text="{Binding Title}" FontSize="13" MaxWidth="160" LineHeight="18"
+                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <Button Classes="icon-btn icon-btn-danger" Width="20" Height="20" VerticalAlignment="Center"
+                            Command="{Binding $parent[ItemsControl].((vm:NotesViewModel)DataContext).CloseEditorTabCommand}"
+                            CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Notes_CloseTabTooltip}"
+                            AutomationProperties.Name="{loc:Tr Notes_CloseTabTooltip}">
+                      <mi:MaterialIcon Kind="Close" Width="12" Height="12" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Button>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Nueva pestaña: en la vista completa vuelve al modo de exploración (la rejilla de notas,
+               con las pestañas ya abiertas intactas); en la simplificada, donde no hay rejilla a la que
+               volver, crea directamente una nota en la raíz de la sesión. Lo decide el propio comando
+               (NotesViewModel.NewTab), no esta plantilla. -->
+          <Button Classes="tab-add" VerticalAlignment="Center"
+                  Command="{Binding NewTabCommand}" ToolTip.Tip="{Binding NewTabTooltip}"
+                  AutomationProperties.Name="{Binding NewTabTooltip}">
+            <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
+          </Button>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Same outline-square language as the "+" tab button (Button.tab-add) instead of the
+           generic faint-fill icon-btn, so the two sit as a matched pair at opposite ends of the
+           tab strip. -->
+      <Button Grid.Column="1" Classes="tab-add" Margin="0,8,8,8" VerticalAlignment="Center"
+              Command="{Binding CloseAllEditorsCommand}" ToolTip.Tip="{loc:Tr Notes_CloseAllTabsTooltip}"
+              AutomationProperties.Name="{loc:Tr Notes_CloseAllTabsTooltip}">
+        <mi:MaterialIcon Kind="TabRemove" Width="16" Height="16" />
+      </Button>
+    </Grid>
+  </Border>
+</UserControl>

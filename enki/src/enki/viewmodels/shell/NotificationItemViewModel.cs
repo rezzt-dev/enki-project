@@ -1,18 +1,33 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using enki.Localization;
 using enki.Models;
 using Material.Icons;
 
 namespace enki.ViewModels;
 
-public sealed class NotificationItemViewModel(AppNotification notification)
+public sealed partial class NotificationItemViewModel(AppNotification notification) : ViewModelBase
 {
+    /// <summary>Si esta fila tiene desplegado su menú "Aplazar" — ver
+    /// <see cref="ReminderItemViewModel.IsSnoozeMenuOpen"/>, mismo patrón y mismo motivo.</summary>
+    [ObservableProperty]
+    private bool _isSnoozeMenuOpen;
+
     public AppNotification Notification { get; } = notification;
 
     public string Id => Notification.Id;
-    public string Title => Notification.Title;
-    public string Message => Notification.Message;
-    public bool HasMessage => !string.IsNullOrWhiteSpace(Notification.Message);
+    public string Title => LocalizedTextFormatter.Resolve(Notification.LocalizedTitle, Notification.Title);
+    public string Message => LocalizedTextFormatter.Resolve(Notification.LocalizedMessage, Notification.Message);
+    public bool HasMessage => !string.IsNullOrWhiteSpace(Message);
     public bool IsRead => Notification.IsRead;
+
+    /// <summary>Solo los avisos de vencimiento llevan origen aplazable — ver
+    /// <see cref="AppNotification.SnoozeTarget"/>. La fila esconde el botón "Aplazar" en el resto en vez
+    /// de mostrarlo deshabilitado: un fallo de sincronización no es algo que el usuario pueda posponer, y
+    /// un botón muerto en cada fila del historial solo añadiría ruido.</summary>
+    public bool CanSnooze => Notification.SnoozeTarget is not null;
+
+    /// <summary>Si la fila ofrece un botón que abre un enlace — ver <see cref="AppNotification.LinkUrl"/>.</summary>
+    public bool HasLink => !string.IsNullOrWhiteSpace(Notification.LinkUrl);
 
     /// <summary>Fase 2 §4.7: replaces this class's own hand-rolled "hace 2 min" logic with the single
     /// shared <see cref="RelativeTimeFormatter"/> used across the app.</summary>

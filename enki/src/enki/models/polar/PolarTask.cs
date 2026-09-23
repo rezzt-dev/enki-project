@@ -29,6 +29,16 @@ public sealed class PolarTask
     public required string Title { get; set; }
     public string Description { get; set; } = string.Empty;
     public bool Completed { get; set; }
+
+    /// <summary>When <see cref="Completed"/> last flipped to <c>true</c>, or <c>null</c> when not completed
+    /// — set/cleared by <c>Services.PolarTaskService.SetTaskCompleted</c>, the single chokepoint that
+    /// mutates <see cref="Completed"/>. Not part of the Supabase sync wire contract (docs/supabase-sync/) —
+    /// stored only in <c>polar-tasks.json</c>, same "local-only" treatment as <see cref="DurationMinutes"/>.
+    /// Feeds "tareas completadas por semana" in <see cref="Services.StatisticsAggregationService"/>;
+    /// <see cref="UpdatedAtUtc"/> alone isn't a reliable proxy since it's bumped by any edit, not just
+    /// completion.</summary>
+    public DateTime? CompletedAtUtc { get; set; }
+
     public List<string> Tags { get; set; } = [];
     public DateTime? DueDateUtc { get; set; }
     public int OrderIndex { get; set; }

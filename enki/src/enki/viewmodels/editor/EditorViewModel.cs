@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -23,12 +24,16 @@ public sealed partial class EditorViewModel : ViewModelBase
 
     private readonly VaultService _vaultService;
     private readonly KanbanService? _kanbanService;
+    private readonly SessionService? _sessionService;
     private readonly SettingsService? _settingsService;
     private readonly NotificationService? _notificationService;
+    private readonly VaultChangeWatcher? _changeWatcher;
+    private readonly NoteTransclusionService _transclusionService;
     private readonly Action _onBack;
     private readonly Action _onChanged;
     private readonly Action<NoteFile>? _onOpenNote;
     private readonly Action<string>? _onOpenLinkedCard;
+    private readonly Action<NoteFile, string>? _onExportHtml;
     private readonly DispatcherTimer _saveTimer;
     private string _lastSavedContent;
     private string? _pendingText;
@@ -43,7 +48,13 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// app, p. ej. <c>MainWindowViewModel.Navigate</c> con Sesiones/Kanban).</summary>
     public ObservableCollection<LinkedCardItemViewModel> LinkedCards { get; } = [];
 
+    [ObservableProperty] private bool _isLinkedCardsExpanded;
+
     public bool HasLinkedCards => LinkedCards.Count > 0;
+
+    /// <summary>Whether the "linked cards" row should actually render — hidden in zen mode even when
+    /// <see cref="HasLinkedCards"/> is true, same reasoning as <see cref="ShowFormattingToolbar"/>.</summary>
+    public bool ShowLinkedCards => HasLinkedCards && !IsZenMode;
 
     /// <summary>This tab's own AvaloniaEdit document, alive for as long as the tab stays open. The single
     /// shared TextEditor in EditorView swaps which Document it points at when the active tab changes
@@ -76,6 +87,17 @@ public sealed partial class EditorViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isActive;
 
+    partial void OnIsActiveChanged(bool value)
+    {
+        if (!value) IsLinkedCardsExpanded = false;
+    }
+
+    /// <summary>Backs the "delete this note" confirmation dialog opened from the editor's own toolbar —
+    /// the same <see cref="AppSettings.ConfirmBeforeDelete"/> guard as <c>NotesViewModel.DeleteNote</c>
+    /// (análisis alfa-3 §4.5), just reached from a second entry point (see <see cref="RequestDelete"/>).</summary>
+    [ObservableProperty]
+    private bool _isPendingDelete;
+
     /// <summary>Whether a dragged tab is currently hovering over this one — drives the same
     /// editor-tab.drag-over highlight the folder tree uses for its own drop targets (NotesView.axaml.cs,
     /// EditorTab_Drag*), set while reordering tabs by drag-and-drop.</summary>
@@ -87,17 +109,41 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// resetting to the top of the note every time.</summary>
     public int LastCaretOffset { get; set; }
 
+    /// <summary>Disparado cuando algo externo al editor pide llevar el cursor a una posición concreta del
+    /// documento — hoy, abrir un resultado de la búsqueda global cuya coincidencia está en el cuerpo de la
+    /// nota. EditorView lo atiende con el mismo manejador que la navegación del panel de Esquema
+    /// (colocar el cursor, enfocar y hacer scroll hasta él).</summary>
+    public event Action<int>? CaretNavigationRequested;
+
+    /// <summary>Coloca el cursor en <paramref name="offset"/>. Escribe también
+    /// <see cref="LastCaretOffset"/> porque una pestaña recién creada todavía no está enlazada a ninguna
+    /// vista: cuando EditorView se enlace a ella leerá ese valor y colocará el cursor por su cuenta,
+    /// mientras que para una pestaña ya abierta lo que actúa es el evento.</summary>
+    public void RequestCaretAt(int offset)
+    {
+        LastCaretOffset = Math.Max(0, offset);
+        CaretNavigationRequested?.Invoke(LastCaretOffset);
+    }
+
     public EditorOutlineViewModel Outline { get; }
     public EditorBacklinksViewModel Backlinks { get; }
     public EditorStatsViewModel Stats { get; }
+    public EditorVersionHistoryViewModel History { get; }
     public SlashCommandsViewModel SlashCommands { get; } = new SlashCommandsViewModel();
+    public NoteLinkPickerViewModel NoteLinkPicker { get; } = new NoteLinkPickerViewModel();
     public FindReplaceViewModel FindReplace { get; } = new FindReplaceViewModel();
 
     [ObservableProperty]
     private string _activeSidePanelTab = "Outline";
 
     [RelayCommand]
-    private void SelectSidePanelTab(string tab) => ActiveSidePanelTab = tab;
+    private void SelectSidePanelTab(string tab)
+    {
+        ActiveSidePanelTab = tab;
+        // Picks up any snapshot captured since this tab was last shown — an autosave tick elsewhere in this
+        // same editing session, or a pre-bulk-operation snapshot from a rename that touched this note.
+        if (tab == "History") History.Reload();
+    }
 
     /// <summary>Mirrors <see cref="EditorPreferences.SidePanelVisible"/> (the app-wide, shared toggle the
     /// Settings page also writes to) so the button next to the header can bind its icon/tooltip per tab
@@ -110,7 +156,56 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// Border.Transitions there) — 0 collapses it and lets the editor column's "*" grid width claim the
     /// freed space, instead of the panel merely toggling IsVisible while the layout keeps reserving its
     /// fixed pixel width regardless.</summary>
-    public double SidePanelWidth => IsSidePanelVisible ? 361 : 0;
+    public double SidePanelWidth => IsSidePanelVisible && !IsZenMode && !IsSimplifiedView ? 361 : 0;
+
+    /// <summary>Vista simplificada de Notas (Ajustes › Editor › Vista del editor). Mirror de
+    /// <see cref="EditorPreferences.SimplifiedNotesView"/> —igual que <see cref="IsSidePanelVisible"/> lo es
+    /// de <see cref="EditorPreferences.SidePanelVisible"/>— resincronizado por EditorView en cada cambio de
+    /// pestaña o de preferencias (ver <see cref="ApplyToolbarGroupState"/>). Mientras está activa, la barra
+    /// de formato y el panel lateral de esquema/enlaces/estadísticas quedan fuera por definición: son
+    /// justamente las dos cosas que esa vista elimina, así que sus interruptores tampoco se muestran
+    /// (<see cref="ShowFullViewChrome"/>) — encenderlos no haría nada.</summary>
+    [ObservableProperty]
+    private bool _isSimplifiedView = EditorPreferences.SimplifiedNotesView;
+
+    /// <summary>Los adornos de cabecera que solo tienen sentido en la vista completa: los botones de
+    /// barra de formato y panel lateral (en la simplificada encenderían cosas que esa vista no tiene), la
+    /// etiqueta de texto del indicador de guardado (la pestaña ya lleva su punto de "sin guardar"), el
+    /// botón de volver (cierra esta pestaña, que allí es justo lo que hace la "x" de la propia pestaña) y
+    /// la caja de etiquetas. Lo que queda en la cabecera de la vista simplificada es el nombre de la nota
+    /// —en pequeño, ver <see cref="TitleFontSize"/>— y las acciones, para que todo el peso visual se lo
+    /// lleve el espacio de edición.</summary>
+    public bool ShowFullViewChrome => !IsSimplifiedView;
+
+    /// <summary>Tamaño del nombre de la nota en la cabecera. En la vista simplificada baja a un tamaño de
+    /// etiqueta: allí el nombre ya está en la pestaña, y un titular de 24px compitiendo con el texto va en
+    /// contra de lo único que esa vista quiere destacar, que es el espacio de edición.</summary>
+    public double TitleFontSize => IsSimplifiedView ? 13 : 24;
+
+    /// <summary>Separación entre la cabecera y el cuerpo de la nota. Con el título reducido y sin la caja
+    /// de etiquetas, la cabecera de la vista simplificada es una sola línea de iconos: mantener los 20px
+    /// de la vista completa dejaría un hueco desproporcionado sobre el texto.</summary>
+    public Thickness HeaderMargin => IsSimplifiedView
+        ? new Thickness(0, 0, 0, 10)
+        : new Thickness(0, 0, 0, 20);
+
+    /// <summary>Margen exterior del editor. En la vista simplificada la nota ya está enmarcada por el
+    /// panel lateral y la barra de pestañas, así que el aire de la vista completa (36px a los lados, que
+    /// allí separan la nota del borde de la ventana) se queda en un margen más ajustado que devuelve ese
+    /// espacio al texto.</summary>
+    public Thickness RootMargin => IsSimplifiedView
+        ? new Thickness(20, 16, 20, 20)
+        : new Thickness(36, 26, 36, 26);
+
+    partial void OnIsSimplifiedViewChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SidePanelWidth));
+        OnPropertyChanged(nameof(ShowFormattingToolbar));
+        OnPropertyChanged(nameof(ShowFullViewChrome));
+        OnPropertyChanged(nameof(RootMargin));
+        OnPropertyChanged(nameof(TitleFontSize));
+        OnPropertyChanged(nameof(HeaderMargin));
+    }
 
     /// <summary>Mirrors MainWindowViewModel.SidebarToggleIcon's chevron-swap convention for the app's
     /// left nav rail, flipped for this panel sitting on the right: pointing toward the edge the panel
@@ -145,6 +240,8 @@ public sealed partial class EditorViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isToolbarVisible = EditorPreferences.ToolbarVisible;
 
+    partial void OnIsToolbarVisibleChanged(bool value) => OnPropertyChanged(nameof(ShowFormattingToolbar));
+
     [RelayCommand]
     private void ToggleToolbar()
     {
@@ -155,6 +252,41 @@ public sealed partial class EditorViewModel : ViewModelBase
             _settingsService.Settings.EditorToolbarVisible = IsToolbarVisible;
             _settingsService.Save();
         }
+    }
+
+    /// <summary>Whether the formatting toolbar row should actually render — combines the user's own
+    /// toggle (<see cref="IsToolbarVisible"/>) with zen mode, which hides it regardless.</summary>
+    public bool ShowFormattingToolbar => IsToolbarVisible && !IsZenMode && !IsSimplifiedView;
+
+    /// <summary>Modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) — hides this
+    /// tab's header, formatting toolbar, linked-cards row and side panel, leaving only the centered note
+    /// body. Mirrors <see cref="EditorPreferences.IsZenMode"/> the same way <see cref="IsSidePanelVisible"/>
+    /// mirrors <see cref="EditorPreferences.SidePanelVisible"/> — a shared, transient (never persisted)
+    /// flag so every open tab, the Notes tab strip (<c>NotesViewModel.IsZenMode</c>) and the shell sidebar
+    /// (<c>MainWindowViewModel.IsZenMode</c>) all reflect the same on/off state at once.</summary>
+    [ObservableProperty]
+    private bool _isZenMode = EditorPreferences.IsZenMode;
+
+    /// <summary>Same chevron-swap convention as <see cref="SidePanelToggleIcon"/>: a plain expand glyph
+    /// while off, a "shrink back" glyph once zen mode is active.</summary>
+    public MaterialIconKind ZenModeToggleIcon => IsZenMode ? MaterialIconKind.FullscreenExit : MaterialIconKind.Fullscreen;
+
+    partial void OnIsZenModeChanged(bool value)
+    {
+        if (value) IsLinkedCardsExpanded = false;
+        OnPropertyChanged(nameof(SidePanelWidth));
+        OnPropertyChanged(nameof(ShowFormattingToolbar));
+        OnPropertyChanged(nameof(ShowLinkedCards));
+        OnPropertyChanged(nameof(ZenModeToggleIcon));
+    }
+
+    /// <summary>Toggled by the "focus mode" header button, the <c>Ctrl+Shift+Enter</c> shortcut
+    /// (NotesView.axaml) and <c>Escape</c> while active (EditorView's key handler).</summary>
+    [RelayCommand]
+    private void ToggleZenMode()
+    {
+        IsZenMode = !IsZenMode;
+        EditorPreferences.IsZenMode = IsZenMode;
     }
 
     // ===================== Formatting toolbar groups (Fase 4 §"Editor de notas", gap 17) =====================
@@ -227,33 +359,53 @@ public sealed partial class EditorViewModel : ViewModelBase
         IsToolbarListsExpanded = EditorPreferences.ToolbarListsExpanded;
         IsToolbarInsertExpanded = EditorPreferences.ToolbarInsertExpanded;
         IsToolbarCodeExpanded = EditorPreferences.ToolbarCodeExpanded;
+        IsZenMode = EditorPreferences.IsZenMode;
+        IsSimplifiedView = EditorPreferences.SimplifiedNotesView;
     }
 
     public EditorViewModel(VaultService vaultService, NoteFile note, Action onBack, Action onChanged,
         Action<NoteFile>? onOpenNote = null, KanbanService? kanbanService = null, Action<string>? onOpenLinkedCard = null,
-        SettingsService? settingsService = null, NotificationService? notificationService = null)
+        SettingsService? settingsService = null, NotificationService? notificationService = null,
+        Action<NoteFile, string>? onExportHtml = null, SessionService? sessionService = null,
+        DailyNoteService? dailyNoteService = null, Action<DateOnly>? onOpenDailyNoteFor = null,
+        VaultChangeWatcher? changeWatcher = null)
     {
         _vaultService = vaultService;
         _onBack = onBack;
         _onChanged = onChanged;
         _onOpenNote = onOpenNote;
         _kanbanService = kanbanService;
+        _sessionService = sessionService;
         _onOpenLinkedCard = onOpenLinkedCard;
         _settingsService = settingsService;
         _notificationService = notificationService;
+        _onExportHtml = onExportHtml;
+        _dailyNoteService = dailyNoteService;
+        _onOpenDailyNoteFor = onOpenDailyNoteFor;
+        _changeWatcher = changeWatcher;
+        _transclusionService = new NoteTransclusionService(vaultService);
         Note = note;
         _title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _tagsInput = string.Join(", ", note.Tags);
 
-        var content = vaultService.ReadContent(note);
+        var fresh = vaultService.ReadFromDisk(note.FullPath)
+            ?? throw new FileNotFoundException("La nota ya no existe.", note.FullPath);
+        var content = fresh.Content;
+        _diskStamp = fresh.Stamp;
         Document = new TextDocument(content);
         _lastSavedContent = content;
+        // Antes que nada derivado del contenido: la huella de lo que se acaba de leer es la referencia
+        // contra la que se detecta cualquier cambio externo a partir de ahora (ver
+        // EditorViewModel.ExternalChanges.cs).
+        TrackForExternalChanges();
         _lastSavedUtc = note.ModifiedUtc;
         _saveStatus = FormatSaveStatus(_lastSavedUtc);
 
         Outline = new EditorOutlineViewModel(Document);
         Backlinks = new EditorBacklinksViewModel(note, vaultService, onOpenNote ?? (_ => { }));
         Stats = new EditorStatsViewModel(Document, note.FullPath);
+        History = new EditorVersionHistoryViewModel(vaultService, note, notificationService, () => Document.Text,
+            ApplyRestoredContent, TryRestoreVersion);
         RefreshWikiLinkScopeNotes();
 
         _saveTimer = new DispatcherTimer { Interval = SaveDebounceDelay };
@@ -262,9 +414,13 @@ public sealed partial class EditorViewModel : ViewModelBase
             _saveTimer.Stop();
             if (_pendingText is { } text) Save(text);
             Backlinks.Refresh(Note);
+            RefreshDailyTemplateState();
         };
 
         RefreshLinkedCards();
+        // Después de Document/Note: decide si esta nota es una nota diaria y, si lo es, qué le falta de su
+        // plantilla — las dos cosas se leen de ahí.
+        RefreshDailyNoteState();
     }
 
     private void RefreshLinkedCards()
@@ -277,17 +433,23 @@ public sealed partial class EditorViewModel : ViewModelBase
             foreach (var card in cards) LinkedCards.Add(new LinkedCardItemViewModel(card.Id, card.Title));
         }
         OnPropertyChanged(nameof(HasLinkedCards));
+        OnPropertyChanged(nameof(ShowLinkedCards));
     }
 
     [RelayCommand]
-    private void OpenLinkedCard(string cardId) => _onOpenLinkedCard?.Invoke(cardId);
+    private void OpenLinkedCard(string cardId)
+    {
+        IsLinkedCardsExpanded = false;
+        _onOpenLinkedCard?.Invoke(cardId);
+    }
 
     /// <summary>Ctrl+click en un wikilink (<see cref="Views.Editor.Markdown.MdSpanKind.WikiLink"/>) —
-    /// resuelve <paramref name="target"/> contra
-    /// las notas del mismo workspace que esta nota (la raíz del vault, o la sesión que la contiene) y abre
-    /// la que calce, igual que un enlace normal abre una URL. Un target que no resuelve a ninguna nota
-    /// (typo, nota borrada) simplemente no hace nada — mismo comportamiento silencioso-pero-inofensivo que
-    /// ya tenía un wikilink sin resolver en el grafo de sesiones.</summary>
+    /// resuelve <paramref name="target"/> contra todas las notas del vault (raíz más cada sesión
+    /// desbloqueada, <see cref="WikiLinkScopeNotes"/>) y abre la que calce, igual que un enlace normal abre
+    /// una URL — sin importar si esa nota vive en otra sesión distinta de la actual, ya que el grafo de
+    /// wikilinks es del vault entero, no por sesión. Un target que no resuelve a ninguna nota (typo, nota
+    /// borrada) simplemente no hace nada — mismo comportamiento silencioso-pero-inofensivo que ya tenía un
+    /// wikilink sin resolver en el grafo de sesiones.</summary>
     public void OpenWikiLink(string target)
     {
         if (_onOpenNote is null) return;
@@ -296,23 +458,62 @@ public sealed partial class EditorViewModel : ViewModelBase
         if (match is not null) _onOpenNote(match);
     }
 
-    /// <summary>Every note in this note's wikilink scope (<see cref="VaultService.ResolveWikiLinkScopeRoot"/>
-    /// — the session it lives under, or the vault root) — what <see cref="OpenWikiLink"/> resolves a
-    /// Ctrl+click against, and what the live-preview colorizer
-    /// (<c>Views.Editor.Markdown.MarkdownLivePreviewColorizer</c>) uses to tell a resolved wikilink apart
-    /// from a broken or ambiguous one. Cached rather than rescanned per keystroke — unlike
-    /// <see cref="Backlinks"/> (which needs fresh content from every other note on every change), this only
-    /// needs to know which notes *exist*, which only this tab's own rename/delete actions change while it's
-    /// open — so it's refreshed there, not in <see cref="OnTextChanged"/>. A note created or renamed from a
-    /// different tab isn't picked up until this one reopens, same "reload to see" tolerance the rest of the
-    /// app already has for cross-tab state (docs/analisis-proyecto/roadmap.md, Fase 5).</summary>
+    /// <summary>Avisa de que un Ctrl+clic no abrió el enlace y por qué — lo llama <c>EditorView</c> cuando
+    /// <see cref="ExternalLinkPolicy"/> rechaza el destino. El motivo se traduce a un mensaje distinto por
+    /// caso a propósito: "fuera del vault" y "esto ejecuta algo" son situaciones muy diferentes para quien
+    /// lee la nota, y un aviso genérico haría que la protección pareciera un fallo de la app
+    /// (.docs/auditoria-seguridad-y-fallos-criticos.md, SEC-01).</summary>
+    public void ReportBlockedLink(string target, ExternalLinkBlockReason reason)
+    {
+        var messageKey = reason switch
+        {
+            ExternalLinkBlockReason.OutsideVault => "Notification_NoteLinkBlocked_OutsideVault",
+            ExternalLinkBlockReason.ExecutableFile => "Notification_NoteLinkBlocked_Executable",
+            ExternalLinkBlockReason.Missing => "Notification_NoteLinkBlocked_Missing",
+            _ => "Notification_NoteLinkBlocked_UnsupportedScheme"
+        };
+        var severity = reason == ExternalLinkBlockReason.Missing
+            ? NotificationSeverity.Info
+            : NotificationSeverity.Warning;
+
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_NoteLinkBlocked_Title"),
+            LocalizedTextFormatter.Format(messageKey, ExternalLinkPolicy.Describe(target)),
+            severity);
+    }
+
+    /// <summary>Every note in the vault (<see cref="VaultService.GetAllNotesAcrossVault"/> — root plus every
+    /// unlocked session, not just this note's own) — what <see cref="OpenWikiLink"/> resolves a Ctrl+click
+    /// against, and what the live-preview colorizer (<c>Views.Editor.Markdown.MarkdownLivePreviewColorizer</c>)
+    /// uses to tell a resolved wikilink apart from a broken or ambiguous one. Cached rather than rescanned
+    /// per keystroke — unlike <see cref="Backlinks"/> (which needs fresh content from every other note on
+    /// every change), this only needs to know which notes *exist*, which only this tab's own rename/delete
+    /// actions change while it's open — so it's refreshed there, not in <see cref="OnTextChanged"/>. A note
+    /// created or renamed from a different tab isn't picked up until this one reopens, same "reload to see"
+    /// tolerance the rest of the app already has for cross-tab state (docs/analisis-proyecto/roadmap.md,
+    /// Fase 5).</summary>
     public IReadOnlyList<NoteFile> WikiLinkScopeNotes { get; private set; } = [];
+
+    /// <summary>Resuelve el contenido que el live preview pide para <c>![[…]]</c>. Se queda en el VM para
+    /// que la vista no lea el vault por su cuenta; el servicio sigue trabajando sobre las entidades reales
+    /// y la lista de alcance idéntica a la de los wikilinks.</summary>
+    public NoteTransclusionResult ResolveTransclusion(string reference, IReadOnlyList<string>? ancestry = null) =>
+        _transclusionService.Resolve(reference, WikiLinkScopeNotes,
+            ancestry ?? [Note.FullPath]);
 
     private void RefreshWikiLinkScopeNotes()
     {
-        var root = _vaultService.ResolveWikiLinkScopeRoot(Note.FullPath);
-        WikiLinkScopeNotes = _vaultService.GetAllNotesRecursive(root);
+        WikiLinkScopeNotes = _vaultService.GetAllNotesAcrossVault();
     }
+
+    /// <summary>Every note in the vault, labeled by which workspace it lives in — feeds
+    /// <see cref="NoteLinkPicker"/> each time it opens. Falls back to just the vault root's own notes when
+    /// this tab was built without a <see cref="SessionService"/> (tests, headless composition), same
+    /// nullable-service tolerance as <see cref="_kanbanService"/> elsewhere in this class.</summary>
+    internal IEnumerable<NotePickerItemViewModel> CollectLinkableNotes() =>
+        _sessionService?.ListAllNotesByWorkspace().Select(t => new NotePickerItemViewModel(t.Note, t.WorkspaceLabel))
+        ?? _vaultService.GetAllNotesRecursive(_vaultService.VaultPath)
+            .Select(n => new NotePickerItemViewModel(n, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"]));
 
     public void OnTextChanged(string currentText)
     {
@@ -325,7 +526,10 @@ public sealed partial class EditorViewModel : ViewModelBase
         // running on every keystroke (docs/analisis-proyecto/roadmap.md, Fase 6, análisis §3) — see the
         // _saveTimer.Tick handler above, which refreshes it right after (or instead of) saving.
         _saveTimer.Stop();
-        if (dirty) _saveTimer.Start();
+        // Con un conflicto externo sin resolver el autoguardado de esta nota está en pausa: seguir
+        // escribiendo es legítimo (el buffer es del usuario), escribirlo a disco por su cuenta no lo es
+        // hasta que decida qué versión gana. Ver EditorViewModel.ExternalChanges.cs.
+        if (dirty && !IsAutosavePaused) _saveTimer.Start();
     }
 
     /// <summary>Writes immediately, skipping the debounce — called when a change must not be left
@@ -336,9 +540,32 @@ public sealed partial class EditorViewModel : ViewModelBase
     public void FlushPendingSave()
     {
         _saveTimer.Stop();
-        if (!IsDirty || _pendingText is not { } text) return;
+        if (IsAutosavePaused || !IsDirty || _pendingText is not { } text) return;
         Save(text);
         Backlinks.Refresh(Note);
+    }
+
+    /// <summary>Cierra esta pestaña: vuelca lo que quedara pendiente y suelta lo que tenía enganchado
+    /// fuera de sí misma — el temporizador de autoguardado y el registro en
+    /// <see cref="VaultChangeWatcher"/>. Lo llama <c>NotesViewModel</c> en cada camino de cierre (una
+    /// pestaña, todas, las de una sesión que se bloquea); sustituye a llamar solo a
+    /// <see cref="FlushPendingSave"/>, que volcaba el texto pero dejaba la nota vigilada como si la
+    /// pestaña siguiera abierta.</summary>
+    public bool Close()
+    {
+        if (!TryPrepareClose()) return false;
+        _saveTimer.Stop();
+        UnsubscribeFromExternalChanges();
+        _changeWatcher?.Untrack(Note.FullPath);
+        return true;
+    }
+
+    /// <summary>Permite cerrar solo si el borrador quedó guardado en la nota o, ante un conflicto,
+    /// en su historial. También lo usa la ventana antes de apagar servicios y claves de cifrado.</summary>
+    public bool TryPrepareClose()
+    {
+        FlushPendingSave();
+        return !IsDirty || (IsAutosavePaused && PreserveUnsavedTextOnClose());
     }
 
     /// <summary>Writes <paramref name="currentText"/> to disk. On an I/O failure (disco lleno, vault
@@ -349,21 +576,44 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// is restarted so the next automatic tick retries on its own, without requiring another keystroke.</summary>
     public void Save(string currentText)
     {
+        _pendingText = currentText;
+        IsDirty = currentText != _lastSavedContent;
+        // Check-before-write, same criterion as FilesViewModel.IsSelectedSessionLocked (docs/version-alfa-3/
+        // 01-analisis-detallado.md §4.1): this note's session can go from unlocked to locked while this tab
+        // is still open (the user locks it from Sessions, or every session simply starts locked again on
+        // the next launch) — every 600ms autosave tick after that must keep failing gracefully instead of
+        // trying to encrypt with a DEK that's no longer cached. The catch below stays as a safety net for
+        // the (much rarer) race where the lock happens between this check and the write itself.
+        if (IsAutosavePaused)
+        {
+            // Hay un conflicto externo esperando decisión: se conserva el texto pendiente y no se toca el
+            // disco. El guardado se reanuda solo cuando el usuario resuelve el diálogo.
+            _pendingText = currentText;
+            return;
+        }
+
+        if (_vaultService.IsPathInLockedSession(Note.FullPath))
+        {
+            HandleSaveFailure(new SessionLockedException(Note.FullPath), currentText);
+            return;
+        }
+
         try
         {
-            _vaultService.WriteContent(Note, currentText);
+            // Comprobada contra la huella de la última lectura/escritura propia: si la nota cambió fuera
+            // de Enki desde entonces, esto lanza en vez de escribir y el cambio ajeno queda intacto en
+            // disco. Es la red de seguridad independiente del vigilante — cubre los casos en los que no
+            // llegó a enterarse (búfer desbordado, unidad de red, equipo suspendido).
+            AdoptDiskStamp(_vaultService.WriteContentChecked(Note, currentText, _diskStamp));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (ExternalModificationException ex)
         {
-            LogService.Error($"No se pudo guardar la nota '{Note.FullPath}'", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteSaveFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteSaveFailed_Message"], Title, DescribeFailureReason(ex)),
-                NotificationSeverity.Error);
-
-            _pendingText = currentText;
-            _saveTimer.Stop();
-            _saveTimer.Start();
+            HandleExternalChange(new VaultExternalChange(Note.FullPath, ex.Kind), currentText);
+            return;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            HandleSaveFailure(ex, currentText);
             return;
         }
 
@@ -372,6 +622,72 @@ public sealed partial class EditorViewModel : ViewModelBase
         _lastSavedUtc = DateTime.UtcNow;
         SaveStatus = FormatSaveStatus(_lastSavedUtc);
         _onChanged();
+    }
+
+    /// <summary>Applies content <see cref="History"/> just restored from an older version straight into this
+    /// tab — the restore itself already wrote the new content to disk (<see cref="VaultService.RestoreVersion"/>),
+    /// so this only has to reconcile the live tab's own state with what's now on disk: the document text,
+    /// the dirty/save-status indicators, and everything derived from content (tags, backlinks, stats,
+    /// wikilink targets) — the same set <see cref="SyncRenamedNote"/> refreshes after a rename, since a
+    /// restore can just as easily have changed the note's frontmatter tags as any other edit would.</summary>
+    private void ApplyRestoredContent(string content)
+    {
+        _saveTimer.Stop();
+        _pendingText = null;
+        Document.Text = content;
+        _lastSavedContent = content;
+        IsDirty = false;
+        _lastSavedUtc = DateTime.UtcNow;
+        SaveStatus = FormatSaveStatus(_lastSavedUtc);
+
+        Note = _vaultService.GetNote(Note.FullPath) ?? Note;
+        // El contenido de disco es otro: la huella anterior ya no sirve como referencia de "esto lo
+        // escribí yo", y sin refrescarla el siguiente autoguardado se rechazaría a sí mismo.
+        AdoptDiskStamp(NoteDiskStamps.TryRead(Note.FullPath));
+        TagsInput = string.Join(", ", Note.Tags);
+        RefreshWikiLinkScopeNotes();
+        Backlinks.Refresh(Note);
+        Stats.Refresh();
+        _onChanged();
+    }
+
+    private bool TryRestoreVersion(string versionId)
+    {
+        if (IsAutosavePaused) return false;
+        try
+        {
+            _vaultService.RestoreVersion(Note, versionId, _diskStamp, Document.Text);
+            return true;
+        }
+        catch (ExternalModificationException ex)
+        {
+            HandleExternalChange(new VaultExternalChange(Note.FullPath, ex.Kind), Document.Text);
+            return false;
+        }
+    }
+
+    /// <summary>Reconcilia una pestaña abierta tras una reescritura de etiquetas desde otra vista.
+    /// Evita que su siguiente autoguardado restaure el frontmatter anterior.</summary>
+    public void ReloadAfterTagChange()
+    {
+        var content = _vaultService.ReadContent(Note);
+        if (content != Document.Text) ApplyRestoredContent(content);
+    }
+
+    /// <summary>Shared by both the proactive check and the defensive catch in <see cref="Save"/> — leaves
+    /// <paramref name="currentText"/> pending and restarts the save timer so the next automatic tick
+    /// retries on its own, without requiring another keystroke.</summary>
+    private void HandleSaveFailure(Exception ex, string currentText)
+    {
+        LogService.Error($"No se pudo guardar la nota '{Note.FullPath}'", ex);
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_NoteSaveFailed_Title"),
+            LocalizedTextFormatter.Format("Notification_NoteSaveFailed_Message", Title, VaultFailureReasons.DescribeLocalized(ex)),
+            NotificationSeverity.Error);
+
+        _pendingText = currentText;
+        _saveTimer.Stop();
+        _saveTimer.Start();
     }
 
     /// <summary>Maps an I/O failure to a translated, user-facing reason — shared by <see cref="Save"/> and
@@ -389,6 +705,11 @@ public sealed partial class EditorViewModel : ViewModelBase
             : FormatSaveStatus(_lastSavedUtc);
         Stats.RefreshLocalizedLabels();
         FindReplace.RefreshLocalizedLabels();
+        History.RefreshLocalizedLabels();
+        RefreshExternalChangeLabels();
+        // La fecha de la nota diaria y el tooltip de "combinar con la plantilla" se formatean con el
+        // idioma activo, así que se rehacen aquí como el resto de textos de la cabecera.
+        RefreshDailyNoteState();
     }
 
     /// <summary>"Saved · HH:mm" (Fase 2 §2) instead of a bare "Saved" — a plain status word gives no
@@ -416,7 +737,6 @@ public sealed partial class EditorViewModel : ViewModelBase
 
         var newContent = NoteTagHelper.SetTags(Document.Text, parsed);
         Document.Text = newContent;
-        _lastSavedContent = newContent;
         Note.Tags = parsed;
         Save(Document.Text);
     }
@@ -426,6 +746,8 @@ public sealed partial class EditorViewModel : ViewModelBase
         if (_suppressTitleRename || string.IsNullOrWhiteSpace(value)) return;
         var oldPath = Note.FullPath;
         var oldTitle = Path.GetFileNameWithoutExtension(oldPath);
+        // Mismo motivo que en Delete: el renombrado es de Enki, no de fuera.
+        _changeWatcher?.Untrack(oldPath);
 
         try
         {
@@ -437,14 +759,15 @@ public sealed partial class EditorViewModel : ViewModelBase
             // pointing at a file that never actually got renamed on disk — revert it instead of letting the
             // ViewModel and the filesystem silently diverge (docs/analisis-proyecto/roadmap.md, Fase 1).
             LogService.Error($"No se pudo renombrar la nota '{oldPath}'", ex);
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteRenameFailed_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteRenameFailed_Message"], oldTitle, DescribeFailureReason(ex)),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteRenameFailed_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteRenameFailed_Message", oldTitle, VaultFailureReasons.DescribeLocalized(ex)),
                 NotificationSeverity.Error);
 
             _suppressTitleRename = true;
             Title = oldTitle;
             _suppressTitleRename = false;
+            TrackForExternalChanges();
             return;
         }
 
@@ -459,17 +782,22 @@ public sealed partial class EditorViewModel : ViewModelBase
             Title = finalTitle;
             _suppressTitleRename = false;
 
-            _notificationService?.Push(
-                LocalizationService.Instance["Notification_NoteRenameCollision_Title"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Notification_NoteRenameCollision_Message"], finalTitle),
+            _notificationService?.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_NoteRenameCollision_Title"),
+                LocalizedTextFormatter.Format("Notification_NoteRenameCollision_Message", finalTitle),
                 NotificationSeverity.Info);
         }
 
+        TrackForExternalChanges();
         _kanbanService?.RelinkNotePath(oldPath, Note.FullPath);
         RefreshLinkedCards();
         RefreshWikiLinkScopeNotes();
         Backlinks.Refresh(Note);
         Stats.Refresh();
+        History.Retarget(Note);
+        // El día de una nota diaria está en el nombre del archivo: este renombrado puede haber convertido
+        // una nota cualquiera en la nota diaria de un día, o al revés.
+        RefreshDailyNoteState();
         _onChanged();
     }
 
@@ -478,7 +806,9 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// doesn't attempt to rename the file a second time, which would fail since the old path is already gone.</summary>
     public void SyncRenamedNote(NoteFile note)
     {
+        _changeWatcher?.Untrack(Note.FullPath);
         Note = note;
+        TrackForExternalChanges();
         _suppressTitleRename = true;
         Title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
         _suppressTitleRename = false;
@@ -486,15 +816,44 @@ public sealed partial class EditorViewModel : ViewModelBase
         RefreshWikiLinkScopeNotes();
         Backlinks.Refresh(Note);
         Stats.Refresh();
+        History.Retarget(Note);
+        RefreshDailyNoteState();
     }
 
     [RelayCommand]
     private void Back() => _onBack();
 
+    /// <summary>"Exportar como HTML…" (cabecera del editor, propuesta 6 de
+    /// docs/propuesta-nuevas-funcionalidades.md). Delega en <see cref="NotesViewModel"/> vía el callback
+    /// inyectado — la exportación usa <see cref="Document"/>.Text, el contenido en vivo de la pestaña,
+    /// para que lo que se exporta sea exactamente lo que el usuario está viendo aunque haya cambios sin
+    /// guardar. No-op en tests (sin callback).</summary>
     [RelayCommand]
+    private void ExportAsHtml() => _onExportHtml?.Invoke(Note, Document.Text);
+
+    [RelayCommand]
+    private void RequestDelete()
+    {
+        if (_settingsService?.Settings.ConfirmBeforeDelete ?? true) IsPendingDelete = true;
+        else Delete();
+    }
+
+    [RelayCommand]
+    private void CancelDelete() => IsPendingDelete = false;
+
+    [RelayCommand]
+    private void ConfirmDelete()
+    {
+        IsPendingDelete = false;
+        Delete();
+    }
+
     private void Delete()
     {
         EditorBacklinksService.WarnIfDeletingLeavesBrokenLinks(_vaultService, _notificationService, Note);
+        // Antes de borrar, no después: el borrado genera su propio evento en el sistema de archivos y sin
+        // esto la pestaña se avisaría a sí misma de que "alguien" borró la nota desde fuera.
+        _changeWatcher?.Untrack(Note.FullPath);
         _vaultService.DeleteNote(Note);
         _onChanged();
         _onBack();

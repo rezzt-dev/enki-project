@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
+using enki.Services;
 
 namespace enki.ViewModels;
 
@@ -13,6 +14,7 @@ public sealed partial class NoteCardViewModel : ObservableObject
     public string Preview => string.IsNullOrWhiteSpace(Note.Preview) ? LocalizationService.Instance["Notes_EmptyNotePreview"] : Note.Preview;
     public string ModifiedLabel => Note.ModifiedLabel;
     public string WordCountLabel => Plural.Get("Notes_WordCount", Note.WordCount, Note.WordCount);
+    public string FileNameLabel => Note.FileNameWithoutExtension;
 
     public bool HasTags => Note.Tags.Count > 0;
     public string TagsLabel => string.Join(", ", Note.Tags);
@@ -35,6 +37,7 @@ public sealed partial class NoteCardViewModel : ObservableObject
         OnPropertyChanged(nameof(Preview));
         OnPropertyChanged(nameof(ModifiedLabel));
         OnPropertyChanged(nameof(WordCountLabel));
+        OnPropertyChanged(nameof(FileNameLabel));
         OnPropertyChanged(nameof(HasTags));
         OnPropertyChanged(nameof(TagsLabel));
     }
@@ -48,4 +51,7 @@ public sealed partial class NoteCardViewModel : ObservableObject
 
     [RelayCommand]
     private void CancelRename() => IsRenaming = false;
+
+    [RelayCommand]
+    private void RevealInSystem() => FolderOpener.RevealFile(Note.FullPath);
 }

@@ -11,10 +11,11 @@ using enki.Services;
 
 namespace enki.ViewModels;
 
-/// <summary>Full "Recordatorios" page — user-created reminders (title, description, date, time, icon),
-/// distinct from the Kanban due-date inbox behind the title-bar button (<see cref="ReminderInboxViewModel"/>).
-/// A reminder that comes due is turned into a real notification by <c>MainWindowViewModel</c>'s scheduler,
-/// which also calls <see cref="Reload"/> here so an open page picks up the change live. Also reloads
+/// <summary>Full "Recordatorios" page — user-created reminders (title, description, date, time, icon). The
+/// title-bar inbox button (<see cref="ReminderInboxViewModel"/>) surfaces the same reminders (merged with
+/// Kanban due dates) as a "what's due soon" preview; this page is the actual CRUD surface and detail view
+/// it jumps to. A reminder that comes due is turned into a real notification by <c>MainWindowViewModel</c>'s
+/// scheduler, which also calls <see cref="Reload"/> here so an open page picks up the change live. Also reloads
 /// whenever <see cref="PolarSyncService"/> finishes a push/pull — otherwise a reminder pulled down from
 /// Polar while this page is already open wouldn't show up until the user navigated away and back.</summary>
 public sealed partial class RemindersViewModel : ViewModelBase
@@ -136,6 +137,8 @@ public sealed partial class RemindersViewModel : ViewModelBase
         WeekdayLabels = BuildWeekdayLabels();
         OnPropertyChanged(nameof(WeekdayLabels));
         Reload();
+        // El editor abierto no se reconstruye en Reload() para no perder lo escrito.
+        Editor?.RefreshLocalizedLabels();
     }
 
     private void HandleSyncCompleted(bool tasksChanged, bool remindersChanged)
@@ -195,6 +198,13 @@ public sealed partial class RemindersViewModel : ViewModelBase
 
     [RelayCommand]
     private void CancelEditor() => Editor = null;
+
+    /// <summary>Cierra el formulario y el detalle del vault anterior.</summary>
+    public void CloseForVaultChange()
+    {
+        Editor = null;
+        Detail = null;
+    }
 
     [RelayCommand]
     private void SaveEditor()

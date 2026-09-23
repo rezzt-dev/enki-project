@@ -47,7 +47,12 @@ public sealed class LocalizationService : INotifyPropertyChanged
     /// per-view wiring. See §1.2/§3.3.</summary>
     public void SetLanguage(string cultureCode)
     {
-        CurrentCulture = new CultureInfo(cultureCode);
+        // Un ajuste importado o editado a mano no debe impedir el arranque ni activar un idioma
+        // sin recursos. La selección inicial permite corregirlo posteriormente.
+        var language = SupportedLanguages.Find(cultureCode);
+        CurrentCulture = CultureInfo.GetCultureInfo(language?.CultureCode ?? SupportedLanguages.SourceCultureCode);
+        CultureInfo.DefaultThreadCurrentCulture = CurrentCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = CurrentCulture;
         CultureInfo.CurrentCulture = CurrentCulture;
         CultureInfo.CurrentUICulture = CurrentCulture;
         Thread.CurrentThread.CurrentCulture = CurrentCulture;

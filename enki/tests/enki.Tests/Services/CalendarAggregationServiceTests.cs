@@ -125,6 +125,105 @@ public class CalendarAggregationServiceTests
         Assert.All(result, r => Assert.True(r.MomentUtc < new DateTime(2026, 1, 5)));
     }
 
+    [Fact]
+    public void BuildGhostOccurrences_VeryOldDailyTaskLeftUnfinished_AgesOutOfTheVisibleRange()
+    {
+        // análisis §4.4, Dev Media: el bucle de proyección tiene un tope fijo de 366 iteraciones
+        // (MaxGhostOccurrenceIterations) porque RollRecurringTasks solo avanza la fecha real al
+        // completarse una ocurrencia. Una tarea diaria dejada sin marcar durante más de un año agota ese
+        // tope antes de alcanzar el rango visible del Calendario y desaparece de él en silencio, aunque
+        // sigue siendo localizable en la lista de tareas Polar — este test documenta ese comportamiento
+        // actual (conocido, no corregido en esta fase) para que un cambio futuro al límite o al algoritmo
+        // de avance lo note explícitamente en vez de dejarlo regresar sin aviso.
+        var realDue = new DateTime(2020, 1, 1); // more than 366 days before the visible range below
+        var task = MakeTask(realDue, PolarRecurrence.Daily);
+        var rangeStart = new DateTime(2026, 3, 1);
+        var rangeEnd = new DateTime(2026, 3, 8);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(task, list: null, rangeStart, rangeEnd);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void BuildGhostOccurrences_DailyTaskWithin366Days_StillReachesTheVisibleRange()
+    {
+        // Same setup as the "ages out" test above but just inside the 366-iteration budget, so the loop
+        // reaches the visible range before exhausting itself — pins the boundary the previous test sits
+        // just past, so both fail loudly if MaxGhostOccurrenceIterations or the roll algorithm changes.
+        var rangeStart = new DateTime(2026, 3, 1);
+        var rangeEnd = new DateTime(2026, 3, 8);
+        var realDue = rangeStart.AddDays(-360);
+        var task = MakeTask(realDue, PolarRecurrence.Daily);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(task, list: null, rangeStart, rangeEnd);
+
+        Assert.NotEmpty(result);
+    }
+
+    // ===================== Fase 6: paridad de ocurrencias fantasma para Recordatorios (análisis §4.4, Media) =====================
+
+    private static Reminder MakeReminder(DateTime notifyAtUtc, PolarRecurrence recurrence, bool isDeleted = false, int? durationMinutes = null) => new()
+    {
+        Id = "reminder-1",
+        Title = "Regar las plantas",
+        NotifyAtUtc = notifyAtUtc,
+        Recurrence = recurrence,
+        IsDeleted = isDeleted,
+        DurationMinutes = durationMinutes
+    };
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_NoRecurrence_ReturnsEmpty()
+    {
+        var reminder = MakeReminder(new DateTime(2026, 3, 1), PolarRecurrence.None);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, new DateTime(2026, 3, 1), new DateTime(2026, 4, 1));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_Deleted_ReturnsEmpty()
+    {
+        var reminder = MakeReminder(new DateTime(2026, 3, 1), PolarRecurrence.Weekly, isDeleted: true);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, new DateTime(2026, 3, 1), new DateTime(2026, 4, 1));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_Weekly_ProjectsEachFutureOccurrenceWithinRange()
+    {
+        var realNotifyAt = new DateTime(2026, 3, 1);
+        var reminder = MakeReminder(realNotifyAt, PolarRecurrence.Weekly);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, rangeStartUtc: realNotifyAt, rangeEndUtc: realNotifyAt.AddDays(28));
+
+        Assert.Equal(3, result.Count);
+        Assert.Equal([realNotifyAt.AddDays(7), realNotifyAt.AddDays(14), realNotifyAt.AddDays(21)], result.Select(r => r.MomentUtc));
+        Assert.All(result, r => Assert.True(r.IsGhostOccurrence));
+        Assert.All(result, r => Assert.False(r.IsCompleted));
+        Assert.All(result, r => Assert.Equal(CalendarItemSourceType.Reminder, r.SourceType));
+    }
+
+    [Fact]
+    public void BuildGhostOccurrences_Reminder_CarriesDurationMinutes_ForTimedOccurrences()
+    {
+        var realNotifyAt = new DateTime(2026, 3, 1, 9, 0, 0);
+        var reminder = MakeReminder(realNotifyAt, PolarRecurrence.Daily, durationMinutes: 30);
+
+        var result = CalendarAggregationService.BuildGhostOccurrences(
+            reminder, realNotifyAt, realNotifyAt.AddDays(2));
+
+        var occurrence = Assert.Single(result);
+        Assert.Equal(30, occurrence.DurationMinutes);
+    }
+
     // ===================== Fase 3: duración en Polar y Recordatorios =====================
 
     private static (CalendarAggregationService Service, PolarTaskService Tasks, ReminderService Reminders)
@@ -174,6 +273,24 @@ public class CalendarAggregationServiceTests
     }
 
     [Fact]
+    public void BuildItems_ProjectsReminderGhostOccurrences_WhenIncluded()
+    {
+        using var _ = new TempDirScope(out var storageDirectory);
+        var (service, _, reminderService) = CreateServiceWithStores(out storageDirectory);
+
+        var due = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
+        reminderService.Create("Recordatorio semanal", "", due, "BellRingOutline", recurrence: PolarRecurrence.Weekly);
+
+        var itemsWithGhosts = service.BuildItems(due.AddDays(6), due.AddDays(8), includeGhostOccurrences: true);
+        var itemsWithoutGhosts = service.BuildItems(due.AddDays(6), due.AddDays(8), includeGhostOccurrences: false);
+
+        var ghost = Assert.Single(itemsWithGhosts);
+        Assert.True(ghost.IsGhostOccurrence);
+        Assert.Equal(due.AddDays(7), ghost.MomentUtc);
+        Assert.Empty(itemsWithoutGhosts);
+    }
+
+    [Fact]
     public void BuildItems_IgnoresDurationMinutes_ForAllDayItems()
     {
         using var _ = new TempDirScope(out var storageDirectory);
@@ -188,6 +305,55 @@ public class CalendarAggregationServiceTests
 
         Assert.Null(item.DurationMinutes);
         Assert.True(item.IsAllDay);
+    }
+
+    // ===================== Fase 3: IsCompleted de tarjetas Kanban (análisis §4.4, Alta) =====================
+
+    [Fact]
+    public void BuildItems_KanbanCard_IsCompletedTrue_WhenCompletedAtUtcSet()
+    {
+        using var _ = new TempDirScope(out var storageDirectory);
+        var kanbanService = new KanbanService(storageDirectory);
+        var due = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
+        var card = new KanbanCard { Id = "done-1", Title = "Hecha", DueDateUtc = due, CompletedAtUtc = due };
+        kanbanService.Board.Columns[0].Cards.Add(card);
+        var svc = new CalendarAggregationService(kanbanService, new PolarTaskService(storageDirectory), new ReminderService(storageDirectory), new PolarAuthService(new SettingsService(storageDirectory)));
+
+        var items = svc.BuildItems(due.AddHours(-1), due.AddHours(1));
+
+        var item = Assert.Single(items);
+        Assert.True(item.IsCompleted);
+    }
+
+    [Fact]
+    public void BuildItems_KanbanCard_IsCompletedFalse_WhenCompletedAtUtcNull()
+    {
+        using var _ = new TempDirScope(out var storageDirectory);
+        var kanbanService = new KanbanService(storageDirectory);
+        var due = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
+        var card = new KanbanCard { Id = "pending-1", Title = "Pendiente", DueDateUtc = due };
+        kanbanService.Board.Columns[0].Cards.Add(card);
+        var svc = new CalendarAggregationService(kanbanService, new PolarTaskService(storageDirectory), new ReminderService(storageDirectory), new PolarAuthService(new SettingsService(storageDirectory)));
+
+        var items = svc.BuildItems(due.AddHours(-1), due.AddHours(1));
+
+        var item = Assert.Single(items);
+        Assert.False(item.IsCompleted);
+    }
+
+    [Fact]
+    public void BuildUnscheduledItems_KanbanCard_IsCompletedTrue_WhenCompletedAtUtcSet()
+    {
+        using var _ = new TempDirScope(out var storageDirectory);
+        var kanbanService = new KanbanService(storageDirectory);
+        var card = new KanbanCard { Id = "done-2", Title = "Hecha sin fecha", CompletedAtUtc = DateTime.UtcNow };
+        kanbanService.Board.Columns[0].Cards.Add(card);
+        var svc = new CalendarAggregationService(kanbanService, new PolarTaskService(storageDirectory), new ReminderService(storageDirectory), new PolarAuthService(new SettingsService(storageDirectory)));
+
+        var items = svc.BuildUnscheduledItems();
+
+        var item = Assert.Single(items, i => i.SourceId == card.Id);
+        Assert.True(item.IsCompleted);
     }
 
     private sealed class TempDirScope : IDisposable

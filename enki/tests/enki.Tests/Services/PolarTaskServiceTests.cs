@@ -79,6 +79,147 @@ public class PolarTaskServiceTests : IDisposable
         Assert.Equal(deletedAtBeforeTaskDelete, service.Store.Subtasks.Single(s => s.Id == subtask.Id).DeletedAtUtc);
     }
 
+    // ===================== Restaurar desde la Papelera (análisis alfa-3 §4.3) =====================
+
+    [Fact]
+    public void RestoreList_UndeletesListButNotItsPreviouslyCascadedTasks()
+    {
+        var service = CreateService();
+        var list = service.CreateList("Lista A", "ic_list", "#000", isDependencyChain: false);
+        var task = service.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        service.DeleteList(list);
+
+        service.RestoreList(list);
+
+        Assert.False(service.Store.Lists.Single(l => l.Id == list.Id).IsDeleted);
+        Assert.Null(service.Store.Lists.Single(l => l.Id == list.Id).DeletedAtUtc);
+        Assert.True(service.Store.Lists.Single(l => l.Id == list.Id).Dirty);
+        Assert.True(service.Store.Tasks.Single(t => t.Id == task.Id).IsDeleted);
+    }
+
+    [Fact]
+    public void RestoreTask_UndeletesTaskAndCascadesToItsSubtasks()
+    {
+        var service = CreateService();
+        var list = service.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = service.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        var otherTask = service.CreateTask(list, "Otra tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        var subtask = service.AddSubtask(task, "Subtarea");
+        var otherSubtask = service.AddSubtask(otherTask, "Otra subtarea");
+        service.DeleteTask(task);
+        service.DeleteTask(otherTask);
+
+        service.RestoreTask(task);
+
+        Assert.False(service.Store.Tasks.Single(t => t.Id == task.Id).IsDeleted);
+        Assert.Null(service.Store.Tasks.Single(t => t.Id == task.Id).DeletedAtUtc);
+        Assert.True(service.Store.Tasks.Single(t => t.Id == task.Id).Dirty);
+        Assert.False(service.Store.Subtasks.Single(s => s.Id == subtask.Id).IsDeleted);
+        Assert.True(service.Store.Tasks.Single(t => t.Id == otherTask.Id).IsDeleted);
+        Assert.True(service.Store.Subtasks.Single(s => s.Id == otherSubtask.Id).IsDeleted);
+    }
+
+    // ===================== Purga de tombstones antiguos (análisis alfa-3, Fase 4) =====================
+
+    // ===================== Borrado permanente desde la Papelera =====================
+
+    [Fact]
+    public void PurgeTask_PhysicallyRemovesTaskAndItsSubtasks()
+    {
+        var service = CreateService();
+        var list = service.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = service.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        var subtask = service.AddSubtask(task, "Subtarea");
+        service.DeleteTask(task);
+
+        service.PurgeTask(task);
+
+        Assert.DoesNotContain(service.Store.Tasks, t => t.Id == task.Id);
+        Assert.DoesNotContain(service.Store.Subtasks, s => s.Id == subtask.Id);
+    }
+
+    [Fact]
+    public void PurgeList_PhysicallyRemovesListAndItsTasksAndSubtasks()
+    {
+        var service = CreateService();
+        var list = service.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = service.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        var subtask = service.AddSubtask(task, "Subtarea");
+        service.DeleteList(list);
+
+        service.PurgeList(list);
+
+        Assert.DoesNotContain(service.Store.Lists, l => l.Id == list.Id);
+        Assert.DoesNotContain(service.Store.Tasks, t => t.Id == task.Id);
+        Assert.DoesNotContain(service.Store.Subtasks, s => s.Id == subtask.Id);
+    }
+
+    [Fact]
+    public void PurgeList_DoesNotRemoveTasksFromOtherLists()
+    {
+        var service = CreateService();
+        var list = service.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var otherList = service.CreateList("Otra", "ic_list", "#000", isDependencyChain: false);
+        var task = service.CreateTask(otherList, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        service.DeleteList(list);
+
+        service.PurgeList(list);
+
+        Assert.Single(service.Store.Lists, l => l.Id == otherList.Id);
+        Assert.Single(service.Store.Tasks, t => t.Id == task.Id);
+    }
+
+    [Fact]
+    public void PurgeAllDeleted_PhysicallyRemovesEveryDeletedListTaskAndSubtask()
+    {
+        var service = CreateService();
+        var list = service.CreateList("Lista", "ic_list", "#000", isDependencyChain: false);
+        var task = service.CreateTask(list, "Tarea", "", 0, null, PolarRecurrence.None, 0, []);
+        var subtask = service.AddSubtask(task, "Subtarea");
+        service.DeleteList(list);
+        var keptList = service.CreateList("Mantener", "ic_list", "#000", isDependencyChain: false);
+        var keptTask = service.CreateTask(keptList, "Mantener", "", 0, null, PolarRecurrence.None, 0, []);
+
+        service.PurgeAllDeleted();
+
+        Assert.DoesNotContain(service.Store.Lists, l => l.Id == list.Id);
+        Assert.DoesNotContain(service.Store.Tasks, t => t.Id == task.Id);
+        Assert.DoesNotContain(service.Store.Subtasks, s => s.Id == subtask.Id);
+        Assert.Contains(service.Store.Lists, l => l.Id == keptList.Id);
+        Assert.Contains(service.Store.Tasks, t => t.Id == keptTask.Id);
+    }
+
+    /// <summary>Mismo criterio de retención de 30 días que ya usan <c>KanbanService</c> y
+    /// <c>ReminderService.PurgeOldTombstones</c> — una lista borrada hace más de 30 días y ya sincronizada
+    /// (<c>!Dirty</c>) se purga físicamente al arrancar; una reciente, o una todavía pendiente de subir, se
+    /// conserva.</summary>
+    [Fact]
+    public void Constructor_PurgesOldSyncedTombstones_ButKeepsRecentOrStillDirtyOnes()
+    {
+        var first = CreateService();
+        var oldSynced = first.CreateList("Vieja y sincronizada", "ic_list", "#000", isDependencyChain: false);
+        first.DeleteList(oldSynced);
+        oldSynced.Dirty = false;
+        oldSynced.DeletedAtUtc = DateTime.UtcNow.AddDays(-31);
+
+        var oldButDirty = first.CreateList("Vieja pero sin sincronizar", "ic_list", "#000", isDependencyChain: false);
+        first.DeleteList(oldButDirty);
+        oldButDirty.DeletedAtUtc = DateTime.UtcNow.AddDays(-31);
+
+        var recent = first.CreateList("Reciente", "ic_list", "#000", isDependencyChain: false);
+        first.DeleteList(recent);
+        recent.Dirty = false;
+        recent.DeletedAtUtc = DateTime.UtcNow.AddDays(-2);
+
+        first.Save();
+
+        var second = CreateService();
+
+        Assert.DoesNotContain(second.Store.Lists, l => l.Id == oldSynced.Id);
+        Assert.Contains(second.Store.Lists, l => l.Id == oldButDirty.Id);
+        Assert.Contains(second.Store.Lists, l => l.Id == recent.Id);
+    }
+
     // ===================== Completar en cascada =====================
 
     [Fact]

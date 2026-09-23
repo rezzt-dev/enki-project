@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
@@ -14,6 +15,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
+using enki.Models;
 using enki.Services;
 using Material.Icons;
 
@@ -27,22 +29,59 @@ public sealed partial class SettingsViewModel : ViewModelBase
     /// tracks the active language, at the cost of no longer being usable in a <c>const</c>/<c>case</c>
     /// context (no callers needed that).</summary>
     public static string DefaultFontLabel => LocalizationService.Instance["Settings_Appearance_Font_DefaultLabel"];
+    public static string DefaultCodeFontLabel => LocalizationService.Instance["Settings_Editor_CodeFont_DefaultLabel"];
 
     private readonly SettingsService _settingsService;
+    private readonly CustomThemeService _customThemeService;
+    private readonly BrandLogoService _brandLogoService;
     private readonly VaultSettingsService _vaultSettingsService;
     private readonly VaultService _vaultService;
+
+    /// <summary>Plantillas de notas del vault activo: aquí solo se leen —para el desplegable de la nota
+    /// diaria— y se abre su carpeta; quien las crea y las aplica es Documentos
+    /// (<c>NotesViewModel.Templates.cs</c>).</summary>
+    private readonly NoteTemplateService _noteTemplateService;
     private readonly VaultBackupService _vaultBackupService;
     private readonly PolarAuthService _polarAuthService;
     private readonly PolarSyncService _polarSyncService;
     private readonly NotificationService _notificationService;
-    private readonly Action _onVaultChanged;
+    /// <summary>Pide al shell abrir otra carpeta como vault activo y recargarlo todo, devolviendo si
+    /// el cambio llegó a producirse — <c>MainWindowViewModel.SwitchToVaultAsync</c>. Es una petición, no
+    /// un aviso: la secuencia segura (comprobar la ruta, volcar lo pendiente, cancelar si algo quedó sin
+    /// guardar, bloquear sesiones, recargar) vive donde está la composición, y tanto "cambiar carpeta del
+    /// vault" como "restaurar copia de seguridad" entran por aquí en vez de repetirla cada uno por su
+    /// cuenta (T4, .docs/project-info/multi-vault-en-caliente.md). El segundo parámetro es el hueco entre
+    /// adoptar la ruta y recargar, que solo usa la restauración para importar sus preferencias.</summary>
+    private readonly Func<string, Action?, Task<bool>> _switchVault;
     private readonly Action<bool> _onTitleBarModeChanged;
     private readonly Action<bool> _onNotificationsPanelChanged;
     private readonly Action<bool> _onRemindersPanelChanged;
+
+    /// <summary>Los dos interruptores nuevos (botón de bandeja de entrada de la barra de título y fila
+    /// "Cambiar de vault" del sidebar) llegan como parámetros opcionales al final del constructor, no
+    /// en su sitio "lógico" entre los demás callbacks: la docena de tests y UI-tests que construyen este
+    /// viewmodel a mano no necesitan enterarse de un ajuste que no ejercitan.</summary>
+    private readonly Action<bool>? _onInboxPanelChanged;
+
+    private readonly Action<bool>? _onVaultSwitcherChanged;
     private readonly Action<bool> _onCalendarShowSidebarScrollbarChanged;
-    private readonly Action<bool> _onCalendarPanelChanged;
     private readonly Action<bool> _onDashboardShowScrollbarChanged;
-    private readonly Action<bool> _onSkillsPanelModeChanged;
+    private readonly Action<string> _onKanbanBoardOrientationChanged;
+
+    /// <summary>Single callback covering every sidebar-section visibility toggle (Ajustes › General ›
+    /// Secciones de la barra lateral) — replaces what used to be one <c>Action&lt;bool&gt;</c> per section
+    /// (<c>onCalendarPanelChanged</c>, <c>onSkillsPanelModeChanged</c>) now that there are eight of them
+    /// instead of two; <see cref="MainWindowViewModel.OnSidebarSectionChanged"/> switches on the
+    /// <see cref="AppPage"/> to apply whatever page-specific side effect that section needs.</summary>
+    private readonly Action<AppPage, bool> _onSidebarSectionChanged;
+
+    /// <summary>Fired after every drag/pin reorder in <see cref="MainSidebarSections"/>/
+    /// <see cref="BottomSidebarSections"/> that changes membership or order but not any single section's
+    /// visibility (so <see cref="_onSidebarSectionChanged"/>'s own rebuild wouldn't otherwise fire) —
+    /// <see cref="MainWindowViewModel"/> wires this straight to its own <c>RebuildNavItems</c> so the real
+    /// sidebar picks up the new order immediately.</summary>
+    private readonly Action _onSidebarSectionOrderChanged;
+
     private readonly Action<bool> _onPolarShowTaskTagsChanged;
     private readonly Action<int> _onUiZoomChanged;
     private readonly Action _onLanguageChanged;
@@ -69,13 +108,14 @@ public sealed partial class SettingsViewModel : ViewModelBase
     /// <summary>Single callback for every other Calendario setting (docs/calendar-feature/
     /// 09-configuracion-y-ajustes.md §1) that the already-open <c>CalendarViewModel</c> needs to react to
     /// live — one callback covering the whole group rather than one per property (unlike
-    /// <see cref="_onCalendarShowSidebarScrollbarChanged"/>/<see cref="_onCalendarPanelChanged"/>, which
+    /// <see cref="_onCalendarShowSidebarScrollbarChanged"/>/<see cref="_onSidebarSectionChanged"/>, which
     /// are their own concerns: sidebar chrome and nav visibility, not "how the grid itself is laid out").
     /// Not fired for <c>CalendarDefaultView</c>, which only matters the next time the page opens.</summary>
     private readonly Action _onCalendarSettingsChanged;
 
     public ObservableCollection<SettingsSectionViewModel> Sections { get; }
     public ObservableCollection<string> AvailableFonts { get; }
+    public ObservableCollection<string> AvailableCodeFonts { get; }
 
     /// <summary>Idiomas disponibles para la UI. La lista es estática, pero el seleccionado se enlaza a
     /// <see cref="SelectedLanguage"/>. CA1822 sugiere marcar el getter <c>static</c> porque no toca estado
@@ -100,21 +140,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private SettingsSection _selectedSection = SettingsSection.General;
 
-    [ObservableProperty]
-    private string _vaultPath;
-
-    /// <summary>Tamaño total en disco del vault activo, ya formateado ("128 MB") — reutiliza
-    /// <see cref="VaultService.GetVaultSizeBytes"/> (ya usado por el Dashboard), solo que aquí se muestra
-    /// junto a la ruta del vault en la "zona de peligro" (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md
-    /// §2). Se recalcula al construir y cada vez que cambia de carpeta.</summary>
-    [ObservableProperty]
-    private string _vaultSizeLabel = string.Empty;
-
-    /// <summary>True mientras el diálogo de confirmación de "Restablecer ajustes a valores por defecto"
-    /// está abierto — mismo patrón request/cancel/confirm que <c>TrashViewModel.PendingEmptyTarget</c>.</summary>
-    [ObservableProperty]
-    private bool _pendingResetSettings;
-
     /// <summary>"Preguntar antes de borrar" (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md §3) —
     /// consultado por <c>KanbanViewModel</c>/<c>CalendarViewModel</c>/<c>PolarTaskManagementViewModel</c>/
     /// <c>SkillsViewModel</c> en sus respectivos <c>RequestDelete*</c> para saltar directo al borrado cuando
@@ -128,296 +153,72 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _debugLoggingEnabled;
 
-    /// <summary>"Backup automático" (Ajustes › General, zona de peligro, Fase 1 de
-    /// docs/analisis-proyecto/roadmap.md) — complemento opcional al backup manual: crea uno nuevo cada
-    /// <see cref="AppSettings.AutoBackupIntervalDays"/> días y conserva los últimos
-    /// <see cref="AppSettings.AutoBackupRetentionCount"/> en <c>%AppData%/Enki/backups/</c>. Apagado por
-    /// defecto.</summary>
-    [ObservableProperty]
-    private bool _autoBackupEnabled;
-
-    /// <summary>Cada cuántos días se crea un backup automático (Fase 10, docs/analisis-proyecto/roadmap.md
-    /// — antes solo el interruptor de <see cref="AutoBackupEnabled"/> tenía control en la UI, el intervalo
-    /// y la retención quedaban fijos en su valor por defecto para todo el mundo). El servicio
-    /// (<c>VaultBackupService.RunScheduledBackupIfDue</c>) ya acota por debajo a 1 día
-    /// independientemente de este campo; el máximo de 30 del selector de la UI es solo para mantener el
-    /// control usable, no una validación adicional.</summary>
-    [ObservableProperty]
-    private int _autoBackupIntervalDays;
-
-    /// <summary>Cuántos backups automáticos se conservan antes de rotar los más antiguos (Fase 10, ver
-    /// <see cref="AutoBackupIntervalDays"/>). Mismo criterio de acotado por la UI, no por el servicio.</summary>
-    [ObservableProperty]
-    private int _autoBackupRetentionCount;
-
     /// <summary>Página de inicio (Ajustes › General) — con qué página arranca la app justo después de
     /// cargar el vault. Reutiliza <c>AppPage</c> (el mismo enum de la navegación principal) en vez de uno
     /// propio, igual que <see cref="CalendarDefaultView"/> reutiliza <c>CalendarViewMode</c>.</summary>
     [ObservableProperty]
     private AppPage _startupPage;
 
+    /// <summary>Si cerrar la ventana principal deja Enki vivo en la bandeja. Global a la instalación y
+    /// apagado por defecto para que el comportamiento de cerrar solo cambie por elección explícita.</summary>
     [ObservableProperty]
-    private bool _isDarkTheme;
-
-    [ObservableProperty]
-    private double _editorFontSize;
-
-    public string EditorFontSizeLabel =>
-        string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Editor_FontSize_Unit"], (int)EditorFontSize);
-
-    [ObservableProperty]
-    private double _editorColumnWidth;
-
-    public string EditorColumnWidthLabel =>
-        string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Editor_ColumnWidth_Unit"], (int)EditorColumnWidth);
-
-    [ObservableProperty]
-    private bool _isColumnLeftAligned;
-
-    [ObservableProperty]
-    private bool _editorShowScrollbar;
-
-    /// <summary>Tamaño de tabulación (docs/ajustes-docs/04-editor-y-notificaciones.md §1) — cuántos
-    /// espacios inserta una pulsación de Tab en el editor de notas.</summary>
-    [ObservableProperty]
-    private double _editorTabSize;
-
-    public string EditorTabSizeLabel => ((int)EditorTabSize).ToString(CultureInfo.CurrentCulture);
-
-    [ObservableProperty]
-    private bool _editorLineNumbers;
-
-    [ObservableProperty]
-    private bool _editorWordWrap;
-
-    [ObservableProperty]
-    private bool _editorSidePanelVisible;
-
-    [ObservableProperty]
-    private string _interfaceFontFamily;
-
-    [ObservableProperty]
-    private string _editorFontFamily;
-
-    [ObservableProperty]
-    private bool _useCustomTitleBar;
-
-    [ObservableProperty]
-    private bool _dashboardShowScrollbar;
-
-    /// <summary>Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md), 50–200 en pasos de 10, 100 por
-    /// defecto — persistido por vault, no globalmente (a diferencia de todo lo demás en esta clase),
-    /// así que se lee/escribe contra <see cref="_vaultSettingsService"/> en vez de
-    /// <see cref="_settingsService"/>. Ver <see cref="OnUiZoomPercentChanged"/>.</summary>
-    [ObservableProperty]
-    private int _uiZoomPercent;
-
-    public string UiZoomPercentLabel =>
-        string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Appearance_Zoom_PercentUnit"], UiZoomPercent);
-
-    private const int UiZoomMinPercent = 50;
-    private const int UiZoomMaxPercent = 200;
-    private const int UiZoomStepPercent = 10;
-
-    /// <summary>Relleno de la barra visual de zoom en Ajustes, como ancho "Star" (proporción del ancho
-    /// disponible, no píxeles fijos) para que la barra ocupe todo el ancho de la tarjeta en vez de un
-    /// tamaño fijo — recalculado en <see cref="OnUiZoomPercentChanged"/> vía <c>OnPropertyChanged</c>
-    /// porque no es un valor propio, se deriva de <see cref="UiZoomPercent"/>.</summary>
-    public GridLength UiZoomBarFillStar => new(UiZoomPercent - UiZoomMinPercent, GridUnitType.Star);
-
-    /// <summary>Complemento de <see cref="UiZoomBarFillStar"/> — juntas sus dos columnas "Star" suman
-    /// siempre el rango completo 50–200, así que la primera representa la fracción rellena de la barra.</summary>
-    public GridLength UiZoomBarRemainderStar => new(UiZoomMaxPercent - UiZoomPercent, GridUnitType.Star);
-
-    [ObservableProperty]
-    private bool _calendarShowSidebarScrollbar;
-
-    // ===================== Calendario (docs/calendar-feature/09-configuracion-y-ajustes.md §1) =====================
-
-    [ObservableProperty]
-    private CalendarViewMode _calendarDefaultView;
-
-    [ObservableProperty]
-    private bool _calendarWeekStartsOnMonday;
-
-    [ObservableProperty]
-    private bool _calendarShowWeekends;
-
-    [ObservableProperty]
-    private double _calendarWorkingHoursStart;
-
-    [ObservableProperty]
-    private double _calendarWorkingHoursEnd;
-
-    [ObservableProperty]
-    private bool _calendarTimeFormat24h;
-
-    [ObservableProperty]
-    private bool _calendarPanelEnabled;
-
-    [ObservableProperty]
-    private bool _skillsPanelEnabled;
-
-    [ObservableProperty]
-    private bool _polarShowTaskTags;
-
-    [ObservableProperty]
-    private bool _notificationsPanelEnabled;
-
-    [ObservableProperty]
-    private bool _remindersPanelEnabled;
-
-    [ObservableProperty]
-    private bool _showDesktopToasts;
-
-    [ObservableProperty]
-    private bool _muteInfoNotifications;
-
-    [ObservableProperty]
-    private bool _muteSuccessNotifications;
-
-    [ObservableProperty]
-    private bool _muteWarningNotifications;
-
-    [ObservableProperty]
-    private bool _muteErrorNotifications;
-
-    [ObservableProperty]
-    private double _reminderSoonWindowDays;
-
-    public string ReminderSoonWindowDaysLabel =>
-        string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Notifications_Reminders_SoonWindow_Unit"], (int)ReminderSoonWindowDays);
-
-    // ===================== Horario "no molestar" y sonido (docs/ajustes-docs/04-editor-y-notificaciones.md §2) =====================
-
-    [ObservableProperty]
-    private bool _doNotDisturbEnabled;
-
-    [ObservableProperty]
-    private string _doNotDisturbStart = "22:00";
-
-    [ObservableProperty]
-    private string _doNotDisturbEnd = "08:00";
-
-    [ObservableProperty]
-    private bool _notificationSoundEnabled;
-
-    /// <summary>0–100 (Fase 5 del roadmap, gap 11) — ver <c>AppSettings.NotificationSoundVolume</c> y
-    /// <c>NotificationSoundPlayer.Play</c> para qué backends de reproducción respetan realmente la escala
-    /// vs. solo el "silencio en 0".</summary>
-    [ObservableProperty]
-    private double _notificationSoundVolume;
-
-    public string NotificationSoundVolumeLabel =>
-        string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Notifications_Sound_Volume_Unit"], (int)NotificationSoundVolume);
-
-    // ===================== Privacidad › vínculo con Polar =====================
-
-    public bool IsSupabaseConfigured => _polarAuthService.IsConfigured;
-
-    [ObservableProperty]
-    private bool _isPolarLinked;
-
-    [ObservableProperty]
-    private string? _polarLinkedEmail;
-
-    /// <summary>"Última sincronización" en Ajustes › Cuenta (docs/ajustes-docs/03-cuenta-y-sincronizacion-polar.md) —
-    /// el dato ya existía en <see cref="PolarSyncService.LastSyncedUtc"/>, solo faltaba mostrarlo aquí.
-    /// Mismo formato ("dd MMM, HH:mm" / "Nunca") que <c>PolarTaskManagementViewModel.RefreshSyncStatus</c>,
-    /// refrescado al construir y cada vez que <see cref="PolarSyncService.SyncCompleted"/> se dispara.</summary>
-    [ObservableProperty]
-    private string _lastSyncedLabel = LocalizationService.Instance["Common_Never"];
-
-    [ObservableProperty]
-    private bool _isSyncingNow;
-
-    [ObservableProperty]
-    private string? _syncError;
-
-    /// <summary>Composed "Couldn't sync: {0}" label — same reasoning as the equivalent properties in
-    /// <c>RemindersViewModel</c>/<c>PolarTaskManagementViewModel</c>: kept out of XAML so the word order can
-    /// be adapted per locale instead of being fixed by a <c>StringFormat</c>. Ajustes › Cuenta previously
-    /// showed no sync error at all (10.2 §8) — only "Last synced", with no way to tell a stale timestamp
-    /// apart from a genuinely broken sync.</summary>
-    public string? SyncErrorLabel => SyncError is { } error
-        ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Account_SyncErrorLabel"], error)
-        : null;
-
-    partial void OnSyncErrorChanged(string? value) => OnPropertyChanged(nameof(SyncErrorLabel));
-
-    /// <summary>Non-null only while <see cref="PolarSyncService.Status"/> is
-    /// <see cref="PolarSyncStatus.Offline"/> and a retry is actually scheduled — "Retrying in 2 minutes".</summary>
-    [ObservableProperty]
-    private string? _nextRetryLabel;
-
-    /// <summary>True right after this view's own "Sync now" click was discarded because another sync (the
-    /// background timer, the realtime debounce, or another view's own manual sync) already held the gate —
-    /// distinct from a completed cycle that simply changed nothing (Fase 9, docs/analisis-proyecto/
-    /// roadmap.md). Cleared the next time any sync cycle actually completes.</summary>
-    [ObservableProperty]
-    private bool _lastSyncNowWasSkipped;
-
-    public string SyncNowButtonLabel => IsSyncingNow
-        ? LocalizationService.Instance["Settings_Account_SyncingButton"]
-        : LocalizationService.Instance["Settings_Account_SyncNowButton"];
-
-    partial void OnIsSyncingNowChanged(bool value) => OnPropertyChanged(nameof(SyncNowButtonLabel));
-
-    [ObservableProperty]
-    private string _polarEmailInput = string.Empty;
-
-    [ObservableProperty]
-    private string _polarPasswordInput = string.Empty;
-
-    [ObservableProperty]
-    private bool _isLinkingPolar;
-
-    [ObservableProperty]
-    private string? _polarLinkError;
-
-    public string LinkButtonLabel => IsLinkingPolar
-        ? LocalizationService.Instance["Settings_Account_LinkingButton"]
-        : LocalizationService.Instance["Settings_Account_LinkPolar_Title"];
-
-    partial void OnIsLinkingPolarChanged(bool value) => OnPropertyChanged(nameof(LinkButtonLabel));
+    private bool _minimizeToTray;
 
     public SettingsViewModel(
         SettingsService settingsService,
+        CustomThemeService customThemeService,
+        BrandLogoService brandLogoService,
         VaultSettingsService vaultSettingsService,
         VaultService vaultService,
         VaultBackupService vaultBackupService,
         PolarAuthService polarAuthService,
         PolarSyncService polarSyncService,
         NotificationService notificationService,
-        Action onVaultChanged,
+        Func<string, Action?, Task<bool>> switchVault,
         Action<bool> onTitleBarModeChanged,
         Action<bool> onNotificationsPanelChanged,
         Action<bool> onRemindersPanelChanged,
         Action<bool> onCalendarShowSidebarScrollbarChanged,
-        Action<bool> onCalendarPanelChanged,
+        Action<AppPage, bool> onSidebarSectionChanged,
+        Action onSidebarSectionOrderChanged,
         Action onCalendarSettingsChanged,
         Action<bool> onDashboardShowScrollbarChanged,
-        Action<bool> onSkillsPanelModeChanged,
+        Action<string> onKanbanBoardOrientationChanged,
         Action<bool> onPolarShowTaskTagsChanged,
         Action<int> onUiZoomChanged,
-        Action onLanguageChanged)
+        Action onLanguageChanged,
+        NoteTemplateService? noteTemplateService = null,
+        Action<bool>? onInboxPanelChanged = null,
+        Action<bool>? onVaultSwitcherChanged = null,
+        UpdateCheckService? updateCheckService = null)
     {
+        _updateCheckService = updateCheckService;
         _settingsService = settingsService;
+        _customThemeService = customThemeService;
+        _brandLogoService = brandLogoService;
         _vaultSettingsService = vaultSettingsService;
         _vaultService = vaultService;
+        // Opcional y derivado del vault cuando no se pasa, como en NotesViewModel: el servicio no tiene
+        // estado propio. La app sí pasa el que compone MainWindowViewModel, para que crear una plantilla
+        // desde Documentos refresque este desplegable por TemplatesChanged sin más cableado.
+        _noteTemplateService = noteTemplateService ?? new NoteTemplateService(vaultService);
+        _noteTemplateService.TemplatesChanged += ReloadDailyNoteTemplates;
         _vaultBackupService = vaultBackupService;
         _polarAuthService = polarAuthService;
         _polarSyncService = polarSyncService;
         _notificationService = notificationService;
-        _onVaultChanged = onVaultChanged;
+        _switchVault = switchVault;
         _onTitleBarModeChanged = onTitleBarModeChanged;
         _onNotificationsPanelChanged = onNotificationsPanelChanged;
         _onRemindersPanelChanged = onRemindersPanelChanged;
+        _onInboxPanelChanged = onInboxPanelChanged;
+        _onVaultSwitcherChanged = onVaultSwitcherChanged;
         _onCalendarShowSidebarScrollbarChanged = onCalendarShowSidebarScrollbarChanged;
-        _onCalendarPanelChanged = onCalendarPanelChanged;
+        _onSidebarSectionChanged = onSidebarSectionChanged;
+        _onSidebarSectionOrderChanged = onSidebarSectionOrderChanged;
         _onCalendarSettingsChanged = onCalendarSettingsChanged;
         _onDashboardShowScrollbarChanged = onDashboardShowScrollbarChanged;
-        _onSkillsPanelModeChanged = onSkillsPanelModeChanged;
+        _onKanbanBoardOrientationChanged = onKanbanBoardOrientationChanged;
         _onPolarShowTaskTagsChanged = onPolarShowTaskTagsChanged;
         _onUiZoomChanged = onUiZoomChanged;
         _onLanguageChanged = onLanguageChanged;
@@ -456,7 +257,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         // property update is marshaled onto the UI thread here rather than in VaultService itself.
         vaultService.VaultSizeChanged += () => Dispatcher.UIThread.Post(RefreshVaultSizeLabel);
         _startupPage = ParseAppPage(settingsService.Settings.StartupPage);
+        _minimizeToTray = settingsService.Settings.MinimizeToTray;
         _isDarkTheme = settingsService.Settings.Theme != "Light";
+        _isCustomThemeActive = customThemeService.ActiveThemeId is not null;
         _editorFontSize = settingsService.Settings.EditorFontSize;
         _editorColumnWidth = settingsService.Settings.EditorColumnWidth;
         _isColumnLeftAligned = settingsService.Settings.EditorColumnPosition == "Left";
@@ -464,9 +267,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorTabSize = settingsService.Settings.EditorTabSize;
         _editorLineNumbers = settingsService.Settings.EditorLineNumbers;
         _editorWordWrap = settingsService.Settings.EditorWordWrap;
+        _editorJustifyText = settingsService.Settings.EditorJustifyParagraphs;
+        _editorAutoPairs = settingsService.Settings.EditorAutoPairs;
+        _editorRemoteImages = settingsService.Settings.EditorRemoteImages;
+        _vaultWatchExternalChanges = settingsService.Settings.VaultWatchExternalChanges;
+        _vaultAutoReloadExternalChanges = settingsService.Settings.VaultAutoReloadExternalChanges;
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
+        _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
+        _kanbanShowTagFilter = settingsService.Settings.KanbanShowTagFilter;
+        _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";
+        _useCustomBrandLogo = settingsService.Settings.UseCustomBrandLogo && brandLogoService.HasLogo;
+        _isBrandLogoCircular = settingsService.Settings.BrandLogoShape == "Circle";
+        _isBuiltInDarkThemesCollapsed = settingsService.Settings.BuiltInDarkThemesCollapsed;
+        _isBuiltInLightThemesCollapsed = settingsService.Settings.BuiltInLightThemesCollapsed;
         _confirmBeforeDelete = settingsService.Settings.ConfirmBeforeDelete;
         _debugLoggingEnabled = settingsService.Settings.DebugLoggingEnabled;
         _autoBackupEnabled = settingsService.Settings.AutoBackupEnabled;
@@ -482,15 +297,33 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _calendarTimeFormat24h = settingsService.Settings.CalendarTimeFormat24h;
         _calendarPanelEnabled = settingsService.Settings.CalendarPanelEnabled;
         _skillsPanelEnabled = settingsService.Settings.SkillsPanelEnabled;
+        _dashboardPanelEnabled = settingsService.Settings.DashboardPanelEnabled;
+        _kanbanPanelEnabled = settingsService.Settings.KanbanPanelEnabled;
+        _notesPanelEnabled = settingsService.Settings.NotesPanelEnabled;
+        _filesPanelEnabled = settingsService.Settings.FilesPanelEnabled;
+        _sessionsPanelEnabled = settingsService.Settings.SessionsPanelEnabled;
+        _trashPanelEnabled = settingsService.Settings.TrashPanelEnabled;
+        _tagManagerPanelEnabled = settingsService.Settings.TagManagerPanelEnabled;
+        _habitsPanelEnabled = settingsService.Settings.HabitsPanelEnabled;
+        _statisticsPanelEnabled = settingsService.Settings.StatisticsPanelEnabled;
+        _remindersSidebarEnabled = settingsService.Settings.RemindersSidebarEnabled;
+        _notificationsSidebarEnabled = settingsService.Settings.NotificationsSidebarEnabled;
         _polarShowTaskTags = settingsService.Settings.PolarShowTaskTags;
         _notificationsPanelEnabled = settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = settingsService.Settings.RemindersPanelEnabled;
+        _inboxPanelEnabled = settingsService.Settings.InboxPanelEnabled;
+        _vaultSwitcherEnabled = settingsService.Settings.VaultSwitcherEnabled;
         _showDesktopToasts = settingsService.Settings.ShowDesktopToasts;
         _muteInfoNotifications = settingsService.Settings.MuteInfoNotifications;
         _muteSuccessNotifications = settingsService.Settings.MuteSuccessNotifications;
         _muteWarningNotifications = settingsService.Settings.MuteWarningNotifications;
         _muteErrorNotifications = settingsService.Settings.MuteErrorNotifications;
         _reminderSoonWindowDays = settingsService.Settings.ReminderSoonWindowDays;
+        _checkUpdatesOnStartup = settingsService.Settings.CheckUpdatesOnStartup;
+        _snoozePrimaryMinutes = settingsService.Settings.SnoozePrimaryMinutes;
+        _snoozeSecondaryMinutes = settingsService.Settings.SnoozeSecondaryMinutes;
+        _snoozeEveningHour = settingsService.Settings.SnoozeEveningHour;
+        _snoozeTomorrowHour = settingsService.Settings.SnoozeTomorrowHour;
         _doNotDisturbEnabled = settingsService.Settings.DoNotDisturbEnabled;
         _doNotDisturbStart = settingsService.Settings.DoNotDisturbStart;
         _doNotDisturbEnd = settingsService.Settings.DoNotDisturbEnd;
@@ -498,16 +331,23 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _notificationSoundVolume = settingsService.Settings.NotificationSoundVolume;
         _interfaceFontFamily = ToLabel(settingsService.Settings.InterfaceFontFamily);
         _editorFontFamily = ToLabel(settingsService.Settings.EditorFontFamily);
-        _selectedLanguage = SupportedLanguages.Find(settingsService.Settings.Language) ?? SupportedLanguages.All[0];
+        _codeFontFamily = ToCodeFontLabel(settingsService.Settings.CodeFontFamily);
+        _selectedLanguage = SupportedLanguages.Find(settingsService.Settings.Language)
+            ?? SupportedLanguages.Find(LocalizationService.Instance.CurrentCulture.Name)
+            ?? SupportedLanguages.All[0];
 
         EditorPreferences.FontSize = _editorFontSize;
         EditorPreferences.ColumnWidth = _editorColumnWidth;
         EditorPreferences.ColumnPosition = settingsService.Settings.EditorColumnPosition;
         EditorPreferences.ShowScrollbar = _editorShowScrollbar;
         EditorPreferences.FontFamily = settingsService.Settings.EditorFontFamily;
+        EditorPreferences.CodeFontFamily = settingsService.Settings.CodeFontFamily;
         EditorPreferences.TabSize = settingsService.Settings.EditorTabSize;
         EditorPreferences.LineNumbers = _editorLineNumbers;
         EditorPreferences.WordWrap = _editorWordWrap;
+        EditorPreferences.JustifyParagraphs = _editorJustifyText;
+        EditorPreferences.AutoPairs = _editorAutoPairs;
+        EditorPreferences.RemoteImages = _editorRemoteImages;
         EditorPreferences.SidePanelVisible = _editorSidePanelVisible;
         EditorPreferences.ToolbarVisible = settingsService.Settings.EditorToolbarVisible;
         EditorPreferences.ToolbarTextStyleExpanded = settingsService.Settings.EditorToolbarTextStyleExpanded;
@@ -515,8 +355,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.ToolbarListsExpanded = settingsService.Settings.EditorToolbarListsExpanded;
         EditorPreferences.ToolbarInsertExpanded = settingsService.Settings.EditorToolbarInsertExpanded;
         EditorPreferences.ToolbarCodeExpanded = settingsService.Settings.EditorToolbarCodeExpanded;
+        EditorPreferences.SimplifiedNotesView = _isSimplifiedNotesView;
 
         AvailableFonts = BuildAvailableFonts();
+        AvailableCodeFonts = BuildAvailableFonts(DefaultCodeFontLabel);
 
         Sections =
         [
@@ -528,15 +370,42 @@ public sealed partial class SettingsViewModel : ViewModelBase
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Account"], Icon = MaterialIconKind.AccountCircleOutline, Section = SettingsSection.Account },
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Skills"], Icon = MaterialIconKind.Brain, Section = SettingsSection.Skills },
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Shortcuts"], Icon = MaterialIconKind.KeyboardOutline, Section = SettingsSection.Shortcuts },
+            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Dashboard"], Icon = MaterialIconKind.ViewDashboardOutline, Section = SettingsSection.Dashboard },
             new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_About"], Icon = MaterialIconKind.InfoOutline, Section = SettingsSection.About }
         ];
 
-        if (Avalonia.Application.Current is not null)
+        ShortcutCategories = new ObservableCollection<ShortcutCategoryViewModel>(
+            ShortcutCatalog.All
+                .GroupBy(d => d.CategoryKey)
+                .Select(group => new ShortcutCategoryViewModel(
+                    group.Key,
+                    group.Select(d => new ShortcutRowViewModel(
+                        d.Id, d.LabelKey, ShortcutRegistry.GetGestureDisplay(d.Id), ShortcutRegistry.IsCustomized(d.Id), group.Key)).ToList())));
+        // Mantiene las filas al día si otra ventana (o un reset disparado desde aquí mismo) cambia un
+        // atajo — mismo "live mirror" que EditorPreferences.Changed, sin desuscripción porque este
+        // viewmodel vive tanto como la shell (igual que Notes/Kanban, nunca se reconstruye salvo reinicio).
+        ShortcutRegistry.Changed += RefreshAllShortcutRows;
+
+        CustomThemes = new ObservableCollection<CustomThemeRowViewModel>();
+        BuiltInDarkThemes = new ObservableCollection<CustomThemeRowViewModel>();
+        BuiltInLightThemes = new ObservableCollection<CustomThemeRowViewModel>();
+        RefreshCustomThemes();
+        RefreshBrandLogoPreview();
+
+        BuildDashboardLayoutOptions();
+        BuildDashboardSections();
+        BuildSidebarSections();
+        ReloadDailyNoteTemplates();
+
+        // Only request a built-in variant when no custom theme is active. A custom theme overrides the
+        // colors in Application.Resources and must not be clobbered by the dark/light toggle.
+        if (Avalonia.Application.Current is not null && !_isCustomThemeActive)
         {
             Avalonia.Application.Current.RequestedThemeVariant = _isDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
         }
 
         ApplyInterfaceFont(settingsService.Settings.InterfaceFontFamily);
+        ApplyCodeFont(settingsService.Settings.CodeFontFamily);
     }
 
     private void DebouncedSave()
@@ -577,15 +446,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private static string? FromLabel(string label) =>
         label == DefaultFontLabel ? null : label;
 
+    private static string ToCodeFontLabel(string? fontFamily) =>
+        string.IsNullOrWhiteSpace(fontFamily) ? DefaultCodeFontLabel : fontFamily;
+
+    private static string? FromCodeFontLabel(string label) =>
+        label == DefaultCodeFontLabel ? null : label;
+
     private static CalendarViewMode ParseCalendarViewMode(string value) =>
         Enum.TryParse<CalendarViewMode>(value, out var mode) ? mode : CalendarViewMode.Month;
 
     private static AppPage ParseAppPage(string value) =>
         Enum.TryParse<AppPage>(value, out var page) ? page : AppPage.Dashboard;
 
-    private static ObservableCollection<string> BuildAvailableFonts()
+    private static ObservableCollection<string> BuildAvailableFonts(string? defaultLabel = null)
     {
-        var list = new ObservableCollection<string> { DefaultFontLabel };
+        var list = new ObservableCollection<string> { defaultLabel ?? DefaultFontLabel };
         try
         {
             var names = FontManager.Current.SystemFonts
@@ -595,12 +470,19 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase);
             foreach (var name in names) list.Add(name);
         }
-        catch
+        catch (Exception ex)
         {
             // Fall back to just the bundled default if the platform can't enumerate system fonts.
+            LogService.Warning("No se pudieron enumerar las fuentes del sistema", ex);
         }
         return list;
     }
+
+    /// <summary>Claves de <c>Colors.axaml</c> que la fuente de la interfaz sustituye: la fuente de texto, la
+    /// de micro-labels y la que usa FluentTheme en sus controles. <c>MonoFontFamily</c> y
+    /// <c>CodeFontFamily</c> quedan fuera para preservar sus preferencias independientes.</summary>
+    private static readonly string[] InterfaceFontResourceKeys =
+        ["DisplayFontFamily", "InterfaceLabelFontFamily", "ContentControlThemeFontFamily"];
 
     private static void ApplyInterfaceFont(string? fontFamily)
     {
@@ -608,27 +490,26 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(fontFamily))
         {
-            app.Resources.Remove("DisplayFontFamily");
+            // Quitar la clave de nivel superior deja ver la de Colors.axaml (diccionario fusionado).
+            foreach (var key in InterfaceFontResourceKeys) app.Resources.Remove(key);
         }
         else
         {
-            app.Resources["DisplayFontFamily"] = new FontFamily(fontFamily);
+            var family = new FontFamily(fontFamily);
+            foreach (var key in InterfaceFontResourceKeys) app.Resources[key] = family;
         }
+    }
+
+    private static void ApplyCodeFont(string? fontFamily)
+    {
+        if (Avalonia.Application.Current is not { } app) return;
+        if (string.IsNullOrWhiteSpace(fontFamily)) app.Resources.Remove("CodeFontFamily");
+        else app.Resources["CodeFontFamily"] = new FontFamily(fontFamily);
     }
 
     partial void OnSelectedSectionChanged(SettingsSection value)
     {
         foreach (var section in Sections) section.IsActive = section.Section == value;
-    }
-
-    partial void OnIsDarkThemeChanged(bool value)
-    {
-        _settingsService.Settings.Theme = value ? "Dark" : "Light";
-        _settingsService.Save();
-        if (Avalonia.Application.Current is not null)
-        {
-            Avalonia.Application.Current.RequestedThemeVariant = value ? ThemeVariant.Dark : ThemeVariant.Light;
-        }
     }
 
     /// <summary>Only ever changed from <see cref="SetStartupPage"/> below (segmented control, no live
@@ -642,94 +523,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SetStartupPage(AppPage page) => StartupPage = page;
 
-    partial void OnEditorFontSizeChanged(double value)
+    partial void OnMinimizeToTrayChanged(bool value)
     {
-        _settingsService.Settings.EditorFontSize = value;
-        DebouncedSave();
-        EditorPreferences.FontSize = value;
-        OnPropertyChanged(nameof(EditorFontSizeLabel));
-    }
-
-    partial void OnEditorColumnWidthChanged(double value)
-    {
-        _settingsService.Settings.EditorColumnWidth = value;
-        DebouncedSave();
-        EditorPreferences.ColumnWidth = value;
-        OnPropertyChanged(nameof(EditorColumnWidthLabel));
-    }
-
-    partial void OnIsColumnLeftAlignedChanged(bool value)
-    {
-        var position = value ? "Left" : "Center";
-        _settingsService.Settings.EditorColumnPosition = position;
+        _settingsService.Settings.MinimizeToTray = value;
         _settingsService.Save();
-        EditorPreferences.ColumnPosition = position;
-    }
-
-    partial void OnEditorShowScrollbarChanged(bool value)
-    {
-        _settingsService.Settings.EditorShowScrollbar = value;
-        _settingsService.Save();
-        EditorPreferences.ShowScrollbar = value;
-    }
-
-    partial void OnEditorTabSizeChanged(double value)
-    {
-        _settingsService.Settings.EditorTabSize = (int)value;
-        DebouncedSave();
-        EditorPreferences.TabSize = (int)value;
-        OnPropertyChanged(nameof(EditorTabSizeLabel));
-    }
-
-    partial void OnEditorLineNumbersChanged(bool value)
-    {
-        _settingsService.Settings.EditorLineNumbers = value;
-        _settingsService.Save();
-        EditorPreferences.LineNumbers = value;
-    }
-
-    partial void OnEditorWordWrapChanged(bool value)
-    {
-        _settingsService.Settings.EditorWordWrap = value;
-        _settingsService.Save();
-        EditorPreferences.WordWrap = value;
-    }
-
-    partial void OnEditorSidePanelVisibleChanged(bool value)
-    {
-        _settingsService.Settings.EditorSidePanelVisible = value;
-        _settingsService.Save();
-        EditorPreferences.SidePanelVisible = value;
-    }
-
-    partial void OnInterfaceFontFamilyChanged(string value)
-    {
-        var stored = FromLabel(value);
-        _settingsService.Settings.InterfaceFontFamily = stored;
-        _settingsService.Save();
-        ApplyInterfaceFont(stored);
-    }
-
-    partial void OnEditorFontFamilyChanged(string value)
-    {
-        var stored = FromLabel(value);
-        _settingsService.Settings.EditorFontFamily = stored;
-        _settingsService.Save();
-        EditorPreferences.FontFamily = stored;
-    }
-
-    partial void OnUseCustomTitleBarChanged(bool value)
-    {
-        _settingsService.Settings.UseCustomTitleBar = value;
-        _settingsService.Save();
-        _onTitleBarModeChanged(value);
-    }
-
-    partial void OnDashboardShowScrollbarChanged(bool value)
-    {
-        _settingsService.Settings.DashboardShowScrollbar = value;
-        _settingsService.Save();
-        _onDashboardShowScrollbarChanged(value);
     }
 
     partial void OnConfirmBeforeDeleteChanged(bool value)
@@ -745,24 +542,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
         LogService.SetDebugEnabled(value);
     }
 
-    partial void OnAutoBackupEnabledChanged(bool value)
-    {
-        _settingsService.Settings.AutoBackupEnabled = value;
-        _settingsService.Save();
-    }
-
-    partial void OnAutoBackupIntervalDaysChanged(int value)
-    {
-        _settingsService.Settings.AutoBackupIntervalDays = value;
-        _settingsService.Save();
-    }
-
-    partial void OnAutoBackupRetentionCountChanged(int value)
-    {
-        _settingsService.Settings.AutoBackupRetentionCount = value;
-        _settingsService.Save();
-    }
-
     /// <summary>Abre <c>%AppData%/Enki/logs</c> en el explorador de archivos — mismo patrón que
     /// <see cref="OpenVaultFolder"/>. <see cref="LogService.LogDirectory"/> es null solo si ni siquiera se
     /// pudo crear la carpeta al arrancar (ver <see cref="LogService.Initialize"/>), caso en el que no hay
@@ -773,215 +552,36 @@ public sealed partial class SettingsViewModel : ViewModelBase
         if (LogService.LogDirectory is { } logDirectory) FolderOpener.Open(logDirectory);
     }
 
-    /// <summary>Slider "Zoom de interfaz" en Ajustes › Apariencia, además del punto de entrada
-    /// compartido por los atajos de teclado y Ctrl+rueda (<c>MainWindowViewModel.AdjustUiZoom</c>, que
-    /// escribe aquí mismo en vez de duplicar guardado/debounce — ver docs/funcionalidad-zoom-interfaz.md
-    /// §9 punto 5). A diferencia del resto de esta clase, persiste contra <see cref="_vaultSettingsService"/>
-    /// (por-vault) en vez de <see cref="_settingsService"/> (global).</summary>
-    partial void OnUiZoomPercentChanged(int value)
-    {
-        _vaultSettingsService.Settings.UiZoomPercent = value;
-        OnPropertyChanged(nameof(UiZoomBarFillStar));
-        OnPropertyChanged(nameof(UiZoomBarRemainderStar));
-        OnPropertyChanged(nameof(UiZoomPercentLabel));
-        DebouncedVaultSave();
-        _onUiZoomChanged(value);
-    }
-
-    /// <summary>Botones "-"/"+" que sustituyen al slider arrastrable en Ajustes › Apariencia (mismo paso
-    /// que los atajos de teclado, ver <c>MainWindowViewModel.UiZoomStepPercent</c>).</summary>
     [RelayCommand]
-    private void ZoomIn() => UiZoomPercent = Math.Clamp(UiZoomPercent + UiZoomStepPercent, UiZoomMinPercent, UiZoomMaxPercent);
-
-    [RelayCommand]
-    private void ZoomOut() => UiZoomPercent = Math.Clamp(UiZoomPercent - UiZoomStepPercent, UiZoomMinPercent, UiZoomMaxPercent);
-
-    partial void OnCalendarShowSidebarScrollbarChanged(bool value)
+    private void SelectSection(SettingsSection section)
     {
-        _settingsService.Settings.CalendarShowSidebarScrollbar = value;
-        _settingsService.Save();
-        _onCalendarShowSidebarScrollbarChanged(value);
+        SearchText = string.Empty;
+        SelectedSection = section;
     }
-
-    /// <summary>Only ever changed from <see cref="SetCalendarDefaultView"/> below (a segmented control,
-    /// not a two-way toggle) — doesn't call <see cref="_onCalendarSettingsChanged"/> since it only affects
-    /// which view the Calendario page opens on next, never anything about an already-open page.</summary>
-    partial void OnCalendarDefaultViewChanged(CalendarViewMode value)
-    {
-        _settingsService.Settings.CalendarDefaultView = value.ToString();
-        _settingsService.Save();
-    }
-
-    [RelayCommand]
-    private void SetCalendarDefaultView(CalendarViewMode mode) => CalendarDefaultView = mode;
-
-    partial void OnCalendarWeekStartsOnMondayChanged(bool value)
-    {
-        _settingsService.Settings.CalendarWeekStartsOnMonday = value;
-        _settingsService.Save();
-        _onCalendarSettingsChanged();
-    }
-
-    partial void OnCalendarShowWeekendsChanged(bool value)
-    {
-        _settingsService.Settings.CalendarShowWeekends = value;
-        _settingsService.Save();
-        _onCalendarSettingsChanged();
-    }
-
-    /// <summary>Un horario laboral invertido o vacío (inicio ≥ fin) dejaría al Calendario sin franja que
-    /// resaltar, así que en vez de guardarlo tal cual, el otro extremo se adelanta/retrasa lo justo para
-    /// mantener <c>fin &gt; inicio</c> — mismo criterio de "no permitir un estado absurdo" que ya aplica
-    /// <c>KanbanCardEditorViewModel</c> a sus propios campos. El extremo ajustado dispara su propio
-    /// <c>On*Changed</c>, que ya persiste y notifica —
-    /// por eso esta rama sale con <c>return</c> sin duplicar el <c>Save()</c>.</summary>
-    partial void OnCalendarWorkingHoursStartChanged(double value)
-    {
-        _settingsService.Settings.CalendarWorkingHoursStart = (int)value;
-        if (value >= CalendarWorkingHoursEnd)
-        {
-            CalendarWorkingHoursEnd = Math.Min(24, value + 1);
-            return;
-        }
-        DebouncedSave();
-        _onCalendarSettingsChanged();
-    }
-
-    partial void OnCalendarWorkingHoursEndChanged(double value)
-    {
-        _settingsService.Settings.CalendarWorkingHoursEnd = (int)value;
-        if (value <= CalendarWorkingHoursStart)
-        {
-            CalendarWorkingHoursStart = Math.Max(0, value - 1);
-            return;
-        }
-        DebouncedSave();
-        _onCalendarSettingsChanged();
-    }
-
-    partial void OnCalendarTimeFormat24hChanged(bool value)
-    {
-        _settingsService.Settings.CalendarTimeFormat24h = value;
-        _settingsService.Save();
-        _onCalendarSettingsChanged();
-    }
-
-    partial void OnCalendarPanelEnabledChanged(bool value)
-    {
-        _settingsService.Settings.CalendarPanelEnabled = value;
-        _settingsService.Save();
-        _onCalendarPanelChanged(value);
-    }
-
-    partial void OnSkillsPanelEnabledChanged(bool value)
-    {
-        _settingsService.Settings.SkillsPanelEnabled = value;
-        _settingsService.Save();
-        _onSkillsPanelModeChanged(value);
-    }
-
-    partial void OnPolarShowTaskTagsChanged(bool value)
-    {
-        _settingsService.Settings.PolarShowTaskTags = value;
-        _settingsService.Save();
-        _onPolarShowTaskTagsChanged(value);
-    }
-
-    partial void OnNotificationsPanelEnabledChanged(bool value)
-    {
-        _settingsService.Settings.NotificationsPanelEnabled = value;
-        _settingsService.Save();
-        _onNotificationsPanelChanged(value);
-    }
-
-    partial void OnRemindersPanelEnabledChanged(bool value)
-    {
-        _settingsService.Settings.RemindersPanelEnabled = value;
-        _settingsService.Save();
-        _onRemindersPanelChanged(value);
-    }
-
-    partial void OnShowDesktopToastsChanged(bool value)
-    {
-        _settingsService.Settings.ShowDesktopToasts = value;
-        _settingsService.Save();
-    }
-
-    partial void OnMuteInfoNotificationsChanged(bool value)
-    {
-        _settingsService.Settings.MuteInfoNotifications = value;
-        _settingsService.Save();
-    }
-
-    partial void OnMuteSuccessNotificationsChanged(bool value)
-    {
-        _settingsService.Settings.MuteSuccessNotifications = value;
-        _settingsService.Save();
-    }
-
-    partial void OnMuteWarningNotificationsChanged(bool value)
-    {
-        _settingsService.Settings.MuteWarningNotifications = value;
-        _settingsService.Save();
-    }
-
-    partial void OnMuteErrorNotificationsChanged(bool value)
-    {
-        _settingsService.Settings.MuteErrorNotifications = value;
-        _settingsService.Save();
-    }
-
-    partial void OnReminderSoonWindowDaysChanged(double value)
-    {
-        _settingsService.Settings.ReminderSoonWindowDays = (int)value;
-        DebouncedSave();
-        OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
-    }
-
-    partial void OnDoNotDisturbEnabledChanged(bool value)
-    {
-        _settingsService.Settings.DoNotDisturbEnabled = value;
-        _settingsService.Save();
-    }
-
-    partial void OnDoNotDisturbStartChanged(string value)
-    {
-        _settingsService.Settings.DoNotDisturbStart = value;
-        _settingsService.Save();
-    }
-
-    partial void OnDoNotDisturbEndChanged(string value)
-    {
-        _settingsService.Settings.DoNotDisturbEnd = value;
-        _settingsService.Save();
-    }
-
-    partial void OnNotificationSoundEnabledChanged(bool value)
-    {
-        _settingsService.Settings.NotificationSoundEnabled = value;
-        _settingsService.Save();
-    }
-
-    partial void OnNotificationSoundVolumeChanged(double value)
-    {
-        _settingsService.Settings.NotificationSoundVolume = value;
-        DebouncedSave();
-        OnPropertyChanged(nameof(NotificationSoundVolumeLabel));
-    }
-
-    [RelayCommand]
-    private void TestNotificationSound() => NotificationSoundPlayer.Play(NotificationSoundVolume);
-
-    [RelayCommand]
-    private void SelectSection(SettingsSection section) => SelectedSection = section;
 
     partial void OnSelectedLanguageChanged(SupportedLanguageInfo? value)
     {
         if (value is null) return;
 
-        LocalizationService.Instance.SetLanguage(value.CultureCode);
+        var previousLanguage = _settingsService.Settings.Language;
         _settingsService.Settings.Language = value.CultureCode;
-        _settingsService.Save();
+        try
+        {
+            _settingsService.Save();
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            _settingsService.Settings.Language = previousLanguage;
+            _selectedLanguage = SupportedLanguages.Find(previousLanguage)
+                ?? SupportedLanguages.Find(LocalizationService.Instance.CurrentCulture.Name);
+            OnPropertyChanged(nameof(SelectedLanguage));
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Settings_General_Language_SaveFailed"),
+                VaultFailureReasons.DescribeLocalized(ex), Models.NotificationSeverity.Error);
+            return;
+        }
+
+        LocalizationService.Instance.SetLanguage(value.CultureCode);
 
         // El shell se encarga de coordinar el refresco de etiquetas en todos los viewmodels para evitar
         // suscripciones directas al singleton de localización desde cada uno de ellos (i18n Fase 4).
@@ -999,17 +599,38 @@ public sealed partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(EditorTabSizeLabel));
         OnPropertyChanged(nameof(UiZoomPercentLabel));
         OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
+        OnPropertyChanged(nameof(InstalledVersionLabel));
+        OnPropertyChanged(nameof(AvailableUpdateLabel));
+        OnPropertyChanged(nameof(UpdateCheckStatusLabel));
+        OnPropertyChanged(nameof(SnoozePrimaryLabel));
+        OnPropertyChanged(nameof(SnoozeSecondaryLabel));
+        OnPropertyChanged(nameof(SnoozeEveningHourLabel));
+        OnPropertyChanged(nameof(SnoozeTomorrowHourLabel));
         OnPropertyChanged(nameof(SyncNowButtonLabel));
         OnPropertyChanged(nameof(LinkButtonLabel));
+        // Las dos dependían de que otra cosa cambiara para refrescarse: la del volumen, de que se moviera
+        // el deslizador (hoy su unidad es "{0}%" en los seis idiomas, pero en alemán lo correcto es
+        // "{0} %" con espacio fino, y ese día la etiqueta se quedaría atrás); la del error de sync, de que
+        // el texto reasignado abajo fuera distinto al que ya había. Anunciarlas no depende de ninguna de
+        // las dos coincidencias.
+        OnPropertyChanged(nameof(NotificationSoundVolumeLabel));
+        OnPropertyChanged(nameof(SyncErrorLabel));
 
         RefreshLastSyncedLabel();
+        SyncError = _polarSyncService.LastError;
         RebuildSections();
+        BuildDashboardLayoutOptions();
+        BuildDashboardSections();
+        BuildSidebarSections();
         RebuildAvailableFonts();
+        RebuildShortcutLabels();
+        ThemeEditor?.RefreshLabels();
+        RefreshSearchTexts();
     }
 
     private void RebuildSections()
     {
-        if (Sections is null || Sections.Count < 9) return;
+        if (Sections is null || Sections.Count < 10) return;
         Sections[0].Label = LocalizationService.Instance["Settings_Nav_General"];
         Sections[1].Label = LocalizationService.Instance["Settings_Nav_Appearance"];
         Sections[2].Label = LocalizationService.Instance["Settings_Nav_Editor"];
@@ -1018,71 +639,22 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Sections[5].Label = LocalizationService.Instance["Settings_Nav_Account"];
         Sections[6].Label = LocalizationService.Instance["Settings_Nav_Skills"];
         Sections[7].Label = LocalizationService.Instance["Settings_Nav_Shortcuts"];
-        Sections[8].Label = LocalizationService.Instance["Settings_Nav_About"];
+        Sections[8].Label = LocalizationService.Instance["Settings_Nav_Dashboard"];
+        Sections[9].Label = LocalizationService.Instance["Settings_Nav_About"];
     }
 
     private void RebuildAvailableFonts()
     {
         if (AvailableFonts is null || AvailableFonts.Count == 0) return;
+        var previousDefault = AvailableFonts[0];
+        var interfaceWasDefault = InterfaceFontFamily == previousDefault;
+        var editorWasDefault = EditorFontFamily == previousDefault;
+        var codeWasDefault = CodeFontFamily == AvailableCodeFonts[0];
         AvailableFonts[0] = DefaultFontLabel;
-        InterfaceFontFamily = ToLabel(FromLabel(InterfaceFontFamily));
-        EditorFontFamily = ToLabel(FromLabel(EditorFontFamily));
-    }
-
-    /// <summary>Signs in with an email/password that already exists in Supabase (docs/supabase-sync/08) —
-    /// Enki never creates accounts, only links to one that's already set up. Success unlocks "Gestión de
-    /// tareas" in Kanban and starts background sync (both wired off <see cref="PolarAuthService.LinkStateChanged"/>
-    /// by <c>MainWindowViewModel</c>/<c>KanbanViewModel</c>).</summary>
-    [RelayCommand]
-    private async Task LinkPolar()
-    {
-        if (IsLinkingPolar) return;
-
-        IsLinkingPolar = true;
-        PolarLinkError = null;
-
-        var (success, error) = await _polarAuthService.LinkAsync(PolarEmailInput, PolarPasswordInput);
-
-        IsLinkingPolar = false;
-        if (success)
-        {
-            PolarEmailInput = string.Empty;
-            PolarPasswordInput = string.Empty;
-        }
-        else
-        {
-            PolarLinkError = error;
-        }
-    }
-
-    [RelayCommand]
-    private void UnlinkPolar()
-    {
-        _polarAuthService.Unlink();
-        PolarEmailInput = string.Empty;
-        PolarPasswordInput = string.Empty;
-        PolarLinkError = null;
-    }
-
-    [RelayCommand]
-    private async Task ChangeVaultFolder()
-    {
-        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
-        if (topLevel?.StorageProvider is null) return;
-
-        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            Title = LocalizationService.Instance["Settings_General_ChangeVaultFolder_DialogTitle"],
-            AllowMultiple = false
-        });
-
-        var folder = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
-        if (string.IsNullOrWhiteSpace(folder)) return;
-
-        _vaultService.SetVaultPath(folder);
-        VaultPath = folder;
-        RefreshVaultSizeLabel();
-        _onVaultChanged();
+        AvailableCodeFonts[0] = DefaultCodeFontLabel;
+        if (interfaceWasDefault) InterfaceFontFamily = DefaultFontLabel;
+        if (editorWasDefault) EditorFontFamily = DefaultFontLabel;
+        if (codeWasDefault) CodeFontFamily = DefaultCodeFontLabel;
     }
 
     /// <summary>Host legible de <see cref="SkillsViewModel.CommunitySkillsUrl"/> — ver el comentario de
@@ -1093,229 +665,4 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private static void OpenCommunitySkills() => UrlOpener.Open(SkillsViewModel.CommunitySkillsUrl);
 
-    // ===================== Zona de peligro (Ajustes › General) =====================
-    // docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md — tamaño del vault, abrir su carpeta,
-    // copia de seguridad y restablecer ajustes por defecto.
-
-    private void RefreshVaultSizeLabel() => VaultSizeLabel = FileSizeFormatter.Format(_vaultService.GetVaultSizeBytes());
-
-    [RelayCommand]
-    private void OpenVaultFolder() => FolderOpener.Open(_vaultService.VaultPath);
-
-    /// <summary>Empaqueta el vault activo + los ficheros de estado de <c>%AppData%/Enki</c> en un único
-    /// .zip elegido por el usuario (mismo patrón <c>StorageProvider</c> que <see cref="ChangeVaultFolder"/>
-    /// para llegar a un <see cref="TopLevel"/> desde este viewmodel). Notifica éxito o fallo por
-    /// <see cref="NotificationService"/> en vez de fallar en silencio.</summary>
-    [RelayCommand]
-    private async Task CreateBackup()
-    {
-        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
-        if (topLevel?.StorageProvider is null) return;
-
-        var suggestedName = $"Enki-Backup-{DateTime.Now:yyyy-MM-dd-HHmm}.zip";
-        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = LocalizationService.Instance["Settings_General_DangerZone_BackupDialogTitle"],
-            SuggestedFileName = suggestedName,
-            DefaultExtension = "zip",
-            FileTypeChoices = [new FilePickerFileType(LocalizationService.Instance["Settings_General_DangerZone_ZipFileType"]) { Patterns = ["*.zip"] }]
-        });
-
-        var destination = file?.TryGetLocalPath();
-        if (string.IsNullOrWhiteSpace(destination)) return;
-
-        try
-        {
-            var result = _vaultBackupService.CreateBackup(destination);
-            if (result.IsComplete)
-            {
-                _notificationService.Push(
-                    LocalizationService.Instance["Settings_General_DangerZone_BackupCreatedTitle"],
-                    string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_General_DangerZone_BackupCreatedMessage"], destination),
-                    Models.NotificationSeverity.Success);
-            }
-            else
-            {
-                // Fase 1 (docs/analisis-proyecto/roadmap.md): antes un fichero bloqueado/ilegible se omitía
-                // del .zip en silencio — el backup "tenía éxito" mostrando el mismo mensaje que uno completo.
-                _notificationService.Push(
-                    LocalizationService.Instance["Settings_General_DangerZone_BackupIncompleteTitle"],
-                    Plural.Get("Settings_General_DangerZone_BackupIncompleteMessage", result.FailedEntries.Count,
-                        result.FailedEntries.Count, destination),
-                    Models.NotificationSeverity.Warning);
-            }
-        }
-        // Specific, expected failure types get a fully-translated message (docs/agent-docs/
-        // internacionalizacion-i18n.md §5.3) instead of leaking Exception.Message, which can come through
-        // in the OS's own language rather than Enki's active one.
-        catch (UnauthorizedAccessException)
-        {
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_BackupFailedTitle"],
-                LocalizationService.Instance["Common_Error_AccessDenied"],
-                Models.NotificationSeverity.Error);
-        }
-        catch (IOException)
-        {
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_BackupFailedTitle"],
-                LocalizationService.Instance["Common_Error_IOFailure"],
-                Models.NotificationSeverity.Error);
-        }
-        catch (Exception ex)
-        {
-            // Last-resort fallback for exception types we can't give a fully-translated message to — a
-            // documented limitation (§5.3), not a bug: a platform exception's text is never guaranteed to
-            // be in Enki's active language unless Enki intercepts it by type, as the cases above already
-            // do for the common, expectable ones.
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_BackupFailedTitle"],
-                ex.Message,
-                Models.NotificationSeverity.Error);
-        }
-    }
-
-    /// <summary>Exporta <c>settings.json</c> a una ubicación elegida por el usuario — sin lógica de merge,
-    /// útil para llevarse la configuración de un equipo a otro
-    /// (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md §1). A diferencia de una copia literal del
-    /// fichero, el vínculo de sesión con Polar (<c>PolarAccessToken</c>/<c>PolarRefreshToken</c>) se redacta
-    /// antes de escribir el fichero exportado — ver <see cref="SettingsService.BuildRedactedExportJson"/> —
-    /// para que "Exportar ajustes" no se convierta en un vector de robo de sesión
-    /// (docs/analisis-proyecto/roadmap.md, Fase 4). Reimportar el fichero exportado no restaura el vínculo
-    /// con Polar; el usuario tiene que volver a iniciar sesión desde Ajustes › Cuenta.</summary>
-    [RelayCommand]
-    private async Task ExportSettings()
-    {
-        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
-        if (topLevel?.StorageProvider is null) return;
-
-        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = LocalizationService.Instance["Settings_General_DangerZone_ExportDialogTitle"],
-            SuggestedFileName = "enki-settings.json",
-            DefaultExtension = "json",
-            FileTypeChoices = [new FilePickerFileType(LocalizationService.Instance["Settings_General_DangerZone_JsonFileType"]) { Patterns = ["*.json"] }]
-        });
-
-        var destination = file?.TryGetLocalPath();
-        if (string.IsNullOrWhiteSpace(destination)) return;
-
-        try
-        {
-            _settingsService.Save();
-            System.IO.File.WriteAllText(destination, _settingsService.BuildRedactedExportJson());
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_ExportedTitle"],
-                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_General_DangerZone_ExportedMessage"], destination),
-                Models.NotificationSeverity.Success);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ExportFailedTitle"],
-                LocalizationService.Instance["Common_Error_AccessDenied"], Models.NotificationSeverity.Error);
-        }
-        catch (IOException)
-        {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ExportFailedTitle"],
-                LocalizationService.Instance["Common_Error_IOFailure"], Models.NotificationSeverity.Error);
-        }
-        catch (Exception ex)
-        {
-            // Last-resort fallback documented in §5.3 — see CreateBackup's catch chain above.
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ExportFailedTitle"], ex.Message, Models.NotificationSeverity.Error);
-        }
-    }
-
-    /// <summary>Reemplaza <c>settings.json</c> por el fichero elegido, sin fusionar — mismo criterio simple
-    /// que <see cref="ExportSettings"/>. Requiere reiniciar Enki para que se apliquen, igual que
-    /// <see cref="ConfirmResetSettings"/>.</summary>
-    [RelayCommand]
-    private async Task ImportSettings()
-    {
-        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
-        if (topLevel?.StorageProvider is null) return;
-
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = LocalizationService.Instance["Settings_General_DangerZone_ImportDialogTitle"],
-            AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType(LocalizationService.Instance["Settings_General_DangerZone_JsonFileType"]) { Patterns = ["*.json"] }]
-        });
-
-        var source = files.Count > 0 ? files[0].TryGetLocalPath() : null;
-        if (string.IsNullOrWhiteSpace(source)) return;
-
-        try
-        {
-            System.IO.File.Copy(source, _settingsService.SettingsFilePath, overwrite: true);
-            _notificationService.Push(
-                LocalizationService.Instance["Settings_General_DangerZone_ImportedTitle"],
-                LocalizationService.Instance["Settings_General_DangerZone_ImportedMessage"],
-                Models.NotificationSeverity.Success);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ImportFailedTitle"],
-                LocalizationService.Instance["Common_Error_AccessDenied"], Models.NotificationSeverity.Error);
-        }
-        catch (IOException)
-        {
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ImportFailedTitle"],
-                LocalizationService.Instance["Common_Error_IOFailure"], Models.NotificationSeverity.Error);
-        }
-        catch (Exception ex)
-        {
-            // Last-resort fallback documented in §5.3 — see CreateBackup's catch chain above.
-            _notificationService.Push(LocalizationService.Instance["Settings_General_DangerZone_ImportFailedTitle"], ex.Message, Models.NotificationSeverity.Error);
-        }
-    }
-
-    [RelayCommand]
-    private void RequestResetSettings() => PendingResetSettings = true;
-
-    [RelayCommand]
-    private void CancelResetSettings() => PendingResetSettings = false;
-
-    /// <summary>Escribe <see cref="AppSettings"/> por defecto a disco (conservando la ruta del vault) y
-    /// avisa que hace falta reiniciar Enki — no hay hoy ningún mecanismo de recarga en caliente para las
-    /// ~50 propiedades ya cargadas en este viewmodel, así que refrescarlas en memoria una a una sería
-    /// complejidad innecesaria para una acción rara.</summary>
-    [RelayCommand]
-    private void ConfirmResetSettings()
-    {
-        _settingsService.ResetToDefaults();
-        PendingResetSettings = false;
-        _notificationService.Push(
-            LocalizationService.Instance["Settings_General_DangerZone_ResetDoneTitle"],
-            LocalizationService.Instance["Settings_General_DangerZone_ResetDoneMessage"],
-            Models.NotificationSeverity.Success);
-    }
-
-    // ===================== Cuenta › sincronización con Polar (Ajustes › Cuenta) =====================
-    // docs/ajustes-docs/03-cuenta-y-sincronizacion-polar.md — el dato y el método ya existían en
-    // PolarSyncService, solo faltaba exponerlos aquí.
-
-    private void RefreshLastSyncedLabel()
-    {
-        LastSyncedLabel = _polarSyncService.LastSyncedUtc is { } utc
-            ? RelativeTimeFormatter.FormatAbsoluteShort(utc)
-            : LocalizationService.Instance["Common_Never"];
-        SyncError = _polarSyncService.LastError;
-        NextRetryLabel = _polarSyncService.Status == PolarSyncStatus.Offline
-            && _polarSyncService.NextSyncAttemptUtc is { } next
-                ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Polar_Sync_NextRetryLabel"], RelativeTimeFormatter.FormatUntil(next, DateTime.UtcNow))
-                : null;
-    }
-
-    [RelayCommand]
-    private async Task SyncNow()
-    {
-        if (IsSyncingNow) return;
-
-        IsSyncingNow = true;
-        var outcome = await _polarSyncService.SyncNowAsync();
-        IsSyncingNow = false;
-        LastSyncNowWasSkipped = outcome == PolarSyncOutcome.SkippedAlreadyRunning;
-        // RefreshLastSyncedLabel ya se dispara desde la suscripción a SyncCompleted del constructor.
-    }
 }

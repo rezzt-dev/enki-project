@@ -52,6 +52,9 @@ public sealed partial class CalendarWeekColumnViewModel : ObservableObject
             .Where(i => !i.IsAllDay)
             .Select(i => new CalendarTimedItemViewModel(i, HourRowHeight, MinimumVisualHeightMinutes))
             .ToList();
+        // Side-by-side layout for items with overlapping time ranges (análisis §4.4, Fase 8) — needs the
+        // whole column's items at once, so it can't live in CalendarTimedItemViewModel's own constructor.
+        CalendarTimedItemLayout.Apply(TimedItems);
 
         RefreshNow(nowLocal);
     }

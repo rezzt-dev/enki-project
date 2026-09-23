@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using enki.Localization;
 using enki.Models;
+using enki.Services;
 using enki.ViewModels;
 using enki.Views.Sessions;
 
@@ -23,9 +25,18 @@ public partial class SessionsView : UserControl
     /// whatever did (or didn't) render.</summary>
     private static readonly TimeSpan GraphLoadingSafetyTimeout = TimeSpan.FromSeconds(6);
 
+    /// <summary>Shortest time the loading screen stays up once shown — long enough to read as a deliberate
+    /// transition rather than a flicker when the graph comes back almost immediately.</summary>
+    private static readonly TimeSpan GraphLoadingMinimumVisible = TimeSpan.FromMilliseconds(520);
+
+    /// <summary>Must match the Opacity <c>DoubleTransition</c> on <c>GraphLoadingOverlay</c> in the XAML.</summary>
+    private static readonly TimeSpan GraphLoadingFadeDuration = TimeSpan.FromMilliseconds(360);
+
     private NativeWebView? _graphWebView;
     private SessionsViewModel? _subscribedVm;
     private DispatcherTimer? _graphLoadingSafetyTimer;
+    private IDisposable? _graphLoadingHideStep;
+    private readonly Stopwatch _graphLoadingVisibleFor = new();
 
     public SessionsView()
     {
@@ -36,11 +47,53 @@ public partial class SessionsView : UserControl
             Unsubscribe();
             _graphLoadingSafetyTimer?.Stop();
             _graphLoadingSafetyTimer = null;
+            _graphLoadingHideStep?.Dispose();
+            _graphLoadingHideStep = null;
+            GraphLoadingAnimation.IsActive = false;
             DisposeGraphWebView();
         };
     }
 
     private SessionsViewModel? Vm => DataContext as SessionsViewModel;
+
+    private void SessionsView_Loaded(object? sender, RoutedEventArgs e) => Focus();
+
+    // Escape closes whichever session dialog (color, delete confirmation, unlock/forgot-password,
+    // recovery codes, create session) is currently on top — same priority-order pattern as
+    // KanbanView_KeyDown, since these dialogs can't stack but a consistent "most specific first" order
+    // keeps this handler correct if that ever changes. Unlike Kanban's handler, this one only ever acts on
+    // Escape, so it doesn't need to guard against hijacking other keys typed into a focused TextBox.
+    private void SessionsView_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { } vm) return;
+        if (e.Key != Key.Escape) return;
+
+        if (vm.SessionPendingColor is not null)
+        {
+            vm.CancelSessionColorCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.SessionPendingDelete is not null)
+        {
+            vm.CancelDeleteSessionCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.SessionPendingUnlock is not null)
+        {
+            vm.CancelUnlockCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.IsRecoveryCodesDialogOpen)
+        {
+            vm.CloseRecoveryCodesDialogCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (vm.IsCreateDialogOpen)
+        {
+            vm.CancelCreateSessionCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
@@ -51,6 +104,7 @@ public partial class SessionsView : UserControl
 
         _subscribedVm.GraphReady += OnGraphReady;
         _subscribedVm.GraphUpdated += OnGraphUpdated;
+        _subscribedVm.SessionColorChanged += OnSessionColorChanged;
         _subscribedVm.LinkRejected += OnLinkRejected;
         _subscribedVm.PendingLinkChanged += OnPendingLinkChanged;
         _subscribedVm.PropertyChanged += OnVmPropertyChanged;
@@ -66,6 +120,7 @@ public partial class SessionsView : UserControl
         if (_subscribedVm is null) return;
         _subscribedVm.GraphReady -= OnGraphReady;
         _subscribedVm.GraphUpdated -= OnGraphUpdated;
+        _subscribedVm.SessionColorChanged -= OnSessionColorChanged;
         _subscribedVm.LinkRejected -= OnLinkRejected;
         _subscribedVm.PendingLinkChanged -= OnPendingLinkChanged;
         _subscribedVm.PropertyChanged -= OnVmPropertyChanged;
@@ -212,18 +267,47 @@ public partial class SessionsView : UserControl
 
     private void ShowGraphLoadingOverlay()
     {
-        GraphLoadingOverlay.IsVisible = true;
+        _graphLoadingHideStep?.Dispose();
+        _graphLoadingHideStep = null;
+
+        if (!GraphLoadingOverlay.IsVisible)
+        {
+            GraphLoadingOverlay.IsVisible = true;
+            GraphLoadingAnimation.IsActive = true;
+            _graphLoadingVisibleFor.Restart();
+        }
+        // Fades in from 0 on a fresh show, or back up if a previous fade-out was still running.
+        GraphLoadingOverlay.Opacity = 1;
+
         _graphLoadingSafetyTimer?.Stop();
         _graphLoadingSafetyTimer = new DispatcherTimer { Interval = GraphLoadingSafetyTimeout };
         _graphLoadingSafetyTimer.Tick += (_, _) => HideGraphLoadingOverlay();
         _graphLoadingSafetyTimer.Start();
     }
 
+    /// <summary>Holds the loading screen for at least <see cref="GraphLoadingMinimumVisible"/> (a graph
+    /// that's ready almost instantly would otherwise flash the animation for a single frame), then fades
+    /// it out and only stops the animation once it's fully transparent.</summary>
     private void HideGraphLoadingOverlay()
     {
-        GraphLoadingOverlay.IsVisible = false;
         _graphLoadingSafetyTimer?.Stop();
         _graphLoadingSafetyTimer = null;
+        if (!GraphLoadingOverlay.IsVisible || _graphLoadingHideStep is not null) return;
+
+        var remaining = GraphLoadingMinimumVisible - _graphLoadingVisibleFor.Elapsed;
+        _graphLoadingHideStep = DispatcherTimer.RunOnce(BeginGraphLoadingFadeOut,
+            remaining > TimeSpan.Zero ? remaining : TimeSpan.FromMilliseconds(1));
+    }
+
+    private void BeginGraphLoadingFadeOut()
+    {
+        GraphLoadingOverlay.Opacity = 0;
+        _graphLoadingHideStep = DispatcherTimer.RunOnce(() =>
+        {
+            _graphLoadingHideStep = null;
+            GraphLoadingOverlay.IsVisible = false;
+            GraphLoadingAnimation.IsActive = false;
+        }, GraphLoadingFadeDuration);
     }
 
     /// <summary>The WebView's own document reported it finished reading its initial nodes/edges into sigma
@@ -254,6 +338,12 @@ public partial class SessionsView : UserControl
         _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildLinkRejectedScript(fromGlobalId, toGlobalId));
     }
 
+    private void OnSessionColorChanged(string sessionId, string color)
+    {
+        if (_graphWebView is null) return;
+        _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildSetSessionColorScript(sessionId, color));
+    }
+
     private void OnWebMessageReceived(object? sender, WebMessageReceivedEventArgs e)
     {
         var body = e.Body;
@@ -270,7 +360,11 @@ public partial class SessionsView : UserControl
 
         JsonDocument document;
         try { document = JsonDocument.Parse(json); }
-        catch (JsonException) { return; }
+        catch (JsonException ex)
+        {
+            LogService.Warning("El WebView del grafo envió un mensaje JSON no válido", ex);
+            return;
+        }
 
         using (document)
         {
@@ -290,8 +384,8 @@ public partial class SessionsView : UserControl
                         vm.HandleNodeClicked(path);
                     break;
 
-                // Sent alongside (never instead of) "nodeClick" for the second click of a double click —
-                // see handleNodeDoubleClick in SessionGraphRenderer.
+                // Activación exclusiva de la segunda pulsación del doble clic — no llega además como otro
+                // "nodeClick", para que el modo enlace no cambie justo antes de abrir la nota.
                 case "nodeDoubleClick":
                     if (document.RootElement.TryGetProperty("path", out var dblPathProp) && dblPathProp.GetString() is { } dblPath)
                         vm.HandleNodeDoubleClicked(dblPath);

@@ -3,18 +3,23 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d"
              x:Class="enki.Views.TagFilterView"
              x:DataType="vm:TagFilterViewModel">
 
-  <Grid>
+  <!-- Los chips van en una columna en estrella y el botón de desplegar en una Auto a su derecha: así
+       el botón nunca se come sitio de la fila cuando no hace falta, y cuando aparece se queda a la
+       vista aunque la lista de etiquetas sea larguísima. -->
+  <Grid ColumnDefinitions="*,Auto">
     <TextBlock Text="{loc:Tr TagFilter_Empty}" Classes="faint" IsVisible="{Binding IsEmpty}" />
 
-    <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding !IsEmpty}">
+    <ItemsControl Grid.Column="0" ItemsSource="{Binding Items}" IsVisible="{Binding !IsEmpty}">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
-          <WrapPanel Orientation="Horizontal" />
+          <controls:TagChipsPanel IsExpanded="{Binding IsExpanded}"
+                                  HiddenCount="{Binding HiddenCount, Mode=OneWayToSource}" />
         </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
@@ -26,5 +31,17 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
+
+    <!-- El margen superior alinea el botón con la primera fila de chips, que arrastran su propio
+         padding de 6px arriba desde el estilo tag-chip. -->
+    <Button Grid.Column="1" Classes="ghost" Margin="6,7,0,8" VerticalAlignment="Top"
+            IsVisible="{Binding HasHiddenTags}" Command="{Binding ToggleExpandedCommand}">
+      <StackPanel Orientation="Horizontal" Spacing="5">
+        <TextBlock Text="{loc:Tr TagFilter_ShowAll}" IsVisible="{Binding IsCollapsed}" />
+        <TextBlock Text="{Binding HiddenBadge}" Classes="faint" FontWeight="Bold"
+                   VerticalAlignment="Center" IsVisible="{Binding IsCollapsed}" />
+        <TextBlock Text="{loc:Tr TagFilter_ShowLess}" IsVisible="{Binding IsExpanded}" />
+      </StackPanel>
+    </Button>
   </Grid>
 </UserControl>

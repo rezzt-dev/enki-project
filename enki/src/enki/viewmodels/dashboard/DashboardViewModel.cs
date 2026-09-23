@@ -21,6 +21,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private readonly PolarAuthService _polarAuthService;
     private readonly NotificationService _notificationService;
     private readonly CalendarAggregationService _calendarAggregationService;
+    private readonly HabitService _habitService;
+    private readonly VaultSettingsService? _vaultSettingsService;
     private readonly Action<NoteFile> _openNote;
     private readonly Action _newNote;
     private readonly Action _navigateToKanban;
@@ -31,6 +33,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private readonly Action _openReminders;
     private readonly Action _openNotifications;
     private readonly Action _openSettings;
+    private readonly Action _navigateToHabits;
 
     /// <summary>Evita repetir el aviso de tamaño parcial en cada <see cref="Reload"/> (p. ej. al navegar
     /// de un lado a otro del Dashboard) — solo se notifica en la transición de completo a incompleto,
@@ -43,6 +46,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// <see cref="DoneBarWidth"/>.</summary>
     private const double BoardBarTotalWidth = 220;
 
+    /// <summary>Cap on how far back <see cref="LoadTodayItems"/> looks for overdue backlog — without it, a
+    /// vault with months of unaddressed overdue items would fill the whole 5-item "HOY" cupo with ancient
+    /// backlog and never show what's actually due today (análisis §4.4, Alta).</summary>
+    private static readonly TimeSpan TodayItemsBacklogWindow = TimeSpan.FromDays(30);
+
+    /// <summary>Max entries shown in the "HOY" card.</summary>
+    private const int MaxTodayItems = 5;
+
     /// <summary>Most recently modified note — the large featured tile in "NOTAS RECIENTES". Its own
     /// property rather than an <c>ObservableCollection</c> indexer binding (e.g. "RecentNotes[0]"), since
     /// Avalonia doesn't refresh an indexer binding when the backing collection is cleared and repopulated
@@ -54,6 +65,11 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// <summary>The rest of the up-to-6 recent notes, excluding <see cref="FeaturedNote"/> — the compact
     /// list beside the featured card.</summary>
     public ObservableCollection<NoteCardViewModel> OtherRecentNotes { get; } = [];
+
+    /// <summary>Configurable sections of the Dashboard, ordered and filtered according to
+    /// <see cref="Models.VaultSettings.DashboardSectionOrder"/> and
+    /// <see cref="Models.VaultSettings.DashboardHiddenSections"/>.</summary>
+    public ObservableCollection<DashboardSectionViewModel> Sections { get; } = [];
 
     /// <summary>Up to 5 cards from the board's "Por hacer" column, soonest due date first — see
     /// <see cref="LoadTaskColumn"/>. Read-only previews: editing/dragging still happens on the
@@ -78,6 +94,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// Reuses <see cref="NotificationItemViewModel"/> as-is, same severity icon/label the bell dropdown
     /// already renders — a read-only feed, opening/marking-as-read still only happens from the bell.</summary>
     public ObservableCollection<NotificationItemViewModel> RecentNotifications { get; } = [];
+
+    /// <summary>Up to 5 non-archived habits with today's done/not-done state, for the compact "Habits"
+    /// card — propuesta 13 (docs/propuesta-nuevas-funcionalidades.md §13). Built the same way
+    /// <see cref="HabitsViewModel.BuildItem"/> builds each row on the full Hábitos page, so both read
+    /// exactly the same consistency-grid logic.</summary>
+    public ObservableCollection<HabitItemViewModel> TodayHabits { get; } = [];
+
+    public bool HasTodayHabits => TodayHabits.Count > 0;
 
     [ObservableProperty]
     private string _vaultPath = string.Empty;
@@ -123,6 +147,20 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// not just read once at construction, since the setting can change without the app restarting.</summary>
     [ObservableProperty]
     private bool _isCalendarEnabled;
+
+    /// <summary>Columnas de la rejilla de "ACCESOS RÁPIDOS": 4 con la tarjeta de Calendario visible,
+    /// 3 cuando el panel está desactivado — sin esto la UniformGrid reservaría una celda vacía aunque
+    /// la tarjeta oculta no ocupe sitio (los hijos invisibles no se miden ni se colocan).</summary>
+    public int QuickAccessColumns => IsCalendarEnabled ? 4 : 3;
+
+    partial void OnIsCalendarEnabledChanged(bool value) => OnPropertyChanged(nameof(QuickAccessColumns));
+
+    /// <summary>Columnas de la rejilla en la que se vierten las secciones del Dashboard — enlazada al
+    /// <see cref="Controls.DashboardGridPanel"/> de <c>DashboardView.axaml</c>. La fija
+    /// <see cref="RebuildSections"/>: 6 para Classic y las plantillas (su geometría está dibujada sobre
+    /// esa rejilla), y el número que el usuario haya configurado en el modo Personalizado.</summary>
+    [ObservableProperty]
+    private int _gridColumns = Services.DashboardLayoutEngine.DefaultColumns;
 
     /// <summary>Ajustes › General "Mostrar barra de desplazamiento" (Panel principal) — alimenta
     /// <see cref="ScrollBarVisibility"/>, que solo se enlaza al ScrollViewer raíz de DashboardView.
@@ -230,6 +268,59 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
     private int _graphLoadGeneration;
 
+    /// <summary>Default dashboard section order, used when <see cref="Models.VaultSettings.DashboardSectionOrder"/>
+    /// is empty or missing.</summary>
+    private static readonly string[] DefaultSectionOrder =
+    [
+        "QuickAccess", "Today", "Vault", "Activity", "Sessions", "BoardTasks", "RecentNotes", "Habits"
+    ];
+
+    /// <summary>Factory for every known section keyed by its persistence key. Each instance resolves its
+    /// localized title so the dashboard and settings share the same display name.</summary>
+    private static readonly Dictionary<string, Func<DashboardSectionViewModel>> SectionFactories = new()
+    {
+        ["QuickAccess"] = () => new QuickAccessSectionViewModel
+        {
+            Key = "QuickAccess",
+            Title = LocalizationService.Instance["DashboardSection_QuickAccess"]
+        },
+        ["Today"] = () => new TodaySectionViewModel
+        {
+            Key = "Today",
+            Title = LocalizationService.Instance["DashboardSection_Today"]
+        },
+        ["Vault"] = () => new VaultSectionViewModel
+        {
+            Key = "Vault",
+            Title = LocalizationService.Instance["DashboardSection_Vault"]
+        },
+        ["Activity"] = () => new ActivitySectionViewModel
+        {
+            Key = "Activity",
+            Title = LocalizationService.Instance["DashboardSection_Activity"]
+        },
+        ["Sessions"] = () => new SessionsSectionViewModel
+        {
+            Key = "Sessions",
+            Title = LocalizationService.Instance["DashboardSection_Sessions"]
+        },
+        ["BoardTasks"] = () => new BoardTasksSectionViewModel
+        {
+            Key = "BoardTasks",
+            Title = LocalizationService.Instance["DashboardSection_BoardTasks"]
+        },
+        ["RecentNotes"] = () => new RecentNotesSectionViewModel
+        {
+            Key = "RecentNotes",
+            Title = LocalizationService.Instance["DashboardSection_RecentNotes"]
+        },
+        ["Habits"] = () => new HabitsSectionViewModel
+        {
+            Key = "Habits",
+            Title = LocalizationService.Instance["DashboardSection_Habits"]
+        }
+    };
+
     public DashboardViewModel(
         VaultService vaultService,
         SessionService sessionService,
@@ -238,6 +329,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         PolarAuthService polarAuthService,
         NotificationService notificationService,
         CalendarAggregationService calendarAggregationService,
+        HabitService habitService,
         Action<NoteFile> openNote,
         Action newNote,
         Action navigateToKanban,
@@ -249,7 +341,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
         Action openReminders,
         Action openNotifications,
         Action openSettings,
-        bool showScrollbar)
+        Action navigateToHabits,
+        bool showScrollbar,
+        VaultSettingsService? vaultSettingsService = null)
     {
         _vaultService = vaultService;
         _sessionService = sessionService;
@@ -258,6 +352,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
         _polarAuthService = polarAuthService;
         _notificationService = notificationService;
         _calendarAggregationService = calendarAggregationService;
+        _habitService = habitService;
+        _vaultSettingsService = vaultSettingsService;
         _openNote = openNote;
         _newNote = newNote;
         _navigateToKanban = navigateToKanban;
@@ -268,6 +364,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         _openReminders = openReminders;
         _openNotifications = openNotifications;
         _openSettings = openSettings;
+        _navigateToHabits = navigateToHabits;
         IsCalendarEnabled = calendarEnabled;
         ShowScrollbar = showScrollbar;
         _notificationService.NotificationsChanged += OnNotificationsChanged;
@@ -287,9 +384,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
     {
         VaultSizeLabel = FileSizeFormatter.Format(_vaultService.GetVaultSizeBytes());
         if (_vaultService.LastVaultSizeCalculationIncomplete && !_vaultSizeWasIncomplete)
-            _notificationService.Push(
-                LocalizationService.Instance["Dashboard_VaultSizeIncomplete_Title"],
-                LocalizationService.Instance["Dashboard_VaultSizeIncomplete_Message"],
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Dashboard_VaultSizeIncomplete_Title"),
+                LocalizedTextFormatter.Format("Dashboard_VaultSizeIncomplete_Message"),
                 NotificationSeverity.Warning);
         _vaultSizeWasIncomplete = _vaultService.LastVaultSizeCalculationIncomplete;
     }
@@ -339,9 +436,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
         // Real column totals, not the 5-item preview cap above — otherwise the badge next to "PENDIENTES"
         // would silently read "5" forever on a board with more than five cards, and the completion bar
         // below would be built on truncated numbers.
-        PendingTaskCount = pendingColumn?.Cards.Count ?? 0;
-        InProgressTaskCount = inProgressColumn?.Cards.Count ?? 0;
-        DoneTaskCount = doneColumn?.Cards.Count ?? 0;
+        PendingTaskCount = VisibleCards(pendingColumn).Count();
+        InProgressTaskCount = VisibleCards(inProgressColumn).Count();
+        DoneTaskCount = VisibleCards(doneColumn).Count();
         BoardTotalCount = PendingTaskCount + InProgressTaskCount + DoneTaskCount;
         BoardProgressPercent = BoardTotalCount > 0 ? (int)Math.Round(DoneTaskCount * 100.0 / BoardTotalCount) : 0;
         PendingBarWidth = BoardTotalCount > 0 ? BoardBarTotalWidth * PendingTaskCount / BoardTotalCount : 0;
@@ -366,7 +463,75 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
         ReloadNotifications();
 
+        ReloadHabits();
+
         _ = LoadGraphAsync();
+
+        RebuildSections();
+    }
+
+    /// <summary>Populates <see cref="TodayHabits"/> for the compact "Habits" card — same read-projection
+    /// logic <see cref="HabitsViewModel.BuildItem"/> uses for the full page, capped to 5 so the card stays
+    /// compact regardless of how many habits the vault has.</summary>
+    private void ReloadHabits()
+    {
+        TodayHabits.Clear();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        foreach (var habit in _habitService.Store.Habits.Where(h => !h.Archived).OrderBy(h => h.CreatedUtc).Take(5))
+            TodayHabits.Add(HabitsViewModel.BuildItem(habit, today));
+
+        OnPropertyChanged(nameof(HasTodayHabits));
+    }
+
+    /// <summary>Builds <see cref="Sections"/> from the per-vault settings, applying the user's order and
+    /// hiding disabled sections. Called by <see cref="Reload"/> so layout is refreshed on every dashboard
+    /// visit and whenever the active vault changes.</summary>
+    private void RebuildSections()
+    {
+        var settings = _vaultSettingsService?.Settings;
+        var order = settings?.DashboardSectionOrder;
+        var hidden = settings?.DashboardHiddenSections ?? [];
+
+        if (order is null || order.Count == 0)
+            order = DefaultSectionOrder.ToList();
+
+        // Make sure any new/unknown sections introduced by future versions land at the end, and drop
+        // stale keys that no longer exist.
+        var result = order
+            .Concat(DefaultSectionOrder.Except(order))
+            .Where(SectionFactories.ContainsKey)
+            .Where(key => !hidden.Contains(key))
+            .ToList();
+
+        var layoutStyle = settings?.DashboardLayoutStyle ?? DashboardLayoutEngine.Classic;
+        var customLayout = settings?.DashboardCustomLayout;
+
+        // Personalizado sin posiciones guardadas ya no cae a Classic: DashboardLayoutEngine.NormalizeCustom
+        // auto-coloca las secciones que no traen posición, así que estrenar el modo personalizado da una
+        // rejilla compacta lista para reorganizar en vez de una pila de filas a todo lo ancho.
+        var gridRows = DashboardLayoutEngine.ClampDimension(settings?.DashboardGridRows ?? DashboardLayoutEngine.DefaultRows);
+        var gridColumns = DashboardLayoutEngine.ClampDimension(settings?.DashboardGridColumns ?? DashboardLayoutEngine.DefaultColumns);
+        var slots = DashboardLayoutEngine.Compute(result, layoutStyle, customLayout, gridRows, gridColumns);
+
+        // Las plantillas y Classic están dibujadas sobre una rejilla de 6 columnas; solo el modo
+        // personalizado usa el número de columnas del vault. El panel de la vista se enlaza a esto.
+        GridColumns = layoutStyle == DashboardLayoutEngine.Custom ? gridColumns : DashboardLayoutEngine.DefaultColumns;
+
+        Sections.Clear();
+        foreach (var key in result)
+        {
+            if (!SectionFactories.TryGetValue(key, out var factory)) continue;
+
+            var section = factory();
+            if (slots.TryGetValue(key, out var slot))
+            {
+                section.GridRow = slot.Row;
+                section.GridColumn = slot.Column;
+                section.GridRowSpan = slot.RowSpan;
+                section.GridColumnSpan = slot.ColumnSpan;
+            }
+            Sections.Add(section);
+        }
     }
 
     /// <summary>Refreshes the notification counter in "ACCESOS RÁPIDOS" and the "ACTIVIDAD" feed every time
@@ -396,29 +561,38 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
         var today = DateTime.Today;
         var rangeEndUtc = today.AddDays(1).ToUniversalTime();
-        var items = _calendarAggregationService.BuildItems(DateTime.MinValue, rangeEndUtc, includeGhostOccurrences: false);
+        var rangeStartUtc = (today - TodayItemsBacklogWindow).ToUniversalTime();
+        var items = _calendarAggregationService.BuildItems(rangeStartUtc, rangeEndUtc, includeGhostOccurrences: false)
+            .Where(i => !i.IsCompleted && (i.IsPastDue || i.MomentLocal.Date == today))
+            .ToList();
 
-        foreach (var item in items.Where(i => !i.IsCompleted && (i.IsPastDue || i.MomentLocal.Date == today)).Take(5))
+        // "Vence hoy" always wins the cupo over older backlog (análisis §4.4, Alta) — only the remaining
+        // slots, if any, are filled with overdue items, most recent first.
+        var dueToday = items.Where(i => i.MomentLocal.Date == today);
+        var overdueBacklog = items.Where(i => i.MomentLocal.Date != today).OrderByDescending(i => i.MomentLocal);
+
+        foreach (var item in dueToday.Concat(overdueBacklog).Take(MaxTodayItems))
             TodayItems.Add(item);
 
         OnPropertyChanged(nameof(HasTodayItems));
     }
 
-    /// <summary>Note/link counts for the "SESIONES" stat card — same vault-wide combined graph
-    /// <see cref="SessionsViewModel"/> renders, but read here only for its two counts, never for a live
-    /// render: an embedded <c>NativeWebView</c> is a real platform child window (backed by
-    /// <c>NativeControlHost</c>), and those don't clip/scroll correctly inside a <c>ScrollViewer</c>
-    /// (the classic cross-framework "airspace" problem) — which is exactly why
-    /// <c>views/sessions/SessionsView.axaml</c> only ever hosts its own graph WebView in a fixed,
-    /// non-scrolling panel. The Dashboard is a scrolling page, so it stays out of the WebView business
-    /// entirely and just links to the real page (<see cref="NavigateToSessions"/>) for the actual graph.
-    /// <see cref="_graphLoadGeneration"/> discards a stale result in case <see cref="Reload"/> is called
-    /// again before this finishes, same pattern as <see cref="SessionsViewModel.LoadGraphCoreAsync"/>.</summary>
+    /// <summary>Note/link counts for the "SESIONES" stat card — same global vault graph
+    /// <see cref="SessionsViewModel"/> renders (every session's notes plus every vault-root note, wikilinks
+    /// resolved across all of it), but read here only for its two counts, never for a live render: an
+    /// embedded <c>NativeWebView</c> is a real platform child window (backed by <c>NativeControlHost</c>),
+    /// and those don't clip/scroll correctly inside a <c>ScrollViewer</c> (the classic cross-framework
+    /// "airspace" problem) — which is exactly why <c>views/sessions/SessionsView.axaml</c> only ever hosts
+    /// its own graph WebView in a fixed, non-scrolling panel. The Dashboard is a scrolling page, so it
+    /// stays out of the WebView business entirely and just links to the real page
+    /// (<see cref="NavigateToSessions"/>) for the actual graph. <see cref="_graphLoadGeneration"/> discards
+    /// a stale result in case <see cref="Reload"/> is called again before this finishes, same pattern as
+    /// <see cref="SessionsViewModel.LoadGraphCoreAsync"/>.</summary>
     private async System.Threading.Tasks.Task LoadGraphAsync()
     {
         var generation = ++_graphLoadGeneration;
         IsGraphLoading = true;
-        var graph = await _sessionService.LoadCombinedGraphAsync();
+        var graph = await _sessionService.LoadGlobalGraphAsync();
         if (generation != _graphLoadGeneration) return;
 
         GraphNodeCount = graph.Nodes.Count;
@@ -431,12 +605,19 @@ public sealed partial class DashboardViewModel : ViewModelBase
         target.Clear();
         if (column is null) return;
 
-        foreach (var card in column.Cards
+        foreach (var card in VisibleCards(column)
                      .OrderBy(c => c.DueDateUtc ?? DateTime.MaxValue)
                      .ThenByDescending(c => c.Priority)
                      .Take(5))
             target.Add(new KanbanCardViewModel(card));
     }
+
+    /// <summary>Las tarjetas que el tablero Kanban dibuja de verdad — es decir, sin las archivadas
+    /// (docs/agent-docs/kanban-tareas-archivadas.md). Este panel es un espejo del tablero, así que sus
+    /// listas y sus contadores tienen que decir lo mismo que él; las Estadísticas, que miran el histórico
+    /// y no el estado actual, sí siguen contando las archivadas.</summary>
+    private static IEnumerable<KanbanCard> VisibleCards(KanbanColumn? column) =>
+        column?.Cards.Where(c => !c.IsArchived) ?? [];
 
     [RelayCommand]
     private void OpenCard(NoteCardViewModel card) => _openNote(card.Note);
@@ -467,4 +648,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
     [RelayCommand]
     private void OpenSettings() => _openSettings();
+
+    [RelayCommand]
+    private void NavigateToHabits() => _navigateToHabits();
+
+    [RelayCommand]
+    private void ToggleHabitToday(HabitItemViewModel item)
+    {
+        _habitService.ToggleCompletion(item.Habit, DateOnly.FromDateTime(DateTime.Today));
+        ReloadHabits();
+    }
 }

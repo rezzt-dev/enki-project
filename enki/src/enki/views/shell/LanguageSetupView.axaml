@@ -44,6 +44,11 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+          <!-- Sin IsVisible, un TextBlock vacío sigue ocupando su línea y el espaciado del StackPanel:
+               la lista de idiomas aparecía descentrada en todos los arranques, que son los que no fallan. -->
+          <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" TextAlignment="Center"
+                     IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     Foreground="{DynamicResource DangerBrush}" />
         </StackPanel>
 
       </StackPanel>

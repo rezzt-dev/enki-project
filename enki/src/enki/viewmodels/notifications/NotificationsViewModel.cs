@@ -49,6 +49,7 @@ public sealed partial class NotificationsViewModel : ViewModelBase
         foreach (var notification in _service.Notifications)
             Items.Add(new NotificationItemViewModel(notification));
 
+        if (Detail is not null) Detail = Items.FirstOrDefault(i => i.Id == Detail.Id);
         IsEmpty = Items.Count == 0;
         UnreadCount = _service.Notifications.Count(n => !n.IsRead);
     }

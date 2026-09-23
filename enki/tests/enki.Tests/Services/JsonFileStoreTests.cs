@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Threading;
 using enki.Services;
 using Xunit;
 
@@ -35,6 +36,16 @@ public class JsonFileStoreTests : IDisposable
 
         Assert.True(loaded);
         Assert.Equal(["a", "b", "c"], value);
+    }
+
+    [Fact]
+    public void Save_OnUnix_CreatesPrivateStateFile()
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        JsonFileStore.Save(_path, new { Secret = "value" });
+
+        Assert.Equal(PrivateDataPermissions.FileMode, File.GetUnixFileMode(_path));
     }
 
     [Fact]
@@ -109,5 +120,61 @@ public class JsonFileStoreTests : IDisposable
             }));
 
         await Task.WhenAll(writers.Concat(readers));
+    }
+
+    [Fact]
+    public async Task Save_WhenAnotherThreadRetainsMutex_TimesOutInsteadOfWaitingForever()
+    {
+        using var acquired = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = Task.Run(() =>
+        {
+            using var mutex = new Mutex(false, JsonFileStore.MutexName(_path));
+            mutex.WaitOne();
+            acquired.Set();
+            release.Wait();
+            mutex.ReleaseMutex();
+        });
+        Assert.True(acquired.Wait(TimeSpan.FromSeconds(2)));
+
+        try
+        {
+            Assert.Throws<TimeoutException>(() =>
+                JsonFileStore.Save(_path, new List<int> { 1 }, TimeSpan.FromMilliseconds(50)));
+        }
+        finally
+        {
+            release.Set();
+            await holder;
+        }
+    }
+
+    [Fact]
+    public async Task TryLoad_WhenMutexTimesOut_ReadsAtomicFileWithoutTheLock()
+    {
+        JsonFileStore.Save(_path, new List<int> { 7 });
+        using var acquired = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = Task.Run(() =>
+        {
+            using var mutex = new Mutex(false, JsonFileStore.MutexName(_path));
+            mutex.WaitOne();
+            acquired.Set();
+            release.Wait();
+            mutex.ReleaseMutex();
+        });
+        Assert.True(acquired.Wait(TimeSpan.FromSeconds(2)));
+
+        try
+        {
+            Assert.True(JsonFileStore.TryLoad<List<int>>(
+                _path, out var value, TimeSpan.FromMilliseconds(50)));
+            Assert.Equal([7], value);
+        }
+        finally
+        {
+            release.Set();
+            await holder;
+        }
     }
 }

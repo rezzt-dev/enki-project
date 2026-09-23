@@ -62,10 +62,10 @@ public sealed partial class PolarTaskEditorViewModel : ObservableObject
     private bool _hasDueTime;
 
     [ObservableProperty]
-    private decimal _dueHour = 9;
+    private int _dueHour = 9;
 
     [ObservableProperty]
-    private decimal _dueMinute;
+    private int _dueMinute;
 
     [ObservableProperty]
     private bool _isCalendarOpen;
@@ -102,8 +102,20 @@ public sealed partial class PolarTaskEditorViewModel : ObservableObject
         ? LocalizationService.Instance["Polar_Editor_ConfirmCreate"]
         : LocalizationService.Instance["Polar_Editor_ConfirmSave"];
 
+    /// <summary>Un editor abierto sobrevive a ir a Ajustes y volver, y <c>Reload()</c> no lo reconstruye
+    /// para no descartar lo escrito — así que sus etiquetas se refrescan en el sitio desde
+    /// <see cref="PolarTaskManagementViewModel.RefreshLocalizedLabels"/>.</summary>
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(HeadingEyebrow));
+        OnPropertyChanged(nameof(HeadingTitle));
+        OnPropertyChanged(nameof(ConfirmLabel));
+        OnPropertyChanged(nameof(DueDateDisplayLabel));
+        OnPropertyChanged(nameof(CalendarMonthLabel));
+    }
+
     private DateTime? CombinedDueDate => DueDate is { } date
-        ? (HasDueTime ? date.Date.Add(new TimeSpan((int)DueHour, (int)DueMinute, 0)) : date.Date)
+        ? (HasDueTime ? date.Date.Add(new TimeSpan(DueHour, DueMinute, 0)) : date.Date)
         : null;
 
     private PolarTaskEditorViewModel(PolarTaskEditorMode mode, PolarTaskList targetList, PolarTask? sourceTask, PolarTaskService? taskService)
@@ -173,9 +185,24 @@ public sealed partial class PolarTaskEditorViewModel : ObservableObject
 
     partial void OnHasDueTimeChanged(bool value) => OnPropertyChanged(nameof(DueDateDisplayLabel));
 
-    partial void OnDueHourChanged(decimal value) => OnPropertyChanged(nameof(DueDateDisplayLabel));
+    partial void OnDueHourChanged(int value) => OnPropertyChanged(nameof(DueDateDisplayLabel));
 
-    partial void OnDueMinuteChanged(decimal value) => OnPropertyChanged(nameof(DueDateDisplayLabel));
+    partial void OnDueMinuteChanged(int value) => OnPropertyChanged(nameof(DueDateDisplayLabel));
+
+    /// <summary>Same [0,23]/[0,59] stepper commands as <see cref="KanbanCardEditorViewModel"/>'s due-time
+    /// stepper — both editors now share the same "time-stepper" control (KanbanView.axaml), so the
+    /// clamping behavior behind it must match too.</summary>
+    [RelayCommand]
+    private void IncrementDueHour() => DueHour = Math.Min(DueHour + 1, 23);
+
+    [RelayCommand]
+    private void DecrementDueHour() => DueHour = Math.Max(DueHour - 1, 0);
+
+    [RelayCommand]
+    private void IncrementDueMinute() => DueMinute = Math.Min(DueMinute + 5, 59);
+
+    [RelayCommand]
+    private void DecrementDueMinute() => DueMinute = Math.Max(DueMinute - 5, 0);
 
     partial void OnCalendarMonthChanged(DateTime value)
     {
@@ -237,18 +264,14 @@ public sealed partial class PolarTaskEditorViewModel : ObservableObject
 
     private void RebuildCalendarDays()
     {
-        var firstOfMonth = new DateTime(CalendarMonth.Year, CalendarMonth.Month, 1);
-        var offset = ((int)firstOfMonth.DayOfWeek + 6) % 7;
-        var gridStart = firstOfMonth.AddDays(-offset);
         var today = DateTime.Today;
 
         CalendarDays.Clear();
-        for (var i = 0; i < 42; i++)
+        foreach (var date in MonthGridCalculator.BuildDates(CalendarMonth))
         {
-            var date = gridStart.AddDays(i);
             CalendarDays.Add(new KanbanCalendarDayViewModel(
                 date,
-                isCurrentMonth: date.Month == firstOfMonth.Month,
+                isCurrentMonth: date.Month == CalendarMonth.Month,
                 isToday: date == today,
                 isSelected: DueDate is { } due && due.Date == date));
         }

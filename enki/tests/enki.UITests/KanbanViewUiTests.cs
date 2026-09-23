@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using enki.Services;
@@ -47,18 +49,49 @@ public class KanbanViewUiTests : IDisposable
         return (view, viewModel, window);
     }
 
+    /// <summary>El nombre de una columna se dibuja siempre en mayúsculas, escriba el usuario lo que
+    /// escriba — es estructura del tablero, no contenido. Así que lo que se busca en el árbol visual es el
+    /// título en mayúsculas, y de paso se comprueba que el modelo conserva el original: la regla es de
+    /// presentación, no debe tocar el dato.</summary>
     [Fact]
-    public void Loading_TheSeedBoard_RendersEveryColumn()
+    public void Loading_TheSeedBoard_RendersEveryColumnTitle_Uppercased()
     {
         var (view, viewModel, window) = CreateView();
 
-        var renderedColumnTitles = view.GetVisualDescendants()
+        var renderedTexts = view.GetVisualDescendants()
             .OfType<TextBlock>()
             .Select(t => t.Text)
             .ToList();
 
         foreach (var column in viewModel.Columns)
-            Assert.Contains(column.Title, renderedColumnTitles);
+        {
+            Assert.Contains(column.Title.ToUpper(CultureInfo.CurrentCulture), renderedTexts);
+            Assert.Equal(column.Column.Title, column.Title);
+        }
+
+        window.Close();
+    }
+
+    /// <summary>La regla de las mayúsculas es de presentación: un título tecleado en minúsculas se dibuja
+    /// en mayúsculas en la cabecera, pero el campo de renombrar sigue ofreciendo el texto literal para
+    /// editarlo — si no, renombrar iría convirtiendo el título a mayúsculas de verdad a cada pasada.</summary>
+    [Fact]
+    public void ATitleTypedInLowercase_RendersUppercased_ButIsEditedAsTyped()
+    {
+        var (view, viewModel, window) = CreateView();
+        var column = viewModel.Columns[0];
+        column.ApplyTitle("pendientes de revisar");
+        view.Measure(new Size(1400, 900));
+        view.Arrange(new Rect(0, 0, 1400, 900));
+
+        var renderedTexts = view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Contains("PENDIENTES DE REVISAR", renderedTexts);
+        Assert.DoesNotContain("pendientes de revisar", renderedTexts);
+
+        column.BeginRenameCommand.Execute(null);
+
+        Assert.Equal("pendientes de revisar", column.EditingTitle);
+        Assert.Equal("pendientes de revisar", column.Column.Title);
 
         window.Close();
     }
@@ -86,6 +119,43 @@ public class KanbanViewUiTests : IDisposable
             .Select(t => t.Text)
             .ToList();
         Assert.Contains(card.Title, renderedCardTitles);
+
+        window.Close();
+    }
+
+    /// <summary>Archivar una tarjeta la saca del tablero dibujado sin sacarla del modelo
+    /// (docs/agent-docs/kanban-tareas-archivadas.md), y la ventana de archivadas —que es XAML nuevo con su
+    /// propia plantilla de fila— la vuelve a pintar con su título. Esta prueba existe sobre todo por la
+    /// segunda mitad: recorre el árbol visual real, así que un binding roto en el modal o una plantilla
+    /// que no resuelve se ven aquí y no en la primera ejecución del usuario.</summary>
+    [Fact]
+    public void ArchivingACard_TakesItOffTheBoard_AndTheArchiveWindowRendersIt()
+    {
+        var (view, viewModel, window) = CreateView();
+        var doneColumn = viewModel.Columns.First(c => c.IsDoneColumn && c.Cards.Count > 0);
+        var card = doneColumn.Cards[0];
+        var title = card.Title;
+
+        viewModel.ArchiveCardCommand.Execute(card);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.True(card.IsArchived);
+        Assert.DoesNotContain(card, doneColumn.Cards);
+        Assert.Contains(card.Card, doneColumn.Column.Cards);
+        Assert.DoesNotContain(title, view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+
+        viewModel.OpenArchiveCommand.Execute(null);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        var renderedInArchive = window.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Contains(title, renderedInArchive);
+        Assert.Contains(viewModel.ArchiveCountLabel, renderedInArchive);
+
+        viewModel.UnarchiveCardCommand.Execute(card);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.False(card.IsArchived);
+        Assert.Contains(card, doneColumn.Cards);
 
         window.Close();
     }

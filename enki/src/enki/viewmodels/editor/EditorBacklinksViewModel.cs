@@ -33,7 +33,7 @@ public sealed partial class EditorBacklinksViewModel : ObservableObject
     /// (docs/analisis-proyecto/roadmap.md, Fase 5).</summary>
     public void Refresh(NoteFile currentNote)
     {
-        var allNotesWithContent = _vaultService.GetAllNotesRecursiveWithContent(_vaultService.VaultPath);
+        var allNotesWithContent = _vaultService.GetAllNotesAcrossVaultWithContent();
         var backlinks = EditorBacklinksService.FindBacklinks(allNotesWithContent, currentNote);
 
         Items.Clear();

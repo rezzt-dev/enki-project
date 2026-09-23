@@ -65,10 +65,15 @@ public sealed class PolarSyncService
     private readonly PolarTaskService _taskService;
     private readonly ReminderService _reminderService;
     private readonly SettingsService _settingsService;
+    private readonly VaultSettingsService? _vaultSettingsService;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
+    private long SyncCursor => _vaultSettingsService?.Settings.PolarLastSyncAtUtcMs
+        ?? _settingsService.Settings.PolarLastSyncAtUtcMs;
+
     public bool IsSyncing { get; private set; }
-    public string? LastError { get; private set; }
+    public LocalizedText? LocalizedError { get; private set; }
+    public string? LastError => LocalizedError is null ? null : LocalizedTextFormatter.Resolve(LocalizedError);
 
     public PolarSyncStatus Status =>
         !_auth.IsLinked ? PolarSyncStatus.NotLinked :
@@ -91,8 +96,8 @@ public sealed class PolarSyncService
     /// fallo (03-problemas-y-deuda-tecnica.md §4).</summary>
     public bool LastErrorWasNetwork { get; private set; }
 
-    public DateTime? LastSyncedUtc => _settingsService.Settings.PolarLastSyncAtUtcMs > 0
-        ? PolarWire.FromEpochMs(_settingsService.Settings.PolarLastSyncAtUtcMs)
+    public DateTime? LastSyncedUtc => SyncCursor > 0
+        ? PolarWire.FromEpochMs(SyncCursor)
         : null;
 
     /// <summary>Raised after every sync attempt (success or failure) — the Kanban task-management view and
@@ -113,13 +118,24 @@ public sealed class PolarSyncService
 
     public PolarSyncService(
         PolarAuthService auth, SupabaseRestClient rest, PolarTaskService taskService,
-        ReminderService reminderService, SettingsService settingsService)
+        ReminderService reminderService, SettingsService settingsService,
+        VaultSettingsService? vaultSettingsService = null)
     {
         _auth = auth;
         _rest = rest;
         _taskService = taskService;
         _reminderService = reminderService;
         _settingsService = settingsService;
+        _vaultSettingsService = vaultSettingsService;
+    }
+
+    /// <summary>Espera a que termine la sincronización actual y bloquea nuevos ciclos mientras
+    /// cambia el vault y se recargan sus almacenes.</summary>
+    public async Task RunWithSyncPausedAsync(Action changeVault)
+    {
+        await _gate.WaitAsync();
+        try { changeVault(); }
+        finally { _gate.Release(); }
     }
 
     public async Task<PolarSyncOutcome> SyncNowAsync(CancellationToken ct = default)
@@ -128,15 +144,19 @@ public sealed class PolarSyncService
         if (!await _gate.WaitAsync(0, ct)) return PolarSyncOutcome.SkippedAlreadyRunning; // a sync is already running — skip, don't queue up
 
         IsSyncing = true;
-        LastError = null;
+        LocalizedError = null;
         LastErrorWasNetwork = false;
         var tasksChanged = false;
         var remindersChanged = false;
         var overwrittenTitles = new List<string>();
         try
         {
+            // El siguiente ciclo debe volver a leer cambios que aparezcan mientras este está
+            // recorriendo las cuatro tablas. Usar la hora de finalización dejaba un hueco permanente
+            // entre la consulta de cada tabla y el final. gt requiere solapar el milisegundo inicial.
+            var syncedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 1;
             var userId = _auth.UserId!;
-            var cursor = _settingsService.Settings.PolarLastSyncAtUtcMs;
+            var cursor = SyncCursor;
 
             tasksChanged |= await PushTaskListsAsync(userId, overwrittenTitles, ct);
             tasksChanged |= await PushTasksAsync(userId, overwrittenTitles, ct);
@@ -157,8 +177,16 @@ public sealed class PolarSyncService
             // common case, not an edge case.
             if (_taskService.RollRecurringTasks()) tasksChanged = true;
 
-            _settingsService.Settings.PolarLastSyncAtUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            _settingsService.Save();
+            if (_vaultSettingsService is not null)
+            {
+                _vaultSettingsService.Settings.PolarLastSyncAtUtcMs = syncedAt;
+                _vaultSettingsService.Save();
+            }
+            else
+            {
+                _settingsService.Settings.PolarLastSyncAtUtcMs = syncedAt;
+                _settingsService.Save();
+            }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -166,19 +194,26 @@ public sealed class PolarSyncService
             // exponencial vive en el temporizador que llama a este método, no aquí, y solo debe aplicar
             // mientras el dispositivo esté realmente sin conexión: un HttpRequestException con StatusCode
             // (401/403/429/500...) significa que el servidor sí respondió, así que no es un fallo de red.
-            LastError = TranslateSyncError(ex);
+            LocalizedError = TranslateSyncError(ex);
             LastErrorWasNetwork = ex is HttpRequestException { StatusCode: null } or TaskCanceledException;
         }
         catch (Exception ex)
         {
-            LastError = ex.Message;
+            LogService.Warning("Sincronización de Polar fallida", ex);
+            LocalizedError = TranslateSyncError(ex);
         }
         finally
         {
             IsSyncing = false;
-            _gate.Release();
-            SyncCompleted?.Invoke(tasksChanged, remindersChanged);
-            if (overwrittenTitles.Count > 0) LocalEditsOverwritten?.Invoke(overwrittenTitles);
+            try
+            {
+                SyncCompleted?.Invoke(tasksChanged, remindersChanged);
+                if (overwrittenTitles.Count > 0) LocalEditsOverwritten?.Invoke(overwrittenTitles);
+            }
+            finally
+            {
+                _gate.Release();
+            }
         }
 
         return PolarSyncOutcome.Completed;
@@ -189,24 +224,22 @@ public sealed class PolarSyncService
     /// indicate success: 401 (Unauthorized)."), indistinguible entre "reinicia sesión", "espera y
     /// reintenta" o "problema del servidor" (04-oportunidades-de-integracion.md, mejora básica de sync
     /// #4).</summary>
-    private static string TranslateSyncError(Exception ex) => ex switch
+    private static LocalizedText TranslateSyncError(Exception ex) => ex switch
     {
         HttpRequestException { StatusCode: System.Net.HttpStatusCode.Unauthorized } =>
-            LocalizationService.Instance["Polar_Sync_Error_Unauthorized"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_Unauthorized"),
         HttpRequestException { StatusCode: System.Net.HttpStatusCode.Forbidden } =>
-            LocalizationService.Instance["Polar_Sync_Error_Forbidden"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_Forbidden"),
         HttpRequestException { StatusCode: System.Net.HttpStatusCode.TooManyRequests } =>
-            LocalizationService.Instance["Polar_Sync_Error_TooManyRequests"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_TooManyRequests"),
         HttpRequestException { StatusCode: not null } httpEx when (int)httpEx.StatusCode!.Value >= 500 =>
-            LocalizationService.Instance["Polar_Sync_Error_ServerError"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_ServerError"),
         HttpRequestException { StatusCode: null } =>
-            LocalizationService.Instance["Polar_Sync_Error_NoConnection"],
+            LocalizedTextFormatter.Format("Polar_Sync_Error_NoConnection"),
         TaskCanceledException =>
-            LocalizationService.Instance["Polar_Sync_Error_Timeout"],
-        // Last-resort fallback for unexpected exception types — ex.Message may come from the .NET
-        // runtime/OS in its own language (docs/agent-docs/internacionalizacion-i18n.md §5.3), a known,
-        // documented limitation rather than a bug to fix here.
-        _ => ex.Message
+            LocalizedTextFormatter.Format("Polar_Sync_Error_Timeout"),
+        // Los fallos inesperados tampoco exponen mensajes del sistema operativo o del servidor.
+        _ => LocalizedTextFormatter.Format("Common_Error_Unexpected")
     };
 
     // ===================== Push =====================

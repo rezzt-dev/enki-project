@@ -64,9 +64,10 @@ public static class SupabaseConfig
                 result[key] = value;
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Missing/unreadable file just means every Polar-linking feature stays disabled.
+            LogService.Warning($"No se pudo leer la configuración Supabase de '{path}'", ex);
         }
 
         return result;

@@ -6,13 +6,17 @@ using enki.Models;
 namespace enki.Services;
 
 /// <summary>Persists the app's own event log (vault switched, sync errors, etc.) to
-/// <c>%AppData%/Enki/notifications.json</c> — same load/save shape as <see cref="SettingsService"/> and
+/// <c>&lt;vault&gt;/.enki/notifications.json</c> — same load/save shape as <see cref="SettingsService"/> and
 /// <see cref="KanbanService"/>. Capped at <see cref="MaxItems"/> so the file can't grow forever.</summary>
 public sealed class NotificationService
 {
     private const int MaxItems = 50;
 
-    private readonly string _path;
+    private readonly string? _storageDirectory;
+    private readonly VaultService? _vaultService;
+    private string _path => _vaultService is not null
+        ? VaultDataStorage.FilePath(_vaultService, "notifications.json")
+        : Path.Combine(_storageDirectory!, "notifications.json");
     private readonly SettingsService _settingsService;
 
     public List<AppNotification> Notifications { get; private set; }
@@ -39,12 +43,24 @@ public sealed class NotificationService
     {
         _settingsService = settingsService;
 
-        var configDir = storageDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Enki");
-        Directory.CreateDirectory(configDir);
-        _path = Path.Combine(configDir, "notifications.json");
+        _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        Directory.CreateDirectory(_storageDirectory);
         Notifications = Load();
+    }
+
+    public NotificationService(SettingsService settingsService, VaultService vaultService)
+    {
+        _settingsService = settingsService;
+        _vaultService = vaultService;
+        Notifications = Load();
+    }
+
+    /// <summary>Recarga el historial de avisos del vault activo.</summary>
+    public void Reload()
+    {
+        LoadedFromCorruptData = false;
+        Notifications = Load();
+        NotificationsChanged?.Invoke();
     }
 
     private List<AppNotification> Load()
@@ -55,20 +71,56 @@ public sealed class NotificationService
         return [];
     }
 
-    public void Save() => JsonFileStore.Save(_path, Notifications);
+    public void Save()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        JsonFileStore.Save(_path, Notifications);
+    }
 
     /// <summary>Inserts, persists and broadcasts a new notification — unless its severity is muted in
     /// Ajustes › Notificaciones (see docs/notificaciones-y-recordatorios.md), in which case the object is
     /// still handed back to the caller (keeps the signature simple) but never recorded or broadcast, so a
     /// muted category leaves no trace in the log either.</summary>
     public AppNotification Push(string title, string message = "", NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(title, message, severity);
+
+    /// <summary>Guarda las claves junto al texto de respaldo para que el historial siga el idioma
+    /// activo incluso tras reiniciar. Mantiene el mismo almacén y los mismos eventos de notificación.</summary>
+    public AppNotification PushLocalized(LocalizedText title, LocalizedText message, NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(enki.Localization.LocalizedTextFormatter.Resolve(title),
+            enki.Localization.LocalizedTextFormatter.Resolve(message), severity, title, message);
+
+    /// <summary>Igual que <see cref="PushLocalized"/> pero dejando anotado de qué vencimiento nace el
+    /// aviso, para que el centro de notificaciones pueda ofrecer "Aplazar" en esa fila (T5). Un método
+    /// aparte y no un parámetro opcional más porque es el único tipo de aviso que lo lleva, y así las
+    /// decenas de <c>Push</c> repartidos por la app no cambian de firma.</summary>
+    public AppNotification PushDue(LocalizedText title, LocalizedText message, SnoozeTarget snoozeTarget,
+        NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(enki.Localization.LocalizedTextFormatter.Resolve(title),
+            enki.Localization.LocalizedTextFormatter.Resolve(message), severity, title, message, snoozeTarget);
+
+    /// <summary>Aviso con un enlace que el usuario puede abrir desde la campana — hoy, el de versión
+    /// nueva (T9). Método aparte por lo mismo que <see cref="PushDue"/>: es el único tipo de aviso que lo
+    /// lleva.</summary>
+    public AppNotification PushWithLink(LocalizedText title, LocalizedText message, string linkUrl,
+        NotificationSeverity severity = NotificationSeverity.Info)
+        => PushCore(enki.Localization.LocalizedTextFormatter.Resolve(title),
+            enki.Localization.LocalizedTextFormatter.Resolve(message), severity, title, message, linkUrl: linkUrl);
+
+    private AppNotification PushCore(string title, string message, NotificationSeverity severity,
+        LocalizedText? localizedTitle = null, LocalizedText? localizedMessage = null,
+        SnoozeTarget? snoozeTarget = null, string? linkUrl = null)
     {
         var notification = new AppNotification
         {
             Id = Guid.NewGuid().ToString("N"),
             Title = title,
             Message = message,
-            Severity = severity
+            LocalizedTitle = localizedTitle,
+            LocalizedMessage = localizedMessage,
+            Severity = severity,
+            SnoozeTarget = snoozeTarget,
+            LinkUrl = linkUrl
         };
 
         if (IsMuted(severity)) return notification;
@@ -76,7 +128,15 @@ public sealed class NotificationService
         Notifications.Insert(0, notification);
         if (Notifications.Count > MaxItems) Notifications.RemoveRange(MaxItems, Notifications.Count - MaxItems);
 
-        Save();
+        try
+        {
+            Save();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // El aviso de un fallo de escritura debe poder mostrarse aunque el disco siga fallando.
+            LogService.Warning("No se pudo persistir la notificación; se conserva en memoria", ex);
+        }
         NotificationAdded?.Invoke(notification);
         NotificationsChanged?.Invoke();
         return notification;

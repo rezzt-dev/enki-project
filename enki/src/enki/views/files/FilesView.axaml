@@ -6,427 +6,90 @@
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:controls="clr-namespace:enki.Controls"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.FilesView"
              x:Name="Root"
              x:DataType="vm:FilesViewModel">
 
-  <UserControl.DataTemplates>
-    <!-- Misma plantilla recursiva que NotesView.axaml, apuntando a FileFolderViewModel. -->
-    <DataTemplate DataType="vm:FileFolderViewModel">
-      <StackPanel>
-        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
-                Padding="{Binding Depth, Converter={StaticResource DepthIndentConverter}}"
-                DragDrop.AllowDrop="True"
-                PointerPressed="FolderRow_PointerPressed"
-                DragDrop.DragEnter="FolderRow_DragEnter"
-                DragDrop.DragOver="FolderRow_DragOver"
-                DragDrop.DragLeave="FolderRow_DragLeave"
-                DragDrop.Drop="FolderRow_Drop">
-          <Grid ColumnDefinitions="20,Auto,*,Auto,Auto" Height="34">
-            <Button Grid.Column="0" Classes="icon-btn" Width="20" Height="20"
-                    IsVisible="{Binding Children.Count, Converter={StaticResource CountToBoolConverter}}"
-                    Command="{Binding ToggleExpandCommand}"
-                    AutomationProperties.Name="{loc:Tr A11y_Files_ToggleFolder}">
-              <mi:MaterialIcon Kind="{Binding IsExpanded, Converter={StaticResource ExpandChevronConverter}}"
-                                Width="16" Height="16" />
-            </Button>
-            <mi:MaterialIcon Grid.Column="1" Kind="FolderOutline" Width="15" Height="15" Margin="2,0,8,0"
-                              Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="2" Text="{Binding Name}" VerticalAlignment="Center" FontSize="13.5"
-                       TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsRenaming}" />
-            <TextBox Grid.Column="2" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
-                      AutomationProperties.Name="{loc:Tr A11y_Files_FolderNameField}"
-                      VerticalAlignment="Center" FontSize="13.5" Padding="4,2"
-                      KeyDown="FolderNameEdit_KeyDown" LostFocus="FolderNameEdit_LostFocus"
-                      Initialized="FolderNameEdit_Initialized"
-                      PropertyChanged="FolderNameEdit_PropertyChanged" />
-            <Button Grid.Column="3" Classes="icon-btn" Width="20" Height="20" Command="{Binding BeginRenameCommand}"
-                    ToolTip.Tip="{loc:Tr Files_RenameAction}" AutomationProperties.Name="{loc:Tr Files_RenameAction}">
-              <mi:MaterialIcon Kind="FolderEditOutline" Width="14" Height="14" />
-            </Button>
-            <Button Grid.Column="4" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
-                    Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).DeleteFolderCommand}"
-                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Files_DeleteFolderTooltip}" AutomationProperties.Name="{loc:Tr Files_DeleteFolderTooltip}">
-              <mi:MaterialIcon Kind="FolderRemoveOutline" Width="14" Height="14" />
-            </Button>
-          </Grid>
-        </Border>
+  <!-- Contenedor de la sección Archivos. No dibuja la sección: elige entre sus dos disposiciones
+       —FilesBrowserView (panel de carpetas + rejilla de tarjetas) y FilesTreeView (árbol de carpetas y
+       archivos + previsualización a la derecha, al estilo de la vista simplificada de Notas)— y aloja lo que
+       es común a las dos: los modales de confirmación de borrado, que se disparan igual desde la rejilla de
+       una que desde el árbol de la otra.
 
-        <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding IsExpanded}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-        </ItemsControl>
-      </StackPanel>
-    </DataTemplate>
-  </UserControl.DataTemplates>
+       Se monta una sola disposición, no las dos con IsVisible, y aquí el motivo es aún más fuerte que en
+       IA Skills: la previsualización instala TextMate sobre un AvaloniaEdit y rasteriza PDFs con PDFium,
+       así que dos vistas vivas duplicarían ambas cosas. -->
 
   <Grid>
+    <ContentControl x:Name="LayoutHost" />
 
-    <!-- ===================== Browsing mode ===================== -->
-    <Grid RowDefinitions="Auto,Auto,*" IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
-
-      <StackPanel Grid.Row="0" Spacing="6" Margin="36,30,36,20">
-        <TextBlock Text="{loc:Tr Files_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-        <TextBlock Text="{loc:Tr Files_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
-        <TextBlock Text="{loc:Tr Files_PageSubtitle}"
-                   Classes="page-subtitle" />
-      </StackPanel>
-
-      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" Margin="36,0,36,18">
-        <Button Grid.Column="0" Classes="pill" Height="36" Command="{Binding ImportCommand}" Margin="0,0,14,0">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" />
-            <TextBlock Text="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
-          </StackPanel>
-        </Button>
-
-        <!-- Workspace selector: mismas sesiones que ya ve Notas — un archivo soltado en la sesión "X" es
-             visible desde Notas y Archivos sin ningún concepto nuevo (docs/seccion-archivos.md §5). -->
-        <ComboBox Grid.Column="1" Height="36" Margin="0,0,14,0" MinWidth="190"
-                  ItemsSource="{Binding SessionOptions}" SelectedItem="{Binding SelectedSessionOption}"
-                  AutomationProperties.Name="{loc:Tr A11y_Files_SessionSelector}">
-          <ComboBox.ItemTemplate>
-            <DataTemplate DataType="vm:SessionOptionViewModel">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="{Binding IsVault, Converter={StaticResource SessionIconConverter}}"
-                                  Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
-                <TextBlock Text="{Binding DisplayName}" FontSize="12" />
-              </StackPanel>
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-
-        <TextBox Grid.Column="2" Classes="search" Height="36" PlaceholderText="{loc:Tr Files_SearchPlaceholder}" AutomationProperties.Name="{loc:Tr Files_SearchPlaceholder}" Text="{Binding SearchText}"
-                  MaxWidth="360" HorizontalAlignment="Left" VerticalAlignment="Center">
-          <TextBox.InnerLeftContent>
-            <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}"
-                    Margin="10,0,0,0" />
-          </TextBox.InnerLeftContent>
-        </TextBox>
-
-        <Border Grid.Column="3" Classes="card" Padding="14,9" VerticalAlignment="Center">
-          <TextBlock Text="{Binding FilesCountLabel}" Classes="faint" FontSize="10.5" />
-        </Border>
-      </Grid>
-
-      <Grid Grid.Row="2" Margin="24,0,24,24">
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="260" MinWidth="180" MaxWidth="480" />
-          <ColumnDefinition Width="Auto" />
-          <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
-        <!-- ===================== Panel de carpetas ===================== -->
-        <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,0,1"
-                Background="{DynamicResource AppBackgroundAltBrush}" Padding="10,12">
-          <Grid RowDefinitions="Auto,Auto,*">
-
-            <Button Grid.Row="0" Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    Padding="10,8" Margin="0,0,0,12" Command="{Binding NewFolderCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" />
-                <TextBlock Text="{loc:Tr Files_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" FontSize="11" />
-              </StackPanel>
-            </Button>
-
-            <Border Grid.Row="1" Classes="folder-row" Margin="0,0,0,4"
-                    Classes.active="{Binding CurrentFolder, Converter={x:Static conv:ObjectConverters.IsNull}}"
-                    Classes.drag-over="{Binding IsRootDropTarget}"
-                    DragDrop.AllowDrop="True"
-                    PointerPressed="RootFolderRow_PointerPressed"
-                    DragDrop.DragEnter="RootFolderRow_DragEnter"
-                    DragDrop.DragOver="RootFolderRow_DragOver"
-                    DragDrop.DragLeave="RootFolderRow_DragLeave"
-                    DragDrop.Drop="RootFolderRow_Drop">
-              <StackPanel Orientation="Horizontal" Spacing="8" Height="34" VerticalAlignment="Center" Margin="14,0,0,0">
-                <mi:MaterialIcon Kind="ViewGridOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                <TextBlock Text="{loc:Tr Files_AllFolder}" FontSize="13.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
-
-            <ScrollViewer Grid.Row="2">
-              <ItemsControl ItemsSource="{Binding RootFolders}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <StackPanel />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-              </ItemsControl>
-            </ScrollViewer>
-          </Grid>
-        </Border>
-
-        <Border Grid.Column="1" Width="1" HorizontalAlignment="Center"
-                Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
-        <GridSplitter Grid.Column="1" Classes="folder-panel-splitter" Width="7"
-                      Background="Transparent" ResizeDirection="Columns"
-                      AutomationProperties.Name="{loc:Tr A11y_Files_FolderPanelSplitter}"
-                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-
-        <!-- ===================== Rejilla de archivos ===================== -->
-        <!-- Objetivo del arrastre-y-soltar desde el explorador del SO (docs/seccion-archivos.md §5/§7):
-             DragDrop.AllowDrop + los cuatro handlers, resueltos vía e.DataTransfer.TryGetFiles(). -->
-        <Border Grid.Column="2" ClipToBounds="True" Classes="files-grid-panel"
-                Classes.drag-over="{Binding IsGridDropTarget}"
-                BorderBrush="{DynamicResource Ink10}" BorderThickness="1"
-                Background="{DynamicResource AppBackgroundAltBrush}"
-                DragDrop.AllowDrop="True"
-                DragDrop.DragEnter="FilesGrid_DragEnter"
-                DragDrop.DragOver="FilesGrid_DragOver"
-                DragDrop.DragLeave="FilesGrid_DragLeave"
-                DragDrop.Drop="FilesGrid_Drop">
-          <Grid RowDefinitions="Auto,*">
-
-            <TextBlock Grid.Row="0" Text="{Binding CurrentFolderLabel}"
-                       Classes="eyebrow" Margin="24,16,24,0" />
-
-            <Grid Grid.Row="1">
-              <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding Files}" Margin="24">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:FileCardViewModel">
-                      <Button Classes="file-card" Margin="0,0,16,16" Width="180" Height="180"
-                              Command="{Binding $parent[ItemsControl].((vm:FilesViewModel)DataContext).OpenCardCommand}"
-                              CommandParameter="{Binding}" AutomationProperties.Name="{Binding FileName}"
-                              Initialized="FileCard_Initialized">
-                        <Button.ContextMenu>
-                          <ContextMenu>
-                            <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}">
-                              <MenuItem.Icon>
-                                <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
-                              </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}"
-                                      Command="{Binding #Root.((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
-                                      CommandParameter="{Binding}">
-                              <MenuItem.Icon>
-                                <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
-                              </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="{loc:Tr Common_Delete}"
-                                      Command="{Binding #Root.((vm:FilesViewModel)DataContext).DeleteFileCommand}"
-                                      CommandParameter="{Binding}">
-                              <MenuItem.Icon>
-                                <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
-                              </MenuItem.Icon>
-                            </MenuItem>
-                          </ContextMenu>
-                        </Button.ContextMenu>
-                        <Grid RowDefinitions="*,Auto,Auto">
-                          <!-- Thumbnail decodificado (imágenes) o icono fijo por tipo (PDF/otros) —
-                               ver FileCardViewModel.EnsureThumbnailLoaded. -->
-                          <Panel Grid.Row="0" Margin="0,0,0,10">
-                            <Image Source="{Binding Thumbnail}" Stretch="Uniform"
-                                   IsVisible="{Binding Thumbnail, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-                            <mi:MaterialIcon Kind="{Binding IconKind}" Width="40" Height="40"
-                                              Foreground="{DynamicResource Ink40}"
-                                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                                              IsVisible="{Binding Thumbnail, Converter={x:Static conv:ObjectConverters.IsNull}}" />
-                          </Panel>
-                          <TextBlock Grid.Row="1" Text="{Binding FileName}"
-                                     FontWeight="Bold" FontSize="13" LetterSpacing="0.2"
-                                     TextTrimming="CharacterEllipsis" MaxLines="1"
-                                     IsVisible="{Binding !IsRenaming}" />
-                          <TextBox Grid.Row="1" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
-                                    AutomationProperties.Name="{loc:Tr A11y_Files_FileNameField}"
-                                    FontSize="12.5" Padding="4,2"
-                                    KeyDown="FileNameEdit_KeyDown" LostFocus="FileNameEdit_LostFocus"
-                                    Initialized="FileNameEdit_Initialized"
-                                    PropertyChanged="FileNameEdit_PropertyChanged" />
-                          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                            <TextBlock Text="{Binding SizeLabel}" Classes="faint" />
-                            <TextBlock Text="·" Classes="faint" />
-                            <TextBlock Text="{Binding ModifiedLabel}" Classes="faint" />
-                          </StackPanel>
-                        </Grid>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </ScrollViewer>
-
-              <StackPanel IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                          Spacing="12">
-                <mi:MaterialIcon Kind="FileOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
-                        HorizontalAlignment="Center" />
-                <TextBlock Text="{loc:Tr Files_EmptyTitle}" Classes="muted" HorizontalAlignment="Center" />
-                <TextBlock Text="{loc:Tr Files_EmptyHint}" Classes="faint"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-            </Grid>
-          </Grid>
-        </Border>
-      </Grid>
-    </Grid>
-
-    <!-- ===================== Preview mode ===================== -->
-    <!-- Deliberadamente sin tira de pestañas (docs/seccion-archivos.md §5): abrir un archivo sustituye
-         esta previsualización única en vez de acumular varias — los archivos se visualizan, no se editan,
-         así que no hay "trabajo en curso" que perder al cambiar de uno a otro. -->
-    <Grid RowDefinitions="Auto,*"
-          IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-
-      <!-- Atajos de página — sin efecto fuera del visor de PDF, ya que PdfDocument es null en cualquier
-           otro caso y Avalonia trata un Command nulo como deshabilitado. -->
-      <Grid.KeyBindings>
-        <KeyBinding Gesture="Left" Command="{Binding ActivePreview.PdfDocument.PreviousPageCommand}" />
-        <KeyBinding Gesture="Right" Command="{Binding ActivePreview.PdfDocument.NextPageCommand}" />
-        <KeyBinding Gesture="PageUp" Command="{Binding ActivePreview.PdfDocument.PreviousPageCommand}" />
-        <KeyBinding Gesture="PageDown" Command="{Binding ActivePreview.PdfDocument.NextPageCommand}" />
-      </Grid.KeyBindings>
-
-      <Border Grid.Row="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
-              Background="{DynamicResource AppBackgroundBrush}">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="20,10">
-          <Button Grid.Column="0" Classes="icon-btn" Command="{Binding ClosePreviewCommand}"
-                  ToolTip.Tip="{loc:Tr Files_BackToGridTooltip}" AutomationProperties.Name="{loc:Tr Files_BackToGridTooltip}" Margin="0,0,12,0">
-            <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
-          </Button>
-          <TextBlock Grid.Column="1" Text="{Binding ActivePreview.FileName}" FontSize="14" FontWeight="Bold"
-                     VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-
-          <!-- Barra de páginas + zoom — solo para PDFs (ActivePreview.PdfDocument es null en cualquier
-               otro caso, y el StackPanel entero se oculta). -->
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
-                      Margin="0,0,16,0" IsVisible="{Binding ActivePreview.IsPdf}">
-            <Button Classes="icon-btn" Width="26" Height="26"
-                    Command="{Binding ActivePreview.PdfDocument.PreviousPageCommand}" ToolTip.Tip="{loc:Tr Files_PrevPageTooltip}" AutomationProperties.Name="{loc:Tr Files_PrevPageTooltip}">
-              <mi:MaterialIcon Kind="ChevronLeft" Width="16" Height="16" />
-            </Button>
-            <TextBlock Text="{Binding ActivePreview.PdfDocument.PageIndicator}" Classes="faint"
-                       VerticalAlignment="Center" MinWidth="56" TextAlignment="Center" />
-            <Button Classes="icon-btn" Width="26" Height="26"
-                    Command="{Binding ActivePreview.PdfDocument.NextPageCommand}" ToolTip.Tip="{loc:Tr Files_NextPageTooltip}" AutomationProperties.Name="{loc:Tr Files_NextPageTooltip}">
-              <mi:MaterialIcon Kind="ChevronRight" Width="16" Height="16" />
-            </Button>
-            <Border Width="1" Height="18" Background="{DynamicResource Ink10}" Margin="8,0" />
-            <Button Classes="icon-btn" Width="26" Height="26"
-                    Command="{Binding ActivePreview.PdfDocument.ZoomOutCommand}" ToolTip.Tip="{loc:Tr Files_ZoomOutTooltip}" AutomationProperties.Name="{loc:Tr Files_ZoomOutTooltip}">
-              <mi:MaterialIcon Kind="MagnifyMinusOutline" Width="15" Height="15" />
-            </Button>
-            <TextBlock Text="{Binding ActivePreview.PdfDocument.ZoomLabel}" Classes="faint"
-                       VerticalAlignment="Center" MinWidth="42" TextAlignment="Center" />
-            <Button Classes="icon-btn" Width="26" Height="26"
-                    Command="{Binding ActivePreview.PdfDocument.ZoomInCommand}" ToolTip.Tip="{loc:Tr Files_ZoomInTooltip}" AutomationProperties.Name="{loc:Tr Files_ZoomInTooltip}">
-              <mi:MaterialIcon Kind="MagnifyPlusOutline" Width="15" Height="15" />
-            </Button>
+    <!-- ===================== Diálogo: eliminar archivo (análisis alfa-3 §4.5) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding FilePendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding FilePendingDelete}" x:DataType="vm:FileCardViewModel">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Files_DeleteFile_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
           </StackPanel>
 
-          <Button Grid.Column="3" Classes="pill" Padding="10,6"
-                  Command="{Binding OpenWithSystemCommand}" CommandParameter="{Binding ActivePreview}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
-              <TextBlock Text="{loc:Tr Files_OpenWithSystemButton, Converter={StaticResource UpperCaseConverter}}" FontSize="11" />
-            </StackPanel>
-          </Button>
-        </Grid>
-      </Border>
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Files_DeleteFile_Message}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding FileName}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
 
-      <Grid Grid.Row="1">
-        <!-- Imágenes: sin dependencia nueva, Bitmap decodificado directamente. -->
-        <Image Source="{Binding ActivePreview.Thumbnail}" Stretch="Uniform" Margin="24"
-               IsVisible="{Binding ActivePreview.IsImage}" />
-
-        <!-- PDFs: visor completo vía PDFtoImage/PDFium (ver PdfRenderHelper) — rail de páginas a la
-             izquierda, página actual a la derecha con zoom real (re-renderizado a mayor DPI, no un
-             escalado borroso del mismo bitmap). El DataContext de todo este subárbol cambia al
-             PdfDocumentViewModel del archivo activo, así que dentro de él los bindings ya no llevan el
-             prefijo "ActivePreview.PdfDocument.". -->
-        <!-- Panel envolvente separado del Grid interior a propósito: si IsVisible y DataContext se
-             declaran en el mismo elemento, Avalonia resuelve IsVisible contra el DataContext NUEVO
-             (PdfDocumentViewModel) en vez del heredado (FilesViewModel), y "ActivePreview.IsPdf" deja de
-             existir ahí. Separarlos en dos elementos evita esa resolución cruzada. -->
-        <Panel IsVisible="{Binding ActivePreview.IsPdf}">
-        <Grid ColumnDefinitions="150,*" DataContext="{Binding ActivePreview.PdfDocument}">
-
-          <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0"
-                  Background="{DynamicResource AppBackgroundAltBrush}" IsVisible="{Binding IsReady}">
-            <ScrollViewer>
-              <ItemsControl ItemsSource="{Binding Pages}" Margin="10">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <!-- Virtualizado a propósito: un PDF de cientos de páginas solo debe renderizar las
-                         miniaturas realmente cerca del viewport (ver PdfPageThumb_Initialized), nunca
-                         todas de golpe. -->
-                    <VirtualizingStackPanel Orientation="Vertical" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="vm:PdfPageThumbnailViewModel">
-                    <Button Classes="pdf-page-thumb" Classes.active="{Binding IsCurrent}" Margin="0,0,0,10"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                            Command="{Binding $parent[ItemsControl].((vm:PdfDocumentViewModel)DataContext).GoToPageCommand}"
-                            CommandParameter="{Binding}"
-                            Initialized="PdfPageThumb_Initialized">
-                      <StackPanel Spacing="4">
-                        <Border Background="{DynamicResource PanelBackgroundBrush}"
-                                BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="2">
-                          <Image Source="{Binding Thumbnail}" Width="110" Stretch="Uniform" />
-                        </Border>
-                        <TextBlock Text="{Binding PageNumber}" Classes="faint" FontSize="10"
-                                   HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-          </Border>
-
-          <Grid Grid.Column="1">
-            <ScrollViewer IsVisible="{Binding IsReady}">
-              <Image Source="{Binding CurrentPageImage}" Stretch="None" Margin="24"
-                     HorizontalAlignment="Center" VerticalAlignment="Top" />
-            </ScrollViewer>
-
-            <StackPanel IsVisible="{Binding IsLoading}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Spacing="12">
-              <mi:MaterialIcon Classes="spin" Kind="Loading" Width="30" Height="30"
-                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-              <TextBlock Text="{loc:Tr Files_PdfRenderingLabel}" Classes="muted" HorizontalAlignment="Center" />
-            </StackPanel>
-
-            <StackPanel IsVisible="{Binding IsFaulted}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Spacing="14" MaxWidth="340">
-              <mi:MaterialIcon Kind="FileAlertOutline" Width="48" Height="48"
-                                Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-              <TextBlock Text="{loc:Tr Files_PdfRenderErrorMessage}"
-                         Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
-              <Button Classes="pill-primary" HorizontalAlignment="Center"
-                      Command="{Binding #Root.((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
-                      CommandParameter="{Binding #Root.((vm:FilesViewModel)DataContext).ActivePreview}">
-                <TextBlock Text="{loc:Tr Files_OpenWithSystemFallbackButton, Converter={StaticResource UpperCaseConverter}}" />
-              </Button>
-            </StackPanel>
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel"
+                    Command="{Binding #Root.((vm:FilesViewModel)DataContext).CancelDeleteFileCommand}"
+                    Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger"
+                    Command="{Binding #Root.((vm:FilesViewModel)DataContext).ConfirmDeleteFileCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
           </Grid>
-        </Grid>
-        </Panel>
-
-        <!-- Cualquier otro tipo (docs/seccion-archivos.md §6): fallback universal, nunca un error duro. -->
-        <StackPanel IsVisible="{Binding ActivePreview.IsOther}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Spacing="14" MaxWidth="360">
-          <mi:MaterialIcon Kind="{Binding ActivePreview.IconKind}" Width="56" Height="56"
-                            Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding ActivePreview.FileName}" Classes="muted" FontSize="13.5"
-                     TextWrapping="Wrap" TextAlignment="Center" />
-          <TextBlock Text="{loc:Tr Files_NoPreviewAvailable}"
-                     Classes="faint" TextWrapping="Wrap" TextAlignment="Center" />
-          <Button Classes="pill-primary" Command="{Binding OpenWithSystemCommand}" CommandParameter="{Binding ActivePreview}"
-                  HorizontalAlignment="Center">
-            <TextBlock Text="{loc:Tr Files_OpenWithSystemFallbackButton, Converter={StaticResource UpperCaseConverter}}" />
-          </Button>
         </StackPanel>
-      </Grid>
-    </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: eliminar carpeta ===================== -->
+    <!-- Modal propio y no el de arriba: una carpeta arrastra consigo todo lo que contiene, y la sección
+         Papelera solo lista archivos sueltos, así que el aviso tiene que decir dónde acaba y cómo recuperarla. -->
+    <controls:ModalOverlayHost IsOpen="{Binding FolderPendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding FolderPendingDelete}" x:DataType="vm:FileFolderCardViewModel">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Files_DeleteFolder_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Files_DeleteFolder_Message}" FontSize="14" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="FolderOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+              <TextBlock Text="{Binding Name}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+            </StackPanel>
+            <TextBlock Text="{loc:Tr Files_DeleteFolder_Hint}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel"
+                    Command="{Binding #Root.((vm:FilesViewModel)DataContext).CancelDeleteFolderCommand}"
+                    Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger"
+                    Command="{Binding #Root.((vm:FilesViewModel)DataContext).ConfirmDeleteFolderCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
 
   </Grid>
 </UserControl>

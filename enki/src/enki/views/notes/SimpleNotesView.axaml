@@ -1,0 +1,412 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:views="clr-namespace:enki.Views"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+             x:Class="enki.Views.SimpleNotesView"
+             x:Name="SimpleRoot"
+             x:DataType="vm:NotesViewModel">
+
+  <!-- Vista simplificada de la página de Notas (Ajustes › Editor › Vista del editor). Solo lo mínimo
+       para escribir: a la izquierda un árbol con las carpetas y las notas markdown de la sesión activa,
+       a la derecha las pestañas abiertas sobre el mismo editor de la vista completa. Lo que esta vista
+       deja fuera a propósito, por ser una vista sin distracciones, es la barra de formato del editor y su
+       panel lateral de esquema/enlaces/estadísticas (ver EditorViewModel.IsSimplifiedView), además de la
+       portada con la rejilla de tarjetas y el filtro de etiquetas.
+
+       No hay un segundo modelo de datos detrás: el DataContext es el mismo NotesViewModel de siempre. -->
+
+  <UserControl.DataTemplates>
+    <!-- Plantilla recursiva de fila del árbol: carpetas y notas comparten fila (mismo alto, misma
+         columna de flechita, misma sangría por nivel) para que el árbol se lea como una sola lista
+         jerárquica y no como dos listas apiladas. El ItemsControl de los hijos reutiliza esta misma
+         plantilla implícita por DataType, a cualquier profundidad. -->
+    <DataTemplate DataType="vm:NoteTreeItemViewModel">
+      <StackPanel>
+        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+                Padding="{Binding Depth, Converter={StaticResource TreeIndentConverter}}"
+                DragDrop.AllowDrop="True"
+                PointerPressed="TreeRow_PointerPressed"
+                PointerMoved="TreeRow_PointerMoved"
+                DragDrop.DragEnter="TreeRow_DragEnter"
+                DragDrop.DragOver="TreeRow_DragOver"
+                DragDrop.DragLeave="TreeRow_DragLeave"
+                DragDrop.Drop="TreeRow_Drop">
+          <Border.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="{loc:Tr Notes_SimpleView_NewNoteInFolderMenuItem}"
+                        IsVisible="{Binding IsFolder}"
+                        Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateTreeNoteInFolderCommand}"
+                        CommandParameter="{Binding}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Notes_CreateSubfolderMenuItem}"
+                        IsVisible="{Binding IsFolder}"
+                        Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateTreeSubfolderCommand}"
+                        CommandParameter="{Binding}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Notes_RenameMenuItem}" Command="{Binding BeginRenameCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Common_Delete}"
+                        Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).DeleteTreeItemCommand}"
+                        CommandParameter="{Binding}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+            </ContextMenu>
+          </Border.ContextMenu>
+
+          <!-- Columna 0 fija (no Auto): reserva el hueco de la flechita también en las notas y en las
+               carpetas vacías, donde el botón no se dibuja — si no, sus iconos se desplazarían a la
+               izquierda y dejarían de alinearse con los de sus hermanos. -->
+          <Grid ColumnDefinitions="20,Auto,*" Height="30">
+            <Button Grid.Column="0" Classes="icon-btn" Width="20" Height="20"
+                    IsVisible="{Binding HasChildren}"
+                    Command="{Binding ToggleExpandCommand}"
+                    AutomationProperties.Name="{loc:Tr A11y_Notes_ToggleFolder}">
+              <mi:MaterialIcon Kind="{Binding IsExpanded, Converter={StaticResource ExpandChevronConverter}}"
+                               Width="16" Height="16" />
+            </Button>
+
+            <mi:MaterialIcon Grid.Column="1" Width="15" Height="15" Margin="2,0,8,0"
+                             IsVisible="{Binding IsFolder}"
+                             Kind="{Binding IsExpanded, Converter={StaticResource FolderStateIconConverter}}"
+                             Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Grid.Column="1" Kind="FileDocumentOutline" Width="15" Height="15" Margin="2,0,8,0"
+                             IsVisible="{Binding IsNote}"
+                             Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+
+            <TextBlock Grid.Column="2" Text="{Binding Name}" VerticalAlignment="Center" FontSize="13"
+                       TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsRenaming}" Margin="0,0,10,0" />
+            <TextBox Grid.Column="2" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
+                     VerticalAlignment="Center" FontSize="13" Padding="4,2" Margin="0,0,10,0"
+                     KeyDown="TreeNameEdit_KeyDown" LostFocus="TreeNameEdit_LostFocus"
+                     Initialized="TreeNameEdit_Initialized"
+                     PropertyChanged="TreeNameEdit_PropertyChanged" />
+          </Grid>
+        </Border>
+
+        <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding IsExpanded}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <Grid ColumnDefinitions="Auto,Auto,*">
+
+    <!-- ===================== Panel lateral ===================== -->
+    <!-- Panel desplegado y raíl contraído son dos hijos del mismo Panel, no dos ramas de layout
+         distintas: así la columna Auto se ajusta sola a cualquiera de los dos y el menú de sesión
+         (abajo) puede anclarse al mismo contenedor esté el panel abierto o cerrado. -->
+    <Panel Grid.Column="0" x:Name="SidebarHost">
+
+      <!-- · Desplegado · -->
+      <Grid RowDefinitions="Auto,*,Auto" Width="{Binding SimpleSidebarWidth}"
+            IsVisible="{Binding IsSimpleSidebarVisible}"
+            Background="{DynamicResource AppBackgroundAltBrush}">
+
+        <!-- Barra superior del panel. Alto fijo de 58 para casar al píxel con la barra de pestañas de
+             la derecha (Border.editor-tab mide 41 + los 8+8 de margen del StackPanel + 1 de borde
+             inferior); dejarlo al contenido haría que las dos barras se desalinearan a la mínima que
+             cambiara el tamaño de un icono. -->
+        <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+                Background="{DynamicResource AppBackgroundBrush}" Padding="8,0">
+          <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+            <Button Grid.Column="0" Classes="icon-btn" Classes.active="{Binding !IsSimpleSearchMode}"
+                    Command="{Binding ShowSimpleTreeCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_SimpleView_Tree_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_SimpleView_Tree_Tooltip}">
+              <mi:MaterialIcon Kind="FileTreeOutline" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="1" Classes="icon-btn" Classes.active="{Binding IsSimpleSearchMode}"
+                    Command="{Binding ShowSimpleSearchCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_SimpleView_Search_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_SimpleView_Search_Tooltip}">
+              <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="3" Classes="icon-btn"
+                    Command="{Binding ToggleSimpleSidebarCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_SimpleView_HideSidebar_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_SimpleView_HideSidebar_Tooltip}">
+              <mi:MaterialIcon Kind="ChevronDoubleLeft" Width="17" Height="17" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- · Cuerpo: árbol · -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding !IsSimpleSearchMode}">
+          <!-- Fila de acciones. "Nueva nota" y "Nueva carpeta" crean siempre en la raíz de la sesión:
+               en esta vista no existe el concepto de "carpeta actual" de la rejilla, y un destino
+               previsible vale más que uno que dependa de dónde se pulsó por última vez. Para crear
+               dentro de una carpeta concreta está su menú contextual en el árbol. -->
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" Margin="8,8,8,4"
+                      HorizontalAlignment="Center">
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewNoteAtRootCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_SimpleView_NewNote_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_SimpleView_NewNote_Tooltip}">
+              <mi:MaterialIcon Kind="NotePlusOutline" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding ShowTemplatePickerCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_Templates_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_Templates_Tooltip}">
+              <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewFolderAtRootCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_SimpleView_NewFolder_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_SimpleView_NewFolder_Tooltip}">
+              <mi:MaterialIcon Kind="FolderPlusOutline" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenDailyNoteCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_SimpleView_DailyNote_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_SimpleView_DailyNote_Tooltip}">
+              <mi:MaterialIcon Kind="CalendarToday" Width="16" Height="16" />
+            </Button>
+            <!-- Mismo calendario de constancia que la vista completa (views/notes/DailyConsistencyView.axaml),
+                 aquí como un icono más de la fila de acciones del árbol. -->
+            <Panel>
+              <Button x:Name="ConsistencyTrigger" Classes="icon-btn" Classes.active="{Binding IsConsistencyOpen}"
+                      Width="30" Height="30" Command="{Binding ToggleConsistencyCommand}"
+                      ToolTip.Tip="{loc:Tr Notes_Consistency_Tooltip}"
+                      AutomationProperties.Name="{loc:Tr Notes_Consistency_Tooltip}">
+                <mi:MaterialIcon Kind="CalendarCheckOutline" Width="16" Height="16" />
+              </Button>
+              <Popup PlacementTarget="{Binding #ConsistencyTrigger}" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
+                     IsLightDismissEnabled="True"
+                     IsOpen="{Binding IsConsistencyOpen, Mode=TwoWay}">
+                <Border Classes="dropdown-popover" MaxHeight="560">
+                  <views:DailyConsistencyView />
+                </Border>
+              </Popup>
+            </Panel>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CollapseSimpleTreeCommand}"
+                    ToolTip.Tip="{loc:Tr Notes_SimpleView_Collapse_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Notes_SimpleView_Collapse_Tooltip}">
+              <mi:MaterialIcon Kind="UnfoldLessHorizontal" Width="16" Height="16" />
+            </Button>
+          </StackPanel>
+
+          <!-- La raíz de la sesión también es destino de arrastre, para poder sacar una nota de una
+               carpeta soltándola sobre el fondo vacío del árbol. -->
+          <Grid Grid.Row="1" Background="Transparent"
+                DragDrop.AllowDrop="True"
+                DragDrop.DragEnter="TreeRoot_DragEnter"
+                DragDrop.DragOver="TreeRoot_DragOver"
+                DragDrop.DragLeave="TreeRoot_DragLeave"
+                DragDrop.Drop="TreeRoot_Drop">
+            <ScrollViewer Padding="0,0,0,10">
+              <ItemsControl ItemsSource="{Binding SimpleTreeRoots}" Margin="8,0,0,0">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <TextBlock Text="{loc:Tr Notes_SimpleView_EmptyTree}" Classes="muted" FontSize="12"
+                       TextWrapping="Wrap" TextAlignment="Center" Margin="24,0"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsVisible="{Binding !HasSimpleTreeItems}" />
+          </Grid>
+        </Grid>
+
+        <!-- · Cuerpo: búsqueda · -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding IsSimpleSearchMode}">
+          <TextBox Grid.Row="0" x:Name="SimpleSearchBox" Classes="search" Margin="10,10,10,6" Height="34"
+                   Text="{Binding SimpleSearchText}"
+                   PlaceholderText="{loc:Tr Notes_SimpleView_SearchPlaceholder}"
+                   AutomationProperties.Name="{loc:Tr Notes_SimpleView_Search_Tooltip}">
+            <TextBox.InnerLeftContent>
+              <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                               Margin="10,0,0,0" />
+            </TextBox.InnerLeftContent>
+          </TextBox>
+
+          <ScrollViewer Grid.Row="1" Padding="0,0,0,10">
+            <ItemsControl ItemsSource="{Binding SimpleSearchResults}" Margin="8,0,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:NoteCardViewModel">
+                  <Border Classes="folder-row" Padding="6,0,10,0"
+                          PointerPressed="SearchResult_PointerPressed">
+                    <Grid ColumnDefinitions="Auto,*" Height="34">
+                      <mi:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="15" Height="15"
+                                       Margin="6,0,8,0" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Preview}" Classes="faint" FontSize="10.5"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <TextBlock Grid.Row="1" Text="{loc:Tr Notes_SimpleView_SearchEmpty}" Classes="muted" FontSize="12"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     IsVisible="{Binding ShowSimpleSearchEmptyState}" />
+        </Grid>
+
+        <!-- · Pie: sesión seleccionada · -->
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10,8">
+          <Button Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  Padding="10,7" Command="{Binding ToggleSessionMenuCommand}"
+                  ToolTip.Tip="{loc:Tr Notes_SimpleView_Session_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr A11y_Notes_SessionSelector}">
+            <!-- Icono + nombre se centran como un grupo en todo el ancho del botón; la doble flecha
+                 va anclada al borde derecho por encima, así no arrastra al grupo fuera del centro. -->
+            <Grid>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <mi:MaterialIcon Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,8,0"
+                                 Kind="{Binding SelectedSessionOption.IsVault, Converter={StaticResource SessionIconConverter}}" />
+                <TextBlock Text="{Binding SelectedSessionOption.DisplayName}" FontSize="12"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="200" />
+              </StackPanel>
+              <mi:MaterialIcon Kind="UnfoldMoreHorizontal" Width="13" Height="13"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+        </Border>
+      </Grid>
+
+      <!-- · Contraído: raíl · -->
+      <!-- Con el panel oculto solo quedan las dos cosas que no se pueden dejar sin salida: volver a
+           mostrarlo (arriba, alineado con la barra de pestañas) y cambiar de sesión (abajo, en el mismo
+           sitio que ocupaba el selector completo). -->
+      <Grid RowDefinitions="Auto,*,Auto" Width="46" IsVisible="{Binding !IsSimpleSidebarVisible}"
+            Background="{DynamicResource AppBackgroundAltBrush}">
+        <!-- La costura de la derecha la dibuja el separador arrastrable mientras el panel está abierto;
+             con el panel cerrado ese separador no está, así que el raíl pinta la suya. -->
+        <Border Grid.Row="0" Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
+                Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
+        <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+                Background="{DynamicResource AppBackgroundBrush}">
+          <Button Classes="icon-btn" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Command="{Binding ToggleSimpleSidebarCommand}"
+                  ToolTip.Tip="{loc:Tr Notes_SimpleView_ShowSidebar_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Notes_SimpleView_ShowSidebar_Tooltip}">
+            <mi:MaterialIcon Kind="ChevronDoubleRight" Width="17" Height="17" />
+          </Button>
+        </Border>
+
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,8">
+          <Button Classes="icon-btn" HorizontalAlignment="Center"
+                  Command="{Binding ToggleSessionMenuCommand}"
+                  ToolTip.Tip="{loc:Tr Notes_SimpleView_Session_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr A11y_Notes_SessionSelector}">
+            <mi:MaterialIcon Width="17" Height="17"
+                             Kind="{Binding SelectedSessionOption.IsVault, Converter={StaticResource SessionIconConverter}}" />
+          </Button>
+        </Border>
+      </Grid>
+
+      <!-- Selector de sesión, anclado al contenedor del panel para servir igual al pie desplegado y al
+           botón del raíl — solo uno de los dos está visible en cada momento, y ambos abren este mismo
+           menú, así que no hace falta duplicarlo. -->
+      <Popup IsOpen="{Binding IsSessionMenuOpen, Mode=TwoWay}" PlacementTarget="{Binding #SidebarHost}"
+             Placement="AnchorAndGravity" PlacementAnchor="BottomLeft" PlacementGravity="TopRight"
+             HorizontalOffset="10" VerticalOffset="-8" IsLightDismissEnabled="True">
+        <Border Classes="dropdown-popover" MinWidth="240" Padding="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{loc:Tr Notes_SimpleView_Session_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" FontSize="9.5" Margin="6,2,6,8" />
+            <ItemsControl ItemsSource="{Binding SessionOptions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:SessionOptionViewModel">
+                  <Button Classes="dropdown-item"
+                          Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).SelectSessionOptionCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="9">
+                      <mi:MaterialIcon Width="14" Height="14" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Ink40}"
+                                       Kind="{Binding IsVault, Converter={StaticResource SessionIconConverter}}" />
+                      <TextBlock Text="{Binding DisplayName}" FontSize="12.5" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Popup>
+    </Panel>
+
+    <!-- Separador arrastrable. Igual que en la vista completa, la costura visible es una Border de 1px
+         y el área de agarre es más ancha que ella; aquí el arrastre lo lleva el code-behind (mueve
+         SimpleSidebarWidth) en vez de un GridSplitter, porque el ancho vive en el viewmodel —es lo que se
+         persiste entre arranques— y no en la ColumnDefinition. -->
+    <Panel Grid.Column="1" Width="7" Cursor="SizeWestEast" Background="Transparent"
+           IsVisible="{Binding IsSimpleSidebarVisible}"
+           PointerPressed="SidebarGrip_PointerPressed"
+           PointerMoved="SidebarGrip_PointerMoved"
+           PointerReleased="SidebarGrip_PointerReleased">
+      <Border Width="1" HorizontalAlignment="Center" Background="{DynamicResource Ink10}"
+              IsHitTestVisible="False" />
+    </Panel>
+
+    <!-- ===================== Pestañas + editor ===================== -->
+    <Grid Grid.Column="2" RowDefinitions="Auto,*">
+      <!-- Siempre visible, incluso sin ninguna pestaña abierta: es la continuación de la barra superior
+           del panel lateral (mismo alto, mismo borde inferior), así que ocultarla dejaría la costura
+           cortada a media ventana. Vacía sigue ofreciendo el "+" para crear la primera nota. -->
+      <views:EditorTabStripView Grid.Row="0" />
+
+      <views:EditorView Grid.Row="1" DataContext="{Binding ActiveEditor}"
+                        IsVisible="{Binding #SimpleRoot.((vm:NotesViewModel)DataContext).ActiveEditor,
+                                            Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+      <!-- Sin ninguna nota abierta no hay portada a la que caer (esa es la vista completa), así que el
+           hueco lo ocupa una llamada a la acción en vez de un panel vacío. -->
+      <StackPanel Grid.Row="1" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  MaxWidth="320" IsVisible="{Binding ActiveEditor, Converter={x:Static conv:ObjectConverters.IsNull}}">
+        <mi:MaterialIcon Kind="NoteTextOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+        <TextBlock Text="{loc:Tr Notes_SimpleView_NoNoteOpen}" Classes="muted" HorizontalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" />
+        <Button Classes="pill-primary" HorizontalAlignment="Center" Command="{Binding NewNoteAtRootCommand}">
+          <TextBlock Text="{loc:Tr Notes_EmptyState_CreateButton, Converter={StaticResource UpperCaseConverter}}" />
+        </Button>
+      </StackPanel>
+
+      <!-- Sesión protegida y bloqueada: mismo tratamiento que en la vista completa — leer sus notas
+           lanzaría SessionLockedException, hay que desbloquearla desde Sesiones primero. -->
+      <StackPanel Grid.Row="1" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  MaxWidth="280" IsVisible="{Binding IsSelectedSessionLocked}">
+        <mi:MaterialIcon Kind="LockOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+        <TextBlock Text="{loc:Tr Notes_LockedSession_Message}" Classes="muted" HorizontalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

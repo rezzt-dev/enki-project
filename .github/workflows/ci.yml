@@ -56,3 +56,36 @@ jobs:
       # un proyecto de test separado de enki.Tests.
       - name: Run UI tests (enki.UITests)
         run: dotnet test enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
+
+  lint-packaging:
+    name: Lint de scripts de empaquetado
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Comprobación estática barata de enki/packaging/ (usada por .github/workflows/release.yml): un
+      # error de sintaxis ahí solo se vería al cortar una release de verdad si no se detecta antes. Ni
+      # `bash -n` ni `shellcheck` ejecutan el script, así que no hace falta el SDK de .NET aquí.
+      - name: Comprobar sintaxis de los scripts de shell
+        run: |
+          for script in enki/packaging/linux/*.sh enki/packaging/macos/*.sh; do
+            echo "==> bash -n $script"
+            bash -n "$script"
+          done
+
+      # shellcheck viene preinstalado en los runners ubuntu-latest de GitHub Actions — se invoca
+      # directamente en vez de traer una action de terceros solo para esto.
+      - name: shellcheck
+        run: shellcheck --severity=warning enki/packaging/linux/*.sh enki/packaging/macos/*.sh
+
+      - name: Validar enki.desktop
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq desktop-file-utils
+          desktop-file-validate enki/packaging/linux/enki.desktop
+
+      # Ruby (con su stdlib "yaml") viene preinstalado en los runners ubuntu-latest — evita depender de
+      # que PyYAML esté disponible para el python3 del sistema, que no está garantizado.
+      - name: Validar YAML de release.yml
+        run: ruby -ryaml -e "YAML.load_file('.github/workflows/release.yml'); puts 'release.yml OK'"

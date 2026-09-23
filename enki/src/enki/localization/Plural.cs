@@ -15,6 +15,6 @@ public static class Plural
             ? count is 0 or 1
             : count == 1;
         var resolved = LocalizationService.Instance[isSingular ? $"{key}_one" : $"{key}_other"];
-        return string.Format(CultureInfo.CurrentCulture, resolved, args);
+        return string.Format(LocalizationService.Instance.CurrentCulture, resolved, args);
     }
 }

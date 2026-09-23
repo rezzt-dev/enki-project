@@ -10,9 +10,9 @@ namespace enki.Tests.Views;
 /// two invariants the zoom <c>ScaleTransform</c> (docs/funcionalidad-zoom-interfaz.md §9 punto 5) and the
 /// single global <c>Style Selector="Popup"</c> in <c>Styles.axaml</c> depend on: every popover in the app
 /// is a real Avalonia <c>Popup</c> (never a <c>Flyout</c>, which resolves its own overlay independent of
-/// that shared style) and <c>MainWindow</c> is the only real <c>Window</c> the app ever opens (a second
-/// <c>Window</c> would render outside the <c>ScaleTransform</c> that wraps <c>MainWindow</c>'s content, so
-/// it wouldn't scale with the rest of the UI at all). That audit was manual and left no regression test
+/// that shared style). T2 añade una excepción deliberada: <c>QuickCaptureWindow</c> debe existir aunque la
+/// principal esté oculta, y por eso declara su propio <c>LayoutTransformControl</c> con el zoom del vault.
+/// Esa auditoría era manual y dejó sin prueba de regresión
 /// behind it — this file turns it into one, scanning the real <c>.axaml</c> source tree the same way
 /// <c>RefreshLocalizedLabelsCoverageTests</c> scans <c>.cs</c> files, so a future <c>&lt;Window&gt;</c> or
 /// <c>&lt;Flyout&gt;</c> added to a view fails the build instead of silently falling outside the
@@ -26,14 +26,21 @@ public class PopupZoomAndThemeAuditTests
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "enki", "styles"));
 
     [Fact]
-    public void OnlyMainWindow_DeclaresARealWindow()
+    public void OnlyShellAndQuickCapture_DeclareRealWindows_AndBothApplyZoom()
     {
         var windowFiles = Directory.EnumerateFiles(ViewsDirectory, "*.axaml", SearchOption.AllDirectories)
             .Where(f => File.ReadAllText(f).Contains("<Window", StringComparison.Ordinal))
             .Select(Path.GetFileName)
             .ToList();
 
-        Assert.Equal(["MainWindow.axaml"], windowFiles);
+        Assert.Equal(["MainWindow.axaml", "QuickCaptureWindow.axaml"], windowFiles.OrderBy(name => name));
+
+        foreach (var windowFile in windowFiles)
+        {
+            var content = File.ReadAllText(Path.Combine(ViewsDirectory, "shell", windowFile!));
+            Assert.Contains("LayoutTransformControl", content, StringComparison.Ordinal);
+            Assert.Contains("UiZoomScale", content, StringComparison.Ordinal);
+        }
     }
 
     /// <summary>A <c>Flyout</c> renders through its own popup mechanism, not the shared

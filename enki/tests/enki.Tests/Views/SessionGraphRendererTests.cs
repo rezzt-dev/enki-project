@@ -1,3 +1,4 @@
+using System.Text.Json;
 using enki.Models;
 using enki.Views.Sessions;
 using Xunit;
@@ -22,7 +23,7 @@ public class SessionGraphRendererTests
         ],
         Edges =
         [
-            new SessionGraphEdge { SessionId = "s1", FromRelativePath = "A.md", ToRelativePath = "B.md", IsManual = true }
+            new SessionGraphEdge { FromSessionId = "s1", ToSessionId = "s1", FromRelativePath = "A.md", ToRelativePath = "B.md", IsManual = true }
         ]
     };
 
@@ -80,6 +81,16 @@ public class SessionGraphRendererTests
     }
 
     [Fact]
+    public void BuildSetSessionColorScript_EmbedsSessionAndColorAsQuotedLiterals()
+    {
+        var script = SessionGraphRenderer.BuildSetSessionColorScript("s1", "#2F80ED");
+
+        Assert.Equal(
+            "window.__enkiSetSessionColor && window.__enkiSetSessionColor(\"s1\", \"#2F80ED\");",
+            script);
+    }
+
+    [Fact]
     public void BuildLinkRejectedScript_EmbedsBothGlobalIds()
     {
         var script = SessionGraphRenderer.BuildLinkRejectedScript("s1::A.md", "s2::B.md");
@@ -87,5 +98,20 @@ public class SessionGraphRendererTests
         Assert.Equal(
             "window.__enkiLinkRejected && window.__enkiLinkRejected(\"s1::A.md\", \"s2::B.md\");",
             script);
+    }
+
+    [Fact]
+    public void BuildSetGraphDataScript_PreservesTagsAsData_IncludingScriptLikeText()
+    {
+        var graph = OneEdgeGraph();
+        graph.Nodes[0].Tags = ["ideas", "</script><script>alert('tag')</script>"];
+        var script = SessionGraphRenderer.BuildSetGraphDataScript(graph);
+        var argument = script[(script.IndexOf('(') + 1)..^2];
+        using var payload = JsonDocument.Parse(JsonSerializer.Deserialize<string>(argument)!);
+
+        var tags = payload.RootElement.GetProperty("nodes")[0].GetProperty("tags");
+        Assert.Equal("ideas", tags[0].GetString());
+        Assert.Equal(graph.Nodes[0].Tags[1], tags[1].GetString());
+        Assert.Equal(0, payload.RootElement.GetProperty("nodes")[1].GetProperty("tags").GetArrayLength());
     }
 }

@@ -25,5 +25,6 @@ public enum SettingsSection
     Account,
     Skills,
     Shortcuts,
+    Dashboard,
     About
 }

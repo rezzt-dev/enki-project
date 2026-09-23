@@ -15,7 +15,8 @@ public sealed class CalendarAggregationService(
     KanbanService kanbanService,
     PolarTaskService polarTaskService,
     ReminderService reminderService,
-    PolarAuthService polarAuthService)
+    PolarAuthService polarAuthService,
+    CalendarLayerColorService? layerColorService = null)
 {
     /// <summary>Hard safety cap on chained <c>CalculateNextDueDate</c> calls per recurring task when
     /// expanding ghost occurrences (docs/calendar-feature/03-glosario-y-modelo-de-datos.md §4) — every
@@ -42,8 +43,12 @@ public sealed class CalendarAggregationService(
     public List<CalendarItemViewModel> BuildItems(DateTime rangeStartUtc, DateTime rangeEndUtc, bool includeGhostOccurrences = true)
     {
         var items = new List<CalendarItemViewModel>();
+        // Un solo mapa por reconstrucción (ver CalendarLayerColorService) — resolver el color item a item
+        // recorrería columnas y listas una vez por tarjeta.
+        var colors = layerColorService?.BuildMap();
 
-        foreach (var card in kanbanService.Board.Columns.SelectMany(c => c.Cards))
+        foreach (var column in kanbanService.Board.Columns)
+        foreach (var card in column.Cards)
         {
             if (card.DueDateUtc is not { } due || due < rangeStartUtc || due >= rangeEndUtc) continue;
 
@@ -56,11 +61,12 @@ public sealed class CalendarAggregationService(
                 Description = card.Description,
                 MomentUtc = due,
                 IsAllDay = isAllDay,
-                IsCompleted = false,
+                IsCompleted = card.CompletedAtUtc is not null,
                 // A duration only ever means something alongside a real time of day (doc §5) — an all-day
                 // card ignores whatever DurationMinutes happens to be stored.
                 DurationMinutes = isAllDay ? null : card.DurationMinutes,
                 LayerColorHex = CalendarItemViewModel.KanbanLayerColorHex,
+                CalendarColorHex = ResolveKanbanColumnColor(colors, column.Id),
                 LayerKey = KanbanLayerKey,
                 Priority = MapPriority(card.Priority),
                 IconKind = MaterialIconKind.ViewColumnOutline,
@@ -96,6 +102,7 @@ public sealed class CalendarAggregationService(
                         IsCompleted = task.Completed,
                         DurationMinutes = isAllDay ? null : task.DurationMinutes,
                         LayerColorHex = list?.Color ?? CalendarItemViewModel.KanbanLayerColorHex,
+                        CalendarColorHex = ResolvePolarListColor(colors, task.ListId),
                         LayerKey = task.ListId,
                         Priority = MapPriority(task.Priority),
                         Tags = task.Tags,
@@ -112,7 +119,7 @@ public sealed class CalendarAggregationService(
                 // DueDateUtc itself falls in this range — a weekly task due last month still needs to
                 // preview this week's upcoming occurrence.
                 if (includeGhostOccurrences)
-                    items.AddRange(BuildGhostOccurrences(task, list, rangeStartUtc, rangeEndUtc));
+                    items.AddRange(BuildGhostOccurrences(task, list, rangeStartUtc, rangeEndUtc, ResolvePolarListColor(colors, task.ListId)));
             }
 
             foreach (var subtask in polarTaskService.Store.Subtasks.Where(s => !s.IsDeleted))
@@ -130,6 +137,7 @@ public sealed class CalendarAggregationService(
                     IsAllDay = IsAllDay(due),
                     IsCompleted = subtask.Completed,
                     LayerColorHex = list?.Color ?? CalendarItemViewModel.KanbanLayerColorHex,
+                    CalendarColorHex = ResolvePolarListColor(colors, parentTask?.ListId),
                     LayerKey = parentTask?.ListId ?? string.Empty,
                     IconKind = MaterialIconKind.SubdirectoryArrowRight,
                     ParentContextLabel = parentTask?.Title ?? string.Empty,
@@ -140,22 +148,29 @@ public sealed class CalendarAggregationService(
 
         foreach (var reminder in reminderService.ActiveReminders)
         {
-            if (reminder.NotifyAtUtc < rangeStartUtc || reminder.NotifyAtUtc >= rangeEndUtc) continue;
-
-            items.Add(new CalendarItemViewModel
+            if (reminder.NotifyAtUtc >= rangeStartUtc && reminder.NotifyAtUtc < rangeEndUtc)
             {
-                SourceId = reminder.Id,
-                SourceType = CalendarItemSourceType.Reminder,
-                Title = reminder.Title,
-                Description = reminder.Description,
-                MomentUtc = reminder.NotifyAtUtc,
-                IsAllDay = IsAllDay(reminder.NotifyAtUtc),
-                IsCompleted = reminder.IsCompleted,
-                DurationMinutes = IsAllDay(reminder.NotifyAtUtc) ? null : reminder.DurationMinutes,
-                LayerColorHex = CalendarItemViewModel.ReminderLayerColorHex,
-                LayerKey = ReminderLayerKey,
-                IconKind = Enum.TryParse<MaterialIconKind>(reminder.Icon, out var kind) ? kind : MaterialIconKind.BellRingOutline
-            });
+                items.Add(new CalendarItemViewModel
+                {
+                    SourceId = reminder.Id,
+                    SourceType = CalendarItemSourceType.Reminder,
+                    Title = reminder.Title,
+                    Description = reminder.Description,
+                    MomentUtc = reminder.NotifyAtUtc,
+                    IsAllDay = IsAllDay(reminder.NotifyAtUtc),
+                    IsCompleted = reminder.IsCompleted,
+                    DurationMinutes = IsAllDay(reminder.NotifyAtUtc) ? null : reminder.DurationMinutes,
+                    LayerColorHex = CalendarItemViewModel.ReminderLayerColorHex,
+                    CalendarColorHex = Resolve(colors, ReminderLayerKey),
+                    LayerKey = ReminderLayerKey,
+                    IconKind = Enum.TryParse<MaterialIconKind>(reminder.Icon, out var kind) ? kind : MaterialIconKind.BellRingOutline
+                });
+            }
+
+            // Same parity gap this preview closes for Polar tasks above: previewed regardless of whether
+            // the reminder's *real* NotifyAtUtc itself falls in this range (análisis alfa-3 §4.4, Media).
+            if (includeGhostOccurrences)
+                items.AddRange(BuildGhostOccurrences(reminder, rangeStartUtc, rangeEndUtc, Resolve(colors, ReminderLayerKey)));
         }
 
         return items
@@ -171,6 +186,7 @@ public sealed class CalendarAggregationService(
     public List<CalendarUnscheduledItemViewModel> BuildUnscheduledItems()
     {
         var items = new List<CalendarUnscheduledItemViewModel>();
+        var colors = layerColorService?.BuildMap();
 
         foreach (var column in kanbanService.Board.Columns)
         foreach (var card in column.Cards)
@@ -182,10 +198,12 @@ public sealed class CalendarAggregationService(
                 SourceType = CalendarItemSourceType.Kanban,
                 Title = card.Title,
                 LayerColorHex = CalendarItemViewModel.KanbanLayerColorHex,
+                CalendarColorHex = ResolveKanbanColumnColor(colors, column.Id),
                 LayerKey = KanbanLayerKey,
                 Priority = MapPriority(card.Priority),
                 IconKind = MaterialIconKind.ViewColumnOutline,
-                ParentContextLabel = column.Title
+                ParentContextLabel = column.Title,
+                IsCompleted = card.CompletedAtUtc is not null
             });
         }
 
@@ -202,6 +220,7 @@ public sealed class CalendarAggregationService(
                     SourceType = CalendarItemSourceType.PolarTask,
                     Title = task.Title,
                     LayerColorHex = list?.Color ?? CalendarItemViewModel.KanbanLayerColorHex,
+                    CalendarColorHex = ResolvePolarListColor(colors, task.ListId),
                     LayerKey = task.ListId,
                     Priority = MapPriority(task.Priority),
                     Tags = task.Tags,
@@ -221,6 +240,7 @@ public sealed class CalendarAggregationService(
                     SourceType = CalendarItemSourceType.PolarSubtask,
                     Title = subtask.Title,
                     LayerColorHex = list?.Color ?? CalendarItemViewModel.KanbanLayerColorHex,
+                    CalendarColorHex = ResolvePolarListColor(colors, parentTask?.ListId),
                     LayerKey = parentTask?.ListId ?? string.Empty,
                     IsCompleted = subtask.Completed,
                     IconKind = MaterialIconKind.SubdirectoryArrowRight,
@@ -238,8 +258,11 @@ public sealed class CalendarAggregationService(
     /// 03-glosario-y-modelo-de-datos.md §4. Pure and static (no service dependency) so it's directly
     /// testable without a live <see cref="PolarTaskService"/>, unlike the rest of this class — see
     /// <c>CalendarAggregationServiceTests</c>.</summary>
+    /// <param name="calendarColorHex">Color de calendario de la lista (ver
+    /// <see cref="CalendarLayerColorService"/>) — <c>null</c> deja la ocurrencia con el color de origen,
+    /// que es lo que ven los tests que llaman a este método directamente.</param>
     public static List<CalendarItemViewModel> BuildGhostOccurrences(
-        PolarTask task, PolarTaskList? list, DateTime rangeStartUtc, DateTime rangeEndUtc)
+        PolarTask task, PolarTaskList? list, DateTime rangeStartUtc, DateTime rangeEndUtc, string? calendarColorHex = null)
     {
         var results = new List<CalendarItemViewModel>();
         if (task.IsDeleted || task.Recurrence == PolarRecurrence.None || task.DueDateUtc is not { } current) return results;
@@ -261,6 +284,7 @@ public sealed class CalendarAggregationService(
                 IsCompleted = false,
                 IsGhostOccurrence = true,
                 LayerColorHex = list?.Color ?? CalendarItemViewModel.KanbanLayerColorHex,
+                CalendarColorHex = calendarColorHex,
                 LayerKey = task.ListId,
                 Priority = MapPriority(task.Priority),
                 Tags = task.Tags,
@@ -271,6 +295,58 @@ public sealed class CalendarAggregationService(
 
         return results;
     }
+
+    /// <summary>Same idea as the <see cref="PolarTask"/> overload above, for recurring reminders (análisis
+    /// alfa-3 §4.4, Media — the ghost-occurrence preview only ever covered Polar tasks, leaving the other
+    /// recurring item type the app natively supports without this parity). Reminders reuse
+    /// <see cref="PolarRecurrence"/> and <see cref="PolarTaskService.CalculateNextDueDate"/> directly (see
+    /// <see cref="Reminder.Recurrence"/>), so the chaining logic is identical.</summary>
+    public static List<CalendarItemViewModel> BuildGhostOccurrences(
+        Reminder reminder, DateTime rangeStartUtc, DateTime rangeEndUtc, string? calendarColorHex = null)
+    {
+        var results = new List<CalendarItemViewModel>();
+        if (reminder.IsDeleted || reminder.Recurrence == PolarRecurrence.None) return results;
+
+        var current = reminder.NotifyAtUtc;
+        for (var i = 0; i < MaxGhostOccurrenceIterations; i++)
+        {
+            current = PolarTaskService.CalculateNextDueDate(current, reminder.Recurrence);
+            if (current >= rangeEndUtc) break;
+            if (current < rangeStartUtc) continue;
+
+            var isAllDay = IsAllDay(current);
+            results.Add(new CalendarItemViewModel
+            {
+                SourceId = reminder.Id,
+                SourceType = CalendarItemSourceType.Reminder,
+                Title = reminder.Title,
+                Description = reminder.Description,
+                MomentUtc = current,
+                IsAllDay = isAllDay,
+                IsCompleted = false,
+                IsGhostOccurrence = true,
+                DurationMinutes = isAllDay ? null : reminder.DurationMinutes,
+                LayerColorHex = CalendarItemViewModel.ReminderLayerColorHex,
+                CalendarColorHex = calendarColorHex,
+                LayerKey = ReminderLayerKey,
+                IconKind = Enum.TryParse<MaterialIconKind>(reminder.Icon, out var kind) ? kind : MaterialIconKind.BellRingOutline
+            });
+        }
+
+        return results;
+    }
+
+    /// <summary>Los tres helpers de color de abajo devuelven <c>null</c> cuando no hay
+    /// <see cref="CalendarLayerColorService"/> (construcción sin él, p. ej. en tests), y entonces cada
+    /// item cae en su <c>LayerColorHex</c> de siempre.</summary>
+    private static string? Resolve(Dictionary<string, string>? colors, string colorKey) =>
+        colors is null ? null : CalendarLayerColorService.Resolve(colors, colorKey);
+
+    private static string? ResolveKanbanColumnColor(Dictionary<string, string>? colors, string columnId) =>
+        Resolve(colors, CalendarLayerColorService.KanbanColumnColorKey(columnId));
+
+    private static string? ResolvePolarListColor(Dictionary<string, string>? colors, string? listId) =>
+        string.IsNullOrEmpty(listId) ? null : Resolve(colors, listId);
 
     private static CalendarItemPriority MapPriority(KanbanPriority priority) => priority switch
     {

@@ -9,6 +9,26 @@ public class RelativeTimeFormatterTests
 {
     private static readonly DateTime Now = new(2026, 8, 17, 12, 0, 0, DateTimeKind.Utc);
 
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("en-GB")]
+    [InlineData("de-DE")]
+    [InlineData("fr-FR")]
+    public void AbsoluteDate_UsesRegionalOrderAndClock(string culture)
+    {
+        var original = LocalizationService.Instance.CurrentCulture.Name;
+        try
+        {
+            LocalizationService.Instance.SetLanguage(culture);
+            var expected = Now.ToLocalTime().ToString("g", System.Globalization.CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expected, RelativeTimeFormatter.FormatAbsolute(Now));
+        }
+        finally
+        {
+            LocalizationService.Instance.SetLanguage(original);
+        }
+    }
+
     [Fact]
     public void Format_WalksThroughEachBucketAndPluralizes()
     {

@@ -15,6 +15,19 @@ public class WikiLinkParserTests
         Title = title
     };
 
+    [Theory]
+    [InlineData("Nota", "Nota", null, null)]
+    [InlineData("Nota#Mi sección", "Nota", "Mi sección", null)]
+    [InlineData("Nota#^bloque-1", "Nota", null, "bloque-1")]
+    [InlineData("Nota^bloque-2|Alias", "Nota", null, "bloque-2")]
+    public void ParseTarget_SeparatesNoteAndFragment(string raw, string note, string? heading, string? block)
+    {
+        var parsed = WikiLinkParser.ParseTarget(raw);
+        Assert.Equal(note, parsed.Note);
+        Assert.Equal(heading, parsed.Heading);
+        Assert.Equal(block, parsed.BlockId);
+    }
+
     [Fact]
     public void ResolveTarget_MatchesByFileName_BeforeTitle()
     {
@@ -87,6 +100,27 @@ public class WikiLinkParserTests
         };
 
         var (status, note) = WikiLinkParser.ResolveTargetWithStatus(notes, "Nueva nota");
+
+        Assert.Equal(WikiLinkResolution.Ambiguous, status);
+        Assert.Null(note);
+    }
+
+    /// <summary>Un nombre de fichero es único garantizado dentro de una sola carpeta (VaultService.CreateNote
+    /// se encarga de eso), pero no vault-wide una vez que el conjunto de notas resuelto puede abarcar varias
+    /// sesiones a la vez (VaultService.GetAllNotesAcrossVault) — dos sesiones distintas pueden tener cada una
+    /// un fichero llamado igual. Antes de este fix, ResolveTargetWithStatus adivinaba el primero con
+    /// FirstOrDefault en vez de reportar la ambigüedad, igual que ya hacía (correctamente) para títulos
+    /// duplicados.</summary>
+    [Fact]
+    public void ResolveTargetWithStatus_AmbiguousFileName_ReturnsAmbiguous()
+    {
+        var notes = new List<NoteFile>
+        {
+            Note("/vault/.sessions/uno/Reunión.md", "Notas de la reunión"),
+            Note("/vault/.sessions/dos/Reunión.md", "Otra reunión")
+        };
+
+        var (status, note) = WikiLinkParser.ResolveTargetWithStatus(notes, "Reunión");
 
         Assert.Equal(WikiLinkResolution.Ambiguous, status);
         Assert.Null(note);

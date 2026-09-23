@@ -3,6 +3,11 @@ bin/
 obj/
 out/
 publish/
+dist/
+
+# Datos de Enki en builds de Debug compilados desde el código fuente (ver services/AppDataDirectory.cs) —
+# settings.json, kanban.json, polar-tasks.json, etc. de desarrollo/pruebas, aisladas de %AppData%/Enki.
+.devdata/
 
 # .NET
 *.user
@@ -14,6 +19,7 @@ publish/
 
 # Local secrets / machine-specific config (contains Supabase keys, etc.)
 local.properties
+.env
 
 # JetBrains Rider / IntelliJ
 .idea/
@@ -29,6 +35,11 @@ local.properties
 # OS files
 .DS_Store
 Thumbs.db
+
+# Documentación local heredada; la documentación versionada vive en .docs/project-info/
+docs/
+# …salvo la de la landing, que viaja con su código (enki-webpage/docs/roadmap/00-GUIA-MAESTRA.md, D13)
+!enki-webpage/docs/
 
 # Logs
 *.log

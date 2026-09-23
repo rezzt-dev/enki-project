@@ -92,6 +92,76 @@ public class KanbanColumnViewModelTests
     }
 
     [Fact]
+    public void ApplyFilters_QuickFilterHighPriority_HidesEverythingElse()
+    {
+        var column = NewColumn();
+        column.Cards.Add(new KanbanCard { Id = "1", Title = "Urgente", Priority = KanbanPriority.High });
+        column.Cards.Add(new KanbanCard { Id = "2", Title = "Normal", Priority = KanbanPriority.Medium });
+        var vm = new KanbanColumnViewModel(column);
+
+        vm.ApplyFilters([], string.Empty, KanbanQuickFilter.HighPriority);
+
+        Assert.True(vm.Cards[0].IsVisible);
+        Assert.False(vm.Cards[1].IsVisible);
+        Assert.Equal(1, vm.VisibleCardCount);
+    }
+
+    [Fact]
+    public void CountLabel_IsThePlainTotal_WithoutFilters()
+    {
+        var column = NewColumn();
+        column.Cards.Add(new KanbanCard { Id = "1", Title = "Uno" });
+        column.Cards.Add(new KanbanCard { Id = "2", Title = "Dos" });
+        var vm = new KanbanColumnViewModel(column);
+
+        vm.ApplyFilters([], string.Empty);
+
+        Assert.False(vm.IsFiltered);
+        Assert.Equal("2", vm.CountLabel);
+        Assert.False(vm.HasNoMatches);
+    }
+
+    [Fact]
+    public void CountLabel_ShowsVisibleOverTotal_WhileFiltering()
+    {
+        var column = NewColumn();
+        column.Cards.Add(new KanbanCard { Id = "1", Title = "Revisar contrato" });
+        column.Cards.Add(new KanbanCard { Id = "2", Title = "Comprar café" });
+        var vm = new KanbanColumnViewModel(column);
+
+        vm.ApplyFilters([], "contrato");
+
+        Assert.True(vm.IsFiltered);
+        Assert.Equal("1/2", vm.CountLabel);
+    }
+
+    [Fact]
+    public void HasNoMatches_IsTrue_OnlyWhenTheFilterHidesEveryCard()
+    {
+        var column = NewColumn();
+        column.Cards.Add(new KanbanCard { Id = "1", Title = "Revisar contrato" });
+        var vm = new KanbanColumnViewModel(column);
+
+        vm.ApplyFilters([], "factura");
+        Assert.True(vm.HasNoMatches);
+        Assert.False(vm.IsEmpty);
+
+        vm.ApplyFilters([], "contrato");
+        Assert.False(vm.HasNoMatches);
+    }
+
+    [Fact]
+    public void HasNoMatches_StaysFalse_ForAColumnThatIsSimplyEmpty()
+    {
+        var vm = new KanbanColumnViewModel(NewColumn());
+
+        vm.ApplyFilters([], "lo que sea");
+
+        Assert.True(vm.IsEmpty);
+        Assert.False(vm.HasNoMatches);
+    }
+
+    [Fact]
     public void Sort_ByPriority_OrdersHighFirstInViewAndModel()
     {
         var column = NewColumn();

@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="enki.Views.TagManagerView" x:DataType="vm:TagManagerViewModel">
+  <Grid>
+    <Grid RowDefinitions="Auto,Auto,*" Margin="36,30,36,36" MaxWidth="1120" HorizontalAlignment="Stretch">
+      <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,26">
+        <TextBlock Classes="page-title" Text="{loc:Tr TagManager_Title}" />
+        <TextBlock Classes="page-subtitle" Text="{loc:Tr TagManager_Subtitle}" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+        <TextBox Grid.Column="0" Classes="search" Width="320" HorizontalAlignment="Left"
+                 PlaceholderText="{loc:Tr TagManager_Search}" Text="{Binding SearchQuery, Mode=TwoWay}"
+                 AutomationProperties.Name="{loc:Tr TagManager_Search}" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock Classes="faint" VerticalAlignment="Center" Text="{Binding SelectedCountLabel}" />
+          <Button Classes="pill-primary" Command="{Binding RequestMergeCommand}" IsEnabled="{Binding CanMerge}"
+                  AutomationProperties.Name="{loc:Tr TagManager_Merge}">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <mi:MaterialIcon Kind="Merge" Width="14" Height="14" />
+              <TextBlock Text="{loc:Tr TagManager_Merge}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" CornerRadius="0">
+        <Grid RowDefinitions="Auto,*">
+          <Grid Grid.Row="0" ColumnDefinitions="32,*,88,88,88,90" Margin="16,12" IsVisible="{Binding !IsEmpty}">
+            <TextBlock Grid.Column="1" Classes="eyebrow" Text="{loc:Tr TagManager_Column_Name}" />
+            <TextBlock Grid.Column="2" Classes="eyebrow" Text="{loc:Tr TagManager_Column_Notes}" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="3" Classes="eyebrow" Text="{loc:Tr TagManager_Column_Kanban}" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="4" Classes="eyebrow" Text="{loc:Tr TagManager_Column_Polar}" HorizontalAlignment="Center" />
+          </Grid>
+          <ScrollViewer Grid.Row="1">
+            <StackPanel>
+              <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:TagManagerItemViewModel">
+                    <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" CornerRadius="0">
+                      <Grid ColumnDefinitions="32,*,88,88,88,90" Margin="16,8">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}" />
+                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="faint" FontSize="11" Text="{Binding BreakdownLabel}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding NoteCount}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding KanbanCount}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="{Binding PolarCount}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                          <Button Classes="icon-btn" Command="{Binding $parent[ItemsControl].((vm:TagManagerViewModel)DataContext).RequestRenameCommand}"
+                                  CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr TagManager_Rename}"
+                                  AutomationProperties.Name="{loc:Tr TagManager_Rename}">
+                            <mi:MaterialIcon Kind="PencilOutline" Width="16" Height="16" />
+                          </Button>
+                          <Button Classes="icon-btn icon-btn-danger" Command="{Binding $parent[ItemsControl].((vm:TagManagerViewModel)DataContext).RequestDeleteCommand}"
+                                  CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr TagManager_Delete}"
+                                  AutomationProperties.Name="{loc:Tr TagManager_Delete}">
+                            <mi:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" />
+                          </Button>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <StackPanel IsVisible="{Binding IsEmpty}" Spacing="10" Margin="20,70" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="TagOffOutline" Width="28" Height="28" Foreground="{DynamicResource Ink30}" HorizontalAlignment="Center" />
+                <TextBlock Classes="muted" Text="{loc:Tr TagManager_Empty}" TextAlignment="Center" />
+              </StackPanel>
+              <TextBlock IsVisible="{Binding HasNoSearchResults}" Classes="muted" Margin="20,60"
+                         Text="{loc:Tr TagManager_NoResults}" TextAlignment="Center" />
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <controls:ModalOverlayHost IsOpen="{Binding PendingRename, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="eyebrow" Text="{loc:Tr TagManager_Rename}" />
+          <TextBlock Classes="muted" Text="{loc:Tr TagManager_RenameHint}" TextWrapping="Wrap" />
+          <TextBox Text="{Binding RenameInput, Mode=TwoWay}" AutomationProperties.Name="{loc:Tr TagManager_NewName}" />
+          <TextBlock Classes="faint" Text="{loc:Tr TagManager_NameRules}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelRenameCommand}" Content="{loc:Tr Common_Cancel}" />
+            <Button Classes="pill-primary" Command="{Binding ConfirmRenameCommand}" IsEnabled="{Binding CanConfirmRename}" Content="{loc:Tr TagManager_Rename}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <controls:ModalOverlayHost IsOpen="{Binding IsMergeDialogOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="eyebrow" Text="{loc:Tr TagManager_Merge}" />
+          <TextBlock Classes="muted" Text="{loc:Tr TagManager_MergeHint}" TextWrapping="Wrap" />
+          <TextBox Text="{Binding MergeTargetInput, Mode=TwoWay}" AutomationProperties.Name="{loc:Tr TagManager_TargetName}" />
+          <TextBlock Classes="faint" Text="{loc:Tr TagManager_NameRules}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelMergeCommand}" Content="{loc:Tr Common_Cancel}" />
+            <Button Classes="pill-primary" Command="{Binding ConfirmMergeCommand}" IsEnabled="{Binding CanConfirmMerge}" Content="{loc:Tr TagManager_Merge}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <controls:ModalOverlayHost IsOpen="{Binding PendingDelete, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" Text="{loc:Tr TagManager_Delete}" />
+          <TextBlock Text="{Binding PendingDeleteMessage}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelDeleteCommand}" Content="{loc:Tr Common_Cancel}" />
+            <Button Classes="pill-primary-danger" Command="{Binding ConfirmDeleteCommand}" Content="{loc:Tr TagManager_Delete}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+  </Grid>
+</UserControl>

@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Avalonia.Media.Imaging;
 using PDFtoImage;
 using SkiaSharp;
@@ -28,6 +31,14 @@ internal static class PdfRenderHelper
     {
         using var stream = File.OpenRead(fullPath);
         return Conversion.GetPageCount(stream);
+    }
+
+    /// <summary>Tamaño de cada página en puntos PDF (1/72 de pulgada), en orden — lo que necesita el visor para
+    /// ajustar una página al ancho del panel antes de haberla renderizado.</summary>
+    public static IReadOnlyList<(double Width, double Height)> GetPageSizes(string fullPath)
+    {
+        using var stream = File.OpenRead(fullPath);
+        return Conversion.GetPageSizes(stream).Select(size => ((double)size.Width, (double)size.Height)).ToList();
     }
 
     /// <summary>Renders <paramref name="pageIndex"/> (0-based) at a fixed pixel width, height following

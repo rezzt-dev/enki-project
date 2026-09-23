@@ -173,6 +173,11 @@ public sealed partial class PolarTaskManagementViewModel : ViewModelBase
         OnPropertyChanged(nameof(LastSyncedDisplayLabel));
         RefreshSyncStatus();
         Reload();
+        // Reload() rehace listas y filas, pero no los overlays abiertos: se refrescan en el sitio para no
+        // descartar lo que el usuario tuviera a medio escribir.
+        TaskEditor?.RefreshLocalizedLabels();
+        ListEditor?.RefreshLocalizedLabels();
+        TaskDetail?.RefreshLocalizedLabels();
     }
 
     public void Reload()
@@ -193,6 +198,14 @@ public sealed partial class PolarTaskManagementViewModel : ViewModelBase
 
         var reselect = previousSelectedId is not null ? Lists.FirstOrDefault(l => l.Id == previousSelectedId) : null;
         SelectList(reselect ?? Lists.FirstOrDefault());
+    }
+
+    /// <summary>Descarta los diálogos vinculados a tareas del vault anterior.</summary>
+    public void CloseForVaultChange()
+    {
+        TaskEditor = null;
+        ListEditor = null;
+        TaskDetail = null;
     }
 
     private void RefreshStats()

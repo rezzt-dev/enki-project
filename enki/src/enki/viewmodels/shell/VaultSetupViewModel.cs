@@ -52,8 +52,14 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
             AllowMultiple = false
         });
 
-        var folder = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
-        if (string.IsNullOrWhiteSpace(folder)) return;
+        var pickedFolder = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+        if (string.IsNullOrWhiteSpace(pickedFolder)) return;
+
+        // The picked folder (e.g. "Documents") is a general-purpose folder, not the vault itself — the
+        // actual vault lives nested one level inside it so Enki's own files never scatter alongside the
+        // user's unrelated ones. See VaultService.ResolveVaultFolder for how an already-existing vault
+        // (old-style flat, or already nested) is recognized and left untouched instead of double-nested.
+        var folder = VaultService.ResolveVaultFolder(pickedFolder);
 
         try
         {
@@ -86,11 +92,7 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            // Last-resort fallback for exception types we can't give a fully-translated message to.
-            // Exception.Message here is a documented limitation, not a bug to "fully fix" — a platform
-            // exception's text is never guaranteed to be in Enki's active language unless Enki intercepts
-            // it by type, as the cases above already do for the common, expectable ones.
-            ErrorMessage = string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["VaultSetup_Error_Generic"], ex.Message);
+            ErrorMessage = VaultFailureReasons.Describe(ex);
         }
     }
 }

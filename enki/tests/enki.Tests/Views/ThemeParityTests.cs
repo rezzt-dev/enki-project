@@ -45,4 +45,14 @@ public class ThemeParityTests
             .Select(m => m.Groups[1].Value)
             .ToArray();
     }
+
+    [Fact]
+    public void RowBackgroundHoverBrush_UsesRowBackgroundHoverColor()
+    {
+        var content = File.ReadAllText(ColorsFilePath);
+
+        var match = Regex.Match(content, @"<SolidColorBrush x:Key=""RowBackgroundHoverBrush""\s+Color=""\{DynamicResource\s+([^}]+)\}""");
+        Assert.True(match.Success, "Colors.axaml no longer declares RowBackgroundHoverBrush.");
+        Assert.Equal("RowBackgroundHoverColor", match.Groups[1].Value);
+    }
 }

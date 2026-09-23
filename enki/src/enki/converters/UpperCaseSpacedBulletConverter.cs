@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using enki.Services;
 using Avalonia.Data.Converters;
 
 namespace enki.Converters;
@@ -13,7 +14,7 @@ public sealed class UpperCaseSpacedBulletConverter : IValueConverter
 {
     public static readonly UpperCaseSpacedBulletConverter Instance = new();
 
-    private static readonly Regex BulletWithSpacing = new(@"\s*•\s*", RegexOptions.Compiled);
+    private static readonly Regex BulletWithSpacing = new(@"\s*•\s*", RegexOptions.Compiled, RegexSafety.MatchTimeout);
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is string s ? BulletWithSpacing.Replace(s.ToUpper(culture), "   •   ") : value;

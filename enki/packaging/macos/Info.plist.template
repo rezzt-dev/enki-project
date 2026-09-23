@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Enki</string>
+	<key>CFBundleDisplayName</key>
+	<string>Enki</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.github.rezzt-dev.enki</string>
+	<key>CFBundleVersion</key>
+	<string>__ENKI_VERSION__</string>
+	<key>CFBundleShortVersionString</key>
+	<string>__ENKI_VERSION__</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleExecutable</key>
+	<string>enki</string>
+	<key>CFBundleIconFile</key>
+	<string>enki.icns</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>11.0</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>__ENKI_COPYRIGHT__</string>
+	<!-- Enki no accede a cámara, micrófono, contactos ni ubicación; no hace falta declarar claves de
+	     privacidad NSxxxUsageDescription. Si en el futuro se añade pegar imágenes o exportar a otras
+	     apps, revisar si alguna de esas claves pasa a ser necesaria. -->
+</dict>
+</plist>

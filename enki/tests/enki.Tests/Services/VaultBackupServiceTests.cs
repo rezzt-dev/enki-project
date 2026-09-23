@@ -14,6 +14,7 @@ namespace enki.Tests.Services;
 /// aborta el resto de la copia.</summary>
 public class VaultBackupServiceTests : IDisposable
 {
+    private readonly TestPolarCredentialStore _credentialStore = new();
     private readonly string _root =
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
 
@@ -78,6 +79,88 @@ public class VaultBackupServiceTests : IDisposable
     }
 
     [Fact]
+    public void CreateBackup_OnUnix_CreatesPrivateArchive()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var destination = Path.Combine(_root, "private-backup.zip");
+
+        CreateService().CreateBackup(destination);
+
+        Assert.Equal(PrivateDataPermissions.FileMode, File.GetUnixFileMode(destination));
+    }
+
+    [Fact]
+    public void CreateBackup_DoesNotFollowSymbolicLinksOutsideVault()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var outside = Path.Combine(_root, "outside");
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "privado.txt"), "secreto");
+        Directory.CreateSymbolicLink(Path.Combine(_vaultPath, "enlace"), outside);
+        var destination = Path.Combine(_root, "no-links.zip");
+
+        CreateService().CreateBackup(destination);
+
+        using var archive = ZipFile.OpenRead(destination);
+        Assert.DoesNotContain(archive.Entries, entry => entry.FullName.Contains("privado", StringComparison.Ordinal));
+        Assert.DoesNotContain(archive.Entries, entry => entry.FullName.StartsWith("vault/enlace", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CreateBackup_WhenCommitFails_PreservesPreviousDestinationAndRemovesTemporary()
+    {
+        var settings = new SettingsService(_appDataDirectory);
+        var vault = new VaultService(settings);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        var service = new VaultBackupService(vault, _appDataDirectory,
+            _ => throw new InvalidOperationException("fallo simulado antes del commit"));
+        var destination = Path.Combine(_root, "backup.zip");
+        File.WriteAllText(destination, "backup anterior");
+
+        Assert.Throws<InvalidOperationException>(() => service.CreateBackup(destination));
+
+        Assert.Equal("backup anterior", File.ReadAllText(destination));
+        Assert.Empty(Directory.GetFiles(_root, "backup.zip.tmp-*"));
+    }
+
+    [Fact]
+    public void RestoreBackup_RoundTripsVaultIntoANewFolder()
+    {
+        File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota restaurable");
+        Directory.CreateDirectory(Path.Combine(_vaultPath, "Adjuntos"));
+        File.WriteAllBytes(Path.Combine(_vaultPath, "Adjuntos", "x.bin"), [1, 2, 3]);
+        var service = CreateService();
+        var backup = Path.Combine(_root, "roundtrip.zip");
+        service.CreateBackup(backup);
+        var restoredPath = Path.Combine(_root, "vault-restaurado");
+
+        var result = service.RestoreBackup(backup, restoredPath);
+
+        Assert.Equal(Path.GetFullPath(restoredPath), result.VaultPath);
+        Assert.Equal("# Nota restaurable", File.ReadAllText(Path.Combine(restoredPath, "Nota.md")));
+        Assert.Equal([1, 2, 3], File.ReadAllBytes(Path.Combine(restoredPath, "Adjuntos", "x.bin")));
+        Assert.NotNull(result.SettingsJson);
+    }
+
+    [Fact]
+    public void RestoreBackup_WithZipSlipEntry_RejectsItWithoutCreatingDestination()
+    {
+        var service = CreateService();
+        var backup = Path.Combine(_root, "malicious.zip");
+        using (var archive = ZipFile.Open(backup, ZipArchiveMode.Create))
+        {
+            using var writer = new StreamWriter(archive.CreateEntry("vault/../../escape.md").Open());
+            writer.Write("fuera");
+        }
+        var destination = Path.Combine(_root, "restored");
+
+        Assert.Throws<InvalidDataException>(() => service.RestoreBackup(backup, destination));
+
+        Assert.False(Directory.Exists(destination));
+        Assert.False(File.Exists(Path.Combine(_root, "escape.md")));
+    }
+
+    [Fact]
     public void CreateBackup_MissingVaultFolder_StillBacksUpAppData()
     {
         var settings = new SettingsService(_appDataDirectory);
@@ -85,7 +168,7 @@ public class VaultBackupServiceTests : IDisposable
         vault.SetVaultPath(_vaultPath);
         // The folder existed a moment ago (SetVaultPath creates it) but got removed afterwards — e.g. an
         // external drive unplugged — so GetVaultSizeBytes's own Directory.Exists guard must be mirrored here.
-        Directory.Delete(_vaultPath);
+        Directory.Delete(_vaultPath, recursive: true);
         var service = new VaultBackupService(vault, _appDataDirectory);
 
         var destination = Path.Combine(_root, "backup.zip");
@@ -135,7 +218,7 @@ public class VaultBackupServiceTests : IDisposable
     [Fact]
     public void CreateBackup_RedactsPolarTokensInsideSettingsJson()
     {
-        var settings = new SettingsService(_appDataDirectory);
+        var settings = new SettingsService(_appDataDirectory, _credentialStore);
         settings.Settings.PolarAccessToken = "super-secret-access-token";
         settings.Settings.PolarRefreshToken = "super-secret-refresh-token";
         settings.Settings.Theme = "Dark";
@@ -155,7 +238,34 @@ public class VaultBackupServiceTests : IDisposable
 
         Assert.DoesNotContain("super-secret-access-token", content);
         Assert.DoesNotContain("super-secret-refresh-token", content);
-        Assert.Contains("\"Dark\"", content);
+        Assert.Contains("\"PolarLinked\"", content);
+        using var vaultReader = new StreamReader(archive.GetEntry("vault/.enki/settings.json")!.Open());
+        Assert.Contains("\"Dark\"", vaultReader.ReadToEnd());
+    }
+
+    [Fact]
+    public void CreateBackup_RedactsLegacyTokensInGlobalAndVaultSettings()
+    {
+        var settings = new SettingsService(_appDataDirectory, _credentialStore);
+        var vault = new VaultService(settings);
+        vault.InitializeVault(_vaultPath, seedWelcomeNote: false);
+        File.WriteAllText(Path.Combine(_appDataDirectory, "settings.json"),
+            "{\"PolarAccessToken\":\"global-secret\",\"Other\":7}");
+        var vaultSettings = Path.Combine(_vaultPath, ".enki", "settings.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(vaultSettings)!);
+        File.WriteAllText(vaultSettings, "{\"PolarRefreshToken\":\"vault-secret\",\"Other\":8}");
+
+        var destination = Path.Combine(_root, "legacy-backup.zip");
+        new VaultBackupService(vault, _appDataDirectory).CreateBackup(destination);
+
+        using var archive = ZipFile.OpenRead(destination);
+        foreach (var entryName in new[] { "app-data/settings.json", "vault/.enki/settings.json" })
+        {
+            using var reader = new StreamReader(archive.GetEntry(entryName)!.Open());
+            var json = reader.ReadToEnd();
+            Assert.DoesNotContain("secret", json);
+            Assert.Contains("Other", json);
+        }
     }
 
     // ===================== Backup automático (Fase 1) =====================
@@ -202,6 +312,37 @@ public class VaultBackupServiceTests : IDisposable
         Assert.False(ranAgain);
         var backupsDir = Path.Combine(_appDataDirectory, "backups");
         Assert.Single(Directory.EnumerateFiles(backupsDir, "*.zip"));
+    }
+
+    [Fact]
+    public void RunScheduledBackupIfDue_WithIncompleteBackup_PreservesPreviousCopiesAndDueDate()
+    {
+        var service = CreateService();
+        var settings = new SettingsService(_appDataDirectory);
+        settings.Settings.AutoBackupEnabled = true;
+        settings.Settings.AutoBackupRetentionCount = 1;
+        var backups = Path.Combine(_appDataDirectory, "backups");
+        Directory.CreateDirectory(backups);
+        var previous = Path.Combine(backups, "Enki-AutoBackup-old.zip");
+        File.WriteAllText(previous, "copia anterior");
+        // Provoca una omisión determinista: los ajustes ilegibles nunca se copian sin redactar.
+        File.WriteAllText(Path.Combine(_appDataDirectory, "settings.json"), "{invalid");
+
+        Assert.False(service.RunScheduledBackupIfDue(settings));
+        Assert.Null(settings.Settings.LastAutoBackupUtc);
+        Assert.Equal("copia anterior", File.ReadAllText(previous));
+    }
+
+    [Fact]
+    public void RunScheduledBackupIfDue_WithMissingVault_PreservesPreviousCopiesAndDueDate()
+    {
+        var service = CreateService();
+        var settings = new SettingsService(_appDataDirectory);
+        settings.Settings.AutoBackupEnabled = true;
+        Directory.Delete(_vaultPath, recursive: true);
+
+        Assert.False(service.RunScheduledBackupIfDue(settings));
+        Assert.Null(settings.Settings.LastAutoBackupUtc);
     }
 
     [Fact]

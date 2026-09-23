@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using enki.ViewModels;
 using PDFtoImage;
+using SkiaSharp;
 using Xunit;
 
 namespace enki.Tests.ViewModels;
@@ -30,6 +31,38 @@ public class PdfRenderHelperTests : IDisposable
     public void GetPageCount_ReadsAOnePagePdf()
     {
         Assert.Equal(1, PdfRenderHelper.GetPageCount(_pdfPath));
+    }
+
+    /// <summary>Same assertion as above but against a PDF built via SkiaSharp's own <see cref="SKDocument"/>
+    /// writer instead of a hand-written minimal file — kept as a second, independently-produced input so a
+    /// page-count bug specific to one PDF generation path (e.g. an off-by-one when a document actually has
+    /// more than one page) can't hide behind the other passing.</summary>
+    [Fact]
+    public void GetPageCount_ReadsATwoPagePdf()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N") + ".pdf");
+        try
+        {
+            using (var stream = File.Create(path))
+            using (var document = SKDocument.CreatePdf(stream))
+            {
+                for (var i = 0; i < 2; i++)
+                {
+                    using var canvas = document.BeginPage(400, 300);
+                    using var font = new SKFont(SKTypeface.Default, 20);
+                    using var paint = new SKPaint { Color = SKColors.Black };
+                    canvas.DrawText($"Page {i + 1}", 20, 40, SKTextAlign.Left, font, paint);
+                    document.EndPage();
+                }
+                document.Close();
+            }
+
+            Assert.Equal(2, PdfRenderHelper.GetPageCount(path));
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
     }
 
     // The next two tests call PDFtoImage.Conversion directly rather than PdfRenderHelper — the helper's
