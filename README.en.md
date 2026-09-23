@@ -206,7 +206,7 @@ an everyday workflow can begin with an idea written in quick capture, continue a
 
 ## PROJECT STATUS
 
-> under active development. the currently declared version is `0.1.0`, and the next set of changes remains in the changelog's `SIN PUBLICAR / UNRELEASED` section.
+> under active development. the currently declared version is `0.2.0`, and the next set of changes remains in the changelog's `SIN PUBLICAR / UNRELEASED` section.
 
 enki already covers a complete daily workflow and provides packaging for windows, linux and macos. it is still a young project: workflows that depend on the operating system, a real screen reader, live synchronisation or sharing the vault with other applications are reviewed manually before considering a release candidate.
 

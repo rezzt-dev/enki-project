@@ -206,7 +206,7 @@ un flujo cotidiano puede empezar con una idea escrita en la captura rapida, cont
 
 ## ESTADO DEL PROYECTO
 
-> en desarrollo activo. la version declarada actualmente es `0.1.0` y el siguiente conjunto de cambios permanece en la seccion `SIN PUBLICAR / UNRELEASED` del changelog.
+> en desarrollo activo. la version declarada actualmente es `0.2.0` y el siguiente conjunto de cambios permanece en la seccion `SIN PUBLICAR / UNRELEASED` del changelog.
 
 enki ya cubre el flujo diario completo y dispone de empaquetado para windows, linux y macos. aun es un proyecto joven: antes de considerar una version candidata se revisan manualmente los recorridos que dependen del sistema operativo, el lector de pantalla, la sincronizacion real y la convivencia del vault con otras aplicaciones.
 

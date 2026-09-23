@@ -11,7 +11,7 @@
          (docs/analisis-proyecto/roadmap.md) — la app no había tenido nunca un número de versión real
          hasta ahora (el SDK generaba 1.0.0.0 por defecto al no fijarse aquí). Subir este número junto a
          CHANGELOG.md en cada release real; ver ese fichero para el criterio de versionado. -->
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
 
     <!-- Fase 8 del roadmap de deficiencias (docs/analisis-proyecto/roadmap.md): antes de esto nada
          bloqueaba un commit con warnings o tests rotos salvo la disciplina manual. Activado una vez
