@@ -5953,4 +5953,10 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Search_Title" xml:space="preserve"><value>Suchergebnisse</value></data>
   <data name="Settings_Search_Description" xml:space="preserve"><value>Passende Optionen aus allen Einstellungsbereichen.</value></data>
   <data name="Settings_DataTransfer_Title" xml:space="preserve"><value>Einstellungen übertragen</value></data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsLabel" xml:space="preserve">
+    <value>Fenstersteuerung anzeigen</value>
+  </data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
+    <value>Zeigt die Schaltflächen zum Minimieren, Maximieren und Schließen in der eigenen Titelleiste. Beim Ausblenden werden die übrigen Symbole rechts ausgerichtet.</value>
+  </data>
 </root>

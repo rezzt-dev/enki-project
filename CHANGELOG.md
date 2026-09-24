@@ -7,6 +7,32 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 ## SIN PUBLICAR / UNRELEASED
 
+### CASTELLANO
+
+#### ANADIDO
+- opcion `ajustes > apariencia > barra de titulo > mostrar controles de ventana`, activada por defecto y guardada junto con las preferencias del vault: permite ocultar al instante los botones propios de minimizar, maximizar y cerrar; al hacerlo, buscar, notificaciones, recordatorios e inbox ocupan el extremo derecho conservando su orden, separacion y margen exterior. El control solo se habilita para la barra propia de Enki —la barra nativa conserva los botones del sistema operativo— y esta traducido a todos los idiomas soportados.
+
+#### CAMBIOS
+- reorganizar ajustes en cuatro grupos y quince secciones para que cada preferencia se pueda localizar y abrir sin depender del buscador; separar vault, copias de seguridad, navegacion, kanban y mantenimiento en destinos propios, mantener visibles el titulo y la descripcion de la seccion activa y actualizar la navegacion al cambiar de idioma.
+- ampliar el ancho util de los formularios de ajustes y separar las columnas de nombre y descripcion de los modulos para evitar que sus textos se solapen.
+- mover `.docs/alpha-to-beta.md` a `.docs/agent-docs/alpha-to-beta.md`, sin cambiar su contenido, para agrupar la documentacion dirigida a agentes de ia.
+
+#### CORREGIDO
+- contar en el resumen de almacenamiento del dashboard todas las notas de la raiz y de las subcarpetas del vault, ademas de todas las sesiones; el recuento recursivo evita leer el contenido de las notas y excluye las carpetas ocultas.
+
+### ENGLISH
+
+#### ADDED
+- a `settings > appearance > title bar > show window controls` option, enabled by default and stored with the vault preferences: it can instantly hide enki's own minimise, maximise and close buttons; search, notifications, reminders and inbox then move to the far right while preserving their order, spacing and outer margin. The toggle is only enabled for Enki's custom title bar —the native title bar keeps the operating system controls— and is translated into every supported language.
+
+#### CHANGED
+- reorganise settings into four groups and fifteen sections so every preference can be found and opened without relying on search; give vault, backups, navigation, kanban and maintenance their own destinations, keep the active section's title and description visible, and refresh navigation when the language changes.
+- widen the usable settings form area and separate module name and description columns so their text no longer overlaps.
+- move `.docs/alpha-to-beta.md` to `.docs/agent-docs/alpha-to-beta.md`, without changing its contents, to group documentation intended for ai agents.
+
+#### FIXED
+- count every note at the vault root and in its subfolders, plus every session, in the dashboard storage summary; the recursive count avoids reading note contents and excludes hidden folders.
+
 ## [0.2.0] - 2026-09-23
 
 ### CASTELLANO

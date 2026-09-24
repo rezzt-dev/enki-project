@@ -132,6 +132,9 @@ public sealed class AppSettings
     /// of the OS window decorations.</summary>
     public bool UseCustomTitleBar { get; set; } = true;
 
+    /// <summary>Muestra los botones de minimizar, maximizar y cerrar en la barra propia.</summary>
+    public bool ShowWindowControls { get; set; } = true;
+
     /// <summary>Shows la barra de desplazamiento vertical del Dashboard — Ajustes › General. Por
     /// defecto activada (que es como se comportaba antes de existir el ajuste); apagarla solo oculta el
     /// raíl y el pulgar, el scroll con rueda/teclado sigue funcionando igual.</summary>

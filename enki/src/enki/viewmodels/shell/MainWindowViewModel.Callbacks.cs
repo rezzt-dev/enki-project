@@ -386,6 +386,7 @@ public sealed partial class MainWindowViewModel
         IsSidebarExpanded = settings.SidebarExpanded;
         SidebarWidth = IsSidebarExpanded ? 248 : 76;
         UseCustomTitleBar = settings.UseCustomTitleBar;
+        RefreshWindowControls();
         NotificationsPanelEnabled = settings.NotificationsPanelEnabled;
         RemindersPanelEnabled = settings.RemindersPanelEnabled;
         InboxPanelEnabled = settings.InboxPanelEnabled;

@@ -29,6 +29,7 @@ public sealed partial class SettingsViewModel
         _editorSidePanelVisible = _settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = _settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = _settingsService.Settings.UseCustomTitleBar;
+        _showWindowControls = _settingsService.Settings.ShowWindowControls;
         _dashboardShowScrollbar = _settingsService.Settings.DashboardShowScrollbar;
         _kanbanShowTagFilter = _settingsService.Settings.KanbanShowTagFilter;
         _kanbanBoardVertical = _settingsService.Settings.KanbanBoardOrientation != "Horizontal";
@@ -127,6 +128,7 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(EditorSidePanelVisible));
         OnPropertyChanged(nameof(IsSimplifiedNotesView));
         OnPropertyChanged(nameof(UseCustomTitleBar));
+        OnPropertyChanged(nameof(ShowWindowControls));
         OnPropertyChanged(nameof(DashboardShowScrollbar));
         OnPropertyChanged(nameof(KanbanShowTagFilter));
         OnPropertyChanged(nameof(KanbanBoardVertical));

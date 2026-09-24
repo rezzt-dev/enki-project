@@ -275,6 +275,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorSidePanelVisible = settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = settingsService.Settings.UseCustomTitleBar;
+        _showWindowControls = settingsService.Settings.ShowWindowControls;
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
         _kanbanShowTagFilter = settingsService.Settings.KanbanShowTagFilter;
         _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";

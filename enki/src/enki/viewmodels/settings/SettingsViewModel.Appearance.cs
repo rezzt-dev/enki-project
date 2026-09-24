@@ -90,6 +90,15 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _useCustomTitleBar;
 
+    [ObservableProperty]
+    private bool _showWindowControls;
+
+    partial void OnShowWindowControlsChanged(bool value)
+    {
+        _settingsService.Settings.ShowWindowControls = value;
+        _settingsService.Save();
+    }
+
     /// <summary>Ajustes › Apariencia › Tablero Kanban — <c>true</c> apila las tarjetas en columnas lado a
     /// lado (disposición por defecto), <c>false</c> gira cada columna 90° en una franja horizontal. Bool en
     /// vez del enum <c>KanbanBoardOrientation</c> de <c>KanbanViewModel</c> porque el control es un segmento

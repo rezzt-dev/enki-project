@@ -1078,7 +1078,8 @@
 
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Appearance Settings_Appearance_TitleBar_Title
-                              Settings_Appearance_TitleBar_UseCustomLabel Settings_Appearance_TitleBar_Description">
+                              Settings_Appearance_TitleBar_UseCustomLabel Settings_Appearance_TitleBar_Description
+                              Settings_Appearance_TitleBar_ShowControlsLabel Settings_Appearance_TitleBar_ShowControlsDescription">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1092,6 +1093,15 @@
                                  Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseCustomTitleBar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Appearance_TitleBar_UseCustomLabel}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding UseCustomTitleBar}">
+                    <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Appearance_TitleBar_ShowControlsLabel}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Appearance_TitleBar_ShowControlsDescription}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowWindowControls}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_TitleBar_ShowControlsLabel}" />
                   </Grid>
                 </StackPanel>
          </Border>

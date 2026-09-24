@@ -5953,4 +5953,10 @@ A disfrutar escribiendo.</value>
   <data name="Settings_Search_Title" xml:space="preserve"><value>Resultados de búsqueda</value></data>
   <data name="Settings_Search_Description" xml:space="preserve"><value>Opciones coincidentes en todas las secciones de ajustes.</value></data>
   <data name="Settings_DataTransfer_Title" xml:space="preserve"><value>Trasladar ajustes</value></data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsLabel" xml:space="preserve">
+    <value>Mostrar controles de ventana</value>
+  </data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
+    <value>Muestra los botones de minimizar, maximizar y cerrar en la barra propia. Al ocultarlos, los iconos restantes se alinean a la derecha.</value>
+  </data>
 </root>

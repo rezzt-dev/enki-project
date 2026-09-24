@@ -38,6 +38,7 @@ public sealed partial class MainWindowViewModel
         _brandLogoService = new BrandLogoService(_settingsService);
         _brandLogoService.LogoChanged += ReloadBrandLogo;
         _settingsService.SettingsChanged += RefreshBrandLogo;
+        _settingsService.SettingsChanged += RefreshWindowControls;
         ReloadBrandLogo();
         // Fase 0 del roadmap de deficiencias: Program.Main ya inicializó LogService con el nivel Warning
         // por defecto antes de que este ajuste (persistido en settings.json) exista siquiera — aquí es

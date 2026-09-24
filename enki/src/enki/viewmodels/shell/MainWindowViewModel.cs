@@ -208,7 +208,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _isSettingsActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AreWindowControlsVisible))]
     private bool _useCustomTitleBar;
+
+    /// <summary>Los controles propios solo se muestran cuando ambas preferencias están activadas.</summary>
+    public bool AreWindowControlsVisible => UseCustomTitleBar && _settingsService.Settings.ShowWindowControls;
+
+    private void RefreshWindowControls() => OnPropertyChanged(nameof(AreWindowControlsVisible));
 
     // ===================== Logo del brand header (Ajustes › Apariencia) =====================
     // El cuadro de 32×32 de la esquina superior izquierda del sidebar lleva el icono de Enki adaptativo al

@@ -41,3 +41,14 @@ de persistencia ni migración de preferencias.
 Las pruebas de interfaz recorren todos los destinos usando sus botones sin depender del buscador,
 comprueban la ubicación de las opciones trasladadas y ejercitan las búsquedas existentes. Las pruebas
 del viewmodel verifican los grupos y sus traducciones en todos los idiomas disponibles.
+
+## Controles de ventana
+
+En **Apariencia → Barra de título**, la opción **Mostrar controles de ventana** está activada
+por defecto, también al cargar ajustes anteriores que no incluyen esta preferencia. Se guarda como
+`ShowWindowControls` en `AppSettings` y se aplica al instante, sin reiniciar.
+
+Al desactivarla, se ocultan minimizar, maximizar y cerrar junto con su separación respecto a los
+iconos de buscar, notificaciones, recordatorios e inbox. Estos conservan su orden, espaciado y margen
+exterior, y quedan alineados a la derecha. La opción requiere **Usar barra de título propia**;
+con la barra nativa, los controles los gestiona el sistema operativo.

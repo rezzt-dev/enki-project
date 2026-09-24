@@ -5953,4 +5953,10 @@ Bonne rédaction.</value>
   <data name="Settings_Search_Title" xml:space="preserve"><value>Résultats de recherche</value></data>
   <data name="Settings_Search_Description" xml:space="preserve"><value>Options correspondantes dans toutes les rubriques.</value></data>
   <data name="Settings_DataTransfer_Title" xml:space="preserve"><value>Transférer les réglages</value></data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsLabel" xml:space="preserve">
+    <value>Afficher les boutons de fenêtre</value>
+  </data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
+    <value>Affiche les boutons de réduction, d’agrandissement et de fermeture dans la barre de titre personnalisée. Les masquer aligne les autres icônes à droite.</value>
+  </data>
 </root>

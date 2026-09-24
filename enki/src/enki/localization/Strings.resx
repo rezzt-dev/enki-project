@@ -5953,4 +5953,10 @@ Happy writing.</value>
   <data name="Settings_Search_Title" xml:space="preserve"><value>Search results</value></data>
   <data name="Settings_Search_Description" xml:space="preserve"><value>Matching options across all settings sections.</value></data>
   <data name="Settings_DataTransfer_Title" xml:space="preserve"><value>Transfer settings</value></data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsLabel" xml:space="preserve">
+    <value>Show window controls</value>
+  </data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
+    <value>Show minimize, maximize and close buttons in the custom title bar. Hiding them aligns the remaining icons to the right.</value>
+  </data>
 </root>

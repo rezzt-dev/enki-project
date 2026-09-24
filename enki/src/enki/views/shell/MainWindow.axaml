@@ -1019,18 +1019,16 @@
         </Popup>
       </Grid>
 
-      <!-- ===================== Window controls (§ ajuste "Usar barra de título propia") =====================
-           Floats over whatever page is showing instead of reserving a bar of its own — dragging the
-           window happens from the sidebar's brand header (see TitleBar_PointerPressed above), not from
-           here. Individually gated by UseCustomTitleBar (not the whole StackPanel, unlike before) so
-           the content buttons above stay visible when the OS draws its own min/max/close instead. -->
+      <!-- Controles de ventana: al ocultarlos también desaparece el margen del botón de minimizar.
+           El StackPanel conserva su alineación derecha y su margen exterior para los iconos restantes.
+           Con la barra nativa, el sistema operativo gestiona sus propios controles. -->
       <Button Classes="titlebar-btn" Click="Minimize_Click" ToolTip.Tip="{loc:Tr Shell_MinimizeTooltip}"
               Margin="85,5,5,5"
-              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AreWindowControlsVisible}">
         <mi:MaterialIcon Kind="WindowMinimize" Width="13" Height="13" />
       </Button>
       <Button Classes="titlebar-btn" Click="MaximizeRestore_Click" ToolTip.Tip="{loc:Tr Shell_MaximizeRestoreTooltip}"
-              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AreWindowControlsVisible}">
         <!-- Plain drawn square instead of a MaterialIcon glyph. MaximizeGlyph is the resting
              "maximize" square; RestoreGlyph (two overlapping squares, classic restore mark) swaps
              in once the window is maximized — toggled in MainWindow.axaml.cs. -->
@@ -1046,7 +1044,7 @@
         </Grid>
       </Button>
       <Button Classes="titlebar-btn titlebar-btn-close" Click="Close_Click" ToolTip.Tip="{loc:Tr Common_Close}"
-              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AreWindowControlsVisible}">
         <mi:MaterialIcon Kind="WindowClose" Width="14" Height="14" />
       </Button>
     </StackPanel>
