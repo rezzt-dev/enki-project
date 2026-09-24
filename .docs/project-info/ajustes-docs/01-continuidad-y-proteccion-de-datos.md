@@ -1,16 +1,11 @@
-# Ajustes › General — Zona de peligro: continuidad y protección de datos
+# Ajustes — Continuidad y protección de datos
 
 > **Alcance**: este documento describe, tal como está implementado hoy, todo lo relacionado con
 > proteger los datos del usuario desde Ajustes — tamaño y acceso al vault, copia de seguridad manual,
 > restauración y copia automática, exportar/importar `settings.json`, restablecer ajustes por defecto, y el ajuste
 > "preguntar antes de borrar" que gobierna las confirmaciones de borrado en el resto de la app. Todo
-> vive en la tarjeta "Zona peligrosa" al final de **Ajustes › General**
-> (`enki/src/enki/views/settings/SettingsView.axaml:175-261`), salvo "preguntar antes de borrar", cuyo
-> efecto se dispara desde otros módulos.
->
-> **Fuera de alcance**: el resto de Ajustes › General (carpeta del vault, idioma, página de inicio,
-> scrollbar del Dashboard, registro de depuración) no está citado hacia este documento en el código y
-> no se describe aquí.
+> se distribuye entre **Vault y archivos**, **Copias de seguridad** y **Actualizaciones y diagnóstico**.
+> Consulta el [mapa de navegación](06-organizacion-y-navegacion.md) para las ubicaciones actuales.
 >
 > **Fuente de verdad**: el código vence a este documento. Verificado contra
 > `enki/src/enki/viewmodels/settings/SettingsViewModel.cs`, `enki/src/enki/models/AppSettings.cs`,

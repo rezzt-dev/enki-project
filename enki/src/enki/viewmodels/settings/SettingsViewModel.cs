@@ -362,17 +362,23 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         Sections =
         [
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_General"], Icon = MaterialIconKind.TuneVariant, Section = SettingsSection.General, IsActive = true },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Appearance"], Icon = MaterialIconKind.ThemeLightDark, Section = SettingsSection.Appearance },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Editor"], Icon = MaterialIconKind.PencilOutline, Section = SettingsSection.Editor },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Notifications"], Icon = MaterialIconKind.BellRingOutline, Section = SettingsSection.Notifications },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Calendar"], Icon = MaterialIconKind.CalendarBlankOutline, Section = SettingsSection.Calendar },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Account"], Icon = MaterialIconKind.AccountCircleOutline, Section = SettingsSection.Account },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Skills"], Icon = MaterialIconKind.Brain, Section = SettingsSection.Skills },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Shortcuts"], Icon = MaterialIconKind.KeyboardOutline, Section = SettingsSection.Shortcuts },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_Dashboard"], Icon = MaterialIconKind.ViewDashboardOutline, Section = SettingsSection.Dashboard },
-            new SettingsSectionViewModel { Label = LocalizationService.Instance["Settings_Nav_About"], Icon = MaterialIconKind.InfoOutline, Section = SettingsSection.About }
+            new SettingsSectionViewModel { Section = SettingsSection.General, Icon = MaterialIconKind.TuneVariant, GroupKey = "Settings_Group_Application", StartsGroup = true, IsActive = true },
+            new SettingsSectionViewModel { Section = SettingsSection.Appearance, Icon = MaterialIconKind.ThemeLightDark, GroupKey = "Settings_Group_Application" },
+            new SettingsSectionViewModel { Section = SettingsSection.Navigation, Icon = MaterialIconKind.PageLayoutSidebarLeft, GroupKey = "Settings_Group_Application" },
+            new SettingsSectionViewModel { Section = SettingsSection.Shortcuts, Icon = MaterialIconKind.KeyboardOutline, GroupKey = "Settings_Group_Application" },
+            new SettingsSectionViewModel { Section = SettingsSection.Notifications, Icon = MaterialIconKind.BellRingOutline, GroupKey = "Settings_Group_Application" },
+            new SettingsSectionViewModel { Section = SettingsSection.Vault, Icon = MaterialIconKind.FolderOutline, GroupKey = "Settings_Group_Data", StartsGroup = true },
+            new SettingsSectionViewModel { Section = SettingsSection.Backups, Icon = MaterialIconKind.BackupRestore, GroupKey = "Settings_Group_Data" },
+            new SettingsSectionViewModel { Section = SettingsSection.Account, Icon = MaterialIconKind.AccountCircleOutline, GroupKey = "Settings_Group_Data" },
+            new SettingsSectionViewModel { Section = SettingsSection.Editor, Icon = MaterialIconKind.PencilOutline, GroupKey = "Settings_Group_Tools", StartsGroup = true },
+            new SettingsSectionViewModel { Section = SettingsSection.Dashboard, Icon = MaterialIconKind.ViewDashboardOutline, GroupKey = "Settings_Group_Tools" },
+            new SettingsSectionViewModel { Section = SettingsSection.Kanban, Icon = MaterialIconKind.ViewDashboardOutline, GroupKey = "Settings_Group_Tools" },
+            new SettingsSectionViewModel { Section = SettingsSection.Calendar, Icon = MaterialIconKind.CalendarBlankOutline, GroupKey = "Settings_Group_Tools" },
+            new SettingsSectionViewModel { Section = SettingsSection.Skills, Icon = MaterialIconKind.Brain, GroupKey = "Settings_Group_Tools" },
+            new SettingsSectionViewModel { Section = SettingsSection.Maintenance, Icon = MaterialIconKind.Update, GroupKey = "Settings_Group_Help", StartsGroup = true },
+            new SettingsSectionViewModel { Section = SettingsSection.About, Icon = MaterialIconKind.InfoOutline, GroupKey = "Settings_Group_Help" }
         ];
+        RebuildSections();
 
         ShortcutCategories = new ObservableCollection<ShortcutCategoryViewModel>(
             ShortcutCatalog.All
@@ -509,6 +515,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedSectionChanged(SettingsSection value)
     {
+        RefreshSectionHeading();
         foreach (var section in Sections) section.IsActive = section.Section == value;
     }
 
@@ -630,17 +637,14 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     private void RebuildSections()
     {
-        if (Sections is null || Sections.Count < 10) return;
-        Sections[0].Label = LocalizationService.Instance["Settings_Nav_General"];
-        Sections[1].Label = LocalizationService.Instance["Settings_Nav_Appearance"];
-        Sections[2].Label = LocalizationService.Instance["Settings_Nav_Editor"];
-        Sections[3].Label = LocalizationService.Instance["Settings_Nav_Notifications"];
-        Sections[4].Label = LocalizationService.Instance["Settings_Nav_Calendar"];
-        Sections[5].Label = LocalizationService.Instance["Settings_Nav_Account"];
-        Sections[6].Label = LocalizationService.Instance["Settings_Nav_Skills"];
-        Sections[7].Label = LocalizationService.Instance["Settings_Nav_Shortcuts"];
-        Sections[8].Label = LocalizationService.Instance["Settings_Nav_Dashboard"];
-        Sections[9].Label = LocalizationService.Instance["Settings_Nav_About"];
+        if (Sections is null) return;
+        foreach (var section in Sections)
+        {
+            section.Label = LocalizationService.Instance[$"Settings_Nav_{section.Section}"];
+            section.Description = LocalizationService.Instance[$"Settings_Summary_{section.Section}"];
+            section.GroupLabel = LocalizationService.Instance[section.GroupKey];
+        }
+        RefreshSectionHeading();
     }
 
     private void RebuildAvailableFonts()

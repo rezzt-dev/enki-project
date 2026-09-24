@@ -3217,10 +3217,10 @@
     <value>Atajos de Kanban</value>
   </data>
   <data name="Settings_Nav_About" xml:space="preserve">
-    <value>Acerca de</value>
+    <value>Acerca de Enki</value>
   </data>
   <data name="Settings_Nav_Account" xml:space="preserve">
-    <value>Cuenta</value>
+    <value>Cuenta Polar</value>
   </data>
   <data name="Settings_Nav_Appearance" xml:space="preserve">
     <value>Apariencia</value>
@@ -3229,7 +3229,7 @@
     <value>Calendario</value>
   </data>
   <data name="Settings_Nav_Editor" xml:space="preserve">
-    <value>Editor</value>
+    <value>Notas y editor</value>
   </data>
   <data name="Settings_Nav_Eyebrow" xml:space="preserve">
     <value>CONFIGURACIÓN</value>
@@ -3241,10 +3241,10 @@
     <value>Notificaciones</value>
   </data>
   <data name="Settings_Nav_Shortcuts" xml:space="preserve">
-    <value>Atajos</value>
+    <value>Atajos de teclado</value>
   </data>
   <data name="Settings_Nav_Skills" xml:space="preserve">
-    <value>Habilidades</value>
+    <value>Skills de IA</value>
   </data>
   <data name="Settings_Nav_Title" xml:space="preserve">
     <value>Configuración</value>
@@ -5925,4 +5925,32 @@ Feliz escritura.</value>
   <data name="Notification_NoteOpenFailed_Title" xml:space="preserve">
     <value>No se pudo abrir la nota</value>
   </data>
+  <data name="Settings_Summary_General" xml:space="preserve"><value>Idioma, inicio y bandeja del sistema</value></data>
+  <data name="Settings_Summary_Appearance" xml:space="preserve"><value>Temas, fuentes, zoom y logo</value></data>
+  <data name="Settings_Nav_Navigation" xml:space="preserve"><value>Navegación</value></data>
+  <data name="Settings_Summary_Navigation" xml:space="preserve"><value>Orden y secciones de la barra lateral</value></data>
+  <data name="Settings_Summary_Shortcuts" xml:space="preserve"><value>Combinaciones de teclas y referencia</value></data>
+  <data name="Settings_Summary_Notifications" xml:space="preserve"><value>Avisos, sonido y recordatorios</value></data>
+  <data name="Settings_Nav_Vault" xml:space="preserve"><value>Vault y archivos</value></data>
+  <data name="Settings_Summary_Vault" xml:space="preserve"><value>Ubicación, espacio y borrado</value></data>
+  <data name="Settings_Nav_Backups" xml:space="preserve"><value>Copias de seguridad</value></data>
+  <data name="Settings_Summary_Backups" xml:space="preserve"><value>Crear, restaurar y trasladar ajustes</value></data>
+  <data name="Settings_Summary_Account" xml:space="preserve"><value>Conexión, sincronización y etiquetas</value></data>
+  <data name="Settings_Summary_Editor" xml:space="preserve"><value>Escritura, lectura y plantillas diarias</value></data>
+  <data name="Settings_Summary_Dashboard" xml:space="preserve"><value>Distribución, widgets y desplazamiento</value></data>
+  <data name="Settings_Nav_Kanban" xml:space="preserve"><value>Kanban</value></data>
+  <data name="Settings_Summary_Kanban" xml:space="preserve"><value>Orientación del tablero y filtros</value></data>
+  <data name="Settings_Summary_Calendar" xml:space="preserve"><value>Vistas, semana y horario laboral</value></data>
+  <data name="Settings_Summary_Skills" xml:space="preserve"><value>Visibilidad y catálogo de la comunidad</value></data>
+  <data name="Settings_Nav_Maintenance" xml:space="preserve"><value>Actualizaciones y diagnóstico</value></data>
+  <data name="Settings_Summary_Maintenance" xml:space="preserve"><value>Versiones, registros y restablecimiento</value></data>
+  <data name="Settings_Summary_About" xml:space="preserve"><value>Aplicación, tecnología y privacidad</value></data>
+  <data name="Settings_Group_Application" xml:space="preserve"><value>Aplicación</value></data>
+  <data name="Settings_Group_Data" xml:space="preserve"><value>Notas y datos</value></data>
+  <data name="Settings_Group_Tools" xml:space="preserve"><value>Herramientas</value></data>
+  <data name="Settings_Group_Help" xml:space="preserve"><value>Ayuda y mantenimiento</value></data>
+  <data name="Settings_AutoSave_Hint" xml:space="preserve"><value>Los cambios se guardan automáticamente.</value></data>
+  <data name="Settings_Search_Title" xml:space="preserve"><value>Resultados de búsqueda</value></data>
+  <data name="Settings_Search_Description" xml:space="preserve"><value>Opciones coincidentes en todas las secciones de ajustes.</value></data>
+  <data name="Settings_DataTransfer_Title" xml:space="preserve"><value>Trasladar ajustes</value></data>
 </root>

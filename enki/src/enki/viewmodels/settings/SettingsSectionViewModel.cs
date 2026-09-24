@@ -8,6 +8,15 @@ public sealed partial class SettingsSectionViewModel : ObservableObject
     [ObservableProperty]
     private string _label = string.Empty;
 
+    [ObservableProperty]
+    private string _description = string.Empty;
+
+    [ObservableProperty]
+    private string _groupLabel = string.Empty;
+
+    public required string GroupKey { get; init; }
+    public bool StartsGroup { get; init; }
+
     public required MaterialIconKind Icon { get; init; }
     public required SettingsSection Section { get; init; }
 
@@ -26,5 +35,10 @@ public enum SettingsSection
     Skills,
     Shortcuts,
     Dashboard,
-    About
+    About,
+    Navigation,
+    Vault,
+    Backups,
+    Kanban,
+    Maintenance
 }

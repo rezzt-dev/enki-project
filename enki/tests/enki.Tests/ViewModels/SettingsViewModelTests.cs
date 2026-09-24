@@ -68,6 +68,32 @@ public class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void Navigation_LocalizesAllDestinationsAndSelectedHeading()
+    {
+        var original = LocalizationService.Instance.CurrentCulture.Name;
+        try
+        {
+            var (vm, _, _, _) = CreateViewModel();
+            Assert.Equal(Enum.GetValues<SettingsSection>().Length, vm.Sections.Count);
+            Assert.Equal(4, vm.Sections.Count(section => section.StartsGroup));
+            vm.SelectSectionCommand.Execute(SettingsSection.Backups);
+            foreach (var language in SupportedLanguages.All)
+            {
+                LocalizationService.Instance.SetLanguage(language.CultureCode);
+                vm.RefreshLocalizedLabels();
+                Assert.All(vm.Sections, section =>
+                {
+                    Assert.DoesNotContain("Settings_", section.Label);
+                    Assert.DoesNotContain("Settings_", section.Description);
+                    Assert.DoesNotContain("Settings_", section.GroupLabel);
+                });
+                Assert.Equal(LocalizationService.Instance["Settings_Nav_Backups"], vm.CurrentSectionTitle);
+            }
+        }
+        finally { LocalizationService.Instance.SetLanguage(original); }
+    }
+
+    [Fact]
     public void KanbanTags_PersistsVisibility_AndNotifiesListeners()
     {
         var (vm, service, _, _) = CreateViewModel();

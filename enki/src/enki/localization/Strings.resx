@@ -3484,10 +3484,10 @@
     <value>Kanban Shortcuts</value>
   </data>
   <data name="Settings_Nav_About" xml:space="preserve">
-    <value>About</value>
+    <value>About Enki</value>
   </data>
   <data name="Settings_Nav_Account" xml:space="preserve">
-    <value>Account</value>
+    <value>Polar account</value>
   </data>
   <data name="Settings_Nav_Appearance" xml:space="preserve">
     <value>Appearance</value>
@@ -3496,7 +3496,7 @@
     <value>Calendar</value>
   </data>
   <data name="Settings_Nav_Editor" xml:space="preserve">
-    <value>Editor</value>
+    <value>Notes and editor</value>
   </data>
   <data name="Settings_Nav_Eyebrow" xml:space="preserve">
     <value>SETTINGS</value>
@@ -3508,10 +3508,10 @@
     <value>Notifications</value>
   </data>
   <data name="Settings_Nav_Shortcuts" xml:space="preserve">
-    <value>Shortcuts</value>
+    <value>Keyboard shortcuts</value>
   </data>
   <data name="Settings_Nav_Skills" xml:space="preserve">
-    <value>Skills</value>
+    <value>AI skills</value>
   </data>
   <data name="Settings_Nav_Title" xml:space="preserve">
     <value>Settings</value>
@@ -5925,4 +5925,32 @@ Happy writing.</value>
   <data name="Notification_NoteOpenFailed_Title" xml:space="preserve">
     <value>Could not open the note</value>
   </data>
+  <data name="Settings_Summary_General" xml:space="preserve"><value>Language, start page and system tray</value></data>
+  <data name="Settings_Summary_Appearance" xml:space="preserve"><value>Themes, fonts, zoom and logo</value></data>
+  <data name="Settings_Nav_Navigation" xml:space="preserve"><value>Navigation</value></data>
+  <data name="Settings_Summary_Navigation" xml:space="preserve"><value>Sidebar order and visible sections</value></data>
+  <data name="Settings_Summary_Shortcuts" xml:space="preserve"><value>Key bindings and reference</value></data>
+  <data name="Settings_Summary_Notifications" xml:space="preserve"><value>Alerts, sound and reminders</value></data>
+  <data name="Settings_Nav_Vault" xml:space="preserve"><value>Vault and files</value></data>
+  <data name="Settings_Summary_Vault" xml:space="preserve"><value>Location, storage and deletion</value></data>
+  <data name="Settings_Nav_Backups" xml:space="preserve"><value>Backups</value></data>
+  <data name="Settings_Summary_Backups" xml:space="preserve"><value>Create, restore and transfer settings</value></data>
+  <data name="Settings_Summary_Account" xml:space="preserve"><value>Connection, sync and task labels</value></data>
+  <data name="Settings_Summary_Editor" xml:space="preserve"><value>Writing, reading and daily templates</value></data>
+  <data name="Settings_Summary_Dashboard" xml:space="preserve"><value>Layout, widgets and scrolling</value></data>
+  <data name="Settings_Nav_Kanban" xml:space="preserve"><value>Kanban</value></data>
+  <data name="Settings_Summary_Kanban" xml:space="preserve"><value>Board orientation and tag filters</value></data>
+  <data name="Settings_Summary_Calendar" xml:space="preserve"><value>Views, week and working hours</value></data>
+  <data name="Settings_Summary_Skills" xml:space="preserve"><value>Visibility and community catalog</value></data>
+  <data name="Settings_Nav_Maintenance" xml:space="preserve"><value>Updates and diagnostics</value></data>
+  <data name="Settings_Summary_Maintenance" xml:space="preserve"><value>Versions, logs and reset</value></data>
+  <data name="Settings_Summary_About" xml:space="preserve"><value>Application, technology and privacy</value></data>
+  <data name="Settings_Group_Application" xml:space="preserve"><value>Application</value></data>
+  <data name="Settings_Group_Data" xml:space="preserve"><value>Notes and data</value></data>
+  <data name="Settings_Group_Tools" xml:space="preserve"><value>Tools</value></data>
+  <data name="Settings_Group_Help" xml:space="preserve"><value>Help and maintenance</value></data>
+  <data name="Settings_AutoSave_Hint" xml:space="preserve"><value>Changes are saved automatically.</value></data>
+  <data name="Settings_Search_Title" xml:space="preserve"><value>Search results</value></data>
+  <data name="Settings_Search_Description" xml:space="preserve"><value>Matching options across all settings sections.</value></data>
+  <data name="Settings_DataTransfer_Title" xml:space="preserve"><value>Transfer settings</value></data>
 </root>

@@ -62,18 +62,17 @@
 
   </UserControl.Styles>
 
-  <Grid ColumnDefinitions="220,*">
+  <Grid ColumnDefinitions="280,*">
 
     <!-- ===================== Section nav ===================== -->
     <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0">
-      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Spacing="24" Margin="18,30,14,30">
+      <Grid RowDefinitions="Auto,Auto,*" Margin="14,24,14,18">
         <StackPanel Spacing="6" Margin="4,0,0,0">
           <TextBlock Text="{loc:Tr Settings_Nav_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
           <TextBlock Text="{loc:Tr Settings_Nav_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" FontSize="26" />
         </StackPanel>
 
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,20,0,16">
           <TextBox x:Name="SettingsSearchBox" Classes="search" Text="{Binding SearchText, Mode=TwoWay}"
                    PlaceholderText="{loc:Tr Settings_Search_Placeholder}"
                    AutomationProperties.Name="{loc:Tr Settings_Search_Placeholder}" KeyDown="Search_KeyDown" />
@@ -83,254 +82,62 @@
             <mi:MaterialIcon Kind="Close" Width="14" Height="14" />
           </Button>
         </Grid>
+        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
         <ItemsControl ItemsSource="{Binding Sections}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <StackPanel Spacing="4" />
+              <StackPanel Spacing="2" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate DataType="vm:SettingsSectionViewModel">
-              <Button Classes="nav-item"
+              <StackPanel>
+              <TextBlock Text="{Binding GroupLabel, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding StartsGroup}" Classes="section-title" FontSize="10.5" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="10,14,0,6" />
+              <Button Classes="nav-item" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      Padding="10,8" ToolTip.Tip="{Binding Description}"
+                      AutomationProperties.Name="{Binding Label}"
                       Classes.active="{Binding IsActive}"
                       Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).SelectSectionCommand}"
                       CommandParameter="{Binding Section}">
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" HorizontalAlignment="Center" />
-                  <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
-                </StackPanel>
+                <Grid ColumnDefinitions="16,*" ColumnSpacing="12">
+                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <StackPanel Grid.Column="1" Spacing="3">
+                    <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
               </Button>
+              </StackPanel>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-      </StackPanel>
       </ScrollViewer>
+      </Grid>
   </Border>
 
     <!-- ===================== Section content ===================== -->
     <!-- Margin en el contenido en vez de Padding en el ScrollViewer (mismo motivo que en
          DashboardView: Avalonia 12 resta el padding del extent scrolleable, dejando los últimos 60px
          de la sección fuera de alcance). -->
-    <ScrollViewer x:Name="SettingsContentScroll" Grid.Column="1">
+    <Grid Grid.Column="1" RowDefinitions="Auto,*">
+      <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="30,24">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding CurrentSectionTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" FontSize="26" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding CurrentSectionDescription}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{loc:Tr Settings_AutoSave_Hint}" Classes="muted" FontSize="11" />
+        </StackPanel>
+      </Border>
+    <ScrollViewer x:Name="SettingsContentScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
       <!-- Durante una búsqueda se apilan las secciones coincidentes. Dashboard conserva
            su ancho de vista previa; los demás formularios mantienen el límite de 640px. -->
-      <StackPanel x:Name="SettingsContent" Margin="36,30,36,30" Spacing="20">
+      <StackPanel x:Name="SettingsContent" Margin="30,24,30,30" Spacing="20">
       <TextBlock x:Name="SearchNoResults" Text="{loc:Tr Settings_Search_NoResults}" Classes="muted" TextWrapping="Wrap" IsVisible="False" />
       <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
 
-        <!-- ===================== General ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_General Settings_General_Title"
-            MatchDescendants="True"
-            Section="General"
-            AdditionalText="{Binding SidebarSearchText}">
+        <controls:SettingsSearchOption Section="Navigation" MatchDescendants="True" ResourceKeys="Settings_Nav_Navigation" AdditionalText="{Binding SidebarSearchText}">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_General_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_General_Description}" Classes="muted" FontSize="12.5" />
-            </StackPanel>
-
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Navigation, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_General_VaultFolder_Title Settings_General_VaultFolder_Description
-                              Settings_General_VaultFolder_ChangeButton Settings_Nav_General">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="FolderOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_General_VaultFolder_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <TextBlock Text="{loc:Tr Settings_General_VaultFolder_Description}"
-                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-                  <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
-                          BorderThickness="1" Padding="12,10">
-                    <TextBlock Text="{Binding VaultPath}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12"
-                               TextTrimming="CharacterEllipsis" />
-             </Border>
-                  <Button Classes="pill" Command="{Binding ChangeVaultFolderCommand}" HorizontalAlignment="Left">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="FolderMoveOutline" Width="14" Height="14" />
-                      <TextBlock Text="{loc:Tr Settings_General_VaultFolder_ChangeButton, Converter={StaticResource UpperCaseConverter}}" />
-                    </StackPanel>
-                  </Button>
-                </StackPanel>
-         </Border>
-            </controls:SettingsSearchOption>
-
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_General_Language_Title Settings_General_Language_Description Settings_Nav_General">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="TranslateVariant" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_General_Language_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <TextBlock Text="{loc:Tr Settings_General_Language_Description}"
-                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-                  <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" AutomationProperties.Name="{loc:Tr Settings_General_Language_Title}"
-                            HorizontalAlignment="Stretch" MaxDropDownHeight="320">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate DataType="loc:SupportedLanguageInfo">
-                        <TextBlock Text="{Binding NativeName}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                </StackPanel>
-         </Border>
-            </controls:SettingsSearchOption>
-
-            <!-- Aviso de versión nueva (T9). Solo avisa: no descarga ni ejecuta nada, y el único enlace
-                 que abre es la página de la release, validada contra el repositorio oficial en
-                 Services.UpdateCheckService. -->
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_Updates_Title Settings_Updates_Description
-                              Settings_Updates_OnStartup_Label Settings_Updates_OnStartup_Description
-                              Settings_Updates_CheckNow Settings_Updates_Download Settings_Updates_Skip
-                              Settings_Nav_General">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="Update" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Updates_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <TextBlock Text="{loc:Tr Settings_Updates_Description}"
-                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Spacing="3">
-                      <TextBlock Text="{loc:Tr Settings_Updates_OnStartup_Label}" FontSize="13" />
-                      <TextBlock Text="{loc:Tr Settings_Updates_OnStartup_Description}"
-                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding CheckUpdatesOnStartup}" OnContent="" OffContent=""
-                                  AutomationProperties.Name="{loc:Tr Settings_Updates_OnStartup_Label}" />
-                  </Grid>
-
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0" Text="{Binding InstalledVersionLabel}" Classes="faint"
-                               VerticalAlignment="Center" TextWrapping="Wrap" />
-                    <Button Grid.Column="1" Classes="pill" Height="34" Command="{Binding CheckForUpdatesCommand}"
-                            IsEnabled="{Binding !IsCheckingForUpdates}"
-                            AutomationProperties.Name="{loc:Tr Settings_Updates_CheckNow}">
-                      <TextBlock Text="{loc:Tr Settings_Updates_CheckNow, Converter={StaticResource UpperCaseConverter}}" />
-                    </Button>
-                  </Grid>
-
-                  <TextBlock Text="{loc:Tr Settings_Updates_Checking}" Classes="muted" FontSize="12"
-                             IsVisible="{Binding IsCheckingForUpdates}" />
-                  <TextBlock Text="{Binding UpdateCheckStatusLabel}" Classes="muted" FontSize="12"
-                             TextWrapping="Wrap" IsVisible="{Binding HasUpdateCheckStatus}" />
-
-                  <!-- Bloque de la release encontrada: versión, notas y las dos decisiones posibles. -->
-                  <Border Classes="trash-hint" IsVisible="{Binding HasAvailableUpdate}">
-                    <StackPanel Spacing="10">
-                      <TextBlock Text="{Binding AvailableUpdateLabel}" FontSize="13" FontWeight="Bold" TextWrapping="Wrap" />
-                      <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto"
-                                    IsVisible="{Binding HasAvailableUpdateNotes}">
-                        <TextBlock Text="{Binding AvailableUpdateNotes}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                      </ScrollViewer>
-                      <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Classes="pill" Height="32" Command="{Binding DownloadUpdateCommand}">
-                          <StackPanel Orientation="Horizontal" Spacing="8">
-                            <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
-                            <TextBlock Text="{loc:Tr Settings_Updates_Download, Converter={StaticResource UpperCaseConverter}}" />
-                          </StackPanel>
-                        </Button>
-                        <Button Classes="ghost" Command="{Binding SkipUpdateCommand}" VerticalAlignment="Center">
-                          <TextBlock Text="{loc:Tr Settings_Updates_Skip, Converter={StaticResource UpperCaseConverter}}" />
-                        </Button>
-                      </StackPanel>
-                    </StackPanel>
-                  </Border>
-                </StackPanel>
-              </Border>
-            </controls:SettingsSearchOption>
-
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_General_Tray_Title Settings_General_Tray_Description
-                              Settings_General_Tray_KeepRunning Settings_Nav_General">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_General_Tray_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <TextBlock Text="{loc:Tr Settings_General_Tray_Description}"
-                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_Tray_KeepRunning}" FontSize="13"
-                               VerticalAlignment="Center" TextWrapping="Wrap" />
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}" OnContent="" OffContent=""
-                                  AutomationProperties.Name="{loc:Tr Settings_General_Tray_KeepRunning}" />
-                  </Grid>
-                </StackPanel>
-              </Border>
-            </controls:SettingsSearchOption>
-
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_General_Startup_Title Settings_General_Startup_Description
-                              Settings_General_Startup_Dashboard Settings_General_Startup_Calendar
-                              Settings_General_Startup_Kanban Settings_General_Startup_Notes
-                              Settings_General_Startup_Files Settings_General_Startup_Sessions Settings_Nav_General">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="HomeVariantOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_General_Startup_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <TextBlock Text="{loc:Tr Settings_General_Startup_Description}"
-                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-                  <WrapPanel>
-                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Dashboard, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
-                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Dashboard, Mode=OneWay}"
-                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Dashboard}" />
-                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Calendar, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
-                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Calendar, Mode=OneWay}"
-                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Calendar}" />
-                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Kanban, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
-                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Kanban, Mode=OneWay}"
-                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Kanban}" />
-                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Notes, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
-                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Notes, Mode=OneWay}"
-                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Notes}" />
-                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Files, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
-                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Files, Mode=OneWay}"
-                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Files}" />
-                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Sessions, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
-                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Sessions, Mode=OneWay}"
-                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Sessions}" />
-                  </WrapPanel>
-                </StackPanel>
-         </Border>
-            </controls:SettingsSearchOption>
-
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_General_Dashboard_Title Settings_General_Dashboard_ShowScrollbar_Label
-                              Settings_General_Dashboard_ShowScrollbar_Description Settings_Nav_General">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="ViewDashboardOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_General_Dashboard_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Spacing="3">
-                      <TextBlock Text="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Label}" FontSize="13" />
-                      <TextBlock Text="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Description}"
-                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding DashboardShowScrollbar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Label}" />
-                  </Grid>
-                </StackPanel>
-         </Border>
-            </controls:SettingsSearchOption>
-
-            <!-- ===================== Secciones de la barra lateral =====================
-                 Dos listas ordenables por arrastrar-y-soltar (o los botones ▲▼/fijar), reutilizando el
-                 mismo estilo de fila "dashboard-section-row" que Ajustes › Dashboard más abajo — máx.
-                 <see cref="SidebarSectionCatalog.MaxBottomSections"/> secciones en el grupo inferior,
-                 junto a Ajustes (que nunca aparece aquí: siempre fijo al final del sidebar real). -->
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_Nav_General Settings_General_Sidebar_Title"
+                ResourceKeys="Settings_Nav_Navigation Settings_General_Sidebar_Title"
                 MatchDescendants="True"
                 AdditionalText="{Binding SidebarSearchText}">
               <Border Classes="card" Padding="22">
@@ -340,7 +147,7 @@
                     <TextBlock Text="{loc:Tr Settings_General_Sidebar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Nav_General Settings_General_Sidebar_MainGroup_Title"
+                      ResourceKeys="Settings_Nav_Navigation Settings_General_Sidebar_MainGroup_Title"
                       MatchDescendants="True"
                       AdditionalText="{Binding SidebarSearchText}">
                     <StackPanel Spacing="14"><TextBlock Text="{loc:Tr Settings_General_Sidebar_Description}"
@@ -361,7 +168,7 @@
                         <ItemsControl.ItemTemplate>
                           <DataTemplate DataType="vm:SidebarSectionConfigViewModel">
                             <controls:SettingsSearchOption
-                                ResourceKeys="Settings_Nav_General Settings_General_Sidebar_Title"
+                                ResourceKeys="Settings_Nav_Navigation Settings_General_Sidebar_Title"
                                 AdditionalText="{Binding Title}">
                               <Border Classes="dashboard-section-row" Classes.drag-over="{Binding IsDropTarget}" Classes.hidden="{Binding !IsVisible}"
                                       BorderThickness="1"
@@ -437,7 +244,7 @@
 
                   <!-- Grupo fijo inferior (máx. 3, junto a Ajustes) -->
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Nav_General Settings_General_Sidebar_BottomGroup_Title"
+                      ResourceKeys="Settings_Nav_Navigation Settings_General_Sidebar_BottomGroup_Title"
                       MatchDescendants="True"
                       AdditionalText="{Binding SidebarSearchText}">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,8" />
@@ -455,7 +262,7 @@
                         <ItemsControl.ItemTemplate>
                           <DataTemplate DataType="vm:SidebarSectionConfigViewModel">
                             <controls:SettingsSearchOption
-                                ResourceKeys="Settings_Nav_General Settings_General_Sidebar_Title"
+                                ResourceKeys="Settings_Nav_Navigation Settings_General_Sidebar_Title"
                                 AdditionalText="{Binding Title}">
                               <Border Classes="dashboard-section-row" Classes.drag-over="{Binding IsDropTarget}" Classes.hidden="{Binding !IsVisible}"
                                       BorderThickness="1"
@@ -532,9 +339,8 @@
                   <!-- El selector de vault no es una sección navegable, así que va como interruptor
                        suelto bajo las dos listas y no como una fila más dentro de ellas. -->
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_General_Sidebar_VaultSwitcher_Label
-                                    Settings_General_Sidebar_VaultSwitcher_Description
-                                    Settings_Nav_General Settings_General_Sidebar_Title">
+                      ResourceKeys="Settings_Nav_Navigation Settings_General_Sidebar_VaultSwitcher_Label
+                                    Settings_General_Sidebar_VaultSwitcher_Description Settings_General_Sidebar_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -548,12 +354,306 @@
                 </StackPanel>
          </Border>
             </controls:SettingsSearchOption>
+          </StackPanel>
+        </controls:SettingsSearchOption>
 
-            <!-- ===================== Diagnóstico (Fase 0, docs/analisis-proyecto/analisis-deficiencias-proyecto.md §2) ===================== -->
+        <controls:SettingsSearchOption Section="Vault" MatchDescendants="True" ResourceKeys="Settings_Nav_Vault">
+          <StackPanel Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Vault, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_General_Diagnostics_Title Settings_General_Diagnostics_DebugLogging_Label
+                ResourceKeys="Settings_Nav_Vault Settings_General_VaultFolder_Title Settings_General_VaultFolder_Description
+                              Settings_General_VaultFolder_ChangeButton">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="FolderOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_General_VaultFolder_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_General_VaultFolder_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
+                          BorderThickness="1" Padding="12,10">
+                    <TextBlock Text="{Binding VaultPath}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="12"
+                               TextTrimming="CharacterEllipsis" />
+             </Border>
+                  <Button Classes="pill" Command="{Binding ChangeVaultFolderCommand}" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="FolderMoveOutline" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Tr Settings_General_VaultFolder_ChangeButton, Converter={StaticResource UpperCaseConverter}}" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+         </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="Settings_Nav_Vault Settings_General_DangerZone_VaultSize_Label">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Classes="section-title" Text="{loc:Tr Settings_General_DangerZone_VaultSize_Label, Converter={StaticResource UpperCaseConverter}}" />
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Nav_Vault Settings_General_DangerZone_VaultSize_Label
+                                    Settings_General_DangerZone_VaultSize_Description Settings_General_DangerZone_OpenVaultFolderButton">
+                    <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_VaultSize_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_VaultSize_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{Binding VaultSizeLabel}" Classes="faint" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Button Classes="pill" Command="{Binding OpenVaultFolderCommand}" HorizontalAlignment="Left">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_OpenVaultFolderButton, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button></StackPanel>
+                  </controls:SettingsSearchOption>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="Settings_Nav_Vault Settings_General_DangerZone_ConfirmBeforeDelete_Label">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Classes="section-title" Text="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Label, Converter={StaticResource UpperCaseConverter}}" />
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Nav_Vault Settings_General_DangerZone_ConfirmBeforeDelete_Label
+                                    Settings_General_DangerZone_ConfirmBeforeDelete_Description
+                                    Settings_General_DangerZone_TrashRetention_Description">
+                    <StackPanel Spacing="14">
+
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding ConfirmBeforeDelete}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Label}" />
+                    </Grid>
+
+                    <TextBlock Classes="muted" FontSize="11.5" TextWrapping="Wrap"
+                               Text="{loc:Tr Settings_General_DangerZone_TrashRetention_Description}" />
+                </StackPanel>
+                  </controls:SettingsSearchOption>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+          </StackPanel>
+        </controls:SettingsSearchOption>
+
+        <controls:SettingsSearchOption Section="Backups" MatchDescendants="True" ResourceKeys="Settings_Nav_Backups">
+          <StackPanel Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Backups, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="Settings_Nav_Backups">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Classes="section-title" Text="{loc:Tr Settings_Nav_Backups, Converter={StaticResource UpperCaseConverter}}" />
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Nav_Backups Settings_General_DangerZone_BackupHint
+                                    Settings_General_DangerZone_CreateBackupButton Settings_General_DangerZone_RestoreBackupButton">
+                    <StackPanel Spacing="14">
+
+                    <TextBlock Text="{loc:Tr Settings_General_DangerZone_BackupHint}"
+                               Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="pill" Command="{Binding CreateBackupCommand}" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="14" Height="14" />
+                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_CreateBackupButton, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="pill" Command="{Binding RequestRestoreBackupCommand}" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <mi:MaterialIcon Kind="BackupRestore" Width="14" Height="14" />
+                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_RestoreBackupButton, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel></StackPanel>
+                  </controls:SettingsSearchOption><controls:SettingsSearchOption
+                      ResourceKeys="Settings_Nav_Backups Settings_General_DangerZone_AutoBackup_Label
+                                    Settings_General_DangerZone_AutoBackup_Description
+                                    Settings_General_DangerZone_AutoBackup_IntervalLabel
+                                    Settings_General_DangerZone_AutoBackup_RetentionLabel">
+                    <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_AutoBackup_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_AutoBackup_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoBackupEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_Label}" />
+                    </Grid>
+
+                    <!-- Intervalo y retención (Fase 10, docs/analisis-proyecto/roadmap.md): antes fijos en su
+                         valor por defecto para todo el mundo, solo el interruptor de arriba tenía control real. -->
+                    <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding AutoBackupEnabled}" Margin="0,-4,0,0">
+                      <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_DangerZone_AutoBackup_IntervalLabel}" FontSize="12.5" Classes="muted" VerticalAlignment="Center" />
+                      <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalDays}" Minimum="1" Maximum="30" Increment="1"
+                                     Width="110" ShowButtonSpinner="True" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_IntervalLabel}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding AutoBackupEnabled}">
+                      <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_DangerZone_AutoBackup_RetentionLabel}" FontSize="12.5" Classes="muted" VerticalAlignment="Center" />
+                      <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupRetentionCount}" Minimum="1" Maximum="30" Increment="1"
+                                     Width="110" ShowButtonSpinner="True" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_RetentionLabel}" />
+                    </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="Settings_Nav_Backups Settings_DataTransfer_Title">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Classes="section-title" Text="{loc:Tr Settings_DataTransfer_Title, Converter={StaticResource UpperCaseConverter}}" />
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Nav_Backups Settings_General_DangerZone_ExportHint
+                                    Settings_General_DangerZone_ExportSettingsButton Settings_General_DangerZone_ImportSettingsButton">
+                    <StackPanel Spacing="14">
+
+                    <TextBlock Text="{loc:Tr Settings_General_DangerZone_ExportHint}"
+                               Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="pill" Command="{Binding ExportSettingsCommand}" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <mi:MaterialIcon Kind="FileExportOutline" Width="14" Height="14" />
+                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_ExportSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="pill" Command="{Binding ImportSettingsCommand}" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <mi:MaterialIcon Kind="FileImportOutline" Width="14" Height="14" />
+                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_ImportSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel></StackPanel>
+                  </controls:SettingsSearchOption>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+          </StackPanel>
+        </controls:SettingsSearchOption>
+
+        <controls:SettingsSearchOption Section="Kanban" MatchDescendants="True" ResourceKeys="Settings_Nav_Kanban">
+          <StackPanel Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Kanban, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Kanban Settings_Appearance_KanbanOrientation_Title
+                              Settings_Appearance_KanbanOrientation_Label Settings_Appearance_KanbanOrientation_Description
+                              Settings_Appearance_KanbanOrientation_Vertical Settings_Appearance_KanbanOrientation_Horizontal">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="ViewColumnOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Description}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                      <RadioButton Classes="segment" GroupName="KanbanBoardOrientation" Content="{loc:Tr Settings_Appearance_KanbanOrientation_Vertical, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding KanbanBoardVertical}" />
+                      <RadioButton Classes="segment" GroupName="KanbanBoardOrientation" Content="{loc:Tr Settings_Appearance_KanbanOrientation_Horizontal, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding !KanbanBoardVertical}" />
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+         </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Kanban Settings_Appearance_KanbanTags_Title Settings_Appearance_KanbanTags_Label
+                              Settings_Appearance_KanbanTags_Description">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Title}" Classes="section-title" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowTagFilter}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanTags_Label}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+          </StackPanel>
+        </controls:SettingsSearchOption>
+
+        <controls:SettingsSearchOption Section="Maintenance" MatchDescendants="True" ResourceKeys="Settings_Nav_Maintenance">
+          <StackPanel Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Maintenance, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Maintenance Settings_Updates_Title Settings_Updates_Description
+                              Settings_Updates_OnStartup_Label Settings_Updates_OnStartup_Description Settings_Updates_CheckNow
+                              Settings_Updates_Download Settings_Updates_Skip">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="Update" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Updates_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Updates_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_Updates_OnStartup_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Updates_OnStartup_Description}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding CheckUpdatesOnStartup}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Updates_OnStartup_Label}" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding InstalledVersionLabel}" Classes="faint"
+                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <Button Grid.Column="1" Classes="pill" Height="34" Command="{Binding CheckForUpdatesCommand}"
+                            IsEnabled="{Binding !IsCheckingForUpdates}"
+                            AutomationProperties.Name="{loc:Tr Settings_Updates_CheckNow}">
+                      <TextBlock Text="{loc:Tr Settings_Updates_CheckNow, Converter={StaticResource UpperCaseConverter}}" />
+                    </Button>
+                  </Grid>
+
+                  <TextBlock Text="{loc:Tr Settings_Updates_Checking}" Classes="muted" FontSize="12"
+                             IsVisible="{Binding IsCheckingForUpdates}" />
+                  <TextBlock Text="{Binding UpdateCheckStatusLabel}" Classes="muted" FontSize="12"
+                             TextWrapping="Wrap" IsVisible="{Binding HasUpdateCheckStatus}" />
+
+                  <!-- Bloque de la release encontrada: versión, notas y las dos decisiones posibles. -->
+                  <Border Classes="trash-hint" IsVisible="{Binding HasAvailableUpdate}">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="{Binding AvailableUpdateLabel}" FontSize="13" FontWeight="Bold" TextWrapping="Wrap" />
+                      <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto"
+                                    IsVisible="{Binding HasAvailableUpdateNotes}">
+                        <TextBlock Text="{Binding AvailableUpdateNotes}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </ScrollViewer>
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="pill" Height="32" Command="{Binding DownloadUpdateCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
+                            <TextBlock Text="{loc:Tr Settings_Updates_Download, Converter={StaticResource UpperCaseConverter}}" />
+                          </StackPanel>
+                        </Button>
+                        <Button Classes="ghost" Command="{Binding SkipUpdateCommand}" VerticalAlignment="Center">
+                          <TextBlock Text="{loc:Tr Settings_Updates_Skip, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Maintenance Settings_General_Diagnostics_Title
+                              Settings_General_Diagnostics_DebugLogging_Label
                               Settings_General_Diagnostics_DebugLogging_Description
-                              Settings_General_Diagnostics_OpenLogsFolderButton Settings_Nav_General">
+                              Settings_General_Diagnostics_OpenLogsFolderButton">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -580,141 +680,13 @@
          </Border>
             </controls:SettingsSearchOption>
 
-            <!-- ===================== Zona de peligro (docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md) ===================== -->
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_Nav_General Settings_General_DangerZone_Title"
-                MatchDescendants="True">
-              <Border Classes="card" Padding="22" BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1">
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="Settings_Nav_Maintenance Settings_General_DangerZone_Title">
+              <Border Classes="card" Padding="22" BorderBrush="{DynamicResource DangerBrush}">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="AlertCircleOutline" Width="15" Height="15" Foreground="{DynamicResource DangerBrush}" />
-                    <TextBlock Text="{loc:Tr Settings_General_DangerZone_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource DangerBrush}" />
-                  </StackPanel>
-
+                  <TextBlock Classes="section-title" Text="{loc:Tr Settings_General_DangerZone_Title, Converter={StaticResource UpperCaseConverter}}" />
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_General_DangerZone_VaultSize_Label
-                                    Settings_General_DangerZone_VaultSize_Description
-                                    Settings_General_DangerZone_OpenVaultFolderButton Settings_Nav_General
-                                    Settings_General_DangerZone_Title">
-                    <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
-                      <StackPanel Grid.Column="0" Spacing="3">
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_VaultSize_Label}" FontSize="13" />
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_VaultSize_Description}"
-                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <TextBlock Grid.Column="1" Text="{Binding VaultSizeLabel}" Classes="faint" VerticalAlignment="Center" />
-                    </Grid>
-
-                    <Button Classes="pill" Command="{Binding OpenVaultFolderCommand}" HorizontalAlignment="Left">
-                      <StackPanel Orientation="Horizontal" Spacing="8">
-                        <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_OpenVaultFolderButton, Converter={StaticResource UpperCaseConverter}}" />
-                      </StackPanel>
-                    </Button></StackPanel>
-                  </controls:SettingsSearchOption>
-
-                  <controls:SettingsSearchOption
-                      ResourceKeys="Settings_General_DangerZone_BackupHint Settings_General_DangerZone_CreateBackupButton
-                                    Settings_General_DangerZone_RestoreBackupButton
-                                    Settings_Nav_General Settings_General_DangerZone_Title">
-                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
-
-                    <TextBlock Text="{loc:Tr Settings_General_DangerZone_BackupHint}"
-                               Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Button Classes="pill" Command="{Binding CreateBackupCommand}" HorizontalAlignment="Left">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                          <mi:MaterialIcon Kind="ArchiveArrowDownOutline" Width="14" Height="14" />
-                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_CreateBackupButton, Converter={StaticResource UpperCaseConverter}}" />
-                        </StackPanel>
-                      </Button>
-                      <Button Classes="pill" Command="{Binding RequestRestoreBackupCommand}" HorizontalAlignment="Left">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                          <mi:MaterialIcon Kind="BackupRestore" Width="14" Height="14" />
-                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_RestoreBackupButton, Converter={StaticResource UpperCaseConverter}}" />
-                        </StackPanel>
-                      </Button>
-                    </StackPanel></StackPanel>
-                  </controls:SettingsSearchOption>
-
-                  <controls:SettingsSearchOption
-                      ResourceKeys="Settings_General_DangerZone_AutoBackup_Label
-                                    Settings_General_DangerZone_AutoBackup_Description
-                                    Settings_General_DangerZone_AutoBackup_IntervalLabel
-                                    Settings_General_DangerZone_AutoBackup_RetentionLabel Settings_Nav_General
-                                    Settings_General_DangerZone_Title">
-                    <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
-                      <StackPanel Grid.Column="0" Spacing="3">
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_AutoBackup_Label}" FontSize="13" />
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_AutoBackup_Description}"
-                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoBackupEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_Label}" />
-                    </Grid>
-
-                    <!-- Intervalo y retención (Fase 10, docs/analisis-proyecto/roadmap.md): antes fijos en su
-                         valor por defecto para todo el mundo, solo el interruptor de arriba tenía control real. -->
-                    <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding AutoBackupEnabled}" Margin="0,-4,0,0">
-                      <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_DangerZone_AutoBackup_IntervalLabel}" FontSize="12.5" Classes="muted" VerticalAlignment="Center" />
-                      <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupIntervalDays}" Minimum="1" Maximum="30" Increment="1"
-                                     Width="110" ShowButtonSpinner="True" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_IntervalLabel}" />
-                    </Grid>
-                    <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding AutoBackupEnabled}">
-                      <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_DangerZone_AutoBackup_RetentionLabel}" FontSize="12.5" Classes="muted" VerticalAlignment="Center" />
-                      <NumericUpDown Grid.Column="1" Value="{Binding AutoBackupRetentionCount}" Minimum="1" Maximum="30" Increment="1"
-                                     Width="110" ShowButtonSpinner="True" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_AutoBackup_RetentionLabel}" />
-                    </Grid></StackPanel>
-                  </controls:SettingsSearchOption>
-
-                  <controls:SettingsSearchOption
-                      ResourceKeys="Settings_General_DangerZone_ConfirmBeforeDelete_Label
-                                    Settings_General_DangerZone_ConfirmBeforeDelete_Description
-                                    Settings_General_DangerZone_TrashRetention_Description Settings_Nav_General
-                                    Settings_General_DangerZone_Title">
-                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
-
-                    <Grid ColumnDefinitions="*,Auto">
-                      <StackPanel Grid.Column="0" Spacing="3">
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Label}" FontSize="13" />
-                        <TextBlock Text="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Description}"
-                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding ConfirmBeforeDelete}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_DangerZone_ConfirmBeforeDelete_Label}" />
-                    </Grid>
-
-                    <TextBlock Classes="muted" FontSize="11.5" TextWrapping="Wrap"
-                               Text="{loc:Tr Settings_General_DangerZone_TrashRetention_Description}" /></StackPanel>
-                  </controls:SettingsSearchOption>
-
-                  <controls:SettingsSearchOption
-                      ResourceKeys="Settings_General_DangerZone_ExportHint
-                                    Settings_General_DangerZone_ExportSettingsButton
-                                    Settings_General_DangerZone_ImportSettingsButton Settings_Nav_General
-                                    Settings_General_DangerZone_Title">
-                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
-
-                    <TextBlock Text="{loc:Tr Settings_General_DangerZone_ExportHint}"
-                               Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Button Classes="pill" Command="{Binding ExportSettingsCommand}" HorizontalAlignment="Left">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                          <mi:MaterialIcon Kind="FileExportOutline" Width="14" Height="14" />
-                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_ExportSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
-                        </StackPanel>
-                      </Button>
-                      <Button Classes="pill" Command="{Binding ImportSettingsCommand}" HorizontalAlignment="Left">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                          <mi:MaterialIcon Kind="FileImportOutline" Width="14" Height="14" />
-                          <TextBlock Text="{loc:Tr Settings_General_DangerZone_ImportSettingsButton, Converter={StaticResource UpperCaseConverter}}" />
-                        </StackPanel>
-                      </Button>
-                    </StackPanel></StackPanel>
-                  </controls:SettingsSearchOption>
-
-                  <controls:SettingsSearchOption
-                      ResourceKeys="Settings_General_DangerZone_ResetSettingsButton Settings_Nav_General
-                                    Settings_General_DangerZone_Title">
-                    <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                      ResourceKeys="Settings_Nav_Maintenance Settings_General_DangerZone_ResetSettingsButton Settings_General_DangerZone_Title">
+                    <StackPanel Spacing="14">
 
                     <Button Classes="pill-primary-danger" Command="{Binding RequestResetSettingsCommand}" HorizontalAlignment="Left">
                       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -724,28 +696,103 @@
                     </Button></StackPanel>
                   </controls:SettingsSearchOption>
                 </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+          </StackPanel>
+        </controls:SettingsSearchOption>
+
+<!-- ===================== General ===================== -->
+        <controls:SettingsSearchOption Section="General" MatchDescendants="True" ResourceKeys="Settings_Nav_General">
+          <StackPanel Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_General, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_General Settings_General_Language_Title Settings_General_Language_Description">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="TranslateVariant" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_General_Language_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_General_Language_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" AutomationProperties.Name="{loc:Tr Settings_General_Language_Title}"
+                            HorizontalAlignment="Stretch" MaxDropDownHeight="320">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate DataType="loc:SupportedLanguageInfo">
+                        <TextBlock Text="{Binding NativeName}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
          </Border>
             </controls:SettingsSearchOption>
 
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_General Settings_General_Startup_Title Settings_General_Startup_Description
+                              Settings_General_Startup_Dashboard Settings_General_Startup_Calendar Settings_General_Startup_Kanban
+                              Settings_General_Startup_Notes Settings_General_Startup_Files Settings_General_Startup_Sessions">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="HomeVariantOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_General_Startup_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_General_Startup_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <WrapPanel>
+                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Dashboard, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Dashboard, Mode=OneWay}"
+                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Dashboard}" />
+                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Calendar, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Calendar, Mode=OneWay}"
+                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Calendar}" />
+                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Kanban, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Kanban, Mode=OneWay}"
+                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Kanban}" />
+                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Notes, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Notes, Mode=OneWay}"
+                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Notes}" />
+                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Files, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Files, Mode=OneWay}"
+                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Files}" />
+                    <RadioButton Classes="segment" GroupName="StartupPage" Content="{loc:Tr Settings_General_Startup_Sessions, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,8,8"
+                                 IsChecked="{Binding StartupPage, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Sessions, Mode=OneWay}"
+                                 Command="{Binding SetStartupPageCommand}" CommandParameter="{x:Static vm:AppPage.Sessions}" />
+                  </WrapPanel>
+                </StackPanel>
+         </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_General Settings_General_Tray_Title Settings_General_Tray_Description
+                              Settings_General_Tray_KeepRunning">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_General_Tray_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_General_Tray_Description}"
+                             Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_General_Tray_KeepRunning}" FontSize="13"
+                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_General_Tray_KeepRunning}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
           </StackPanel>
         </controls:SettingsSearchOption>
 
         <!-- ===================== Apariencia ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_Appearance Settings_Appearance_Title"
-            MatchDescendants="True"
-            Section="Appearance"
-            AdditionalText="{Binding ThemeSearchText}">
+        <controls:SettingsSearchOption Section="Appearance" MatchDescendants="True" ResourceKeys="Settings_Nav_Appearance" AdditionalText="{Binding ThemeSearchText}">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_Appearance_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_Appearance_Description}" Classes="muted" FontSize="12.5" />
-            </StackPanel>
-
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Appearance, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_Theme_Title Settings_Appearance_Theme_DarkLabel
-                              Settings_Appearance_Theme_Description Settings_Appearance_CustomTheme_ActiveHint
-                              Settings_Nav_Appearance">
+                ResourceKeys="Settings_Nav_Appearance Settings_Appearance_Theme_Title Settings_Appearance_Theme_DarkLabel
+                              Settings_Appearance_Theme_Description Settings_Appearance_CustomTheme_ActiveHint">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -766,20 +813,17 @@
          </Border>
             </controls:SettingsSearchOption>
 
-            <!-- ===== Temas personalizados ===== -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_CustomTheme_Title Settings_Appearance_CustomTheme_Description
-                              Settings_Appearance_CustomTheme_ActiveLabel Settings_Appearance_CustomTheme_ActivateButton
-                              Settings_Appearance_CustomTheme_DuplicateButton Settings_Appearance_CustomTheme_EditButton
-                              Settings_Appearance_CustomTheme_DeleteButton Settings_Appearance_Theme_NewThemeButton
-                              Settings_Appearance_CustomTheme_ImportButton
-                              Settings_Appearance_CustomTheme_BuiltInDarkTitle
-                              Settings_Appearance_CustomTheme_CollapseSection
-                              Settings_Appearance_CustomTheme_ExpandSection
-                              Settings_Appearance_CustomTheme_BuiltInLightTitle
+                ResourceKeys="Settings_Nav_Appearance Settings_Appearance_CustomTheme_Title
+                              Settings_Appearance_CustomTheme_Description Settings_Appearance_CustomTheme_ActiveLabel
+                              Settings_Appearance_CustomTheme_ActivateButton Settings_Appearance_CustomTheme_DuplicateButton
+                              Settings_Appearance_CustomTheme_EditButton Settings_Appearance_CustomTheme_DeleteButton
+                              Settings_Appearance_Theme_NewThemeButton Settings_Appearance_CustomTheme_ImportButton
+                              Settings_Appearance_CustomTheme_BuiltInDarkTitle Settings_Appearance_CustomTheme_CollapseSection
+                              Settings_Appearance_CustomTheme_ExpandSection Settings_Appearance_CustomTheme_BuiltInLightTitle
                               Settings_Appearance_CustomTheme_YourThemesTitle Settings_Appearance_CustomTheme_Empty
                               Settings_Appearance_CustomTheme_UseSystemThemeButton Settings_Appearance_Theme_BackButton
-                              Settings_Appearance_Theme_SaveButton Settings_Nav_Appearance"
+                              Settings_Appearance_Theme_SaveButton"
                 AdditionalText="{Binding ThemeSearchText}">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
@@ -963,8 +1007,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_InterfaceFont_Title Settings_Appearance_InterfaceFont_Description
-                              Settings_Nav_Appearance">
+                ResourceKeys="Settings_Nav_Appearance Settings_Appearance_InterfaceFont_Title Settings_Appearance_InterfaceFont_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -980,10 +1023,9 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_Zoom_Title Settings_Appearance_Zoom_Description
+                ResourceKeys="Settings_Nav_Appearance Settings_Appearance_Zoom_Title Settings_Appearance_Zoom_Description
                               Settings_Appearance_Zoom_LevelLabel Settings_Appearance_Zoom_OutTooltip
-                              Settings_Appearance_Zoom_DefaultMarkerTooltip Settings_Appearance_Zoom_InTooltip
-                              Settings_Nav_Appearance">
+                              Settings_Appearance_Zoom_DefaultMarkerTooltip Settings_Appearance_Zoom_InTooltip">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1035,8 +1077,8 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_TitleBar_Title Settings_Appearance_TitleBar_UseCustomLabel
-                              Settings_Appearance_TitleBar_Description Settings_Nav_Appearance">
+                ResourceKeys="Settings_Nav_Appearance Settings_Appearance_TitleBar_Title
+                              Settings_Appearance_TitleBar_UseCustomLabel Settings_Appearance_TitleBar_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1055,18 +1097,14 @@
          </Border>
             </controls:SettingsSearchOption>
 
-            <!-- Logo del sidebar: por defecto el icono de Enki (adaptativo al tema), o una imagen del
-                 usuario que BrandLogoService reescala y recodifica al importarla. La forma circular solo
-                 se ofrece con imagen personalizada — el icono por defecto ya es una insignia cuadrada y
-                 recortarlo le comería las esquinas. Ver docs/agent-docs/logo-personalizado.md. -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_BrandLogo_Title Settings_Appearance_BrandLogo_Description
-                              Settings_Appearance_BrandLogo_SourceLabel Settings_Appearance_BrandLogo_SourceDefault
-                              Settings_Appearance_BrandLogo_SourceCustom Settings_Appearance_BrandLogo_Empty
-                              Settings_Appearance_BrandLogo_ChooseButton Settings_Appearance_BrandLogo_RemoveButton
-                              Settings_Appearance_BrandLogo_QualityHint Settings_Appearance_BrandLogo_ShapeLabel
-                              Settings_Appearance_BrandLogo_ShapeDescription Settings_Appearance_BrandLogo_ShapeSquare
-                              Settings_Appearance_BrandLogo_ShapeCircle Settings_Nav_Appearance">
+                ResourceKeys="Settings_Nav_Appearance Settings_Appearance_BrandLogo_Title
+                              Settings_Appearance_BrandLogo_Description Settings_Appearance_BrandLogo_SourceLabel
+                              Settings_Appearance_BrandLogo_SourceDefault Settings_Appearance_BrandLogo_SourceCustom
+                              Settings_Appearance_BrandLogo_Empty Settings_Appearance_BrandLogo_ChooseButton
+                              Settings_Appearance_BrandLogo_RemoveButton Settings_Appearance_BrandLogo_QualityHint
+                              Settings_Appearance_BrandLogo_ShapeLabel Settings_Appearance_BrandLogo_ShapeDescription
+                              Settings_Appearance_BrandLogo_ShapeSquare Settings_Appearance_BrandLogo_ShapeCircle">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1140,70 +1178,13 @@
                 </StackPanel>
               </Border>
             </controls:SettingsSearchOption>
-
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_KanbanOrientation_Title Settings_Appearance_KanbanOrientation_Label
-                              Settings_Appearance_KanbanOrientation_Description
-                              Settings_Appearance_KanbanOrientation_Vertical
-                              Settings_Appearance_KanbanOrientation_Horizontal Settings_Nav_Appearance">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
-                    <mi:MaterialIcon Kind="ViewColumnOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Spacing="3">
-                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Label}" FontSize="13" />
-                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanOrientation_Description}"
-                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                      <RadioButton Classes="segment" GroupName="KanbanBoardOrientation" Content="{loc:Tr Settings_Appearance_KanbanOrientation_Vertical, Converter={StaticResource UpperCaseConverter}}"
-                                   IsChecked="{Binding KanbanBoardVertical}" />
-                      <RadioButton Classes="segment" GroupName="KanbanBoardOrientation" Content="{loc:Tr Settings_Appearance_KanbanOrientation_Horizontal, Converter={StaticResource UpperCaseConverter}}"
-                                   IsChecked="{Binding !KanbanBoardVertical}" />
-                    </StackPanel>
-                  </Grid>
-                </StackPanel>
-         </Border>
-            </controls:SettingsSearchOption>
-
-            <controls:SettingsSearchOption
-                ResourceKeys="Settings_Appearance_KanbanTags_Title Settings_Appearance_KanbanTags_Label
-                              Settings_Appearance_KanbanTags_Description Settings_Nav_Appearance">
-              <Border Classes="card" Padding="22">
-                <StackPanel Spacing="14">
-                  <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Title}" Classes="section-title" />
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="3" Margin="0,0,16,0">
-                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Label}" FontSize="13" />
-                      <TextBlock Text="{loc:Tr Settings_Appearance_KanbanTags_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowTagFilter}" OnContent="" OffContent=""
-                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanTags_Label}" />
-                  </Grid>
-                </StackPanel>
-              </Border>
-            </controls:SettingsSearchOption>
           </StackPanel>
         </controls:SettingsSearchOption>
 
         <!-- ===================== Editor ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_Editor Settings_Editor_Title"
-            MatchDescendants="True"
-            Section="Editor">
+        <controls:SettingsSearchOption Section="Editor" MatchDescendants="True" ResourceKeys="Settings_Nav_Editor">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_Editor_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_Editor_Description}" Classes="muted" FontSize="12.5" />
-            </StackPanel>
-
-            <!-- Vista del editor de notas: completa (portada con rejilla + editor) o simplificada
-                 (árbol a la izquierda, editor a la derecha, sin barra de formato ni panel lateral). Va
-                 la primera de la sección porque el resto de ajustes de aquí se aplican dentro de
-                 cualquiera de las dos, mientras que esta decide cuál se está mirando. -->
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Editor, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Editor Settings_Editor_ViewMode_Title"
                 MatchDescendants="True">
@@ -1214,8 +1195,8 @@
                     <TextBlock Text="{loc:Tr Settings_Editor_ViewMode_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_ViewMode_Description Settings_Editor_ViewMode_Full
-                                    Settings_Editor_ViewMode_Simple Settings_Nav_Editor Settings_Editor_ViewMode_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_ViewMode_Description Settings_Editor_ViewMode_Full
+                                    Settings_Editor_ViewMode_Simple Settings_Editor_ViewMode_Title">
                     <StackPanel Spacing="14"><TextBlock Text="{loc:Tr Settings_Editor_ViewMode_Description}"
                                Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
 
@@ -1230,8 +1211,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_ViewMode_Full_Description Settings_Editor_ViewMode_Simple_Description
-                                    Settings_Editor_ViewMode_Simple_Omissions Settings_Nav_Editor
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_ViewMode_Full_Description
+                                    Settings_Editor_ViewMode_Simple_Description Settings_Editor_ViewMode_Simple_Omissions
                                     Settings_Editor_ViewMode_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <StackPanel Spacing="7">
@@ -1251,7 +1232,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Editor_Font_Title Settings_Editor_Font_Description Settings_Nav_Editor">
+                ResourceKeys="Settings_Nav_Editor Settings_Editor_Font_Title Settings_Editor_Font_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1267,7 +1248,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Editor_CodeFont_Title Settings_Editor_CodeFont_Description Settings_Nav_Editor">
+                ResourceKeys="Settings_Nav_Editor Settings_Editor_CodeFont_Title Settings_Editor_CodeFont_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1282,14 +1263,11 @@
               </Border>
             </controls:SettingsSearchOption>
 
-            <!-- Plantillas de notas: el desplegable elige cuál se aplica a la nota diaria; el resto de
-                 la gestión (crear, editar, borrar) vive en Documentos › "Desde plantilla", que es donde
-                 se usan. Aquí solo lo que es configuración. -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Editor_Templates_Title Settings_Editor_Templates_Description
+                ResourceKeys="Settings_Nav_Editor Settings_Editor_Templates_Title Settings_Editor_Templates_Description
                               Settings_Editor_Templates_DailyNote_Label Settings_Editor_Templates_DailyNote_Description
                               Settings_Editor_Templates_None Settings_Editor_Templates_OpenFolder
-                              Settings_Editor_Templates_Variables Settings_Nav_Editor"
+                              Settings_Editor_Templates_Variables"
                 AdditionalText="{Binding TemplatesSearchText}">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
@@ -1342,18 +1320,19 @@
                   </StackPanel>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_FontSize_Label Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_FontSize_Label Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Editor_FontSize_Label}" FontSize="13" VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding EditorFontSizeLabel}"
                                  Classes="faint" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider Minimum="12" Maximum="20" Value="{Binding EditorFontSize}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Editor_FontSize_Label}" /></StackPanel>
+                    <Slider Minimum="12" Maximum="20" Value="{Binding EditorFontSize}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Editor_FontSize_Label}" />
+                </StackPanel>
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_ColumnWidth_Label Settings_Editor_ColumnWidth_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_ColumnWidth_Label Settings_Editor_ColumnWidth_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
 
                     <Grid ColumnDefinitions="*,Auto">
@@ -1363,13 +1342,13 @@
                     </Grid>
                     <TextBlock Text="{loc:Tr Settings_Editor_ColumnWidth_Description}"
                                Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-                    <Slider Minimum="480" Maximum="1400" Value="{Binding EditorColumnWidth}" TickFrequency="20" AutomationProperties.Name="{loc:Tr Settings_Editor_ColumnWidth_Label}" /></StackPanel>
+                    <Slider Minimum="480" Maximum="1400" Value="{Binding EditorColumnWidth}" TickFrequency="20" AutomationProperties.Name="{loc:Tr Settings_Editor_ColumnWidth_Label}" />
+                </StackPanel>
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_ColumnPosition_Label Settings_Editor_ColumnPosition_Centered
-                                    Settings_Editor_ColumnPosition_Left Settings_Nav_Editor
-                                    Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_ColumnPosition_Label Settings_Editor_ColumnPosition_Centered
+                                    Settings_Editor_ColumnPosition_Left Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><StackPanel Spacing="8" Margin="0,4,0,0">
                       <TextBlock Text="{loc:Tr Settings_Editor_ColumnPosition_Label}" FontSize="13" />
                       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -1382,8 +1361,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_WordWrap_Label Settings_Editor_WordWrap_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_WordWrap_Label Settings_Editor_WordWrap_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1399,9 +1378,9 @@
                        control segmentado que la posición de la columna, porque es la misma clase de
                        elección: dos formas de componer la misma página, no un interruptor de una función. -->
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_TextAlign_Label Settings_Editor_TextAlign_Description
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_TextAlign_Label Settings_Editor_TextAlign_Description
                                     Settings_Editor_TextAlign_Justified Settings_Editor_TextAlign_Ragged
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <StackPanel Spacing="8">
                       <StackPanel Spacing="3">
@@ -1419,8 +1398,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_AutoPairs_Label Settings_Editor_AutoPairs_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_AutoPairs_Label Settings_Editor_AutoPairs_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1433,8 +1412,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_ShowScrollbar_Label Settings_Editor_ShowScrollbar_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_ShowScrollbar_Label Settings_Editor_ShowScrollbar_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1447,8 +1426,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_LineNumbers_Label Settings_Editor_LineNumbers_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_LineNumbers_Label Settings_Editor_LineNumbers_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1461,8 +1440,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_RemoteImages_Label Settings_Editor_RemoteImages_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_RemoteImages_Label Settings_Editor_RemoteImages_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1476,8 +1455,8 @@
 
                   <!-- Cambios externos al vault (.docs/project-info/cambios-externos-en-el-vault.md) -->
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_WatchExternal_Label Settings_Editor_WatchExternal_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_WatchExternal_Label Settings_Editor_WatchExternal_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1490,8 +1469,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_AutoReloadExternal_Label Settings_Editor_AutoReloadExternal_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_AutoReloadExternal_Label
+                                    Settings_Editor_AutoReloadExternal_Description Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding CanAutoReloadExternalChanges}">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1504,8 +1483,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_SidePanel_Label Settings_Editor_SidePanel_Description
-                                    Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_SidePanel_Label Settings_Editor_SidePanel_Description
+                                    Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1518,21 +1497,22 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Editor_TabSize_Label Settings_Nav_Editor Settings_Editor_SizeLayout_Title">
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_TabSize_Label Settings_Editor_SizeLayout_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Editor_TabSize_Label}" FontSize="13" VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding EditorTabSizeLabel}"
                                  Classes="faint" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider Minimum="2" Maximum="8" Value="{Binding EditorTabSize}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Editor_TabSize_Label}" /></StackPanel>
+                    <Slider Minimum="2" Maximum="8" Value="{Binding EditorTabSize}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Editor_TabSize_Label}" />
+                </StackPanel>
                   </controls:SettingsSearchOption>
                 </StackPanel>
          </Border>
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Editor_Autosave_Title Settings_Editor_Autosave_Description Settings_Nav_Editor">
+                ResourceKeys="Settings_Nav_Editor Settings_Editor_Autosave_Title Settings_Editor_Autosave_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="10">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1548,16 +1528,9 @@
         </controls:SettingsSearchOption>
 
         <!-- ===================== Notificaciones ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Title"
-            MatchDescendants="True"
-            Section="Notifications">
+        <controls:SettingsSearchOption Section="Notifications" MatchDescendants="True" ResourceKeys="Settings_Nav_Notifications">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_Notifications_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_Notifications_Description}" Classes="muted" FontSize="12.5" />
-            </StackPanel>
-
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Notifications, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Panels_Title"
                 MatchDescendants="True">
@@ -1568,8 +1541,8 @@
                     <TextBlock Text="{loc:Tr Settings_Notifications_Panels_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Bell_Label Settings_Notifications_Bell_Description
-                                    Settings_Nav_Notifications Settings_Notifications_Panels_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Bell_Label Settings_Notifications_Bell_Description
+                                    Settings_Notifications_Panels_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Text="{loc:Tr Settings_Notifications_Bell_Label}" FontSize="13" />
@@ -1579,9 +1552,8 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_RemindersTray_Label
-                                    Settings_Notifications_RemindersTray_Description Settings_Nav_Notifications
-                                    Settings_Notifications_Panels_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_RemindersTray_Label
+                                    Settings_Notifications_RemindersTray_Description Settings_Notifications_Panels_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1592,9 +1564,8 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Inbox_Label
-                                    Settings_Notifications_Inbox_Description Settings_Nav_Notifications
-                                    Settings_Notifications_Panels_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Inbox_Label
+                                    Settings_Notifications_Inbox_Description Settings_Notifications_Panels_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1605,8 +1576,8 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Toast_Label Settings_Notifications_Toast_Description
-                                    Settings_Nav_Notifications Settings_Notifications_Panels_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Toast_Label
+                                    Settings_Notifications_Toast_Description Settings_Notifications_Panels_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1632,32 +1603,28 @@
                   <TextBlock Text="{loc:Tr Settings_Notifications_MuteByCategory_Description}"
                              Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Mute_Info_Label Settings_Nav_Notifications
-                                    Settings_Notifications_MuteByCategory_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Mute_Info_Label Settings_Notifications_MuteByCategory_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Info_Label}" FontSize="13" VerticalAlignment="Center" />
                       <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteInfoNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Info_Label}" />
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Mute_Success_Label Settings_Nav_Notifications
-                                    Settings_Notifications_MuteByCategory_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Mute_Success_Label Settings_Notifications_MuteByCategory_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Success_Label}" FontSize="13" VerticalAlignment="Center" />
                       <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteSuccessNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Success_Label}" />
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Mute_Warning_Label Settings_Nav_Notifications
-                                    Settings_Notifications_MuteByCategory_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Mute_Warning_Label Settings_Notifications_MuteByCategory_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Warning_Label}" FontSize="13" VerticalAlignment="Center" />
                       <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteWarningNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Warning_Label}" />
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Mute_Error_Label Settings_Nav_Notifications
-                                    Settings_Notifications_MuteByCategory_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Mute_Error_Label Settings_Notifications_MuteByCategory_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Mute_Error_Label}" FontSize="13" VerticalAlignment="Center" />
                       <ToggleSwitch Grid.Column="1" IsChecked="{Binding MuteErrorNotifications}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Notifications_Mute_Error_Label}" />
@@ -1668,8 +1635,9 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Notifications_Reminders_Title Settings_Notifications_Reminders_SoonWindow_Label
-                              Settings_Notifications_Reminders_SoonWindow_Description Settings_Nav_Notifications">
+                ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Reminders_Title
+                              Settings_Notifications_Reminders_SoonWindow_Label
+                              Settings_Notifications_Reminders_SoonWindow_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1688,14 +1656,11 @@
          </Border>
             </controls:SettingsSearchOption>
 
-            <!-- Valores rápidos de "Aplazar" (T5). Los dos primeros son duraciones (NumericUpDown, porque
-                 el rango útil va de 1 minuto a 7 días y un deslizador ahí no acierta); los dos últimos son
-                 horas del día, donde el deslizador de 0–23 sí es el control natural. -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Notifications_Snooze_Title Settings_Notifications_Snooze_Description
-                              Settings_Notifications_Snooze_Primary Settings_Notifications_Snooze_Secondary
-                              Settings_Notifications_Snooze_Evening Settings_Notifications_Snooze_Tomorrow
-                              Settings_Nav_Notifications">
+                ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Snooze_Title
+                              Settings_Notifications_Snooze_Description Settings_Notifications_Snooze_Primary
+                              Settings_Notifications_Snooze_Secondary Settings_Notifications_Snooze_Evening
+                              Settings_Notifications_Snooze_Tomorrow">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1749,9 +1714,9 @@
                   </StackPanel>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Dnd_Label Settings_Notifications_Dnd_Description
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Dnd_Label Settings_Notifications_Dnd_Description
                                     Settings_Notifications_Dnd_FromLabel Settings_Notifications_Dnd_ToLabel
-                                    Settings_Nav_Notifications Settings_Notifications_DndSound_Title">
+                                    Settings_Notifications_DndSound_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Text="{loc:Tr Settings_Notifications_Dnd_Label}" FontSize="13" />
@@ -1774,8 +1739,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Sound_Label Settings_Notifications_Sound_Description
-                                    Settings_Nav_Notifications Settings_Notifications_DndSound_Title">
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Sound_Label
+                                    Settings_Notifications_Sound_Description Settings_Notifications_DndSound_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1788,9 +1753,8 @@
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Notifications_Sound_Volume_Label
-                                    Settings_Notifications_Sound_Volume_Description
-                                    Settings_Notifications_Sound_TestButton Settings_Nav_Notifications
+                      ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Sound_Volume_Label
+                                    Settings_Notifications_Sound_Volume_Description Settings_Notifications_Sound_TestButton
                                     Settings_Notifications_DndSound_Title">
                     <StackPanel Spacing="14"><StackPanel Spacing="8" IsEnabled="{Binding NotificationSoundEnabled}">
                       <Grid ColumnDefinitions="*,Auto">
@@ -1816,21 +1780,13 @@
         </controls:SettingsSearchOption>
 
         <!-- ===================== Calendario ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_Calendar Settings_Calendar_Title"
-            MatchDescendants="True"
-            Section="Calendar">
+        <controls:SettingsSearchOption Section="Calendar" MatchDescendants="True" ResourceKeys="Settings_Nav_Calendar">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_Calendar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_Calendar_Description}"
-                         Classes="muted" FontSize="12.5" />
-            </StackPanel>
-
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Calendar, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Calendar_DefaultView_Title Settings_Calendar_DefaultView_Description
+                ResourceKeys="Settings_Nav_Calendar Settings_Calendar_DefaultView_Title Settings_Calendar_DefaultView_Description
                               Settings_Calendar_View_Month Settings_Calendar_View_Week Settings_Calendar_View_Day
-                              Settings_Calendar_View_Agenda Settings_Nav_Calendar">
+                              Settings_Calendar_View_Agenda">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1866,9 +1822,8 @@
                     <TextBlock Text="{loc:Tr Settings_Calendar_Week_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Calendar_WeekStartsMonday_Label
-                                    Settings_Calendar_WeekStartsMonday_Description Settings_Nav_Calendar
-                                    Settings_Calendar_Week_Title">
+                      ResourceKeys="Settings_Nav_Calendar Settings_Calendar_WeekStartsMonday_Label
+                                    Settings_Calendar_WeekStartsMonday_Description Settings_Calendar_Week_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Text="{loc:Tr Settings_Calendar_WeekStartsMonday_Label}" FontSize="13" />
@@ -1879,8 +1834,8 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Calendar_ShowWeekends_Label Settings_Calendar_ShowWeekends_Description
-                                    Settings_Nav_Calendar Settings_Calendar_Week_Title">
+                      ResourceKeys="Settings_Nav_Calendar Settings_Calendar_ShowWeekends_Label
+                                    Settings_Calendar_ShowWeekends_Description Settings_Calendar_Week_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1905,30 +1860,31 @@
                     <TextBlock Text="{loc:Tr Settings_Calendar_WorkingHours_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Calendar_WorkingHours_Description Settings_Calendar_WorkingHours_StartLabel
-                                    Settings_Nav_Calendar Settings_Calendar_WorkingHours_Title">
+                      ResourceKeys="Settings_Nav_Calendar Settings_Calendar_WorkingHours_Description
+                                    Settings_Calendar_WorkingHours_StartLabel Settings_Calendar_WorkingHours_Title">
                     <StackPanel Spacing="14"><TextBlock Text="{loc:Tr Settings_Calendar_WorkingHours_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Calendar_WorkingHours_StartLabel}" FontSize="13" VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding CalendarWorkingHoursStart, StringFormat={}{0:00}:00}"
                                  Classes="faint" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider Minimum="0" Maximum="23" Value="{Binding CalendarWorkingHoursStart}" TickFrequency="1" /></StackPanel>
+                    <Slider Minimum="0" Maximum="23" Value="{Binding CalendarWorkingHoursStart}" TickFrequency="1" />
+                </StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Calendar_WorkingHours_EndLabel Settings_Nav_Calendar
-                                    Settings_Calendar_WorkingHours_Title">
+                      ResourceKeys="Settings_Nav_Calendar Settings_Calendar_WorkingHours_EndLabel Settings_Calendar_WorkingHours_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Calendar_WorkingHours_EndLabel}" FontSize="13" VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding CalendarWorkingHoursEnd, StringFormat={}{0:00}:00}"
                                  Classes="faint" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider Minimum="1" Maximum="24" Value="{Binding CalendarWorkingHoursEnd}" TickFrequency="1" /></StackPanel>
+                    <Slider Minimum="1" Maximum="24" Value="{Binding CalendarWorkingHoursEnd}" TickFrequency="1" />
+                </StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Calendar_TimeFormat24h_Label Settings_Calendar_TimeFormat24h_Description
-                                    Settings_Nav_Calendar Settings_Calendar_WorkingHours_Title">
+                      ResourceKeys="Settings_Nav_Calendar Settings_Calendar_TimeFormat24h_Label
+                                    Settings_Calendar_TimeFormat24h_Description Settings_Calendar_WorkingHours_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1952,8 +1908,8 @@
                     <TextBlock Text="{loc:Tr Settings_Calendar_PanelSidebar_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Calendar_ShowInNav_Label Settings_Calendar_ShowInNav_Description
-                                    Settings_Nav_Calendar Settings_Calendar_PanelSidebar_Title">
+                      ResourceKeys="Settings_Nav_Calendar Settings_Calendar_ShowInNav_Label Settings_Calendar_ShowInNav_Description
+                                    Settings_Calendar_PanelSidebar_Title">
                     <StackPanel Spacing="14"><Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Text="{loc:Tr Settings_Calendar_ShowInNav_Label}" FontSize="13" />
@@ -1964,9 +1920,8 @@
                     </Grid></StackPanel>
                   </controls:SettingsSearchOption>
                   <controls:SettingsSearchOption
-                      ResourceKeys="Settings_Calendar_SidebarScrollbar_Label
-                                    Settings_Calendar_SidebarScrollbar_Description Settings_Nav_Calendar
-                                    Settings_Calendar_PanelSidebar_Title">
+                      ResourceKeys="Settings_Nav_Calendar Settings_Calendar_SidebarScrollbar_Label
+                                    Settings_Calendar_SidebarScrollbar_Description Settings_Calendar_PanelSidebar_Title">
                     <StackPanel Spacing="14"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Grid.Column="0" Spacing="3">
@@ -1984,21 +1939,12 @@
         </controls:SettingsSearchOption>
 
         <!-- ===================== Cuenta ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_Account Settings_Account_Title"
-            MatchDescendants="True"
-            Section="Account">
+        <controls:SettingsSearchOption Section="Account" MatchDescendants="True" ResourceKeys="Settings_Nav_Account">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_Account_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_Account_Description}"
-                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-            </StackPanel>
-
-            <!-- Sin configuración de Supabase en este equipo (falta local.properties) -->
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Account, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Account_SupabaseNotConfigured_Title
-                              Settings_Account_SupabaseNotConfigured_Description Settings_Nav_Account">
+                ResourceKeys="Settings_Nav_Account Settings_Account_SupabaseNotConfigured_Title
+                              Settings_Account_SupabaseNotConfigured_Description">
               <Border Classes="card" Padding="22" IsVisible="{Binding !IsSupabaseConfigured}">
                 <StackPanel Spacing="10">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2011,11 +1957,9 @@
          </Border>
             </controls:SettingsSearchOption>
 
-            <!-- Vinculado -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Account_LinkPolar_Title Settings_Account_LinkedAccount_Label
-                              Settings_Account_LinkedBadge Settings_Account_LinkedDescription
-                              Settings_Account_UnlinkButton Settings_Nav_Account">
+                ResourceKeys="Settings_Nav_Account Settings_Account_LinkPolar_Title Settings_Account_LinkedAccount_Label
+                              Settings_Account_LinkedBadge Settings_Account_LinkedDescription Settings_Account_UnlinkButton">
               <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2043,11 +1987,9 @@
          </Border>
             </controls:SettingsSearchOption>
 
-            <!-- No vinculado (formulario) -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Account_LinkPolar_Title Settings_Account_LinkForm_Description
-                              Settings_Account_EmailLabel Settings_Account_EmailPlaceholder
-                              Settings_Account_PasswordLabel Settings_Nav_Account">
+                ResourceKeys="Settings_Nav_Account Settings_Account_LinkPolar_Title Settings_Account_LinkForm_Description
+                              Settings_Account_EmailLabel Settings_Account_EmailPlaceholder Settings_Account_PasswordLabel">
               <Border Classes="card" Padding="22" IsVisible="{Binding !IsPolarLinked}">
                 <StackPanel Spacing="14" IsEnabled="{Binding IsSupabaseConfigured}">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2082,8 +2024,8 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Account_TaskManagement_Title Settings_Account_ShowTags_Label
-                              Settings_Account_ShowTags_Description Settings_Nav_Account">
+                ResourceKeys="Settings_Nav_Account Settings_Account_TaskManagement_Title Settings_Account_ShowTags_Label
+                              Settings_Account_ShowTags_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2102,10 +2044,8 @@
          </Border>
             </controls:SettingsSearchOption>
 
-            <!-- ===================== Sincronización (docs/ajustes-docs/03-cuenta-y-sincronizacion-polar.md) ===================== -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Account_Sync_Title Settings_Account_LastSynced_Label
-                              Polar_Sync_AlreadyRunningNotice Settings_Nav_Account">
+                ResourceKeys="Settings_Nav_Account Settings_Account_Sync_Title Settings_Account_LastSynced_Label Polar_Sync_AlreadyRunningNotice">
               <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2135,8 +2075,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Account_Management_Title Settings_Account_Management_Description
-                              Settings_Nav_Account">
+                ResourceKeys="Settings_Nav_Account Settings_Account_Management_Title Settings_Account_Management_Description">
               <Border Classes="card" Padding="22" IsVisible="{Binding IsPolarLinked}">
                 <StackPanel Spacing="10">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2152,20 +2091,12 @@
         </controls:SettingsSearchOption>
 
         <!-- ===================== Skills ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_Skills Settings_Skills_Title"
-            MatchDescendants="True"
-            Section="Skills">
+        <controls:SettingsSearchOption Section="Skills" MatchDescendants="True" ResourceKeys="Settings_Nav_Skills">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_Skills_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_Skills_Description}"
-                         Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-            </StackPanel>
-
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Skills, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Skills_Section_Title Settings_Skills_ShowSkills_Label
-                              Settings_Skills_ShowSkills_Description Settings_Nav_Skills">
+                ResourceKeys="Settings_Nav_Skills Settings_Skills_Section_Title Settings_Skills_ShowSkills_Label
+                              Settings_Skills_ShowSkills_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2185,8 +2116,8 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Skills_CommunityLink_Tooltip Settings_Skills_CommunityLink_Title
-                              Settings_Skills_CommunityLink_Description Settings_Nav_Skills">
+                ResourceKeys="Settings_Nav_Skills Settings_Skills_CommunityLink_Tooltip Settings_Skills_CommunityLink_Title
+                              Settings_Skills_CommunityLink_Description">
               <Button Classes="card" Padding="18,16" Command="{Binding OpenCommunitySkillsCommand}"
                       ToolTip.Tip="{loc:Tr Settings_Skills_CommunityLink_Tooltip}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
@@ -2208,15 +2139,11 @@
         </controls:SettingsSearchOption>
 
         <!-- ===================== Atajos de teclado remapeables (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_Shortcuts Settings_Shortcuts_Title"
-            MatchDescendants="True"
-            Section="Shortcuts"
-            AdditionalText="{Binding ShortcutSearchText}">
+        <controls:SettingsSearchOption Section="Shortcuts" MatchDescendants="True" ResourceKeys="Settings_Nav_Shortcuts" AdditionalText="{Binding ShortcutSearchText}">
           <StackPanel Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Shortcuts, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Shortcuts_Title Settings_Shortcuts_Description Settings_Shortcuts_ResetAllButton
-                              Settings_Nav_Shortcuts">
+                ResourceKeys="Settings_Nav_Shortcuts Settings_Shortcuts_Title Settings_Shortcuts_Description Settings_Shortcuts_ResetAllButton">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Spacing="4">
                   <TextBlock Text="{loc:Tr Settings_Shortcuts_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -2231,8 +2158,6 @@
               </Grid>
             </controls:SettingsSearchOption>
 
-            <!-- Un Border.card por categoría (Services.ShortcutCatalog.CategoryKey), cada fila con su
-                 propio control de captura — clic o Enter empieza a escuchar la próxima combinación. -->
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Shortcuts"
                 MatchDescendants="True"
@@ -2326,17 +2251,10 @@
               </ItemsControl>
             </controls:SettingsSearchOption>
 
-            <!-- ===================== Referencia (no remapeable) ===================== -->
-            <StackPanel Spacing="4" Margin="0,6,0,0">
-              <TextBlock Text="{loc:Tr Settings_Shortcuts_ReferenceSectionTitle, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_Shortcuts_ReferenceSectionNote}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-            </StackPanel>
-
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_KanbanSection_Title Settings_KanbanSection_SearchBoard
-                              Settings_KanbanSection_NewCard Settings_KanbanSection_DeleteKey
-                              Settings_KanbanSection_DeleteCard Settings_KanbanSection_CloseDialog
-                              Settings_Nav_Shortcuts">
+                ResourceKeys="Settings_Nav_Shortcuts Settings_KanbanSection_Title Settings_KanbanSection_SearchBoard
+                              Settings_KanbanSection_NewCard Settings_KanbanSection_DeleteKey Settings_KanbanSection_DeleteCard
+                              Settings_KanbanSection_CloseDialog">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="12">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2358,8 +2276,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_PdfViewer_Title Settings_PdfViewer_NavKey Settings_PdfViewer_PrevNextPage
-                              Settings_Nav_Shortcuts">
+                ResourceKeys="Settings_Nav_Shortcuts Settings_PdfViewer_Title Settings_PdfViewer_NavKey Settings_PdfViewer_PrevNextPage">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="12">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2377,18 +2294,11 @@
         </controls:SettingsSearchOption>
 
         <!-- ===================== Acerca de ===================== -->
-        <controls:SettingsSearchOption
-            ResourceKeys="Settings_Nav_About Settings_About_Title"
-            MatchDescendants="True"
-            Section="About">
+        <controls:SettingsSearchOption Section="About" MatchDescendants="True" ResourceKeys="Settings_Nav_About">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Tr Settings_About_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{loc:Tr Settings_About_Description}" Classes="muted" FontSize="12.5" />
-            </StackPanel>
-
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_About, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_About_Tagline Settings_Nav_About">
+                ResourceKeys="Settings_Nav_About Settings_About_Tagline">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="16">
                   <StackPanel Orientation="Horizontal" Spacing="12">
@@ -2409,7 +2319,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_About_WhatIsEnki_Title Settings_About_WhatIsEnki_Description Settings_Nav_About">
+                ResourceKeys="Settings_Nav_About Settings_About_WhatIsEnki_Title Settings_About_WhatIsEnki_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2423,7 +2333,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_About_Modules_Title Settings_About_Module_Dashboard_Name
+                ResourceKeys="Settings_Nav_About Settings_About_Modules_Title Settings_About_Module_Dashboard_Name
                               Settings_About_Module_Dashboard_Description Settings_About_Module_Notes_Name
                               Settings_About_Module_Notes_Description Settings_About_Module_Sessions_Name
                               Settings_About_Module_Sessions_Description Settings_About_Module_Kanban_Name
@@ -2432,7 +2342,7 @@
                               Settings_About_Module_Calendar_Description Settings_About_Module_Reminders_Name
                               Settings_About_Module_Reminders_Description Settings_About_Module_Trash_Name
                               Settings_About_Module_Trash_Description Settings_About_Module_Settings_Name
-                              Settings_About_Module_Settings_Description Settings_Nav_About">
+                              Settings_About_Module_Settings_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="12">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2473,7 +2383,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_About_Technology_Title Settings_About_Technology_Description Settings_Nav_About">
+                ResourceKeys="Settings_Nav_About Settings_About_Technology_Title Settings_About_Technology_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2487,7 +2397,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_About_Privacy_Title Settings_About_Privacy_Description Settings_Nav_About">
+                ResourceKeys="Settings_Nav_About Settings_About_Privacy_Title Settings_About_Privacy_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2506,7 +2416,7 @@
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_About_Language_Title Settings_About_Language_Description Settings_Nav_About">
+                ResourceKeys="Settings_Nav_About Settings_About_Language_Title Settings_About_Language_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2524,19 +2434,10 @@
       </StackPanel>
 
       <!-- ===================== Dashboard: lista + vista previa en vivo, a todo lo ancho ===================== -->
-      <controls:SettingsSearchOption
-          ResourceKeys="Settings_Nav_Dashboard Settings_Dashboard_Title"
-          MatchDescendants="True"
-          Section="Dashboard"
-          AdditionalText="{Binding DashboardSearchText}">
-        <StackPanel Spacing="20" MaxWidth="1080" HorizontalAlignment="Left">
-          <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Settings_Dashboard_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Tr Settings_Dashboard_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-          </StackPanel>
-
-          <!-- ===== Organización: qué plantilla de rejilla reparte las secciones visibles ===== -->
-          <controls:SettingsSearchOption
+      <controls:SettingsSearchOption Section="Dashboard" MatchDescendants="True" ResourceKeys="Settings_Nav_Dashboard" AdditionalText="{Binding DashboardSearchText}">
+          <StackPanel Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Dashboard, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption
               ResourceKeys="Settings_Nav_Dashboard Settings_Dashboard_Layout_Title"
               MatchDescendants="True"
               AdditionalText="{Binding DashboardSearchText}">
@@ -2618,14 +2519,8 @@
        </Border>
           </controls:SettingsSearchOption>
 
-          <!-- ===== Editor de rejilla (solo en la organización "Personalizada") =====
-               Sustituye al antiguo configurador de "número de columnas": el modo Personalizado ya no
-               reparte las secciones en un UniformGrid por orden de lista, sino que cada una tiene su
-               celda y su tamaño, colocados a mano aquí. Toda la interacción vive en el control
-               (views/settings/DashboardGridEditor.axaml) y las reglas en SettingsViewModel.DashboardGrid.cs. -->
-          <controls:SettingsSearchOption
-              ResourceKeys="Settings_Dashboard_GridConfig_Title Settings_Dashboard_GridConfig_Subtitle
-                            Settings_Nav_Dashboard">
+            <controls:SettingsSearchOption
+              ResourceKeys="Settings_Nav_Dashboard Settings_Dashboard_GridConfig_Title Settings_Dashboard_GridConfig_Subtitle">
             <Border Classes="card" Padding="18"
                     IsVisible="{Binding IsCustomLayout}">
               <StackPanel Spacing="14">
@@ -2641,11 +2536,7 @@
        </Border>
           </controls:SettingsSearchOption>
 
-          <!-- Riel de control angosto (9*) + lienzo de vista previa dominante (16*) — proporción fluida en
-               vez de un ancho fijo en píxeles, para que ambas columnas encojan juntas en vez de desbordar
-               en ventanas cerca del MinWidth de MainWindow (980px) — mismo motivo por el que el resto de
-               columnas de este archivo usan '*' en vez de números fijos. -->
-          <controls:SettingsSearchOption
+            <controls:SettingsSearchOption
               ResourceKeys="Settings_Nav_Dashboard Settings_Dashboard_SectionList_Title"
               MatchDescendants="True"
               AdditionalText="{Binding DashboardSearchText}">
@@ -2965,10 +2856,32 @@
 
             </Grid>
           </controls:SettingsSearchOption>
-        </StackPanel>
-      </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Dashboard Settings_General_Dashboard_Title
+                              Settings_General_Dashboard_ShowScrollbar_Label Settings_General_Dashboard_ShowScrollbar_Description">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="ViewDashboardOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_General_Dashboard_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Description}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding DashboardShowScrollbar}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_General_Dashboard_ShowScrollbar_Label}" />
+                  </Grid>
+                </StackPanel>
+         </Border>
+            </controls:SettingsSearchOption>
+          </StackPanel>
+        </controls:SettingsSearchOption>
       </StackPanel>
     </ScrollViewer>
+    </Grid>
 
     <!-- ===================== Diálogo: restaurar copia de seguridad ===================== -->
     <controls:ModalOverlayHost IsOpen="{Binding PendingRestoreBackup}">
