@@ -1111,9 +1111,15 @@
            iguales como columnas haya, así que todas miden lo mismo y la fila llega de borde a borde.
 
            El hueco de 16px entre columnas es Margin de la propia columna (UniformGrid no tiene Spacing):
-           8px a cada lado, y el Margin negativo de -8 del panel se come los dos medios huecos de los
-           extremos, de forma que la primera y la última columna quedan alineadas al píxel con la barra de
-           herramientas de arriba en vez de meterse 8px hacia dentro.
+           8px a cada lado, y un Margin negativo de -8 se come los dos medios huecos de los extremos, de
+           forma que la primera y la última columna quedan alineadas al píxel con la barra de herramientas
+           de arriba en vez de meterse 8px hacia dentro.
+
+           Ese -8 va en el ScrollViewer, no en el ItemsControl de dentro: el visor recorta a sus propios
+           límites, y con el margen negativo en su contenido el borde derecho de la última columna caía
+           justo en la línea de recorte. Con escalado fraccional (125%, 150%…) el redondeo de la maqueta
+           lo empujaba un píxel fuera y la columna se quedaba sin borde derecho. Ensanchando el visor, el
+           recorte queda 8px más allá del borde, en el hueco transparente.
 
            Ya no hay una tira fantasma con un "+" al final de la fila: duplicaba el botón "NUEVA COLUMNA"
            del encabezado —que además va rotulado y no se va con el scroll— y dejaba una caja vacía
@@ -1130,14 +1136,14 @@
            Solo una de las dos franjas de abajo está visible según Ajustes › Apariencia › Tablero Kanban
            (BoardOrientation) — mismo patrón de "ambas viven en el mismo Grid.Row, mutuamente excluyentes
            por IsVisible" que Board/TaskManagement más abajo en este mismo archivo. -->
-      <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Disabled"
+      <ScrollViewer Grid.Row="4" Margin="-8,0" VerticalScrollBarVisibility="Disabled"
                     HorizontalScrollBarVisibility="{Binding BoardHorizontalScrollBarVisibility}"
                     IsVisible="{Binding BoardOrientation, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Vertical}">
         <!-- x:Name: región exportable a PNG/PDF (T8). Se rasteriza el contenido del ScrollViewer, no el
              ScrollViewer, porque el contenido está dispuesto a su ancho completo y es el visor quien lo
              recorta — así la imagen sale con todas las columnas aunque no quepan en pantalla. Ver
              Services.Export.ViewExportService.FindExportRoot. -->
-        <ItemsControl x:Name="KanbanExportRootVertical" ItemsSource="{Binding Columns}" Margin="-8,0" HorizontalAlignment="Stretch">
+        <ItemsControl x:Name="KanbanExportRootVertical" ItemsSource="{Binding Columns}" HorizontalAlignment="Stretch">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <UniformGrid Rows="1" />

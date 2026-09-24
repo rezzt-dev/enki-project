@@ -132,6 +132,11 @@ public partial class CalendarView : UserControl
             e.Handled = true;
             return;
         }
+        if (vm.IsTodayPopoverOpen)
+        {
+            if (e.Key == Key.Escape) { vm.CloseTodayPopoverCommand.Execute(null); e.Handled = true; }
+            return;
+        }
         if (vm.ItemPendingDelete is not null)
         {
             if (e.Key == Key.Escape) { vm.CancelDeleteItemCommand.Execute(null); e.Handled = true; }

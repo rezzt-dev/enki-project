@@ -658,8 +658,9 @@ public partial class EditorView : UserControl, IDisposable
         }
 
         _boundVm.SlashCommands.Filter = context.Value.Filter;
-        if (!_boundVm.SlashCommands.IsOpen) _boundVm.SlashCommands.IsOpen = true;
+        // Posicionar antes de abrir: si no, el popup se muestra un instante en su offset anterior.
         PositionSlashCommandsPopup();
+        if (!_boundVm.SlashCommands.IsOpen) _boundVm.SlashCommands.IsOpen = true;
     }
 
     private void PositionSlashCommandsPopup() => PositionPopup(SlashCommandsPopup);
@@ -732,8 +733,11 @@ public partial class EditorView : UserControl, IDisposable
         if (popup is null) return;
         try
         {
+            // CalculateCaretRectangle devuelve coordenadas del documento completo, no de la zona visible:
+            // hay que restar el scroll del TextView o, en una nota desplazada, el popup acaba abajo del todo.
+            var textView = Editor.TextArea.TextView;
             var rect = Editor.TextArea.Caret.CalculateCaretRectangle();
-            var point = Editor.TextArea.TextView.TranslatePoint(rect.BottomLeft, EditorBorder);
+            var point = textView.TranslatePoint(rect.BottomLeft - textView.ScrollOffset, EditorBorder);
             if (point is null) return;
             popup.HorizontalOffset = Math.Max(8, point.Value.X);
             popup.VerticalOffset = Math.Max(8, point.Value.Y + 4);

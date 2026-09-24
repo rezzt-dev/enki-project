@@ -349,6 +349,56 @@ public class CalendarViewModelTests
         }
     }
 
+    // ===================== Popup del botón "Hoy" =====================
+
+    [Fact]
+    public void OpenTodayPopover_ListsPendingFirstThenCompleted_EachAlphabetically()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanbanService, _, reminderService) = CreateViewModel(out dir);
+            var todayAtNoonUtc = DateTime.Today.AddHours(12).ToUniversalTime();
+            var column = kanbanService.Board.Columns[0];
+            column.Cards.Clear();
+            column.Cards.Add(new KanbanCard { Id = "card-1", Title = "zeta", DueDateUtc = todayAtNoonUtc });
+            kanbanService.Save();
+            reminderService.Create("Beta", string.Empty, todayAtNoonUtc, "Bell");
+            var alfa = reminderService.Create("Alfa", string.Empty, todayAtNoonUtc, "Bell");
+            var gamma = reminderService.Create("Gamma", string.Empty, todayAtNoonUtc, "Bell");
+            reminderService.Create("Mañana", string.Empty, todayAtNoonUtc.AddDays(1), "Bell");
+            reminderService.ToggleCompleted(alfa.Id);
+            reminderService.ToggleCompleted(gamma.Id);
+            // El resumen del día ignora "ocultar completadas": lo hecho también se lista, abajo.
+            vm.HideCompletedItems = true;
+
+            // Abrir el resumen no navega: la vista de detrás se queda donde estaba.
+            var reference = DateTime.Today.AddMonths(-3);
+            vm.ReferenceDate = reference;
+            vm.OpenTodayPopoverCommand.Execute(null);
+
+            Assert.True(vm.IsTodayPopoverOpen);
+            Assert.Equal(reference, vm.ReferenceDate);
+            Assert.Equal(["Beta", "zeta"], vm.TodayPendingItems.Select(i => i.Title));
+            Assert.Equal(["Alfa", "Gamma"], vm.TodayCompletedItems.Select(i => i.Title));
+            Assert.False(vm.HasNoTodayItems);
+
+            // Completar desde el propio resumen mueve el item de grupo sin cerrar el diálogo.
+            vm.ToggleCompleteItemCommand.Execute(vm.TodayPendingItems.Single(i => i.Title == "Beta"));
+            Assert.Equal(["zeta"], vm.TodayPendingItems.Select(i => i.Title));
+            Assert.Equal(["Alfa", "Beta", "Gamma"], vm.TodayCompletedItems.Select(i => i.Title));
+            Assert.True(vm.IsTodayPopoverOpen);
+
+            vm.ShowTodayInCalendarCommand.Execute(null);
+            Assert.False(vm.IsTodayPopoverOpen);
+            Assert.Equal(DateTime.Today, vm.ReferenceDate);
+        }
+        finally
+        {
+            DeleteDirectory(dir);
+        }
+    }
+
     [Fact]
     public void Layers_RenamingAKanbanColumnUpdatesItsRowLabelInPlace()
     {

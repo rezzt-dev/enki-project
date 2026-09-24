@@ -12,6 +12,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 #### ANADIDO
 - opcion `ajustes > apariencia > barra de titulo > mostrar controles de ventana`, activada por defecto y guardada junto con las preferencias del vault: permite ocultar al instante los botones propios de minimizar, maximizar y cerrar; al hacerlo, buscar, notificaciones, recordatorios e inbox ocupan el extremo derecho conservando su orden, separacion y margen exterior. El control solo se habilita para la barra propia de Enki —la barra nativa conserva los botones del sistema operativo— y esta traducido a todos los idiomas soportados.
 
+#### ANADIDO
+- popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
+
 #### CAMBIOS
 - reorganizar ajustes en cuatro grupos y quince secciones para que cada preferencia se pueda localizar y abrir sin depender del buscador; separar vault, copias de seguridad, navegacion, kanban y mantenimiento en destinos propios, mantener visibles el titulo y la descripcion de la seccion activa y actualizar la navegacion al cambiar de idioma.
 - ampliar el ancho util de los formularios de ajustes y separar las columnas de nombre y descripcion de los modulos para evitar que sus textos se solapen.
@@ -19,11 +22,18 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### CORREGIDO
 - contar en el resumen de almacenamiento del dashboard todas las notas de la raiz y de las subcarpetas del vault, ademas de todas las sesiones; el recuento recursivo evita leer el contenido de las notas y excluye las carpetas ocultas.
+- exportar a png/pdf el tablero kanban y el calendario sin recortar lo que quedaba oculto por sus `ScrollViewer` internos: tarjetas de una columna que no caben en alto, franjas del kanban horizontal, filas de la cuadricula del mes y horas de semana/dia; `FullSizeLayout` maqueta la region a su tamano completo mientras dura el render y la restaura despues.
+- exportar a 2x sin ampliar ni recortar la imagen: el contenido rasterizado se pegaba con su tamano logico en vez de en pixeles del bitmap, asi que a 2x solo se copiaba el cuadrante superior izquierdo estirado al doble.
+- borde derecho de la ultima columna del tablero kanban vertical perdiendose con escalado fraccional (125%, 150%...); el margen negativo que alinea las columnas con la barra de herramientas ahora vive en el `ScrollViewer`, no en su contenido.
+- popup de comandos `/` del editor apareciendo un instante en su posicion anterior antes de recolocarse, y mal posicionado en una nota con scroll porque `CalculateCaretRectangle` no descontaba el desplazamiento del `TextView`.
 
 ### ENGLISH
 
 #### ADDED
 - a `settings > appearance > title bar > show window controls` option, enabled by default and stored with the vault preferences: it can instantly hide enki's own minimise, maximise and close buttons; search, notifications, reminders and inbox then move to the far right while preserving their order, spacing and outer margin. The toggle is only enabled for Enki's custom title bar —the native title bar keeps the operating system controls— and is translated into every supported language.
+
+#### ADDED
+- calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
 
 #### CHANGED
 - reorganise settings into four groups and fifteen sections so every preference can be found and opened without relying on search; give vault, backups, navigation, kanban and maintenance their own destinations, keep the active section's title and description visible, and refresh navigation when the language changes.
@@ -32,6 +42,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### FIXED
 - count every note at the vault root and in its subfolders, plus every session, in the dashboard storage summary; the recursive count avoids reading note contents and excludes hidden folders.
+- export the kanban board and the calendar to png/pdf without clipping what their internal `ScrollViewer`s hid: cards that overflow a column's height, horizontal kanban lanes, month grid rows and week/day hour rows; `FullSizeLayout` lays out the region at its full size for the duration of the render and restores it afterwards.
+- export at 2x without enlarging or cropping the image: the rendered content was pasted using its logical size instead of the bitmap's pixel size, so at 2x only the top-left quadrant got copied and stretched.
+- vertical kanban board losing its last column's right border under fractional scaling (125%, 150%...); the negative margin that aligns the columns with the toolbar now lives on the `ScrollViewer`, not its content.
+- editor's `/` command popup flashing at its previous position before repositioning, and misplaced in a scrolled note because `CalculateCaretRectangle` didn't subtract the `TextView`'s scroll offset.
 
 ## [0.2.0] - 2026-09-23
 

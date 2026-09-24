@@ -274,6 +274,18 @@
   <data name="Calendar_Toolbar_TodayButton" xml:space="preserve">
     <value>Heute</value>
   </data>
+  <data name="Calendar_TodayPopover_Pending" xml:space="preserve">
+    <value>Offen</value>
+  </data>
+  <data name="Calendar_TodayPopover_Completed" xml:space="preserve">
+    <value>Erledigt</value>
+  </data>
+  <data name="Calendar_TodayPopover_Empty" xml:space="preserve">
+    <value>Für heute ist nichts geplant.</value>
+  </data>
+  <data name="Calendar_TodayPopover_ShowInCalendar" xml:space="preserve">
+    <value>Im Kalender anzeigen</value>
+  </data>
   <data name="Calendar_Toolbar_ToggleSidebarTooltip" xml:space="preserve">
     <value>Seitenleiste umschalten</value>
   </data>

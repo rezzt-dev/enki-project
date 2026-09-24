@@ -33,6 +33,7 @@ dos opciones puras.
 | --- | --- |
 | `ExportSnapshot.cs` | `ExportFormat` (Png/Pdf), la lámina ya rasterizada (PNG codificado + RGB en crudo, de una sola pasada) y `ExportRenderException`, el fallo "ni siquiera se pudo rasterizar" con su texto ya localizable. |
 | `VisualSnapshotRenderer.cs` | Rasteriza un control a PNG y a RGB, con cabecera (título + subtítulo) y márgenes. |
+| `FullSizeLayout.cs` | Maqueta la región a su tamaño completo mientras dura el render (sin recortes de los `ScrollViewer` internos) y la restaura después. |
 | `PdfImageWriter.cs` | PDF 1.7 con tabla `xref` clásica, una hoja por imagen, `/DeviceRGB` de 8 bits con `/FlateDecode`. |
 | `NotePageComposer.cs` | Compone fuera del árbol visual la hoja A4 de una nota a partir de su Markdown, y la pagina. |
 | `ViewExportService.cs` | El flujo completo: localizar la región, rasterizar, diálogo de guardado, escritura atómica y aviso. |
@@ -40,13 +41,27 @@ dos opciones puras.
 ### Por qué el tablero entero y no solo lo que se ve
 
 El criterio de aceptación pide "incluir todas las columnas y tarjetas visibles del tablero, aunque excedan
-el área en pantalla". Dos detalles lo consiguen:
+el área en pantalla". Tres detalles lo consiguen:
 
 1. Se rasteriza el **contenido** del `ScrollViewer`, no el `ScrollViewer`: el contenido está dispuesto a su
    tamaño completo y es el visor quien lo recorta.
-2. Antes de rasterizar se lleva el `ScrollViewer` al origen y se fuerza una pasada de maquetado, porque el
-   desplazamiento vive en la posición de *arrange* del contenido y saldría en la imagen como un recorte. El
-   desplazamiento se restaura siempre, incluso si el render falla.
+2. Los `ScrollViewer` de **dentro** de la región también recortan: las tarjetas de cada columna del Kanban
+   vertical, las franjas del Kanban horizontal, la cuadrícula del mes y la rejilla de horas de Semana/Día.
+   Mientras dura el render, `FullSizeLayout` mide la región con alto ilimitado y la dispone a
+   `max(lo que pide, lo que ocupaba)`. El ancho solo se libera si algún visor sigue desbordando en
+   horizontal (las franjas del Kanban horizontal): liberarlo siempre haría que el tablero vertical, que
+   reparte el ancho entre columnas, pidiera para cada columna el ancho de su título más largo.
+3. Todos los visores (el que contiene la región y los de dentro) se llevan al origen antes de maquetar,
+   porque un desplazamiento vivo saldría en la imagen como un recorte. Al terminar se invalida la región
+   y su padre, se fuerza una pasada de maquetado y se restauran los desplazamientos, incluso si el render
+   falla.
+
+### El contenido se pega en la lámina en píxeles
+
+El contenido se rasteriza en un bitmap propio y luego se pega bajo la cabecera. `DrawImage` recibe el
+rectángulo de origen **en píxeles del bitmap** (`PixelSize`), no su tamaño lógico: con la sobrecarga corta,
+Skia toma `Bitmap.Size` (lógico) como si fueran píxeles, así que a 2× solo copiaba el cuadrante superior
+izquierdo y lo estiraba al doble, y la lámina salía ampliada y recortada.
 
 ### Cómo encuentra el viewmodel su región sin tocar ningún control
 
@@ -110,7 +125,9 @@ Tras exportar se revela el archivo en el explorador del sistema (`FolderOpener.R
   hoja con más resolución y que una hoja gigante se recorte conservando la proporción.
 - `tests/enki.UITests/ViewExportUiTests.cs` — con las vistas reales maquetadas: que la región exportable
   exista con el nombre que busca el servicio, que esté dispuesta a su tamaño completo dentro de un
-  `ScrollViewer`, que la del calendario no incluya la barra de navegación, y que la hoja de una nota se
+  `ScrollViewer`, que la del calendario no incluya la barra de navegación, que `FullSizeLayout` haga
+  crecer el tablero hasta su columna más larga y la vista Semana hasta las 24 horas (y que ambas vuelvan
+  a su tamaño después), y que la hoja de una nota se
   componga y se pagine (incluida la nota vacía, que sigue dando una página: un PDF sin hojas no es válido).
 
 No se rasteriza nada en los tests: la plataforma headless de Avalonia dibuja en el vacío. Que la imagen se

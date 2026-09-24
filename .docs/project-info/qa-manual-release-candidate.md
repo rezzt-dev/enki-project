@@ -442,9 +442,15 @@ exportable existe y está maquetada, pero que la imagen se vea bien solo se ve m
 
 - [ ] Kanban con más columnas de las que caben en pantalla: el PNG incluye **todas**, no solo las visibles,
       y las tarjetas se leen sin recortes.
-- [ ] Lo mismo con el tablero en disposición horizontal (Ajustes › Apariencia).
+- [ ] Kanban con una columna con más tarjetas de las que caben en alto: salen **todas** las tarjetas, no
+      solo las que se ven sin desplazar la columna.
+- [ ] Lo mismo con el tablero en disposición horizontal (Ajustes › Apariencia): cada franja sale entera.
 - [ ] Calendario en Mes, Semana, Día y Agenda: la imagen lleva la cabecera de días de la semana y **no**
       lleva la barra de navegación (◀ ▶ Hoy, selector de vista).
+- [ ] Mes con las seis filas y Semana/Día con las 24 horas, aunque en pantalla haga falta desplazarse.
+- [ ] Exportando a 1× y a 2×, la imagen tiene la misma composición que la pantalla (no sale ampliada ni
+      cortada por la derecha o por abajo); a 2× solo gana nitidez. Tras exportar, la vista sigue con el
+      mismo desplazamiento que tenía.
 - [ ] El PDF abre correctamente en el visor del sistema, en Evince/Preview/Adobe y en un navegador.
 - [ ] Una nota larga da un PDF de varias páginas A4, con encabezados, listas, citas y bloques de código
       reconocibles.

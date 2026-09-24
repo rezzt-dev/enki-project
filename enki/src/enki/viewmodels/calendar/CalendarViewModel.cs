@@ -104,6 +104,28 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// of its own.</summary>
     public bool HasUnscheduledItems => UnscheduledItems.Count > 0;
 
+    /// <summary>Popup del botón "Hoy": todo lo que cae hoy, pendiente arriba y completado abajo, cada
+    /// grupo en orden alfabético. Ignora a propósito capas, filtros secundarios y "ocultar completadas"
+    /// — es un resumen del día completo, no otra vista de la rejilla filtrada. Se reconstruye en
+    /// <see cref="Rebuild"/>, así que marcar un item como hecho desde el propio popup lo mueve de grupo.</summary>
+    public ObservableCollection<CalendarItemViewModel> TodayPendingItems { get; } = [];
+
+    /// <summary>Ver <see cref="TodayPendingItems"/>.</summary>
+    public ObservableCollection<CalendarItemViewModel> TodayCompletedItems { get; } = [];
+
+    public bool HasTodayPendingItems => TodayPendingItems.Count > 0;
+    public bool HasTodayCompletedItems => TodayCompletedItems.Count > 0;
+    public bool HasNoTodayItems => !HasTodayPendingItems && !HasTodayCompletedItems;
+    public int TodayPendingCount => TodayPendingItems.Count;
+    public int TodayCompletedCount => TodayCompletedItems.Count;
+
+    /// <summary>Cabecera del popup de "Hoy" — fecha larga en la cultura activa.</summary>
+    [ObservableProperty]
+    private string _todayPopoverHeaderLabel = string.Empty;
+
+    [ObservableProperty]
+    private bool _isTodayPopoverOpen;
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -521,6 +543,36 @@ public sealed partial class CalendarViewModel : ViewModelBase
         Rebuild();
     }
 
+    /// <summary>Botón "Hoy" de la barra: abre el resumen del día (<see cref="TodayPendingItems"/>/
+    /// <see cref="TodayCompletedItems"/>) como diálogo modal. No navega ni reconstruye la rejilla — solo
+    /// refresca las dos listas del día, así abrirlo es instantáneo y la vista de detrás no parpadea.</summary>
+    [RelayCommand]
+    private void OpenTodayPopover()
+    {
+        RebuildToday();
+        IsTodayPopoverOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseTodayPopover() => IsTodayPopoverOpen = false;
+
+    /// <summary>"Ver en el calendario" del pie del resumen: cierra el diálogo y lleva la vista activa a hoy.</summary>
+    [RelayCommand]
+    private void ShowTodayInCalendar()
+    {
+        IsTodayPopoverOpen = false;
+        GoToToday();
+    }
+
+    /// <summary>Pulsar un item del resumen abre su editor real — el diálogo se cierra antes, porque el
+    /// editor vive en otra pantalla y el overlay modal taparía la ventana entera.</summary>
+    [RelayCommand]
+    private void OpenTodayItem(CalendarItemViewModel item)
+    {
+        IsTodayPopoverOpen = false;
+        _openItemEditor(item);
+    }
+
     [RelayCommand]
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
 
@@ -558,6 +610,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         RebuildLayers();
         RebuildTagFilters();
         RebuildUnscheduled();
+        RebuildToday();
 
         switch (ActiveView)
         {
@@ -591,6 +644,30 @@ public sealed partial class CalendarViewModel : ViewModelBase
             .Where(i => CalendarItemFilter.MatchesSecondaryFilters(i, priorityFilters, tagFilters, HideCompletedItems, HideGhostOccurrences))
             .Select(i => i with { IsSearchMatch = CalendarItemFilter.MatchesSearch(i, SearchText) && !string.IsNullOrWhiteSpace(SearchText) })
             .ToList();
+    }
+
+    private void RebuildToday()
+    {
+        var today = DateTime.Today;
+        var items = _aggregationService.BuildItems(today.ToUniversalTime(), today.AddDays(1).ToUniversalTime(),
+                includeGhostOccurrences: !HideGhostOccurrences)
+            .OrderBy(i => i.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        TodayPendingItems.Clear();
+        TodayCompletedItems.Clear();
+        foreach (var item in items)
+            (item.IsCompleted ? TodayCompletedItems : TodayPendingItems).Add(item);
+
+        OnPropertyChanged(nameof(HasTodayPendingItems));
+        OnPropertyChanged(nameof(HasTodayCompletedItems));
+        OnPropertyChanged(nameof(HasNoTodayItems));
+        var longDate = today.ToString("D", CultureInfo.CurrentCulture);
+        TodayPopoverHeaderLabel = longDate.Length > 0
+            ? char.ToUpper(longDate[0], CultureInfo.CurrentCulture) + longDate[1..]
+            : longDate;
+        OnPropertyChanged(nameof(TodayPendingCount));
+        OnPropertyChanged(nameof(TodayCompletedCount));
     }
 
     private void RebuildMonth()
