@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using enki.Models;
 using enki.Services;
 using enki.ViewModels;
@@ -30,7 +31,7 @@ public class DashboardViewModelTests : IDisposable
     }
 
     private sealed record Harness(
-        DashboardViewModel Dashboard, VaultService Vault, KanbanService Kanban,
+        DashboardViewModel Dashboard, VaultService Vault, SessionService Sessions, KanbanService Kanban,
         ReminderService Reminders, NotificationService Notifications, VaultSettingsService VaultSettings,
         HabitService Habits);
 
@@ -57,7 +58,7 @@ public class DashboardViewModelTests : IDisposable
             openReminders: () => { }, openNotifications: () => { }, openSettings: () => { }, navigateToHabits: () => { },
             showScrollbar: true, vaultSettingsService);
 
-        return new Harness(dashboard, vault, kanbanService, reminderService, notificationService, vaultSettingsService, habitService);
+        return new Harness(dashboard, vault, sessionService, kanbanService, reminderService, notificationService, vaultSettingsService, habitService);
     }
 
     [Fact]
@@ -81,6 +82,29 @@ public class DashboardViewModelTests : IDisposable
 
         Assert.Equal(2, h.Dashboard.TotalNoteCount);
         Assert.True(h.Dashboard.HasFeaturedNote);
+    }
+
+    [Fact]
+    public void Reload_CountsNotesInVaultFoldersAndEverySession()
+    {
+        var h = CreateViewModel();
+        File.WriteAllText(Path.Combine(_vaultPath, "Raíz.md"), "# Raíz");
+        var vaultFolder = Directory.CreateDirectory(Path.Combine(_vaultPath, "Carpeta"));
+        File.WriteAllText(Path.Combine(vaultFolder.FullName, "Anidada.md"), "# Anidada");
+
+        var firstSession = h.Sessions.Create("Primera");
+        File.WriteAllText(Path.Combine(firstSession.RootPath, "Uno.md"), "# Uno");
+        var sessionFolder = Directory.CreateDirectory(Path.Combine(firstSession.RootPath, "Subcarpeta"));
+        File.WriteAllText(Path.Combine(sessionFolder.FullName, "Dos.md"), "# Dos");
+        var secondSession = h.Sessions.Create("Segunda");
+        File.WriteAllText(Path.Combine(secondSession.RootPath, "Tres.md"), "# Tres");
+
+        h.Dashboard.Reload();
+
+        Assert.Equal(5, h.Dashboard.TotalNoteCount);
+        Assert.Equal(2, h.Dashboard.SessionCount);
+        Assert.Equal("Raíz", h.Dashboard.FeaturedNote?.Title);
+        Assert.True(SpinWait.SpinUntil(() => !h.Dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
     }
 
     [Fact]

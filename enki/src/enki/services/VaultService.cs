@@ -565,6 +565,17 @@ public sealed partial class VaultService
             .ToList();
     }
 
+    /// <summary>Cuenta las notas visibles bajo una carpeta sin leer su contenido. Comparte las reglas de
+    /// exclusión de <see cref="GetAllNotesRecursive"/>; al aplicarse a la raíz del vault no incluye las
+    /// sesiones ni la papelera, que viven en carpetas ocultas.</summary>
+    public static int CountNotesRecursive(string root)
+    {
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return 0;
+
+        return ReadableMarkdownFiles(root, SearchOption.AllDirectories)
+            .Count(info => !IsUnderHiddenDirectory(root, info.FullName));
+    }
+
     /// <summary>Same file set as <see cref="GetAllNotesRecursive"/>, but also hands back each note's raw
     /// content alongside its metadata — callers that need both (session graphs need title for the node
     /// label and content to extract <c>[[wikilinks]]</c>, the backlinks panel needs content to find

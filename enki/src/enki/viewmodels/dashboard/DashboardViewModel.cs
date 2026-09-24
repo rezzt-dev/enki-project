@@ -412,9 +412,11 @@ public sealed partial class DashboardViewModel : ViewModelBase
     {
         var notes = _vaultService.GetNotes();
         VaultPath = _vaultService.VaultPath;
-        SessionCount = _sessionService.List().Count;
+        var sessions = _sessionService.List();
+        SessionCount = sessions.Count;
         RefreshVaultSizeLabel();
-        TotalNoteCount = notes.Count;
+        TotalNoteCount = VaultService.CountNotesRecursive(_vaultService.VaultPath)
+            + sessions.Sum(session => session.NoteCount);
 
         var recentNotes = notes.Take(6).Select(n => new NoteCardViewModel(n)).ToList();
         FeaturedNote = recentNotes.Count > 0 ? recentNotes[0] : null;
