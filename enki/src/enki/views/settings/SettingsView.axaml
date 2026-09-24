@@ -127,11 +127,11 @@
         </StackPanel>
       </Border>
     <ScrollViewer x:Name="SettingsContentScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-      <!-- Durante una búsqueda se apilan las secciones coincidentes. Dashboard conserva
-           su ancho de vista previa; los demás formularios mantienen el límite de 640px. -->
+      <!-- Durante una búsqueda se apilan las secciones coincidentes.
+           Los formularios aprovechan todo el ancho disponible del panel derecho. -->
       <StackPanel x:Name="SettingsContent" Margin="30,24,30,30" Spacing="20">
       <TextBlock x:Name="SearchNoResults" Text="{loc:Tr Settings_Search_NoResults}" Classes="muted" TextWrapping="Wrap" IsVisible="False" />
-      <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
+      <StackPanel Spacing="20" HorizontalAlignment="Stretch">
 
         <controls:SettingsSearchOption Section="Navigation" MatchDescendants="True" ResourceKeys="Settings_Nav_Navigation" AdditionalText="{Binding SidebarSearchText}">
           <StackPanel Spacing="20">
@@ -2350,7 +2350,7 @@
                     <TextBlock Text="{loc:Tr Settings_About_Modules_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
 
-                  <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="9">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="24" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="9">
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr Settings_About_Module_Dashboard_Name}" FontSize="12.5" FontWeight="Bold" />
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_About_Module_Dashboard_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
 
