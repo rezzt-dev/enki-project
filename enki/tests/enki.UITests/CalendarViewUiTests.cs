@@ -126,6 +126,52 @@ public class CalendarViewUiTests : IDisposable
     }
 
     [Fact]
+    public void LayerColorPopover_ToggleInitializesDraft_AndPickerAndHexStayInSync()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            view.FindControl<ToggleButton>("LayersSectionToggle")!.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var row = vm.Layers.First(l => l.CanEditColor);
+            var toggle = view.GetVisualDescendants().OfType<ToggleButton>()
+                .Single(b => b.Name == "LayerColorToggle" && ReferenceEquals(b.DataContext, row));
+            toggle.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+
+            var popup = view.GetLogicalDescendants().OfType<Popup>()
+                .Single(p => ReferenceEquals(p.DataContext, row));
+            var picker = popup.Child!.GetVisualDescendants().OfType<enki.Controls.LocalizedColorPicker>().Single();
+            var input = popup.Child!.GetVisualDescendants().OfType<TextBox>().Single();
+            var original = row.ColorHex;
+            Assert.Equal(original, input.Text);
+            Assert.Equal(original, HexColorUtility.ColorToHex(picker.Color));
+
+            picker.Color = Avalonia.Media.Color.Parse("#123ABC");
+            Assert.Equal("#123ABC", input.Text);
+            Assert.Equal(original, row.ColorHex);
+            Assert.True(popup.IsOpen);
+
+            input.Text = "#456789";
+            Assert.Equal("#456789", HexColorUtility.ColorToHex(picker.Color));
+            row.ApplyDraftColorCommand.Execute(null);
+            Assert.Equal("#456789", row.ColorHex);
+            Assert.False(row.IsColorPickerOpen);
+
+            toggle.IsChecked = true;
+            Assert.Equal("#456789", row.ColorDraftHex);
+            input.Text = "#invalid";
+            row.ApplyDraftColorCommand.Execute(null);
+            Assert.Equal("#456789", row.ColorHex);
+            Assert.Equal("#456789", input.Text);
+            Assert.True(row.IsColorPickerOpen);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
     public void Opening_DefaultsToMonthView_AndRendersOneCellPerDay()
     {
         var (view, viewModel, window) = CreateView();

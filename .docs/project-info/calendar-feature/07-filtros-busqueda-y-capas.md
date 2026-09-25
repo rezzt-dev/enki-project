@@ -76,10 +76,12 @@ la cabecera de un grupo: debajo cuelga una sub-fila indentada por columna, **sol
 propio**. El filtrado no cambia — las sub-filas existen para poder ver y tocar su color.
 
 El punto de color de una fila editable es un botón: abre un emergente anclado (`Border.calendar-popover`)
-con una rejilla de los colores sugeridos, un campo hex libre y, si esa capa tiene color puesto a mano, un
-botón "automático" para devolverla al reparto. Un clic en un color lo aplica y cierra; no hay "guardar",
-porque es un ajuste de una sola propiedad reversible desde el mismo sitio. El emergente es anclado y no
-modal a propósito: el usuario quiere ver el calendario detrás mientras compara colores.
+de 340 px de ancho, con títulos que admiten varias líneas para evitar cortes. Incluye una rejilla de
+colores sugeridos, un selector visual y un campo hexadecimal sincronizados. Al abrirlo se carga el color
+actual. Las muestras de la rejilla se aplican con un clic; el color personalizado se confirma con
+"Guardar" o Intro. Un hexadecimal inválido no se guarda y recupera el color actual. Si la capa tiene
+color puesto a mano, "automático" permite devolverla al reparto. El emergente es anclado y no modal
+a propósito: el usuario puede seguir viendo el calendario detrás.
 
 `CalendarViewModel.RebuildLayers` actualiza las filas **en sitio** cuando la estructura no cambia (un
 renombrado, un color nuevo) y solo reconstruye la colección cuando cambia el conjunto de filas. Si

@@ -397,20 +397,21 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto,*" Margin="36,30,36,26">
+  <Grid Margin="36,30,36,26">
 
-    <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,22">
-      <TextBlock Text="{loc:Tr Calendar_PageEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-      <TextBlock Text="{loc:Tr Calendar_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
-      <TextBlock Text="{loc:Tr Calendar_PageSubtitle}"
-                 Classes="page-subtitle" />
-    </StackPanel>
+    <!-- La cabecera ocupa solo la columna lateral; el calendario aprovecha toda la altura. -->
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
 
-    <!-- Sidebar (mini-calendario) + contenido — docs/calendar-feature/04-vistas-y-navegacion.md §1. -->
-    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+      <StackPanel Grid.Row="0" Grid.Column="0" Width="320" Spacing="6" Margin="0,0,0,22"
+                  IsVisible="{Binding !IsSidebarCollapsed}">
+        <TextBlock Text="{loc:Tr Calendar_PageEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+        <TextBlock Text="{loc:Tr Calendar_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
+        <TextBlock Text="{loc:Tr Calendar_PageSubtitle}"
+                   Classes="page-subtitle" />
+      </StackPanel>
 
       <!-- ===================== Sidebar: mini-calendario (§7) ===================== -->
-      <Border Grid.Column="0" Classes="calendar-sidebar" Width="320" VerticalAlignment="Stretch"
+      <Border Grid.Row="1" Grid.Column="0" Classes="calendar-sidebar" Width="320" VerticalAlignment="Stretch"
               IsVisible="{Binding !IsSidebarCollapsed}">
         <ScrollViewer VerticalScrollBarVisibility="{Binding SidebarScrollBarVisibility}" Margin="0,0,-14,0" Padding="0,0,14,0">
         <StackPanel Spacing="22">
@@ -535,13 +536,13 @@
                                HorizontalOffset="8" IsLightDismissEnabled="True"
                                OverlayInputPassThroughElement="{Binding #LayerColorToggle}"
                                IsOpen="{Binding IsColorPickerOpen, Mode=TwoWay}">
-                          <Border Classes="calendar-popover" Width="198" Padding="14">
+                          <Border Classes="calendar-popover" Width="340" Padding="18">
                             <StackPanel Spacing="10">
                               <StackPanel Spacing="3">
                                 <TextBlock Text="{loc:Tr Calendar_Layers_ColorTitle, Converter={StaticResource UpperCaseConverter}}"
-                                           Classes="eyebrow" FontSize="9" />
-                                <TextBlock Text="{Binding Label}" FontSize="11" FontWeight="Bold"
-                                           TextTrimming="CharacterEllipsis" />
+                                           Classes="eyebrow" FontSize="9" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="Bold"
+                                           TextWrapping="Wrap" />
                               </StackPanel>
 
                               <ItemsControl ItemsSource="{Binding PaletteSwatches}">
@@ -561,13 +562,27 @@
                                 </ItemsControl.ItemTemplate>
                               </ItemsControl>
 
-                              <TextBox Text="{Binding ColorDraftHex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                       Classes="search" FontFamily="{StaticResource MonoFontFamily}" FontSize="11"
-                                       AutomationProperties.Name="{loc:Tr ColorPicker_Hex}">
-                                <TextBox.KeyBindings>
-                                  <KeyBinding Gesture="Enter" Command="{Binding ApplyDraftColorCommand}" />
-                                </TextBox.KeyBindings>
-                              </TextBox>
+                              <StackPanel Spacing="6">
+                                <TextBlock Text="{loc:Tr ColorPicker_Hex}" Classes="muted" FontSize="11" />
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                  <controls:LocalizedColorPicker Color="{Binding ColorDraft, Mode=TwoWay}"
+                                                                 IsAlphaEnabled="False" CornerRadius="0"
+                                                                 AutomationProperties.Name="{loc:Tr ColorPicker_Spectrum}" />
+                                  <TextBox Grid.Column="1"
+                                           Text="{Binding ColorDraftHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Classes="search" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
+                                           PlaceholderText="#RRGGBB"
+                                           AutomationProperties.Name="{loc:Tr ColorPicker_Hex}">
+                                    <TextBox.KeyBindings>
+                                      <KeyBinding Gesture="Enter" Command="{Binding ApplyDraftColorCommand}" />
+                                    </TextBox.KeyBindings>
+                                  </TextBox>
+                                </Grid>
+                                <Button Classes="ghost" HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding ApplyDraftColorCommand}"
+                                        Content="{loc:Tr Common_Save, Converter={StaticResource UpperCaseConverter}}" />
+                              </StackPanel>
 
                               <!-- "Automático" solo aparece cuando hay un color elegido a mano que
                                    deshacer; si no, no hay nada que restablecer. -->
@@ -738,7 +753,7 @@
   </Border>
 
       <!-- ===================== Contenido: barra superior + vista activa ===================== -->
-      <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="20,0,0,0">
+      <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" RowDefinitions="Auto,*" Margin="20,0,0,0">
 
         <!-- Navegación temporal + selector de vista — docs/calendar-feature/04-vistas-y-navegacion.md
              §9 (◀/▶/Hoy comunes a las cuatro vistas) y §1/10-diseno-visual-y-componentes.md §6
@@ -836,16 +851,17 @@
           <!-- ===================== Vista Mes ===================== -->
           <!-- Animación de "reveal" al navegar/cambiar de vista — docs/calendar-feature/
                10-diseno-visual-y-componentes.md §8. -->
-          <ScrollViewer Grid.Row="1" IsVisible="{Binding IsMonthView}"
+          <!-- Las seis semanas se reparten el alto disponible sin desplazamiento vertical. -->
+          <Grid Grid.Row="1" IsVisible="{Binding IsMonthView}"
                         Opacity="{Binding RevealOpacity}"
                         RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-            <ScrollViewer.Transitions>
+            <Grid.Transitions>
               <Transitions>
                 <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
                 <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
               </Transitions>
-            </ScrollViewer.Transitions>
-            <Border Classes="calendar-month-grid" MinHeight="480" Margin="5,0,5,5">
+            </Grid.Transitions>
+            <Border Classes="calendar-month-grid" Margin="5,0,5,5">
               <ItemsControl ItemsSource="{Binding Days}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -916,7 +932,7 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
        </Border>
-          </ScrollViewer>
+          </Grid>
 
           <!-- ===================== Vistas Semana/Día (comparten CalendarWeekColumnViewModel —
                Día es simplemente 1 columna, docs/calendar-feature/04-vistas-y-navegacion.md §4) ============ -->
