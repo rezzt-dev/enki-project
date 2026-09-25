@@ -5971,4 +5971,10 @@ Bonne rédaction.</value>
   <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
     <value>Affiche les boutons de réduction, d’agrandissement et de fermeture dans la barre de titre personnalisée. Les masquer aligne les autres icônes à droite.</value>
   </data>
+  <data name="Explorer_Copy" xml:space="preserve"><value>Copier</value></data>
+  <data name="Explorer_Cut" xml:space="preserve"><value>Couper</value></data>
+  <data name="Explorer_Paste" xml:space="preserve"><value>Coller</value></data>
+  <data name="Explorer_CopyReady" xml:space="preserve"><value>Prêt à copier</value></data>
+  <data name="Explorer_CutReady" xml:space="preserve"><value>Prêt à déplacer au collage</value></data>
+  <data name="Explorer_Pasted" xml:space="preserve"><value>Élément collé</value></data>
 </root>

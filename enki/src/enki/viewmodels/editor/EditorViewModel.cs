@@ -801,6 +801,26 @@ public sealed partial class EditorViewModel : ViewModelBase
         _onChanged();
     }
 
+    /// <summary>Guarda los cambios pendientes y rechaza transferencias con conflictos sin resolver.</summary>
+    public bool PrepareFileTransfer()
+    {
+        FlushPendingSave();
+        if (IsDirty || IsAutosavePaused) return false;
+        if (_diskStamp is { } stamp && NoteDiskStamps.Check(Note.FullPath, stamp, out _) != NoteDiskState.Unchanged)
+        {
+            HandleExternalChange(new VaultExternalChange(Note.FullPath, VaultExternalChangeKind.Modified), Document.Text);
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>Actualiza la pestaña y su huella después de trasladar la nota con sus adjuntos.</summary>
+    public void SyncTransferredNote(NoteFile note)
+    {
+        SyncRenamedNote(note);
+        ApplyRestoredContent(_vaultService.ReadContent(note));
+    }
+
     /// <summary>Reconciles this tab with a rename that already happened on disk elsewhere (the note grid's
     /// context menu, see NotesViewModel.CommitRenameNote) — suppresses <see cref="OnTitleChanged"/> so it
     /// doesn't attempt to rename the file a second time, which would fail since the old path is already gone.</summary>

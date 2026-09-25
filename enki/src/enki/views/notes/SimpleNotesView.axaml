@@ -11,6 +11,12 @@
              x:Class="enki.Views.SimpleNotesView"
              x:Name="SimpleRoot"
              x:DataType="vm:NotesViewModel">
+  <UserControl.ContextMenu>
+    <ContextMenu>
+      <MenuItem Header="{loc:Tr Explorer_Paste}" Command="{Binding PasteEntryCommand}"
+                CommandParameter="{Binding EffectiveRootPath}" />
+    </ContextMenu>
+  </UserControl.ContextMenu>
 
   <!-- Vista simplificada de la página de Notas (Ajustes › Editor › Vista del editor). Solo lo mínimo
        para escribir: a la izquierda un árbol con las carpetas y las notas markdown de la sesión activa,
@@ -28,7 +34,7 @@
          plantilla implícita por DataType, a cualquier profundidad. -->
     <DataTemplate DataType="vm:NoteTreeItemViewModel">
       <StackPanel>
-        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource TreeIndentConverter}}"
                 DragDrop.AllowDrop="True"
                 PointerPressed="TreeRow_PointerPressed"
@@ -39,6 +45,10 @@
                 DragDrop.Drop="TreeRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Copy}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
               <MenuItem Header="{loc:Tr Notes_SimpleView_NewNoteInFolderMenuItem}"
                         IsVisible="{Binding IsFolder}"
                         Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateTreeNoteInFolderCommand}"
@@ -250,8 +260,21 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="vm:NoteCardViewModel">
-                  <Border Classes="folder-row" Padding="6,0,10,0"
+                  <Border Focusable="True" Classes="folder-row" Padding="6,0,10,0"
                           PointerPressed="SearchResult_PointerPressed">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="{loc:Tr Explorer_Copy}" InputGesture="Ctrl+C"
+                                  Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="{loc:Tr Explorer_Cut}" InputGesture="Ctrl+X"
+                                  Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V"
+                                  Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                      </ContextMenu>
+                    </Border.ContextMenu>
                     <Grid ColumnDefinitions="Auto,*" Height="34">
                       <mi:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="15" Height="15"
                                        Margin="6,0,8,0" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />

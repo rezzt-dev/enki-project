@@ -371,6 +371,8 @@ public partial class FilesTreeView : UserControl
 
     private void SearchResult_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (sender is not Control row || !e.GetCurrentPoint(row).Properties.IsLeftButtonPressed) return;
+        row.Focus();
         if (sender is Border { DataContext: FileTreeItemViewModel node }) Vm?.SelectTreeItemCommand.Execute(node);
     }
 

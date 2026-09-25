@@ -356,6 +356,9 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public void Reload()
     {
+        PasteEntryCommand.NotifyCanExecuteChanged();
+        CopyEntryCommand.NotifyCanExecuteChanged();
+        CutEntryCommand.NotifyCanExecuteChanged();
         if (IsSelectedSessionLocked)
         {
             Notes.Clear();
@@ -981,7 +984,13 @@ public sealed partial class NotesViewModel : ViewModelBase
         var oldPath = card.Note.FullPath;
         try
         {
-            _vaultService.MoveNote(card.Note, destinationFolderPath);
+            var editor = OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, oldPath));
+            if (editor is not null && !editor.PrepareFileTransfer()) return;
+            var moved = _vaultService.TransferNote(card.Note, destinationFolderPath, cut: true);
+            editor?.SyncTransferredNote(moved);
+            card.UpdateNote(moved);
+            _kanbanService?.RelinkNotePath(oldPath, moved.FullPath);
+            PersistOpenTabs();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -989,7 +998,6 @@ public sealed partial class NotesViewModel : ViewModelBase
             return;
         }
 
-        _kanbanService?.RelinkNotePath(oldPath, card.Note.FullPath);
         Reload();
     }
 }

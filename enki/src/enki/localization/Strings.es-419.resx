@@ -5971,4 +5971,10 @@ Feliz escritura.</value>
   <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
     <value>Muestra los botones de minimizar, maximizar y cerrar en la barra propia. Al ocultarlos, los iconos restantes se alinean a la derecha.</value>
   </data>
+  <data name="Explorer_Copy" xml:space="preserve"><value>Copiar</value></data>
+  <data name="Explorer_Cut" xml:space="preserve"><value>Cortar</value></data>
+  <data name="Explorer_Paste" xml:space="preserve"><value>Pegar</value></data>
+  <data name="Explorer_CopyReady" xml:space="preserve"><value>Listo para copiar</value></data>
+  <data name="Explorer_CutReady" xml:space="preserve"><value>Listo para mover al pegar</value></data>
+  <data name="Explorer_Pasted" xml:space="preserve"><value>Elemento pegado</value></data>
 </root>

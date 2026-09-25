@@ -11,6 +11,12 @@
              x:Class="enki.Views.FilesTreeView"
              x:Name="TreeRoot"
              x:DataType="vm:FilesViewModel">
+  <UserControl.ContextMenu>
+    <ContextMenu>
+      <MenuItem Header="{loc:Tr Explorer_Paste}" Command="{Binding PasteEntryCommand}"
+                CommandParameter="{Binding EffectiveRootPath}" />
+    </ContextMenu>
+  </UserControl.ContextMenu>
 
   <!-- Modo "árbol" de la sección Archivos: el panel lateral de la vista simplificada de Notas adaptado a
        los adjuntos del vault. Carpetas y archivos se entremezclan en una misma lista jerárquica a la
@@ -33,7 +39,7 @@
          como dos listas apiladas. -->
     <DataTemplate DataType="vm:FileTreeItemViewModel">
       <StackPanel>
-        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource TreeIndentConverter}}"
                 ToolTip.Tip="{Binding Name}" ToolTip.ShowDelay="700"
                 DragDrop.AllowDrop="True"
@@ -47,6 +53,10 @@
             <!-- Un menú para los dos tipos de nodo, con lo que tiene sentido en cada uno: "crear subcarpeta"
                  sobre un archivo creaba una carpeta hermana sin decirlo. -->
             <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Copy}" IsVisible="{Binding IsFile}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut}" IsVisible="{Binding IsFile}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
               <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}" IsVisible="{Binding IsFile}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
                         CommandParameter="{Binding Card}">
@@ -282,8 +292,21 @@
                    la sangría del árbol contaba y aquí se pierde. -->
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="vm:FileTreeItemViewModel">
-                  <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Padding="6,0,10,0"
+                  <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Padding="6,0,10,0"
                           PointerPressed="SearchResult_PointerPressed">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="{loc:Tr Explorer_Copy}" InputGesture="Ctrl+C"
+                                  Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="{loc:Tr Explorer_Cut}" InputGesture="Ctrl+X"
+                                  Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V"
+                                  Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                      </ContextMenu>
+                    </Border.ContextMenu>
                     <Grid ColumnDefinitions="Auto,*" Height="38">
                       <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="15" Height="15"
                                        Margin="6,0,8,0" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />

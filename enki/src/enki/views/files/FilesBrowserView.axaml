@@ -25,7 +25,7 @@
          un panel con veinte carpetas eran cuarenta iconos compitiendo con los nombres. -->
     <DataTemplate DataType="vm:FileFolderViewModel">
       <StackPanel>
-        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource DepthIndentConverter}}"
                 DragDrop.AllowDrop="True"
                 PointerPressed="FolderRow_PointerPressed"
@@ -35,6 +35,8 @@
                 DragDrop.Drop="FolderRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
               <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
@@ -137,6 +139,8 @@
               KeyDown="FolderCard_KeyDown">
         <Button.ContextMenu>
           <ContextMenu Opening="FolderCardMenu_Opening">
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
             <MenuItem Header="{loc:Tr Files_OpenFolderMenuItem}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenFolderCardCommand}"
                       CommandParameter="{Binding}">
@@ -212,6 +216,10 @@
               KeyDown="FileCard_KeyDown">
         <Button.ContextMenu>
           <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Copy}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
             <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
                       CommandParameter="{Binding}">
@@ -465,6 +473,8 @@
                 DragDrop.Drop="FilesGrid_Drop">
           <Border.ContextMenu>
             <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding PasteEntryCommand}" />
+              <Separator />
               <MenuItem Header="{loc:Tr Files_ImportButton}" Command="{Binding ImportCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />

@@ -824,26 +824,38 @@ public sealed partial class VaultService
         var sourceRoot = ResolveEncryptedSessionRoot(sourcePath);
         var destinationRoot = ResolveEncryptedSessionRoot(destination);
 
+        if (sourceRoot is not null && IsPathInLockedSession(sourcePath)) throw new SessionLockedException(sourcePath);
+        if (destinationRoot is not null && IsPathInLockedSession(destination)) throw new SessionLockedException(destination);
         var sameScope = sourceRoot is null
             ? destinationRoot is null
             : destinationRoot is not null && PathsEqual(sourceRoot, destinationRoot);
         if (sameScope) return MoveWithUniqueSuffix(sourcePath, destinationFolder);
 
+        var stamp = NoteDiskStamps.Read(new FileInfo(sourcePath));
         var raw = File.ReadAllBytes(sourcePath);
         var plaintext = sourceRoot is null ? raw : _encryptionService.Decrypt(sourceRoot, raw);
         var payload = destinationRoot is null ? plaintext : _encryptionService.Encrypt(destinationRoot, plaintext);
 
+        var tempPath = $"{destination}.tmp-{Guid.NewGuid():N}";
         try
         {
-            var tempPath = $"{destination}.tmp-{Guid.NewGuid():N}";
             File.WriteAllBytes(tempPath, payload);
-            File.Move(tempPath, destination, overwrite: true);
-            File.Delete(sourcePath);
+            File.Move(tempPath, destination, overwrite: false);
+            try
+            {
+                if (NoteDiskStamps.Check(sourcePath, stamp, out _) != NoteDiskState.Unchanged)
+                    throw new IOException("El archivo ha cambiado durante la transferencia.");
+                File.Delete(sourcePath);
+            }
+            catch
+            {
+                File.Delete(destination);
+                throw;
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        finally
         {
-            LogService.Error($"No se pudo mover '{sourcePath}' a '{destination}' re-cifrando su contenido", ex);
-            throw;
+            if (File.Exists(tempPath)) File.Delete(tempPath);
         }
 
         return destination;
@@ -857,7 +869,7 @@ public sealed partial class VaultService
     {
         var destination = Path.Combine(destinationFolder, Path.GetFileName(sourcePath));
         var suffix = 2;
-        while (File.Exists(destination))
+        while (File.Exists(destination) || Directory.Exists(destination))
         {
             destination = Path.Combine(destinationFolder,
                 $"{Path.GetFileNameWithoutExtension(sourcePath)} {suffix}{Path.GetExtension(sourcePath)}");
@@ -1158,7 +1170,7 @@ public sealed partial class VaultService
         var fileName = Path.GetFileName(sourcePath);
         var destination = Path.Combine(folderPath, fileName);
         var suffix = 2;
-        while (File.Exists(destination))
+        while (File.Exists(destination) || Directory.Exists(destination))
         {
             destination = Path.Combine(folderPath,
                 $"{Path.GetFileNameWithoutExtension(fileName)} {suffix}{Path.GetExtension(fileName)}");

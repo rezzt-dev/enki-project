@@ -124,6 +124,7 @@ public partial class SimpleNotesView : UserControl
             return;
         }
 
+        ((Control)sender).Focus();
         vm.ActivateTreeItemCommand.Execute(node);
 
         // Solo las notas se arrastran: mover carpetas enteras es una operación bastante más destructiva
@@ -207,6 +208,8 @@ public partial class SimpleNotesView : UserControl
 
     private void SearchResult_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (sender is not Control row || !e.GetCurrentPoint(row).Properties.IsLeftButtonPressed) return;
+        row.Focus();
         if (sender is Border { DataContext: NoteCardViewModel card }) Vm?.OpenCardCommand.Execute(card);
     }
 

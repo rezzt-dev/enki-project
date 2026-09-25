@@ -26,7 +26,7 @@
          implícita (por DataType) a cualquier profundidad, sin necesidad de TreeView. -->
     <DataTemplate DataType="vm:NoteFolderViewModel">
       <StackPanel>
-        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource DepthIndentConverter}}"
                 DragDrop.AllowDrop="True"
                 PointerPressed="FolderRow_PointerPressed"
@@ -36,6 +36,8 @@
                 DragDrop.Drop="FolderRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
               <MenuItem Header="{loc:Tr Notes_RenameMenuItem}" Command="{Binding BeginRenameCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
@@ -106,6 +108,13 @@
       <Button Classes="note-card" Margin="0,0,16,16" Width="224" Height="150"
               Command="{Binding $parent[ItemsControl].((vm:NotesViewModel)DataContext).OpenFolderCardCommand}"
               CommandParameter="{Binding}">
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="{loc:Tr Explorer_Paste}"
+                      Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}"
+                      CommandParameter="{Binding}" />
+          </ContextMenu>
+        </Button.ContextMenu>
         <Grid RowDefinitions="*,Auto">
           <mi:MaterialIcon Grid.Row="0" Kind="FolderOutline" Width="48" Height="48"
                             Foreground="{DynamicResource Ink40}" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -296,6 +305,8 @@
                 Background="{DynamicResource AppBackgroundAltBrush}">
           <Border.ContextMenu>
             <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding PasteEntryCommand}" />
+              <Separator />
               <MenuItem Header="{loc:Tr Notes_NewNoteButton}" Command="{Binding NewNoteCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" />
@@ -338,6 +349,10 @@
                               AutomationProperties.Name="{Binding Title}">
                         <Button.ContextMenu>
                           <ContextMenu>
+              <MenuItem Header="{loc:Tr Explorer_Copy}" InputGesture="Ctrl+C" Command="{Binding #Root.((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut}" InputGesture="Ctrl+X" Command="{Binding #Root.((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding #Root.((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
                             <MenuItem Header="{loc:Tr Notes_RenameMenuItem}" Command="{Binding BeginRenameCommand}">
                               <MenuItem.Icon>
                                 <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />

@@ -5971,4 +5971,10 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
     <value>Zeigt die Schaltflächen zum Minimieren, Maximieren und Schließen in der eigenen Titelleiste. Beim Ausblenden werden die übrigen Symbole rechts ausgerichtet.</value>
   </data>
+  <data name="Explorer_Copy" xml:space="preserve"><value>Kopieren</value></data>
+  <data name="Explorer_Cut" xml:space="preserve"><value>Ausschneiden</value></data>
+  <data name="Explorer_Paste" xml:space="preserve"><value>Einfügen</value></data>
+  <data name="Explorer_CopyReady" xml:space="preserve"><value>Zum Kopieren bereit</value></data>
+  <data name="Explorer_CutReady" xml:space="preserve"><value>Zum Verschieben beim Einfügen bereit</value></data>
+  <data name="Explorer_Pasted" xml:space="preserve"><value>Element eingefügt</value></data>
 </root>

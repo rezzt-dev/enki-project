@@ -292,6 +292,9 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     public void Reload()
     {
+        PasteEntryCommand.NotifyCanExecuteChanged();
+        CopyEntryCommand.NotifyCanExecuteChanged();
+        CutEntryCommand.NotifyCanExecuteChanged();
         _appliedSearch = SearchText.Trim();
 
         // Drop any decrypted PDF temp copies the outgoing cards were holding onto before discarding them —

@@ -5971,4 +5971,10 @@ Happy writing.</value>
   <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
     <value>Show minimize, maximize and close buttons in the custom title bar. Hiding them aligns the remaining icons to the right.</value>
   </data>
+  <data name="Explorer_Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Explorer_Cut" xml:space="preserve"><value>Cut</value></data>
+  <data name="Explorer_Paste" xml:space="preserve"><value>Paste</value></data>
+  <data name="Explorer_CopyReady" xml:space="preserve"><value>Ready to copy</value></data>
+  <data name="Explorer_CutReady" xml:space="preserve"><value>Ready to move when pasted</value></data>
+  <data name="Explorer_Pasted" xml:space="preserve"><value>Item pasted</value></data>
 </root>
