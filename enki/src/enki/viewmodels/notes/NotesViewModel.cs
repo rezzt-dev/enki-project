@@ -638,6 +638,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         if (existing is not null)
         {
             ActiveEditor = existing;
+            CloseSimpleNavigator();
             if (caretOffset is { } offset) existing.RequestCaretAt(offset);
             return;
         }
@@ -667,6 +668,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         if (caretOffset is { } newTabOffset) editor.RequestCaretAt(newTabOffset);
         OpenEditors.Add(editor);
         ActiveEditor = editor;
+        CloseSimpleNavigator();
     }
 
     [RelayCommand]

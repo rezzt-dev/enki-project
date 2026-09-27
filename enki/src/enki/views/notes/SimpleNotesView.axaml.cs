@@ -38,6 +38,12 @@ public partial class SimpleNotesView : UserControl
     public SimpleNotesView()
     {
         InitializeComponent();
+        KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Escape || Vm is not { IsSimpleNavigatorOpen: true } vm) return;
+            vm.CloseSimpleNavigatorCommand.Execute(null);
+            e.Handled = true;
+        };
 
         // En túnel (antes que cualquier burbuja y antes de que Avalonia mueva el foco por el clic): si
         // el clic cae dentro de la fila que se está renombrando, se arma la bandera que impide que el
@@ -67,14 +73,58 @@ public partial class SimpleNotesView : UserControl
     /// de fricción que esta vista existe para quitar.</summary>
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(NotesViewModel.IsSimpleSearchMode)) return;
-        if (Vm is not { IsSimpleSearchMode: true }) return;
+        if (Vm is not { } vm) return;
+        if (e.PropertyName == nameof(NotesViewModel.IsSimpleNavigatorOpen) && !vm.IsSimpleNavigatorOpen)
+        {
+            if (SimpleNavigator.IsKeyboardFocusWithin)
+                (vm.IsSimpleSearchMode ? RailSearchButton : RailTreeButton).Focus();
+            return;
+        }
+        if (e.PropertyName is not (nameof(NotesViewModel.IsSimpleSearchMode)
+            or nameof(NotesViewModel.IsSimpleNavigatorOpen)
+            or nameof(NotesViewModel.IsSimpleSidebarVisible))) return;
 
         Dispatcher.UIThread.Post(() =>
         {
-            SimpleSearchBox.Focus();
-            SimpleSearchBox.SelectAll();
+            if (Vm is not { IsSimpleNavigatorVisible: true } current) return;
+            if (current.IsSimpleSearchMode)
+            {
+                SimpleSearchBox.Focus();
+                SimpleSearchBox.SelectAll();
+            }
+            else if (current.IsSimpleNavigatorOpen)
+            {
+                foreach (var control in SimpleNavigator.GetVisualDescendants())
+                    if (control is Border { IsEffectivelyVisible: true, DataContext: NoteTreeItemViewModel } row
+                        && row.Classes.Contains("folder-row"))
+                    {
+                        row.Focus();
+                        break;
+                    }
+            }
         }, DispatcherPriority.Input);
+    }
+
+    private void NavigatorDismiss_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        Vm?.CloseSimpleNavigatorCommand.Execute(null);
+        e.Handled = true;
+    }
+
+    private void TreeRow_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space)
+            || sender is not Border { DataContext: NoteTreeItemViewModel { IsRenaming: false } node }) return;
+        Vm?.ActivateTreeItemCommand.Execute(node);
+        e.Handled = true;
+    }
+
+    private void SearchResult_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space)
+            || sender is not Border { DataContext: NoteCardViewModel card }) return;
+        Vm?.OpenCardCommand.Execute(card);
+        e.Handled = true;
     }
 
     // ===================== Filas del árbol =====================

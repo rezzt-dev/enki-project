@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Services;
 using enki.ViewModels;
@@ -211,7 +212,7 @@ public class SimpleNotesViewUiTests : IDisposable
         window.Close();
     }
 
-    /// <summary>Ocultar el panel deja solo el raíl (mostrar panel + cambiar de sesión), y la elección se
+    /// <summary>Ocultar el panel deja el raíl de navegación, y la elección se
     /// guarda en ajustes para reabrir la app tal como se dejó.</summary>
     [Fact]
     public void TogglingTheSidebar_PersistsTheChoice()
@@ -237,6 +238,138 @@ public class SimpleNotesViewUiTests : IDisposable
         Assert.False(new SettingsService(_tempDir).Settings.NotesSimpleSidebarVisible);
 
         window.Close();
+    }
+
+    /// <summary>El navegador del raíl se superpone sin quitar ancho al editor ni guardar el panel
+    /// como desplegado. Abrir una nota desde una carpeta lo descarta y reutiliza su pestaña.</summary>
+    [Fact]
+    public void CollapsedRail_BrowsesNestedNotesWithoutResizingEditorOrPersistingExpansion()
+    {
+        var folder = VaultService.CreateFolder(_vaultDir, "Proyecto");
+        File.WriteAllText(Path.Combine(folder.FullPath, "nota.md"), "# Nota\n");
+        var (view, vm, window) = CreateView(simplified: true);
+        try
+        {
+            vm.ToggleSimpleSidebarCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var simple = view.GetVisualDescendants().OfType<SimpleNotesView>().Single();
+            var tabs = simple.GetVisualDescendants().OfType<EditorTabStripView>().Single();
+            var editorPosition = tabs.TranslatePoint(default, window);
+            var editorWidth = tabs.Bounds.Width;
+            var trigger = simple.FindControl<Button>("RailTreeButton")!;
+            ClickControl(window, trigger);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(vm.IsSimpleNavigatorOpen);
+            Assert.False(vm.IsSimpleSidebarVisible);
+            Assert.False(new SettingsService(_tempDir).Settings.NotesSimpleSidebarVisible);
+            Assert.Equal(editorPosition, tabs.TranslatePoint(default, window));
+            Assert.Equal(editorWidth, tabs.Bounds.Width);
+            Assert.Contains("active", trigger.Classes);
+            Assert.Equal(52, simple.FindControl<Grid>("CollapsedRail")!.Bounds.Width);
+
+            var folderNode = Assert.Single(vm.SimpleTreeRoots);
+            PressRowLeftEdge(view, window, folderNode);
+            Assert.True(vm.IsSimpleNavigatorOpen);
+            var note = Assert.Single(folderNode.Children);
+            PressRowLeftEdge(view, window, note);
+            Assert.False(vm.IsSimpleNavigatorOpen);
+            Assert.Equal(note.FullPath, vm.ActiveEditor!.Note.FullPath);
+
+            ClickControl(window, trigger);
+            PressRowLeftEdge(view, window, Assert.Single(Assert.Single(vm.SimpleTreeRoots).Children));
+            Assert.Single(vm.OpenEditors);
+            Assert.False(vm.IsSimpleNavigatorOpen);
+        }
+        finally { window.Close(); }
+    }
+
+    /// <summary>La búsqueda recibe el foco también al reabrirse en el mismo modo. Escape y clic fuera
+    /// cierran el navegador; la consulta se conserva para poder retomarla.</summary>
+    [Fact]
+    public void CollapsedSearch_RefocusesOnReopen_AndDismissesWithEscapeOrOutsideClick()
+    {
+        File.WriteAllText(Path.Combine(_vaultDir, "consulta.md"), "# Consulta\n");
+        var (view, vm, window) = CreateView(simplified: true);
+        try
+        {
+            vm.ToggleSimpleSidebarCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var simple = view.GetVisualDescendants().OfType<SimpleNotesView>().Single();
+            var trigger = simple.FindControl<Button>("RailSearchButton")!;
+            var search = simple.FindControl<TextBox>("SimpleSearchBox")!;
+            ClickControl(window, trigger);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(search.IsFocused);
+            vm.SimpleSearchText = "consulta";
+
+            window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.None, null);
+            window.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.None, null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.False(vm.IsSimpleNavigatorOpen);
+            Assert.True(trigger.IsFocused);
+
+            ClickControl(window, trigger);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(search.IsFocused);
+            Assert.Equal("consulta", search.Text);
+            var dismissArea = simple.FindControl<Border>("NavigatorDismissArea")!;
+            var outside = dismissArea.TranslatePoint(new Point(dismissArea.Bounds.Width - 20, 150), window)!.Value;
+            window.MouseDown(outside, MouseButton.Left);
+            window.MouseUp(outside, MouseButton.Left);
+            Assert.False(vm.IsSimpleNavigatorOpen);
+            Assert.False(vm.IsSimpleSidebarVisible);
+
+            // Retomar una búsqueda y abrir su resultado con el teclado también descarta el panel.
+            vm.ShowSimpleTreeCommand.Execute(null);
+            vm.SimpleSearchText = "consulta";
+            ClickControl(window, trigger);
+            Dispatcher.UIThread.RunJobs();
+            var result = Assert.Single(vm.SimpleSearchResults);
+            var row = simple.GetVisualDescendants().OfType<Border>()
+                .Single(b => b.IsEffectivelyVisible && ReferenceEquals(b.DataContext, result)
+                    && b.Classes.Contains("folder-row"));
+            row.Focus();
+            window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.None, null);
+            window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.None, null);
+            Assert.False(vm.IsSimpleNavigatorOpen);
+            Assert.Equal(result.Note.FullPath, vm.ActiveEditor!.Note.FullPath);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void CollapsedRail_CreatesNotes_AndCanPinTheTemporaryNavigator()
+    {
+        var (view, vm, window) = CreateView(simplified: true);
+        try
+        {
+            vm.ToggleSimpleSidebarCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var simple = view.GetVisualDescendants().OfType<SimpleNotesView>().Single();
+            ClickControl(window, simple.FindControl<Button>("RailNewNoteButton")!);
+            Assert.Single(vm.OpenEditors);
+            Assert.False(vm.IsSimpleSidebarVisible);
+
+            ClickControl(window, simple.FindControl<Button>("RailTreeButton")!);
+            var navigator = simple.FindControl<Border>("SimpleNavigator")!;
+            var pin = navigator.GetVisualDescendants().OfType<Button>()
+                .Single(b => b.IsEffectivelyVisible && ReferenceEquals(b.Command, vm.ToggleSimpleSidebarCommand));
+            ClickControl(window, pin);
+            Assert.True(vm.IsSimpleSidebarVisible);
+            Assert.False(vm.IsSimpleNavigatorOpen);
+            Assert.True(new SettingsService(_tempDir).Settings.NotesSimpleSidebarVisible);
+            Assert.Equal(0, Grid.GetColumn(navigator));
+        }
+        finally { window.Close(); }
+    }
+
+    private static void ClickControl(Window window, Control control)
+    {
+        var point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(point, MouseButton.Left);
+        window.MouseUp(point, MouseButton.Left);
+        window.GetLayoutManager()!.ExecuteLayoutPass();
     }
 
     /// <summary>La búsqueda del panel es recursiva pero acotada a la sesión activa — aquí, el vault.</summary>
