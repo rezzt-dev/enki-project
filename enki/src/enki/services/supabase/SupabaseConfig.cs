@@ -4,13 +4,10 @@ using System.IO;
 
 namespace enki.Services;
 
-/// <summary>Reads <c>SUPABASE_URL</c>/<c>SUPABASE_ANON_KEY</c> from a <c>local.properties</c> file shipped
-/// next to the executable (see the <c>None Include</c> in enki.csproj, which copies it there from the repo
-/// root at build time). Same file name/format Polar's Android build reads via Gradle
-/// (docs/supabase-sync/08-configuracion-y-credenciales.md) — adapted to a plain runtime read here since a
-/// desktop app has no BuildConfig codegen step. Never committed to git (see root .gitignore); if the file
-/// is missing (fresh checkout with no credentials yet), <see cref="IsConfigured"/> is false and every
-/// Polar-linking feature stays disabled rather than throwing.</summary>
+/// <summary>Lee la configuración pública de Polar generada al compilar y distribuida junto al
+/// ejecutable en <c>polar.properties</c>. El empaquetado conserva este archivo sin distribuir
+/// el resto de propiedades locales del desarrollador. Sin configuración, las funciones locales
+/// siguen disponibles en builds de desarrollo.</summary>
 public static class SupabaseConfig
 {
     public static string? Url { get; }
@@ -26,15 +23,8 @@ public static class SupabaseConfig
         AnonKey = string.IsNullOrWhiteSpace(anonKey) ? null : anonKey;
     }
 
-    /// <summary>Rejects anything that isn't <c>https://</c> instead of trimming and returning it as-is —
-    /// a scheme other than https would silently degrade every Polar-linking feature to plain text, both the
-    /// REST calls here and the Realtime websocket (<see cref="PolarRealtimeService"/>, which builds its
-    /// <c>wss://</c> URL by replacing <c>https://</c> in this same value). Treating a non-https URL as
-    /// unconfigured (<see cref="IsConfigured"/> becomes <see langword="false"/>) is safer than trying to
-    /// "fix" it, since a misconfigured <c>local.properties</c> is a build/ops mistake worth surfacing loudly
-    /// rather than silently working over an insecure channel (docs/analisis-proyecto/roadmap.md, Fase 4).
-    /// <c>internal</c> purely so this pure function can be unit-tested directly — the static constructor
-    /// itself can't be re-run per test case.</summary>
+    /// <summary>Rechaza protocolos distintos de HTTPS para que las llamadas REST y Realtime
+    /// no transmitan datos en claro. Una URL inválida deja Polar sin configurar.</summary>
     internal static string? NormalizeAndValidateHttpsUrl(string? rawUrl)
     {
         if (string.IsNullOrWhiteSpace(rawUrl)) return null;
@@ -46,7 +36,7 @@ public static class SupabaseConfig
     private static Dictionary<string, string> Load()
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        var path = Path.Combine(AppContext.BaseDirectory, "local.properties");
+        var path = Path.Combine(AppContext.BaseDirectory, "polar.properties");
         if (!File.Exists(path)) return result;
 
         try

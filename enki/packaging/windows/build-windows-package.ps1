@@ -78,6 +78,14 @@ if (-not (Test-Path $exePath)) {
     throw "No se encuentra $exePath -- fallo el publish?"
 }
 
+# También valida publicaciones reutilizadas mediante -SkipPublish.
+$polarPath = Join-Path $PublishDir "polar.properties"
+if (-not (Test-Path $polarPath) -or
+    -not (Select-String -Path $polarPath -Pattern '^SUPABASE_URL=https://' -Quiet) -or
+    -not (Select-String -Path $polarPath -Pattern '^SUPABASE_ANON_KEY=.' -Quiet)) {
+    throw "Falta la configuracion publica de Polar. Repite sin -SkipPublish con Supabase configurado."
+}
+
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
 $iscc = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue

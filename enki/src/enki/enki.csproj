@@ -35,13 +35,7 @@
     <InternalsVisibleTo Include="enki.UITests" />
   </ItemGroup>
 
-  <!-- Supabase credentials (SUPABASE_URL/SUPABASE_ANON_KEY) — never committed, see root .gitignore and
-       docs/supabase-sync/08-configuracion-y-credenciales.md. Copied next to the executable so
-       Services.SupabaseConfig can read it at runtime; absent on a fresh checkout, in which case every
-       Polar-linking feature just stays disabled (SupabaseConfig.IsConfigured is false). -->
-  <ItemGroup>
-    <None Include="../../local.properties" Link="local.properties" CopyToOutputDirectory="PreserveNewest" Condition="Exists('../../local.properties')" />
-  </ItemGroup>
+  <Import Project="../../build/PolarConfiguration.targets" />
 
   <!-- Skills de IA por defecto (docs/agent-docs/ia-skills/especificacion-desarrollo.md §2) — copiadas junto al
        ejecutable para que SkillService.EnsureDefaultSkills las encuentre en runtime vía

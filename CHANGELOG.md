@@ -26,6 +26,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - mover `.docs/alpha-to-beta.md` a `.docs/agent-docs/alpha-to-beta.md`, sin cambiar su contenido, para agrupar la documentacion dirigida a agentes de ia.
 
 #### CORREGIDO
+- incluir la configuracion publica de supabase que necesita polar en `polar.properties` dentro de los instaladores de linux, windows y macos; generar solo `SUPABASE_URL` y la clave publicable, rechazar urls inseguras, claves secretas y configuraciones parciales, exigir una configuracion valida al publicar y permitir que github actions la reciba mediante variables o secrets para evitar instalaciones con polar deshabilitado.
 - mostrar siempre el texto de prioridad baja, media o alta en las tarjetas del tablero kanban, tanto en el diseno vertical como en el horizontal, conservando el indicador visual y el clic para cambiarla.
 - contar en el resumen de almacenamiento del dashboard todas las notas de la raiz y de las subcarpetas del vault, ademas de todas las sesiones; el recuento recursivo evita leer el contenido de las notas y excluye las carpetas ocultas.
 - exportar a png/pdf el tablero kanban y el calendario sin recortar lo que quedaba oculto por sus `ScrollViewer` internos: tarjetas de una columna que no caben en alto, franjas del kanban horizontal, filas de la cuadricula del mes y horas de semana/dia; `FullSizeLayout` maqueta la region a su tamano completo mientras dura el render y la restaura despues.
@@ -52,6 +53,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - move `.docs/alpha-to-beta.md` to `.docs/agent-docs/alpha-to-beta.md`, without changing its contents, to group documentation intended for ai agents.
 
 #### FIXED
+- include the public supabase configuration required by polar in `polar.properties` inside the linux, windows and macos installers; generate only `SUPABASE_URL` and the publishable key, reject insecure urls, secret keys and partial configurations, require valid configuration when publishing, and let github actions receive it through variables or secrets to prevent installations with polar disabled.
 - always show the low, medium or high priority label on kanban board cards in both vertical and horizontal layouts, preserving the visual indicator and click action to change priority.
 - count every note at the vault root and in its subfolders, plus every session, in the dashboard storage summary; the recursive count avoids reading note contents and excludes hidden folders.
 - export the kanban board and the calendar to png/pdf without clipping what their internal `ScrollViewer`s hid: cards that overflow a column's height, horizontal kanban lanes, month grid rows and week/day hour rows; `FullSizeLayout` lays out the region at its full size for the duration of the render and restores it afterwards.

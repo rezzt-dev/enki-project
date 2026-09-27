@@ -21,6 +21,12 @@ on:
           Solo afecta a esta ejecución de prueba, no crea ninguna release de GitHub.
         required: false
 
+# Configuración pública del mismo backend que usa Polar. La publicación valida que exista.
+env:
+  SUPABASE_URL: ${{ vars.SUPABASE_URL || secrets.SUPABASE_URL }}
+  SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_PUBLISHABLE_KEY }}
+
 jobs:
   linux:
     name: Linux (.deb + .tar.gz)

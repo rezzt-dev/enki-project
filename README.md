@@ -246,7 +246,7 @@ SUPABASE_ANON_KEY=<clave-publicable>
 
 si tu entorno usa `SUPABASE_PUBLISHABLE_KEY`, copia ese valor en `SUPABASE_ANON_KEY`. no uses `SUPABASE_SECRET_KEY`: enki no necesita ni debe recibir una clave secreta de servidor.
 
-sin este archivo, enki sigue funcionando con normalidad y conserva todas sus funciones locales.
+sin este archivo, los builds de desarrollo conservan todas sus funciones locales. al compilar se genera `polar.properties` con solo la URL y la clave publica; los instaladores incluyen ese archivo. `dotnet publish` exige una configuracion valida para evitar instalaciones con Polar deshabilitado. tambien puedes aportar esos valores mediante variables de entorno de compilacion. consulta [empaquetado y distribucion](.docs/project-info/empaquetado-y-distribucion.md) para configurar las releases.
 
 ---
 

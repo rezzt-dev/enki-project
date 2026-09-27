@@ -81,6 +81,12 @@ if [[ ! -x "$PUBLISH_DIR/enki" ]]; then
   exit 1
 fi
 
+# También impide empaquetar publicaciones antiguas incompletas con --skip-publish.
+if [[ ! -s "$PUBLISH_DIR/polar.properties" ]] || ! grep -q '^SUPABASE_URL=https://' "$PUBLISH_DIR/polar.properties" || ! grep -q '^SUPABASE_ANON_KEY=.' "$PUBLISH_DIR/polar.properties"; then
+  echo "Falta la configuración pública de Polar en $PUBLISH_DIR. Vuelve a ejecutar sin --skip-publish con Supabase configurado." >&2
+  exit 1
+fi
+
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -90,8 +96,8 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # Igual que en el .deb/.tar.gz de Linux: el binario y sus librerías nativas (libSkiaSharp.dylib,
 # libHarfBuzzSharp.dylib...) tienen que quedarse juntos porque .NET las resuelve vía
 # AppContext.BaseDirectory, que dentro de un bundle apunta a Contents/MacOS. local.properties (las
-# credenciales locales de Supabase de quien compila) se excluye: nunca debe viajar en un paquete
-# distribuido.
+# propiedades locales de quien compila) se excluye. polar.properties sí viaja con la URL y
+# la clave pública que necesita la aplicación instalada.
 cp -a "$PUBLISH_DIR/." "$APP/Contents/MacOS/"
 rm -f "$APP/Contents/MacOS/local.properties"
 chmod 755 "$APP/Contents/MacOS/enki"

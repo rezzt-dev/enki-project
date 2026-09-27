@@ -103,6 +103,23 @@ autocontenido de arriba y lo envuelve en el paquete final. Los tres siguen el mi
 `local.properties` — las credenciales locales de Supabase de quien compila (ver
 `enki.csproj`) — para que nunca viajen dentro de un paquete distribuido.
 
+La configuración pública sí viaja en `polar.properties`, junto al ejecutable (también en publicaciones
+single-file). `enki/build/PolarConfiguration.targets` lo genera con **solo** `SUPABASE_URL` y
+`SUPABASE_ANON_KEY`, a partir de `enki/local.properties` o del entorno de compilación. El entorno tiene
+prioridad como pareja completa; se acepta también `SUPABASE_PUBLISHABLE_KEY`. Se exige HTTPS y una
+clave publicable `sb_publishable_...` o JWT con rol `anon`; nunca una clave secreta/service_role.
+
+`dotnet build` permite desarrollar sin configuración. `dotnet publish` falla si falta o es inválida,
+para no generar instaladores con «Polar no configurado». Los scripts comprueban también la presencia
+del archivo al reutilizar una publicación con `--skip-publish`/`-SkipPublish`. No reutilices un publish
+antiguo: vuelve a compilar para generar el archivo nuevo.
+
+Para releases de GitHub Actions, define las variables de repositorio `SUPABASE_URL` y
+`SUPABASE_ANON_KEY` (o `SUPABASE_PUBLISHABLE_KEY`) en Settings → Secrets and variables → Actions.
+También se admiten secrets con esos nombres. Deben corresponder al mismo proyecto que usa Polar.
+El instalador incluye esos valores públicos; el usuario instalado solo tiene que vincular su cuenta.
+
+
 ### Linux — `enki/packaging/linux/build-linux-package.sh`
 
 ```bash

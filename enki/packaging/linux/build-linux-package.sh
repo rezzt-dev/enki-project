@@ -78,6 +78,12 @@ if [[ ! -x "$PUBLISH_DIR/enki" ]]; then
   exit 1
 fi
 
+# También impide empaquetar publicaciones antiguas incompletas con --skip-publish.
+if [[ ! -s "$PUBLISH_DIR/polar.properties" ]] || ! grep -q '^SUPABASE_URL=https://' "$PUBLISH_DIR/polar.properties" || ! grep -q '^SUPABASE_ANON_KEY=.' "$PUBLISH_DIR/polar.properties"; then
+  echo "Falta la configuración pública de Polar en $PUBLISH_DIR. Vuelve a ejecutar sin --skip-publish con Supabase configurado." >&2
+  exit 1
+fi
+
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -86,9 +92,8 @@ mkdir -p "$STAGE/usr/lib/enki" "$STAGE/usr/bin" "$STAGE/usr/share/applications"
 mkdir -p "$STAGE/usr/share/icons/hicolor/256x256/apps" "$STAGE/usr/share/icons/hicolor/512x512/apps"
 mkdir -p "$STAGE/usr/share/doc/enki"
 
-# Copia el publish tal cual, salvo local.properties: son las credenciales de Supabase del entorno de
-# desarrollo de quien compila (ver enki.csproj y docs/supabase-sync/08-configuracion-y-credenciales.md);
-# nunca deben viajar dentro de un paquete distribuido, con o sin build de Debug.
+# Conserva polar.properties (URL y clave pública generadas al compilar). El archivo local completo
+# se excluye también de publicaciones antiguas porque puede contener otras propiedades privadas.
 cp -a "$PUBLISH_DIR/." "$STAGE/usr/lib/enki/"
 rm -f "$STAGE/usr/lib/enki/local.properties"
 chmod 755 "$STAGE/usr/lib/enki/enki"
