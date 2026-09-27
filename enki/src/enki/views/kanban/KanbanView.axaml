@@ -33,13 +33,7 @@
               IsVisible="{Binding IsVisible}"
               Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenCardDetailCommand}"
               CommandParameter="{Binding}"
-              AutomationProperties.Name="{Binding Title}"
-              DragDrop.AllowDrop="True"
-              Initialized="CardBody_Initialized"
-              DragDrop.DragEnter="CardBody_DragEnter"
-              DragDrop.DragOver="CardBody_DragOver"
-              DragDrop.DragLeave="CardBody_DragLeave"
-              DragDrop.Drop="CardBody_Drop">
+              AutomationProperties.Name="{Binding Title}">
         <!-- Menú contextual de la tarjeta: las mismas acciones que los botones que solo aparecen al pasar
              el ratón, más "archivar", que solo existe en la columna "Hecho" (KanbanCardViewModel.CanArchive).
              Archivar saca la tarjeta del tablero sin borrarla; se sigue viendo en el Calendario y se
@@ -154,12 +148,7 @@
     <DataTemplate DataType="vm:KanbanColumnViewModel">
       <Border Classes="kanban-column" Classes.drag-over="{Binding IsDropTarget}"
               Width="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).BoardColumnWidth}"
-              Margin="8,0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-              DragDrop.AllowDrop="True"
-              DragDrop.DragEnter="ColumnBody_DragEnter"
-              DragDrop.DragOver="ColumnBody_DragOver"
-              DragDrop.DragLeave="ColumnBody_DragLeave"
-              DragDrop.Drop="ColumnBody_Drop">
+              Margin="8,0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid RowDefinitions="Auto,*,Auto">
 
           <!-- Cabecera: nombre, contador y acciones al pasar el ratón. El candado de las columnas del
@@ -616,13 +605,7 @@
               IsVisible="{Binding IsVisible}"
               Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenCardDetailCommand}"
               CommandParameter="{Binding}"
-              AutomationProperties.Name="{Binding Title}"
-              DragDrop.AllowDrop="True"
-              Initialized="CardBody_Initialized"
-              DragDrop.DragEnter="CardBody_DragEnter"
-              DragDrop.DragOver="CardBody_DragOver"
-              DragDrop.DragLeave="CardBody_DragLeave"
-              DragDrop.Drop="CardBody_Drop">
+              AutomationProperties.Name="{Binding Title}">
         <!-- Menú contextual de la tarjeta: las mismas acciones que los botones que solo aparecen al pasar
              el ratón, más "archivar", que solo existe en la columna "Hecho" (KanbanCardViewModel.CanArchive).
              Archivar saca la tarjeta del tablero sin borrarla; se sigue viendo en el Calendario y se
@@ -740,12 +723,7 @@
          loseta cuadrada más: aquí no hay pie fijo donde ponerla (la franja es la fila entera) pero
          tampoco tiene por qué ocupar el sitio de una tarjeta real. -->
     <DataTemplate x:Key="KanbanColumnTemplateHorizontal" DataType="vm:KanbanColumnViewModel">
-      <Border Classes="kanban-column" Classes.drag-over="{Binding IsDropTarget}"
-              DragDrop.AllowDrop="True"
-              DragDrop.DragEnter="ColumnBody_DragEnter"
-              DragDrop.DragOver="ColumnBody_DragOver"
-              DragDrop.DragLeave="ColumnBody_DragLeave"
-              DragDrop.Drop="ColumnBody_Drop">
+      <Border Classes="kanban-column" Classes.drag-over="{Binding IsDropTarget}">
         <Grid RowDefinitions="Auto,Auto">
 
           <!-- Encabezado de columna: mismo contenido y mismas reglas de revelado que en la vertical, pero
@@ -831,6 +809,16 @@
   </UserControl.Resources>
 
   <Grid>
+    <!-- La instantánea conserva la tarjeta completa (incluidas las etiquetas desplegadas). La capa
+         no participa en el hit testing ni en la medida de las columnas y comparte el zoom de la vista. -->
+    <Canvas x:Name="CardDragLayer" ZIndex="100" IsHitTestVisible="False" IsVisible="False" ClipToBounds="True">
+      <Border x:Name="CardDropIndicator" Background="{DynamicResource InkBrush}" IsVisible="False" />
+      <Grid x:Name="CardDragPreview">
+        <Image x:Name="CardDragImage" Stretch="Fill" />
+        <Border Classes="dropdown-popover" Background="Transparent" BorderBrush="{DynamicResource Ink60}"
+                Padding="0" MaxHeight="Infinity" />
+      </Grid>
+    </Canvas>
 
     <!-- IsVisible vive en este Border envolvente (no en el Grid interior) por el mismo motivo que en el
          panel de "Gestión de tareas" más abajo: cambiar el DataContext del Grid reapuntaría también

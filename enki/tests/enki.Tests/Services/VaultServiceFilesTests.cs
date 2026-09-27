@@ -63,4 +63,22 @@ public class VaultServiceFilesTests : IDisposable
         Assert.Equal(3, VaultService.CountFolderEntries(Path.Combine(_vaultPath, "carpeta")));
         Assert.Equal(0, VaultService.CountFolderEntries(Path.Combine(_vaultPath, "no-existe")));
     }
+
+    [Fact]
+    public void CountFilesRecursive_MatchesFileBrowser_AndHandlesMissingRoot()
+    {
+        Touch("raiz.pdf");
+        Touch("a/b/imagen.png");
+        Touch("a/nota.md");
+        Touch("a/otra.MD");
+        Touch("a/.oculto.json");
+        Touch(".tasks/reminders.json");
+        Touch(".sessions/sesion/archivo.pdf");
+        Touch(".trash/borrado.pdf");
+
+        Assert.Equal(2, VaultService.CountFilesRecursive(_vaultPath));
+        Assert.Equal(_vault.GetFilesRecursive(_vaultPath).Count, VaultService.CountFilesRecursive(_vaultPath));
+        Assert.Equal(0, VaultService.CountFilesRecursive(Path.Combine(_vaultPath, "no-existe")));
+        Assert.Equal(0, VaultService.CountFilesRecursive(string.Empty));
+    }
 }

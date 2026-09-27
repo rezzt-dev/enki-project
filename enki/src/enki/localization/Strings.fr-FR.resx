@@ -4653,7 +4653,7 @@ Bonne rédaction.</value>
     <value>Éléments à échéance aujourd'hui ou en retard, entre Kanban, Polar et Rappels</value>
   </data>
   <data name="DashboardSection_Vault_Description" xml:space="preserve">
-    <value>Notes, sessions et taille sur le disque du coffre actuel</value>
+    <value>Notes, fichiers, sessions et espace disque du coffre actuel</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
     <value>Notifications récentes et le récapitulatif de mes tâches Polar</value>
@@ -5977,4 +5977,7 @@ Bonne rédaction.</value>
   <data name="Explorer_CopyReady" xml:space="preserve"><value>Prêt à copier</value></data>
   <data name="Explorer_CutReady" xml:space="preserve"><value>Prêt à déplacer au collage</value></data>
   <data name="Explorer_Pasted" xml:space="preserve"><value>Élément collé</value></data>
+  <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>FICHIERS</value></data>
+  <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notes et fichiers de toutes les sessions. Exclut les éléments supprimés et les fichiers internes.</value></data>
+  <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Taille totale du dossier du coffre, y compris les données internes et la corbeille.</value></data>
 </root>

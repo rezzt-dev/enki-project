@@ -68,7 +68,38 @@ public class DashboardViewModelTests : IDisposable
 
         Assert.Equal(_vaultPath, h.Dashboard.VaultPath);
         Assert.Equal(0, h.Dashboard.TotalNoteCount);
+        Assert.Equal(0, h.Dashboard.TotalFileCount);
         Assert.False(h.Dashboard.HasFeaturedNote);
+    }
+
+    [Fact]
+    public void Reload_CountsFilesAcrossVaultAndSessions_WithoutInternalDataOrTrash()
+    {
+        var h = CreateViewModel();
+        Assert.True(SpinWait.SpinUntil(() => !h.Dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
+        var session = h.Sessions.Create("Trabajo");
+        foreach (var root in new[] { _vaultPath, session.RootPath })
+        {
+            File.WriteAllText(Path.Combine(root, "documento.pdf"), "pdf");
+            File.WriteAllText(Path.Combine(root, "nota.md"), "# Nota");
+            File.WriteAllText(Path.Combine(root, "mayusculas.MD"), "# Nota");
+            File.WriteAllText(Path.Combine(root, ".oculto.json"), "{}");
+            var folder = Directory.CreateDirectory(Path.Combine(root, "carpeta"));
+            File.WriteAllText(Path.Combine(folder.FullName, "imagen.png"), "png");
+            var trash = Directory.CreateDirectory(Path.Combine(root, ".trash"));
+            File.WriteAllText(Path.Combine(trash.FullName, "borrado.pdf"), "pdf");
+        }
+        var tasks = Directory.CreateDirectory(Path.Combine(_vaultPath, ".tasks"));
+        File.WriteAllText(Path.Combine(tasks.FullName, "reminders.json"), "[]");
+
+        h.Dashboard.Reload();
+
+        Assert.Equal(4, h.Dashboard.TotalFileCount);
+        Assert.True(SpinWait.SpinUntil(() => !h.Dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
+        File.Delete(Path.Combine(session.RootPath, "documento.pdf"));
+        h.Dashboard.Reload();
+        Assert.Equal(3, h.Dashboard.TotalFileCount);
+        Assert.True(SpinWait.SpinUntil(() => !h.Dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
     }
 
     [Fact]

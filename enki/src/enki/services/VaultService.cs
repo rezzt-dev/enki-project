@@ -1525,6 +1525,32 @@ public sealed partial class VaultService
         foreach (var child in folder.Children) CollectFilesRecursive(child, result);
     }
 
+    /// <summary>Cuenta archivos visibles sin cargar contenido ni metadatos. Excluye Markdown y
+    /// carpetas internas; las sesiones se cuentan pasando su raíz explícitamente. Omite enlaces de
+    /// directorio para evitar ciclos y conserva el recuento accesible si una carpeta desaparece.</summary>
+    public static int CountFilesRecursive(string root)
+    {
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return 0;
+
+        var count = 0;
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(root))
+                if (!Path.GetFileName(file).StartsWith('.') &&
+                    !file.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) count++;
+
+            foreach (var directory in new DirectoryInfo(root).EnumerateDirectories())
+                if (!directory.Name.StartsWith('.') &&
+                    !directory.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    count += CountFilesRecursive(directory.FullName);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // El siguiente refresco volverá a intentar acceder a la carpeta.
+        }
+        return count;
+    }
+
     /// <summary>Cuántos elementos enseña Archivos al entrar en <paramref name="folderPath"/>: sus subcarpetas
     /// visibles más sus archivos que no son notas. Cuenta entradas del directorio sin leer los metadatos de
     /// ninguna, que es todo lo que necesita el contador de una tarjeta de carpeta; una carpeta que desaparece o

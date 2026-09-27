@@ -4653,7 +4653,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Heute fällige oder überfällige Einträge aus Kanban, Polar und Erinnerungen</value>
   </data>
   <data name="DashboardSection_Vault_Description" xml:space="preserve">
-    <value>Notizen, Sitzungen und Speichergröße des aktuellen Tresors</value>
+    <value>Notizen, Dateien, Sitzungen und Speicherplatz des aktuellen Vaults</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
     <value>Letzte Benachrichtigungen und meine Polar-Aufgabenübersicht</value>
@@ -5977,4 +5977,7 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Explorer_CopyReady" xml:space="preserve"><value>Zum Kopieren bereit</value></data>
   <data name="Explorer_CutReady" xml:space="preserve"><value>Zum Verschieben beim Einfügen bereit</value></data>
   <data name="Explorer_Pasted" xml:space="preserve"><value>Element eingefügt</value></data>
+  <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>DATEIEN</value></data>
+  <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notizen und Dateien aus allen Sitzungen. Gelöschte Einträge und interne Dateien sind ausgeschlossen.</value></data>
+  <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Gesamtgröße des Vault-Ordners einschließlich interner Daten und Papierkorb.</value></data>
 </root>

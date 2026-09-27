@@ -11,6 +11,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### ANADIDO
 - opcion `ajustes > apariencia > barra de titulo > mostrar controles de ventana`, activada por defecto y guardada junto con las preferencias del vault: permite ocultar al instante los botones propios de minimizar, maximizar y cerrar; al hacerlo, buscar, notificaciones, recordatorios e inbox ocupan el extremo derecho conservando su orden, separacion y margen exterior. El control solo se habilita para la barra propia de Enki —la barra nativa conserva los botones del sistema operativo— y esta traducido a todos los idiomas soportados.
+- ampliar la tarjeta de almacen del panel principal con el recuento de archivos visibles distintos de Markdown en la raiz, subcarpetas y sesiones; excluye datos internos, ocultos y papelera, separa su inventario del tamano real en disco y traduce sus etiquetas y ayudas en todos los idiomas soportados.
+- profesionalizar el arrastre de tarjetas Kanban con una copia flotante completa que sigue el punto donde se agarra, atenua el origen, marca la posicion de insercion y el destino, desplaza automaticamente los bordes y permite ordenar o mover entre columnas en los dos disenos; `Escape`, soltar fuera, cambiar de vista o perder el foco cancelan sin modificar el tablero.
 
 #### ANADIDO
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
@@ -34,6 +36,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### ADDED
 - a `settings > appearance > title bar > show window controls` option, enabled by default and stored with the vault preferences: it can instantly hide enki's own minimise, maximise and close buttons; search, notifications, reminders and inbox then move to the far right while preserving their order, spacing and outer margin. The toggle is only enabled for Enki's custom title bar —the native title bar keeps the operating system controls— and is translated into every supported language.
+- extend the dashboard storage card with a count of visible non-Markdown files in the root, subfolders and sessions; it excludes internal, hidden and trash data, distinguishes inventory from actual disk size, and translates its labels and help text into every supported language.
+- professionalise Kanban card dragging with a full floating copy that follows the grab point, dims the source, marks the insertion position and target, automatically scrolls edges, and supports reordering or moving across columns in both layouts; `Escape`, dropping outside, changing view or losing focus cancel without changing the board.
 
 #### ADDED
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.

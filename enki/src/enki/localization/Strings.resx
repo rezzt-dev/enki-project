@@ -4653,7 +4653,7 @@ Happy writing.</value>
     <value>Items due today or overdue, across Kanban, Polar and Reminders</value>
   </data>
   <data name="DashboardSection_Vault_Description" xml:space="preserve">
-    <value>Notes, sessions and disk size for the current vault</value>
+    <value>Notes, files, sessions and disk size of the current vault</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
     <value>Recent notifications and my Polar task summary</value>
@@ -5977,4 +5977,7 @@ Happy writing.</value>
   <data name="Explorer_CopyReady" xml:space="preserve"><value>Ready to copy</value></data>
   <data name="Explorer_CutReady" xml:space="preserve"><value>Ready to move when pasted</value></data>
   <data name="Explorer_Pasted" xml:space="preserve"><value>Item pasted</value></data>
+  <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>FILES</value></data>
+  <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notes and files from all sessions. Excludes deleted items and internal files.</value></data>
+  <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Total size of the vault folder, including internal data and trash.</value></data>
 </root>

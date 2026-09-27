@@ -12,18 +12,14 @@ namespace enki.Views;
 
 public partial class KanbanView : UserControl
 {
-    private static readonly DataFormat<string> CardDragFormat =
-        DataFormat.CreateStringApplicationFormat("com.enki.kanban-card-id");
-
-    private PointerPressedEventArgs? _dragPressArgs;
-    private Point _dragStartPoint;
-    private bool _dragging;
+    private readonly KanbanCardDragController _cardDrag;
 
     private KanbanViewModel? _subscribedVm;
 
     public KanbanView()
     {
         InitializeComponent();
+        _cardDrag = new KanbanCardDragController(this, CardDragLayer, CardDragPreview, CardDragImage, CardDropIndicator);
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => Unsubscribe();
     }
@@ -123,6 +119,7 @@ public partial class KanbanView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        _cardDrag.Cancel();
         Unsubscribe();
         _subscribedVm = Vm;
         if (_subscribedVm is null) return;
@@ -140,6 +137,11 @@ public partial class KanbanView : UserControl
     // immediately" courtesy as every other inline editor in this view.
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(KanbanViewModel.DisplayMode) or nameof(KanbanViewModel.BoardOrientation)
+            or nameof(KanbanViewModel.CardEditor) or nameof(KanbanViewModel.CardDetail)
+            or nameof(KanbanViewModel.IsArchiveOpen))
+            _cardDrag.Cancel();
+
         if (e.PropertyName != nameof(KanbanViewModel.CardEditor)) return;
         if (Vm is not { CardEditor: not null }) return;
 
@@ -148,126 +150,6 @@ public partial class KanbanView : UserControl
             TitleBox.Focus();
             TitleBox.SelectAll();
         });
-    }
-
-    // ===================== Drag source: cards =====================
-
-    // Button/Border click-gesture tracking marks PointerPressed/PointerMoved as handled, so a plain
-    // XAML event attribute on the card never sees them — same issue NotesView works around for note
-    // cards and editor tabs, and the same fix (AddHandler with handledEventsToo:true) applies here.
-    private void CardBody_Initialized(object? sender, EventArgs e)
-    {
-        if (sender is not Control control) return;
-        control.AddHandler(InputElement.PointerPressedEvent, CardBody_PointerPressed,
-            RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
-        control.AddHandler(InputElement.PointerMovedEvent, CardBody_PointerMoved,
-            RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
-    }
-
-    private void CardBody_PointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        _dragPressArgs = e;
-        _dragStartPoint = e.GetPosition(null);
-        _dragging = false;
-    }
-
-    private async void CardBody_PointerMoved(object? sender, PointerEventArgs e)
-    {
-        if (_dragging || _dragPressArgs is null) return;
-        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-        if (sender is not Control { DataContext: KanbanCardViewModel card }) return;
-
-        var current = e.GetPosition(null);
-        var dx = current.X - _dragStartPoint.X;
-        var dy = current.Y - _dragStartPoint.Y;
-        if (dx * dx + dy * dy < 16) return; // ~4px threshold
-
-        _dragging = true;
-        var pressArgs = _dragPressArgs;
-        _dragPressArgs = null;
-
-        try
-        {
-            using var transfer = new DataTransfer();
-            transfer.Add(DataTransferItem.Create(CardDragFormat, card.Id));
-            await DragDrop.DoDragDropAsync(pressArgs, transfer, DragDropEffects.Move);
-        }
-        finally
-        {
-            _dragging = false;
-        }
-    }
-
-    // ===================== Drop target: a card (insert before it) =====================
-
-    private void CardBody_DragEnter(object? sender, DragEventArgs e) => UpdateCardDragOver(sender, e, true);
-    private void CardBody_DragOver(object? sender, DragEventArgs e) => UpdateCardDragOver(sender, e, true);
-    private void CardBody_DragLeave(object? sender, DragEventArgs e) => UpdateCardDragOver(sender, e, false);
-
-    private static void UpdateCardDragOver(object? sender, DragEventArgs e, bool isOver)
-    {
-        if (sender is not Control { DataContext: KanbanCardViewModel target }) return;
-
-        var valid = e.DataTransfer.Contains(CardDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
-        target.IsDropTarget = isOver && valid;
-
-        // Stop the drag-over from also bubbling up to the column body below, which would light up
-        // both the targeted card and its whole column at once.
-        e.Handled = true;
-    }
-
-    private void CardBody_Drop(object? sender, DragEventArgs e)
-    {
-        if (sender is not Control { DataContext: KanbanCardViewModel target } || Vm is not { } vm) return;
-        target.IsDropTarget = false;
-        e.Handled = true;
-
-        var sourceId = e.DataTransfer.TryGetValue(CardDragFormat);
-        if (sourceId is null) return;
-
-        var source = FindCard(vm, sourceId);
-        if (source is null || ReferenceEquals(source, target)) return;
-
-        var targetColumn = FindColumn(vm, target);
-        if (targetColumn is not null) vm.MoveCard(source, targetColumn, target);
-    }
-
-    // ===================== Drop target: column body (append at the end) =====================
-
-    private void ColumnBody_DragEnter(object? sender, DragEventArgs e) => UpdateColumnDragOver(sender, e, true);
-    private void ColumnBody_DragOver(object? sender, DragEventArgs e) => UpdateColumnDragOver(sender, e, true);
-    private void ColumnBody_DragLeave(object? sender, DragEventArgs e) => UpdateColumnDragOver(sender, e, false);
-
-    private static void UpdateColumnDragOver(object? sender, DragEventArgs e, bool isOver)
-    {
-        if (sender is not Control { DataContext: KanbanColumnViewModel column }) return;
-
-        var valid = e.DataTransfer.Contains(CardDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
-        column.IsDropTarget = isOver && valid;
-    }
-
-    private void ColumnBody_Drop(object? sender, DragEventArgs e)
-    {
-        if (sender is not Control { DataContext: KanbanColumnViewModel column } || Vm is not { } vm) return;
-        column.IsDropTarget = false;
-        if (e.Handled) return; // a card inside this column already handled the drop
-
-        var sourceId = e.DataTransfer.TryGetValue(CardDragFormat);
-        if (sourceId is null) return;
-
-        var source = FindCard(vm, sourceId);
-        if (source is not null) vm.MoveCard(source, column, null);
-    }
-
-    private static KanbanCardViewModel? FindCard(KanbanViewModel vm, string id)
-    {
-        foreach (var column in vm.Columns)
-            foreach (var card in column.Cards)
-                if (string.Equals(card.Id, id, StringComparison.Ordinal))
-                    return card;
-        return null;
     }
 
     private static KanbanColumnViewModel? FindColumn(KanbanViewModel vm, KanbanCardViewModel card)

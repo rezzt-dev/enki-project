@@ -116,6 +116,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private int _totalNoteCount;
 
     [ObservableProperty]
+    private int _totalFileCount;
+
+    [ObservableProperty]
     private int _pendingTaskCount;
 
     [ObservableProperty]
@@ -417,6 +420,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
         RefreshVaultSizeLabel();
         TotalNoteCount = VaultService.CountNotesRecursive(_vaultService.VaultPath)
             + sessions.Sum(session => session.NoteCount);
+        TotalFileCount = VaultService.CountFilesRecursive(_vaultService.VaultPath)
+            + sessions.Sum(session => VaultService.CountFilesRecursive(session.RootPath));
 
         var recentNotes = notes.Take(6).Select(n => new NoteCardViewModel(n)).ToList();
         FeaturedNote = recentNotes.Count > 0 ? recentNotes[0] : null;
