@@ -26,6 +26,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - mover `.docs/alpha-to-beta.md` a `.docs/agent-docs/alpha-to-beta.md`, sin cambiar su contenido, para agrupar la documentacion dirigida a agentes de ia.
 
 #### CORREGIDO
+- mostrar siempre el texto de prioridad baja, media o alta en las tarjetas del tablero kanban, tanto en el diseno vertical como en el horizontal, conservando el indicador visual y el clic para cambiarla.
 - contar en el resumen de almacenamiento del dashboard todas las notas de la raiz y de las subcarpetas del vault, ademas de todas las sesiones; el recuento recursivo evita leer el contenido de las notas y excluye las carpetas ocultas.
 - exportar a png/pdf el tablero kanban y el calendario sin recortar lo que quedaba oculto por sus `ScrollViewer` internos: tarjetas de una columna que no caben en alto, franjas del kanban horizontal, filas de la cuadricula del mes y horas de semana/dia; `FullSizeLayout` maqueta la region a su tamano completo mientras dura el render y la restaura despues.
 - exportar a 2x sin ampliar ni recortar la imagen: el contenido rasterizado se pegaba con su tamano logico en vez de en pixeles del bitmap, asi que a 2x solo se copiaba el cuadrante superior izquierdo estirado al doble.
@@ -51,6 +52,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - move `.docs/alpha-to-beta.md` to `.docs/agent-docs/alpha-to-beta.md`, without changing its contents, to group documentation intended for ai agents.
 
 #### FIXED
+- always show the low, medium or high priority label on kanban board cards in both vertical and horizontal layouts, preserving the visual indicator and click action to change priority.
 - count every note at the vault root and in its subfolders, plus every session, in the dashboard storage summary; the recursive count avoids reading note contents and excludes hidden folders.
 - export the kanban board and the calendar to png/pdf without clipping what their internal `ScrollViewer`s hid: cards that overflow a column's height, horizontal kanban lanes, month grid rows and week/day hour rows; `FullSizeLayout` lays out the region at its full size for the duration of the render and restores it afterwards.
 - export at 2x without enlarging or cropping the image: the rendered content was pasted using its logical size instead of the bitmap's pixel size, so at 2x only the top-left quadrant got copied and stretched.

@@ -57,10 +57,7 @@
         <StackPanel Spacing="9">
 
           <!-- Prioridad (clic para rotar Baja → Media → Alta) + acciones de la tarjeta.
-               La palabra solo se escribe cuando la prioridad es alta: repetir "MEDIA" en veinte tarjetas
-               seguidas es ruido, y baja/media ya se distinguen por la intensidad del punto (§1.3). El
-               tooltip del punto dice siempre cuál es, así que no se pierde nada por el camino
-               (KanbanCardViewModel.IsHighPriority / PriorityTooltip). -->
+               La etiqueta muestra siempre la prioridad actual junto al indicador. -->
           <Grid ColumnDefinitions="Auto,*,Auto" MinHeight="24">
             <Button Grid.Column="0" Classes="ghost" Padding="2,0" VerticalAlignment="Center"
                     Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).CyclePriorityCommand}"
@@ -72,7 +69,7 @@
                          Classes.medium="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium}"
                          Classes.high="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High}" />
                 <TextBlock Text="{Binding PriorityLabel, Converter={StaticResource UpperCaseConverter}}" Classes="faint"
-                           LetterSpacing="1" VerticalAlignment="Center" IsVisible="{Binding IsHighPriority}" />
+                           LetterSpacing="1" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
 
@@ -629,10 +626,7 @@
         <Grid RowDefinitions="Auto,*,Auto,Auto,Auto">
 
               <!-- Prioridad (clic para rotar Baja → Media → Alta) + acciones de la tarjeta.
-                   La palabra solo se escribe cuando la prioridad es alta: repetir "MEDIA" en veinte tarjetas
-                   seguidas es ruido, y baja/media ya se distinguen por la intensidad del punto (§1.3). El
-                   tooltip del punto dice siempre cuál es, así que no se pierde nada por el camino
-                   (KanbanCardViewModel.IsHighPriority / PriorityTooltip). -->
+                   La etiqueta muestra siempre la prioridad actual junto al indicador. -->
               <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" MinHeight="24">
                 <Button Grid.Column="0" Classes="ghost" Padding="2,0" VerticalAlignment="Center"
                         Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).CyclePriorityCommand}"
@@ -644,7 +638,7 @@
                              Classes.medium="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium}"
                              Classes.high="{Binding Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High}" />
                     <TextBlock Text="{Binding PriorityLabel, Converter={StaticResource UpperCaseConverter}}" Classes="faint"
-                               LetterSpacing="1" VerticalAlignment="Center" IsVisible="{Binding IsHighPriority}" />
+                               LetterSpacing="1" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
 

@@ -27,15 +27,10 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         _ => LocalizationService.Instance["Kanban_Priority_Medium"]
     };
 
-    /// <summary>La tarjeta solo escribe la palabra "alta" cuando de verdad lo es: repetir "MEDIA" en
-    /// veinte tarjetas seguidas es ruido, y baja/media ya se distinguen por la intensidad del punto
-    /// (docs/agent-docs/sistema-diseno-web.md §1.3, "más opaco = más prioridad"). Lo excepcional se
-    /// nombra, lo normal se insinúa.</summary>
+    /// <summary>Indica si la tarjeta tiene prioridad alta.</summary>
     public bool IsHighPriority => Card.Priority == KanbanPriority.High;
 
-    /// <summary>Contrapartida de esconder la etiqueta en baja/media: el tooltip del punto siempre dice la
-    /// prioridad actual además de qué hace el clic, así que la información sigue disponible sin abrir la
-    /// tarjeta y sin depender de distinguir dos grises.</summary>
+    /// <summary>El tooltip indica la prioridad actual y explica la acción al hacer clic.</summary>
     public string PriorityTooltip => string.Format(
         CultureInfo.CurrentCulture,
         LocalizationService.Instance["Kanban_Card_PriorityTooltip"],
