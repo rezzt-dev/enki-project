@@ -11,28 +11,14 @@ using enki.ViewModels;
 
 namespace enki.Views;
 
-/// <summary>Fase 3 (docs/calendar-feature/12-plan-de-implementacion-por-fases.md) code-behind: drag &amp;
-/// drop to reschedule (doc 05 §2) and click-to-create on an empty Semana/Día hour slot (doc 05 §3), the
-/// two gestures that genuinely need code-behind rather than a pure XAML binding — a slot's Command needs
-/// both the column's date and the row's hour, which live in two different nested DataContexts a single
-/// CommandParameter binding can't combine (a Mes day cell only needs its own date, so that one is wired
-/// directly in CalendarView.axaml via OpenQuickCreateForDayCommand). Mirrors the exact drag&amp;drop
-/// mechanism <c>KanbanView.axaml.cs</c> already uses for cards (same <see cref="DataTransferItem"/>/
-/// <see cref="DragDrop.DoDragDropAsync"/> APIs), per doc 05 §2's "reutilización técnica obligatoria".</summary>
+/// <summary>Interacciones visuales del calendario: arrastre flotante, creación en una franja y ajuste
+/// de duración. Las escrituras siguen pasando por el viewmodel y los servicios de cada origen.</summary>
 public partial class CalendarView : UserControl
 {
-    private static readonly DataFormat<string> ItemDragFormat =
-        DataFormat.CreateStringApplicationFormat("com.enki.calendar-item");
-
-    private PointerPressedEventArgs? _dragPressArgs;
-    private Point _dragStartPoint;
-    private bool _dragging;
+    private readonly CalendarItemDragController _itemDrag;
 
     // ===================== Franja horaria: redimensionar (doc 05 §2b) =====================
-    // Separate pointer state machine from the drag-to-move one above — the resize handle sits inside the
-    // same timed chip that already listens for a whole-chip move-drag (TimedChip_Initialized), so
-    // Chip_PointerMoved below bails out early whenever _resizing is true instead of also starting a
-    // DragDrop operation for the same gesture.
+    // El asa de duración mantiene su propio gesto y bloquea el arrastre de movimiento.
     private Panel? _resizeVisual;
     private CalendarTimedItemViewModel? _resizingItem;
     private double _resizeStartPointerY;
@@ -40,18 +26,13 @@ public partial class CalendarView : UserControl
     private int _resizeLiveDurationMinutes;
     private bool _resizing;
 
-    /// <summary>Only the source reference travels through the drag, same as the wire format itself
-    /// (<see cref="ItemDragFormat"/>'s payload is just "type|id") — this is what lets a
-    /// <see cref="CalendarUnscheduledItemViewModel"/> row (Fase 4, doc §"Panel de no programadas") share
-    /// the exact same drag source plumbing as a positioned <see cref="CalendarItemViewModel"/> chip without
-    /// either type needing to know about the other.</summary>
-    private (CalendarItemSourceType SourceType, string SourceId)? _dragSource;
-
     private CalendarViewModel? _subscribedVm;
 
     public CalendarView()
     {
         InitializeComponent();
+        _itemDrag = new CalendarItemDragController(this, CalendarDragLayer, CalendarDragPreview, CalendarDragImage,
+            CalendarDropIndicator, () => _resizing);
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => Unsubscribe();
     }
@@ -60,6 +41,7 @@ public partial class CalendarView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        _itemDrag.Cancel();
         Unsubscribe();
         _subscribedVm = Vm;
         if (_subscribedVm is null) return;
@@ -80,6 +62,10 @@ public partial class CalendarView : UserControl
     /// S, D, A, N) seguían llegando al calendario con el modal delante.</summary>
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(CalendarViewModel.ActiveView) or nameof(CalendarViewModel.ReferenceDate)
+            or nameof(CalendarViewModel.QuickCreate) or nameof(CalendarViewModel.ItemPendingDelete)
+            or nameof(CalendarViewModel.IsTodayPopoverOpen))
+            _itemDrag.Cancel();
         if (e.PropertyName != nameof(CalendarViewModel.QuickCreate)) return;
         if (Vm is not { QuickCreate: not null }) return;
 
@@ -212,118 +198,21 @@ public partial class CalendarView : UserControl
     private void AttachDragHandlers(Control control)
     {
         control.AddHandler(InputElement.PointerPressedEvent, Chip_PointerPressed,
-            RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+            RoutingStrategies.Tunnel, handledEventsToo: true);
         control.AddHandler(InputElement.PointerMovedEvent, Chip_PointerMoved,
-            RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+            RoutingStrategies.Tunnel, handledEventsToo: true);
+        control.AddHandler(InputElement.PointerReleasedEvent, (sender, e) => _itemDrag.Release(sender, e),
+            RoutingStrategies.Tunnel, handledEventsToo: true);
     }
 
     private void Chip_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        _dragPressArgs = e;
-        _dragStartPoint = e.GetPosition(null);
-        _dragging = false;
-        _dragSource = sender switch
-        {
-            // A ghost occurrence can't be dragged/rescheduled (docs/calendar-feature/
-            // 03-glosario-y-modelo-de-datos.md §4) — no drag source means Chip_PointerMoved never starts
-            // one, same effect as omitting AttachDragHandlers for it without needing a third code path.
-            Control { DataContext: CalendarItemViewModel { IsGhostOccurrence: true } } => null,
-            Control { DataContext: CalendarItemViewModel item } => (item.SourceType, item.SourceId),
-            Control { DataContext: CalendarTimedItemViewModel { Item.IsGhostOccurrence: true } } => null,
-            Control { DataContext: CalendarTimedItemViewModel timed } => (timed.Item.SourceType, timed.Item.SourceId),
-            Control { DataContext: CalendarUnscheduledItemViewModel unscheduled } => (unscheduled.SourceType, unscheduled.SourceId),
-            _ => null
-        };
+        if (sender is Control control) _itemDrag.Press(control, e);
     }
 
-    private async void Chip_PointerMoved(object? sender, PointerEventArgs e)
+    private void Chip_PointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_resizing) return; // the resize handle's own gesture owns this pointer right now
-        if (_dragging || _dragPressArgs is null || _dragSource is not { } source) return;
-        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-
-        var current = e.GetPosition(null);
-        var dx = current.X - _dragStartPoint.X;
-        var dy = current.Y - _dragStartPoint.Y;
-        if (dx * dx + dy * dy < 16) return; // ~4px threshold
-
-        _dragging = true;
-        var pressArgs = _dragPressArgs;
-        _dragPressArgs = null;
-
-        try
-        {
-            using var transfer = new DataTransfer();
-            transfer.Add(DataTransferItem.Create(ItemDragFormat, $"{(int)source.SourceType}|{source.SourceId}"));
-            await DragDrop.DoDragDropAsync(pressArgs, transfer, DragDropEffects.Move);
-        }
-        finally
-        {
-            _dragging = false;
-            _dragSource = null;
-        }
-    }
-
-    private static bool TryParseDrag(DragEventArgs e, out CalendarItemSourceType sourceType, out string sourceId)
-    {
-        sourceType = default;
-        sourceId = string.Empty;
-
-        var raw = e.DataTransfer.TryGetValue(ItemDragFormat);
-        if (raw is null) return false;
-
-        var parts = raw.Split('|', 2);
-        if (parts.Length != 2 || !int.TryParse(parts[0], out var typeValue)) return false;
-
-        sourceType = (CalendarItemSourceType)typeValue;
-        sourceId = parts[1];
-        return true;
-    }
-
-    // ===================== Drop target: Mes day cell — whole-day reschedule, keeps time =====================
-
-    private void MonthCell_DragEnter(object? sender, DragEventArgs e) => UpdateMonthCellDragOver(sender, e, true);
-    private void MonthCell_DragOver(object? sender, DragEventArgs e) => UpdateMonthCellDragOver(sender, e, true);
-    private void MonthCell_DragLeave(object? sender, DragEventArgs e) => UpdateMonthCellDragOver(sender, e, false);
-
-    private static void UpdateMonthCellDragOver(object? sender, DragEventArgs e, bool isOver)
-    {
-        if (sender is not Border { DataContext: CalendarMonthDayViewModel } border) return;
-        var valid = e.DataTransfer.Contains(ItemDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
-        border.Classes.Set("drag-over", isOver && valid);
-    }
-
-    private void MonthCell_Drop(object? sender, DragEventArgs e)
-    {
-        if (sender is not Border { DataContext: CalendarMonthDayViewModel day } border || Vm is null) return;
-        border.Classes.Set("drag-over", false);
-        if (!TryParseDrag(e, out var sourceType, out var sourceId)) return;
-
-        Vm.MoveItem(sourceType, sourceId, day.Date, null);
-    }
-
-    // ===================== Drop target: Semana/Día "todo el día" strip — same as a Mes cell =====================
-
-    private void AllDayColumn_DragEnter(object? sender, DragEventArgs e) => UpdateWeekColumnDragOver(sender, e, true);
-    private void AllDayColumn_DragOver(object? sender, DragEventArgs e) => UpdateWeekColumnDragOver(sender, e, true);
-    private void AllDayColumn_DragLeave(object? sender, DragEventArgs e) => UpdateWeekColumnDragOver(sender, e, false);
-
-    private static void UpdateWeekColumnDragOver(object? sender, DragEventArgs e, bool isOver)
-    {
-        if (sender is not Border { DataContext: CalendarWeekColumnViewModel } border) return;
-        var valid = e.DataTransfer.Contains(ItemDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
-        border.Classes.Set("drag-over", isOver && valid);
-    }
-
-    private void AllDayColumn_Drop(object? sender, DragEventArgs e)
-    {
-        if (sender is not Border { DataContext: CalendarWeekColumnViewModel column } border || Vm is null) return;
-        border.Classes.Set("drag-over", false);
-        if (!TryParseDrag(e, out var sourceType, out var sourceId)) return;
-
-        Vm.MoveItem(sourceType, sourceId, column.Date, null);
+        _itemDrag.Move(sender, e);
     }
 
     private void AllDayColumn_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -336,31 +225,6 @@ public partial class CalendarView : UserControl
     // The hour cell's own DataContext is only CalendarHourRowViewModel (it's rendered by an inner
     // ItemsControl shared by every day column) — the day it belongs to has to be recovered by walking up
     // to the nearest ancestor whose DataContext is the owning CalendarWeekColumnViewModel.
-
-    private void HourCell_DragEnter(object? sender, DragEventArgs e) => UpdateHourCellDragOver(sender, e, true);
-    private void HourCell_DragOver(object? sender, DragEventArgs e) => UpdateHourCellDragOver(sender, e, true);
-    private void HourCell_DragLeave(object? sender, DragEventArgs e) => UpdateHourCellDragOver(sender, e, false);
-
-    private static void UpdateHourCellDragOver(object? sender, DragEventArgs e, bool isOver)
-    {
-        if (sender is not Border { DataContext: CalendarHourRowViewModel } border) return;
-        var valid = e.DataTransfer.Contains(ItemDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
-        border.Classes.Set("drag-over", isOver && valid);
-    }
-
-    private void HourCell_Drop(object? sender, DragEventArgs e)
-    {
-        if (sender is not Border { DataContext: CalendarHourRowViewModel hourRow } border || Vm is null) return;
-        border.Classes.Set("drag-over", false);
-        if (!TryParseDrag(e, out var sourceType, out var sourceId)) return;
-
-        var column = FindAncestorDataContext<CalendarWeekColumnViewModel>(border);
-        if (column is null) return;
-
-        var time = RoundToQuarterHour(hourRow.Hour, e.GetPosition(border).Y / border.Bounds.Height);
-        Vm.MoveItem(sourceType, sourceId, column.Date, time);
-    }
 
     private void HourCell_PointerPressed(object? sender, PointerPressedEventArgs e)
     {

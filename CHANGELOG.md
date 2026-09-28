@@ -18,6 +18,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
 
 #### CAMBIOS
+- extender al calendario el arrastre flotante de kanban para tarjetas kanban, tareas y subtareas polar y recordatorios, conservando el aspecto y el punto de agarre; resaltar el destino, marcar la hora en pasos de 15 minutos, desplazar la rejilla en sus bordes y admitir agenda, elementos sin programar y chips de "+n mas", con cancelacion segura y escritura sobre el origen real solo al soltar.
 - mejorar el panel lateral plegado de la vista simplificada de notas con un rail de `52px` para explorar, buscar, crear una nota, abrir plantillas o la nota diaria y cambiar de sesion, desplazable en ventanas bajas para mantener todas las acciones accesibles.
 - abrir el arbol y la busqueda temporalmente sobre el editor sin reducir su ancho ni modificar `NotesSimpleSidebarVisible`; resaltar el acceso activo, dar foco a la busqueda, permitir activar filas con `Intro` o `Espacio` y cerrar el navegador al abrir una nota, pulsar `Escape`, cerrar o hacer clic fuera; la chincheta fija el panel y guarda la preferencia.
 - quitar el borde exterior del boton de cerrar todas las pestanas en la barra del editor, conservando su icono, tamano y estados de interaccion.
@@ -45,6 +46,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
 
 #### CHANGED
+- extend kanban's floating drag interaction to calendar kanban cards, polar tasks and subtasks, and reminders while preserving their appearance and grab point; highlight the target, mark time in 15-minute steps, scroll at grid edges, and support agenda, unscheduled items and "+n more" chips, with safe cancellation and writes to the real source only on drop.
 - improve the collapsed sidebar of the simplified notes view with a `52px` rail to browse, search, create a note, open templates or the daily note, and switch session; it scrolls in short windows so every action remains accessible.
 - open the tree and search temporarily over the editor without reducing its width or changing `NotesSimpleSidebarVisible`; highlight the active shortcut, focus search, allow rows to activate with `Enter` or `Space`, and dismiss the navigator on note open, `Escape`, close or outside click; the pin fixes the panel open and saves the preference.
 - remove the outer border from the close-all-tabs button in the editor tab bar while preserving its icon, size and interaction states.

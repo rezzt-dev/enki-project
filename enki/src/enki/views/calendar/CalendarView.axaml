@@ -399,6 +399,15 @@
 
   <Grid Margin="36,30,36,26">
 
+    <!-- Misma presentación flotante que Kanban, por encima del contenido y sin interceptar destinos. -->
+    <Canvas x:Name="CalendarDragLayer" ZIndex="100" IsHitTestVisible="False" IsVisible="False" ClipToBounds="True">
+      <Border x:Name="CalendarDropIndicator" Background="{DynamicResource InkBrush}" IsVisible="False" />
+      <Border x:Name="CalendarDragPreview" Classes="dropdown-popover" Padding="0" BorderThickness="0"
+              MaxHeight="Infinity" Background="{DynamicResource AppBackgroundBrush}">
+        <Image x:Name="CalendarDragImage" Stretch="Fill" />
+      </Border>
+    </Canvas>
+
     <!-- La cabecera ocupa solo la columna lateral; el calendario aprovecha toda la altura. -->
     <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
 
@@ -872,10 +881,7 @@
                   <DataTemplate x:DataType="vm:CalendarMonthDayViewModel">
                     <Border Classes="calendar-month-cell"
                             Classes.calendar-last-col="{Binding IsLastColumn}"
-                            Classes.calendar-last-row="{Binding IsLastRow}"
-                            DragDrop.AllowDrop="True"
-                            DragDrop.DragEnter="MonthCell_DragEnter" DragDrop.DragOver="MonthCell_DragOver"
-                            DragDrop.DragLeave="MonthCell_DragLeave" DragDrop.Drop="MonthCell_Drop">
+                            Classes.calendar-last-row="{Binding IsLastRow}">
                       <Grid>
                         <!-- Capa de clic vacío — doc 05 §3: crea un item con la fecha de esta celda. Se
                              sienta por debajo del contenido real en el z-order de este Grid. -->
@@ -979,9 +985,6 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
                     <Border Classes="calendar-week-column" Padding="4,0" MinHeight="20"
-                            DragDrop.AllowDrop="True"
-                            DragDrop.DragEnter="AllDayColumn_DragEnter" DragDrop.DragOver="AllDayColumn_DragOver"
-                            DragDrop.DragLeave="AllDayColumn_DragLeave" DragDrop.Drop="AllDayColumn_Drop"
                             PointerPressed="AllDayColumn_PointerPressed">
                       <Border.ContextMenu>
                         <ContextMenu>
@@ -1031,7 +1034,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
-                      <Border Classes="calendar-week-column">
+                      <Border Classes="calendar-week-column calendar-time-column">
                         <Grid>
                           <ItemsControl ItemsSource="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).HourRows}">
                             <ItemsControl.ItemsPanel>
@@ -1042,9 +1045,6 @@
                             <ItemsControl.ItemTemplate>
                               <DataTemplate x:DataType="vm:CalendarHourRowViewModel">
                                 <Border Classes="calendar-hour-row" Classes.working="{Binding IsWorkingHour}" Height="60"
-                                        DragDrop.AllowDrop="True"
-                                        DragDrop.DragEnter="HourCell_DragEnter" DragDrop.DragOver="HourCell_DragOver"
-                                        DragDrop.DragLeave="HourCell_DragLeave" DragDrop.Drop="HourCell_Drop"
                                         PointerPressed="HourCell_PointerPressed" Cursor="Hand" />
                               </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -1086,11 +1086,13 @@
               <ItemsControl ItemsSource="{Binding AgendaGroups}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarAgendaGroupViewModel">
-                    <StackPanel Spacing="8" Margin="0,0,0,26">
+                    <Border Classes="calendar-agenda-day" Background="Transparent" Margin="0,0,0,26">
+                    <StackPanel Spacing="8">
                       <TextBlock Text="{Binding HeaderLabel}" Classes="eyebrow" />
                       <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,0,0,4" />
                       <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarAgendaItemTemplate}" />
                     </StackPanel>
+                    </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>

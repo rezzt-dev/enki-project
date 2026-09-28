@@ -1225,13 +1225,10 @@ public sealed partial class CalendarViewModel : ViewModelBase
 
     // ===================== Fase 3: arrastrar y soltar para reprogramar (doc 05 §2) =====================
 
-    /// <summary>Rewrites the positioning date (and, when <paramref name="newLocalTime"/> is given, the
-    /// time) of the real source model behind a dragged <see cref="CalendarItemViewModel"/> — resolved by
-    /// <paramref name="sourceType"/>/<paramref name="sourceId"/> rather than by passing the dragged
-    /// viewmodel itself, since Avalonia's <c>DataTransfer</c> can only carry primitive data across a drag
-    /// operation (see CalendarView.axaml.cs's drag-source handlers). Dropping on a whole-day target (a Mes
-    /// cell or a Semana/Día "todo el día" strip) passes <c>null</c> for <paramref name="newLocalTime"/>,
-    /// which keeps whatever time of day the item already had — dropping on an hour slot always sets both.</summary>
+    /// <summary>Reprograma la entidad real identificada por <paramref name="sourceType"/> y
+    /// <paramref name="sourceId"/>. El controlador de arrastre comparte este camino entre chips y filas
+    /// sin programar. Con <paramref name="newLocalTime"/> nulo (Mes, todo el día o Agenda) conserva la
+    /// hora original; al soltar en una franja horaria actualiza tanto la fecha como la hora.</summary>
     public void MoveItem(CalendarItemSourceType sourceType, string sourceId, DateTime newLocalDate, TimeSpan? newLocalTime)
     {
         switch (sourceType)
