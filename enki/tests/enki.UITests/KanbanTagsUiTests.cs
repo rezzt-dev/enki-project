@@ -37,7 +37,7 @@ public sealed class KanbanTagsUiTests
             var sync = new PolarSyncService(auth, new SupabaseRestClient(auth), tasks, new ReminderService(directory), settings);
             var kanban = new KanbanService(directory);
             var model = new KanbanCard { Id = "tags", Title = "Etiquetas largas", Tags = Enumerable.Range(1, 12).Select(i => $"etiqueta-{i:00}").ToList() };
-            kanban.Board.Columns[0].Cards.Add(model);
+            kanban.DefaultBoard.Columns[0].Cards.Add(model);
             var vm = new KanbanViewModel(kanban, auth, new PolarTaskManagementViewModel(tasks, sync), settingsService: settings)
             { BoardOrientation = orientation };
             var view = new KanbanView { DataContext = vm };

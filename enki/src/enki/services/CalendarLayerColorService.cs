@@ -39,7 +39,7 @@ public sealed class CalendarLayerColorService(
     public Dictionary<string, string> BuildMap()
     {
         var overrides = settingsService.Settings.CalendarLayerColors;
-        var columns = kanbanService.Board.Columns;
+        var columns = kanbanService.AllColumns;
         // Same gate the calendar itself uses before showing any Polar data.
         var lists = polarAuthService.IsLinked
             ? polarTaskService.Store.Lists.Where(l => !l.IsDeleted).OrderBy(l => l.OrderIndex).ToList()

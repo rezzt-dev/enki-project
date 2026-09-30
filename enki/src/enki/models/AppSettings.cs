@@ -144,6 +144,32 @@ public sealed class AppSettings
     /// aplicados ni toca las etiquetas de las tarjetas.</summary>
     public bool KanbanShowTagFilter { get; set; } = true;
 
+    /// <summary>Habilita la gestión de varios tableros locales en este vault. Se enciende sola en cuanto
+    /// el almacén guarda más de un tablero (cualquier camino que cree uno lo activa), así que apagarla solo
+    /// tiene efecto mientras quede uno: <c>SettingsViewModel.KanbanMultipleBoardsEnabled</c> avisa en vez
+    /// de dejar tableros inalcanzables.</summary>
+    public bool KanbanMultipleBoardsEnabled { get; set; }
+
+    /// <summary>Último tablero abierto; una identidad obsoleta cae al predeterminado del almacén.</summary>
+    public string? KanbanLastSelectedBoardId { get; set; }
+
+    /// <summary>Muestra el botón de filtro rápido "Alta prioridad" en la barra de herramientas del
+    /// tablero Kanban. Apagado, el botón desaparece (sus tarjetas siguen existiendo y el filtro manual
+    /// sigue disponible en el desplegable de ordenación).</summary>
+    public bool KanbanShowHighPriorityButton { get; set; } = true;
+
+    /// <summary>Muestra el botón de filtro rápido "Vencidas" en la barra de herramientas del tablero
+    /// Kanban.</summary>
+    public bool KanbanShowOverdueButton { get; set; } = true;
+
+    /// <summary>Muestra el botón "Archivadas" (puerta a la ventana de tareas archivadas) en la barra de
+    /// herramientas del tablero Kanban.</summary>
+    public bool KanbanShowArchiveButton { get; set; } = true;
+
+    /// <summary>Muestra el botón de ordenación (desplegable de criterios) en la barra de herramientas del
+    /// tablero Kanban.</summary>
+    public bool KanbanShowSortButton { get; set; } = true;
+
     /// <summary>"Vertical" o "Horizontal" — Ajustes › Apariencia. Vertical apila las tarjetas dentro de
     /// columnas lado a lado (la disposición clásica de un tablero Kanban); Horizontal gira cada columna
     /// 90° en una franja de ancho completo con sus tarjetas desplazándose de lado a lado. Stored as a

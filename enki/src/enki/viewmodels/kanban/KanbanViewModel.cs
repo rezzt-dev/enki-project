@@ -236,6 +236,26 @@ public sealed partial class KanbanViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showTagFilter = true;
 
+    /// <summary>Ajustes › Apariencia › Botones de la barra de herramientas del tablero Kanban: pinta o
+    /// esconde el botón "Alta prioridad".</summary>
+    [ObservableProperty]
+    private bool _showHighPriorityButton = true;
+
+    /// <summary>Ajustes › Apariencia › Botones de la barra de herramientas del tablero Kanban: pinta o
+    /// esconde el botón "Vencidas".</summary>
+    [ObservableProperty]
+    private bool _showOverdueButton = true;
+
+    /// <summary>Ajustes › Apariencia › Botones de la barra de herramientas del tablero Kanban: pinta o
+    /// esconde el botón "Archivadas".</summary>
+    [ObservableProperty]
+    private bool _showArchiveButton = true;
+
+    /// <summary>Ajustes › Apariencia › Botones de la barra de herramientas del tablero Kanban: pinta o
+    /// esconde el botón de ordenación.</summary>
+    [ObservableProperty]
+    private bool _showSortButton = true;
+
     public KanbanViewModel(KanbanService kanbanService, PolarAuthService polarAuthService, PolarTaskManagementViewModel taskManagement,
         VaultService? vaultService = null, SessionService? sessionService = null, Action<string>? onOpenLinkedNote = null,
         SettingsService? settingsService = null, NotificationService? notificationService = null)
@@ -252,6 +272,18 @@ public sealed partial class KanbanViewModel : ViewModelBase
         {
             _showTagFilter = settingsService.Settings.KanbanShowTagFilter;
             settingsService.SettingsChanged += () => ShowTagFilter = settingsService.Settings.KanbanShowTagFilter;
+
+            _showHighPriorityButton = settingsService.Settings.KanbanShowHighPriorityButton;
+            settingsService.SettingsChanged += () => ShowHighPriorityButton = settingsService.Settings.KanbanShowHighPriorityButton;
+
+            _showOverdueButton = settingsService.Settings.KanbanShowOverdueButton;
+            settingsService.SettingsChanged += () => ShowOverdueButton = settingsService.Settings.KanbanShowOverdueButton;
+
+            _showArchiveButton = settingsService.Settings.KanbanShowArchiveButton;
+            settingsService.SettingsChanged += () => ShowArchiveButton = settingsService.Settings.KanbanShowArchiveButton;
+
+            _showSortButton = settingsService.Settings.KanbanShowSortButton;
+            settingsService.SettingsChanged += () => ShowSortButton = settingsService.Settings.KanbanShowSortButton;
         }
 
         if (settingsService is not null &&
@@ -270,6 +302,13 @@ public sealed partial class KanbanViewModel : ViewModelBase
         TagFilter.Changed += ApplyFilters;
         ArchiveTagFilter.Changed += ApplyArchiveFilters;
 
+        // Tablero activo: el último que el usuario tuviera abierto, y si esa identidad ya no existe
+        // (tablero borrado, vault de otra versión) cae al predeterminado del almacén. La suscripción
+        // re-sincroniza la opción "varios tableros" porque puede cambiarla otro camino (importar un
+        // vault con más de un tablero lo activa sola).
+        _currentBoardId = settingsService?.Settings.KanbanLastSelectedBoardId ?? _kanbanService.DefaultBoard.Id;
+        if (settingsService is not null) settingsService.SettingsChanged += RefreshMultipleBoardsSettings;
+        RefreshMultipleBoardsSettings();
         Reload();
     }
 
@@ -345,12 +384,15 @@ public sealed partial class KanbanViewModel : ViewModelBase
 
     public void Reload()
     {
+        _currentBoardId ??= _settingsService?.Settings.KanbanLastSelectedBoardId;
+        if (!_kanbanService.Boards.Any(b => b.Id == _currentBoardId)) _currentBoardId = _kanbanService.DefaultBoard.Id;
+        RefreshBoardOptions();
         Columns.Clear();
-        foreach (var column in _kanbanService.Board.Columns) AddColumnViewModel(column);
-        BoardName = _kanbanService.Board.Name;
+        foreach (var column in CurrentBoard.Columns) AddColumnViewModel(column);
+        BoardName = CurrentBoard.Name;
         RefreshStats();
 
-        var allTags = _kanbanService.Board.Columns
+        var allTags = CurrentBoard.Columns
             .SelectMany(c => c.Cards)
             .SelectMany(card => card.Tags)
             .Distinct(StringComparer.OrdinalIgnoreCase);
@@ -366,6 +408,24 @@ public sealed partial class KanbanViewModel : ViewModelBase
         CardDetail = null;
         IsArchiveOpen = false;
         TaskManagement.CloseForVaultChange();
+        // El tablero activo era una identidad del vault anterior: se olvida entera, incluidos los
+        // estados guardados por tablero, para que el siguiente Reload() caiga al predeterminado del
+        // vault nuevo en vez de arrastrar un id que allí no existe.
+        BoardSwitching?.Invoke();
+        _boardStates.Clear();
+        _currentBoardId = null;
+        CancelBoardSwitch();
+        IsBoardSelectorOpen = IsBoardNameEditorOpen = IsBoardDeletePending = IsMoveCardOpen = false;
+        LastMovedBoardId = null;
+        ClearFilters();
+        ClearArchiveFilters();
+        IsArchiveSortMenuOpen = IsSortMenuOpen = IsArchiveAllPending = false;
+        CardPendingDelete = null;
+        ColumnPendingDelete = null;
+        _returnToArchive = false;
+        BoardHorizontalOffset = BoardVerticalOffset = 0;
+        SortMode = KanbanCardSortMode.Manual;
+        ArchiveSortMode = KanbanArchiveSortMode.ArchivedDate;
     }
 
     private void ApplyFilters()
@@ -447,7 +507,7 @@ public sealed partial class KanbanViewModel : ViewModelBase
     private void AddColumn()
     {
         var column = new KanbanColumn { Id = Guid.NewGuid().ToString("N"), Title = LocalizationService.Instance["Kanban_Column_DefaultTitle"] };
-        _kanbanService.Board.Columns.Add(column);
+        CurrentBoard.Columns.Add(column);
         var vm = AddColumnViewModel(column);
         RefreshStats();
         Persist();
@@ -501,7 +561,7 @@ public sealed partial class KanbanViewModel : ViewModelBase
         // camino que DeleteCard), conservando su índice original para una posible restauración.
         for (var i = 0; i < column.Column.Cards.Count; i++)
         {
-            _kanbanService.Board.TrashedCards.Add(new KanbanTrashedCard
+            CurrentBoard.TrashedCards.Add(new KanbanTrashedCard
             {
                 Card = column.Column.Cards[i],
                 ColumnId = column.Column.Id,
@@ -510,7 +570,7 @@ public sealed partial class KanbanViewModel : ViewModelBase
             });
         }
 
-        _kanbanService.Board.Columns.Remove(column.Column);
+        CurrentBoard.Columns.Remove(column.Column);
         Columns.Remove(column);
         RefreshStats();
         RefreshTagFilter();
@@ -551,46 +611,67 @@ public sealed partial class KanbanViewModel : ViewModelBase
         ReturnToArchiveIfPending();
     }
 
+    /// <summary>Guardado del formulario de tarjeta, con el guardado por delante del cierre: el editor
+    /// solo se descarta cuando el tablero ya está en disco. Así un guardado fallido —permisos, disco
+    /// lleno— no se lleva por delante lo que el usuario tenía escrito, y al cambiar de tablero con el
+    /// diálogo "cambios sin guardar" abierto <c>SaveAndSwitchBoard</c> puede distinguir los dos casos con
+    /// un solo <c>if (CardEditor is null)</c>.</summary>
     [RelayCommand]
     private void SaveCardEditor()
     {
         if (CardEditor is not { } editor) return;
         if (!editor.CanSave) return;
 
-        if (editor.IsCreateMode)
+        TryBoardOperation(() =>
         {
-            var card = editor.BuildCard(Guid.NewGuid().ToString("N"));
-            editor.SelectedColumn.Column.Cards.Add(card);
-            editor.SelectedColumn.Cards.Add(new KanbanCardViewModel(card));
-        }
-        else if (editor.SourceCard is { } sourceCard)
-        {
-            editor.ApplyTo(sourceCard.Card);
-            sourceCard.RefreshFromModel();
-
-            // Moving between columns via the selector (Fase 7 accessibility — a non-drag&drop way to
-            // relocate a card) reuses the same MoveCard the drag&drop handlers call, so subtask automation
-            // (ApplySubtaskAutomation) and persistence stay identical either way.
-            if (!ReferenceEquals(editor.SelectedColumn, editor.TargetColumn))
+            if (editor.IsCreateMode)
             {
-                // Sacar una tarjeta archivada de su columna desde este selector es, de hecho,
-                // desarchivarla: pedirla en otra columna solo puede querer decir que vuelve al tablero.
-                if (sourceCard.IsArchived) UnarchiveCard(sourceCard);
-                MoveCard(sourceCard, editor.SelectedColumn, beforeCard: null);
-            }
-        }
+                var card = editor.BuildCard(Guid.NewGuid().ToString("N"));
+                editor.SelectedColumn.Column.Cards.Add(card);
+                editor.SelectedColumn.Cards.Add(new KanbanCardViewModel(card));
 
-        CardEditor = null;
-        RefreshStats();
-        RefreshTagFilter();
-        ReloadArchive();
-        Persist();
-        ReturnToArchiveIfPending();
+                // La tarjeta acaba de entrar en memoria: si el guardado falla hay que sacarla otra vez, o
+                // el tablero enseñaría una tarjeta que el disco no conoce y el editor —que sigue abierto—
+                // la crearía por segunda vez al darle a guardar otra vez.
+                try { Persist(); }
+                catch
+                {
+                    if (editor.SelectedColumn.Cards.FirstOrDefault(c => ReferenceEquals(c.Card, card)) is { } added)
+                        editor.SelectedColumn.Cards.Remove(added);
+                    editor.SelectedColumn.Column.Cards.Remove(card);
+                    throw;
+                }
+            }
+            else if (editor.SourceCard is { } sourceCard)
+            {
+                editor.ApplyTo(sourceCard.Card);
+                sourceCard.RefreshFromModel();
+
+                // Moving between columns via the selector (Fase 7 accessibility — a non-drag&drop way to
+                // relocate a card) reuses the same MoveCard the drag&drop handlers call, so subtask automation
+                // (ApplySubtaskAutomation) and persistence stay identical either way.
+                if (!ReferenceEquals(editor.SelectedColumn, editor.TargetColumn))
+                {
+                    // Sacar una tarjeta archivada de su columna desde este selector es, de hecho,
+                    // desarchivarla: pedirla en otra columna solo puede querer decir que vuelve al tablero.
+                    if (sourceCard.IsArchived) UnarchiveCard(sourceCard);
+                    MoveCard(sourceCard, editor.SelectedColumn, beforeCard: null);
+                }
+
+                Persist();
+            }
+
+            CardEditor = null;
+            RefreshStats();
+            RefreshTagFilter();
+            ReloadArchive();
+            ReturnToArchiveIfPending();
+        });
     }
 
     private void RefreshTagFilter()
     {
-        var allTags = _kanbanService.Board.Columns
+        var allTags = CurrentBoard.Columns
             .SelectMany(c => c.Cards)
             .SelectMany(card => card.Tags)
             .Distinct(StringComparer.OrdinalIgnoreCase);
@@ -632,10 +713,22 @@ public sealed partial class KanbanViewModel : ViewModelBase
 
     /// <summary>Entry point for the reminder inbox — jumps straight to a card's read-only detail by id,
     /// without the caller needing to know which column it lives in.</summary>
+    ///
+    /// <para>La columna puede estar en otro tablero, así que el id se resuelve contra el almacén entero
+    /// (<see cref="KanbanService.FindCardLocation"/>) y el salto de tablero pasa por
+    /// <see cref="NavigateToBoard"/>: es el mismo camino que un clic en el selector, con su aviso de
+    /// cambios sin guardar incluido. Antes de existir varios tableros bastaba con buscar entre las
+    /// columnas dibujadas.</para>
     public void OpenCardById(string cardId)
     {
-        var card = FindCardById(cardId);
-        if (card is not null) OpenCardDetail(card);
+        if (_kanbanService.FindCardLocation(cardId) is not { } location) return;
+        NavigateToBoard(location.Board.Id, () =>
+        {
+            // El tablero destino acaba de construirse (o ya estaba): si la tarjeta no está entre las
+            // columnas dibujadas no es que no exista, es que este viewmodel todavía no la conoce.
+            if (FindCardById(cardId) is null) Reload();
+            if (FindCardById(cardId) is { } card) OpenCardDetail(card);
+        });
     }
 
     /// <summary>Entry point for the calendar's "Editar" action (docs/calendar-feature/
@@ -644,15 +737,19 @@ public sealed partial class KanbanViewModel : ViewModelBase
     /// editing itself.</summary>
     public void OpenCardEditorById(string cardId)
     {
-        var card = FindCardById(cardId);
-        if (card is null)
+        if (_kanbanService.FindCardLocation(cardId) is not { } location) return;
+        NavigateToBoard(location.Board.Id, () =>
         {
-            // Columns is only rebuilt from _kanbanService.Board on Reload(), never live-synced — a card
-            // just created elsewhere (e.g. the calendar's "más opciones" quick-create) won't be in it yet.
-            Reload();
-            card = FindCardById(cardId);
-        }
-        if (card is not null) OpenEditCard(card);
+            var card = FindCardById(cardId);
+            if (card is null)
+            {
+                // Columns is only rebuilt from CurrentBoard on Reload(), never live-synced — a card
+                // just created elsewhere (e.g. the calendar's "más opciones" quick-create) won't be in it yet.
+                Reload();
+                card = FindCardById(cardId);
+            }
+            if (card is not null) OpenEditCard(card);
+        });
     }
 
     [RelayCommand]
@@ -1011,7 +1108,7 @@ public sealed partial class KanbanViewModel : ViewModelBase
     {
         var existing = ArchivedCards.ToDictionary(c => c.Id, StringComparer.Ordinal);
 
-        var archived = _kanbanService.Board.Columns
+        var archived = CurrentBoard.Columns
             .SelectMany(column => column.Cards)
             .Where(card => card.IsArchived)
             .ToList();
@@ -1093,7 +1190,7 @@ public sealed partial class KanbanViewModel : ViewModelBase
             var index = column.Column.Cards.IndexOf(card.Card);
             column.Cards.Remove(card);
             column.Column.Cards.Remove(card.Card);
-            _kanbanService.Board.TrashedCards.Add(new KanbanTrashedCard
+            CurrentBoard.TrashedCards.Add(new KanbanTrashedCard
             {
                 Card = card.Card,
                 ColumnId = column.Column.Id,

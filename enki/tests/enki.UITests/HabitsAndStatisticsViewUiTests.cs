@@ -114,13 +114,13 @@ public class HabitsAndStatisticsViewUiTests : IDisposable
         File.WriteAllBytes(Path.Combine(_vaultPath, "adjunto.pdf"), new byte[2048]);
 
         var kanbanService = new KanbanService(_tempDir);
-        kanbanService.Board.Columns[0].Cards.Add(new KanbanCard
+        kanbanService.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
         {
             Id = "c1", Title = "Tarea", Priority = KanbanPriority.High,
             DueDateUtc = DateTime.UtcNow.AddDays(-1),
             Subtasks = [new KanbanSubtask { Id = "s1", Title = "sub", IsDone = true }]
         });
-        kanbanService.Board.Columns[^1].Cards.Add(new KanbanCard
+        kanbanService.DefaultBoard.Columns[^1].Cards.Add(new KanbanCard
         {
             Id = "c2", Title = "Hecha", CompletedAtUtc = DateTime.UtcNow.AddDays(-2)
         });

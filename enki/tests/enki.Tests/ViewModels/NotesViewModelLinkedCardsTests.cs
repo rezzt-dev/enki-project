@@ -31,7 +31,7 @@ public class NotesViewModelLinkedCardsTests : IDisposable
         var session = new SessionService(vault);
 
         var kanban = new KanbanService(Path.Combine(_tempDir, "kanban-storage"));
-        var card = kanban.Board.Columns[0].Cards[0];
+        var card = kanban.DefaultBoard.Columns[0].Cards[0];
 
         File.WriteAllText(Path.Combine(vaultDir, "Nota.md"), "# Nota\n\nContenido.");
         var notes = new NotesViewModel(vault, session, kanban);

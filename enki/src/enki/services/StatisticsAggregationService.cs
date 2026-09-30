@@ -53,7 +53,7 @@ public sealed partial class StatisticsAggregationService(
         var noteCreatedDates = notes.Select(n => DateOnly.FromDateTime(SafeCreationTimeUtc(n).ToLocalTime())).ToList();
         var noteEditedDates = notes.Select(n => DateOnly.FromDateTime(n.ModifiedUtc.ToLocalTime())).ToList();
 
-        var kanbanCompletedDates = kanbanService.Board.Columns.SelectMany(c => c.Cards)
+        var kanbanCompletedDates = kanbanService.AllColumns.SelectMany(c => c.Cards)
             .Where(c => c.CompletedAtUtc is not null)
             .Select(c => DateOnly.FromDateTime(c.CompletedAtUtc!.Value.ToLocalTime()))
             .ToList();
@@ -85,17 +85,15 @@ public sealed partial class StatisticsAggregationService(
         return points;
     }
 
-    /// <summary>Returns pending / in-progress / done counts from the kanban board columns — the
-    /// first column is always "pending," the last is always "done," and everything in between is
-    /// "in progress" (same convention the rest of the app already uses).</summary>
+    /// <summary>Agrega el histórico de todos los tableros por rol; las columnas personalizadas cuentan
+    /// como trabajo en curso. No depende del orden ni de la selección de la interfaz.</summary>
     public KanbanFlowSnapshot BuildKanbanFlow()
     {
-        var columns = kanbanService.Board.Columns;
-        if (columns.Count == 0) return new KanbanFlowSnapshot(0, 0, 0);
-        var pending = columns[0].Cards.Count;
-        var done = columns[^1].Cards.Count;
-        var inProgress = columns.Skip(1).Take(columns.Count - 2).Sum(c => c.Cards.Count);
-        return new KanbanFlowSnapshot(pending, inProgress, done);
+        var columns = kanbanService.AllColumns.ToList();
+        return new KanbanFlowSnapshot(
+            columns.Where(c => c.Role == CoreColumnRole.Backlog).Sum(c => c.Cards.Count),
+            columns.Where(c => c.Role is CoreColumnRole.InProgress or CoreColumnRole.None).Sum(c => c.Cards.Count),
+            columns.Where(c => c.Role == CoreColumnRole.Done).Sum(c => c.Cards.Count));
     }
 
     /// <summary>% of (hábito, día aplicable) pairs marked done within the week, capped at

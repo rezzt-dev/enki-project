@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:models="clr-namespace:enki.Models"
         xmlns:vm="clr-namespace:enki.ViewModels"
         xmlns:views="clr-namespace:enki.Views"
         xmlns:conv="clr-namespace:enki.Converters"
@@ -992,6 +993,10 @@
                 </ComboBox.ItemTemplate>
               </ComboBox>
 
+              <ComboBox HorizontalAlignment="Stretch" MinWidth="140" MaxWidth="300" ItemsSource="{Binding KanbanBoards}" SelectedItem="{Binding SelectedKanbanBoard}"
+                        IsVisible="{Binding ShowKanbanBoards}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Boards}">
+                <ComboBox.ItemTemplate><DataTemplate x:DataType="models:KanbanBoard"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
               <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding KanbanColumns}"
                         SelectedItem="{Binding SelectedKanbanColumn}"
                         IsVisible="{Binding IsKanbanDestination}"

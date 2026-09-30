@@ -4,11 +4,11 @@ using enki.Models;
 
 namespace enki.ViewModels;
 
-public sealed class TrashedTaskCardViewModel(KanbanTrashedCard trashedCard)
+public sealed class TrashedTaskCardViewModel(KanbanTrashedCard trashedCard, string? boardName = null)
 {
     public KanbanTrashedCard TrashedCard { get; } = trashedCard;
     public string Title => TrashedCard.Card.Title;
-    public string ColumnTitle => TrashedCard.ColumnTitle;
+    public string ColumnTitle => boardName is null ? TrashedCard.ColumnTitle : $"{boardName} · {TrashedCard.ColumnTitle}";
 
     /// <summary>"Was in: {0}" — the origin Kanban column, shown on the trashed-task card. Composed here
     /// instead of via XAML StringFormat because word order around the placeholder isn't fixed across

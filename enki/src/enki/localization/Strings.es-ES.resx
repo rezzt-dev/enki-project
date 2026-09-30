@@ -1404,6 +1404,102 @@
   <data name="Kanban_Lists_SelectPrompt" xml:space="preserve">
     <value>Crear una lista para empezar</value>
   </data>
+  <data name="Kanban_Multi_Boards" xml:space="preserve">
+    <value>Tableros</value>
+  </data>
+  <data name="Kanban_Multi_CannotDelete" xml:space="preserve">
+    <value>Solo se pueden eliminar tableros vacíos, sin tarjetas archivadas ni en la papelera. El último tablero no se puede eliminar.</value>
+  </data>
+  <data name="Kanban_Multi_Column" xml:space="preserve">
+    <value>Columna</value>
+  </data>
+  <data name="Kanban_Multi_Create" xml:space="preserve">
+    <value>Nuevo tablero</value>
+  </data>
+  <data name="Kanban_Multi_Default" xml:space="preserve">
+    <value>Predeterminado</value>
+  </data>
+  <data name="Kanban_Multi_Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Kanban_Multi_DeleteConfirm" xml:space="preserve">
+    <value>¿Eliminar este tablero? Solo se pueden eliminar tableros vacíos.</value>
+  </data>
+  <data name="Kanban_Multi_Deleted" xml:space="preserve">
+    <value>Tablero eliminado.</value>
+  </data>
+  <data name="Kanban_Multi_Description" xml:space="preserve">
+    <value>Activa la gestión de varios tableros locales: cada uno con sus columnas y tarjetas, todos dentro de este vault.</value>
+  </data>
+  <data name="Kanban_Multi_DisableBlocked" xml:space="preserve">
+    <value>No se puede desactivar: este vault ya guarda más de un tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Discard" xml:space="preserve">
+    <value>Descartar y cambiar</value>
+  </data>
+  <data name="Kanban_Multi_DuplicateName" xml:space="preserve">
+    <value>Ya existe un tablero con ese nombre.</value>
+  </data>
+  <data name="Kanban_Multi_Empty" xml:space="preserve">
+    <value>Este tablero todavía no tiene tarjetas. Crea la primera para empezar.</value>
+  </data>
+  <data name="Kanban_Multi_Enabled" xml:space="preserve">
+    <value>Varios tableros</value>
+  </data>
+  <data name="Kanban_Multi_FirstTask" xml:space="preserve">
+    <value>Crear la primera tarjeta</value>
+  </data>
+  <data name="Kanban_Multi_InvalidName" xml:space="preserve">
+    <value>El nombre debe tener entre 1 y 80 caracteres.</value>
+  </data>
+  <data name="Kanban_Multi_LoadFailed" xml:space="preserve">
+    <value>No se pudo cargar el tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Manage" xml:space="preserve">
+    <value>Gestionar tableros</value>
+  </data>
+  <data name="Kanban_Multi_MissingDestination" xml:space="preserve">
+    <value>Elige un tablero y una columna de destino.</value>
+  </data>
+  <data name="Kanban_Multi_Move" xml:space="preserve">
+    <value>Mover a otro tablero</value>
+  </data>
+  <data name="Kanban_Multi_Moved" xml:space="preserve">
+    <value>Tarjeta movida al tablero de destino.</value>
+  </data>
+  <data name="Kanban_Multi_Name" xml:space="preserve">
+    <value>Nombre del tablero</value>
+  </data>
+  <data name="Kanban_Multi_OpenDestination" xml:space="preserve">
+    <value>Ver tablero destino</value>
+  </data>
+  <data name="Kanban_Multi_Recovered" xml:space="preserve">
+    <value>Se activó la gestión de varios tableros: este vault ya guarda más de uno.</value>
+  </data>
+  <data name="Kanban_Multi_Rename" xml:space="preserve">
+    <value>Renombrar</value>
+  </data>
+  <data name="Kanban_Multi_SaveFailed" xml:space="preserve">
+    <value>No se pudo guardar el cambio en el tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Search" xml:space="preserve">
+    <value>Buscar tableros…</value>
+  </data>
+  <data name="Kanban_Multi_Select" xml:space="preserve">
+    <value>Elegir tablero</value>
+  </data>
+  <data name="Kanban_Multi_SetDefault" xml:space="preserve">
+    <value>Usar como predeterminado</value>
+  </data>
+  <data name="Kanban_Multi_Unarchive" xml:space="preserve">
+    <value>Esta tarjeta está archivada: al moverla vuelve al tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Unsaved" xml:space="preserve">
+    <value>Tienes cambios sin guardar en la tarjeta que estás editando.</value>
+  </data>
+  <data name="Kanban_Multi_VaultScope" xml:space="preserve">
+    <value>Los tableros viven en este vault: cambiar de vault cambia el juego entero.</value>
+  </data>
   <data name="Kanban_NotePicker_NoResults" xml:space="preserve">
     <value>Sin resultados</value>
   </data>
@@ -5410,6 +5506,24 @@ A disfrutar escribiendo.</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
     <value>Oculta la fila de etiquetas del tablero para despejarlo. Cuando pase de una línea, se ven hasta cinco y podéis desplegar el resto.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Title" xml:space="preserve">
+    <value>Botones de la barra</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Description" xml:space="preserve">
+    <value>Elige qué botones aparecen en la barra de herramientas del tablero Kanban: los filtros rápidos, el acceso a las archivadas y el desplegable de ordenación.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_HighPriority" xml:space="preserve">
+    <value>Alta prioridad</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Overdue" xml:space="preserve">
+    <value>Vencidas</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Archive" xml:space="preserve">
+    <value>Archivadas</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Sort" xml:space="preserve">
+    <value>Ordenación</value>
   </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Mostrar todas</value>

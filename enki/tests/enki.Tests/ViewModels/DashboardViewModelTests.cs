@@ -142,7 +142,7 @@ public class DashboardViewModelTests : IDisposable
     public void Reload_SplitsBoardCardsAcrossCoreColumns_ByRole()
     {
         var h = CreateViewModel();
-        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var backlogColumn = h.Kanban.DefaultBoard.Columns.First(c => c.Role == CoreColumnRole.Backlog);
         backlogColumn.Cards.Add(new KanbanCard { Id = "p1", Title = "Pendiente" });
 
         h.Dashboard.Reload();
@@ -156,9 +156,9 @@ public class DashboardViewModelTests : IDisposable
     {
         var h = CreateViewModel();
         // Move the backlog column to the end of the board — the dashboard must still find it by Role.
-        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
-        h.Kanban.Board.Columns.Remove(backlogColumn);
-        h.Kanban.Board.Columns.Add(backlogColumn);
+        var backlogColumn = h.Kanban.DefaultBoard.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        h.Kanban.DefaultBoard.Columns.Remove(backlogColumn);
+        h.Kanban.DefaultBoard.Columns.Add(backlogColumn);
         backlogColumn.Cards.Add(new KanbanCard { Id = "p1", Title = "Pendiente" });
 
         h.Dashboard.Reload();
@@ -171,8 +171,8 @@ public class DashboardViewModelTests : IDisposable
     public void Reload_BoardProgressPercent_IsZero_WhenBoardHasNoCards()
     {
         var h = CreateViewModel();
-        foreach (var column in h.Kanban.Board.Columns) column.Cards.Clear();
-        h.Kanban.Board.Columns[0].Cards.Clear();
+        foreach (var column in h.Kanban.DefaultBoard.Columns) column.Cards.Clear();
+        h.Kanban.DefaultBoard.Columns[0].Cards.Clear();
 
         h.Dashboard.Reload();
 
@@ -221,11 +221,14 @@ public class DashboardViewModelTests : IDisposable
     public void Reload_DoesNotPushSizeWarning_OnTheHappyPath()
     {
         var h = CreateViewModel();
+        Assert.True(SpinWait.SpinUntil(() => !h.Dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
 
         h.Dashboard.Reload();
 
         Assert.DoesNotContain(h.Notifications.Notifications, n => n.Title == "Tamaño del vault incompleto");
+        // El grafo puede escribir .graph.json; esperar su final evita competir con la limpieza del vault.
+        Assert.True(SpinWait.SpinUntil(() => !h.Dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
     }
 
     [Fact]
@@ -317,7 +320,7 @@ public class DashboardViewModelTests : IDisposable
     public void Reload_TodayItems_AlwaysIncludesItemsDueToday_EvenWithOldOverdueBacklog()
     {
         var h = CreateViewModel();
-        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var backlogColumn = h.Kanban.DefaultBoard.Columns.First(c => c.Role == CoreColumnRole.Backlog);
         for (var i = 0; i < 6; i++)
         {
             backlogColumn.Cards.Add(new KanbanCard
@@ -337,7 +340,7 @@ public class DashboardViewModelTests : IDisposable
     public void Reload_TodayItems_ExcludesOverdueBacklog_OlderThanBacklogWindow()
     {
         var h = CreateViewModel();
-        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var backlogColumn = h.Kanban.DefaultBoard.Columns.First(c => c.Role == CoreColumnRole.Backlog);
         var ancientCard = new KanbanCard { Id = "ancient-1", Title = "Muy vieja", DueDateUtc = DateTime.UtcNow.AddDays(-400) };
         backlogColumn.Cards.Add(ancientCard);
 
@@ -350,7 +353,7 @@ public class DashboardViewModelTests : IDisposable
     public void Reload_TodayItems_ExcludesCompletedKanbanCards()
     {
         var h = CreateViewModel();
-        var backlogColumn = h.Kanban.Board.Columns.First(c => c.Role == CoreColumnRole.Backlog);
+        var backlogColumn = h.Kanban.DefaultBoard.Columns.First(c => c.Role == CoreColumnRole.Backlog);
         var completedCard = new KanbanCard
         {
             Id = "completed-1", Title = "Terminada", DueDateUtc = DateTime.UtcNow.AddDays(-1),

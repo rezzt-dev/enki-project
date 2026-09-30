@@ -55,7 +55,7 @@ public sealed class QuickCaptureServiceTests : IDisposable
     public void Capture_Kanban_AddsRealCardToChosenColumnAndPersistsIt()
     {
         var (vault, kanban, service) = CreateServices();
-        var target = kanban.Board.Columns.Last();
+        var target = kanban.DefaultBoard.Columns.Last();
         var changed = 0;
         kanban.BoardChanged += () => changed++;
 
@@ -66,18 +66,18 @@ public sealed class QuickCaptureServiceTests : IDisposable
         Assert.Equal("Con capturas y guion", card.Description);
         Assert.Equal(1, changed);
         var reloaded = new KanbanService(vault);
-        Assert.Contains(reloaded.Board.Columns.SelectMany(column => column.Cards), candidate => candidate.Id == card.Id);
+        Assert.Contains(reloaded.DefaultBoard.Columns.SelectMany(column => column.Cards), candidate => candidate.Id == card.Id);
     }
 
     [Fact]
-    public void Capture_Kanban_UsesFirstColumnWhenSavedColumnNoLongerExists()
+    public void Capture_Kanban_RejectsStaleDestinationWithoutWritingElsewhere()
     {
         var (_, kanban, service) = CreateServices();
-        var first = kanban.Board.Columns[0];
+        var first = kanban.DefaultBoard.Columns[0];
 
-        var result = service.Capture("Recoger paquete", QuickCaptureDestination.KanbanCard, "missing");
-
-        Assert.Contains(first.Cards, card => card.Id == result.CardId);
+        var count = first.Cards.Count;
+        Assert.Throws<InvalidOperationException>(() => service.Capture("Recoger paquete", QuickCaptureDestination.KanbanCard, "missing"));
+        Assert.Equal(count, first.Cards.Count);
     }
 
     [Fact]

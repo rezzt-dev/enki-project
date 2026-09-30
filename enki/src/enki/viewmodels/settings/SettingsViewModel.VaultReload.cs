@@ -32,6 +32,10 @@ public sealed partial class SettingsViewModel
         _showWindowControls = _settingsService.Settings.ShowWindowControls;
         _dashboardShowScrollbar = _settingsService.Settings.DashboardShowScrollbar;
         _kanbanShowTagFilter = _settingsService.Settings.KanbanShowTagFilter;
+        _kanbanShowHighPriorityButton = _settingsService.Settings.KanbanShowHighPriorityButton;
+        _kanbanShowOverdueButton = _settingsService.Settings.KanbanShowOverdueButton;
+        _kanbanShowArchiveButton = _settingsService.Settings.KanbanShowArchiveButton;
+        _kanbanShowSortButton = _settingsService.Settings.KanbanShowSortButton;
         _kanbanBoardVertical = _settingsService.Settings.KanbanBoardOrientation != "Horizontal";
         _useCustomBrandLogo = _settingsService.Settings.UseCustomBrandLogo && _brandLogoService.HasLogo;
         _isBrandLogoCircular = _settingsService.Settings.BrandLogoShape == "Circle";
@@ -131,6 +135,10 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(ShowWindowControls));
         OnPropertyChanged(nameof(DashboardShowScrollbar));
         OnPropertyChanged(nameof(KanbanShowTagFilter));
+        OnPropertyChanged(nameof(KanbanShowHighPriorityButton));
+        OnPropertyChanged(nameof(KanbanShowOverdueButton));
+        OnPropertyChanged(nameof(KanbanShowArchiveButton));
+        OnPropertyChanged(nameof(KanbanShowSortButton));
         OnPropertyChanged(nameof(KanbanBoardVertical));
         OnPropertyChanged(nameof(UseCustomBrandLogo));
         OnPropertyChanged(nameof(IsBrandLogoCircular));

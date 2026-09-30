@@ -62,7 +62,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     /// <summary>Tarjetas Kanban vinculadas a alguna nota del subárbol de <see cref="SelectedSession"/> —
     /// consecuencia derivada del enlace nota↔tarea, sin almacén propio: se recalcula contra
-    /// <see cref="KanbanService.Board"/> cada vez que cambia la
+    /// <see cref="KanbanService.AllColumns"/> cada vez que cambia la
     /// sesión seleccionada.</summary>
     public ObservableCollection<LinkedCardItemViewModel> LinkedCards { get; } = [];
 
@@ -372,7 +372,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
             if (notePaths.Count > 0)
             {
-                var cards = _kanbanService.Board.Columns.SelectMany(c => c.Cards)
+                var cards = _kanbanService.AllColumns.SelectMany(c => c.Cards)
                     .Where(c => c.LinkedNotePath is not null && notePaths.Contains(c.LinkedNotePath));
                 foreach (var card in cards) LinkedCards.Add(new LinkedCardItemViewModel(card.Id, card.Title));
             }

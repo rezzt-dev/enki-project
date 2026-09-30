@@ -563,6 +563,17 @@
          </Border>
             </controls:SettingsSearchOption>
 
+            <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Kanban Kanban_Multi_Enabled Kanban_Multi_Description">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Text="{loc:Tr Kanban_Multi_Enabled}" Classes="section-title" />
+                  <TextBlock Text="{loc:Tr Kanban_Multi_Description}" TextWrapping="Wrap" Classes="muted" />
+                  <ToggleSwitch IsChecked="{Binding KanbanMultipleBoardsEnabled}" OnContent="" OffContent=""
+                                AutomationProperties.Name="{loc:Tr Kanban_Multi_Enabled}" />
+                  <Button Classes="ghost" Content="{loc:Tr Kanban_Multi_Manage}" Command="{Binding ManageKanbanBoardsCommand}" IsVisible="{Binding KanbanMultipleBoardsEnabled}" />
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Kanban Settings_Appearance_KanbanTags_Title Settings_Appearance_KanbanTags_Label
                               Settings_Appearance_KanbanTags_Description">
@@ -576,6 +587,53 @@
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowTagFilter}" OnContent="" OffContent=""
                                   AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanTags_Label}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <!-- Barra de herramientas del tablero: un interruptor por cada botón que se dibuja sobre el
+                 tablero (filtros rápidos, archivadas y ordenación). Van en una sola tarjeta y no en cuatro
+                 porque son la misma decisión —qué ocupa la barra— repartida en cuatro piezas, y apagar uno
+                 solo lo esconde: ni cambia el filtro activo ni borra nada. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Kanban Settings_Appearance_KanbanToolbar_Title Settings_Appearance_KanbanToolbar_Description
+                              Settings_Appearance_KanbanToolbar_HighPriority Settings_Appearance_KanbanToolbar_Overdue
+                              Settings_Appearance_KanbanToolbar_Archive Settings_Appearance_KanbanToolbar_Sort">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="SortVariant" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Appearance_KanbanToolbar_Title}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Appearance_KanbanToolbar_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Appearance_KanbanToolbar_HighPriority}"
+                               FontSize="13" VerticalAlignment="Center" />
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowHighPriorityButton}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanToolbar_HighPriority}" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Appearance_KanbanToolbar_Overdue}"
+                               FontSize="13" VerticalAlignment="Center" />
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowOverdueButton}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanToolbar_Overdue}" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Appearance_KanbanToolbar_Archive}"
+                               FontSize="13" VerticalAlignment="Center" />
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowArchiveButton}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanToolbar_Archive}" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Appearance_KanbanToolbar_Sort}"
+                               FontSize="13" VerticalAlignment="Center" />
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding KanbanShowSortButton}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Appearance_KanbanToolbar_Sort}" />
                   </Grid>
                 </StackPanel>
               </Border>

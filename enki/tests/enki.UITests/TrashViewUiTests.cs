@@ -86,7 +86,7 @@ public class TrashViewUiTests : IDisposable
     public void CancelEmpty_ClosesTheDialogWithoutClearingAnything()
     {
         var (_, viewModel, kanban, window) = CreateView();
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "c1", Title = "Borrada" },
             ColumnId = "col-1",

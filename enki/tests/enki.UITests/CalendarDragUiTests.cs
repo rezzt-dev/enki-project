@@ -39,7 +39,7 @@ public sealed class CalendarDragUiTests : IDisposable
         settings.Settings.PolarLinked = true;
         settings.Settings.PolarUserId = "user-1";
         var kanban = new KanbanService(_directory);
-        foreach (var column in kanban.Board.Columns) column.Cards.Clear();
+        foreach (var column in kanban.DefaultBoard.Columns) column.Cards.Clear();
         var polar = new PolarTaskService(_directory);
         var reminders = new ReminderService(_directory);
         var due = unscheduled ? (DateTime?)null : StartDate.ToUniversalTime();
@@ -48,7 +48,7 @@ public sealed class CalendarDragUiTests : IDisposable
         {
             case CalendarItemSourceType.Kanban:
                 var card = new KanbanCard { Id = "drag", Title = "Tarea de prueba", DueDateUtc = due, DurationMinutes = 60 };
-                kanban.Board.Columns[0].Cards.Add(card);
+                kanban.DefaultBoard.Columns[0].Cards.Add(card);
                 kanban.Save();
                 date = () => card.DueDateUtc;
                 break;
@@ -71,7 +71,7 @@ public sealed class CalendarDragUiTests : IDisposable
                 break;
         }
         for (var i = 0; i < extraCards; i++)
-            kanban.Board.Columns[0].Cards.Add(new KanbanCard
+            kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
             {
                 Id = $"extra-{i}", Title = $"A extra {i}", DueDateUtc = StartDate.ToUniversalTime()
             });

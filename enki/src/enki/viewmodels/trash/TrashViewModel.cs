@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -203,7 +204,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         IsEmpty = Notes.Count == 0;
 
         Tasks.Clear();
-        foreach (var trashed in _kanbanService.Board.TrashedCards) Tasks.Add(new TrashedTaskCardViewModel(trashed));
+        foreach (var trashed in _kanbanService.AllTrashedCards) Tasks.Add(new TrashedTaskCardViewModel(trashed, _kanbanService.FindTrashBoard(trashed)?.Name));
         IsTasksEmpty = Tasks.Count == 0;
 
         Files.Clear();
@@ -308,8 +309,9 @@ public sealed partial class TrashViewModel : ViewModelBase
         // docs/analisis-proyecto/roadmap.md): si el tablero no tiene ninguna columna válida, la tarjeta
         // se queda en la papelera — recuperable — en vez de quedar fuera de ambas listas, perdida en
         // silencio. La columna original pudo ser borrada desde entonces: se recurre a la primera.
-        var targetColumn = _kanbanService.Board.Columns.FirstOrDefault(c => c.Id == trashed.ColumnId)
-            ?? _kanbanService.Board.Columns.FirstOrDefault();
+        var board = _kanbanService.FindTrashBoard(trashed);
+        var targetColumn = board?.Columns.FirstOrDefault(c => c.Id == trashed.ColumnId)
+            ?? board?.Columns.FirstOrDefault();
         if (targetColumn is null)
         {
             _notificationService.PushLocalized(
@@ -319,7 +321,9 @@ public sealed partial class TrashViewModel : ViewModelBase
             return;
         }
 
-        _kanbanService.Board.TrashedCards.Remove(trashed);
+        var trashIndex = board!.TrashedCards.IndexOf(trashed);
+        var archivedAt = trashed.Card.ArchivedAtUtc;
+        board.TrashedCards.Remove(trashed);
 
         var insertIndex = trashed.CardIndex is { } idx
             ? Math.Min(idx, targetColumn.Cards.Count)
@@ -333,7 +337,16 @@ public sealed partial class TrashViewModel : ViewModelBase
         // varios (el tablero y el propio Calendario).
         trashed.Card.ArchivedAtUtc = null;
 
-        _kanbanService.Save();
+        try { _kanbanService.Save(); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+        {
+            targetColumn.Cards.Remove(trashed.Card);
+            board.TrashedCards.Insert(trashIndex, trashed);
+            trashed.Card.ArchivedAtUtc = archivedAt;
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Title"),
+                LocalizedTextFormatter.Format("Kanban_Multi_SaveFailed"), NotificationSeverity.Error);
+            return;
+        }
         _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Title"),
             LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Message", trashed.Card.Title, targetColumn.Title),

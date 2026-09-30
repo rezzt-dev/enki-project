@@ -43,6 +43,26 @@ public class VaultBackupServiceTests : IDisposable
     }
 
     [Fact]
+    public void BackupAndRestore_PreservesVersionedBoardsAndMigrationCopy()
+    {
+        var backup = CreateService();
+        var tasks = Path.Combine(_vaultPath, ".tasks");
+        Directory.CreateDirectory(tasks);
+        File.WriteAllText(Path.Combine(tasks, "kanban.json"), "{\"Name\":\"Original\",\"Columns\":[]}");
+        var kanban = new KanbanService(tasks);
+        var second = kanban.CreateBoard("Segundo");
+        kanban.SetDefaultBoard(second.Id);
+        var zip = Path.Combine(_root, "boards.zip");
+        backup.CreateBackup(zip);
+        var destination = Path.Combine(_root, "restored");
+        backup.RestoreBackup(zip, destination);
+        var restored = new KanbanService(Path.Combine(destination, ".tasks"));
+        Assert.Equal(2, restored.Boards.Count);
+        Assert.Equal(second.Id, restored.DefaultBoard.Id);
+        Assert.True(File.Exists(Path.Combine(destination, ".tasks", "kanban.json.pre-multiboard.bak")));
+    }
+
+    [Fact]
     public void CreateBackup_IncludesVaultNotesAndAppDataJsonFiles()
     {
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota\n\nContenido.");

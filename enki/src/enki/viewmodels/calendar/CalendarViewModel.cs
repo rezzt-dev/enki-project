@@ -829,11 +829,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
         };
 
         // Las columnas van en el orden del tablero, el mismo que ve el usuario en Kanban.
-        desired.AddRange(_kanbanService.Board.Columns.Select(column =>
+        desired.AddRange(_kanbanService.AllColumns.Select(column =>
         {
             var colorKey = CalendarLayerColorService.KanbanColumnColorKey(column.Id);
             return new LayerRow(
-                CalendarAggregationService.KanbanLayerKey, colorKey, column.Title,
+                CalendarAggregationService.KanbanLayerKey, colorKey, _kanbanService.ColumnLabel(column),
                 CalendarLayerColorService.Resolve(colors, colorKey),
                 CanEditColor: true, _layerColorService.HasCustomColor(colorKey), IsChildRow: true);
         }));
@@ -966,9 +966,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
     {
         QuickCreate = new CalendarQuickCreateViewModel(
             localDate, localTime,
-            _kanbanService.Board.Columns,
+            _kanbanService.AllColumns.ToList(),
             _polarTaskService.Store.Lists.Where(l => !l.IsDeleted).ToList(),
             _polarAuthService.IsLinked);
+
+        QuickCreate.SetBoards(_kanbanService.Boards, _kanbanService.DefaultBoard);
 
         if (preferredType is { } type && (type != CalendarQuickCreateType.PolarTask || _polarAuthService.IsLinked))
             QuickCreate.SelectedType = type;
@@ -1004,8 +1006,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private void SaveQuickCreate()
     {
         if (QuickCreate is not { CanSave: true } draft) return;
-        CreateFromQuickCreate(draft);
-        QuickCreate = null;
+        if (CreateFromQuickCreate(draft) is not null) QuickCreate = null;
     }
 
     /// <summary>"Más opciones" (doc 06 §1, point 6) — saves with whatever minimal data is already filled
@@ -1015,8 +1016,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     {
         if (QuickCreate is not { CanSave: true } draft) return;
         var created = CreateFromQuickCreate(draft);
-        QuickCreate = null;
-        if (created is not null) _openItemEditor(created);
+        if (created is not null) { QuickCreate = null; _openItemEditor(created); }
     }
 
     /// <summary>Color de calendario de una sola capa — solo lo usa
@@ -1041,8 +1041,21 @@ public sealed partial class CalendarViewModel : ViewModelBase
                     Id = Guid.NewGuid().ToString("N"), Title = title, DueDateUtc = dueUtc,
                     DurationMinutes = durationMinutes
                 };
+                if (!_kanbanService.Boards.Any(b => b.Columns.Contains(column)))
+                {
+                    _notificationService.Push(LocalizationService.Instance["Kanban_Multi_Boards"],
+                        LocalizationService.Instance["Kanban_Multi_MissingDestination"], NotificationSeverity.Warning);
+                    return null;
+                }
                 column.Cards.Add(card);
-                _kanbanService.Save();
+                try { _kanbanService.Save(); }
+                catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+                {
+                    column.Cards.Remove(card);
+                    _notificationService.Push(LocalizationService.Instance["Kanban_Multi_Boards"],
+                        LocalizationService.Instance["Kanban_Multi_SaveFailed"], NotificationSeverity.Error);
+                    return null;
+                }
                 _notificationService.PushLocalized(
                     LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Title"),
                     LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Message", title, LocalizedTextFormatter.Format("Calendar_Label_Kanban")),
@@ -1141,7 +1154,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     {
         if (subtask.ParentSourceType == CalendarItemSourceType.Kanban)
         {
-            var model = _kanbanService.Board.Columns.SelectMany(c => c.Cards)
+            var model = _kanbanService.AllColumns.SelectMany(c => c.Cards)
                 .SelectMany(c => c.Subtasks).FirstOrDefault(s => s.Id == subtask.Id);
             if (model is null) return;
             model.IsDone = !model.IsDone;
@@ -1204,14 +1217,14 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// reference to <see cref="KanbanService"/>, never to the Kanban page's own viewmodel.</summary>
     private void DeleteKanbanCard(string cardId)
     {
-        foreach (var column in _kanbanService.Board.Columns)
+        foreach (var column in _kanbanService.AllColumns)
         {
             var card = column.Cards.FirstOrDefault(c => c.Id == cardId);
             if (card is null) continue;
 
             var index = column.Cards.IndexOf(card);
             column.Cards.Remove(card);
-            _kanbanService.Board.TrashedCards.Add(new KanbanTrashedCard
+            _kanbanService.Boards.First(b => b.Columns.Contains(column)).TrashedCards.Add(new KanbanTrashedCard
             {
                 Card = card,
                 ColumnId = column.Id,
@@ -1235,7 +1248,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         {
             case CalendarItemSourceType.Kanban:
             {
-                var card = _kanbanService.Board.Columns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
+                var card = _kanbanService.AllColumns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
                 if (card is null) return;
                 card.DueDateUtc = CombineUtc(newLocalDate, newLocalTime, card.DueDateUtc);
                 _kanbanService.Save();
@@ -1286,7 +1299,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         {
             case CalendarItemSourceType.Kanban:
             {
-                var card = _kanbanService.Board.Columns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
+                var card = _kanbanService.AllColumns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
                 if (card is null) return;
                 card.DurationMinutes = clamped;
                 _kanbanService.Save();

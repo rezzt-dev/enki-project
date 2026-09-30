@@ -47,7 +47,7 @@ public sealed class CalendarAggregationService(
         // recorrería columnas y listas una vez por tarjeta.
         var colors = layerColorService?.BuildMap();
 
-        foreach (var column in kanbanService.Board.Columns)
+        foreach (var column in kanbanService.AllColumns)
         foreach (var card in column.Cards)
         {
             if (card.DueDateUtc is not { } due || due < rangeStartUtc || due >= rangeEndUtc) continue;
@@ -55,6 +55,7 @@ public sealed class CalendarAggregationService(
             var isAllDay = IsAllDay(due);
             items.Add(new CalendarItemViewModel
             {
+                ParentContextLabel = kanbanService.ColumnLabel(column),
                 SourceId = card.Id,
                 SourceType = CalendarItemSourceType.Kanban,
                 Title = card.Title,
@@ -188,12 +189,13 @@ public sealed class CalendarAggregationService(
         var items = new List<CalendarUnscheduledItemViewModel>();
         var colors = layerColorService?.BuildMap();
 
-        foreach (var column in kanbanService.Board.Columns)
+        foreach (var column in kanbanService.AllColumns)
         foreach (var card in column.Cards)
         {
             if (card.DueDateUtc is not null) continue;
             items.Add(new CalendarUnscheduledItemViewModel
             {
+                ParentContextLabel = kanbanService.ColumnLabel(column),
                 SourceId = card.Id,
                 SourceType = CalendarItemSourceType.Kanban,
                 Title = card.Title,
@@ -202,7 +204,6 @@ public sealed class CalendarAggregationService(
                 LayerKey = KanbanLayerKey,
                 Priority = MapPriority(card.Priority),
                 IconKind = MaterialIconKind.ViewColumnOutline,
-                ParentContextLabel = column.Title,
                 IsCompleted = card.CompletedAtUtc is not null
             });
         }

@@ -186,6 +186,8 @@ public sealed class VaultBackupService
                 input.CopyTo(output);
             }
 
+            var kanbanPath = Path.Combine(temporary, ".tasks", "kanban.json");
+            if (File.Exists(kanbanPath)) KanbanService.ValidateBackupFile(kanbanPath);
             Directory.Move(temporary, destination);
             return new VaultRestoreResult(destination, settingsJson);
         }

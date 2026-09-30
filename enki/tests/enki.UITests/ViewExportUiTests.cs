@@ -124,7 +124,7 @@ public class ViewExportUiTests : IDisposable
     {
         var kanbanService = new KanbanService(_tempDir);
         for (var i = 0; i < 30; i++)
-            kanbanService.Board.Columns[0].Cards.Add(new KanbanCard { Id = $"card-{i}", Title = $"Tarjeta {i}" });
+            kanbanService.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = $"card-{i}", Title = $"Tarjeta {i}" });
         kanbanService.Save();
 
         var settings = new SettingsService(_tempDir);

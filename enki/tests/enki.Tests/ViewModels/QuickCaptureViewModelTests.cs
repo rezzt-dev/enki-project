@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using enki.Models;
 using enki.Services;
 using enki.ViewModels;
@@ -30,6 +31,29 @@ public sealed class QuickCaptureViewModelTests : IDisposable
         var viewModel = new QuickCaptureViewModel(new QuickCaptureService(vault, kanban), vault, kanban,
             vaultSettings, notifications);
         return (viewModel, vault, kanban, vaultSettings, notifications);
+    }
+
+    [Fact]
+    public void Submit_ToAnotherBoard_UsesExplicitDestination_AndRejectsDeletionDuringDraft()
+    {
+        var (vm, _, service, settings, _) = CreateViewModel();
+        var board = service.CreateBoard("Estudios");
+        vm.PrepareToShow();
+        vm.SelectedDestination = vm.Destinations.Single(d => d.Value == QuickCaptureDestination.KanbanCard);
+        vm.SelectedKanbanBoard = board;
+        vm.Draft = "Examen";
+        vm.SubmitCommand.Execute(null);
+        Assert.Equal(board.Id, settings.Settings.QuickCaptureKanbanBoardId);
+        Assert.Equal("Examen", Assert.Single(board.Columns[0].Cards).Title);
+        board.Columns[0].Cards.Clear();
+        vm.Draft = "Conservar borrador";
+        service.DeleteEmptyBoard(board.Id);
+        vm.SubmitCommand.Execute(null);
+        Assert.Equal("Conservar borrador", vm.Draft);
+        Assert.NotNull(vm.ErrorMessage);
+        vm.PrepareToShow();
+        Assert.Same(service.DefaultBoard, vm.SelectedKanbanBoard);
+        Assert.NotNull(vm.SelectedKanbanColumn);
     }
 
     [Fact]
@@ -76,7 +100,7 @@ public sealed class QuickCaptureViewModelTests : IDisposable
 
         var reloaded = new VaultSettingsService(new VaultService(new SettingsService(Path.Combine(_root, "config"))));
         Assert.Equal(QuickCaptureDestination.KanbanCard, reloaded.Settings.QuickCaptureDestination);
-        Assert.Equal(kanban.Board.Columns[^1].Id, reloaded.Settings.QuickCaptureKanbanColumnId);
+        Assert.Equal(kanban.DefaultBoard.Columns[^1].Id, reloaded.Settings.QuickCaptureKanbanColumnId);
     }
 
     /// <summary>El popup de la bandeja de entrada de la barra de título comparte este viewmodel con la
@@ -125,7 +149,7 @@ public sealed class QuickCaptureViewModelTests : IDisposable
     public void Submit_KanbanWithoutColumns_KeepsDraftAndDoesNotClose()
     {
         var (viewModel, _, kanban, _, _) = CreateViewModel();
-        kanban.Board.Columns.Clear();
+        kanban.DefaultBoard.Columns.Clear();
         viewModel.ReloadDestinations();
         viewModel.SelectedDestination = Assert.Single(viewModel.Destinations,
             option => option.Value == QuickCaptureDestination.KanbanCard);

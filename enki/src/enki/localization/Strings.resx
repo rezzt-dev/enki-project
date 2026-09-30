@@ -1404,6 +1404,102 @@
   <data name="Kanban_Lists_SelectPrompt" xml:space="preserve">
     <value>Create a list to get started</value>
   </data>
+  <data name="Kanban_Multi_Boards" xml:space="preserve">
+    <value>Boards</value>
+  </data>
+  <data name="Kanban_Multi_CannotDelete" xml:space="preserve">
+    <value>Only empty boards can be deleted, with no archived or trashed cards. The last board can't be deleted.</value>
+  </data>
+  <data name="Kanban_Multi_Column" xml:space="preserve">
+    <value>Column</value>
+  </data>
+  <data name="Kanban_Multi_Create" xml:space="preserve">
+    <value>New board</value>
+  </data>
+  <data name="Kanban_Multi_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Kanban_Multi_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Kanban_Multi_DeleteConfirm" xml:space="preserve">
+    <value>Delete this board? Only empty boards can be deleted.</value>
+  </data>
+  <data name="Kanban_Multi_Deleted" xml:space="preserve">
+    <value>Board deleted.</value>
+  </data>
+  <data name="Kanban_Multi_Description" xml:space="preserve">
+    <value>Turns on multiple local boards: each one with its own columns and cards, all inside this vault.</value>
+  </data>
+  <data name="Kanban_Multi_DisableBlocked" xml:space="preserve">
+    <value>Can't turn this off: this vault already holds more than one board.</value>
+  </data>
+  <data name="Kanban_Multi_Discard" xml:space="preserve">
+    <value>Discard and switch</value>
+  </data>
+  <data name="Kanban_Multi_DuplicateName" xml:space="preserve">
+    <value>A board with that name already exists.</value>
+  </data>
+  <data name="Kanban_Multi_Empty" xml:space="preserve">
+    <value>This board has no cards yet. Create the first one to get started.</value>
+  </data>
+  <data name="Kanban_Multi_Enabled" xml:space="preserve">
+    <value>Multiple boards</value>
+  </data>
+  <data name="Kanban_Multi_FirstTask" xml:space="preserve">
+    <value>Create the first card</value>
+  </data>
+  <data name="Kanban_Multi_InvalidName" xml:space="preserve">
+    <value>The name must be between 1 and 80 characters.</value>
+  </data>
+  <data name="Kanban_Multi_LoadFailed" xml:space="preserve">
+    <value>The board couldn't be loaded.</value>
+  </data>
+  <data name="Kanban_Multi_Manage" xml:space="preserve">
+    <value>Manage boards</value>
+  </data>
+  <data name="Kanban_Multi_MissingDestination" xml:space="preserve">
+    <value>Pick a destination board and column.</value>
+  </data>
+  <data name="Kanban_Multi_Move" xml:space="preserve">
+    <value>Move to another board</value>
+  </data>
+  <data name="Kanban_Multi_Moved" xml:space="preserve">
+    <value>Card moved to the destination board.</value>
+  </data>
+  <data name="Kanban_Multi_Name" xml:space="preserve">
+    <value>Board name</value>
+  </data>
+  <data name="Kanban_Multi_OpenDestination" xml:space="preserve">
+    <value>Open destination board</value>
+  </data>
+  <data name="Kanban_Multi_Recovered" xml:space="preserve">
+    <value>Multiple boards were turned on: this vault already holds more than one.</value>
+  </data>
+  <data name="Kanban_Multi_Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Kanban_Multi_SaveFailed" xml:space="preserve">
+    <value>The change couldn't be saved to the board.</value>
+  </data>
+  <data name="Kanban_Multi_Search" xml:space="preserve">
+    <value>Search boards…</value>
+  </data>
+  <data name="Kanban_Multi_Select" xml:space="preserve">
+    <value>Choose board</value>
+  </data>
+  <data name="Kanban_Multi_SetDefault" xml:space="preserve">
+    <value>Use as default</value>
+  </data>
+  <data name="Kanban_Multi_Unarchive" xml:space="preserve">
+    <value>This card is archived: moving it puts it back on a board.</value>
+  </data>
+  <data name="Kanban_Multi_Unsaved" xml:space="preserve">
+    <value>You have unsaved changes in the card you're editing.</value>
+  </data>
+  <data name="Kanban_Multi_VaultScope" xml:space="preserve">
+    <value>Boards live in this vault: switching vaults switches the whole set.</value>
+  </data>
   <data name="Kanban_NotePicker_NoResults" xml:space="preserve">
     <value>No results</value>
   </data>
@@ -5410,6 +5506,24 @@ Happy writing.</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
     <value>Hide the board's tag row for a cleaner board. When it runs past one line, up to five tags stay visible and you can expand the rest.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Title" xml:space="preserve">
+    <value>Toolbar buttons</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Description" xml:space="preserve">
+    <value>Pick which buttons appear on the Kanban board toolbar: the quick filters, the archived-cards shortcut and the sort dropdown.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_HighPriority" xml:space="preserve">
+    <value>High priority</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Overdue" xml:space="preserve">
+    <value>Overdue</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Archive" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Sort" xml:space="preserve">
+    <value>Sorting</value>
   </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Show all</value>

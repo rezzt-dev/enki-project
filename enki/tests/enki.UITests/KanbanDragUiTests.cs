@@ -37,14 +37,14 @@ public sealed class KanbanDragUiTests : IDisposable
         var tasks = new PolarTaskService(_directory);
         var sync = new PolarSyncService(auth, new SupabaseRestClient(auth), tasks, new ReminderService(_directory), settings);
         var service = new KanbanService(_directory);
-        foreach (var column in service.Board.Columns) column.Cards.Clear();
+        foreach (var column in service.DefaultBoard.Columns) column.Cards.Clear();
         for (var i = 0; i < cardCount; i++)
-            service.Board.Columns[0].Cards.Add(new KanbanCard
+            service.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
             {
                 Id = $"source-{i}", Title = $"Tarea {i}", Description = "Descripción de la tarea que se arrastra.",
                 Tags = ["desarrollo", "documentación"], DueDateUtc = DateTime.UtcNow.AddDays(2)
             });
-        service.Board.Columns[1].Cards.Add(new KanbanCard { Id = "target", Title = "Destino" });
+        service.DefaultBoard.Columns[1].Cards.Add(new KanbanCard { Id = "target", Title = "Destino" });
         service.Save();
         var vm = new KanbanViewModel(service, auth, new PolarTaskManagementViewModel(tasks, sync))
         {
@@ -101,7 +101,7 @@ public sealed class KanbanDragUiTests : IDisposable
             Assert.True(vm.Columns[1].IsDropTarget);
             Assert.True(view.FindControl<Border>("CardDropIndicator")!.IsVisible);
             Assert.Contains(source, vm.Columns[0].Cards);
-            Assert.Contains(new KanbanService(_directory).Board.Columns[0].Cards, c => c.Id == source.Id);
+            Assert.Contains(new KanbanService(_directory).DefaultBoard.Columns[0].Cards, c => c.Id == source.Id);
 
             var moved = new Point(end.X + 8, end.Y + 8);
             window.MouseMove(moved, RawInputModifiers.LeftMouseButton);
@@ -111,7 +111,7 @@ public sealed class KanbanDragUiTests : IDisposable
 
             Assert.Same(source, vm.Columns[1].Cards[0]);
             Assert.DoesNotContain(source, vm.Columns[0].Cards);
-            Assert.Contains(new KanbanService(_directory).Board.Columns[1].Cards, c => c.Id == source.Id);
+            Assert.Contains(new KanbanService(_directory).DefaultBoard.Columns[1].Cards, c => c.Id == source.Id);
             Assert.False(layer.IsVisible);
             Assert.Null(image.Source);
             Assert.Equal(1, button.Opacity);

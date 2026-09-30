@@ -108,7 +108,7 @@ public sealed partial class MainWindowViewModel
         {
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Title"),
-                LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Message"),
+                LocalizedTextFormatter.Format("Kanban_Multi_LoadFailed"),
                 Models.NotificationSeverity.Error);
         }
         if (_notificationService.LoadedFromCorruptData)
@@ -526,7 +526,8 @@ public sealed partial class MainWindowViewModel
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnKanbanBoardOrientationChanged,
             OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService,
-            OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService);
+            OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
+            () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; });
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

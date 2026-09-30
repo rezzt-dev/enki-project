@@ -1335,6 +1335,102 @@
   <data name="Kanban_Lists_SelectPrompt" xml:space="preserve">
     <value>Erstelle eine Liste, um loszulegen</value>
   </data>
+  <data name="Kanban_Multi_Boards" xml:space="preserve">
+    <value>Boardliste</value>
+  </data>
+  <data name="Kanban_Multi_CannotDelete" xml:space="preserve">
+    <value>Es lassen sich nur leere Boards löschen, ohne archivierte oder im Papierkorb liegende Karten. Das letzte Board lässt sich nicht löschen.</value>
+  </data>
+  <data name="Kanban_Multi_Column" xml:space="preserve">
+    <value>Spalte</value>
+  </data>
+  <data name="Kanban_Multi_Create" xml:space="preserve">
+    <value>Neues Board</value>
+  </data>
+  <data name="Kanban_Multi_Default" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Kanban_Multi_Delete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="Kanban_Multi_DeleteConfirm" xml:space="preserve">
+    <value>Dieses Board löschen? Es lassen sich nur leere Boards löschen.</value>
+  </data>
+  <data name="Kanban_Multi_Deleted" xml:space="preserve">
+    <value>Board gelöscht.</value>
+  </data>
+  <data name="Kanban_Multi_Description" xml:space="preserve">
+    <value>Aktiviert mehrere lokale Boards: jedes mit eigenen Spalten und Karten, alle in diesem Vault.</value>
+  </data>
+  <data name="Kanban_Multi_DisableBlocked" xml:space="preserve">
+    <value>Lässt sich nicht deaktivieren: Dieser Vault enthält bereits mehr als ein Board.</value>
+  </data>
+  <data name="Kanban_Multi_Discard" xml:space="preserve">
+    <value>Verwerfen und wechseln</value>
+  </data>
+  <data name="Kanban_Multi_DuplicateName" xml:space="preserve">
+    <value>Ein Board mit diesem Namen existiert bereits.</value>
+  </data>
+  <data name="Kanban_Multi_Empty" xml:space="preserve">
+    <value>Dieses Board hat noch keine Karten. Erstelle die erste, um loszulegen.</value>
+  </data>
+  <data name="Kanban_Multi_Enabled" xml:space="preserve">
+    <value>Mehrere Boards</value>
+  </data>
+  <data name="Kanban_Multi_FirstTask" xml:space="preserve">
+    <value>Erste Karte erstellen</value>
+  </data>
+  <data name="Kanban_Multi_InvalidName" xml:space="preserve">
+    <value>Der Name muss zwischen 1 und 80 Zeichen lang sein.</value>
+  </data>
+  <data name="Kanban_Multi_LoadFailed" xml:space="preserve">
+    <value>Das Board konnte nicht geladen werden.</value>
+  </data>
+  <data name="Kanban_Multi_Manage" xml:space="preserve">
+    <value>Boards verwalten</value>
+  </data>
+  <data name="Kanban_Multi_MissingDestination" xml:space="preserve">
+    <value>Wähle ein Ziel-Board und eine Spalte.</value>
+  </data>
+  <data name="Kanban_Multi_Move" xml:space="preserve">
+    <value>In ein anderes Board verschieben</value>
+  </data>
+  <data name="Kanban_Multi_Moved" xml:space="preserve">
+    <value>Karte in das Ziel-Board verschoben.</value>
+  </data>
+  <data name="Kanban_Multi_Name" xml:space="preserve">
+    <value>Name des Boards</value>
+  </data>
+  <data name="Kanban_Multi_OpenDestination" xml:space="preserve">
+    <value>Ziel-Board öffnen</value>
+  </data>
+  <data name="Kanban_Multi_Recovered" xml:space="preserve">
+    <value>Mehrere Boards wurden aktiviert: Dieser Vault enthält bereits mehr als eines.</value>
+  </data>
+  <data name="Kanban_Multi_Rename" xml:space="preserve">
+    <value>Umbenennen</value>
+  </data>
+  <data name="Kanban_Multi_SaveFailed" xml:space="preserve">
+    <value>Die Änderung konnte nicht im Board gespeichert werden.</value>
+  </data>
+  <data name="Kanban_Multi_Search" xml:space="preserve">
+    <value>Boards suchen…</value>
+  </data>
+  <data name="Kanban_Multi_Select" xml:space="preserve">
+    <value>Board auswählen</value>
+  </data>
+  <data name="Kanban_Multi_SetDefault" xml:space="preserve">
+    <value>Als Standard verwenden</value>
+  </data>
+  <data name="Kanban_Multi_Unarchive" xml:space="preserve">
+    <value>Diese Karte ist archiviert: Beim Verschieben landet sie wieder auf einem Board.</value>
+  </data>
+  <data name="Kanban_Multi_Unsaved" xml:space="preserve">
+    <value>In der Karte, die du gerade bearbeitest, gibt es ungespeicherte Änderungen.</value>
+  </data>
+  <data name="Kanban_Multi_VaultScope" xml:space="preserve">
+    <value>Boards gehören zu diesem Vault: Ein Vault-Wechsel wechselt das ganze Set.</value>
+  </data>
   <data name="Kanban_NotePicker_NoResults" xml:space="preserve">
     <value>Keine Ergebnisse</value>
   </data>
@@ -5410,6 +5506,24 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
     <value>Blende die Schlagwortzeile des Boards für mehr Übersicht aus. Bei mehr als einer Zeile bleiben bis zu fünf sichtbar, den Rest kannst du aufklappen.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Title" xml:space="preserve">
+    <value>Schaltflächen der Werkzeugleiste</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Description" xml:space="preserve">
+    <value>Wähle, welche Schaltflächen die Werkzeugleiste des Kanban-Boards zeigt: die Schnellfilter, den Zugang zu den archivierten Karten und das Sortiermenü.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_HighPriority" xml:space="preserve">
+    <value>Hohe Priorität</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Overdue" xml:space="preserve">
+    <value>Überfällig</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Archive" xml:space="preserve">
+    <value>Archiviert</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Sort" xml:space="preserve">
+    <value>Sortierung</value>
   </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Alle anzeigen</value>

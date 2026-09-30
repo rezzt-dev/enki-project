@@ -316,7 +316,7 @@ public class CalendarAggregationServiceTests
         var kanbanService = new KanbanService(storageDirectory);
         var due = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
         var card = new KanbanCard { Id = "done-1", Title = "Hecha", DueDateUtc = due, CompletedAtUtc = due };
-        kanbanService.Board.Columns[0].Cards.Add(card);
+        kanbanService.DefaultBoard.Columns[0].Cards.Add(card);
         var svc = new CalendarAggregationService(kanbanService, new PolarTaskService(storageDirectory), new ReminderService(storageDirectory), new PolarAuthService(new SettingsService(storageDirectory)));
 
         var items = svc.BuildItems(due.AddHours(-1), due.AddHours(1));
@@ -332,7 +332,7 @@ public class CalendarAggregationServiceTests
         var kanbanService = new KanbanService(storageDirectory);
         var due = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
         var card = new KanbanCard { Id = "pending-1", Title = "Pendiente", DueDateUtc = due };
-        kanbanService.Board.Columns[0].Cards.Add(card);
+        kanbanService.DefaultBoard.Columns[0].Cards.Add(card);
         var svc = new CalendarAggregationService(kanbanService, new PolarTaskService(storageDirectory), new ReminderService(storageDirectory), new PolarAuthService(new SettingsService(storageDirectory)));
 
         var items = svc.BuildItems(due.AddHours(-1), due.AddHours(1));
@@ -347,7 +347,7 @@ public class CalendarAggregationServiceTests
         using var _ = new TempDirScope(out var storageDirectory);
         var kanbanService = new KanbanService(storageDirectory);
         var card = new KanbanCard { Id = "done-2", Title = "Hecha sin fecha", CompletedAtUtc = DateTime.UtcNow };
-        kanbanService.Board.Columns[0].Cards.Add(card);
+        kanbanService.DefaultBoard.Columns[0].Cards.Add(card);
         var svc = new CalendarAggregationService(kanbanService, new PolarTaskService(storageDirectory), new ReminderService(storageDirectory), new PolarAuthService(new SettingsService(storageDirectory)));
 
         var items = svc.BuildUnscheduledItems();

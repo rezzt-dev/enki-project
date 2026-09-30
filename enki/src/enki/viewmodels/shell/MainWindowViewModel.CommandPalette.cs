@@ -48,6 +48,14 @@ public sealed partial class MainWindowViewModel
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_SwitchVault"], MaterialIconKind.SafeSquareOutline, OpenVaultSwitcher));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ClipWebPage"], MaterialIconKind.WebPlus, () => WebClip.Open()));
 
+        if (Kanban?.MultipleBoardsEnabled == true)
+        {
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["Kanban_Multi_Select"], MaterialIconKind.ViewDashboardOutline,
+                () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; }));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["Kanban_Multi_Create"], MaterialIconKind.Plus,
+                () => { Navigate(AppPage.Kanban); Kanban.CreateBoardCommand.Execute(null); }));
+        }
+
         if (Notes is not null)
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenDailyNote"], MaterialIconKind.CalendarTodayOutline, OpenDailyNoteFromPalette));

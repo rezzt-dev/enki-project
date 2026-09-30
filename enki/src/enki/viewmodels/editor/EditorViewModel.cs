@@ -428,7 +428,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         LinkedCards.Clear();
         if (_kanbanService is not null)
         {
-            var cards = _kanbanService.Board.Columns.SelectMany(c => c.Cards)
+            var cards = _kanbanService.AllColumns.SelectMany(c => c.Cards)
                 .Where(c => string.Equals(c.LinkedNotePath, Note.FullPath, StringComparison.OrdinalIgnoreCase));
             foreach (var card in cards) LinkedCards.Add(new LinkedCardItemViewModel(card.Id, card.Title));
         }

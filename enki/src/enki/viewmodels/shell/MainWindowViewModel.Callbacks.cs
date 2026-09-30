@@ -330,6 +330,7 @@ public sealed partial class MainWindowViewModel
         _vaultService.EncryptionService.LockAll();
         VaultService.CleanupStaleDecryptedTempFiles();
 
+        QuickCapture.CloseForVaultChange();
         Kanban?.CloseForVaultChange();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
@@ -427,6 +428,9 @@ public sealed partial class MainWindowViewModel
         _dismissedReminderService.Reload();
         _snoozedReminderService.Reload();
         _notificationService.Reload();
+        if (_kanbanService.LoadedFromCorruptData)
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Title"),
+                LocalizedTextFormatter.Format("Kanban_Multi_LoadFailed"), NotificationSeverity.Warning);
     }
 
     /// <summary>Pops every reminder whose scheduled time has arrived and turns each into a real
@@ -495,7 +499,7 @@ public sealed partial class MainWindowViewModel
                 : null;
         }
 
-        var card = _kanbanService.Board.Columns
+        var card = _kanbanService.AllColumns
             .SelectMany(column => column.Cards)
             .FirstOrDefault(c => c.Id == snooze.SourceId);
         return card is { CompletedAtUtc: null } && card.DueDateUtc == snooze.DueUtcSnapshot

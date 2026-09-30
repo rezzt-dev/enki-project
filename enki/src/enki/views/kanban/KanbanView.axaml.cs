@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -28,7 +29,12 @@ public partial class KanbanView : UserControl
 
     /// <summary>Grabs initial keyboard focus so the shortcuts below work the moment the page opens,
     /// without requiring the user to click something on it first — same pattern as CalendarView_Loaded.</summary>
-    private void KanbanView_Loaded(object? sender, RoutedEventArgs e) => Focus();
+    private void KanbanView_Loaded(object? sender, RoutedEventArgs e)
+    {
+        if (Vm?.IsBoardNameEditorOpen == true) BoardNameBox.Focus();
+        else if (Vm?.IsBoardSelectorOpen == true) BoardSearchBox.Focus();
+        else Focus();
+    }
 
     /// <summary>Atajos de teclado del tablero:
     /// N nueva tarjeta, C nueva columna (Fase 7 de docs/agent-docs/analisis-proyecto/roadmap.md), Delete
@@ -57,6 +63,7 @@ public partial class KanbanView : UserControl
         // cuando el usuario no está escribiendo.
         if (e.Source is TextBox) { if (e.Key != Key.Escape) return; }
 
+        if (e.Key != Key.Escape && (vm.IsBoardNameEditorOpen || vm.IsMoveCardOpen || vm.IsBoardSwitchPending || vm.IsBoardDeletePending || vm.IsBoardSelectorOpen)) return;
         switch (e.Key)
         {
             case Key.N when vm.DisplayMode == KanbanDisplayMode.Board && vm.CardEditor is null && vm.CardDetail is null && !vm.IsArchiveOpen:
@@ -85,6 +92,11 @@ public partial class KanbanView : UserControl
             // Sin ningún diálogo abierto, Escape limpia el buscador, que es el gesto que espera quien
             // acaba de filtrar y quiere el tablero entero de vuelta.
             case Key.Escape:
+                if (vm.IsBoardSwitchPending) { vm.CancelBoardSwitchCommand.Execute(null); e.Handled = true; break; }
+                if (vm.IsBoardNameEditorOpen) { vm.CancelBoardNameEditorCommand.Execute(null); e.Handled = true; break; }
+                if (vm.IsBoardDeletePending) { vm.CancelDeleteBoardCommand.Execute(null); e.Handled = true; break; }
+                if (vm.IsMoveCardOpen) { vm.CancelMoveCardCommand.Execute(null); e.Handled = true; break; }
+                if (vm.IsBoardSelectorOpen) { vm.IsBoardSelectorOpen = false; e.Handled = true; break; }
                 if (vm.CardPendingDelete is not null) { vm.CancelDeleteCardCommand.Execute(null); e.Handled = true; }
                 else if (vm.ColumnPendingDelete is not null) { vm.CancelDeleteColumnCommand.Execute(null); e.Handled = true; }
                 else if (vm.IsArchiveAllPending) { vm.CancelArchiveAllDoneCommand.Execute(null); e.Handled = true; }
@@ -124,19 +136,56 @@ public partial class KanbanView : UserControl
         _subscribedVm = Vm;
         if (_subscribedVm is null) return;
         _subscribedVm.PropertyChanged += OnVmPropertyChanged;
+        _subscribedVm.BoardSwitching += OnBoardSwitching;
     }
 
     private void Unsubscribe()
     {
         if (_subscribedVm is null) return;
         _subscribedVm.PropertyChanged -= OnVmPropertyChanged;
+        _subscribedVm.BoardSwitching -= OnBoardSwitching;
         _subscribedVm = null;
     }
 
     // Focuses the title field the moment the create/edit popup opens, same "ready to type
     // immediately" courtesy as every other inline editor in this view.
+    private void BoardSelector_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { } vm) return;
+        if (e.Key == Key.Escape) { vm.IsBoardSelectorOpen = false; e.Handled = true; }
+        else if (e.Key == Key.Down && e.Source is TextBox)
+        { if (BoardList.SelectedIndex < 0) BoardList.SelectedIndex = 0; BoardList.Focus(); e.Handled = true; }
+        else if (e.Key == Key.Enter && (BoardList.SelectedItem as KanbanBoardOption ?? vm.BoardOptions.FirstOrDefault()) is { } board)
+        { vm.SelectBoardCommand.Execute(board); e.Handled = true; }
+    }
+
+    private void BoardList_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is ListBox { SelectedItem: KanbanBoardOption board } && Vm is { } vm)
+        { vm.SelectBoardCommand.Execute(board); e.Handled = true; }
+    }
+
+    private void OnBoardSwitching()
+    {
+        _cardDrag.Cancel();
+        if (Vm is not { } vm) return;
+        vm.BoardHorizontalOffset = BoardVerticalScroll.Offset.X;
+        vm.BoardVerticalOffset = BoardHorizontalScroll.Offset.Y;
+    }
+
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(KanbanViewModel.BoardName))
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (Vm is not { } vm) return;
+                BoardVerticalScroll.Offset = new Vector(vm.BoardHorizontalOffset, 0);
+                BoardHorizontalScroll.Offset = new Vector(0, vm.BoardVerticalOffset);
+            });
+        if (e.PropertyName == nameof(KanbanViewModel.IsBoardSelectorOpen))
+            Dispatcher.UIThread.Post(() => { if (Vm?.IsBoardSelectorOpen == true) BoardSearchBox.Focus(); else BoardSelectorButton.Focus(); });
+        if (e.PropertyName == nameof(KanbanViewModel.IsBoardNameEditorOpen) && Vm?.IsBoardNameEditorOpen == true)
+            Dispatcher.UIThread.Post(() => { BoardNameBox.Focus(); BoardNameBox.SelectAll(); });
         if (e.PropertyName is nameof(KanbanViewModel.DisplayMode) or nameof(KanbanViewModel.BoardOrientation)
             or nameof(KanbanViewModel.CardEditor) or nameof(KanbanViewModel.CardDetail)
             or nameof(KanbanViewModel.IsArchiveOpen))

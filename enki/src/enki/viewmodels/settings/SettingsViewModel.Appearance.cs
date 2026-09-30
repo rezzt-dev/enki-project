@@ -179,6 +179,42 @@ public sealed partial class SettingsViewModel
         _settingsService.Save();
     }
 
+    [ObservableProperty]
+    private bool _kanbanShowHighPriorityButton;
+
+    partial void OnKanbanShowHighPriorityButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowHighPriorityButton = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty]
+    private bool _kanbanShowOverdueButton;
+
+    partial void OnKanbanShowOverdueButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowOverdueButton = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty]
+    private bool _kanbanShowArchiveButton;
+
+    partial void OnKanbanShowArchiveButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowArchiveButton = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty]
+    private bool _kanbanShowSortButton;
+
+    partial void OnKanbanShowSortButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowSortButton = value;
+        _settingsService.Save();
+    }
+
     partial void OnKanbanBoardVerticalChanged(bool value)
     {
         var orientation = value ? "Vertical" : "Horizontal";

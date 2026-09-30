@@ -67,8 +67,11 @@ public sealed class VaultSettings
     /// espacio puede ser distinta y la columna Kanban asociada solo existe dentro de ese vault.</summary>
     public QuickCaptureDestination QuickCaptureDestination { get; set; } = QuickCaptureDestination.InboxNote;
 
-    /// <summary>Columna preferida para nuevas tarjetas de captura rápida. Si desaparece, el servicio usa
-    /// la primera columna disponible y el selector actualiza este valor en la siguiente elección.</summary>
+    /// <summary>Tablero preferido para captura rápida, independiente del tablero abierto.</summary>
+    public string? QuickCaptureKanbanBoardId { get; set; }
+
+    /// <summary>Columna preferida. Si desaparece, el formulario presenta un destino válido antes
+    /// del siguiente envío; el servicio nunca redirige una selección obsoleta al guardar.</summary>
     public string? QuickCaptureKanbanColumnId { get; set; }
 
     // ===================== Dashboard configurable (propuesta 27) =====================

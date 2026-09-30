@@ -432,9 +432,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
         // Matched by explicit CoreColumnRole so renaming or reordering the Kanban columns never empties
         // this widget silently. Non-core columns and legacy columns without a role are ignored.
-        var pendingColumn = _kanbanService.Board.Columns.FirstOrDefault(c => c.Role == CoreColumnRole.Backlog);
-        var inProgressColumn = _kanbanService.Board.Columns.FirstOrDefault(c => c.Role == CoreColumnRole.InProgress);
-        var doneColumn = _kanbanService.Board.Columns.FirstOrDefault(c => c.Role == CoreColumnRole.Done);
+        var pendingColumn = _kanbanService.AllColumns.Where(c => c.Role == CoreColumnRole.Backlog).SelectMany(c => c.Cards);
+        var inProgressColumn = _kanbanService.AllColumns.Where(c => c.Role == CoreColumnRole.InProgress).SelectMany(c => c.Cards);
+        var doneColumn = _kanbanService.AllColumns.Where(c => c.Role == CoreColumnRole.Done).SelectMany(c => c.Cards);
 
         LoadTaskColumn(pendingColumn, PendingTasks);
         LoadTaskColumn(inProgressColumn, InProgressTasks);
@@ -446,7 +446,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         PendingTaskCount = VisibleCards(pendingColumn).Count();
         InProgressTaskCount = VisibleCards(inProgressColumn).Count();
         DoneTaskCount = VisibleCards(doneColumn).Count();
-        BoardTotalCount = PendingTaskCount + InProgressTaskCount + DoneTaskCount;
+        BoardTotalCount = _kanbanService.AllColumns.SelectMany(c => c.Cards).Count(c => c.ArchivedAtUtc is null);
         BoardProgressPercent = BoardTotalCount > 0 ? (int)Math.Round(DoneTaskCount * 100.0 / BoardTotalCount) : 0;
         PendingBarWidth = BoardTotalCount > 0 ? BoardBarTotalWidth * PendingTaskCount / BoardTotalCount : 0;
         InProgressBarWidth = BoardTotalCount > 0 ? BoardBarTotalWidth * InProgressTaskCount / BoardTotalCount : 0;
@@ -607,11 +607,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
         IsGraphLoading = false;
     }
 
-    private static void LoadTaskColumn(KanbanColumn? column, ObservableCollection<KanbanCardViewModel> target)
+    private static void LoadTaskColumn(IEnumerable<KanbanCard> column, ObservableCollection<KanbanCardViewModel> target)
     {
         target.Clear();
-        if (column is null) return;
-
         foreach (var card in VisibleCards(column)
                      .OrderBy(c => c.DueDateUtc ?? DateTime.MaxValue)
                      .ThenByDescending(c => c.Priority)
@@ -623,8 +621,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// (docs/agent-docs/kanban-tareas-archivadas.md). Este panel es un espejo del tablero, así que sus
     /// listas y sus contadores tienen que decir lo mismo que él; las Estadísticas, que miran el histórico
     /// y no el estado actual, sí siguen contando las archivadas.</summary>
-    private static IEnumerable<KanbanCard> VisibleCards(KanbanColumn? column) =>
-        column?.Cards.Where(c => !c.IsArchived) ?? [];
+    private static IEnumerable<KanbanCard> VisibleCards(IEnumerable<KanbanCard> cards) =>
+        cards.Where(card => card.ArchivedAtUtc is null);
 
     [RelayCommand]
     private void OpenCard(NoteCardViewModel card) => _openNote(card.Note);

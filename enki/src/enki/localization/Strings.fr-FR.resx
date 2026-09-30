@@ -1335,6 +1335,102 @@
   <data name="Kanban_Lists_SelectPrompt" xml:space="preserve">
     <value>Créez une liste pour commencer</value>
   </data>
+  <data name="Kanban_Multi_Boards" xml:space="preserve">
+    <value>Tableaux</value>
+  </data>
+  <data name="Kanban_Multi_CannotDelete" xml:space="preserve">
+    <value>Seuls les tableaux vides peuvent être supprimés, sans carte archivée ni mise à la corbeille. Le dernier tableau ne peut pas être supprimé.</value>
+  </data>
+  <data name="Kanban_Multi_Column" xml:space="preserve">
+    <value>Colonne</value>
+  </data>
+  <data name="Kanban_Multi_Create" xml:space="preserve">
+    <value>Nouveau tableau</value>
+  </data>
+  <data name="Kanban_Multi_Default" xml:space="preserve">
+    <value>Par défaut</value>
+  </data>
+  <data name="Kanban_Multi_Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Kanban_Multi_DeleteConfirm" xml:space="preserve">
+    <value>Supprimer ce tableau ? Seuls les tableaux vides peuvent être supprimés.</value>
+  </data>
+  <data name="Kanban_Multi_Deleted" xml:space="preserve">
+    <value>Tableau supprimé.</value>
+  </data>
+  <data name="Kanban_Multi_Description" xml:space="preserve">
+    <value>Active la gestion de plusieurs tableaux locaux : chacun avec ses colonnes et ses cartes, tous dans ce coffre.</value>
+  </data>
+  <data name="Kanban_Multi_DisableBlocked" xml:space="preserve">
+    <value>Impossible de désactiver : ce coffre contient déjà plus d'un tableau.</value>
+  </data>
+  <data name="Kanban_Multi_Discard" xml:space="preserve">
+    <value>Abandonner et changer</value>
+  </data>
+  <data name="Kanban_Multi_DuplicateName" xml:space="preserve">
+    <value>Un tableau porte déjà ce nom.</value>
+  </data>
+  <data name="Kanban_Multi_Empty" xml:space="preserve">
+    <value>Ce tableau n'a encore aucune carte. Créez la première pour commencer.</value>
+  </data>
+  <data name="Kanban_Multi_Enabled" xml:space="preserve">
+    <value>Plusieurs tableaux</value>
+  </data>
+  <data name="Kanban_Multi_FirstTask" xml:space="preserve">
+    <value>Créer la première carte</value>
+  </data>
+  <data name="Kanban_Multi_InvalidName" xml:space="preserve">
+    <value>Le nom doit comporter entre 1 et 80 caractères.</value>
+  </data>
+  <data name="Kanban_Multi_LoadFailed" xml:space="preserve">
+    <value>Le tableau n'a pas pu être chargé.</value>
+  </data>
+  <data name="Kanban_Multi_Manage" xml:space="preserve">
+    <value>Gérer les tableaux</value>
+  </data>
+  <data name="Kanban_Multi_MissingDestination" xml:space="preserve">
+    <value>Choisissez un tableau et une colonne de destination.</value>
+  </data>
+  <data name="Kanban_Multi_Move" xml:space="preserve">
+    <value>Déplacer vers un autre tableau</value>
+  </data>
+  <data name="Kanban_Multi_Moved" xml:space="preserve">
+    <value>Carte déplacée vers le tableau de destination.</value>
+  </data>
+  <data name="Kanban_Multi_Name" xml:space="preserve">
+    <value>Nom du tableau</value>
+  </data>
+  <data name="Kanban_Multi_OpenDestination" xml:space="preserve">
+    <value>Voir le tableau de destination</value>
+  </data>
+  <data name="Kanban_Multi_Recovered" xml:space="preserve">
+    <value>La gestion de plusieurs tableaux a été activée : ce coffre en contient déjà plus d'un.</value>
+  </data>
+  <data name="Kanban_Multi_Rename" xml:space="preserve">
+    <value>Renommer</value>
+  </data>
+  <data name="Kanban_Multi_SaveFailed" xml:space="preserve">
+    <value>La modification n'a pas pu être enregistrée dans le tableau.</value>
+  </data>
+  <data name="Kanban_Multi_Search" xml:space="preserve">
+    <value>Rechercher des tableaux…</value>
+  </data>
+  <data name="Kanban_Multi_Select" xml:space="preserve">
+    <value>Choisir un tableau</value>
+  </data>
+  <data name="Kanban_Multi_SetDefault" xml:space="preserve">
+    <value>Définir par défaut</value>
+  </data>
+  <data name="Kanban_Multi_Unarchive" xml:space="preserve">
+    <value>Cette carte est archivée : la déplacer la remet sur un tableau.</value>
+  </data>
+  <data name="Kanban_Multi_Unsaved" xml:space="preserve">
+    <value>Vous avez des modifications non enregistrées dans la carte en cours d'édition.</value>
+  </data>
+  <data name="Kanban_Multi_VaultScope" xml:space="preserve">
+    <value>Les tableaux appartiennent à ce coffre : changer de coffre change l'ensemble.</value>
+  </data>
   <data name="Kanban_NotePicker_NoResults" xml:space="preserve">
     <value>Aucun résultat</value>
   </data>
@@ -5410,6 +5506,24 @@ Bonne rédaction.</value>
   </data>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
     <value>Masquez la rangée d’étiquettes du tableau pour l’alléger. Au-delà d’une ligne, cinq étiquettes au maximum restent visibles et vous pouvez déplier le reste.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Title" xml:space="preserve">
+    <value>Boutons de la barre</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Description" xml:space="preserve">
+    <value>Choisissez les boutons affichés dans la barre d’outils du tableau Kanban : les filtres rapides, l’accès aux cartes archivées et le menu de tri.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_HighPriority" xml:space="preserve">
+    <value>Priorité haute</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Overdue" xml:space="preserve">
+    <value>En retard</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Archive" xml:space="preserve">
+    <value>Archivées</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Sort" xml:space="preserve">
+    <value>Tri</value>
   </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Tout afficher</value>

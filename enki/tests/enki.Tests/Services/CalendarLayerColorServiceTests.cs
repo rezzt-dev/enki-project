@@ -42,12 +42,12 @@ public class CalendarLayerColorServiceTests
             Colors = new CalendarLayerColorService(Kanban, Tasks, Auth, Settings);
         }
 
-        public KanbanColumn Column(CoreColumnRole role) => Kanban.Board.Columns.First(c => c.Role == role);
+        public KanbanColumn Column(CoreColumnRole role) => Kanban.DefaultBoard.Columns.First(c => c.Role == role);
 
         public KanbanColumn AddCustomColumn(string title)
         {
             var column = new KanbanColumn { Id = Guid.NewGuid().ToString("N"), Title = title };
-            Kanban.Board.Columns.Add(column);
+            Kanban.DefaultBoard.Columns.Add(column);
             Kanban.Save();
             return column;
         }

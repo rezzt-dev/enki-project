@@ -128,7 +128,7 @@ public sealed partial class StatisticsAggregationService
             .Select(n => (Note: n, Created: SafeCreationTimeUtc(n).ToLocalTime(), Modified: n.ModifiedUtc.ToLocalTime()))
             .ToList();
 
-        var cards = kanbanService.Board.Columns.SelectMany(c => c.Cards).ToList();
+        var cards = kanbanService.AllColumns.SelectMany(c => c.Cards).ToList();
         var polarTasks = polarAuthService.IsLinked
             ? polarTaskService.Store.Tasks.Where(t => !t.IsDeleted).ToList()
             : [];
@@ -524,7 +524,7 @@ public sealed partial class StatisticsAggregationService
     /// flujo de tres estados (<see cref="BuildKanbanFlow"/>) colapsa las columnas intermedias, y quien ha
     /// montado un tablero de seis columnas quiere ver las seis.</summary>
     private List<ChartDatum> BuildColumnDistribution() =>
-        [.. kanbanService.Board.Columns.Select(c => new ChartDatum(c.Title, c.Cards.Count))];
+        [.. kanbanService.AllColumns.Select(c => new ChartDatum(kanbanService.ColumnLabel(c), c.Cards.Count))];
 
     private static List<int> BuildPriorityCounts(List<KanbanCard> cards) =>
         [cards.Count(c => c.Priority == KanbanPriority.High),

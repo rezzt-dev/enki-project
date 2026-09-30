@@ -1164,6 +1164,10 @@
               <!-- Destino: columna Kanban o lista Polar, según el tipo elegido — doc 06 §1, puntos 4–5. -->
               <StackPanel Spacing="6" IsVisible="{Binding IsKanbanType}">
                 <TextBlock Text="{loc:Tr Calendar_QuickCreate_ColumnLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <ComboBox ItemsSource="{Binding Boards}" SelectedItem="{Binding SelectedBoard}" IsVisible="{Binding HasMultipleBoards}"
+                          HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Kanban_Multi_Boards}">
+                  <ComboBox.ItemTemplate><DataTemplate x:DataType="models:KanbanBoard"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
                 <ComboBox ItemsSource="{Binding Columns}" SelectedItem="{Binding SelectedColumn}"
                           HorizontalAlignment="Stretch">
                   <ComboBox.ItemTemplate>

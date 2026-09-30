@@ -319,7 +319,10 @@
 
     <DataTemplate DataType="vm:BoardTasksSectionViewModel">
       <Grid RowDefinitions="Auto,*">
-        <TextBlock Grid.Row="0" Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+        <StackPanel Grid.Row="0" Spacing="4">
+          <TextBlock Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+          <TextBlock Text="{loc:Tr Kanban_Multi_VaultScope}" Classes="faint" />
+        </StackPanel>
 
         <Border Grid.Row="1" Classes="card" Padding="22" Margin="0,16,0,0">
           <!-- Grid Auto,* en vez de StackPanel: así la franja Pendientes/En progreso/Hecho (fila "*")

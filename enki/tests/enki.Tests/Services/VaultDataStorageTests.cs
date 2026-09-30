@@ -34,7 +34,7 @@ public sealed class VaultDataStorageTests : IDisposable
         var dismissed = new DismissedReminderService(vault);
         var notifications = new NotificationService(settings, vault);
 
-        kanban.Board.Name = "Vault A";
+        kanban.DefaultBoard.Name = "Vault A";
         kanban.Save();
         polar.Store.Lists.Add(new PolarTaskList { Id = "list-a", Title = "Lista A" });
         polar.Save();
@@ -55,7 +55,7 @@ public sealed class VaultDataStorageTests : IDisposable
         dismissed.Reload();
         notifications.Reload();
 
-        Assert.NotEqual("Vault A", kanban.Board.Name);
+        Assert.NotEqual("Vault A", kanban.DefaultBoard.Name);
         Assert.Empty(polar.Store.Lists);
         Assert.Empty(reminders.Reminders);
         Assert.False(dismissed.IsDismissed("card-a", DateTime.UtcNow.Date));
@@ -68,7 +68,7 @@ public sealed class VaultDataStorageTests : IDisposable
         dismissed.Reload();
         notifications.Reload();
 
-        Assert.Equal("Vault A", kanban.Board.Name);
+        Assert.Equal("Vault A", kanban.DefaultBoard.Name);
         Assert.Contains(polar.Store.Lists, list => list.Id == "list-a");
         Assert.Contains(reminders.Reminders, reminder => reminder.Title == "Aviso A");
         Assert.True(dismissed.IsDismissed("card-a", DateTime.UtcNow.Date));

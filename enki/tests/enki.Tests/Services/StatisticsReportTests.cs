@@ -36,7 +36,7 @@ public class StatisticsReportTests : IDisposable
         vaultService.InitializeVault(_vaultPath, seedWelcomeNote: false);
 
         var kanbanService = new KanbanService(_storageDirectory);
-        foreach (var column in kanbanService.Board.Columns) column.Cards.Clear();
+        foreach (var column in kanbanService.DefaultBoard.Columns) column.Cards.Clear();
 
         var taskService = new PolarTaskService(_storageDirectory);
         var authService = new PolarAuthService(settingsService, baseUrl: "https://test.example", anonKey: "test-key");
@@ -109,8 +109,8 @@ public class StatisticsReportTests : IDisposable
         var h = CreateHarness();
         WriteNote("a.md", 10, "trabajo");
         WriteNote("b.md", 10, "trabajo");
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "T", Tags = ["trabajo"] });
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "c2", Title = "T", Tags = ["ideas"] });
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "T", Tags = ["trabajo"] });
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "c2", Title = "T", Tags = ["ideas"] });
         var (start, end) = LastMonthRange();
 
         var report = h.Service.BuildReport(start, end);
@@ -140,17 +140,17 @@ public class StatisticsReportTests : IDisposable
     public void BuildReport_TaskHealth_SplitsOverdueFromUpcomingAndCountsSubtasks()
     {
         var h = CreateHarness();
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
         {
             Id = "c1", Title = "Vencida", DueDateUtc = DateTime.UtcNow.AddDays(-3),
             Subtasks = [new KanbanSubtask { Id = "s1", Title = "a", IsDone = true },
                         new KanbanSubtask { Id = "s2", Title = "b", IsDone = false }]
         });
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
         {
             Id = "c2", Title = "Próxima", DueDateUtc = DateTime.UtcNow.AddDays(3)
         });
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "c3", Title = "Sin fecha" });
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "c3", Title = "Sin fecha" });
         var (start, end) = LastMonthRange();
 
         var report = h.Service.BuildReport(start, end);
@@ -169,7 +169,7 @@ public class StatisticsReportTests : IDisposable
         // Una tarjeta ya terminada con fecha pasada no es deuda: contarla dejaría el marcador de
         // "vencidas" creciendo para siempre en cualquier tablero con historial.
         var h = CreateHarness();
-        h.Kanban.Board.Columns[^1].Cards.Add(new KanbanCard
+        h.Kanban.DefaultBoard.Columns[^1].Cards.Add(new KanbanCard
         {
             Id = "c1", Title = "Hecha tarde",
             DueDateUtc = DateTime.UtcNow.AddDays(-5),

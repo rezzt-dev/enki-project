@@ -190,8 +190,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         NoteTemplateService? noteTemplateService = null,
         Action<bool>? onInboxPanelChanged = null,
         Action<bool>? onVaultSwitcherChanged = null,
-        UpdateCheckService? updateCheckService = null)
+        UpdateCheckService? updateCheckService = null,
+        KanbanService? kanbanService = null,
+        Action? onManageKanbanBoards = null)
     {
+        _kanbanService = kanbanService;
+        _onManageKanbanBoards = onManageKanbanBoards;
         _updateCheckService = updateCheckService;
         _settingsService = settingsService;
         _customThemeService = customThemeService;
@@ -278,6 +282,13 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _showWindowControls = settingsService.Settings.ShowWindowControls;
         _dashboardShowScrollbar = settingsService.Settings.DashboardShowScrollbar;
         _kanbanShowTagFilter = settingsService.Settings.KanbanShowTagFilter;
+        // KanbanMultipleBoardsEnabled no tiene campo propio: se lee y escribe directo contra los ajustes
+        // desde SettingsViewModel.Kanban.cs, para que no haya dos copias de un dato que además puede
+        // cambiar solo (importar un vault con varios tableros lo activa).
+        _kanbanShowHighPriorityButton = settingsService.Settings.KanbanShowHighPriorityButton;
+        _kanbanShowOverdueButton = settingsService.Settings.KanbanShowOverdueButton;
+        _kanbanShowArchiveButton = settingsService.Settings.KanbanShowArchiveButton;
+        _kanbanShowSortButton = settingsService.Settings.KanbanShowSortButton;
         _kanbanBoardVertical = settingsService.Settings.KanbanBoardOrientation != "Horizontal";
         _useCustomBrandLogo = settingsService.Settings.UseCustomBrandLogo && brandLogoService.HasLogo;
         _isBrandLogoCircular = settingsService.Settings.BrandLogoShape == "Circle";

@@ -36,15 +36,15 @@ public class LanguageSetupViewModelTests : IDisposable
         LocalizationService.Instance.SetLanguage("en-US");
         var settings = new SettingsService(_storageDirectory);
         var kanban = new KanbanService(_storageDirectory, deferSeedCreation: true);
-        Assert.Empty(kanban.Board.Columns);
+        Assert.Empty(kanban.DefaultBoard.Columns);
         var vm = new LanguageSetupViewModel(settings, kanban.EnsureSeedBoard);
         vm.SelectLanguageCommand.Execute(culture);
-        Assert.Equal(LocalizationService.Instance["Kanban_Seed_ColumnTodo"], kanban.Board.Columns[0].Title);
-        var title = kanban.Board.Columns[0].Title;
+        Assert.Equal(LocalizationService.Instance["Kanban_Seed_ColumnTodo"], kanban.DefaultBoard.Columns[0].Title);
+        var title = kanban.DefaultBoard.Columns[0].Title;
         LocalizationService.Instance.SetLanguage("es-ES");
         var restored = new KanbanService(_storageDirectory, deferSeedCreation: true);
         restored.EnsureSeedBoard();
-        Assert.Equal(title, restored.Board.Columns[0].Title);
+        Assert.Equal(title, restored.DefaultBoard.Columns[0].Title);
         Assert.Equal(culture, new SettingsService(_storageDirectory).Settings.Language);
     }
 

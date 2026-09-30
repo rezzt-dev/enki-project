@@ -45,7 +45,7 @@ public class SettingsViewModelTests : IDisposable
         return (backupService, syncService, notificationService, customThemeService, brandLogoService);
     }
 
-    private (SettingsViewModel Settings, SettingsService SettingsService, VaultService Vault, VaultSettingsService VaultSettingsService) CreateViewModel()
+    private (SettingsViewModel Settings, SettingsService SettingsService, VaultService Vault, VaultSettingsService VaultSettingsService) CreateViewModel(KanbanService? kanbanService = null)
     {
         var settingsService = new SettingsService(_storageDirectory);
         var vault = new VaultService(settingsService);
@@ -62,9 +62,27 @@ public class SettingsViewModelTests : IDisposable
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
             onKanbanBoardOrientationChanged: _ => { },
             onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { },
-            onLanguageChanged: () => vm!.RefreshLocalizedLabels());
+            onLanguageChanged: () => vm!.RefreshLocalizedLabels(), kanbanService: kanbanService);
 
         return (vm, settingsService, vault, vaultSettingsService);
+    }
+
+    [Fact]
+    public void MultipleBoards_CanOnlyBeDisabledAfterConsolidatingToOneBoard()
+    {
+        var kanban = new KanbanService(Path.Combine(_storageDirectory, "boards"));
+        var (vm, settings, _, _) = CreateViewModel(kanban);
+        Assert.False(vm.KanbanMultipleBoardsEnabled);
+        vm.KanbanMultipleBoardsEnabled = true;
+        Assert.True(settings.Settings.KanbanMultipleBoardsEnabled);
+        var board = kanban.CreateBoard("Estudios");
+        vm.KanbanMultipleBoardsEnabled = false;
+        Assert.True(vm.KanbanMultipleBoardsEnabled);
+        Assert.Equal(2, kanban.Boards.Count);
+        kanban.DeleteEmptyBoard(board.Id);
+        vm.KanbanMultipleBoardsEnabled = false;
+        Assert.False(settings.Settings.KanbanMultipleBoardsEnabled);
+        Assert.Single(kanban.Boards);
     }
 
     [Fact]

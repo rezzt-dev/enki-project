@@ -38,6 +38,21 @@
     <Setter Property="ShouldUseOverlayLayer" Value="True" />
   </Style>
 
+  <!-- Los menús comparten las superficies y las esquinas del resto de la aplicación. -->
+  <Style Selector="MenuFlyoutPresenter, ContextMenu">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="6" />
+    <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
   <Style Selector="TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
@@ -2064,7 +2079,7 @@
        de opacidad de blanco" que el resto del sistema (§1.2 del sistema de diseño). -->
   <Style Selector="Border.kanban-column">
     <Setter Property="Background" Value="{DynamicResource Ink05}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Transitions">
@@ -2083,10 +2098,10 @@
        transitions. -->
   <Style Selector="Button.kanban-card">
     <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Padding" Value="14" />
+    <Setter Property="Padding" Value="16" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -2155,13 +2170,13 @@
        el sistema de separación). El pie es fijo: "añadir tarjeta" deja de ser la última loseta de la
        pila —inalcanzable sin bajar del todo en una columna larga— y pasa a estar siempre a la vista. -->
   <Style Selector="Border.kanban-column-header">
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="16,12" />
   </Style>
   <Style Selector="Border.kanban-column-footer">
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="8" />
@@ -2188,10 +2203,10 @@
     <Setter Property="Cursor" Value="Hand" />
   </Style>
   <Style Selector="Button.kanban-add-card TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
   </Style>
   <Style Selector="Button.kanban-add-card mi|MaterialIcon">
-    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
   </Style>
   <Style Selector="Button.kanban-add-card /template/ ContentPresenter">
     <Setter Property="Transitions">
@@ -2217,7 +2232,7 @@
     <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="10.5" />
     <Setter Property="LetterSpacing" Value="1" />
-    <Setter Property="Foreground" Value="{DynamicResource Ink30}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="TextAlignment" Value="Center" />
     <Setter Property="TextWrapping" Value="Wrap" />
