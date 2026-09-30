@@ -181,19 +181,19 @@
           <mi:MaterialIcon Kind="DotsVertical" Width="16" Height="16" />
           <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedRight">
-              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" Command="{Binding ActivePreview.RevealInSystemCommand}">
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ActivePreview.RevealInSystemCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}" Command="{Binding CopyPathCommand}"
+              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CopyPathCommand}"
                         CommandParameter="{Binding ActivePreview.File.FullPath}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
               <Separator />
-              <MenuItem Header="{loc:Tr Common_Delete}" Command="{Binding RequestDeleteFileCommand}"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" Command="{Binding RequestDeleteFileCommand}"
                         CommandParameter="{Binding ActivePreview}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />

@@ -572,7 +572,7 @@
                               </ItemsControl>
 
                               <StackPanel Spacing="6">
-                                <TextBlock Text="{loc:Tr ColorPicker_Hex}" Classes="muted" FontSize="11" />
+                                <TextBlock Text="{loc:Tr ColorPicker_Hex, Converter={StaticResource UpperCaseConverter}}" Classes="muted" FontSize="11" />
                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                   <controls:LocalizedColorPicker Color="{Binding ColorDraft, Mode=TwoWay}"
                                                                  IsAlphaEnabled="False" CornerRadius="0"
@@ -814,12 +814,12 @@
               <mi:MaterialIcon Kind="TrayArrowDown" Width="17" Height="17" />
               <Button.Flyout>
                 <MenuFlyout Placement="BottomEdgeAlignedRight">
-                  <MenuItem Header="{loc:Tr Export_ToPng}" Command="{Binding ExportViewAsPngCommand}">
+                  <MenuItem Header="{loc:Tr Export_ToPng, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportViewAsPngCommand}">
                     <MenuItem.Icon>
                       <mi:MaterialIcon Kind="ImageOutline" Width="14" Height="14" />
                     </MenuItem.Icon>
                   </MenuItem>
-                  <MenuItem Header="{loc:Tr Export_ToPdf}" Command="{Binding ExportViewAsPdfCommand}">
+                  <MenuItem Header="{loc:Tr Export_ToPdf, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportViewAsPdfCommand}">
                     <MenuItem.Icon>
                       <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
                     </MenuItem.Icon>
@@ -925,7 +925,7 @@
                                    IsOpen="{Binding #OverflowToggle.IsChecked, Mode=TwoWay}">
                               <Border Classes="dropdown-popover" Width="260">
                                 <StackPanel Spacing="8">
-                                  <TextBlock Text="{Binding OverflowPopoverHeaderLabel}" Classes="eyebrow" FontSize="10" />
+                                  <TextBlock Text="{Binding OverflowPopoverHeaderLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="10" />
                                   <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
                                 </StackPanel>
                          </Border>

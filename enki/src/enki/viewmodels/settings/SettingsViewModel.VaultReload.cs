@@ -68,6 +68,7 @@ public sealed partial class SettingsViewModel
         _remindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
         _notificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
         _polarShowTaskTags = _settingsService.Settings.PolarShowTaskTags;
+        _notificationsEnabled = _settingsService.Settings.NotificationsEnabled;
         _notificationsPanelEnabled = _settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
         _inboxPanelEnabled = _settingsService.Settings.InboxPanelEnabled;
@@ -171,6 +172,7 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(RemindersSidebarEnabled));
         OnPropertyChanged(nameof(NotificationsSidebarEnabled));
         OnPropertyChanged(nameof(PolarShowTaskTags));
+        OnPropertyChanged(nameof(NotificationsEnabled));
         OnPropertyChanged(nameof(NotificationsPanelEnabled));
         OnPropertyChanged(nameof(RemindersPanelEnabled));
         OnPropertyChanged(nameof(InboxPanelEnabled));

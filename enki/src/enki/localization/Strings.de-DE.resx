@@ -3444,6 +3444,12 @@
   <data name="Settings_Notifications_Mute_Warning_Label" xml:space="preserve">
     <value>Warnung</value>
   </data>
+  <data name="Settings_Notifications_Global_Description" xml:space="preserve">
+    <value>Deaktiviert alle neuen Benachrichtigungen, Einblendungen und Töne. Der vorhandene Verlauf bleibt erhalten.</value>
+  </data>
+  <data name="Settings_Notifications_Global_Label" xml:space="preserve">
+    <value>Benachrichtigungen aktivieren</value>
+  </data>
   <data name="Settings_Notifications_Panels_Title" xml:space="preserve">
     <value>Bereiche</value>
   </data>

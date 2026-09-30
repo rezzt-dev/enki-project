@@ -3444,6 +3444,12 @@
   <data name="Settings_Notifications_Mute_Warning_Label" xml:space="preserve">
     <value>Advertencia</value>
   </data>
+  <data name="Settings_Notifications_Global_Description" xml:space="preserve">
+    <value>Al desactivar, se detienen todas las notificaciones nuevas, ventanas emergentes y sonidos. El historial existente se conserva.</value>
+  </data>
+  <data name="Settings_Notifications_Global_Label" xml:space="preserve">
+    <value>Activar notificaciones</value>
+  </data>
   <data name="Settings_Notifications_Panels_Title" xml:space="preserve">
     <value>Paneles</value>
   </data>

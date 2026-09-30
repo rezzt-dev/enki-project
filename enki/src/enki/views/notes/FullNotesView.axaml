@@ -36,21 +36,21 @@
                 DragDrop.Drop="FolderRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
-              <MenuItem Header="{loc:Tr Notes_RenameMenuItem}" Command="{Binding BeginRenameCommand}">
+              <MenuItem Header="{loc:Tr Notes_RenameMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Notes_CreateSubfolderMenuItem}"
+              <MenuItem Header="{loc:Tr Notes_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateSubfolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Common_Delete}"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).DeleteFolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
@@ -110,7 +110,7 @@
               CommandParameter="{Binding}">
         <Button.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="{loc:Tr Explorer_Paste}"
+            <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}"
                       CommandParameter="{Binding}" />
           </ContextMenu>
@@ -305,19 +305,19 @@
                 Background="{DynamicResource AppBackgroundAltBrush}">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding PasteEntryCommand}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding PasteEntryCommand}" />
               <Separator />
-              <MenuItem Header="{loc:Tr Notes_NewNoteButton}" Command="{Binding NewNoteCommand}">
+              <MenuItem Header="{loc:Tr Notes_NewNoteButton, Converter={StaticResource UpperCaseConverter}}" Command="{Binding NewNoteCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Notes_Templates_Tooltip}" Command="{Binding ShowTemplatePickerCommand}">
+              <MenuItem Header="{loc:Tr Notes_Templates_Tooltip, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ShowTemplatePickerCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Notes_NewFolderButton}" Command="{Binding NewFolderCommand}">
+              <MenuItem Header="{loc:Tr Notes_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" Command="{Binding NewFolderCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
@@ -349,21 +349,21 @@
                               AutomationProperties.Name="{Binding Title}">
                         <Button.ContextMenu>
                           <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Copy}" InputGesture="Ctrl+C" Command="{Binding #Root.((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Cut}" InputGesture="Ctrl+X" Command="{Binding #Root.((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding #Root.((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C" Command="{Binding #Root.((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X" Command="{Binding #Root.((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding #Root.((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
-                            <MenuItem Header="{loc:Tr Notes_RenameMenuItem}" Command="{Binding BeginRenameCommand}">
+                            <MenuItem Header="{loc:Tr Notes_RenameMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}">
                               <MenuItem.Icon>
                                 <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                               </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="{loc:Tr Notes_RevealInSystemMenuItem}" Command="{Binding RevealInSystemCommand}">
+                            <MenuItem Header="{loc:Tr Notes_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding RevealInSystemCommand}">
                               <MenuItem.Icon>
                                 <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
                               </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="{loc:Tr Notes_ExportHtmlMenuItem}"
+                            <MenuItem Header="{loc:Tr Notes_ExportHtmlMenuItem, Converter={StaticResource UpperCaseConverter}}"
                                       Command="{Binding #Root.((vm:NotesViewModel)DataContext).ExportNoteAsHtmlCommand}"
                                       CommandParameter="{Binding}">
                               <MenuItem.Icon>
@@ -372,21 +372,21 @@
                             </MenuItem>
                             <!-- PNG y PDF (T8): la hoja la compone Services.Export.NotePageComposer a
                                  partir del Markdown, no se rasteriza el editor (que virtualiza líneas). -->
-                            <MenuItem Header="{loc:Tr Export_ToPng}"
+                            <MenuItem Header="{loc:Tr Export_ToPng, Converter={StaticResource UpperCaseConverter}}"
                                       Command="{Binding #Root.((vm:NotesViewModel)DataContext).ExportNoteAsPngCommand}"
                                       CommandParameter="{Binding}">
                               <MenuItem.Icon>
                                 <mi:MaterialIcon Kind="ImageOutline" Width="14" Height="14" />
                               </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="{loc:Tr Export_ToPdf}"
+                            <MenuItem Header="{loc:Tr Export_ToPdf, Converter={StaticResource UpperCaseConverter}}"
                                       Command="{Binding #Root.((vm:NotesViewModel)DataContext).ExportNoteAsPdfCommand}"
                                       CommandParameter="{Binding}">
                               <MenuItem.Icon>
                                 <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
                               </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="{loc:Tr Common_Delete}"
+                            <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
                                       Command="{Binding #Root.((vm:NotesViewModel)DataContext).RequestDeleteNoteCommand}"
                                       CommandParameter="{Binding}">
                               <MenuItem.Icon>

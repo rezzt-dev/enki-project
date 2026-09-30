@@ -15,8 +15,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - profesionalizar el arrastre de tarjetas Kanban con una copia flotante completa que sigue el punto donde se agarra, atenua el origen, marca la posicion de insercion y el destino, desplaza automaticamente los bordes y permite ordenar o mover entre columnas en los dos disenos; `Escape`, soltar fuera, cambiar de vista o perder el foco cancelan sin modificar el tablero.
 - organizar las tarjetas Kanban en multiples tableros independientes por vault, activables desde `ajustes > kanban`: crear, buscar, seleccionar, renombrar, elegir el predeterminado y eliminar solo tableros vacios, recordando el ultimo abierto y conservando el modo de un unico tablero hasta que se necesite ampliar la organizacion.
 - mover una tarjeta a otro tablero y columna desde su detalle o menu, conservando su identidad, etiquetas, nota, fechas y subtareas; preseleccionar columnas con el mismo rol, desarchivar solo cuando corresponde y ofrecer abrir el tablero de destino al completar la operacion.
-
-#### ANADIDO
+- incorporar en `ajustes > notificaciones` un interruptor global, activo por defecto y persistido por vault, que detiene todos los avisos nuevos, toasts y sonidos sin borrar el historial; al reactivarlo se recuperan las preferencias de categoria, toast y sonido.
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
 
 #### CAMBIOS
@@ -31,6 +30,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - hacer que calendario, busqueda global, etiquetas, estadisticas, dashboard, captura rapida, papelera y copias de seguridad recorran los tableros reales del vault en vez del tablero visible; la captura rapida permite elegir un tablero y una columna validos sin redirigir silenciosamente destinos eliminados.
 - permitir ocultar por separado los botones de prioridad alta, vencidas, archivadas y ordenacion de la barra de herramientas Kanban desde `ajustes > kanban`, manteniendo intactos los filtros y el orden activos.
 - ajustar la cabecera, los estados vacios y los textos auxiliares de Kanban para que el selector de tablero y las acciones de gestion se adapten a ventanas estrechas y sean mas legibles.
+- unificar en mayusculas las acciones de menus contextuales, submenus, desplegables y dialogos de `kanban`, `archivos`, `notas`, `habilidades`, `calendario` y `ajustes`, con tipografia comun y pruebas de regresion, conservando el texto escrito por el usuario.
 
 #### CORREGIDO
 - incluir la configuracion publica de supabase que necesita polar en `polar.properties` dentro de los instaladores de linux, windows y macos; generar solo `SUPABASE_URL` y la clave publicable, rechazar urls inseguras, claves secretas y configuraciones parciales, exigir una configuracion valida al publicar y permitir que github actions la reciba mediante variables o secrets para evitar instalaciones con polar deshabilitado.
@@ -49,8 +49,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - professionalise Kanban card dragging with a full floating copy that follows the grab point, dims the source, marks the insertion position and target, automatically scrolls edges, and supports reordering or moving across columns in both layouts; `Escape`, dropping outside, changing view or losing focus cancel without changing the board.
 - organise Kanban cards in independent boards per vault, enabled from `settings > kanban`: create, search, select, rename, choose the default and delete empty boards only, remember the last open board, and preserve the single-board experience until more organisation is needed.
 - move a card to another board and column from its detail or menu while preserving its identity, tags, note, dates and subtasks; preselect columns with the same role, unarchive only when appropriate, and offer to open the destination board after completion.
-
-#### ADDED
+- add a global switch under `settings > notifications`, enabled by default and persisted per vault, that stops all new log entries, toasts and sounds without deleting history; restoring it keeps the category, toast and sound preferences.
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
 
 #### CHANGED
@@ -65,6 +64,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - make calendar, global search, tags, statistics, dashboard, quick capture, trash and backups traverse the vault's real boards instead of the visible board; quick capture can choose a valid board and column without silently redirecting deleted destinations.
 - allow the high-priority, overdue, archived and sorting buttons in the Kanban toolbar to be hidden independently from `settings > kanban`, while leaving active filters and sorting intact.
 - adjust Kanban's header, empty states and supporting text so the board selector and management actions adapt to narrow windows and are more legible.
+- standardise actions in context menus, submenus, dropdowns and dialogs across `kanban`, `files`, `notes`, `skills`, `calendar` and `settings` in uppercase with shared typography and regression tests while preserving user-authored text.
 
 #### FIXED
 - include the public supabase configuration required by polar in `polar.properties` inside the linux, windows and macos installers; generate only `SUPABASE_URL` and the publishable key, reject insecure urls, secret keys and partial configurations, require valid configuration when publishing, and let github actions receive it through variables or secrets to prevent installations with polar disabled.

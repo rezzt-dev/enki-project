@@ -86,7 +86,7 @@
              recupera desde la ventana de archivadas (docs/agent-docs/kanban-tareas-archivadas.md). -->
         <Button.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="{loc:Tr Kanban_Multi_Move}"
+            <MenuItem Header="{loc:Tr Kanban_Multi_Move, Converter={StaticResource UpperCaseConverter}}"
                       IsVisible="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).MultipleBoardsEnabled}"
                       Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenMoveCardCommand}" CommandParameter="{Binding}" />
             <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
@@ -583,7 +583,7 @@
 
         <Button.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="{loc:Tr Kanban_Multi_Move}"
+            <MenuItem Header="{loc:Tr Kanban_Multi_Move, Converter={StaticResource UpperCaseConverter}}"
                       IsVisible="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).MultipleBoardsEnabled}"
                       Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenMoveCardCommand}" CommandParameter="{Binding}" />
             <MenuItem Header="{loc:Tr Kanban_Archive_UnarchiveMenu, Converter={StaticResource UpperCaseConverter}}"
@@ -661,7 +661,7 @@
              recupera desde la ventana de archivadas (docs/agent-docs/kanban-tareas-archivadas.md). -->
         <Button.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="{loc:Tr Kanban_Multi_Move}"
+            <MenuItem Header="{loc:Tr Kanban_Multi_Move, Converter={StaticResource UpperCaseConverter}}"
                       IsVisible="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).MultipleBoardsEnabled}"
                       Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenMoveCardCommand}" CommandParameter="{Binding}" />
             <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
@@ -923,12 +923,12 @@
           <mi:MaterialIcon Kind="TrayArrowDown" Width="16" Height="16" />
           <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedRight">
-              <MenuItem Header="{loc:Tr Export_ToPng}" Command="{Binding ExportBoardAsPngCommand}">
+              <MenuItem Header="{loc:Tr Export_ToPng, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportBoardAsPngCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="ImageOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Export_ToPdf}" Command="{Binding ExportBoardAsPdfCommand}">
+              <MenuItem Header="{loc:Tr Export_ToPdf, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportBoardAsPdfCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
                 </MenuItem.Icon>
@@ -971,9 +971,9 @@
                         <mi:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14" />
                         <Button.Flyout>
                           <MenuFlyout>
-                            <MenuItem Header="{loc:Tr Kanban_Multi_Rename}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RenameSelectedBoardCommand}" CommandParameter="{Binding}" />
-                            <MenuItem Header="{loc:Tr Kanban_Multi_SetDefault}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).UseSelectedBoardAsDefaultCommand}" CommandParameter="{Binding}" IsEnabled="{Binding !IsDefault}" />
-                            <MenuItem Header="{loc:Tr Kanban_Multi_Delete}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).DeleteSelectedBoardCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:Tr Kanban_Multi_Rename, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RenameSelectedBoardCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:Tr Kanban_Multi_SetDefault, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).UseSelectedBoardAsDefaultCommand}" CommandParameter="{Binding}" IsEnabled="{Binding !IsDefault}" />
+                            <MenuItem Header="{loc:Tr Kanban_Multi_Delete, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).DeleteSelectedBoardCommand}" CommandParameter="{Binding}" />
                           </MenuFlyout>
                         </Button.Flyout>
                       </Button>
@@ -983,12 +983,12 @@
                 </ListBox.ItemTemplate>
               </ListBox>
               <TextBlock Text="{loc:Tr Search_NoResults}" Classes="muted" IsVisible="{Binding !HasBoardSearchResults}" />
-              <Button Classes="pill" HorizontalAlignment="Stretch" Content="{loc:Tr Kanban_Multi_Create}" Command="{Binding CreateBoardCommand}" />
+              <Button Classes="pill" HorizontalAlignment="Stretch" Content="{loc:Tr Kanban_Multi_Create, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CreateBoardCommand}" />
             </StackPanel>
           </Border>
         </Popup>
       <Button Grid.Row="1" Classes="ghost" HorizontalAlignment="Left" Margin="0,0,0,8"
-              Content="{loc:Tr Kanban_Multi_OpenDestination}" Command="{Binding OpenMovedBoardCommand}"
+              Content="{loc:Tr Kanban_Multi_OpenDestination, Converter={StaticResource UpperCaseConverter}}" Command="{Binding OpenMovedBoardCommand}"
               IsVisible="{Binding LastMovedBoardId, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
 
       <!-- ===================== Barra de herramientas =====================
@@ -1196,7 +1196,7 @@
         <Border Classes="board-hint" IsVisible="{Binding IsBoardEmpty}" Margin="0,0,0,16">
           <StackPanel Spacing="7">
             <TextBlock Text="{loc:Tr Kanban_Multi_Empty}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-            <Button Classes="pill" Content="{loc:Tr Kanban_Multi_FirstTask}" Command="{Binding CreateFirstCardCommand}" />
+            <Button Classes="pill" Content="{loc:Tr Kanban_Multi_FirstTask, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CreateFirstCardCommand}" />
             <TextBlock Text="{loc:Tr Kanban_Board_ShortcutsHint}" Classes="faint" />
           </StackPanel>
         </Border>
@@ -2324,7 +2324,7 @@
 
           <!-- Encabezado: prioridad + fecha límite, título, descripción -->
           <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,18">
-            <Button Classes="ghost" Content="{loc:Tr Kanban_Multi_Move}"
+            <Button Classes="ghost" Content="{loc:Tr Kanban_Multi_Move, Converter={StaticResource UpperCaseConverter}}"
                     IsVisible="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).MultipleBoardsEnabled}"
                     Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).MoveCardFromDetailCommand}" />
             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -2793,8 +2793,8 @@
           <TextBox x:Name="BoardNameBox" Text="{Binding BoardNameDraft}" MaxLength="80" AutomationProperties.Name="{loc:Tr Kanban_Multi_Name}" />
           <TextBlock Text="{Binding BoardError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
           <WrapPanel HorizontalAlignment="Right">
-            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel}" Command="{Binding CancelBoardNameEditorCommand}" />
-            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Common_Save}" Command="{Binding SaveBoardNameCommand}" />
+            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CancelBoardNameEditorCommand}" />
+            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Common_Save, Converter={StaticResource UpperCaseConverter}}" Command="{Binding SaveBoardNameCommand}" />
           </WrapPanel>
         </StackPanel>
       </Border>
@@ -2807,8 +2807,8 @@
           <TextBlock Text="{loc:Tr Kanban_Multi_CannotDelete}" TextWrapping="Wrap" IsVisible="{Binding !CanDeleteCurrentBoard}" />
           <TextBlock Text="{Binding BoardError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
           <WrapPanel HorizontalAlignment="Right">
-            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel}" Command="{Binding CancelDeleteBoardCommand}" />
-            <Button Classes="pill-primary-danger" Margin="8,0,0,0" Content="{loc:Tr Common_Delete}" Command="{Binding DeleteBoardCommand}" IsEnabled="{Binding CanDeleteCurrentBoard}"/>
+            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CancelDeleteBoardCommand}" />
+            <Button Classes="pill-primary-danger" Margin="8,0,0,0" Content="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" Command="{Binding DeleteBoardCommand}" IsEnabled="{Binding CanDeleteCurrentBoard}"/>
           </WrapPanel>
         </StackPanel>
       </Border>
@@ -2834,8 +2834,8 @@
           <TextBlock Text="{loc:Tr Kanban_Multi_Unarchive}" IsVisible="{Binding MoveWillUnarchive}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding BoardError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
           <WrapPanel HorizontalAlignment="Right">
-            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel}" Command="{Binding CancelMoveCardCommand}" />
-            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Kanban_Multi_Move}" Command="{Binding ConfirmMoveCardCommand}" />
+            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CancelMoveCardCommand}" />
+            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Kanban_Multi_Move, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ConfirmMoveCardCommand}" />
           </WrapPanel>
         </StackPanel>
       </Border>
@@ -2845,9 +2845,9 @@
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Tr Kanban_Multi_Unsaved}" TextWrapping="Wrap" />
           <WrapPanel HorizontalAlignment="Right">
-            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel}" Command="{Binding CancelBoardSwitchCommand}" />
-            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Kanban_Multi_Discard}" Command="{Binding DiscardAndSwitchBoardCommand}" />
-            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Common_Save}" Command="{Binding SaveAndSwitchBoardCommand}" />
+            <Button Classes="ghost modal-cancel" Margin="8,0,0,0" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CancelBoardSwitchCommand}" />
+            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Kanban_Multi_Discard, Converter={StaticResource UpperCaseConverter}}" Command="{Binding DiscardAndSwitchBoardCommand}" />
+            <Button Classes="pill-primary" Margin="8,0,0,0" Content="{loc:Tr Common_Save, Converter={StaticResource UpperCaseConverter}}" Command="{Binding SaveAndSwitchBoardCommand}" />
           </WrapPanel>
         </StackPanel>
       </Border>

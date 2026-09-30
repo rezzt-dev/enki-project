@@ -216,6 +216,10 @@ public sealed class AppSettings
 
     // ===================== Notificaciones y recordatorios (Ajustes › Notificaciones) =====================
 
+    /// <summary>Permite crear avisos de cualquier categoría. Al desactivarlo se conservan los avisos
+    /// anteriores, pero no se añaden nuevos ni se disparan toasts o sonidos.</summary>
+    public bool NotificationsEnabled { get; set; } = true;
+
     /// <summary>Shows/hides the bell (system event log) button in the title bar entirely.</summary>
     public bool NotificationsPanelEnabled { get; set; } = true;
 

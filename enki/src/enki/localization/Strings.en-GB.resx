@@ -3444,6 +3444,12 @@
   <data name="Settings_Notifications_Mute_Warning_Label" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="Settings_Notifications_Global_Description" xml:space="preserve">
+    <value>Stop all new notifications, popups and sounds when off. Existing history stays available.</value>
+  </data>
+  <data name="Settings_Notifications_Global_Label" xml:space="preserve">
+    <value>Enable notifications</value>
+  </data>
   <data name="Settings_Notifications_Panels_Title" xml:space="preserve">
     <value>Panels</value>
   </data>

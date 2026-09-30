@@ -50,6 +50,10 @@
   <Style Selector="MenuItem">
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="MinHeight" Value="36" />
+    <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.6" />
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 

@@ -51,19 +51,19 @@
                 DragDrop.Drop="FolderRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Skills_CreateSubfolderMenuItem}"
+              <MenuItem Header="{loc:Tr Skills_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:SkillsViewModel)DataContext).CreateSubfolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Skills_RenameFolder_Action}" Command="{Binding BeginRenameCommand}">
+              <MenuItem Header="{loc:Tr Skills_RenameFolder_Action, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Common_Delete}"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:SkillsViewModel)DataContext).RequestDeleteFolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>

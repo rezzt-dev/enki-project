@@ -13,7 +13,7 @@
              x:DataType="vm:NotesViewModel">
   <UserControl.ContextMenu>
     <ContextMenu>
-      <MenuItem Header="{loc:Tr Explorer_Paste}" Command="{Binding PasteEntryCommand}"
+      <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" Command="{Binding PasteEntryCommand}"
                 CommandParameter="{Binding EffectiveRootPath}" />
     </ContextMenu>
   </UserControl.ContextMenu>
@@ -46,11 +46,11 @@
                 DragDrop.Drop="TreeRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Copy}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Cut}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
-              <MenuItem Header="{loc:Tr Notes_SimpleView_NewNoteInFolderMenuItem}"
+              <MenuItem Header="{loc:Tr Notes_SimpleView_NewNoteInFolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         IsVisible="{Binding IsFolder}"
                         Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateTreeNoteInFolderCommand}"
                         CommandParameter="{Binding}">
@@ -58,7 +58,7 @@
                   <mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Notes_CreateSubfolderMenuItem}"
+              <MenuItem Header="{loc:Tr Notes_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         IsVisible="{Binding IsFolder}"
                         Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateTreeSubfolderCommand}"
                         CommandParameter="{Binding}">
@@ -66,12 +66,12 @@
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Notes_RenameMenuItem}" Command="{Binding BeginRenameCommand}">
+              <MenuItem Header="{loc:Tr Notes_RenameMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Common_Delete}"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).DeleteTreeItemCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
@@ -438,13 +438,13 @@
                           PointerPressed="SearchResult_PointerPressed" KeyDown="SearchResult_KeyDown">
                     <Border.ContextMenu>
                       <ContextMenu>
-                        <MenuItem Header="{loc:Tr Explorer_Copy}" InputGesture="Ctrl+C"
+                        <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C"
                                   Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="{loc:Tr Explorer_Cut}" InputGesture="Ctrl+X"
+                        <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X"
                                   Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V"
+                        <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V"
                                   Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}"
                                   CommandParameter="{Binding}" />
                       </ContextMenu>

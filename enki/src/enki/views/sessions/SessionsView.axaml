@@ -221,13 +221,13 @@
                    IsOpen="{Binding IsGraphFilterOpen}">
               <Border Classes="dropdown-popover" Width="340" CornerRadius="0">
                 <Grid RowDefinitions="Auto,*,Auto" Margin="4" MaxHeight="520">
-                  <TextBlock Grid.Row="0" Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontWeight="Bold" FontSize="15" Margin="0,0,0,14" />
+                  <TextBlock Grid.Row="0" Text="{loc:Tr Sessions_Graph_GlobalTitle, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" FontSize="15" Margin="0,0,0,14" />
                   <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Spacing="10">
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Explore}" FontSize="12" FontWeight="Bold" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Explore, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
                       <ComboBox ItemsSource="{Binding GraphExplorationOptions}" SelectedIndex="{Binding GraphExplorationIndex}"
                                 HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Sessions_Graph_Explore}" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Clusters}" FontSize="12" FontWeight="Bold" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Clusters, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
                       <ComboBox ItemsSource="{Binding GraphClusters}" SelectedItem="{Binding SelectedGraphCluster}"
                                 IsEnabled="{Binding HasGraphClusters}" HorizontalAlignment="Stretch"
                                 AutomationProperties.Name="{loc:Tr Sessions_Graph_Clusters}">
@@ -254,7 +254,7 @@
                           </ItemsControl.ItemTemplate>
                         </ItemsControl>
                       </ScrollViewer>
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Tags}" FontSize="12" FontWeight="Bold" />
+                      <TextBlock Text="{loc:Tr Sessions_Graph_Tags, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
                       <TextBlock Text="{loc:Tr Sessions_Graph_TagsHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                       <TextBlock Text="{loc:Tr Sessions_Graph_NoTags}" Classes="muted" FontSize="12" IsVisible="{Binding !HasGraphTags}" />
                       <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGraphTags}">
@@ -275,7 +275,7 @@
                   </ScrollViewer>
                   <Button Grid.Row="2" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
                           Margin="0,14,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                          Content="{loc:Tr Sessions_Graph_ResetFilters}" />
+                          Content="{loc:Tr Sessions_Graph_ResetFilters, Converter={StaticResource UpperCaseConverter}}" />
                 </Grid>
               </Border>
             </Popup>
@@ -283,7 +283,7 @@
             <Border Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16"
                     IsHitTestVisible="False" MaxWidth="460">
               <StackPanel Spacing="4">
-                <TextBlock Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontSize="12" FontWeight="Bold" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_GlobalTitle, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
                 <TextBlock Text="{Binding GraphDiscoverySummary}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
                 <TextBlock Text="{loc:Tr Sessions_Graph_AccessibleScope}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
               </StackPanel>
@@ -293,7 +293,7 @@
               <StackPanel Spacing="12">
                 <TextBlock Text="{Binding GraphEmptyMessage}" TextWrapping="Wrap" TextAlignment="Center" />
                 <Button Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsVisible="{Binding IsGraphFiltered}"
-                        HorizontalAlignment="Center" Content="{loc:Tr Sessions_Graph_ResetFilters}" />
+                        HorizontalAlignment="Center" Content="{loc:Tr Sessions_Graph_ResetFilters, Converter={StaticResource UpperCaseConverter}}" />
               </StackPanel>
             </Border>
           </Grid>

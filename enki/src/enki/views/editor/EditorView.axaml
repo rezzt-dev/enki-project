@@ -159,7 +159,7 @@
                IsOpen="{Binding IsLinkedCardsExpanded, Mode=TwoWay}">
           <Border Classes="dropdown-popover" MinWidth="200" MaxWidth="320">
             <StackPanel Spacing="10">
-              <TextBlock Text="{loc:Tr Editor_LinkedCards_Label}" Classes="eyebrow" FontSize="9" />
+              <TextBlock Text="{loc:Tr Editor_LinkedCards_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
               <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding LinkedCards}">
                   <ItemsControl.ItemsPanel>

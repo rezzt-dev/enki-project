@@ -624,7 +624,7 @@
                         <Grid ColumnDefinitions="Auto,*">
                           <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="16" Height="16"
                                             Margin="0,2,10,0" VerticalAlignment="Top" />
-                          <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
+                          <TextBlock Grid.Column="1" Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" TextWrapping="Wrap" />
                         </Grid>
                       </Button>
                     </DataTemplate>
@@ -773,16 +773,16 @@
                         <StackPanel Spacing="2">
                           <TextBlock Text="{loc:Tr Reminder_Snooze_MenuTitle, Converter={StaticResource UpperCaseConverter}}"
                                      Classes="eyebrow" FontSize="9.5" Margin="8,0,0,4" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeEveningCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeTomorrowCommand}"
                                   CommandParameter="{Binding}" />
                         </StackPanel>
@@ -903,16 +903,16 @@
                         <StackPanel Spacing="2">
                           <TextBlock Text="{loc:Tr Reminder_Snooze_MenuTitle, Converter={StaticResource UpperCaseConverter}}"
                                      Classes="eyebrow" FontSize="9.5" Margin="8,0,0,4" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeEveningCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeTomorrowCommand}"
                                   CommandParameter="{Binding}" />
 
@@ -931,7 +931,7 @@
                             </Button>
                           </Grid>
 
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Cancel}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Cancel, Converter={StaticResource UpperCaseConverter}}"
                                   IsVisible="{Binding IsSnoozed}"
                                   Command="{Binding $parent[ItemsControl].DataContext.CancelSnoozeCommand}"
                                   CommandParameter="{Binding}" />
@@ -988,7 +988,7 @@
                         AutomationProperties.Name="{loc:Tr QuickCapture_Destination_Label}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:QuickCaptureDestinationOption">
-                    <TextBlock Text="{Binding Label}" />
+                    <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" />
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>

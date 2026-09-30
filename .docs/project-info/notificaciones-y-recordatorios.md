@@ -124,6 +124,10 @@ Nueva sección en `SettingsViewModel`/`SettingsView.axaml`, mismo patrón de las
 
 - **Paneles**: mostrar/ocultar campana, recordatorios y bandeja de entrada por separado;
   activar/desactivar el aviso emergente (toast) del sistema.
+- **Interruptor global**: `NotificationsEnabled` está activo de forma predeterminada. Al apagarlo,
+  `NotificationService` descarta todos los avisos nuevos antes de guardarlos o emitir eventos; por
+  tanto tampoco aparecen toasts ni suenan avisos. El historial anterior permanece disponible y las
+  preferencias de categoría, toast y sonido se conservan para cuando se vuelva a activar.
 - **Silenciar por categoría**: un toggle por severidad (`Info/Success/Warning/Error`) — una categoría
   silenciada ni se guarda ni aparece en la campana (ver `NotificationService.Push`/`IsMuted`).
 - **Recordatorios**: slider para la ventana de "próxima a vencer" (`ReminderSoonWindowDays`, 1–30 días).

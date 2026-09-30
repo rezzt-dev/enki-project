@@ -43,27 +43,27 @@
                 DragDrop.Drop="TreeRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Skills_CreateSubfolderMenuItem}"
+              <MenuItem Header="{loc:Tr Skills_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:SkillsViewModel)DataContext).CreateTreeSubfolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Skills_RenameFolder_Action}" IsVisible="{Binding IsFolder}"
+              <MenuItem Header="{loc:Tr Skills_RenameFolder_Action, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}"
                         Command="{Binding BeginRenameCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Common_Edit}" IsVisible="{Binding IsSkill}"
+              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsSkill}"
                         Command="{Binding $parent[UserControl].((vm:SkillsViewModel)DataContext).OpenTreeItemCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Common_Delete}"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:SkillsViewModel)DataContext).DeleteTreeItemCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>

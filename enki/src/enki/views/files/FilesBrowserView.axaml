@@ -35,21 +35,21 @@
                 DragDrop.Drop="FolderRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
-              <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
+              <MenuItem Header="{loc:Tr Files_RenameAction, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem}"
+              <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateSubfolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_ImportHereMenuItem}"
+              <MenuItem Header="{loc:Tr Files_ImportHereMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ImportCommand}"
                         CommandParameter="{Binding FullPath}">
                 <MenuItem.Icon>
@@ -57,14 +57,14 @@
                 </MenuItem.Icon>
               </MenuItem>
               <Separator />
-              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}"
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RevealFolderCommand}"
                         CommandParameter="{Binding FullPath}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
                         CommandParameter="{Binding FullPath}">
                 <MenuItem.Icon>
@@ -72,7 +72,7 @@
                 </MenuItem.Icon>
               </MenuItem>
               <Separator />
-              <MenuItem Header="{loc:Tr Common_Delete}"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RequestDeleteFolderCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
@@ -139,21 +139,21 @@
               KeyDown="FolderCard_KeyDown">
         <Button.ContextMenu>
           <ContextMenu Opening="FolderCardMenu_Opening">
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
-            <MenuItem Header="{loc:Tr Files_OpenFolderMenuItem}"
+            <MenuItem Header="{loc:Tr Files_OpenFolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenFolderCardCommand}"
                       CommandParameter="{Binding}">
               <MenuItem.Icon>
                 <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
+            <MenuItem Header="{loc:Tr Files_RenameAction, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
               <MenuItem.Icon>
                 <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="{loc:Tr Files_ImportHereMenuItem}"
+            <MenuItem Header="{loc:Tr Files_ImportHereMenuItem, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ImportCommand}"
                       CommandParameter="{Binding FullPath}">
               <MenuItem.Icon>
@@ -161,14 +161,14 @@
               </MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}"
+            <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RevealFolderCommand}"
                       CommandParameter="{Binding FullPath}">
               <MenuItem.Icon>
                 <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+            <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
                       CommandParameter="{Binding FullPath}">
               <MenuItem.Icon>
@@ -176,7 +176,7 @@
               </MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="{loc:Tr Common_Delete}" InputGesture="Delete"
+            <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" InputGesture="Delete"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RequestDeleteFolderCommand}"
                       CommandParameter="{Binding}">
               <MenuItem.Icon>
@@ -216,29 +216,29 @@
               KeyDown="FileCard_KeyDown">
         <Button.ContextMenu>
           <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Copy}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Cut}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
-            <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}"
+            <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
                       CommandParameter="{Binding}">
               <MenuItem.Icon>
                 <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
+            <MenuItem Header="{loc:Tr Files_RenameAction, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
               <MenuItem.Icon>
                 <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
               </MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" Command="{Binding RevealInSystemCommand}">
+            <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding RevealInSystemCommand}">
               <MenuItem.Icon>
                 <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
               </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+            <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
                       CommandParameter="{Binding File.FullPath}">
               <MenuItem.Icon>
@@ -246,7 +246,7 @@
               </MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="{loc:Tr Common_Delete}" InputGesture="Delete"
+            <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" InputGesture="Delete"
                       Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RequestDeleteFileCommand}"
                       CommandParameter="{Binding}">
               <MenuItem.Icon>
@@ -473,14 +473,14 @@
                 DragDrop.Drop="FilesGrid_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Paste}" InputGesture="Ctrl+V" Command="{Binding PasteEntryCommand}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding PasteEntryCommand}" />
               <Separator />
-              <MenuItem Header="{loc:Tr Files_ImportButton}" Command="{Binding ImportCommand}">
+              <MenuItem Header="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ImportCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_NewFolderButton}" Command="{Binding NewFolderCommand}">
+              <MenuItem Header="{loc:Tr Files_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" Command="{Binding NewFolderCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>

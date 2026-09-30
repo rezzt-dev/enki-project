@@ -321,6 +321,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _remindersSidebarEnabled = settingsService.Settings.RemindersSidebarEnabled;
         _notificationsSidebarEnabled = settingsService.Settings.NotificationsSidebarEnabled;
         _polarShowTaskTags = settingsService.Settings.PolarShowTaskTags;
+        _notificationsEnabled = settingsService.Settings.NotificationsEnabled;
         _notificationsPanelEnabled = settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = settingsService.Settings.RemindersPanelEnabled;
         _inboxPanelEnabled = settingsService.Settings.InboxPanelEnabled;

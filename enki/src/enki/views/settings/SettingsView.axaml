@@ -570,7 +570,7 @@
                   <TextBlock Text="{loc:Tr Kanban_Multi_Description}" TextWrapping="Wrap" Classes="muted" />
                   <ToggleSwitch IsChecked="{Binding KanbanMultipleBoardsEnabled}" OnContent="" OffContent=""
                                 AutomationProperties.Name="{loc:Tr Kanban_Multi_Enabled}" />
-                  <Button Classes="ghost" Content="{loc:Tr Kanban_Multi_Manage}" Command="{Binding ManageKanbanBoardsCommand}" IsVisible="{Binding KanbanMultipleBoardsEnabled}" />
+                  <Button Classes="ghost" Content="{loc:Tr Kanban_Multi_Manage, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ManageKanbanBoardsCommand}" IsVisible="{Binding KanbanMultipleBoardsEnabled}" />
                 </StackPanel>
               </Border>
             </controls:SettingsSearchOption>
@@ -1600,6 +1600,20 @@
           <StackPanel Spacing="20">
             <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Notifications, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
             <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Global_Label Settings_Notifications_Global_Description">
+              <Border Classes="card" Padding="22">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                  <StackPanel Grid.Column="0" Spacing="5">
+                    <TextBlock Text="{loc:Tr Settings_Notifications_Global_Label, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                    <TextBlock Text="{loc:Tr Settings_Notifications_Global_Description}" Classes="muted"
+                               FontSize="11.5" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding NotificationsEnabled}" OnContent="" OffContent=""
+                                VerticalAlignment="Center" AutomationProperties.Name="{loc:Tr Settings_Notifications_Global_Label}" />
+                </Grid>
+              </Border>
+            </controls:SettingsSearchOption>
+            <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Panels_Title"
                 MatchDescendants="True">
               <Border Classes="card" Padding="22">
@@ -1837,7 +1851,7 @@
                                 Value="{Binding NotificationSoundVolume}" VerticalAlignment="Center" AutomationProperties.Name="{loc:Tr Settings_Notifications_Sound_Volume_Label}" />
                         <Button Grid.Column="1" Classes="ghost" Margin="10,0,0,0"
                                 Content="{loc:Tr Settings_Notifications_Sound_TestButton, Converter={StaticResource UpperCaseConverter}}"
-                                Command="{Binding TestNotificationSoundCommand}" />
+                                Command="{Binding TestNotificationSoundCommand}" IsEnabled="{Binding NotificationsEnabled}" />
                       </Grid>
                     </StackPanel></StackPanel>
                   </controls:SettingsSearchOption>

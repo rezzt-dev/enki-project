@@ -77,10 +77,9 @@ public sealed class NotificationService
         JsonFileStore.Save(_path, Notifications);
     }
 
-    /// <summary>Inserts, persists and broadcasts a new notification — unless its severity is muted in
-    /// Ajustes › Notificaciones (see docs/notificaciones-y-recordatorios.md), in which case the object is
-    /// still handed back to the caller (keeps the signature simple) but never recorded or broadcast, so a
-    /// muted category leaves no trace in the log either.</summary>
+    /// <summary>Inserta, persiste y anuncia un aviso salvo que el interruptor global esté apagado o
+    /// su categoría esté silenciada en Ajustes › Notificaciones. En ambos casos devuelve el objeto al
+    /// llamante sin guardarlo ni emitir eventos; tampoco se disparan toast o sonido.</summary>
     public AppNotification Push(string title, string message = "", NotificationSeverity severity = NotificationSeverity.Info)
         => PushCore(title, message, severity);
 
@@ -123,7 +122,7 @@ public sealed class NotificationService
             LinkUrl = linkUrl
         };
 
-        if (IsMuted(severity)) return notification;
+        if (!_settingsService.Settings.NotificationsEnabled || IsMuted(severity)) return notification;
 
         Notifications.Insert(0, notification);
         if (Notifications.Count > MaxItems) Notifications.RemoveRange(MaxItems, Notifications.Count - MaxItems);
