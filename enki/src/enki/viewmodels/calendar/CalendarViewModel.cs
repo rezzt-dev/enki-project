@@ -1253,7 +1253,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// <paramref name="sourceId"/>. El controlador de arrastre comparte este camino entre chips y filas
     /// sin programar. Con <paramref name="newLocalTime"/> nulo (Mes, todo el día o Agenda) conserva la
     /// hora original; al soltar en una franja horaria actualiza tanto la fecha como la hora.</summary>
-    public void MoveItem(CalendarItemSourceType sourceType, string sourceId, DateTime newLocalDate, TimeSpan? newLocalTime)
+    public void MoveItem(CalendarItemSourceType sourceType, string sourceId, DateTime newLocalDate, TimeSpan? newLocalTime, bool isOpeningMilestone = false)
     {
         switch (sourceType)
         {
@@ -1261,7 +1261,19 @@ public sealed partial class CalendarViewModel : ViewModelBase
             {
                 var card = _kanbanService.AllColumns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
                 if (card is null) return;
-                card.DueDateUtc = CombineUtc(newLocalDate, newLocalTime, card.DueDateUtc);
+                var newDate = isOpeningMilestone
+                    ? CombineUtc(newLocalDate, TimeSpan.Zero, card.StartDateUtc)
+                    : CombineUtc(newLocalDate, newLocalTime, card.DueDateUtc);
+                var start = isOpeningMilestone ? newDate : card.StartDateUtc;
+                var end = isOpeningMilestone ? card.DueDateUtc : newDate;
+                if (start is { } opening && end is { } closing && opening > closing)
+                {
+                    _notificationService.Push(LocalizationService.Instance["Calendar_Label_Kanban"],
+                        LocalizationService.Instance["Kanban_DateRange_Invalid"], NotificationSeverity.Warning);
+                    return;
+                }
+                if (isOpeningMilestone) card.StartDateUtc = newDate;
+                else card.DueDateUtc = newDate;
                 _kanbanService.Save();
                 break;
             }

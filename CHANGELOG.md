@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### ANADIDO
+- fechas opcionales de apertura y cierre para cada tarjeta kanban, persistidas en el tablero y editables de forma independiente; si existen ambas, el formulario impide guardar un cierre anterior a la apertura.
 - opcion `ajustes > apariencia > barra de titulo > mostrar controles de ventana`, activada por defecto y guardada junto con las preferencias del vault: permite ocultar al instante los botones propios de minimizar, maximizar y cerrar; al hacerlo, buscar, notificaciones, recordatorios e inbox ocupan el extremo derecho conservando su orden, separacion y margen exterior. El control solo se habilita para la barra propia de Enki —la barra nativa conserva los botones del sistema operativo— y esta traducido a todos los idiomas soportados.
 - ampliar la tarjeta de almacen del panel principal con el recuento de archivos visibles distintos de Markdown en la raiz, subcarpetas y sesiones; excluye datos internos, ocultos y papelera, separa su inventario del tamano real en disco y traduce sus etiquetas y ayudas en todos los idiomas soportados.
 - profesionalizar el arrastre de tarjetas Kanban con una copia flotante completa que sigue el punto donde se agarra, atenua el origen, marca la posicion de insercion y el destino, desplaza automaticamente los bordes y permite ordenar o mover entre columnas en los dos disenos; `Escape`, soltar fuera, cambiar de vista o perder el foco cancelan sin modificar el tablero.
@@ -35,6 +36,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - unificar en mayusculas las acciones de menus contextuales, submenus, desplegables y dialogos de `kanban`, `archivos`, `notas`, `habilidades`, `calendario` y `ajustes`, con tipografia comun y pruebas de regresion, conservando el texto escrito por el usuario.
 
 #### CORREGIDO
+- bloquear el empaquetado linux cuando faltan bibliotecas nativas requeridas junto al ejecutable publicado, incluso al reutilizar una publicacion con `--skip-publish`, para evitar distribuir paquetes que no arrancan.
 - incluir la configuracion publica de supabase que necesita polar en `polar.properties` dentro de los instaladores de linux, windows y macos; generar solo `SUPABASE_URL` y la clave publicable, rechazar urls inseguras, claves secretas y configuraciones parciales, exigir una configuracion valida al publicar y permitir que github actions la reciba mediante variables o secrets para evitar instalaciones con polar deshabilitado.
 - mostrar siempre el texto de prioridad baja, media o alta en las tarjetas del tablero kanban, tanto en el diseno vertical como en el horizontal, conservando el indicador visual y el clic para cambiarla.
 - contar en el resumen de almacenamiento del dashboard todas las notas de la raiz y de las subcarpetas del vault, ademas de todas las sesiones; el recuento recursivo evita leer el contenido de las notas y excluye las carpetas ocultas.
@@ -46,6 +48,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- optional opening and closing dates for every kanban card, persisted in the board and editable independently; when both exist, the form prevents saving a closing date before the opening date.
 - a `settings > appearance > title bar > show window controls` option, enabled by default and stored with the vault preferences: it can instantly hide enki's own minimise, maximise and close buttons; search, notifications, reminders and inbox then move to the far right while preserving their order, spacing and outer margin. The toggle is only enabled for Enki's custom title bar —the native title bar keeps the operating system controls— and is translated into every supported language.
 - extend the dashboard storage card with a count of visible non-Markdown files in the root, subfolders and sessions; it excludes internal, hidden and trash data, distinguishes inventory from actual disk size, and translates its labels and help text into every supported language.
 - professionalise Kanban card dragging with a full floating copy that follows the grab point, dims the source, marks the insertion position and target, automatically scrolls edges, and supports reordering or moving across columns in both layouts; `Escape`, dropping outside, changing view or losing focus cancel without changing the board.
@@ -71,6 +74,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - standardise actions in context menus, submenus, dropdowns and dialogs across `kanban`, `files`, `notes`, `skills`, `calendar` and `settings` in uppercase with shared typography and regression tests while preserving user-authored text.
 
 #### FIXED
+- block linux packaging when native libraries required beside the published executable are missing, including when reusing a publication with `--skip-publish`, to avoid distributing packages that cannot start.
 - include the public supabase configuration required by polar in `polar.properties` inside the linux, windows and macos installers; generate only `SUPABASE_URL` and the publishable key, reject insecure urls, secret keys and partial configurations, require valid configuration when publishing, and let github actions receive it through variables or secrets to prevent installations with polar disabled.
 - always show the low, medium or high priority label on kanban board cards in both vertical and horizontal layouts, preserving the visual indicator and click action to change priority.
 - count every note at the vault root and in its subfolders, plus every session, in the dashboard storage summary; the recursive count avoids reading note contents and excludes hidden folders.

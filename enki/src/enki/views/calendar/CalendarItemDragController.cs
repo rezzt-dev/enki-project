@@ -41,7 +41,7 @@ internal sealed class CalendarItemDragController
     private DateTime _date;
     private TimeSpan? _time;
     private bool _dragging;
-    private (CalendarItemSourceType Type, string Id)? _item;
+    private (CalendarItemSourceType Type, string Id, bool IsOpening)? _item;
 
     public CalendarItemDragController(CalendarView view, Canvas layer, Border preview, Image image,
         Border indicator, Func<bool> isResizing)
@@ -84,9 +84,9 @@ internal sealed class CalendarItemDragController
             if (child is Button || child is Control c && c.Classes.Contains("calendar-chip-resize-handle")) return;
         _item = source.DataContext switch
         {
-            CalendarItemViewModel { IsGhostOccurrence: false } item => (item.SourceType, item.SourceId),
-            CalendarTimedItemViewModel { Item.IsGhostOccurrence: false } timed => (timed.Item.SourceType, timed.Item.SourceId),
-            CalendarUnscheduledItemViewModel item => (item.SourceType, item.SourceId),
+            CalendarItemViewModel { IsGhostOccurrence: false } item => (item.SourceType, item.SourceId, item.IsOpeningMilestone),
+            CalendarTimedItemViewModel { Item.IsGhostOccurrence: false } timed => (timed.Item.SourceType, timed.Item.SourceId, timed.Item.IsOpeningMilestone),
+            CalendarUnscheduledItemViewModel item => (item.SourceType, item.SourceId, false),
             _ => null
         };
         if (_item is null) return;
@@ -165,7 +165,7 @@ internal sealed class CalendarItemDragController
         var time = _time;
         Cancel();
         if (valid && item is { } origin && _view.DataContext is CalendarViewModel vm)
-            vm.MoveItem(origin.Type, origin.Id, date, time);
+            vm.MoveItem(origin.Type, origin.Id, date, time, origin.IsOpening);
     }
 
     private Control? Hit() => _view.InputHitTest(_layer.TranslatePoint(_position, _view) ?? default) as Control;

@@ -6100,4 +6100,7 @@ Happy writing.</value>
   <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>FILES</value></data>
   <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notes and files from all sessions. Excludes deleted items and internal files.</value></data>
   <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Total size of the vault folder, including internal data and trash.</value></data>
+  <data name="Kanban_Field_StartDateLabel" xml:space="preserve"><value>Opening</value></data>
+  <data name="Kanban_Field_EndDateLabel" xml:space="preserve"><value>Closing</value></data>
+  <data name="Kanban_DateRange_Invalid" xml:space="preserve"><value>Closing cannot be before opening.</value></data>
 </root>

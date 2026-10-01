@@ -6100,4 +6100,7 @@ Bonne rédaction.</value>
   <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>FICHIERS</value></data>
   <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notes et fichiers de toutes les sessions. Exclut les éléments supprimés et les fichiers internes.</value></data>
   <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Taille totale du dossier du coffre, y compris les données internes et la corbeille.</value></data>
+  <data name="Kanban_Field_StartDateLabel" xml:space="preserve"><value>Ouverture</value></data>
+  <data name="Kanban_Field_EndDateLabel" xml:space="preserve"><value>Clôture</value></data>
+  <data name="Kanban_DateRange_Invalid" xml:space="preserve"><value>La clôture ne peut pas précéder l’ouverture.</value></data>
 </root>

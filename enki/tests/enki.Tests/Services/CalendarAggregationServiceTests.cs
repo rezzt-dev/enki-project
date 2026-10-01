@@ -15,6 +15,41 @@ namespace enki.Tests.Services;
 /// constructible in a test.</summary>
 public class CalendarAggregationServiceTests
 {
+    [Fact]
+    public void KanbanRange_PersistsAndProjectsBothMilestones_WithoutMarkingOpeningOverdue()
+    {
+        using var _ = new TempDirScope(out var directory);
+        var kanban = new KanbanService(directory);
+        var start = new DateTime(2026, 10, 22, 0, 0, 0, DateTimeKind.Local).ToUniversalTime();
+        var end = new DateTime(2026, 10, 29, 0, 0, 0, DateTimeKind.Local).ToUniversalTime();
+        kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
+        {
+            Id = "range", Title = "Entrega", StartDateUtc = start, DueDateUtc = end
+        });
+        kanban.Save();
+        kanban = new KanbanService(directory);
+        var card = kanban.AllColumns.SelectMany(c => c.Cards).Single(c => c.Id == "range");
+        Assert.Equal(start, card.StartDateUtc);
+        Assert.Equal(end, card.DueDateUtc);
+        var svc = new CalendarAggregationService(kanban, new PolarTaskService(directory),
+            new ReminderService(directory), new PolarAuthService(new SettingsService(directory)));
+        var items = svc.BuildItems(start, end.AddDays(1)).Where(x => x.SourceId == "range").ToList();
+        Assert.Equal(2, items.Count);
+        Assert.Equal(start, items[0].MomentUtc);
+        Assert.Equal(end, items[1].MomentUtc);
+        Assert.True(items[0].IsOpeningMilestone);
+        Assert.False(items[0].IsPastDue);
+        Assert.False(items[1].IsOpeningMilestone);
+        Assert.All(items, item => Assert.True(item.IsAllDay));
+        Assert.Single(svc.BuildItems(start, end), x => x.SourceId == "range");
+        Assert.DoesNotContain(svc.BuildUnscheduledItems(), x => x.SourceId == "range");
+        card.DueDateUtc = null;
+        Assert.Single(svc.BuildItems(start, end), x => x.SourceId == "range");
+        Assert.DoesNotContain(svc.BuildUnscheduledItems(), x => x.SourceId == "range");
+        card.StartDateUtc = null;
+        Assert.Contains(svc.BuildUnscheduledItems(), x => x.SourceId == "range");
+    }
+
     private static PolarTask MakeTask(
         DateTime? dueUtc, PolarRecurrence recurrence, bool isDeleted = false, int priority = 0, string[]? tags = null) => new()
     {

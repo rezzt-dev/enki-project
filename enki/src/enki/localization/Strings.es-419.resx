@@ -6100,4 +6100,7 @@ Feliz escritura.</value>
   <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>ARCHIVOS</value></data>
   <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notas y archivos de todas las sesiones. Excluye los elementos eliminados y los archivos internos.</value></data>
   <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Tamaño total de la carpeta del almacén, incluidos los datos internos y la papelera.</value></data>
+  <data name="Kanban_Field_StartDateLabel" xml:space="preserve"><value>Apertura</value></data>
+  <data name="Kanban_Field_EndDateLabel" xml:space="preserve"><value>Cierre</value></data>
+  <data name="Kanban_DateRange_Invalid" xml:space="preserve"><value>El cierre no puede ser anterior a la apertura.</value></data>
 </root>

@@ -13,6 +13,21 @@ public class KanbanCardViewModelTests
         new() { Id = id, Title = title, Priority = priority };
 
     [Fact]
+    public void OpeningOnly_IsVisibleInMetadata_AndDoesNotMakeCardOverdue()
+    {
+        var card = NewCard();
+        card.StartDateUtc = DateTime.Today.AddDays(-7).ToUniversalTime();
+        var vm = new KanbanCardViewModel(card);
+        Assert.True(vm.HasDueDate);
+        Assert.True(vm.HasStatusMetadata);
+        Assert.False(vm.IsOverdue);
+        Assert.Contains(KanbanCard.FormatDueLabel(card.StartDateUtc.Value), vm.DueDateLabel);
+        card.DueDateUtc = DateTime.Today.AddDays(7).ToUniversalTime();
+        vm.RefreshFromModel();
+        Assert.Contains(KanbanCard.FormatDueLabel(card.DueDateUtc.Value), vm.DueDateLabel);
+    }
+
+    [Fact]
     public void CyclePriority_GoesLowMediumHighLow()
     {
         var card = NewCard();

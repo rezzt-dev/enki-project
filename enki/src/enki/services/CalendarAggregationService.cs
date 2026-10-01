@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using enki.Models;
+using enki.Localization;
 using enki.ViewModels;
 using Material.Icons;
 
@@ -49,8 +50,9 @@ public sealed class CalendarAggregationService(
 
         foreach (var column in kanbanService.AllColumns)
         foreach (var card in column.Cards)
+        foreach (var milestone in new[] { (Date: card.StartDateUtc, IsOpening: true), (Date: card.DueDateUtc, IsOpening: false) })
         {
-            if (card.DueDateUtc is not { } due || due < rangeStartUtc || due >= rangeEndUtc) continue;
+            if (milestone.Date is not { } due || due < rangeStartUtc || due >= rangeEndUtc) continue;
 
             var isAllDay = IsAllDay(due);
             items.Add(new CalendarItemViewModel
@@ -58,14 +60,17 @@ public sealed class CalendarAggregationService(
                 ParentContextLabel = kanbanService.ColumnLabel(column),
                 SourceId = card.Id,
                 SourceType = CalendarItemSourceType.Kanban,
-                Title = card.Title,
+                Title = card.StartDateUtc is not null
+                    ? $"{LocalizationService.Instance[milestone.IsOpening ? "Kanban_Field_StartDateLabel" : "Kanban_Field_EndDateLabel"]}: {card.Title}"
+                    : card.Title,
+                IsOpeningMilestone = milestone.IsOpening,
                 Description = card.Description,
                 MomentUtc = due,
                 IsAllDay = isAllDay,
                 IsCompleted = card.CompletedAtUtc is not null,
                 // A duration only ever means something alongside a real time of day (doc §5) — an all-day
                 // card ignores whatever DurationMinutes happens to be stored.
-                DurationMinutes = isAllDay ? null : card.DurationMinutes,
+                DurationMinutes = isAllDay || milestone.IsOpening ? null : card.DurationMinutes,
                 LayerColorHex = CalendarItemViewModel.KanbanLayerColorHex,
                 CalendarColorHex = ResolveKanbanColumnColor(colors, column.Id),
                 LayerKey = KanbanLayerKey,
@@ -192,7 +197,7 @@ public sealed class CalendarAggregationService(
         foreach (var column in kanbanService.AllColumns)
         foreach (var card in column.Cards)
         {
-            if (card.DueDateUtc is not null) continue;
+            if (card.DueDateUtc is not null || card.StartDateUtc is not null) continue;
             items.Add(new CalendarUnscheduledItemViewModel
             {
                 ParentContextLabel = kanbanService.ColumnLabel(column),

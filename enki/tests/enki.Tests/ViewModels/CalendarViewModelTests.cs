@@ -253,6 +253,33 @@ public class CalendarViewModelTests
         return (vm, kanbanService, taskService, reminderService);
     }
 
+    [Fact]
+    public void MoveKanbanMilestones_UpdatesCorrectDate_AndRejectsReversedRange()
+    {
+        var (vm, kanban, _, _) = CreateViewModel(out var directory);
+        try
+        {
+            var start = new DateTime(2026, 10, 22, 0, 0, 0, DateTimeKind.Local);
+            var end = start.AddDays(7);
+            var card = new KanbanCard
+            {
+                Id = "range", Title = "Entrega", StartDateUtc = start.ToUniversalTime(), DueDateUtc = end.ToUniversalTime()
+            };
+            kanban.DefaultBoard.Columns[0].Cards.Add(card);
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, start.AddDays(1), null, isOpeningMilestone: true);
+            Assert.Equal(start.AddDays(1), card.StartDateUtc?.ToLocalTime());
+            Assert.Equal(end, card.DueDateUtc?.ToLocalTime());
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, end.AddDays(1), null, isOpeningMilestone: true);
+            Assert.Equal(start.AddDays(1), card.StartDateUtc?.ToLocalTime());
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, start, null);
+            Assert.Equal(end, card.DueDateUtc?.ToLocalTime());
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, end.AddDays(1), null);
+            Assert.Equal(end.AddDays(1), card.DueDateUtc?.ToLocalTime());
+            Assert.Equal(start.AddDays(1), card.StartDateUtc?.ToLocalTime());
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     // ===================== Capas: colores por origen (doc 07 §1b) =====================
 
     [Fact]

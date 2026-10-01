@@ -36,9 +36,13 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         LocalizationService.Instance["Kanban_Card_PriorityTooltip"],
         PriorityLabel);
 
-    public bool HasDueDate => Card.DueDateUtc is not null;
+    public bool HasDueDate => Card.DueDateUtc is not null || Card.StartDateUtc is not null;
     public bool IsOverdue => Card.DueDateUtc is { } due && KanbanCard.IsPastDue(due);
-    public string DueDateLabel => Card.DueDateUtc is { } due ? KanbanCard.FormatDueLabel(due) : string.Empty;
+    public string DueDateLabel => Card.StartDateUtc is { } start
+        ? (Card.DueDateUtc is { } end
+            ? $"{KanbanCard.FormatDueLabel(start)} → {KanbanCard.FormatDueLabel(end)}"
+            : $"{LocalizationService.Instance["Kanban_Field_StartDateLabel"]}: {KanbanCard.FormatDueLabel(start)}")
+        : Card.DueDateUtc is { } due ? KanbanCard.FormatDueLabel(due) : string.Empty;
 
     public bool HasSubtasks => Card.Subtasks.Count > 0;
     private int DoneSubtaskCount => Card.Subtasks.Count(s => s.IsDone);

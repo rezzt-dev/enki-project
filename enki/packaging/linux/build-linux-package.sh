@@ -78,6 +78,15 @@ if [[ ! -x "$PUBLISH_DIR/enki" ]]; then
   exit 1
 fi
 
+# El ejecutable single-file carga estas bibliotecas desde su propia carpeta. Comprueba también
+# publicaciones reutilizadas para evitar distribuir un binario que falla al arrancar.
+for native_library in libSkiaSharp.so libHarfBuzzSharp.so libonigwrap.so libpdfium.so; do
+  if [[ ! -s "$PUBLISH_DIR/$native_library" ]]; then
+    echo "Falta $native_library en $PUBLISH_DIR. Vuelve a publicar Enki antes de empaquetarlo." >&2
+    exit 1
+  fi
+done
+
 # También impide empaquetar publicaciones antiguas incompletas con --skip-publish.
 if [[ ! -s "$PUBLISH_DIR/polar.properties" ]] || ! grep -q '^SUPABASE_URL=https://' "$PUBLISH_DIR/polar.properties" || ! grep -q '^SUPABASE_ANON_KEY=.' "$PUBLISH_DIR/polar.properties"; then
   echo "Falta la configuración pública de Polar en $PUBLISH_DIR. Vuelve a ejecutar sin --skip-publish con Supabase configurado." >&2

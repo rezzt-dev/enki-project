@@ -2064,7 +2064,71 @@
               <!-- Fecha límite: selector por calendario emergente, mismo lenguaje visual que el resto
                    del formulario (§7.10) — nada de tecleo manual de fecha. -->
               <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Tr Kanban_Field_DueDateLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <TextBlock Text="{loc:Tr Kanban_Field_StartDateLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+
+                <Button Name="StartDateTrigger" Classes="date-picker-trigger"
+                        Command="{Binding ToggleStartCalendarCommand}">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <mi:MaterialIcon Grid.Column="0" Kind="CalendarOutline" Width="14" Height="14"
+                                      Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding StartDateDisplayLabel}"
+                               Classes.placeholder="{Binding !HasStartDate}"
+                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                    <mi:MaterialIcon Grid.Column="2" Kind="MenuDown" Width="15" Height="15"
+                                      Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+
+                <Popup PlacementTarget="{Binding #StartDateTrigger}" Placement="BottomEdgeAlignedLeft"
+                       VerticalOffset="6" IsLightDismissEnabled="True"
+                       OverlayInputPassThroughElement="{Binding #StartDateTrigger}"
+                       IsOpen="{Binding IsStartCalendarOpen, Mode=TwoWay}">
+                  <Border Classes="calendar-popover" Width="290">
+                    <StackPanel Spacing="14">
+
+                      <!-- Mes + navegación -->
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Button Grid.Column="0" Classes="icon-btn calendar-nav" Command="{Binding PreviousMonthCommand}"
+                                ToolTip.Tip="{loc:Tr Kanban_Calendar_PrevMonthTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Calendar_PrevMonthTooltip}">
+                          <mi:MaterialIcon Kind="ChevronLeft" Width="15" Height="15" />
+                        </Button>
+                        <TextBlock Grid.Column="1" Text="{Binding CalendarMonthLabel}" Classes="eyebrow" FontSize="10.5"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Classes="icon-btn calendar-nav" Command="{Binding NextMonthCommand}"
+                                ToolTip.Tip="{loc:Tr Kanban_Calendar_NextMonthTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Calendar_NextMonthTooltip}">
+                          <mi:MaterialIcon Kind="ChevronRight" Width="15" Height="15" />
+                        </Button>
+                      </Grid>
+
+                      <!-- Cabecera de días de la semana (empieza en lunes) -->
+                      <UniformGrid Columns="7">
+                        <TextBlock Text="{loc:Tr Kanban_Calendar_WeekdayMon, Converter={StaticResource UpperCaseConverter}}" Classes="faint calendar-weekday" />
+                        <TextBlock Text="{loc:Tr Kanban_Calendar_WeekdayTue, Converter={StaticResource UpperCaseConverter}}" Classes="faint calendar-weekday" />
+                        <TextBlock Text="{loc:Tr Kanban_Calendar_WeekdayWed, Converter={StaticResource UpperCaseConverter}}" Classes="faint calendar-weekday" />
+                        <TextBlock Text="{loc:Tr Kanban_Calendar_WeekdayThu, Converter={StaticResource UpperCaseConverter}}" Classes="faint calendar-weekday" />
+                        <TextBlock Text="{loc:Tr Kanban_Calendar_WeekdayFri, Converter={StaticResource UpperCaseConverter}}" Classes="faint calendar-weekday" />
+                        <TextBlock Text="{loc:Tr Kanban_Calendar_WeekdaySat, Converter={StaticResource UpperCaseConverter}}" Classes="faint calendar-weekday" />
+                        <TextBlock Text="{loc:Tr Kanban_Calendar_WeekdaySun, Converter={StaticResource UpperCaseConverter}}" Classes="faint calendar-weekday" />
+                      </UniformGrid>
+
+                      <!-- Rejilla de días (6 semanas fijas, ver KanbanCardEditorViewModel.RebuildCalendarDays) -->
+                      <ItemsControl ItemsSource="{Binding CalendarDays}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <UniformGrid Columns="7" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                      </ItemsControl>
+                      <StackPanel Orientation="Horizontal" Spacing="18">
+                        <Button Classes="ghost" Command="{Binding ClearStartDateCommand}" Content="{loc:Tr Kanban_DueDate_ClearButton, Converter={StaticResource UpperCaseConverter}}" />
+                        <Button Classes="ghost" Command="{Binding SetStartDateTodayCommand}" Content="{loc:Tr Kanban_DueDate_TodayButton, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </Popup>
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Tr Kanban_Field_EndDateLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
 
                 <Button Name="DueDateTrigger" Classes="date-picker-trigger"
                         Command="{Binding ToggleCalendarCommand}">
@@ -2209,6 +2273,9 @@
              </Border>
                 </Popup>
               </StackPanel>
+
+              <TextBlock Text="{loc:Tr Kanban_DateRange_Invalid}" IsVisible="{Binding HasInvalidDateRange}"
+                         Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
 
               <!-- Subtareas -->
               <StackPanel Spacing="8">

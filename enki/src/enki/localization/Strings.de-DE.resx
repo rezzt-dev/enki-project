@@ -6100,4 +6100,7 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>DATEIEN</value></data>
   <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notizen und Dateien aus allen Sitzungen. Gelöschte Einträge und interne Dateien sind ausgeschlossen.</value></data>
   <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Gesamtgröße des Vault-Ordners einschließlich interner Daten und Papierkorb.</value></data>
+  <data name="Kanban_Field_StartDateLabel" xml:space="preserve"><value>Beginn</value></data>
+  <data name="Kanban_Field_EndDateLabel" xml:space="preserve"><value>Ende</value></data>
+  <data name="Kanban_DateRange_Invalid" xml:space="preserve"><value>Das Ende darf nicht vor dem Beginn liegen.</value></data>
 </root>

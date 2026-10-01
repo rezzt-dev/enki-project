@@ -70,6 +70,9 @@ public sealed record CalendarItemViewModel
     /// <c>NotifyAtUtc</c> for Reminder.</summary>
     public required DateTime MomentUtc { get; init; }
 
+    /// <summary>Distingue el hito de apertura del cierre de la misma tarjeta.</summary>
+    public bool IsOpeningMilestone { get; init; }
+
     /// <summary><c>true</c> when <see cref="MomentUtc"/>, converted to local time, falls exactly at
     /// local midnight — same criterion <see cref="KanbanCard.IsPastDue"/>/<c>FormatDueLabel</c> already
     /// use to distinguish "day only" from "day + time".</summary>
@@ -161,7 +164,7 @@ public sealed record CalendarItemViewModel
     /// <summary>Backs the resize handle on the Semana/Día timed chip (docs/calendar-feature/
     /// 05-interacciones-y-microinteracciones.md §2b) — any real, timed item can persist a dragged duration
     /// via its source service (Kanban/Polar/Reminder). All-day and ghost occurrences never show the handle.</summary>
-    public bool CanResize => SourceType != CalendarItemSourceType.PolarSubtask && !IsGhostOccurrence && !IsAllDay;
+    public bool CanResize => !IsOpeningMilestone && SourceType != CalendarItemSourceType.PolarSubtask && !IsGhostOccurrence && !IsAllDay;
 
     /// <summary>Transparent regardless of <see cref="EffectiveCalendarColorHex"/> for a ghost occurrence (docs/
     /// calendar-feature/10-diseno-visual-y-componentes.md §4: "sin fondo relleno" — the alpha-zero hex
@@ -189,7 +192,7 @@ public sealed record CalendarItemViewModel
     /// <summary>Reuses <see cref="KanbanCard.IsPastDue"/> verbatim for all three sources, applied to
     /// whichever moment positions this item — see docs/calendar-feature/03-glosario-y-modelo-de-datos.md
     /// §3. A completed item is never shown as overdue regardless of its date.</summary>
-    public bool IsPastDue => !IsCompleted && KanbanCard.IsPastDue(MomentUtc);
+    public bool IsPastDue => !IsCompleted && !IsOpeningMilestone && KanbanCard.IsPastDue(MomentUtc);
 
     /// <summary>"Vencido siempre gana visualmente sobre el color de origen" (docs/calendar-feature/
     /// 10-diseno-visual-y-componentes.md §4) — only the chip's border switches to the danger color; the

@@ -91,7 +91,7 @@ public sealed partial class KanbanService
         var previous = new KanbanCard
         {
             Id = card.Id, Title = card.Title, Description = card.Description, Priority = card.Priority,
-            DueDateUtc = card.DueDateUtc, DurationMinutes = card.DurationMinutes, LinkedNotePath = card.LinkedNotePath,
+            StartDateUtc = card.StartDateUtc, DueDateUtc = card.DueDateUtc, DurationMinutes = card.DurationMinutes, LinkedNotePath = card.LinkedNotePath,
             Tags = card.Tags, Subtasks = card.Subtasks
         };
         var next = location.Column.Id == columnId
@@ -106,6 +106,7 @@ public sealed partial class KanbanService
         card.Title = draft.Title;
         card.Description = draft.Description;
         card.Priority = draft.Priority;
+        card.StartDateUtc = draft.StartDateUtc;
         card.DueDateUtc = draft.DueDateUtc;
         card.DurationMinutes = draft.DurationMinutes;
         card.LinkedNotePath = draft.LinkedNotePath;

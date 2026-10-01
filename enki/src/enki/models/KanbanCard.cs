@@ -11,6 +11,8 @@ public sealed class KanbanCard
     public required string Title { get; set; }
     public string Description { get; set; } = string.Empty;
     public KanbanPriority Priority { get; set; } = KanbanPriority.Medium;
+    /// <summary>Fecha de apertura opcional; el cierre se conserva en DueDateUtc.</summary>
+    public DateTime? StartDateUtc { get; set; }
     public DateTime? DueDateUtc { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 
