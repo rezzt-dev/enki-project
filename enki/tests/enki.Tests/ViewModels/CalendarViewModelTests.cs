@@ -285,6 +285,47 @@ public class CalendarViewModelTests
     }
 
     [Fact]
+    public void MultipleBoards_ShareThreeStateRowsAndRefreshCardsAndCustomColumns()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanban, _, _) = CreateViewModel(out dir);
+            foreach (var column in kanban.AllColumns) column.Cards.Clear();
+            var rows = vm.Layers.Where(l => l.IsChildRow).ToArray();
+            var second = kanban.CreateBoard("Personal");
+            Assert.Equal(rows, vm.Layers.Where(l => l.IsChildRow));
+            var due = DateTime.Today.AddHours(10).ToUniversalTime();
+            kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "first", Title = "Primera", DueDateUtc = due });
+            second.Columns[0].Cards.Add(new KanbanCard { Id = "second", Title = "Segunda", DueDateUtc = due });
+            second.Columns[1].Cards.Add(new KanbanCard { Id = "unscheduled", Title = "Sin fecha" });
+            var custom = new KanbanColumn { Id = "custom", Title = "Revisión" };
+            second.Columns.Add(custom);
+            kanban.Save();
+            vm.ReferenceDate = DateTime.Today;
+            vm.SetViewCommand.Execute(CalendarViewMode.Day);
+
+            Assert.Equal(4, vm.Layers.Count(l => l.IsChildRow));
+            Assert.Contains(vm.Layers, l => l.Label == "Personal · Revisión");
+            Assert.Equal(new[] { "first", "second" }, vm.WeekColumns[0].TimedItems.Select(i => i.Item.SourceId).OrderBy(id => id));
+            var row = vm.Layers.Single(l => l.ColorKey == CalendarLayerColorService.KanbanRoleColorKey(CoreColumnRole.Backlog));
+            row.SelectSwatchCommand.Execute("#123ABC");
+            Assert.All(vm.WeekColumns[0].TimedItems, i => Assert.Equal("#123ABC", i.Item.EffectiveCalendarColorHex));
+            Assert.Contains(vm.UnscheduledItems, i => i.SourceId == "unscheduled");
+
+            kanban.MoveCardToBoard("second", second.Id, second.Columns[1].Id);
+            Assert.Equal(CalendarLayerPalette.InProgressColorHex,
+                vm.WeekColumns[0].TimedItems.Single(i => i.Item.SourceId == "second").Item.EffectiveCalendarColorHex);
+            vm.Layers[0].IsActive = false;
+            Assert.Empty(vm.WeekColumns[0].TimedItems);
+            Assert.Empty(vm.UnscheduledItems);
+            vm.Layers[0].IsActive = true;
+            Assert.Equal(2, vm.WeekColumns[0].TimedItems.Count);
+        }
+        finally { DeleteDirectory(dir); }
+    }
+
+    [Fact]
     public void Layers_KanbanChildRowsAreNotFiltersOfTheirOwn()
     {
         var dir = string.Empty;
@@ -400,13 +441,23 @@ public class CalendarViewModelTests
     }
 
     [Fact]
-    public void Layers_RenamingAKanbanColumnUpdatesItsRowLabelInPlace()
+    public void Layers_RenamingCustomColumnUpdatesItsRowButCoreStateKeepsItsLabel()
     {
         var dir = string.Empty;
         try
         {
             var (vm, kanbanService, _, _) = CreateViewModel(out dir);
-            var column = kanbanService.DefaultBoard.Columns[0];
+            var core = kanbanService.DefaultBoard.Columns[0];
+            var coreRow = vm.Layers.First(l => l.IsChildRow);
+            var coreLabel = coreRow.Label;
+            core.Title = "Pendientes personales";
+            kanbanService.Save();
+            Assert.Same(coreRow, vm.Layers.First(l => l.IsChildRow));
+            Assert.Equal(coreLabel, coreRow.Label);
+
+            var column = new KanbanColumn { Id = "custom", Title = "Revisión" };
+            kanbanService.DefaultBoard.Columns.Add(column);
+            kanbanService.Save();
             var row = vm.Layers.First(l => l.IsChildRow && l.Label == column.Title);
 
             column.Title = "Rebautizada";

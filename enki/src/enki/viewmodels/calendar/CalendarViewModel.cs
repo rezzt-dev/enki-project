@@ -815,7 +815,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// color (renombrar una columna, elegir un color), las filas se actualizan en sitio: así el emergente
     /// del color no se cierra solo en cuanto se pulsa un color.
     ///
-    /// Bajo la fila KANBAN cuelga una sub-fila por columna del tablero (doc §1b). Son solo color: la
+    /// Bajo KANBAN aparecen tres estados compartidos y las columnas personalizadas (doc §1b). Son solo color: la
     /// visibilidad sigue siendo de todo Kanban a la vez, que es lo que esta sección hacía hasta ahora.</summary>
     private void RebuildLayers()
     {
@@ -828,15 +828,26 @@ public sealed partial class CalendarViewModel : ViewModelBase
                 CalendarItemViewModel.KanbanLayerColorHex, false, false, false)
         };
 
-        // Las columnas van en el orden del tablero, el mismo que ve el usuario en Kanban.
-        desired.AddRange(_kanbanService.AllColumns.Select(column =>
+        // Los tres estados base aparecen una sola vez; las columnas personalizadas conservan
+        // su identidad y el nombre del tablero para distinguir títulos repetidos.
+        foreach (var (role, labelKey) in new[]
+                 {
+                     (CoreColumnRole.Backlog, "Kanban_Seed_ColumnTodo"),
+                     (CoreColumnRole.InProgress, "Kanban_Seed_ColumnInProgress"),
+                     (CoreColumnRole.Done, "Kanban_Seed_ColumnDone")
+                 })
         {
-            var colorKey = CalendarLayerColorService.KanbanColumnColorKey(column.Id);
-            return new LayerRow(
-                CalendarAggregationService.KanbanLayerKey, colorKey, _kanbanService.ColumnLabel(column),
-                CalendarLayerColorService.Resolve(colors, colorKey),
-                CanEditColor: true, _layerColorService.HasCustomColor(colorKey), IsChildRow: true);
-        }));
+            AddKanbanColorRow(CalendarLayerColorService.KanbanRoleColorKey(role),
+                LocalizationService.Instance[labelKey]);
+        }
+        foreach (var column in _kanbanService.AllColumns.Where(c => c.Role == CoreColumnRole.None))
+            AddKanbanColorRow(CalendarLayerColorService.KanbanColumnColorKey(column.Id),
+                _kanbanService.ColumnLabel(column));
+
+        void AddKanbanColorRow(string colorKey, string label) => desired.Add(new LayerRow(
+            CalendarAggregationService.KanbanLayerKey, colorKey, label,
+            CalendarLayerColorService.Resolve(colors, colorKey),
+            CanEditColor: true, _layerColorService.HasCustomColor(colorKey), IsChildRow: true));
 
         desired.Add(new LayerRow(
             CalendarAggregationService.ReminderLayerKey, CalendarAggregationService.ReminderLayerKey,

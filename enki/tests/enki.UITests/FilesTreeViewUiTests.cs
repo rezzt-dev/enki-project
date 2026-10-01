@@ -53,6 +53,94 @@ public class FilesTreeViewUiTests : IDisposable
         return (view, viewModel, vault, sessions, window);
     }
 
+    [Fact]
+    public void CollapsedRail_SearchOverlaysPreview_AndPinningReservesSpace()
+    {
+        var (view, vm, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            vm.IsTreeSidebarVisible = false;
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            var preview = tree.GetVisualDescendants().OfType<FilePreviewView>().Single();
+            var previewColumn = (Grid)preview.Parent!;
+            var originalBounds = previewColumn.Bounds;
+            var search = tree.FindControl<Button>("RailSearchButton")!;
+            Assert.True(search.IsEffectivelyVisible);
+            search.Command!.Execute(search.CommandParameter);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.True(vm.IsTreeSearchMode);
+            Assert.True(tree.FindControl<Border>("TreeNavigator")!.IsEffectivelyVisible);
+            Assert.True(tree.FindControl<TextBox>("TreeSearchBox")!.IsEffectivelyVisible);
+            Assert.Equal(originalBounds, previewColumn.Bounds);
+            Assert.False(vm.IsTreeSidebarVisible);
+
+            vm.ToggleTreeSidebarCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.False(vm.IsTreeNavigatorOpen);
+            Assert.True(vm.IsTreeSidebarVisible);
+            Assert.True(previewColumn.Bounds.X > originalBounds.X);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void CollapsedRail_NewFolderOpensForRenaming_AndSessionMenuDismissesNavigator()
+    {
+        var (view, vm, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            vm.IsTreeSidebarVisible = false;
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            var create = tree.FindControl<Button>("RailNewFolderButton")!;
+            create.Command!.Execute(create.CommandParameter);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.True(vm.IsTreeNavigatorOpen);
+            Assert.False(vm.IsTreeSidebarVisible);
+            Assert.True(vm.FileTreeRoots.Single().IsRenaming);
+            Assert.True(tree.FindControl<Border>("TreeNavigator")!.IsEffectivelyVisible);
+
+            var session = tree.FindControl<Button>("RailSessionButton")!;
+            session.Command!.Execute(session.CommandParameter);
+            Assert.False(vm.IsTreeNavigatorOpen);
+            Assert.True(vm.IsTreeSessionMenuOpen);
+            vm.SelectTreeSessionOptionCommand.Execute(vm.SessionOptions[0]);
+            Assert.False(vm.IsTreeSessionMenuOpen);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void TemporarySearch_EscapeAndOpeningResultCloseIt_WithoutPinning()
+    {
+        SeedVault();
+        var (view, vm, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            vm.ReloadFolders();
+            vm.Reload();
+            vm.IsTreeSidebarVisible = false;
+            vm.ToggleTreeSearchPeekCommand.Execute(null);
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            tree.FindControl<TextBox>("TreeSearchBox")!.RaiseEvent(new Avalonia.Input.KeyEventArgs
+            {
+                RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+                Key = Avalonia.Input.Key.Escape
+            });
+            Assert.False(vm.IsTreeNavigatorOpen);
+
+            vm.ToggleTreeSearchPeekCommand.Execute(null);
+            vm.TreeSearchText = "suelto";
+            vm.OpenFirstTreeSearchResult();
+            Assert.NotNull(vm.ActivePreview);
+            Assert.False(vm.IsTreeNavigatorOpen);
+            Assert.False(vm.IsTreeSidebarVisible);
+        }
+        finally { window.Close(); }
+    }
+
     /// <summary>Una carpeta "diseno" con "logo.png" dentro y un "suelto.pdf" en la raíz del vault.</summary>
     private void SeedVault()
     {

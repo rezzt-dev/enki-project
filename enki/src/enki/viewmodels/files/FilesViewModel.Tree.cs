@@ -63,13 +63,32 @@ public sealed partial class FilesViewModel
     private bool _isTreeView;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTreePeekActive))]
+    [NotifyPropertyChangedFor(nameof(IsSearchPeekActive))]
     private bool _isTreeSearchMode;
 
     [ObservableProperty]
     private string _treeSearchText = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTreeNavigatorVisible))]
+    [NotifyPropertyChangedFor(nameof(TreeNavigatorColumn))]
     private bool _isTreeSidebarVisible = true;
+
+    /// <summary>Navegación temporal sobre la previsualización, sin alterar el panel guardado.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTreeNavigatorVisible))]
+    [NotifyPropertyChangedFor(nameof(IsTreePeekActive))]
+    [NotifyPropertyChangedFor(nameof(IsSearchPeekActive))]
+    private bool _isTreeNavigatorOpen;
+
+    [ObservableProperty]
+    private bool _isTreeSessionMenuOpen;
+
+    public bool IsTreeNavigatorVisible => IsTreeSidebarVisible || IsTreeNavigatorOpen;
+    public int TreeNavigatorColumn => IsTreeSidebarVisible ? 0 : 2;
+    public bool IsTreePeekActive => IsTreeNavigatorOpen && !IsTreeSearchMode;
+    public bool IsSearchPeekActive => IsTreeNavigatorOpen && IsTreeSearchMode;
 
     [ObservableProperty]
     private double _treeSidebarWidth = 272;
@@ -114,6 +133,8 @@ public sealed partial class FilesViewModel
 
     partial void OnIsTreeViewChanged(bool value)
     {
+        CloseTreeNavigator();
+        IsTreeSessionMenuOpen = false;
         if (_loadingNavigationPreferences) return;
 
         // Entrar en el modo árbol lo reconstruye: mientras está fuera de pantalla no se mantiene al día
@@ -130,6 +151,8 @@ public sealed partial class FilesViewModel
 
     partial void OnIsTreeSidebarVisibleChanged(bool value)
     {
+        CloseTreeNavigator();
+        IsTreeSessionMenuOpen = false;
         if (_settingsService is null || _loadingNavigationPreferences) return;
         _settingsService.Settings.FilesTreeSidebarVisible = value;
         _settingsService.Save();
@@ -169,6 +192,41 @@ public sealed partial class FilesViewModel
 
     [RelayCommand]
     private void ToggleTreeSidebar() => IsTreeSidebarVisible = !IsTreeSidebarVisible;
+
+    [RelayCommand]
+    private void ToggleTreePeek() => ToggleTreeNavigator(search: false);
+
+    [RelayCommand]
+    private void ToggleTreeSearchPeek() => ToggleTreeNavigator(search: true);
+
+    private void ToggleTreeNavigator(bool search)
+    {
+        if (IsTreeNavigatorOpen && IsTreeSearchMode == search)
+        {
+            CloseTreeNavigator();
+            return;
+        }
+        IsTreeSessionMenuOpen = false;
+        IsTreeSearchMode = search;
+        IsTreeNavigatorOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseTreeNavigator() => IsTreeNavigatorOpen = false;
+
+    [RelayCommand]
+    private void ToggleTreeSessionMenu()
+    {
+        CloseTreeNavigator();
+        IsTreeSessionMenuOpen = !IsTreeSessionMenuOpen;
+    }
+
+    [RelayCommand]
+    private void SelectTreeSessionOption(SessionOptionViewModel option)
+    {
+        IsTreeSessionMenuOpen = false;
+        SelectedSessionOption = option;
+    }
 
     /// <summary>Persiste el ancho del panel al soltar el separador, no en cada píxel del arrastre — mismo
     /// criterio que el panel de la vista simplificada de Notas y el del árbol de Skills.</summary>
@@ -435,6 +493,7 @@ public sealed partial class FilesViewModel
         if (node.Card is { } card)
         {
             OpenCard(card);
+            CloseTreeNavigator();
             return;
         }
 
@@ -545,6 +604,9 @@ public sealed partial class FilesViewModel
     private void CreateFolderInTree(string parentPath)
     {
         if (TryCreateFolder(parentPath) is not { } created) return;
+        IsTreeSearchMode = false;
+        IsTreeSessionMenuOpen = false;
+        if (!IsTreeSidebarVisible) IsTreeNavigatorOpen = true;
         Refresh();
         ExpandTreeAncestorsOf(created.FullPath);
 

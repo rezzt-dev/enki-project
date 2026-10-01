@@ -38,6 +38,12 @@ public partial class FilesTreeView : UserControl
     public FilesTreeView()
     {
         InitializeComponent();
+        KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Escape || Vm is not { IsTreeNavigatorOpen: true } vm) return;
+            vm.CloseTreeNavigatorCommand.Execute(null);
+            e.Handled = true;
+        };
 
         AddHandler(PointerPressedEvent, OnTreePreviewPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
 
@@ -65,14 +71,24 @@ public partial class FilesTreeView : UserControl
     {
         if (Vm is not { } vm) return;
 
+        if (e.PropertyName == nameof(FilesViewModel.IsTreeNavigatorOpen) && !vm.IsTreeNavigatorOpen)
+        {
+            if (TreeNavigator.IsKeyboardFocusWithin)
+                (vm.IsTreeSearchMode ? RailSearchButton : RailTreeButton).Focus();
+            return;
+        }
+
         switch (e.PropertyName)
         {
             // Entrar en modo búsqueda pone el cursor en el cuadro: pulsar la lupa es inequívocamente "quiero
             // escribir una búsqueda", y obligar a un segundo clic para empezar a teclear sería fricción gratuita.
             // Salir devuelve el foco al árbol, para seguir con el teclado donde se estaba.
+            case nameof(FilesViewModel.IsTreeNavigatorOpen):
+            case nameof(FilesViewModel.IsTreeSidebarVisible):
             case nameof(FilesViewModel.IsTreeSearchMode):
                 Dispatcher.UIThread.Post(() =>
                 {
+                    if (!vm.IsTreeNavigatorVisible) return;
                     if (vm.IsTreeSearchMode)
                     {
                         TreeSearchBox.Focus();
@@ -91,6 +107,12 @@ public partial class FilesTreeView : UserControl
                 if (!vm.IsTreeSearchMode && vm.SelectedTreeNode is { } node) BringNodeIntoView(node);
                 break;
         }
+    }
+
+    private void NavigatorDismiss_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        Vm?.CloseTreeNavigatorCommand.Execute(null);
+        e.Handled = true;
     }
 
     // ===================== Filas del árbol =====================
@@ -240,7 +262,8 @@ public partial class FilesTreeView : UserControl
         }
         else if (e.Key == Key.Escape)
         {
-            vm.ShowTreeBrowseCommand.Execute(null);
+            if (vm.IsTreeNavigatorOpen) vm.CloseTreeNavigatorCommand.Execute(null);
+            else vm.ShowTreeBrowseCommand.Execute(null);
             e.Handled = true;
         }
     }

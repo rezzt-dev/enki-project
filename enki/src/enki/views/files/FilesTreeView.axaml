@@ -174,16 +174,189 @@
     <!-- ===================== Panel lateral ===================== -->
     <Panel Grid.Column="0" x:Name="SidebarHost">
 
+      <!-- El panel fijado reserva espacio; el navegador temporal se superpone al contenido. -->
+      <Border Width="{Binding TreeSidebarWidth}" IsVisible="{Binding IsTreeSidebarVisible}" />
+
+      <!-- · Contraído: raíl · -->
+      <!-- Accesos persistentes, con las mismas medidas que el raíl de Notas. -->
+      <Grid x:Name="CollapsedRail" RowDefinitions="Auto,*,Auto" Width="52" IsVisible="{Binding !IsTreeSidebarVisible}"
+            Background="{DynamicResource AppBackgroundAltBrush}">
+        <Border Grid.Row="0" Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
+                Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
+        <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+                Background="{DynamicResource AppBackgroundBrush}">
+          <Button Classes="icon-btn" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Command="{Binding ToggleTreeSidebarCommand}"
+                  ToolTip.Tip="{loc:Tr Files_Tree_ShowSidebar_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Files_Tree_ShowSidebar_Tooltip}">
+            <mi:MaterialIcon Kind="ChevronDoubleRight" Width="17" Height="17" />
+          </Button>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="4" Margin="7,10" HorizontalAlignment="Center">
+            <Button x:Name="RailTreeButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ToggleTreePeekCommand}" Classes.active="{Binding IsTreePeekActive}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_Browse_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_Browse_Tooltip}">
+              <mi:MaterialIcon Kind="FileTreeOutline" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailSearchButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ToggleTreeSearchPeekCommand}" Classes.active="{Binding IsSearchPeekActive}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_SearchPlaceholder}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
+              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" />
+            </Button>
+            <Border Height="1" Margin="6,8" Background="{DynamicResource Ink10}" />
+            <Button x:Name="RailNewFolderButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding NewTreeFolderAtRootCommand}"
+                    ToolTip.Tip="{loc:Tr Files_NewFolderButton}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_NewFolderButton}">
+              <mi:MaterialIcon Kind="FolderPlusOutline" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailImportButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ImportCommand}" CommandParameter="{Binding EffectiveRootPath}"
+                    ToolTip.Tip="{loc:Tr Files_ImportButton}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_ImportButton}">
+              <mi:MaterialIcon Kind="TrayArrowDown" Width="18" Height="18" />
+            </Button>
+            <Border Height="1" Margin="6,8" Background="{DynamicResource Ink10}" />
+            <Button x:Name="RailBrowserButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ShowBrowserViewCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Nav_Browser}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_Nav_Browser}">
+              <mi:MaterialIcon Kind="ViewGridOutline" Width="18" Height="18" />
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,8">
+          <Button x:Name="RailSessionButton" Classes="icon-btn" HorizontalAlignment="Center"
+                  Command="{Binding ToggleTreeSessionMenuCommand}" Classes.active="{Binding IsTreeSessionMenuOpen}"
+                  ToolTip.Tip="{Binding SelectedSessionOption.DisplayName}" ToolTip.Placement="Right"
+                  AutomationProperties.Name="{loc:Tr A11y_Files_SessionSelector}">
+            <mi:MaterialIcon Width="17" Height="17"
+                             Kind="{Binding SelectedSessionOption.IsVault, Converter={StaticResource SessionIconConverter}}" />
+          </Button>
+        </Border>
+      </Grid>
+      <Popup IsOpen="{Binding IsTreeSessionMenuOpen, Mode=TwoWay}" PlacementTarget="{Binding #SidebarHost}"
+             Placement="AnchorAndGravity" PlacementAnchor="BottomLeft" PlacementGravity="TopRight"
+             HorizontalOffset="10" VerticalOffset="-8" IsLightDismissEnabled="True">
+        <Border Classes="dropdown-popover" MinWidth="240" Padding="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{loc:Tr A11y_Files_SessionSelector, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" FontSize="9.5" Margin="6,2,6,8" />
+            <ItemsControl ItemsSource="{Binding SessionOptions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:SessionOptionViewModel">
+                  <Button Classes="dropdown-item"
+                          Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).SelectTreeSessionOptionCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="9">
+                      <mi:MaterialIcon Width="14" Height="14" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Ink40}"
+                                       Kind="{Binding IsVault, Converter={StaticResource SessionIconConverter}}" />
+                      <TextBlock Text="{Binding DisplayName}" FontSize="12.5" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Popup>
+    </Panel>
+
+    <!-- Separador arrastrable. Igual que en la vista simplificada de Notas, la costura visible es una
+         Border de 1px y el área de agarre es más ancha; el arrastre lo lleva el code-behind (mueve
+         TreeSidebarWidth) en vez de un GridSplitter, porque el ancho vive en el viewmodel —es lo que se
+         persiste entre arranques— y no en la ColumnDefinition. -->
+    <Panel Grid.Column="1" Width="7" Cursor="SizeWestEast" Background="Transparent"
+           IsVisible="{Binding IsTreeSidebarVisible}"
+           AutomationProperties.Name="{loc:Tr A11y_Files_TreeSidebarSplitter}"
+           PointerPressed="SidebarGrip_PointerPressed"
+           PointerMoved="SidebarGrip_PointerMoved"
+           PointerReleased="SidebarGrip_PointerReleased">
+      <Border Width="1" HorizontalAlignment="Center" Background="{DynamicResource Ink10}"
+              IsHitTestVisible="False" />
+    </Panel>
+
+    <!-- ===================== Panel derecho: previsualización ===================== -->
+    <Grid Grid.Column="2" RowDefinitions="Auto,*">
+
+      <!-- Cabecera sin nada abierto: nombre de la sección + conmutador de navegación. Con un archivo abierto
+           desaparece, porque la barra de la propia previsualización ya trae nombre, acciones y conmutador:
+           tener las dos apiladas gastaba una franja entera de la ventana en repetir lo mismo. -->
+      <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+              Background="{DynamicResource AppBackgroundBrush}" Padding="18,0"
+              IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Grid.Column="0" Text="{loc:Tr Files_PageTitle, Converter={StaticResource UpperCaseConverter}}"
+                     Classes="eyebrow" FontSize="10" VerticalAlignment="Center" />
+
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                      ToolTip.Tip="{loc:Tr Files_Nav_Tooltip}">
+            <Button Classes="icon-btn" Width="34" Height="34"
+                    Command="{Binding ShowBrowserViewCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Nav_Browser}"
+                    AutomationProperties.Name="{loc:Tr Files_Nav_Browser}">
+              <mi:MaterialIcon Kind="ViewGridOutline" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn active" Width="34" Height="34"
+                    Command="{Binding ShowTreeViewCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Nav_Tree}"
+                    AutomationProperties.Name="{loc:Tr Files_Nav_Tree}">
+              <mi:MaterialIcon Kind="FileTreeOutline" Width="16" Height="16" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <views:FilePreviewView Grid.Row="0" Grid.RowSpan="2"
+                             IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+      <StackPanel Grid.Row="1" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="380"
+                  Margin="24"
+                  IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
+        <Border Width="72" Height="72" Background="{DynamicResource Ink05}" HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="FileEyeOutline" Width="36" Height="36" Foreground="{DynamicResource Ink40}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="{loc:Tr Files_Tree_NoSelection}" Classes="muted" HorizontalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" />
+        <Button Classes="pill" HorizontalAlignment="Center" Command="{Binding ImportCommand}"
+                CommandParameter="{Binding EffectiveRootPath}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
+            <TextBlock Text="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+        <TextBlock Text="{loc:Tr Files_Tree_DropHint}" Classes="faint" FontSize="11.5" HorizontalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Clic fuera cierra el navegador temporal sin activar la previsualización. -->
+    <Border Grid.Column="2" x:Name="NavigatorDismissArea" Background="Transparent"
+            IsVisible="{Binding IsTreeNavigatorOpen}" PointerPressed="NavigatorDismiss_PointerPressed" />
+    <Border Grid.Column="{Binding TreeNavigatorColumn}" x:Name="TreeNavigator"
+            Classes.dropdown-popover="{Binding IsTreeNavigatorOpen}"
+            Width="{Binding TreeSidebarWidth}" HorizontalAlignment="Left"
+            Padding="0" MaxHeight="Infinity" IsVisible="{Binding IsTreeNavigatorVisible}">
       <!-- · Desplegado · -->
-      <Grid RowDefinitions="Auto,*,Auto" Width="{Binding TreeSidebarWidth}"
-            IsVisible="{Binding IsTreeSidebarVisible}"
+      <Grid RowDefinitions="Auto,*,Auto"
             Background="{DynamicResource AppBackgroundAltBrush}">
 
         <!-- Barra superior: modo árbol / modo búsqueda a la izquierda, ocultar el panel a la derecha.
              Alto fijo de 58 para casar al píxel con la barra de la previsualización. -->
         <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
                 Background="{DynamicResource AppBackgroundBrush}" Padding="8,0">
-          <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+          <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
             <Button Grid.Column="0" Classes="icon-btn" Classes.active="{Binding !IsTreeSearchMode}"
                     Command="{Binding ShowTreeBrowseCommand}"
                     ToolTip.Tip="{loc:Tr Files_Tree_Browse_Tooltip}"
@@ -196,11 +369,22 @@
                     AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
               <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" />
             </Button>
-            <Button Grid.Column="3" Classes="icon-btn"
+            <Button Grid.Column="3" Classes="icon-btn" IsVisible="{Binding IsTreeSidebarVisible}"
                     Command="{Binding ToggleTreeSidebarCommand}"
                     ToolTip.Tip="{loc:Tr Files_Tree_HideSidebar_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Files_Tree_HideSidebar_Tooltip}">
               <mi:MaterialIcon Kind="ChevronDoubleLeft" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="3" Classes="icon-btn" IsVisible="{Binding IsTreeNavigatorOpen}"
+                    Command="{Binding ToggleTreeSidebarCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_ShowSidebar_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_ShowSidebar_Tooltip}">
+              <mi:MaterialIcon Kind="PinOutline" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="4" Classes="icon-btn" IsVisible="{Binding IsTreeNavigatorOpen}"
+                    Command="{Binding CloseTreeNavigatorCommand}"
+                    ToolTip.Tip="{loc:Tr Common_Close}" AutomationProperties.Name="{loc:Tr Common_Close}">
+              <mi:MaterialIcon Kind="Close" Width="17" Height="17" />
             </Button>
           </Grid>
         </Border>
@@ -350,102 +534,7 @@
         </Border>
       </Grid>
 
-      <!-- · Contraído: raíl · -->
-      <!-- Con el panel oculto solo quedan las dos cosas que no se pueden dejar sin salida: volver a
-           mostrarlo y volver al modo explorador. -->
-      <Grid RowDefinitions="Auto,*,Auto" Width="46" IsVisible="{Binding !IsTreeSidebarVisible}"
-            Background="{DynamicResource AppBackgroundAltBrush}">
-        <Border Grid.Row="0" Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
-                Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
-        <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
-                Background="{DynamicResource AppBackgroundBrush}">
-          <Button Classes="icon-btn" HorizontalAlignment="Center" VerticalAlignment="Center"
-                  Command="{Binding ToggleTreeSidebarCommand}"
-                  ToolTip.Tip="{loc:Tr Files_Tree_ShowSidebar_Tooltip}"
-                  AutomationProperties.Name="{loc:Tr Files_Tree_ShowSidebar_Tooltip}">
-            <mi:MaterialIcon Kind="ChevronDoubleRight" Width="17" Height="17" />
-          </Button>
-        </Border>
-
-        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,8">
-          <Button Classes="icon-btn" HorizontalAlignment="Center"
-                  Command="{Binding ShowBrowserViewCommand}"
-                  ToolTip.Tip="{loc:Tr Files_Nav_Browser}"
-                  AutomationProperties.Name="{loc:Tr Files_Nav_Browser}">
-            <mi:MaterialIcon Kind="ViewGridOutline" Width="17" Height="17" />
-          </Button>
-        </Border>
-      </Grid>
-    </Panel>
-
-    <!-- Separador arrastrable. Igual que en la vista simplificada de Notas, la costura visible es una
-         Border de 1px y el área de agarre es más ancha; el arrastre lo lleva el code-behind (mueve
-         TreeSidebarWidth) en vez de un GridSplitter, porque el ancho vive en el viewmodel —es lo que se
-         persiste entre arranques— y no en la ColumnDefinition. -->
-    <Panel Grid.Column="1" Width="7" Cursor="SizeWestEast" Background="Transparent"
-           IsVisible="{Binding IsTreeSidebarVisible}"
-           AutomationProperties.Name="{loc:Tr A11y_Files_TreeSidebarSplitter}"
-           PointerPressed="SidebarGrip_PointerPressed"
-           PointerMoved="SidebarGrip_PointerMoved"
-           PointerReleased="SidebarGrip_PointerReleased">
-      <Border Width="1" HorizontalAlignment="Center" Background="{DynamicResource Ink10}"
-              IsHitTestVisible="False" />
-    </Panel>
-
-    <!-- ===================== Panel derecho: previsualización ===================== -->
-    <Grid Grid.Column="2" RowDefinitions="Auto,*">
-
-      <!-- Cabecera sin nada abierto: nombre de la sección + conmutador de navegación. Con un archivo abierto
-           desaparece, porque la barra de la propia previsualización ya trae nombre, acciones y conmutador:
-           tener las dos apiladas gastaba una franja entera de la ventana en repetir lo mismo. -->
-      <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
-              Background="{DynamicResource AppBackgroundBrush}" Padding="18,0"
-              IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Grid.Column="0" Text="{loc:Tr Files_PageTitle, Converter={StaticResource UpperCaseConverter}}"
-                     Classes="eyebrow" FontSize="10" VerticalAlignment="Center" />
-
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                      ToolTip.Tip="{loc:Tr Files_Nav_Tooltip}">
-            <Button Classes="icon-btn" Width="34" Height="34"
-                    Command="{Binding ShowBrowserViewCommand}"
-                    ToolTip.Tip="{loc:Tr Files_Nav_Browser}"
-                    AutomationProperties.Name="{loc:Tr Files_Nav_Browser}">
-              <mi:MaterialIcon Kind="ViewGridOutline" Width="16" Height="16" />
-            </Button>
-            <Button Classes="icon-btn active" Width="34" Height="34"
-                    Command="{Binding ShowTreeViewCommand}"
-                    ToolTip.Tip="{loc:Tr Files_Nav_Tree}"
-                    AutomationProperties.Name="{loc:Tr Files_Nav_Tree}">
-              <mi:MaterialIcon Kind="FileTreeOutline" Width="16" Height="16" />
-            </Button>
-          </StackPanel>
-        </Grid>
-      </Border>
-
-      <views:FilePreviewView Grid.Row="0" Grid.RowSpan="2"
-                             IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-
-      <StackPanel Grid.Row="1" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="380"
-                  Margin="24"
-                  IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
-        <Border Width="72" Height="72" Background="{DynamicResource Ink05}" HorizontalAlignment="Center">
-          <mi:MaterialIcon Kind="FileEyeOutline" Width="36" Height="36" Foreground="{DynamicResource Ink40}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Border>
-        <TextBlock Text="{loc:Tr Files_Tree_NoSelection}" Classes="muted" HorizontalAlignment="Center"
-                   TextAlignment="Center" TextWrapping="Wrap" />
-        <Button Classes="pill" HorizontalAlignment="Center" Command="{Binding ImportCommand}"
-                CommandParameter="{Binding EffectiveRootPath}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
-            <TextBlock Text="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}" />
-          </StackPanel>
-        </Button>
-        <TextBlock Text="{loc:Tr Files_Tree_DropHint}" Classes="faint" FontSize="11.5" HorizontalAlignment="Center"
-                   TextAlignment="Center" TextWrapping="Wrap" />
-      </StackPanel>
-    </Grid>
+    </Border>
 
     <!-- Realce mientras un arrastre válido del explorador del sistema sobrevuela la vista: un recuadro por
          encima de todo —IsHitTestVisible="False" para no interponerse en el propio arrastre—, con el mismo

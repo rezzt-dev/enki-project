@@ -247,6 +247,11 @@ No se usa `NativeWebView`: su backend en Linux es software-only y propenso a fal
 - **Panel lateral**: plegable (`AppSettings.FilesTreeSidebarVisible`), redimensionable
   (`FilesTreeSidebarWidth`) y con su propio estado de carpetas expandidas (`FilesTreeExpandedFolderPaths`),
   independiente del panel del explorador.
+- **Raíl contraído**: mantiene árbol, búsqueda, nueva carpeta, importar y cambio a explorador, con el
+  selector de sesión al pie. Comparte las medidas del raíl de Notas (52 px, botones de 36 px).
+  Árbol y búsqueda abren el mismo navegador sobre la previsualización sin desplazarla ni guardar el
+  estado temporal. Se cierra al abrir un archivo, pulsar fuera o usar Esc; la chincheta fija el panel.
+  Crear una carpeta desde el raíl abre el árbol para poder renombrarla.
 
 ## 9. Importar archivos
 
