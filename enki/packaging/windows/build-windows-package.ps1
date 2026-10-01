@@ -86,6 +86,17 @@ if (-not (Test-Path $polarPath) -or
     throw "Falta la configuracion publica de Polar. Repite sin -SkipPublish con Supabase configurado."
 }
 
+# El instalador no debe depender de una instalación previa de VLC.
+$vlcRoot = Join-Path $PublishDir "libvlc\$Rid"
+foreach ($library in @("libvlc.dll", "libvlccore.dll")) {
+    if (-not (Test-Path (Join-Path $vlcRoot $library))) {
+        throw "Falta $library en $vlcRoot. Vuelve a publicar con el runtime multimedia incluido."
+    }
+}
+if (-not (Get-ChildItem (Join-Path $vlcRoot "plugins") -Recurse -Filter "*avcodec*" -ErrorAction SilentlyContinue)) {
+    throw "Faltan los codecs multimedia del paquete de Enki."
+}
+
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
 $iscc = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue

@@ -5699,6 +5699,9 @@ Feliz escritura.</value>
   <data name="Files_FitWidthTooltip" xml:space="preserve">
     <value>Ajustar al ancho (Ctrl+0)</value>
   </data>
+  <data name="Files_FitHeightTooltip" xml:space="preserve">
+    <value>Ajustar al alto</value>
+  </data>
   <data name="Files_ActualSizeTooltip" xml:space="preserve">
     <value>Tamaño real (100 %)</value>
   </data>
@@ -6103,4 +6106,13 @@ Feliz escritura.</value>
   <data name="Kanban_Field_StartDateLabel" xml:space="preserve"><value>Apertura</value></data>
   <data name="Kanban_Field_EndDateLabel" xml:space="preserve"><value>Cierre</value></data>
   <data name="Kanban_DateRange_Invalid" xml:space="preserve"><value>El cierre no puede ser anterior a la apertura.</value></data>
+  <data name="Files_MediaPlayPause" xml:space="preserve"><value>Reproducir / pausar</value></data>
+  <data name="Files_MediaStop" xml:space="preserve"><value>Detener</value></data>
+  <data name="Files_MediaMute" xml:space="preserve"><value>Silenciar / activar sonido</value></data>
+  <data name="Files_MediaVolume" xml:space="preserve"><value>Volumen</value></data>
+  <data name="Files_MediaSeek" xml:space="preserve"><value>Posición de reproducción</value></data>
+  <data name="Files_MediaReady" xml:space="preserve"><value>Pulsa reproducir para abrir este archivo aquí.</value></data>
+  <data name="Files_MediaError" xml:space="preserve"><value>No se puede reproducir este archivo. Su formato puede no ser compatible o el motor multimedia de Enki no está disponible. Puedes abrirlo con la aplicación del sistema.</value></data>
+  <data name="Files_MediaErrorTitle" xml:space="preserve"><value>No se pudo reproducir el archivo</value></data>
+  <data name="Files_ContainerPreviewNotice" xml:space="preserve"><value>Vista del texto o del contenido del archivo comprimido. No reproduce la maquetación ni ejecuta macros o fórmulas.</value></data>
 </root>

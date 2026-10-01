@@ -13,7 +13,6 @@ using enki.Localization;
 using enki.Models;
 using enki.Services;
 using Material.Icons;
-using SkiaSharp;
 
 namespace enki.ViewModels;
 
@@ -56,7 +55,7 @@ public sealed partial class FileCardViewModel : ObservableObject
         nameof(FileName), nameof(SizeLabel), nameof(ModifiedLabel), nameof(ExtensionLabel), nameof(HasExtension),
         nameof(MetaLabel), nameof(KindLabel), nameof(IsImage), nameof(IsPdf), nameof(IsAudio), nameof(IsVideo),
         nameof(IsCode), nameof(IsOther), nameof(IsPlayable), nameof(IconKind), nameof(PdfDocument),
-        nameof(CodeContent), nameof(CodeDocument), nameof(CodeLanguage), nameof(CodeLanguageLabel),
+        nameof(IsContainerPreview), nameof(CodeContent), nameof(CodeDocument), nameof(CodeLanguage), nameof(CodeLanguageLabel),
         nameof(CodeLinesLabel), nameof(IsCodeViewer), nameof(IsCodeTruncated), nameof(ShowsInfoPanel),
         nameof(PreviewHint), nameof(IsImageViewer), nameof(IsImageLoading), nameof(KindMetaLabel)
     ];
@@ -189,7 +188,8 @@ public sealed partial class FileCardViewModel : ObservableObject
 
     public TextDocument? CodeDocument { get; private set; }
 
-    public bool IsCodeViewer => IsCode && CodeDocument is not null;
+    public bool IsCodeViewer => CodeDocument is not null;
+    public bool IsContainerPreview => IsOther && ContainerPreviewService.Supports(File.FullPath);
 
     public bool IsCodeTruncated { get; private set; }
 
@@ -202,15 +202,16 @@ public sealed partial class FileCardViewModel : ObservableObject
     // ===================== Panel de información =====================
 
     /// <summary>La previsualización no tiene visor para este archivo y enseña en su lugar el panel de
-    /// información con el botón de abrirlo con la aplicación del sistema: audio, vídeo, cualquier tipo sin visor
-    /// propio, un texto que al leerlo resulta no serlo, y una imagen que no se ha podido decodificar.</summary>
+    /// información con el botón de abrirlo con la aplicación del sistema: tipos sin visor, texto ilegible
+    /// e imágenes que no se han podido decodificar.</summary>
     public bool ShowsInfoPanel =>
-        IsAudio || IsVideo || IsOther || (IsCode && _codeUnavailableKey is not null) || (IsImage && IsPreviewImageFaulted);
+        (IsPlayable && MediaPreview is null) || (IsOther && !IsCodeViewer) || (IsCode && _codeUnavailableKey is not null) || (IsImage && IsPreviewImageFaulted);
 
     public string PreviewHint => LocalizationService.Instance[File.Kind switch
     {
         VaultFileKind.Audio => "Files_AudioPreviewHint",
         VaultFileKind.Video => "Files_VideoPreviewHint",
+        VaultFileKind.Other when _codeUnavailableKey is not null => _codeUnavailableKey,
         VaultFileKind.Code when _codeUnavailableKey is not null => _codeUnavailableKey,
         VaultFileKind.Image when IsPreviewImageFaulted => "Files_ImagePreviewErrorHint",
         _ => "Files_NoPreviewAvailable"
@@ -220,6 +221,16 @@ public sealed partial class FileCardViewModel : ObservableObject
     /// miniaturas. Null hasta que <see cref="EnsurePdfDocumentLoaded"/> se llama por primera vez, y siempre null
     /// para lo que no es un PDF.</summary>
     public PdfDocumentViewModel? PdfDocument { get; private set; }
+
+    public MediaPreviewViewModel? MediaPreview { get; private set; }
+
+    public void EnsureMediaPreviewLoaded(Action<string> reportError)
+    {
+        if (!IsPlayable || MediaPreview is not null) return;
+        MediaPreview = new MediaPreviewViewModel(_vaultService, File, reportError);
+        OnPropertyChanged(nameof(MediaPreview));
+        OnPropertyChanged(nameof(ShowsInfoPanel));
+    }
 
     public FileCardViewModel(VaultService vaultService, VaultFile file)
     {
@@ -247,6 +258,9 @@ public sealed partial class FileCardViewModel : ObservableObject
     /// tiene que volver a pedir la carga (ver <c>FilesViewModel.LoadPreviewContent</c>).</summary>
     public void UpdateFile(VaultFile file)
     {
+        MediaPreview?.Close();
+        MediaPreview = null;
+        OnPropertyChanged(nameof(MediaPreview));
         PdfDocument?.Close();
         PdfDocument = null;
         File = file;
@@ -294,11 +308,12 @@ public sealed partial class FileCardViewModel : ObservableObject
                     ? RenderPdfThumbnail(vaultService, file.FullPath)
                     : file.IsSvg
                         ? SvgRenderHelper.RenderSvg(vaultService.ReadFileBytes(file.FullPath), GridThumbnailWidth)
-                        : DecodeRaster(vaultService.ReadFileBytes(file.FullPath), GridThumbnailWidth, out _);
+                        : DecodeRaster(vaultService.ReadFileBytes(file.FullPath), GridThumbnailWidth, file.Extension, out _);
 
                 Dispatcher.UIThread.Post(() =>
                 {
                     if (generation == _generation) Thumbnail = bitmap;
+                    else bitmap.Dispose();
                 });
             }
             catch (Exception ex)
@@ -351,13 +366,13 @@ public sealed partial class FileCardViewModel : ObservableObject
                 }
                 else
                 {
-                    bitmap = DecodeRaster(bytes, PreviewImageMaxWidth, out var originalSize);
+                    bitmap = DecodeRaster(bytes, PreviewImageMaxWidth, file.Extension, out var originalSize);
                     if (originalSize.Width > 0) dimensions = $"{originalSize.Width} × {originalSize.Height} px";
                 }
 
                 Dispatcher.UIThread.Post(() =>
                 {
-                    if (generation != _generation) return;
+                    if (generation != _generation) { bitmap.Dispose(); return; }
                     PreviewImage = bitmap;
                     ImageDimensionsLabel = dimensions;
                 });
@@ -373,20 +388,10 @@ public sealed partial class FileCardViewModel : ObservableObject
         });
     }
 
-    /// <summary>Decodifica una imagen rasterizada reduciéndola a <paramref name="maxWidth"/> si es más ancha, y
-    /// nunca ampliándola. El tamaño original se lee de la cabecera con <see cref="SKCodec"/> antes de decodificar,
-    /// que es barato, para decidir si hace falta reducir sin decodificar la imagen dos veces.</summary>
-    private static Bitmap DecodeRaster(byte[] bytes, int maxWidth, out PixelSize originalSize)
+    /// <summary>Decodifica el primer fotograma, corrige la orientación y limita ambas dimensiones sin ampliar.</summary>
+    private static Bitmap DecodeRaster(byte[] bytes, int maxWidth, string extension, out PixelSize originalSize)
     {
-        using (var codec = SKCodec.Create(new MemoryStream(bytes)))
-        {
-            originalSize = codec is null ? default : new PixelSize(codec.Info.Width, codec.Info.Height);
-        }
-
-        using var stream = new MemoryStream(bytes);
-        return originalSize.Width > maxWidth
-            ? Bitmap.DecodeToWidth(stream, maxWidth, BitmapInterpolationMode.HighQuality)
-            : new Bitmap(stream);
+        return ImagePreviewService.Decode(bytes, maxWidth, extension, out originalSize);
     }
 
     [RelayCommand]
@@ -409,7 +414,7 @@ public sealed partial class FileCardViewModel : ObservableObject
     /// es código.</summary>
     public void EnsureCodeContentLoaded()
     {
-        if (!IsCode || _codeLoadAttempted) return;
+        if ((!IsCode && !IsContainerPreview) || _codeLoadAttempted) return;
         _codeLoadAttempted = true;
 
         try
@@ -421,7 +426,13 @@ public sealed partial class FileCardViewModel : ObservableObject
             else
             {
                 var bytes = _vaultService.ReadFileBytes(File.FullPath);
-                if (LooksBinary(bytes))
+                if (IsContainerPreview)
+                {
+                    CodeContent = ContainerPreviewService.Read(bytes, File.FullPath, out var truncated);
+                    IsCodeTruncated = truncated;
+                    IsCodeWordWrap = true;
+                }
+                else if (LooksBinary(bytes))
                 {
                     _codeUnavailableKey = "Files_BinaryPreviewHint";
                 }
@@ -447,11 +458,12 @@ public sealed partial class FileCardViewModel : ObservableObject
 
         if (CodeContent is not null)
         {
-            CodeLanguage = Path.GetExtension(File.FileName);
+            CodeLanguage = IsContainerPreview ? ".txt" : CodePreviewService.LanguageExtension(File.FileName);
             CodeLanguageLabel = CodeLanguage.TrimStart('.').ToUpperInvariant();
             CodeDocument = new TextDocument(CodeContent) { FileName = File.FileName };
         }
 
+        OnPropertyChanged(nameof(IsContainerPreview));
         OnPropertyChanged(nameof(CodeContent));
         OnPropertyChanged(nameof(CodeLanguage));
         OnPropertyChanged(nameof(CodeLanguageLabel));
@@ -467,17 +479,33 @@ public sealed partial class FileCardViewModel : ObservableObject
     /// UTF-16 lleva nulos legítimos, así que con marca de orden de bytes se da por texto.</summary>
     internal static bool LooksBinary(byte[] bytes)
     {
+        if (bytes.AsSpan().StartsWith(new byte[] { 0, 0, 0xFE, 0xFF })) return false;
         if (bytes.Length >= 2 && ((bytes[0] == 0xFF && bytes[1] == 0xFE) || (bytes[0] == 0xFE && bytes[1] == 0xFF)))
             return false;
 
-        return Array.IndexOf(bytes, (byte)0, 0, Math.Min(bytes.Length, 8000)) >= 0;
+        var length = Math.Min(bytes.Length, 8000);
+        var controls = 0;
+        for (var i = 0; i < length; i++)
+        {
+            if (bytes[i] == 0) return true;
+            if (bytes[i] < 32 && bytes[i] is not (9 or 10 or 12 or 13)) controls++;
+        }
+        return length > 0 && controls > length / 10;
     }
 
     private static string DecodeText(byte[] bytes)
     {
-        using var reader = new StreamReader(new MemoryStream(bytes), new UTF8Encoding(false),
-            detectEncodingFromByteOrderMarks: true);
-        return reader.ReadToEnd();
+        try
+        {
+            using var reader = new StreamReader(new MemoryStream(bytes), new UTF8Encoding(false, true),
+                detectEncodingFromByteOrderMarks: true);
+            return reader.ReadToEnd();
+        }
+        catch (DecoderFallbackException)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            return Encoding.GetEncoding(1252).GetString(bytes);
+        }
     }
 
     [RelayCommand]

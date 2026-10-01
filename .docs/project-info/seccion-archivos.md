@@ -1,7 +1,7 @@
 # Sección Archivos
 
 Referencia técnica de la pantalla "Archivos" (`AppPage.Files`): las dos disposiciones, navegación,
-tarjetas, previsualización (imágenes, PDF, código y panel de información) y su relación con el resto del
+tarjetas, previsualización (imágenes, PDF, código, documentos, audio/vídeo y panel de información) y su relación con el resto del
 vault. Documenta el comportamiento tal y como está implementado hoy, no un plan futuro.
 
 ## 1. Qué es y qué no es
@@ -45,11 +45,11 @@ ya era genérica.
 
 ## 2. Detección de tipo
 
-`VaultFile.KindFromExtension` clasifica cada archivo por extensión (sin distinguir mayúsculas, sin mirar el
+`VaultFile.KindFromPath` reconoce nombres convencionales sin extensión y delega en `KindFromExtension` para clasificar por extensión (sin distinguir mayúsculas, sin mirar el
 contenido) en un `VaultFileKind`:
 
 - **Image**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp`, `.ico`, `.tiff`, `.tif` y `.svg` (este último
-  rasterizado con `SvgRenderHelper`).
+  rasterizado con `SvgRenderHelper`), AVIF, HEIC/HEIF, TGA, PSD, JPEG XL, PBM/PGM/PPM y QOI.
 - **Pdf**: `.pdf`.
 - **Audio** y **Video**: las extensiones habituales (`.mp3`, `.flac`, `.mp4`, `.mkv`…).
 - **Code**: código y texto plano (`.cs`, `.py`, `.json`, `.yaml`, `.txt`, `.log`, `.csv`…).
@@ -160,10 +160,13 @@ flechas (§8).
 
 ### 6.1 Imágenes
 
-`EnsurePreviewImageLoaded` decodifica la imagen fuera del hilo de UI, con un tope de 4096 px de ancho (los
+`EnsurePreviewImageLoaded` decodifica la imagen fuera del hilo de UI, con un tope de 4096 px en cualquiera de sus dimensiones (los
 SVG, a 1600 px); mientras tanto se enseña la miniatura (`DisplayImage`). Se ajusta a la ventana **sin
 ampliar** por encima de su tamaño (`StretchDirection="DownOnly"`), o a tamaño real con desplazamiento
-(`IsImageActualSize`). Una imagen que no se puede decodificar va al panel de información.
+(`IsImageActualSize`). `ImagePreviewService` usa Magick.NET para los formatos rasterizados: corrige la
+orientación EXIF y muestra la primera página/fotograma. La decodificación se fuerza al formato declarado,
+limita la imagen a 100 megapíxeles y la caché de píxeles a 256 MB, sin caché en disco para no filtrar imágenes
+de sesiones protegidas. Una imagen que no se puede decodificar va al panel de información.
 
 ### 6.2 PDF
 
@@ -175,8 +178,8 @@ Ver §7.
 
 - descarta los de más de 32 MB (panel de información, "demasiado grande");
 - detecta binarios con extensión de texto (`LooksBinary`: un byte nulo en los primeros 8000 bytes, salvo
-  con marca de orden de bytes UTF-16) — panel de información;
-- decodifica respetando la marca de orden de bytes (UTF-8/UTF-16);
+  con marca de orden de bytes UTF-16/UTF-32; también rechaza un exceso de controles) — panel de información;
+- decodifica respetando la marca de orden de bytes (UTF-8/UTF-16/UTF-32); sin marca, intenta UTF-8 estricto y después Windows-1252;
 - trunca a 512 000 caracteres (`IsCodeTruncated`), avisándolo en una franja sobre el editor — antes se
   añadía una línea inventada al final del propio texto, que se copiaba con él.
 
@@ -184,11 +187,11 @@ El editor (AvaloniaEdit + TextMate, solo lectura, con números de línea) va **s
 alrededor: trae el suyo y virtualiza las líneas. El tema de resaltado sigue al de la app (LightPlus o
 DarkPlus, también al cambiarlo en caliente) y la gramática se resuelve por extensión, también cuando un
 renombrado cambia la extensión del archivo abierto; una extensión sin gramática queda sin resaltado. La barra
-trae el lenguaje, ajuste de líneas largas y copiar el contenido (el icono pasa a un check un momento).
+trae el lenguaje, búsqueda (también Ctrl+F), ajuste de líneas largas y copiar el contenido (el icono pasa a un check un momento).
 
 ### 6.4 Panel de información
 
-Audio, vídeo, tipos sin visor, texto binario/ilegible e imágenes que no se pueden decodificar enseñan una
+Tipos sin visor, texto binario/ilegible e imágenes que no se pueden decodificar enseñan una
 ficha (`ShowsInfoPanel`): icono y extensión, nombre, tipo y datos, el motivo (`PreviewHint`) y dos salidas —
 reproducir/abrir con la aplicación del sistema y mostrar en la carpeta. Nunca un error sin salida.
 
@@ -201,6 +204,50 @@ compartido por todas las cuentas de la máquina, sino en el directorio privado p
 con un `chmod` posterior. El barrido de arranque y cierre (`CleanupStaleDecryptedTempFiles`) mira los dos
 sitios, para seguir limpiando lo que dejaran versiones anteriores sueltas en la raíz del temporal.
 
+### 6.5 Audio y vídeo
+
+`MediaPreviewViewModel` crea LibVLC solo al pulsar reproducir. `MediaPreviewView` conecta el `VideoView`
+de LibVLCSharp.Avalonia cuando existe un reproductor; los controles permanecen fuera de la superficie
+nativa para evitar superposiciones sobre el vídeo. Incluye reproducir/pausar, detener, posición (cuando
+el medio admite búsqueda), tiempo total, volumen y silencio. No hay reproducción automática.
+
+Al cerrar, cambiar archivo/disposición o desmontar la vista se desconecta el vídeo, se detiene y libera
+VLC y se elimina la copia descifrada. Renombrar, mover o borrar detiene primero el reproductor para liberar
+el archivo en Windows. Los fallos muestran una explicación en el visor y usan `NotificationService`;
+la acción de abrir con el sistema sigue disponible en la cabecera.
+
+El usuario no instala VLC por separado. Windows incluye `VideoLAN.LibVLC.Windows`, con las bibliotecas
+y los plugins fuera del ejecutable single-file. macOS incorpora el motor oficial 3.0.24 para Intel o
+Apple Silicon dentro de `Enki.app`, con SHA-256 fijado y rutas de carga relativas al bundle.
+`MediaRuntimeService` carga ese motor privado en macOS.
+
+En Linux el instalador prepara las dependencias: el `.deb` declara `libvlc5`, `vlc-plugin-base` y
+`vlc-plugin-video-output`, que resuelve el gestor de paquetes; el `install.sh` del `.tar.gz` llama a
+`install-media-runtime.sh` antes de copiar Enki. En Arch y derivados instala `libvlc` y
+`vlc-plugins-all`, para incluir también FFmpeg y la salida gráfica. Debian/Ubuntu, Fedora y openSUSE
+usan sus propios gestores y repositorios configurados. Se necesita conexión y autorización del sistema
+para instalar dependencias ausentes; un fallo detiene la instalación. El `.tar.gz` es un instalador,
+no un paquete portable independiente de las bibliotecas del sistema. No hay descargas al reproducir.
+
+La compatibilidad final de cada códec depende del motor distribuido y, en Linux, de los paquetes
+ofrecidos por los repositorios de la distribución.
+La integración sigue la [vista oficial de VideoLAN](https://github.com/videolan/libvlcsharp/blob/3.x/src/LibVLCSharp.Avalonia/README.md).
+
+### 6.6 Documentos y contenedores
+
+`ContainerPreviewService` reutiliza el visor de texto en modo de solo lectura, con un aviso que distingue
+la extracción de texto de una reproducción del diseño original:
+
+- DOCX: párrafos y texto de Word; PPTX: texto de las diapositivas.
+- ODT/ODS/ODP: texto de OpenDocument.
+- XLSX: valores guardados de las celdas, referencias y cadenas compartidas; no calcula fórmulas.
+- ZIP/JAR/NuGet: listado de rutas y tamaños, sin extraer contenido al disco.
+
+Límites: 32 MB de archivo, 2000 entradas, 8 MB acumulados de XML y 512 000 caracteres de salida.
+El XML prohíbe DTD y entidades externas. No ejecuta macros, scripts ni vínculos externos. Los formatos
+Office antiguos (`.doc`, `.xls`, `.ppt`), RAR/7z y documentos con cifrado interno requieren una aplicación
+externa. Los fallos y truncados siguen las mismas indicaciones del visor de código.
+
 ## 7. Visor de PDF
 
 `EnsurePdfDocumentLoaded` crea un `PdfDocumentViewModel` por tarjeta y arranca `LoadAsync()`, que resuelve
@@ -210,10 +257,13 @@ página** (`PdfRenderHelper.GetPageSizes`, en puntos) y renderiza la primera. Cu
 
 **Zoom**: se mide contra el tamaño físico de la página (100 % = tamaño en papel a 96 DIP por pulgada). El
 documento se abre **ajustado al ancho** del panel (`IsFitWidth`), que la vista informa con
-`SetViewport(ancho, escala)` —con un debounce de 120 ms al redimensionar— y que se recalcula por página (un
+`SetViewport(ancho, alto, escala)` —con un debounce de 120 ms al redimensionar— y que se recalcula por página (un
 anexo apaisado se ajusta a su propio ancho). Elegir un zoom concreto apaga el ajuste; los escalones son fijos
 (25 %–400 %), así que desde un ajuste de 83 % se llega a un valor redondo. Ctrl + rueda, Ctrl + +/−, el
-botón del porcentaje (100 %) y el de ajustar al ancho (Ctrl + 0).
+botón del porcentaje (100 %), el de ajustar al ancho (Ctrl + 0) y el de **ajustar al alto**.
+El ajuste al alto (`IsFitHeight`) usa la altura disponible con margen para la página y la barra
+horizontal; se recalcula al redimensionar y cambiar de página. Ambos ajustes son excluyentes y
+se desactivan al elegir un zoom manual.
 
 **Render**: cada cambio de página o de zoom pide a PDFium la página al DPI que corresponde **multiplicado
 por la escala de la pantalla**, así que en HiDPI no se ve borrosa. El tamaño con que se dibuja
@@ -335,6 +385,8 @@ Todo con `CornerRadius="0"`, según `docs/sistema-diseno-web.md`.
 - `enki.Tests/ViewModels/FilesViewModelTreeTests.cs` — forma del árbol, búsqueda del panel, estado persistido.
 - `enki.Tests/ViewModels/FileCardViewModelTests.cs` — binarios, codificación, truncado, panel de información.
 - `enki.Tests/ViewModels/FilesViewModel{DeleteConfirmation,Encryption,SessionPersistence}Tests.cs`.
+- `enki.Tests/Services/{FileCompatibility,ContainerPreviewService,ImagePreviewService}Tests.cs` — formatos, decodificación real, límites y documentos.
+- `enki.UITests/FileCompatibilityUiTests.cs` — controles del reproductor y carga bajo demanda.
 - `enki.Tests/Services/VaultServiceFilesTests.cs` — enumeración recursiva y contador de carpeta.
 - `enki.UITests/Files{View,TreeView,DropTarget,SectionPolish}UiTests.cs` — XAML compilado de verdad: las dos
   disposiciones, destinos de arrastre, miga de pan, modal de carpeta y visores.
@@ -342,9 +394,27 @@ Todo con `CornerRadius="0"`, según `docs/sistema-diseno-web.md`.
 ## 14. Qué NO hace esta sección
 
 - **No edita archivos**: solo el nombre. No hay editor de imágenes ni anotación de PDF.
-- **No reproduce audio ni vídeo** dentro de la app: los entrega al reproductor del sistema.
+- **No reproduce la maquetación de Office** ni anima GIF/WebP: muestra texto y el primer fotograma, respectivamente.
 - **No hay selección múltiple**: cada operación actúa sobre un archivo o una carpeta.
 - **No enlaza notas con archivos** vía wikilinks; la relación con Documentos es estructural (mismas carpetas,
   mismo selector de sesión).
 - **No hay caché de miniaturas persistente** (§5).
 - **La sección Papelera no lista carpetas borradas**: quedan en `<vault>/.trash` y se recuperan a mano (§10).
+
+## 15. Verificación de compatibilidad (2026-10-01)
+
+Resultado final: **2228 tests de unidad/servicio correctos y 30 tests de interfaz de Archivos correctos**.
+Compilación sin errores ni advertencias y comprobación de formato del diff limpia.
+
+- Pruebas automatizadas: clasificación y alias de lenguajes, UTF-16/32 y Windows-1252, rechazo de binarios,
+  lectura de DOCX/XLSX y ZIP con límites, XML sin entidades externas y decodificación real de
+  TIFF/TGA/AVIF/WebP/PNG/QOI/JPEG XL/HEIC. El fixture HEIC es un rectángulo generado localmente;
+  no depende de un codificador HEVC incluido en Magick.NET.
+- Interfaz: tests headless de Archivos y controles del reproductor; inspección de una ventana real de
+  1000 × 700 con el estado de error y la acción de abrir externamente.
+- Motor real en Linux: WAV de prueba, pausa, posición, volumen y liberación. El equipo de comprobación
+  tiene LibVLC parcial sin decodificador MPEG-4 ni salida XCB; se comprobó el error visible en vídeo,
+  pero **queda pendiente reproducir vídeo con salida gráfica y códecs completos**, y validar Windows/macOS.
+- Antes de distribuir: comprobar MP4/H.264, WebM, audio, pausa/búsqueda/fin, cambio de archivo y disposición,
+  cierre de ventana y bloqueo de sesión cifrada. Revisar que no quede reproducción ni temporal descifrado.
+  Comprobar además pantallas pequeñas, escalado de pantalla y menús/modales sobre la superficie nativa.

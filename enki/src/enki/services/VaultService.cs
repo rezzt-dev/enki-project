@@ -1582,7 +1582,7 @@ public sealed partial class VaultService
             FullPath = fullPath,
             ModifiedUtc = info.LastWriteTimeUtc,
             SizeBytes = info.Length,
-            Kind = VaultFile.KindFromExtension(info.Extension)
+            Kind = VaultFile.KindFromPath(info.FullName)
         };
     }
 

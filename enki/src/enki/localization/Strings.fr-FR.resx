@@ -5699,6 +5699,9 @@ Bonne rédaction.</value>
   <data name="Files_FitWidthTooltip" xml:space="preserve">
     <value>Ajuster à la largeur (Ctrl+0)</value>
   </data>
+  <data name="Files_FitHeightTooltip" xml:space="preserve">
+    <value>Ajuster à la hauteur</value>
+  </data>
   <data name="Files_ActualSizeTooltip" xml:space="preserve">
     <value>Taille réelle (100 %)</value>
   </data>
@@ -6103,4 +6106,13 @@ Bonne rédaction.</value>
   <data name="Kanban_Field_StartDateLabel" xml:space="preserve"><value>Ouverture</value></data>
   <data name="Kanban_Field_EndDateLabel" xml:space="preserve"><value>Clôture</value></data>
   <data name="Kanban_DateRange_Invalid" xml:space="preserve"><value>La clôture ne peut pas précéder l’ouverture.</value></data>
+  <data name="Files_MediaPlayPause" xml:space="preserve"><value>Lecture / pause</value></data>
+  <data name="Files_MediaStop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="Files_MediaMute" xml:space="preserve"><value>Couper / rétablir le son</value></data>
+  <data name="Files_MediaVolume" xml:space="preserve"><value>Volume</value></data>
+  <data name="Files_MediaSeek" xml:space="preserve"><value>Position de lecture</value></data>
+  <data name="Files_MediaReady" xml:space="preserve"><value>Appuyez sur lecture pour ouvrir ce fichier ici.</value></data>
+  <data name="Files_MediaError" xml:space="preserve"><value>Impossible de lire ce fichier. Son format n’est peut-être pas pris en charge ou le moteur multimédia d’Enki est indisponible. Vous pouvez l’ouvrir avec l’application du système.</value></data>
+  <data name="Files_MediaErrorTitle" xml:space="preserve"><value>Impossible de lire le fichier</value></data>
+  <data name="Files_ContainerPreviewNotice" xml:space="preserve"><value>Aperçu du texte ou du contenu de l’archive. La mise en page n’est pas reproduite ; les macros et formules ne sont pas exécutées.</value></data>
 </root>

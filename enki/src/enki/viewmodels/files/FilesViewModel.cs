@@ -296,6 +296,12 @@ public sealed partial class FilesViewModel : ViewModelBase
         CopyEntryCommand.NotifyCanExecuteChanged();
         CutEntryCommand.NotifyCanExecuteChanged();
         _appliedSearch = SearchText.Trim();
+        if (ActivePreview is { } open && (_vaultService.IsPathInLockedSession(open.File.FullPath)
+            || !IsSameOrUnder(open.File.FullPath, EffectiveRootPath)))
+        {
+            open.PdfDocument?.Close();
+            ActivePreview = null;
+        }
 
         // Drop any decrypted PDF temp copies the outgoing cards were holding onto before discarding them —
         // Reload() runs on every folder switch/search keystroke, so this is the main point at which those
@@ -736,12 +742,14 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// llamada es no-op si ya está cargado, así que se puede pedir tantas veces como haga falta. Está
     /// aparte de <see cref="OpenCard"/> porque hay más momentos en que hace falta: renombrar o mover el
     /// archivo abierto, que dejan la tarjeta en blanco (ver <see cref="FileCardViewModel.UpdateFile"/>).</summary>
-    private static void LoadPreviewContent(FileCardViewModel card)
+    private void LoadPreviewContent(FileCardViewModel card)
     {
         card.EnsureThumbnailLoaded();
         card.EnsurePreviewImageLoaded();
         card.EnsurePdfDocumentLoaded();
         card.EnsureCodeContentLoaded();
+        card.EnsureMediaPreviewLoaded(message => _notificationService.Push(
+            LocalizationService.Instance["Files_MediaErrorTitle"], message, NotificationSeverity.Error));
     }
 
     [RelayCommand]
@@ -965,6 +973,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     private void RenameFolderAt(NoteFolder folder, string newName)
     {
         var oldPath = folder.FullPath;
+        if (ActivePreview is { } playing && IsSameOrUnder(playing.File.FullPath, oldPath)) playing.MediaPreview?.Close();
         NoteFolder? renamed = null;
         if (!TryVaultOperation("Files_Notify_FolderRenameFailed_Title", () => renamed = VaultService.RenameFolder(folder, newName))
             || renamed is null)
@@ -1029,6 +1038,7 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     private void DeleteFolderAt(string folderPath)
     {
+        if (ActivePreview is { } playing && IsSameOrUnder(playing.File.FullPath, folderPath)) playing.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_FolderDeleteFailed_Title",
                 () => _vaultService.DeleteFolder(new NoteFolder { FullPath = folderPath })))
             return;
@@ -1054,6 +1064,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         card.IsRenaming = false;
         if (newName.Length == 0 || newName == card.FileName) return;
 
+        card.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_FileRenameFailed_Title",
                 () => card.UpdateFile(_vaultService.RenameFile(card.File, newName))))
             return;
@@ -1103,6 +1114,7 @@ public sealed partial class FilesViewModel : ViewModelBase
                 neighbourPath = sequence[index + 1 < sequence.Count ? index + 1 : index - 1].File.FullPath;
         }
 
+        card.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_DeleteFailed_Title", () => _vaultService.DeleteFile(card.File))) return;
 
         card.PdfDocument?.Close();
@@ -1118,6 +1130,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         var currentFolderPath = Path.GetDirectoryName(card.File.FullPath);
         if (PathsEqual(currentFolderPath, destinationFolderPath)) return;
 
+        card.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_MoveFailed_Title", () => _vaultService.MoveFile(card.File, destinationFolderPath)))
             return;
 

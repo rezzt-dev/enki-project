@@ -6,12 +6,14 @@
 #
 #   - Enki-<version>-macos-<arch>.zip   — siempre (Enki.app comprimido).
 #   - Enki-<version>-macos-<arch>.dmg   — solo si `hdiutil` está disponible (macOS real; el job de
-#     macOS en CI lo trae siempre). En Linux/Windows se omite con un aviso.
+#     macOS en CI lo trae siempre).
 #
 # El bundle se firma ad-hoc (`codesign --sign -`) cuando `codesign` está disponible: no sustituye a
 # una firma con certificado de Apple Developer (seguiría avisando "desarrollador no identificado" al
 # abrirlo), pero evita el "Enki.app está dañado" que Gatekeeper muestra para bundles sin firmar en
 # macOS recientes.
+#
+# Requiere macOS con herramientas de Xcode y Python 3 para incorporar y validar el motor multimedia.
 #
 # Uso:
 #   enki/packaging/macos/build-macos-package.sh [opciones]
@@ -100,7 +102,12 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # la clave pública que necesita la aplicación instalada.
 cp -a "$PUBLISH_DIR/." "$APP/Contents/MacOS/"
 rm -f "$APP/Contents/MacOS/local.properties"
+# Descarta el antiguo runtime NuGet (solo Intel) de publicaciones reutilizadas.
+rm -f "$APP/Contents/MacOS/libvlc.dylib"
 chmod 755 "$APP/Contents/MacOS/enki"
+
+# Siempre se incorpora el runtime correcto, también al reutilizar una publicación antigua.
+bash "$SCRIPT_DIR/bundle-media-runtime.sh" "$RID" "$APP/Contents/MacOS/libvlc"
 
 cp "$REPO_ROOT/enki/src/enki/assets/icon/enki.icns" "$APP/Contents/Resources/enki.icns"
 

@@ -10,6 +10,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### ANADIDO
+- reproductor integrado de audio y video en Archivos, con reproducir/pausar, detener, busqueda de posicion, volumen y silencio; libera el motor y las copias temporales cifradas al cerrar, cambiar, mover, renombrar, borrar o bloquear la sesion, y mantiene la accion para abrir con el sistema ante errores o formatos no compatibles.
+- previsualizacion de texto para documentos DOCX, XLSX, PPTX y OpenDocument, y listado seguro de rutas y tamanos para ZIP, JAR y paquetes NuGet; limita tamano, entradas, XML y salida, prohibe DTD y entidades externas, y no ejecuta macros, scripts, formulas ni enlaces externos.
+- soporte de previsualizacion para AVIF, HEIC/HEIF, TGA, PSD, JPEG XL, PBM/PGM/PPM y QOI, junto con mas extensiones de audio, video y codigo, y nombres convencionales como `Dockerfile`, `Makefile` y `CMakeLists.txt`.
 - fechas opcionales de apertura y cierre para cada tarjeta kanban, persistidas en el tablero y editables de forma independiente; si existen ambas, el formulario impide guardar un cierre anterior a la apertura.
 - opcion `ajustes > apariencia > barra de titulo > mostrar controles de ventana`, activada por defecto y guardada junto con las preferencias del vault: permite ocultar al instante los botones propios de minimizar, maximizar y cerrar; al hacerlo, buscar, notificaciones, recordatorios e inbox ocupan el extremo derecho conservando su orden, separacion y margen exterior. El control solo se habilita para la barra propia de Enki —la barra nativa conserva los botones del sistema operativo— y esta traducido a todos los idiomas soportados.
 - ampliar la tarjeta de almacen del panel principal con el recuento de archivos visibles distintos de Markdown en la raiz, subcarpetas y sesiones; excluye datos internos, ocultos y papelera, separa su inventario del tamano real en disco y traduce sus etiquetas y ayudas en todos los idiomas soportados.
@@ -20,6 +23,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
 
 #### CAMBIOS
+- incluir el motor multimedia y sus codecs en el instalador de Windows, integrarlo en `Enki.app` para Intel y Apple Silicon, y preparar automaticamente las dependencias de audio y video en los instaladores Linux sin requerir que el usuario instale VLC por separado.
+- mejorar el visor de codigo con busqueda, alias de gramaticas y lectura UTF-8, UTF-16, UTF-32 y Windows-1252; ampliar el visor PDF con ajuste al alto, conservar la interfaz traducida y documentar los limites y formatos compatibles de Archivos.
 - añadir un rail plegado de `52px` a la vista de arbol de archivos para explorar, buscar, crear carpetas, importar y cambiar de sesion; el arbol y la busqueda se abren temporalmente sobre la previsualizacion sin reducirla ni guardar el estado, se cierran al abrir un archivo, pulsar fuera o `Escape`, y la chincheta fija el panel.
 - compartir los colores de los estados base de Kanban entre todos los tableros en las capas del calendario: `Backlog`, `InProgress` y `Done` aparecen una sola vez y repintan todas sus tarjetas, las columnas personalizadas conservan su color propio y las preferencias antiguas por columna se migran sin perder la primera eleccion valida.
 - extender al calendario el arrastre flotante de kanban para tarjetas kanban, tareas y subtareas polar y recordatorios, conservando el aspecto y el punto de agarre; resaltar el destino, marcar la hora en pasos de 15 minutos, desplazar la rejilla en sus bordes y admitir agenda, elementos sin programar y chips de "+n mas", con cancelacion segura y escritura sobre el origen real solo al soltar.
@@ -48,6 +53,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- an integrated audio and video player in Files with play/pause, stop, seek, volume and mute controls; it releases the engine and encrypted temporary copies when closing, switching, moving, renaming, deleting or locking the session, and keeps the system-open action for errors or unsupported formats.
+- text previews for DOCX, XLSX, PPTX and OpenDocument files, plus safe path and size listings for ZIP, JAR and NuGet packages; it limits file size, entries, XML and output, prohibits DTDs and external entities, and never runs macros, scripts, formulas or external links.
+- preview support for AVIF, HEIC/HEIF, TGA, PSD, JPEG XL, PBM/PGM/PPM and QOI, alongside more audio, video and code extensions and conventional names such as `Dockerfile`, `Makefile` and `CMakeLists.txt`.
 - optional opening and closing dates for every kanban card, persisted in the board and editable independently; when both exist, the form prevents saving a closing date before the opening date.
 - a `settings > appearance > title bar > show window controls` option, enabled by default and stored with the vault preferences: it can instantly hide enki's own minimise, maximise and close buttons; search, notifications, reminders and inbox then move to the far right while preserving their order, spacing and outer margin. The toggle is only enabled for Enki's custom title bar —the native title bar keeps the operating system controls— and is translated into every supported language.
 - extend the dashboard storage card with a count of visible non-Markdown files in the root, subfolders and sessions; it excludes internal, hidden and trash data, distinguishes inventory from actual disk size, and translates its labels and help text into every supported language.
@@ -58,6 +66,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
 
 #### CHANGED
+- bundle the media engine and codecs in the Windows installer, embed it in `Enki.app` for Intel and Apple Silicon, and automatically prepare audio and video dependencies in Linux installers without requiring users to install VLC separately.
+- improve the code viewer with search, grammar aliases and UTF-8, UTF-16, UTF-32 and Windows-1252 reading; extend the PDF viewer with fit-to-height, retain translated interface text, and document Files compatibility limits and formats.
 - add a collapsed `52px` rail to the files tree view for browsing, searching, creating folders, importing and switching session; the tree and search open temporarily over the preview without shrinking it or saving state, dismiss on file open, outside press or `Escape`, and the pin keeps the panel open.
 - share base Kanban-state colours across every board in calendar layers: `Backlog`, `InProgress` and `Done` appear once and repaint all their cards, custom columns keep their own colour, and legacy per-column preferences migrate without losing the first valid choice.
 - extend kanban's floating drag interaction to calendar kanban cards, polar tasks and subtasks, and reminders while preserving their appearance and grab point; highlight the target, mark time in 15-minute steps, scroll at grid edges, and support agenda, unscheduled items and "+n more" chips, with safe cancellation and writes to the real source only on drop.

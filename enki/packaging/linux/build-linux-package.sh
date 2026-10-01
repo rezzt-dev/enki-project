@@ -137,6 +137,7 @@ Priority: optional
 Architecture: $DEB_ARCH
 Maintainer: rezztdev <rezztdev@users.noreply.github.com>
 Installed-Size: $INSTALLED_SIZE_KB
+Depends: libvlc5, vlc-plugin-base, vlc-plugin-video-output
 Description: Tu segundo cerebro, en tu escritorio
  Enki es una aplicacion de escritorio de notas Markdown, Kanban, calendario y
  recordatorios pensada para un unico usuario. Funciona por completo sin
@@ -154,13 +155,17 @@ fi
 TARBALL_ROOT="$WORK_DIR/tarball"
 mkdir -p "$TARBALL_ROOT"
 cp -a "$STAGE/usr" "$TARBALL_ROOT/usr"
+cp "$SCRIPT_DIR/install-media-runtime.sh" "$TARBALL_ROOT/install-media-runtime.sh"
 
 cat > "$TARBALL_ROOT/install.sh" <<'INSTALL'
 #!/usr/bin/env bash
 # Instala Enki copiando el árbol usr/ de este paquete dentro de /usr del sistema (requiere sudo).
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-sudo cp -a "$here/usr/." /usr/
+bash "$here/install-media-runtime.sh"
+elevate=()
+if [[ "$EUID" -ne 0 ]]; then elevate=(sudo); fi
+"${elevate[@]}" cp -a "$here/usr/." /usr/
 command -v update-desktop-database >/dev/null 2>&1 && sudo update-desktop-database /usr/share/applications || true
 command -v gtk-update-icon-cache >/dev/null 2>&1 && sudo gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
 echo "Enki instalado. Búscalo en el menú de aplicaciones o ejecuta 'enki' en una terminal."

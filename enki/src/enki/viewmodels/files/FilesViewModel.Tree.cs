@@ -171,6 +171,11 @@ public sealed partial class FilesViewModel
     /// <summary>Mantiene marcado en el árbol el archivo que se está previsualizando, venga de donde venga
     /// la orden de abrirlo (el propio árbol, la rejilla del otro modo, un resultado de búsqueda o los botones
     /// de anterior/siguiente), y al día esos mismos botones.</summary>
+    partial void OnActivePreviewChanging(FileCardViewModel? value)
+    {
+        if (!ReferenceEquals(ActivePreview, value)) ActivePreview?.MediaPreview?.Close();
+    }
+
     partial void OnActivePreviewChanged(FileCardViewModel? value)
     {
         _treeSelectionPath = value?.File.FullPath;
