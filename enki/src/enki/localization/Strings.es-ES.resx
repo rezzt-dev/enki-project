@@ -6115,4 +6115,37 @@ A disfrutar escribiendo.</value>
   <data name="Files_MediaError" xml:space="preserve"><value>No se puede reproducir este archivo. Su formato puede no ser compatible o el motor multimedia de Enki no está disponible. Puedes abrirlo con la aplicación del sistema.</value></data>
   <data name="Files_MediaErrorTitle" xml:space="preserve"><value>No se pudo reproducir el archivo</value></data>
   <data name="Files_ContainerPreviewNotice" xml:space="preserve"><value>Vista del texto o del contenido del archivo comprimido. No reproduce la maquetación ni ejecuta macros o fórmulas.</value></data>
+  <data name="Activity_All" xml:space="preserve">
+    <value>Todos</value>
+  </data>
+  <data name="Activity_Unread" xml:space="preserve">
+    <value>Sin leer</value>
+  </data>
+  <data name="Activity_Pending" xml:space="preserve">
+    <value>Pendientes</value>
+  </data>
+  <data name="Activity_Overdue" xml:space="preserve">
+    <value>Vencidos</value>
+  </data>
+  <data name="Activity_Completed" xml:space="preserve">
+    <value>Completados</value>
+  </data>
+  <data name="Activity_Search" xml:space="preserve">
+    <value>Buscar por título o descripción…</value>
+  </data>
+  <data name="Activity_Results" xml:space="preserve">
+    <value>{0} de {1}</value>
+  </data>
+  <data name="Activity_NoResults" xml:space="preserve">
+    <value>No hay coincidencias</value>
+  </data>
+  <data name="Activity_NoResultsHint" xml:space="preserve">
+    <value>Prueba otra búsqueda o restablece los filtros.</value>
+  </data>
+  <data name="Activity_Reset" xml:space="preserve">
+    <value>Restablecer filtros</value>
+  </data>
+  <data name="Activity_MarkPending" xml:space="preserve">
+    <value>Marcar como pendiente</value>
+  </data>
 </root>

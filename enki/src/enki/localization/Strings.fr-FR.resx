@@ -6115,4 +6115,37 @@ Bonne rédaction.</value>
   <data name="Files_MediaError" xml:space="preserve"><value>Impossible de lire ce fichier. Son format n’est peut-être pas pris en charge ou le moteur multimédia d’Enki est indisponible. Vous pouvez l’ouvrir avec l’application du système.</value></data>
   <data name="Files_MediaErrorTitle" xml:space="preserve"><value>Impossible de lire le fichier</value></data>
   <data name="Files_ContainerPreviewNotice" xml:space="preserve"><value>Aperçu du texte ou du contenu de l’archive. La mise en page n’est pas reproduite ; les macros et formules ne sont pas exécutées.</value></data>
+  <data name="Activity_All" xml:space="preserve">
+    <value>Tous</value>
+  </data>
+  <data name="Activity_Unread" xml:space="preserve">
+    <value>Non lus</value>
+  </data>
+  <data name="Activity_Pending" xml:space="preserve">
+    <value>En attente</value>
+  </data>
+  <data name="Activity_Overdue" xml:space="preserve">
+    <value>En retard</value>
+  </data>
+  <data name="Activity_Completed" xml:space="preserve">
+    <value>Terminés</value>
+  </data>
+  <data name="Activity_Search" xml:space="preserve">
+    <value>Rechercher par titre ou description…</value>
+  </data>
+  <data name="Activity_Results" xml:space="preserve">
+    <value>{0} sur {1}</value>
+  </data>
+  <data name="Activity_NoResults" xml:space="preserve">
+    <value>Aucun résultat</value>
+  </data>
+  <data name="Activity_NoResultsHint" xml:space="preserve">
+    <value>Essayez une autre recherche ou réinitialisez les filtres.</value>
+  </data>
+  <data name="Activity_Reset" xml:space="preserve">
+    <value>Réinitialiser les filtres</value>
+  </data>
+  <data name="Activity_MarkPending" xml:space="preserve">
+    <value>Marquer comme en attente</value>
+  </data>
 </root>

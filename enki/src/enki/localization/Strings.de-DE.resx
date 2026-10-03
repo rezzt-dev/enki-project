@@ -6115,4 +6115,37 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Files_MediaError" xml:space="preserve"><value>Diese Datei kann nicht wiedergegeben werden. Ihr Format wird möglicherweise nicht unterstützt oder die Medienkomponente von Enki ist nicht verfügbar. Du kannst sie mit der Systemanwendung öffnen.</value></data>
   <data name="Files_MediaErrorTitle" xml:space="preserve"><value>Datei konnte nicht wiedergegeben werden</value></data>
   <data name="Files_ContainerPreviewNotice" xml:space="preserve"><value>Textvorschau oder Archivinhalt. Formatierung, Makros und Formeln werden nicht ausgeführt.</value></data>
+  <data name="Activity_All" xml:space="preserve">
+    <value>Alle</value>
+  </data>
+  <data name="Activity_Unread" xml:space="preserve">
+    <value>Ungelesen</value>
+  </data>
+  <data name="Activity_Pending" xml:space="preserve">
+    <value>Ausstehend</value>
+  </data>
+  <data name="Activity_Overdue" xml:space="preserve">
+    <value>Überfällig</value>
+  </data>
+  <data name="Activity_Completed" xml:space="preserve">
+    <value>Erledigt</value>
+  </data>
+  <data name="Activity_Search" xml:space="preserve">
+    <value>Nach Titel oder Beschreibung suchen…</value>
+  </data>
+  <data name="Activity_Results" xml:space="preserve">
+    <value>{0} von {1}</value>
+  </data>
+  <data name="Activity_NoResults" xml:space="preserve">
+    <value>Keine Ergebnisse</value>
+  </data>
+  <data name="Activity_NoResultsHint" xml:space="preserve">
+    <value>Ändern Sie die Suche oder setzen Sie die Filter zurück.</value>
+  </data>
+  <data name="Activity_Reset" xml:space="preserve">
+    <value>Filter zurücksetzen</value>
+  </data>
+  <data name="Activity_MarkPending" xml:space="preserve">
+    <value>Als ausstehend markieren</value>
+  </data>
 </root>

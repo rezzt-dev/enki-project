@@ -236,3 +236,30 @@ Ninguno bloqueante; ideas para seguir puliendo si hace falta más adelante:
   también los errores de vault, que hoy comparten la misma severidad `Success`/`Error`.
 - Notificaciones del **SO nativo** (más allá del toast in-app de `WindowNotificationManager`) si se
   justifica para eventos realmente urgentes con la app en segundo plano.
+
+## Listas de actividad: búsqueda y estados
+
+Las páginas de Notificaciones y Recordatorios separan la cabecera, las acciones globales y los filtros.
+Reutilizan la tipografía, los segmentos, los botones y los colores del tema; las filas tienen separadores
+finos y un fondo sutil para elementos sin leer, sin desplazamiento al pasar el puntero.
+
+- **Notificaciones:** búsqueda por título o mensaje, filtros Todos / Sin leer y orden de más reciente a
+  más antiguo. Abrir una notificación la marca como leída; su detalle sigue abierto aunque deje de
+  cumplir el filtro Sin leer.
+- **Recordatorios:** búsqueda por título o descripción y filtros Todos / Pendientes / Vencidos /
+  Completados. Los pendientes se ordenan por fecha de aviso y los completados quedan al final. El botón
+  de cada fila permite completar o volver a pendiente sin abrir el detalle. El estado completado se
+  identifica expresamente y no se presenta como programado.
+- El contador muestra resultados visibles frente al total. Una búsqueda sin coincidencias ofrece
+  restablecer los filtros y se distingue de una colección vacía. Las acciones de marcar todos como
+  leídos y limpiar siguen afectando a la colección completa, independientemente del filtro; limpiar
+  conserva su confirmación.
+- El formulario de creación dispone de más ancho y los detalles permiten desplazar el contenido
+  manteniendo las acciones en el pie. Las etiquetas nuevas están traducidas a todos los idiomas.
+
+`VisibleItems` es una proyección de los mismos objetos de `Items`, no otro almacén. Los filtros y la
+búsqueda se conservan al recargar. Recordatorios escucha `ReminderService.RemindersChanged` para
+actualizar la lista y el detalle cuando otra pantalla modifica las entidades.
+
+Validación automatizada: `ActivityListViewModelTests` cubre búsqueda, orden y transiciones de estado;
+`ActivityViewsUiTests` comprueba los enlaces de comandos y filas con títulos largos a 720 px de ancho.

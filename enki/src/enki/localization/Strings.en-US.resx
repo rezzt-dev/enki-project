@@ -6115,4 +6115,37 @@ Happy writing.</value>
   <data name="Files_MediaError" xml:space="preserve"><value>This file cannot be played. Its format may be unsupported or the Enki media engine is unavailable. You can open it with the system application.</value></data>
   <data name="Files_MediaErrorTitle" xml:space="preserve"><value>Could not play the file</value></data>
   <data name="Files_ContainerPreviewNotice" xml:space="preserve"><value>Text or archive contents preview. Layout is not reproduced; macros and formulas are not executed.</value></data>
+  <data name="Activity_All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Activity_Unread" xml:space="preserve">
+    <value>Unread</value>
+  </data>
+  <data name="Activity_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Activity_Overdue" xml:space="preserve">
+    <value>Overdue</value>
+  </data>
+  <data name="Activity_Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Activity_Search" xml:space="preserve">
+    <value>Search by title or description…</value>
+  </data>
+  <data name="Activity_Results" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="Activity_NoResults" xml:space="preserve">
+    <value>No matching results</value>
+  </data>
+  <data name="Activity_NoResultsHint" xml:space="preserve">
+    <value>Try another search or reset the filters.</value>
+  </data>
+  <data name="Activity_Reset" xml:space="preserve">
+    <value>Reset filters</value>
+  </data>
+  <data name="Activity_MarkPending" xml:space="preserve">
+    <value>Mark as pending</value>
+  </data>
 </root>

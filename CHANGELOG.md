@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### ANADIDO
+- busqueda y filtros para las listas de notificaciones y recordatorios, con resultados visibles, estado sin coincidencias, ordenacion por fecha y acciones para completar o reabrir recordatorios sin abandonar la lista.
 - reproductor integrado de audio y video en Archivos, con reproducir/pausar, detener, busqueda de posicion, volumen y silencio; libera el motor y las copias temporales cifradas al cerrar, cambiar, mover, renombrar, borrar o bloquear la sesion, y mantiene la accion para abrir con el sistema ante errores o formatos no compatibles.
 - previsualizacion de texto para documentos DOCX, XLSX, PPTX y OpenDocument, y listado seguro de rutas y tamanos para ZIP, JAR y paquetes NuGet; limita tamano, entradas, XML y salida, prohibe DTD y entidades externas, y no ejecuta macros, scripts, formulas ni enlaces externos.
 - soporte de previsualizacion para AVIF, HEIC/HEIF, TGA, PSD, JPEG XL, PBM/PGM/PPM y QOI, junto con mas extensiones de audio, video y codigo, y nombres convencionales como `Dockerfile`, `Makefile` y `CMakeLists.txt`.
@@ -23,6 +24,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
 
 #### CAMBIOS
+- actualizar en vivo las listas de recordatorios cuando otra pantalla modifica sus entidades, conservar el detalle abierto aunque deje de cumplir un filtro y ampliar los formularios y detalles para facilitar la lectura en ventanas estrechas.
 - ajustar el espaciado de los pies de las vistas simplificada de notas y arbol de archivos para alinear sus controles con el resto de la interfaz.
 - incluir el motor multimedia y sus codecs en el instalador de Windows, integrarlo en `Enki.app` para Intel y Apple Silicon, y preparar automaticamente las dependencias de audio y video en los instaladores Linux sin requerir que el usuario instale VLC por separado.
 - mejorar el visor de codigo con busqueda, alias de gramaticas y lectura UTF-8, UTF-16, UTF-32 y Windows-1252; ampliar el visor PDF con ajuste al alto, conservar la interfaz traducida y documentar los limites y formatos compatibles de Archivos.
@@ -55,6 +57,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- search and filters for the notifications and reminders lists, with visible result counts, no-match state, date sorting and actions to complete or reopen reminders without leaving the list.
 - an integrated audio and video player in Files with play/pause, stop, seek, volume and mute controls; it releases the engine and encrypted temporary copies when closing, switching, moving, renaming, deleting or locking the session, and keeps the system-open action for errors or unsupported formats.
 - text previews for DOCX, XLSX, PPTX and OpenDocument files, plus safe path and size listings for ZIP, JAR and NuGet packages; it limits file size, entries, XML and output, prohibits DTDs and external entities, and never runs macros, scripts, formulas or external links.
 - preview support for AVIF, HEIC/HEIF, TGA, PSD, JPEG XL, PBM/PGM/PPM and QOI, alongside more audio, video and code extensions and conventional names such as `Dockerfile`, `Makefile` and `CMakeLists.txt`.
@@ -68,6 +71,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
 
 #### CHANGED
+- update reminder lists live when another screen modifies their entities, keep the open detail visible even when it no longer matches a filter, and widen forms and details for easier reading in narrow windows.
 - adjust footer spacing in the simplified notes and file tree views so their controls align with the rest of the interface.
 - bundle the media engine and codecs in the Windows installer, embed it in `Enki.app` for Intel and Apple Silicon, and automatically prepare audio and video dependencies in Linux installers without requiring users to install VLC separately.
 - improve the code viewer with search, grammar aliases and UTF-8, UTF-16, UTF-32 and Windows-1252 reading; extend the PDF viewer with fit-to-height, retain translated interface text, and document Files compatibility limits and formats.

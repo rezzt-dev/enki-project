@@ -1501,6 +1501,19 @@
     <Setter Property="Background" Value="{DynamicResource Ink05}" />
   </Style>
 
+  <!-- Filas de actividad: separadores continuos y lectura estable al pasar el puntero. -->
+  <Style Selector="Button.note-card.activity-row">
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="18" />
+    <Setter Property="MinHeight" Value="88" />
+  </Style>
+  <Style Selector="Button.note-card.activity-row.unread">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="Button.note-card.activity-row:pointerover">
+    <Setter Property="RenderTransform" Value="none" />
+  </Style>
+
   <!-- Tarjeta de IA Skills: hermana de note-card pero con más aire, acciones más grandes y un estado
        de selección más definido para el panel de detalle. El fondo y el borde se aplican al
        ContentPresenter del template para poder animarlos suavemente sin que el Button los sobreescriba. -->
@@ -1863,6 +1876,11 @@
         <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
+  </Style>
+  <!-- Centra texto y placeholder en inputs de una línea, incluso con altura fija.
+       Las descripciones multilínea conservan la alineación superior de Fluent. -->
+  <Style Selector="TextBox.search[AcceptsReturn=False]">
+    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="TextBox.search:focus /template/ Border#PART_BorderElement">
     <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
