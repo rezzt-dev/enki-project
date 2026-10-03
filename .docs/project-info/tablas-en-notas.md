@@ -82,6 +82,11 @@ no quede pegada a las letras. Se consigue haciendo que el primer elemento de la 
 texto: Avalonia compone cada línea con el mayor ascenso y el mayor descenso de sus elementos, así que un
 espaciador más alto arrastra a toda la línea consigo (`SpacerMetrics`).
 
+Cuando las celdas necesitan varias líneas, `MarkdownTableRowVisual` dibuja cada fila con el alto de su
+celda más alta y centra verticalmente el contenido de cada celda, también en el encabezado. La línea
+base del bloque reserva el descenso del editor dentro de ese alto para que la rejilla no añada espacio
+inferior adicional. La alineación horizontal sigue siendo la indicada por la separadora Markdown.
+
 ### La fila separadora
 
 `| --- | --- |` no es contenido, es la declaración de las alineaciones, y una tabla dibujada no puede

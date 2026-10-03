@@ -8,6 +8,7 @@ using AvaloniaEdit.Rendering;
 using enki.Services;
 using enki.ViewModels;
 using enki.Views;
+using enki.Views.Editor.Markdown;
 using Xunit;
 
 namespace enki.UITests;
@@ -574,6 +575,15 @@ public class EditorViewTablesUiTests : IDisposable
         // no de un par de píxeles de redondeo.
         Assert.True(wrapped > single + 10,
             $"la fila envuelta mide {wrapped} y la de una línea {single}");
+
+        // La rejilla debe medir lo mismo que el bloque dibujado: un descenso añadido por el editor
+        // dejaría aire solo debajo y desplazaría el centro vertical de las celdas.
+        var geometry = GeometryOfFirstTable(editor);
+        // Se admite un píxel por el redondeo de la medida del control en Avalonia.
+        Assert.InRange(wrapped - (geometry.RowHeight(4) + 2 * MarkdownTableLayout.RowVerticalPadding),
+            0, 1);
+        Assert.InRange(single - (geometry.RowHeight(3) + 2 * MarkdownTableLayout.RowVerticalPadding),
+            0, 1);
 
         window.Close();
     }

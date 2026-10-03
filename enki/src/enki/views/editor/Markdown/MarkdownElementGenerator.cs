@@ -567,7 +567,8 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 ZoneKind.TableRow => zone is { TableRow: { } tableRow, TableGeometry: { } tableGeometry }
                     ? new InlineObjectElement(length, new MarkdownTableRowVisual(
                         CurrentContext.Document.GetText(line), line, zone.Line, tableRow, tableGeometry,
-                        _style, _state, _textArea.TextView.DefaultLineHeight))
+                        _style, _state, _textArea.TextView.DefaultLineHeight,
+                        _textArea.TextView.DefaultBaseline))
                     : null,
                 ZoneKind.Align => spacer > 0 ? new WhitespaceFormattedElement(string.Empty, 0, spacer) : null,
                 // The space keeps its own glyph and grows by its share of the row's leftover width.

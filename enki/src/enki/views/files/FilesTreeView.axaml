@@ -514,7 +514,7 @@
 
         <!-- · Pie: selector de sesión y contador de todo el árbol. El selector vive aquí, y no en la
              cabecera, porque acota todo lo que se ve encima: mismo sitio que en la vista simplificada de Notas. -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10,8">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10">
           <StackPanel Spacing="6">
             <ComboBox Height="32" HorizontalAlignment="Stretch"
                       ItemsSource="{Binding SessionOptions}" SelectedItem="{Binding SelectedSessionOption}"

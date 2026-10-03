@@ -470,7 +470,7 @@
         </Grid>
 
         <!-- · Pie: sesión seleccionada · -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10,8">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10">
           <Button Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                   Padding="10,7" Command="{Binding ToggleSessionMenuCommand}"
                   ToolTip.Tip="{loc:Tr Notes_SimpleView_Session_Tooltip}"

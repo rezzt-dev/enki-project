@@ -23,6 +23,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
 
 #### CAMBIOS
+- ajustar el espaciado de los pies de las vistas simplificada de notas y arbol de archivos para alinear sus controles con el resto de la interfaz.
 - incluir el motor multimedia y sus codecs en el instalador de Windows, integrarlo en `Enki.app` para Intel y Apple Silicon, y preparar automaticamente las dependencias de audio y video en los instaladores Linux sin requerir que el usuario instale VLC por separado.
 - mejorar el visor de codigo con busqueda, alias de gramaticas y lectura UTF-8, UTF-16, UTF-32 y Windows-1252; ampliar el visor PDF con ajuste al alto, conservar la interfaz traducida y documentar los limites y formatos compatibles de Archivos.
 - añadir un rail plegado de `52px` a la vista de arbol de archivos para explorar, buscar, crear carpetas, importar y cambiar de sesion; el arbol y la busqueda se abren temporalmente sobre la previsualizacion sin reducirla ni guardar el estado, se cierran al abrir un archivo, pulsar fuera o `Escape`, y la chincheta fija el panel.
@@ -41,6 +42,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - unificar en mayusculas las acciones de menus contextuales, submenus, desplegables y dialogos de `kanban`, `archivos`, `notas`, `habilidades`, `calendario` y `ajustes`, con tipografia comun y pruebas de regresion, conservando el texto escrito por el usuario.
 
 #### CORREGIDO
+- corregir la altura y la alineacion vertical de las filas de tablas Markdown con celdas en varias lineas, reservando el descenso del editor para que la rejilla no deje espacio adicional bajo el contenido.
 - bloquear el empaquetado linux cuando faltan bibliotecas nativas requeridas junto al ejecutable publicado, incluso al reutilizar una publicacion con `--skip-publish`, para evitar distribuir paquetes que no arrancan.
 - incluir la configuracion publica de supabase que necesita polar en `polar.properties` dentro de los instaladores de linux, windows y macos; generar solo `SUPABASE_URL` y la clave publicable, rechazar urls inseguras, claves secretas y configuraciones parciales, exigir una configuracion valida al publicar y permitir que github actions la reciba mediante variables o secrets para evitar instalaciones con polar deshabilitado.
 - mostrar siempre el texto de prioridad baja, media o alta en las tarjetas del tablero kanban, tanto en el diseno vertical como en el horizontal, conservando el indicador visual y el clic para cambiarla.
@@ -66,6 +68,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
 
 #### CHANGED
+- adjust footer spacing in the simplified notes and file tree views so their controls align with the rest of the interface.
 - bundle the media engine and codecs in the Windows installer, embed it in `Enki.app` for Intel and Apple Silicon, and automatically prepare audio and video dependencies in Linux installers without requiring users to install VLC separately.
 - improve the code viewer with search, grammar aliases and UTF-8, UTF-16, UTF-32 and Windows-1252 reading; extend the PDF viewer with fit-to-height, retain translated interface text, and document Files compatibility limits and formats.
 - add a collapsed `52px` rail to the files tree view for browsing, searching, creating folders, importing and switching session; the tree and search open temporarily over the preview without shrinking it or saving state, dismiss on file open, outside press or `Escape`, and the pin keeps the panel open.
@@ -84,6 +87,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - standardise actions in context menus, submenus, dropdowns and dialogs across `kanban`, `files`, `notes`, `skills`, `calendar` and `settings` in uppercase with shared typography and regression tests while preserving user-authored text.
 
 #### FIXED
+- fix the height and vertical alignment of Markdown table rows with multiline cells, reserving the editor descent so the grid does not leave extra space below the content.
 - block linux packaging when native libraries required beside the published executable are missing, including when reusing a publication with `--skip-publish`, to avoid distributing packages that cannot start.
 - include the public supabase configuration required by polar in `polar.properties` inside the linux, windows and macos installers; generate only `SUPABASE_URL` and the publishable key, reject insecure urls, secret keys and partial configurations, require valid configuration when publishing, and let github actions receive it through variables or secrets to prevent installations with polar disabled.
 - always show the low, medium or high priority label on kanban board cards in both vertical and horizontal layouts, preserving the visual indicator and click action to change priority.
