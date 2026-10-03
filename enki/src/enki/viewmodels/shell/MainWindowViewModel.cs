@@ -193,7 +193,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _isVaultReady;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageRevealAllowsTranslation))]
     private ViewModelBase? _currentPage;
+
+    /// <summary>La rejilla del calendario conserva sus coordenadas desde el primer fotograma.</summary>
+    public bool PageRevealAllowsTranslation => CurrentPage is not CalendarViewModel;
 
     [ObservableProperty]
     private bool _isSidebarExpanded;
@@ -358,29 +362,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     partial void OnIsSidebarExpandedChanged(bool value) => OnPropertyChanged(nameof(SidebarToggleIcon));
 
-    /// <summary>Page-entry reveal (Fase 2 §7, same Opacity 0→1 + TranslateY 8px/200-300ms CubicEaseOut
-    /// technique as <see cref="CalendarViewModel"/>'s own reveal) applied once at the shell level around
-    /// <see cref="CurrentPage"/> instead of duplicated per page, so every <see cref="Navigate"/>/
-    /// <see cref="OpenSettings"/>/<see cref="OpenReminders"/>/<see cref="OpenNotifications"/> switch gets it
-    /// for free.</summary>
+    /// <summary>Solicita una entrada visual; la vista gestiona los fotogramas y su cancelación.</summary>
     [ObservableProperty]
-    private double _pageRevealOpacity = 1;
+    private int _pageRevealRevision;
 
-    [ObservableProperty]
-    private double _pageRevealOffsetY;
-
-    private const double PageRevealTravelPixels = 8;
-
-    private void AnimatePageReveal()
-    {
-        PageRevealOpacity = 0;
-        PageRevealOffsetY = PageRevealTravelPixels;
-        Dispatcher.UIThread.Post(() =>
-        {
-            PageRevealOpacity = 1;
-            PageRevealOffsetY = 0;
-        }, DispatcherPriority.Loaded);
-    }
+    private void AnimatePageReveal() => PageRevealRevision++;
 
     [RelayCommand]
     private void Navigate(AppPage page)
@@ -389,7 +375,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         foreach (var item in BottomNavItems) item.IsActive = item.Page == page;
         IsSettingsActive = false;
 
-        CurrentPage = page switch
+        ViewModelBase? targetPage = page switch
         {
             AppPage.Dashboard => Dashboard,
             AppPage.Calendar => Calendar,
@@ -407,7 +393,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
             AppPage.Notifications => Notifications,
             _ => Dashboard
         };
-        AnimatePageReveal();
+        if (ReferenceEquals(CurrentPage, targetPage)) return;
 
         if (page == AppPage.Dashboard) Dashboard!.Reload();
         if (page == AppPage.Files) Files!.Refresh();
@@ -424,6 +410,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
             UpdateTrashBadge();
         }
         if (page == AppPage.TagManager) TagManager!.Reload();
+
+        CurrentPage = targetPage;
+        AnimatePageReveal();
     }
 
     [RelayCommand]
@@ -468,6 +457,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void OpenSettings()
     {
+        if (ReferenceEquals(CurrentPage, Settings)) return;
         foreach (var item in NavItems) item.IsActive = false;
         foreach (var item in BottomNavItems) item.IsActive = false;
         IsSettingsActive = true;

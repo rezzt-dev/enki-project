@@ -56,6 +56,29 @@ public sealed class SettingsSearchUiTests : IDisposable
         control.GetLogicalAncestors().OfType<Control>().All(c => c.IsVisible);
 
     [Fact]
+    public void MotionMode_IsSearchableAndChangesFromBothSegments()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            vm.SearchText = "animaciones";
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var segments = view.GetVisualDescendants().OfType<RadioButton>()
+                .Where(b => b.GroupName == "MotionMode").ToArray();
+            Assert.Equal(2, segments.Length);
+            Assert.All(segments, segment => Assert.True(Shown(segment)));
+            segments[1].IsChecked = true;
+            Assert.True(vm.UseSubtleAnimations);
+            Assert.True(MotionService.UseSubtleAnimations);
+            segments[0].IsChecked = true;
+            Assert.False(vm.UseSubtleAnimations);
+            Assert.False(MotionService.UseSubtleAnimations);
+        }
+        finally { window.Close(); MotionService.Apply(false); }
+    }
+
+    [Fact]
     public void Navigation_OpensEverySectionWithoutSearch_AndKeepsHeadingInSync()
     {
         var (view, vm, window) = CreateView();

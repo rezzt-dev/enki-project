@@ -68,6 +68,24 @@ public class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void MotionMode_PersistsAndReloadsWithoutOverwritingStoredChoice()
+    {
+        var (vm, settings, _, _) = CreateViewModel();
+        try
+        {
+            Assert.False(vm.UseSubtleAnimations);
+            vm.UseSubtleAnimations = true;
+            Assert.True(settings.Settings.UseSubtleAnimations);
+            Assert.True(MotionService.UseSubtleAnimations);
+            settings.Settings.UseSubtleAnimations = false;
+            vm.ReloadForVault();
+            Assert.False(vm.UseSubtleAnimations);
+            Assert.False(MotionService.UseSubtleAnimations);
+        }
+        finally { MotionService.Apply(false); }
+    }
+
+    [Fact]
     public void MultipleBoards_CanOnlyBeDisabledAfterConsolidatingToOneBoard()
     {
         var kanban = new KanbanService(Path.Combine(_storageDirectory, "boards"));

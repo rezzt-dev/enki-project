@@ -262,6 +262,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         vaultService.VaultSizeChanged += () => Dispatcher.UIThread.Post(RefreshVaultSizeLabel);
         _startupPage = ParseAppPage(settingsService.Settings.StartupPage);
         _minimizeToTray = settingsService.Settings.MinimizeToTray;
+        _useSubtleAnimations = settingsService.Settings.UseSubtleAnimations;
         _isDarkTheme = settingsService.Settings.Theme != "Light";
         _isCustomThemeActive = customThemeService.ActiveThemeId is not null;
         _editorFontSize = settingsService.Settings.EditorFontSize;

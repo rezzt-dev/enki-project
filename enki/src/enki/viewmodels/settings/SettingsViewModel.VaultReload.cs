@@ -12,6 +12,9 @@ public sealed partial class SettingsViewModel
     {
         _startupPage = ParseAppPage(_settingsService.Settings.StartupPage);
         _minimizeToTray = _settingsService.Settings.MinimizeToTray;
+        _useSubtleAnimations = _settingsService.Settings.UseSubtleAnimations;
+        MotionService.Apply(_useSubtleAnimations);
+        OnPropertyChanged(nameof(UseSubtleAnimations));
         _isDarkTheme = _settingsService.Settings.Theme != "Light";
         _isCustomThemeActive = _customThemeService.ActiveThemeId is not null;
         _editorFontSize = _settingsService.Settings.EditorFontSize;

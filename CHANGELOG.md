@@ -22,6 +22,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - mover una tarjeta a otro tablero y columna desde su detalle o menu, conservando su identidad, etiquetas, nota, fechas y subtareas; preseleccionar columnas con el mismo rol, desarchivar solo cuando corresponde y ofrecer abrir el tablero de destino al completar la operacion.
 - incorporar en `ajustes > notificaciones` un interruptor global, activo por defecto y persistido por vault, que detiene todos los avisos nuevos, toasts y sonidos sin borrar el historial; al reactivarlo se recuperan las preferencias de categoria, toast y sonido.
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
+- selector `ajustes > apariencia > animaciones` para elegir entre el perfil normal, predeterminado, y el sutil, guardado por vault y aplicado al instante; sutiles acorta las transiciones, elimina desplazamientos decorativos y reduce la animacion del grafo de sesiones sin ocultar indicadores funcionales.
 
 #### CAMBIOS
 - actualizar en vivo las listas de recordatorios cuando otra pantalla modifica sus entidades, conservar el detalle abierto aunque deje de cumplir un filtro y ampliar los formularios y detalles para facilitar la lectura en ventanas estrechas.
@@ -42,6 +43,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - permitir ocultar por separado los botones de prioridad alta, vencidas, archivadas y ordenacion de la barra de herramientas Kanban desde `ajustes > kanban`, manteniendo intactos los filtros y el orden activos.
 - ajustar la cabecera, los estados vacios y los textos auxiliares de Kanban para que el selector de tablero y las acciones de gestion se adapten a ventanas estrechas y sean mas legibles.
 - unificar en mayusculas las acciones de menus contextuales, submenus, desplegables y dialogos de `kanban`, `archivos`, `notas`, `habilidades`, `calendario` y `ajustes`, con tipografia comun y pruebas de regresion, conservando el texto escrito por el usuario.
+- centralizar los perfiles de movimiento en `MotionService` y reemplazar revelados y transiciones dispersos por `MotionReveal`; preparar cada seccion antes de mostrarla, cancelar animaciones obsoletas y eliminar la interpolacion de ancho del panel del editor para evitar recomposiciones y repintados innecesarios.
 
 #### CORREGIDO
 - corregir la altura y la alineacion vertical de las filas de tablas Markdown con celdas en varias lineas, reservando el descenso del editor para que la rejilla no deje espacio adicional bajo el contenido.
@@ -69,6 +71,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - move a card to another board and column from its detail or menu while preserving its identity, tags, note, dates and subtasks; preselect columns with the same role, unarchive only when appropriate, and offer to open the destination board after completion.
 - add a global switch under `settings > notifications`, enabled by default and persisted per vault, that stops all new log entries, toasts and sounds without deleting history; restoring it keeps the category, toast and sound preferences.
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
+- a `settings > appearance > animations` selector for the default normal or subtle profile, persisted per vault and applied immediately; subtle shortens transitions, removes decorative translation and reduces session-graph animation without hiding functional indicators.
 
 #### CHANGED
 - update reminder lists live when another screen modifies their entities, keep the open detail visible even when it no longer matches a filter, and widen forms and details for easier reading in narrow windows.
@@ -89,6 +92,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - allow the high-priority, overdue, archived and sorting buttons in the Kanban toolbar to be hidden independently from `settings > kanban`, while leaving active filters and sorting intact.
 - adjust Kanban's header, empty states and supporting text so the board selector and management actions adapt to narrow windows and are more legible.
 - standardise actions in context menus, submenus, dropdowns and dialogs across `kanban`, `files`, `notes`, `skills`, `calendar` and `settings` in uppercase with shared typography and regression tests while preserving user-authored text.
+- centralise motion profiles in `MotionService` and replace scattered reveals and transitions with `MotionReveal`; prepare each section before showing it, cancel stale animations, and remove editor-side-panel width interpolation to avoid unnecessary relayouts and redraws.
 
 #### FIXED
 - fix the height and vertical alignment of Markdown table rows with multiline cells, reserving the editor descent so the grid does not leave extra space below the content.

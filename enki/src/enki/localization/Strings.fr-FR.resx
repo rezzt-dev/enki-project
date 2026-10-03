@@ -6148,4 +6148,8 @@ Bonne rédaction.</value>
   <data name="Activity_MarkPending" xml:space="preserve">
     <value>Marquer comme en attente</value>
   </data>
+  <data name="Settings_Appearance_Motion_Title" xml:space="preserve"><value>Animations</value></data>
+  <data name="Settings_Appearance_Motion_Description" xml:space="preserve"><value>Normales : transitions complètes et effets décoratifs. Subtiles : transitions brèves sans mouvements décoratifs.</value></data>
+  <data name="Settings_Appearance_Motion_Subtle" xml:space="preserve"><value>Subtiles</value></data>
+  <data name="Settings_Appearance_Motion_Normal" xml:space="preserve"><value>Normales</value></data>
 </root>

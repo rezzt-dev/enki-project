@@ -152,10 +152,8 @@ public sealed partial class EditorViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSidePanelVisible = EditorPreferences.SidePanelVisible;
 
-    /// <summary>Drives the animated width of the side-panel host in EditorView (see
-    /// Border.Transitions there) — 0 collapses it and lets the editor column's "*" grid width claim the
-    /// freed space, instead of the panel merely toggling IsVisible while the layout keeps reserving its
-    /// fixed pixel width regardless.</summary>
+    /// <summary>Ancho reservado para el panel lateral. Se aplica de una vez para no recomponer
+    /// el editor y su Markdown en cada fotograma de una transición.</summary>
     public double SidePanelWidth => IsSidePanelVisible && !IsZenMode && !IsSimplifiedView ? 361 : 0;
 
     /// <summary>Vista simplificada de Notas (Ajustes › Editor › Vista del editor). Mirror de

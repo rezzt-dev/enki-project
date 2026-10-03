@@ -52,7 +52,7 @@ public static class SessionGraphRenderer
         IncludeFields = true
     };
 
-    public static string RenderDocument(SessionGraph graph)
+    public static string RenderDocument(SessionGraph graph, bool subtleAnimations = false)
     {
         var sigmaScript = VendoredScripts.Get("sigma.min.js");
         var d3ForceScript = VendoredScripts.Get("d3-force-standalone.min.js");
@@ -193,6 +193,13 @@ public static class SessionGraphRenderer
                   const ROTATION_SPEED = (Math.PI * 2) / ROTATION_PERIOD_MS; // radians / ms
                   let isDraggingNode = false;
                   let lastRotationTs = null;
+                  let nextFrameAt = 0;
+                  let subtleMotion = {{(subtleAnimations ? "true" : "false")}};
+                  window.setSubtleMotion = function (value) {
+                    subtleMotion = !!value;
+                    lastRotationTs = null;
+                    nextFrameAt = 0;
+                  };
                   // Whether the next simulation 'end' should re-fit the camera to the whole scene (see the
                   // simulation's 'end' handler) — true at load and after every graph-data update, cleared
                   // after the first settle so a drag-release 'end' doesn't yank the view mid-interaction.
@@ -475,7 +482,7 @@ public static class SessionGraphRenderer
                       invalidateGroupings();
                       if (refitOnSettle) {
                         refitOnSettle = false;
-                        setTimeout(function () { zoomToFit(600, 90); }, 250);
+                        setTimeout(function () { zoomToFit(subtleMotion ? 100 : 180, 90); }, 0);
                       }
                       reportPositions();
                     });
@@ -1224,7 +1231,7 @@ public static class SessionGraphRenderer
                     if (!node) return;
                     const p = worldToScreen(node.x, node.y);
                     const t = (Date.now() % 1200) / 1200;
-                    const pulse = 1 + 0.25 * Math.sin(t * Math.PI * 2);
+                    const pulse = subtleMotion ? 1 : 1 + 0.25 * Math.sin(t * Math.PI * 2);
                     const fade = fadeOverride === undefined ? 1 : fadeOverride;
                     const baseR = Math.max(
                       MIN_NODE_SCREEN_RADIUS * Math.sqrt(PENDING_VAL),
@@ -1304,7 +1311,7 @@ public static class SessionGraphRenderer
                     // the camera back to fit it instead of leaving the view cropped at the old extent. The
                     // short delay gives the simulation a beat to settle the newly-connected nodes toward
                     // each other before measuring the bounding box to fit.
-                    setTimeout(function () { zoomToFit(600, 90); }, 260);
+                    setTimeout(function () { zoomToFit(subtleMotion ? 100 : 180, 90); }, 0);
                   };
 
                   // A manual link was refused host-side (e.g. the two notes live in different sessions) —
@@ -1334,23 +1341,8 @@ public static class SessionGraphRenderer
                     sigma.misc.animation.camera(s.camera, { x: cx, y: cy, ratio: ratio }, { duration: duration });
                   }
 
-                  // ===================== Main animation loop =====================
-                  // Runs forever (there is no autoPauseRedraw-style opt-out here, deliberately — same as the
-                  // force-graph version): the ambient rotation, the pending-node pulse and the flow particles
-                  // all need to keep animating long after the force simulation itself has settled and
-                  // stopped calling its own 'tick' listeners. Every frame: rotate, ask sigma to repaint
-                  // itself from the current node positions, then redraw both overlay canvases in sync via
-                  // the same camera transform sigma just used.
-                  //
-                  // refresh() is called *without* skipIndexation, even though click/drag/hover resolution
-                  // here never uses sigma's own quadtree (see nearestNodeWithin above) — the canvas renderer
-                  // itself also reads that same quadtree every render() to decide which nodes/edges count as
-                  // "on screen" at all (camera.getRectangle + quadtree.area, see sigma.renderers.canvas.js).
-                  // Skipping indexation left that query permanently empty, so nothing ever got painted —
-                  // found by comparing a real render against the theory in a throwaway Playwright harness
-                  // before wiring this into the actual WebView (see the migration handoff doc for why: no
-                  // .NET SDK/display was available when the original investigation happened, so getting this
-                  // kind of thing wrong silently was the expected failure mode to guard against).
+                  // Un máximo de 60 Hz evita repintar el canvas por encima del presupuesto visual;
+                  // el modo sutil usa 30 Hz y omite la rotación y las partículas decorativas.
                   function frame(ts) {
                     // Skip the whole redraw (rotation math, sigma's full-graph repaint, both overlay
                     // canvases) while the WebView isn't actually visible — e.g. the app minimized or this
@@ -1360,14 +1352,21 @@ public static class SessionGraphRenderer
                     // hidden, all in one frame, once it does.
                     if (document.hidden) {
                       lastRotationTs = null;
+                      nextFrameAt = 0;
                       requestAnimationFrame(frame);
                       return;
                     }
 
-                    const dt = lastRotationTs === null ? 0 : ts - lastRotationTs;
+                    const interval = 1000 / (subtleMotion ? 30 : 60);
+                    if (ts + 0.5 < nextFrameAt) {
+                      requestAnimationFrame(frame);
+                      return;
+                    }
+                    const dt = lastRotationTs === null ? 0 : Math.min(50, ts - lastRotationTs);
                     lastRotationTs = ts;
+                    nextFrameAt = Math.max(nextFrameAt + interval, ts);
 
-                    rotateGraph(dt);
+                    if (!subtleMotion) rotateGraph(dt);
                     if (!isDraggingNode) snapSessionsToRing(dt);
                     s.refresh();
 
@@ -1387,7 +1386,7 @@ public static class SessionGraphRenderer
                     affinityCtx.restore();
                     drawSessionAffinity();
                     drawSessionLabels();
-                    drawParticles(dt);
+                    if (!subtleMotion) drawParticles(dt);
                     drawOverlays();
 
                     requestAnimationFrame(frame);
@@ -1395,7 +1394,7 @@ public static class SessionGraphRenderer
 
                   buildParticleState();
                   requestAnimationFrame(frame);
-                  setTimeout(function () { zoomToFit(500, 90); }, 400);
+                  setTimeout(function () { zoomToFit(subtleMotion ? 100 : 180, 90); }, 0);
                 })();
                 </script>
                 </body>

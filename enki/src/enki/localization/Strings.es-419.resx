@@ -6148,4 +6148,8 @@ Feliz escritura.</value>
   <data name="Activity_MarkPending" xml:space="preserve">
     <value>Marcar como pendiente</value>
   </data>
+  <data name="Settings_Appearance_Motion_Title" xml:space="preserve"><value>Animaciones</value></data>
+  <data name="Settings_Appearance_Motion_Description" xml:space="preserve"><value>Normales: transiciones completas y efectos decorativos. Sutiles: transiciones breves sin desplazamientos decorativos.</value></data>
+  <data name="Settings_Appearance_Motion_Subtle" xml:space="preserve"><value>Sutiles</value></data>
+  <data name="Settings_Appearance_Motion_Normal" xml:space="preserve"><value>Normales</value></data>
 </root>

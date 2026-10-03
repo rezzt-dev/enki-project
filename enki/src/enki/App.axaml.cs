@@ -18,6 +18,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        MotionService.Apply(false);
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -32,6 +33,7 @@ public partial class App : Application
                 var settingsService = new SettingsService();
                 ApplyStoredLanguage(settingsService);
                 ApplyStoredThemeVariant(settingsService);
+                MotionService.Apply(settingsService.Settings.UseSubtleAnimations);
 
                 var window = new MainWindow(settingsService);
                 MainWindowRef = window;

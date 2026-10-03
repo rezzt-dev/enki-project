@@ -10,6 +10,7 @@
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.SessionsView"
              x:DataType="vm:SessionsViewModel"
+             UseSubtleAnimations="{DynamicResource MotionSubtle}"
              Focusable="True" Loaded="SessionsView_Loaded" KeyDown="SessionsView_KeyDown">
 
   <Grid>
@@ -181,14 +182,14 @@
             <Grid x:Name="GraphLoadingOverlay" IsVisible="False" Opacity="0" IsHitTestVisible="False">
               <Grid.Transitions>
                 <Transitions>
-                  <DoubleTransition Property="Opacity" Duration="0:0:0.36" Easing="CubicEaseOut" />
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
                 </Transitions>
               </Grid.Transitions>
               <Border Background="{DynamicResource AppBackgroundAltBrush}" />
               <Border Background="{DynamicResource GraphBackdropDotsBrush}" />
               <Border Background="{DynamicResource GraphBackdropBloomBrush}" />
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="22">
-                <controls:GraphLoadingIndicator x:Name="GraphLoadingAnimation" Width="200" Height="176"
+                <controls:GraphLoadingIndicator x:Name="GraphLoadingAnimation" UseSubtleAnimations="{DynamicResource MotionSubtle}" Width="200" Height="176"
                                                 Ink="{DynamicResource InkBrush}" HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Tr Sessions_Graph_LoadingLabel, Converter={StaticResource UpperCaseConverter}}"
                            Classes="eyebrow" HorizontalAlignment="Center" />

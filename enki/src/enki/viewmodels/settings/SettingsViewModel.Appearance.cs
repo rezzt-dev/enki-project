@@ -68,6 +68,16 @@ public sealed partial class SettingsViewModel
     }
 
     [ObservableProperty]
+    private bool _useSubtleAnimations;
+
+    partial void OnUseSubtleAnimationsChanged(bool value)
+    {
+        _settingsService.Settings.UseSubtleAnimations = value;
+        _settingsService.Save();
+        MotionService.Apply(value);
+    }
+
+    [ObservableProperty]
     private bool _isDarkTheme;
 
     /// <summary>Whether an imported custom theme (Ajustes › Apariencia › Tema personalizado) is currently

@@ -6148,4 +6148,8 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Activity_MarkPending" xml:space="preserve">
     <value>Als ausstehend markieren</value>
   </data>
+  <data name="Settings_Appearance_Motion_Title" xml:space="preserve"><value>Animationen</value></data>
+  <data name="Settings_Appearance_Motion_Description" xml:space="preserve"><value>Normal: vollständige Übergänge und dekorative Effekte. Dezent: kurze Übergänge ohne dekorative Bewegungen.</value></data>
+  <data name="Settings_Appearance_Motion_Subtle" xml:space="preserve"><value>Dezent</value></data>
+  <data name="Settings_Appearance_Motion_Normal" xml:space="preserve"><value>Normal</value></data>
 </root>

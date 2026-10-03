@@ -28,7 +28,7 @@
                   HorizontalAlignment="Left" VerticalAlignment="Center">
             <Border.Transitions>
               <Transitions>
-                <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
               </Transitions>
             </Border.Transitions>
             <Panel x:Name="PART_MovingKnobs">
@@ -37,11 +37,11 @@
                       CornerRadius="0"
                       Background="{DynamicResource Ink40}"
                       HorizontalAlignment="Left" VerticalAlignment="Center"
-                      Margin="2,0,0,0">
+                      Margin="2,0,0,0" RenderTransform="translateX(0px)">
                 <Border.Transitions>
                   <Transitions>
-                    <ThicknessTransition Property="Margin" Duration="0:0:0.3" Easing="BackEaseOut" />
-                    <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+                    <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
                   </Transitions>
                 </Border.Transitions>
               </Border>
@@ -64,7 +64,7 @@
       <Setter Property="Background" Value="{DynamicResource InkBrush}" />
     </Style>
     <Style Selector="^:checked /template/ Border#SwitchKnob">
-      <Setter Property="Margin" Value="20,0,0,0" />
+      <Setter Property="RenderTransform" Value="translateX(18px)" />
       <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
     </Style>
     <Style Selector="^:disabled">

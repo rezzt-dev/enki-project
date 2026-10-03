@@ -6,6 +6,9 @@ namespace enki.Models;
 
 public sealed class AppSettings
 {
+    /// <summary>Reduce los desplazamientos decorativos y acorta las transiciones de interfaz.</summary>
+    public bool UseSubtleAnimations { get; set; }
+
     /// <summary>Devuelve cada preferencia numérica al rango que su control de Ajustes permite elegir, y
     /// reemplaza por el valor por defecto lo que quede fuera. Lo llama
     /// <see cref="Services.SettingsService"/> tras cada deserialización —carga, cambio de vault e

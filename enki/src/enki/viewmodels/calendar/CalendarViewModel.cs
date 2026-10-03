@@ -170,37 +170,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSidebarCollapsed;
 
-    /// <summary>Drives the "reveal" transition when navigating between periods or switching views
-    /// (docs/calendar-feature/10-diseno-visual-y-componentes.md §8: Opacity 0→1 + a small
-    /// <c>TranslateTransform.Y</c>, 200–300ms <c>CubicEaseOut</c>) — set to the "just appeared" state by
-    /// <see cref="AnimateReveal"/> right before the relevant Rebuild, then eased back to steady state on
-    /// the next dispatcher pass so the view actually renders one frame at the offset state first. Shared
-    /// by all three grid containers in CalendarView.axaml (only one is ever visible at a time), and
-    /// deliberately *not* touched by a plain data-refresh <see cref="Rebuild"/> — doc §8 is about
-    /// navigation, not about re-flashing the grid every time a card is edited elsewhere.</summary>
+    /// <summary>Solicita una entrada visual; la vista gestiona los fotogramas y su cancelación.</summary>
     [ObservableProperty]
-    private double _revealOpacity = 1;
+    private int _revealRevision;
 
-    [ObservableProperty]
-    private double _revealOffsetY;
-
-    /// <summary>~8px per doc §8 ("no los 24px de la web... una distancia menor evita que la animación se
-    /// sienta lenta en uso repetido").</summary>
-    private const double RevealTravelPixels = 8;
-
-    private void AnimateReveal()
-    {
-        RevealOpacity = 0;
-        RevealOffsetY = RevealTravelPixels;
-        // One dispatcher pass later (after this frame has actually rendered the "just appeared" state)
-        // ease back to steady state — setting both values back-to-back in the same call stack would never
-        // give Avalonia's Transitions a "from" frame to animate away from.
-        Dispatcher.UIThread.Post(() =>
-        {
-            RevealOpacity = 1;
-            RevealOffsetY = 0;
-        }, DispatcherPriority.Loaded);
-    }
+    private void AnimateReveal() => RevealRevision++;
 
     /// <summary>Ajustes › Calendario "Mostrar barra de desplazamiento del sidebar" —
     /// drives <see cref="SidebarScrollBarVisibility"/> below, bound only on the sidebar's ScrollViewer in

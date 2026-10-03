@@ -298,10 +298,8 @@ public partial class EditorView : UserControl, IDisposable
         Editor.TextArea.TextView.Redraw();
     }
 
-    /// <summary>Pushes the shared preference into the bound tab's own IsSidePanelVisible — which drives
-    /// SidePanelHost's animated Width in EditorView.axaml — instead of toggling a control's IsVisible
-    /// directly, so a change made from the Settings page (or another tab) still slides this tab's panel
-    /// in/out rather than snapping it.</summary>
+    /// <summary>Sincroniza el panel de la pestaña con la preferencia compartida. El host aplica
+    /// su ancho una sola vez, sin recalcular el Markdown durante una animación de tamaño.</summary>
     private void ApplySidePanelVisibility()
     {
         if (_boundVm is not { } vm) return;

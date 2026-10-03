@@ -523,20 +523,10 @@
         </Grid>
       </Border>
 
-      <!-- Panel lateral derecho, host: outline, backlinks y estadísticas. Its own Width is bound to
-           EditorViewModel.SidePanelWidth (0 when collapsed) rather than the panel just toggling
-           IsVisible inside a fixed grid column, so hiding it actually gives the editor's "*" column the
-           freed space back instead of leaving it as dead space — and animating that Width (instead of
-           snapping) is what gives the show/hide its slide. ClipToBounds crops the separator+panel's own
-           fixed-width content as the host shrinks past it, instead of letting it overflow past the host's
-           shrinking bounds mid-animation. -->
+      <!-- El panel reserva su ancho una sola vez: animarlo recompone todo el Markdown por fotograma. -->
       <Grid Grid.Column="1" x:Name="SidePanelHost" ColumnDefinitions="Auto,Auto"
             Width="{Binding SidePanelWidth}" ClipToBounds="True">
-        <Grid.Transitions>
-          <Transitions>
-            <DoubleTransition Property="Width" Duration="0:0:0.2" Easing="CubicEaseOut" />
-          </Transitions>
-        </Grid.Transitions>
+
 
         <!-- Separador fino entre editor y panel lateral -->
         <Border Grid.Column="0" Width="1" HorizontalAlignment="Center"

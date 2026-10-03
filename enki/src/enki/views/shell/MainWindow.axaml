@@ -8,6 +8,7 @@
         xmlns:views="clr-namespace:enki.Views"
         xmlns:conv="clr-namespace:enki.Converters"
         xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+        xmlns:motion="clr-namespace:enki.Views"
         xmlns:loc="clr-namespace:enki.Localization"
         mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="820"
         x:Class="enki.MainWindow"
@@ -111,11 +112,6 @@
       <Border Width="{Binding SidebarWidth}" CornerRadius="0"
               Background="{DynamicResource SidebarBackgroundBrush}">
         <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0">
-          <Border.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Width" Duration="0:0:0.16" Easing="CubicEaseOut" />
-            </Transitions>
-          </Border.Transitions>
 
           <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="14,18,14,16">
 
@@ -400,19 +396,10 @@
       <Border Grid.Row="0" Height="44" />
 
       <Grid Grid.Row="1">
-        <!-- Animación de entrada de página — mismo Opacity 0→1 + TranslateY 8px/250ms CubicEaseOut que
-             el "reveal" del Calendario
-             (CalendarViewModel.AnimateReveal), aplicado una sola vez a nivel de shell alrededor de
-             CurrentPage en vez de duplicarlo en cada página. -->
+        <!-- Una entrada cancelable por navegación, después de construir la sección. -->
         <ContentControl Content="{Binding CurrentPage}"
-                         Opacity="{Binding PageRevealOpacity}"
-                         RenderTransform="{Binding PageRevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-          <ContentControl.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-            </Transitions>
-          </ContentControl.Transitions>
+                         motion:MotionReveal.AllowTranslation="{Binding PageRevealAllowsTranslation}"
+                         motion:MotionReveal.Revision="{Binding PageRevealRevision}">
         </ContentControl>
 
         <!-- Grano de película sutil sobre todo el shell (§5.1) -->

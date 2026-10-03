@@ -7,7 +7,8 @@
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:models="clr-namespace:enki.Models"
              xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
-             xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:motion="clr-namespace:enki.Views"
+        xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
              x:Class="enki.Views.CalendarView"
              x:DataType="vm:CalendarViewModel"
@@ -862,14 +863,8 @@
                10-diseno-visual-y-componentes.md §8. -->
           <!-- Las seis semanas se reparten el alto disponible sin desplazamiento vertical. -->
           <Grid Grid.Row="1" IsVisible="{Binding IsMonthView}"
-                        Opacity="{Binding RevealOpacity}"
-                        RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-            <Grid.Transitions>
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              </Transitions>
-            </Grid.Transitions>
+                        motion:MotionReveal.AllowTranslation="False"
+                motion:MotionReveal.Revision="{Binding RevealRevision}">
             <Border Classes="calendar-month-grid" Margin="5,0,5,5">
               <ItemsControl ItemsSource="{Binding Days}">
                 <ItemsControl.ItemsPanel>
@@ -943,14 +938,8 @@
           <!-- ===================== Vistas Semana/Día (comparten CalendarWeekColumnViewModel —
                Día es simplemente 1 columna, docs/calendar-feature/04-vistas-y-navegacion.md §4) ============ -->
           <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsHourGridView}"
-                Opacity="{Binding RevealOpacity}"
-                RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-            <Grid.Transitions>
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              </Transitions>
-            </Grid.Transitions>
+                motion:MotionReveal.AllowTranslation="False"
+                motion:MotionReveal.Revision="{Binding RevealRevision}">
 
             <!-- Cabeceras de columna -->
             <Grid Grid.Row="0" ColumnDefinitions="56,*">
@@ -1074,14 +1063,8 @@
           <!-- ===================== Vista Agenda — docs/calendar-feature/04-vistas-y-navegacion.md §6:
                lista agrupada por día, días sin items no se muestran. ===================== -->
           <Grid Grid.Row="1" IsVisible="{Binding IsAgendaView}"
-                Opacity="{Binding RevealOpacity}"
-                RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-            <Grid.Transitions>
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              </Transitions>
-            </Grid.Transitions>
+                motion:MotionReveal.AllowTranslation="False"
+                motion:MotionReveal.Revision="{Binding RevealRevision}">
             <ScrollViewer IsVisible="{Binding !IsAgendaEmpty}">
               <ItemsControl ItemsSource="{Binding AgendaGroups}">
                 <ItemsControl.ItemTemplate>

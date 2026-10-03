@@ -24,9 +24,9 @@
       <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
       <Setter Property="Transitions">
         <Transitions>
-          <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
-          <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
-          <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
         </Transitions>
       </Setter>
     </Style>
@@ -848,6 +848,21 @@
         <controls:SettingsSearchOption Section="Appearance" MatchDescendants="True" ResourceKeys="Settings_Nav_Appearance" AdditionalText="{Binding ThemeSearchText}">
           <StackPanel Spacing="20">
             <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Appearance, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Appearance Settings_Appearance_Motion_Title Settings_Appearance_Motion_Description Settings_Appearance_Motion_Subtle Settings_Appearance_Motion_Normal">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Text="{loc:Tr Settings_Appearance_Motion_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  <TextBlock Text="{loc:Tr Settings_Appearance_Motion_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="0">
+                    <RadioButton Classes="segment" Content="{loc:Tr Settings_Appearance_Motion_Normal, Converter={StaticResource UpperCaseConverter}}"
+                                 GroupName="MotionMode" IsChecked="{Binding !UseSubtleAnimations, Mode=TwoWay}" />
+                    <RadioButton Classes="segment" Content="{loc:Tr Settings_Appearance_Motion_Subtle, Converter={StaticResource UpperCaseConverter}}"
+                                 GroupName="MotionMode" IsChecked="{Binding UseSubtleAnimations, Mode=TwoWay}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Appearance Settings_Appearance_Theme_Title Settings_Appearance_Theme_DarkLabel
                               Settings_Appearance_Theme_Description Settings_Appearance_CustomTheme_ActiveHint">

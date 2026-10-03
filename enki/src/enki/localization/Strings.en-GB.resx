@@ -6148,4 +6148,8 @@ Happy writing.</value>
   <data name="Activity_MarkPending" xml:space="preserve">
     <value>Mark as pending</value>
   </data>
+  <data name="Settings_Appearance_Motion_Title" xml:space="preserve"><value>Animations</value></data>
+  <data name="Settings_Appearance_Motion_Description" xml:space="preserve"><value>Normal: full transitions and decorative effects. Subtle: brief transitions without decorative movement.</value></data>
+  <data name="Settings_Appearance_Motion_Subtle" xml:space="preserve"><value>Subtle</value></data>
+  <data name="Settings_Appearance_Motion_Normal" xml:space="preserve"><value>Normal</value></data>
 </root>

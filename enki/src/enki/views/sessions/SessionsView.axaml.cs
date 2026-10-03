@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -25,18 +24,28 @@ public partial class SessionsView : UserControl
     /// whatever did (or didn't) render.</summary>
     private static readonly TimeSpan GraphLoadingSafetyTimeout = TimeSpan.FromSeconds(6);
 
-    /// <summary>Shortest time the loading screen stays up once shown — long enough to read as a deliberate
-    /// transition rather than a flicker when the graph comes back almost immediately.</summary>
-    private static readonly TimeSpan GraphLoadingMinimumVisible = TimeSpan.FromMilliseconds(520);
+    public static readonly StyledProperty<bool> UseSubtleAnimationsProperty =
+        AvaloniaProperty.Register<SessionsView, bool>(nameof(UseSubtleAnimations));
 
-    /// <summary>Must match the Opacity <c>DoubleTransition</c> on <c>GraphLoadingOverlay</c> in the XAML.</summary>
-    private static readonly TimeSpan GraphLoadingFadeDuration = TimeSpan.FromMilliseconds(360);
+    public bool UseSubtleAnimations
+    {
+        get => GetValue(UseSubtleAnimationsProperty);
+        set => SetValue(UseSubtleAnimationsProperty, value);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == UseSubtleAnimationsProperty && _graphWebView is not null)
+            _ = _graphWebView.InvokeScript(UseSubtleAnimations
+                ? "window.setSubtleMotion && window.setSubtleMotion(true);"
+                : "window.setSubtleMotion && window.setSubtleMotion(false);");
+    }
 
     private NativeWebView? _graphWebView;
     private SessionsViewModel? _subscribedVm;
     private DispatcherTimer? _graphLoadingSafetyTimer;
     private IDisposable? _graphLoadingHideStep;
-    private readonly Stopwatch _graphLoadingVisibleFor = new();
 
     public SessionsView()
     {
@@ -261,7 +270,7 @@ public partial class SessionsView : UserControl
         }
 
         ShowGraphLoadingOverlay();
-        var html = SessionGraphRenderer.RenderDocument(graph);
+        var html = SessionGraphRenderer.RenderDocument(graph, UseSubtleAnimations);
         webView.NavigateToString(html, null);
     }
 
@@ -274,9 +283,9 @@ public partial class SessionsView : UserControl
         {
             GraphLoadingOverlay.IsVisible = true;
             GraphLoadingAnimation.IsActive = true;
-            _graphLoadingVisibleFor.Restart();
         }
         // Fades in from 0 on a fresh show, or back up if a previous fade-out was still running.
+        GraphLoadingOverlay.IsHitTestVisible = true;
         GraphLoadingOverlay.Opacity = 1;
 
         _graphLoadingSafetyTimer?.Stop();
@@ -285,29 +294,26 @@ public partial class SessionsView : UserControl
         _graphLoadingSafetyTimer.Start();
     }
 
-    /// <summary>Holds the loading screen for at least <see cref="GraphLoadingMinimumVisible"/> (a graph
-    /// that's ready almost instantly would otherwise flash the animation for a single frame), then fades
-    /// it out and only stops the animation once it's fully transparent.</summary>
+    /// <summary>Retira la capa en cuanto el grafo está listo, sin una espera artificial.</summary>
     private void HideGraphLoadingOverlay()
     {
         _graphLoadingSafetyTimer?.Stop();
         _graphLoadingSafetyTimer = null;
         if (!GraphLoadingOverlay.IsVisible || _graphLoadingHideStep is not null) return;
 
-        var remaining = GraphLoadingMinimumVisible - _graphLoadingVisibleFor.Elapsed;
-        _graphLoadingHideStep = DispatcherTimer.RunOnce(BeginGraphLoadingFadeOut,
-            remaining > TimeSpan.Zero ? remaining : TimeSpan.FromMilliseconds(1));
+        BeginGraphLoadingFadeOut();
     }
 
     private void BeginGraphLoadingFadeOut()
     {
+        GraphLoadingOverlay.IsHitTestVisible = false;
         GraphLoadingOverlay.Opacity = 0;
         _graphLoadingHideStep = DispatcherTimer.RunOnce(() =>
         {
             _graphLoadingHideStep = null;
             GraphLoadingOverlay.IsVisible = false;
             GraphLoadingAnimation.IsActive = false;
-        }, GraphLoadingFadeDuration);
+        }, MotionService.InteractionDuration);
     }
 
     /// <summary>The WebView's own document reported it finished reading its initial nodes/edges into sigma
