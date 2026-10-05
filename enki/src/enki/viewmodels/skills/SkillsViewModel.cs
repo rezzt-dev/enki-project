@@ -41,6 +41,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
     private readonly SettingsService? _settingsService;
 
     private IReadOnlyList<string>? _pendingImportPaths;
+    private string? _pendingImportTarget;
     private Action<string>? _pendingNamePromptConfirm;
 
     /// <summary>Evita que <see cref="Reload"/> se reentre a sí mismo: dentro de él se reasignan
@@ -96,7 +97,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
     /// <summary>Alterna el cuadro de búsqueda junto al contador — <c>ToggleSearchCommand</c> limpia
     /// <see cref="SearchText"/> al cerrarlo, así que reabrir siempre arranca desde la lista completa.</summary>
     [ObservableProperty]
-    private bool _isSearchOpen;
+    private bool _isSearchOpen = true;
 
     [ObservableProperty]
     private string _searchText = string.Empty;
@@ -122,6 +123,9 @@ public sealed partial class SkillsViewModel : ViewModelBase
     /// el plural depende del idioma activo (§1.3/§1.4). Notificada manualmente en <see cref="ApplyFilter"/>,
     /// que es el único sitio donde cambia <see cref="Skills"/>.</summary>
     public string SkillsCountLabel => Plural.Get("Skills_Count", Skills.Count, Skills.Count);
+
+    /// <summary>Total de la biblioteca, independiente de la carpeta activa.</summary>
+    public string LibraryCountLabel => Plural.Get("Skills_Count", TotalSkillsCount, TotalSkillsCount);
 
     /// <summary>Nombre de la carpeta abierta, o "TODAS" en la raíz — la miga de pan de la barra de la
     /// rejilla.</summary>
@@ -238,13 +242,20 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
     public void Reload()
     {
+        if (_reloading) return;
+        var checkedPaths = _allSkills.Where(s => s.IsCheckedForExport).Select(s => s.FilePath).ToHashSet();
         var previouslySelectedPath = SelectedSkill?.FilePath;
 
         _reloading = true;
         try
         {
             _allSkills = _skillService.LoadSkills().Select(skill => new SkillViewModel(skill)).ToList();
+            foreach (var skill in _allSkills) skill.IsCheckedForExport = checkedPaths.Contains(skill.FilePath);
             ReloadFolders();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            NotifyFolderFailure("Skills_Notify_ImportFailed_Title", ex);
         }
         finally
         {
@@ -256,6 +267,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
         TagFilter.Reload(_allSkills.SelectMany(s => s.Model.Tags).Distinct(StringComparer.OrdinalIgnoreCase));
 
         OnPropertyChanged(nameof(TotalSkillsCount));
+        OnPropertyChanged(nameof(LibraryCountLabel));
         OnPropertyChanged(nameof(DefaultSkillsCount));
         OnPropertyChanged(nameof(CustomSkillsCount));
         OnPropertyChanged(nameof(TaggedSkillsCount));
@@ -379,14 +391,19 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
         IsEmpty = _allSkills.Count == 0 && RootFolders.Count == 0;
         HasNoSearchResults = IsFlatResults && Skills.Count == 0 && !IsEmpty;
-        IsCurrentFolderEmpty = !IsFlatResults && !IsEmpty && BrowserItems.Count == 0;
+        IsCurrentFolderEmpty = !IsFlatResults && !IsEmpty && !BrowserItems.Any(item => item is not SkillFolderCardViewModel { IsParent: true });
 
         OnPropertyChanged(nameof(NoSearchResultsMessage));
         OnPropertyChanged(nameof(SkillsCountLabel));
     }
 
     [RelayCommand]
-    private void SelectSkill(SkillViewModel? skill) => SelectedSkill = skill;
+    private void SelectSkill(SkillViewModel? skill)
+    {
+        if (ActiveEditor is not null && !PathsEqual(ActiveEditor.Skill.FilePath, skill?.FilePath)
+            && !PrepareLibraryMutation()) return;
+        SelectedSkill = skill;
+    }
 
     partial void OnSelectedSkillChanged(SkillViewModel? oldValue, SkillViewModel? newValue)
     {
@@ -461,6 +478,9 @@ public sealed partial class SkillsViewModel : ViewModelBase
     {
         if (folder is null) return;
 
+        if (!folder.IsRenaming) return;
+        folder.IsRenaming = false; // Evita reentradas por LostFocus al reconstruir el árbol.
+        if (!PrepareLibraryMutation()) return;
         var newName = folder.EditingName.Trim();
         if (newName.Length > 0 && newName != folder.Name)
         {
@@ -504,6 +524,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
     private void DeleteFolder(SkillFolderViewModel folder)
     {
+        if (!PrepareLibraryMutation()) return;
         try
         {
             var affectsCurrent = CurrentFolder is not null &&
@@ -534,6 +555,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
     /// que un fallo se avisa en vez de dejar la skill donde estaba sin explicación.</summary>
     public void MoveSkillToFolder(SkillViewModel skill, string destinationFolderPath)
     {
+        if (!PrepareLibraryMutation()) return;
         if (PathsEqual(skill.Model.FolderPath, destinationFolderPath)) return;
 
         try
@@ -553,6 +575,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
     /// el servicio con un <see cref="InvalidOperationException"/> explicado, no un fallo de E/S opaco.</summary>
     public void MoveFolderToFolder(SkillFolderViewModel folder, string destinationParentPath)
     {
+        if (!PrepareLibraryMutation()) return;
         try
         {
             _skillService.MoveFolder(folder.Folder, destinationParentPath);
@@ -593,6 +616,27 @@ public sealed partial class SkillsViewModel : ViewModelBase
             LocalizedTextFormatter.Format(titleKey),
             VaultFailureReasons.DescribeLocalized(ex),
             NotificationSeverity.Error);
+    }
+
+    private bool PrepareLibraryMutation()
+    {
+        if (ActiveEditor is null) return true;
+        CloseEditor();
+        return ActiveEditor is null;
+    }
+
+    [RelayCommand]
+    private void NewSkill()
+    {
+        ActiveEditor?.FlushPendingSave();
+        if (ActiveEditor?.IsDirty == true) return;
+        var target = CurrentFolderPath;
+        BeginNamePrompt(LocalizationService.Instance["Skills_NewSkill"],
+            LocalizationService.Instance["Skills_NewSkill"], "", name =>
+        {
+            var created = _skillService.CreateSkill(target, name);
+            if (FindSkillByPath(created.FilePath) is { } skill) OpenEditor(skill);
+        });
     }
 
     // ===================== Editar =====================
@@ -696,7 +740,11 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
         NamePrompt = null;
         _pendingNamePromptConfirm = null;
-        onConfirm(value);
+        try { onConfirm(value); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            NotifyFolderFailure("Skills_Notify_CopyFailed_Title", ex);
+        }
     }
 
     [RelayCommand]
@@ -731,12 +779,17 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
     private void DeleteSkill(SkillViewModel skill)
     {
+        if (!PrepareLibraryMutation()) return;
         try
         {
             _skillService.DeleteSkill(skill.Model);
             if (SelectedSkill == skill) SelectedSkill = null;
             if (ActiveEditor?.Skill == skill.Model) ActiveEditor = null;
             Reload();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            NotifyFolderFailure("Skills_Notify_DeleteFailed_Title", ex);
         }
         catch (InvalidOperationException ex)
         {
@@ -785,36 +838,36 @@ public sealed partial class SkillsViewModel : ViewModelBase
     /// <summary>Punto de entrada común de las dos formas de importar. El destino es siempre
     /// <see cref="CurrentFolderPath"/>: importar mientras se navega un tema deja las skills nuevas en ese
     /// tema, que es lo que se espera de una biblioteca con carpetas.</summary>
-    public void BeginImport(IReadOnlyList<string> paths)
+    public void BeginImport(IReadOnlyList<string> paths, string? targetFolderPath = null)
     {
-        var conflicts = DetectImportConflicts(paths);
-        if (conflicts.Count == 0)
+        if (HasImportConflicts) return;
+        var target = targetFolderPath ?? CurrentFolderPath;
+        try
         {
-            RunImport(paths, ConflictResolution.Overwrite);
-            return;
+            var conflicts = SkillService.ExpandMarkdownFiles(paths)
+                .Select(pair => pair.RelativeDestination)
+                .Where(relative => File.Exists(Path.Combine(target, relative)))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (conflicts.Count == 0)
+            {
+                RunImport(paths, ConflictResolution.Rename, target);
+                return;
+            }
+            _pendingImportPaths = paths;
+            _pendingImportTarget = target;
+            ImportConflictFileNames = conflicts;
         }
-
-        _pendingImportPaths = paths;
-        ImportConflictFileNames = conflicts;
-    }
-
-    private List<string> DetectImportConflicts(IReadOnlyList<string> paths)
-    {
-        var target = CurrentFolderPath;
-        if (!Directory.Exists(target)) return [];
-
-        return SkillService.ExpandMarkdownFiles(paths)
-            .Select(pair => pair.RelativeDestination)
-            .Where(relative => File.Exists(Path.Combine(target, relative)))
-            .Select(relative => relative.Replace(Path.DirectorySeparatorChar, '/'))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            NotifyFolderFailure("Skills_Notify_ImportFailed_Title", ex);
+        }
     }
 
     [RelayCommand]
     private void ResolveImportCancel()
     {
         _pendingImportPaths = null;
+        _pendingImportTarget = null;
         ImportConflictFileNames = null;
     }
 
@@ -829,14 +882,17 @@ public sealed partial class SkillsViewModel : ViewModelBase
         if (_pendingImportPaths is not { } paths) return;
         ImportConflictFileNames = null;
         _pendingImportPaths = null;
-        RunImport(paths, resolution);
+        var target = _pendingImportTarget ?? CurrentFolderPath;
+        _pendingImportTarget = null;
+        RunImport(paths, resolution, target);
     }
 
-    private void RunImport(IReadOnlyList<string> paths, ConflictResolution resolution)
+    private void RunImport(IReadOnlyList<string> paths, ConflictResolution resolution, string target)
     {
+        if (!PrepareLibraryMutation()) return;
         try
         {
-            var result = _skillService.Import(paths, resolution, CurrentFolderPath);
+            var result = _skillService.Import(paths, resolution, target);
             Reload();
 
             if (result.Imported.Count > 0)
@@ -875,6 +931,8 @@ public sealed partial class SkillsViewModel : ViewModelBase
     [RelayCommand]
     private async Task ExportSkills()
     {
+        ActiveEditor?.FlushPendingSave();
+        if (ActiveEditor?.IsDirty == true) return;
         var selected = _allSkills.Where(s => s.IsCheckedForExport).ToList();
         if (selected.Count == 0 && SelectedSkill is not null) selected.Add(SelectedSkill);
 

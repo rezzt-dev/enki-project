@@ -50,6 +50,11 @@ Una imagen pegada o arrastrada a `Proyecto.md` se guarda en **`Proyecto.attachme
 de la nota (`NoteImageAttachments.FolderFor`). La nota y sus imágenes se mueven, se copian y se respaldan
 juntas, y el nombre de la carpeta dice a quién pertenecen sin abrir nada.
 
+Las carpetas cuyo nombre termina en `.attachments` (sin distinguir mayúsculas) quedan ocultas en
+las vistas de Notas y Archivos, a cualquier profundidad. Sus contenidos tampoco se incluyen en las
+búsquedas recursivas ni en los recuentos de elementos visibles. Siguen en el vault y las imágenes
+se muestran normalmente dentro de las notas.
+
 - El nombre del archivo es `imagen-AAAAMMDD-HHMMSS.png` para una captura del portapapeles, y el nombre
   original saneado (sin espacios ni caracteres inválidos) para un archivo arrastrado. Una colisión añade
   `-2`, `-3`…

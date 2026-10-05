@@ -925,7 +925,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 if (anchor.IsDeleted) return;
                 var doc = _textArea.Document;
                 var offset = anchor.Offset;
-                if (offset < 0 || offset >= doc.TextLength) return;
+                if (offset < 0 || offset >= doc.TextLength || !_textArea.ReadOnlySectionProvider.CanInsert(offset)) return;
                 var current = doc.GetCharAt(offset);
                 var next = current is 'x' or 'X' ? ' ' : 'x';
                 doc.Replace(offset, 1, next.ToString());

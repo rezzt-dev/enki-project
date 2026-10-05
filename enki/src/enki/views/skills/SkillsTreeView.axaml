@@ -76,7 +76,7 @@
           <!-- Columna 0 fija (no Auto): reserva el hueco de la flechita también en las skills y en las
                carpetas vacías, donde el botón no se dibuja — si no, sus iconos se desplazarían a la
                izquierda y dejarían de alinearse con los de sus hermanos. -->
-          <Grid ColumnDefinitions="20,Auto,*,Auto" Height="30">
+          <Grid ColumnDefinitions="20,Auto,*,Auto" Height="38">
             <Button Grid.Column="0" Classes="icon-btn" Width="20" Height="20"
                     IsVisible="{Binding HasChildren}"
                     Command="{Binding ToggleExpandCommand}"
@@ -204,12 +204,14 @@
 
           <!-- La raíz de la biblioteca también es destino de arrastre, para poder sacar una skill de una
                carpeta soltándola sobre el fondo vacío del árbol. -->
-          <Grid Grid.Row="1" Background="Transparent"
+          <Grid Grid.Row="1" RowDefinitions="Auto,*" Background="Transparent"
                 DragDrop.AllowDrop="True"
                 DragDrop.DragEnter="TreeBackground_DragOver"
                 DragDrop.DragOver="TreeBackground_DragOver"
                 DragDrop.Drop="TreeBackground_Drop">
-            <ScrollViewer Padding="0,0,0,10">
+            <Button Grid.Row="0" Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Margin="8,4,8,8" Command="{Binding SelectFolderCommand}" Content="{loc:Tr Skills_AllFolder, Converter={StaticResource UpperCaseConverter}}" />
+            <ScrollViewer Grid.Row="1" Padding="0,0,0,10">
               <ItemsControl ItemsSource="{Binding SkillTreeRoots}" Margin="8,0,0,0">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -274,7 +276,7 @@
              propio en el que vivir. -->
         <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10,8">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{Binding SkillsCountLabel}" Classes="faint" FontSize="10.5"
+            <TextBlock Grid.Column="0" Text="{Binding LibraryCountLabel}" Classes="faint" FontSize="10.5"
                        VerticalAlignment="Center" Margin="4,0,0,0" />
             <Button Grid.Column="1" Classes="icon-btn" Width="26" Height="26"
                     Command="{Binding OpenCommunitySkillsCommand}"
@@ -328,7 +330,8 @@
     </Panel>
 
     <!-- ===================== Panel derecho: detalle o editor ===================== -->
-    <Grid Grid.Column="2" RowDefinitions="Auto,*">
+    <Grid Grid.Column="2" RowDefinitions="Auto,*" Background="Transparent" DragDrop.AllowDrop="True"
+          DragDrop.DragOver="Workspace_DragOver" DragDrop.DragLeave="Workspace_DragLeave" DragDrop.Drop="Workspace_Drop">
 
       <!-- Cabecera: nombre de lo abierto + conmutador de navegación. Mismo alto que la barra superior del
            panel lateral, para que la costura no quede cortada a media ventana. -->
@@ -362,6 +365,7 @@
 
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
                       ToolTip.Tip="{loc:Tr Skills_Nav_Tooltip}">
+            <Button Classes="pill-primary" Command="{Binding NewSkillCommand}" Content="{loc:Tr Skills_NewSkill, Converter={StaticResource UpperCaseConverter}}" />
             <Button Classes="icon-btn" Width="34" Height="34"
                     Command="{Binding ShowBrowserViewCommand}"
                     ToolTip.Tip="{loc:Tr Skills_Nav_Browser}"
@@ -387,13 +391,17 @@
       <!-- Detalle de la seleccionada. -->
       <Grid Grid.Row="1" Margin="18"
             IsVisible="{Binding ActiveEditor, Converter={x:Static conv:ObjectConverters.IsNull}}">
-        <views:SkillDetailView MaxWidth="620" HorizontalAlignment="Left"
+        <views:SkillDetailView HorizontalAlignment="Stretch"
                                IsVisible="{Binding SelectedSkill, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
-        <StackPanel Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360"
+        <StackPanel Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="540"
                     IsVisible="{Binding SelectedSkill, Converter={x:Static conv:ObjectConverters.IsNull}}">
+          <TextBlock Text="{loc:Tr Skills_WorkspaceTitle}" FontSize="30" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Text="{loc:Tr Skills_DropHint}" Classes="muted" TextAlignment="Center" TextWrapping="Wrap" />
+          <Button Classes="pill-primary" HorizontalAlignment="Center" Command="{Binding NewSkillCommand}" Content="{loc:Tr Skills_NewSkill, Converter={StaticResource UpperCaseConverter}}" />
           <mi:MaterialIcon Kind="Brain" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding CurrentFolderLabel}" FontSize="16" FontWeight="Bold" TextAlignment="Center" />
           <TextBlock Text="{loc:Tr Skills_Tree_NoSelection}" Classes="muted" HorizontalAlignment="Center"
                      TextAlignment="Center" TextWrapping="Wrap" />
           <Button Classes="pill" HorizontalAlignment="Center" Command="{Binding ImportSkillsCommand}">
@@ -404,6 +412,12 @@
           </Button>
         </StackPanel>
       </Grid>
+      <Border Grid.Row="1" BorderBrush="{DynamicResource InkBrush}" BorderThickness="2" IsHitTestVisible="False"
+              IsVisible="{Binding IsGridDropTarget}">
+        <Border Background="{DynamicResource AppBackgroundBrush}" Padding="24" VerticalAlignment="Bottom">
+          <TextBlock Text="{loc:Tr Skills_DropHint}" TextWrapping="Wrap" TextAlignment="Center" />
+        </Border>
+      </Border>
     </Grid>
   </Grid>
 </UserControl>

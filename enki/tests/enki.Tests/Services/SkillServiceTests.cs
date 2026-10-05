@@ -477,4 +477,58 @@ public class SkillServiceTests : IDisposable
         var skill = Assert.Single(service.LoadSkills());
         Assert.Equal("Mía", skill.Name);
     }
+    [Fact]
+    public void SaveSkill_ExternalChangePreservesDiskAndDraft()
+    {
+        var service = new SkillService(_storageDirectory);
+        var skill = service.CreateSkill(_storageDirectory, "Original");
+        File.WriteAllText(skill.FilePath, "Cambio externo");
+        Assert.Throws<IOException>(() => service.SaveSkill(skill, "Borrador"));
+        Assert.Equal("Cambio externo", File.ReadAllText(skill.FilePath));
+        Assert.Empty(Directory.GetFiles(_storageDirectory, "*.tmp-*"));
+    }
+
+    [Fact]
+    public void Import_SameFileIsSkippedWithoutThrowing()
+    {
+        var service = new SkillService(_storageDirectory);
+        var skill = service.CreateSkill(_storageDirectory, "Original");
+        var result = service.Import([skill.FilePath], ConflictResolution.Overwrite);
+        Assert.Single(result.Skipped);
+        Assert.Empty(result.Imported);
+        Assert.Equal(skill.Content, File.ReadAllText(skill.FilePath));
+    }
+
+    [Fact]
+    public void CreateFolder_NameCollidingWithAFileUsesSuffix()
+    {
+        var service = new SkillService(_storageDirectory);
+        Directory.CreateDirectory(_storageDirectory);
+        File.WriteAllText(Path.Combine(_storageDirectory, "folder"), "contenido");
+        var folder = service.CreateFolder(_storageDirectory, "folder");
+        Assert.Equal("folder 2", Path.GetFileName(folder.FullPath));
+        Assert.True(Directory.Exists(folder.FullPath));
+    }
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("..")]
+    public void CreateFolder_DotNamesStayWithinLibrary(string name)
+    {
+        var service = new SkillService(_storageDirectory);
+        var folder = service.CreateFolder(_storageDirectory, name);
+        Assert.Equal(_storageDirectory, Path.GetDirectoryName(folder.FullPath));
+    }
+
+    [Fact]
+    public void CreateSkill_SameNameDoesNotOverwrite()
+    {
+        var service = new SkillService(_storageDirectory);
+        var first = service.CreateSkill(_storageDirectory, "Analista: experto");
+        var second = service.CreateSkill(_storageDirectory, "Analista: experto");
+        Assert.NotEqual(first.FilePath, second.FilePath);
+        Assert.Equal("Analista: experto", service.ReadSkill(second.FilePath).Name);
+        Assert.Equal(first.Content, File.ReadAllText(first.FilePath));
+    }
+
 }

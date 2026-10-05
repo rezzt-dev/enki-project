@@ -681,8 +681,12 @@ public sealed partial class VaultService
     {
         var relative = Path.GetRelativePath(root, fullPath);
         var segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        return segments.Take(segments.Length - 1).Any(s => s.StartsWith('.'));
+        return segments.Take(segments.Length - 1).Any(IsHiddenDirectoryName);
     }
+
+    /// <summary>Oculta carpetas internas y adjuntos de notas en la navegación y sus recuentos.</summary>
+    private static bool IsHiddenDirectoryName(string name) =>
+        name.StartsWith('.') || name.EndsWith(NoteImageAttachments.FolderSuffix, StringComparison.OrdinalIgnoreCase);
 
     private static List<NoteFolder> BuildFolderChildren(string parentPath)
     {
@@ -691,7 +695,7 @@ public sealed partial class VaultService
                      .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
         {
             var name = Path.GetFileName(dir);
-            if (string.IsNullOrEmpty(name) || name.StartsWith('.')) continue;
+            if (string.IsNullOrEmpty(name) || IsHiddenDirectoryName(name)) continue;
             result.Add(new NoteFolder { FullPath = dir, Children = BuildFolderChildren(dir) });
         }
         return result;
@@ -1511,7 +1515,8 @@ public sealed partial class VaultService
     /// búsqueda de la rejilla de Archivos para encontrar un archivo aunque viva en una subcarpeta. Se compone de
     /// <see cref="GetFiles"/> carpeta a carpeta sobre el mismo recorrido de <see cref="GetFolderTree"/> en vez de
     /// un <c>SearchOption.AllDirectories</c> propio, así que excluye exactamente lo mismo que la navegación:
-    /// notas, archivos ocultos y carpetas que empiezan por punto (<c>.trash</c>, <c>.sessions</c>).</summary>
+    /// notas, archivos ocultos, carpetas que empiezan por punto (<c>.trash</c>, <c>.sessions</c>)
+    /// y carpetas de adjuntos (<c>*.attachments</c>).</summary>
     public List<VaultFile> GetFilesRecursive(string root)
     {
         var result = GetFiles(root);
@@ -1540,7 +1545,7 @@ public sealed partial class VaultService
                     !file.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) count++;
 
             foreach (var directory in new DirectoryInfo(root).EnumerateDirectories())
-                if (!directory.Name.StartsWith('.') &&
+                if (!IsHiddenDirectoryName(directory.Name) &&
                     !directory.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     count += CountFilesRecursive(directory.FullName);
         }
@@ -1562,7 +1567,7 @@ public sealed partial class VaultService
             if (!Directory.Exists(folderPath)) return 0;
 
             var folders = Directory.EnumerateDirectories(folderPath)
-                .Count(path => !Path.GetFileName(path).StartsWith('.'));
+                .Count(path => !IsHiddenDirectoryName(Path.GetFileName(path)));
             var files = Directory.EnumerateFiles(folderPath)
                 .Count(path => !Path.GetFileName(path).StartsWith('.') &&
                                !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase));

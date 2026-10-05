@@ -117,10 +117,11 @@
          familia visual que la tarjeta de skill (Button.skill-card) para que la rejilla se lea como una
          sola cuadrícula y no como dos listas apiladas. -->
     <DataTemplate DataType="vm:SkillFolderCardViewModel">
-      <Button Classes="skill-card" Height="210" Margin="8"
+      <Button Classes="skill-card" Classes.drag-over="{Binding IsDropTarget}" Height="210" Margin="8"
               DragDrop.AllowDrop="True"
               DragDrop.DragEnter="FolderCard_DragEnter"
               DragDrop.DragOver="FolderCard_DragOver"
+              DragDrop.DragLeave="FolderCard_DragLeave"
               DragDrop.Drop="FolderCard_Drop"
               Command="{Binding $parent[ItemsControl].((vm:SkillsViewModel)DataContext).OpenFolderCardCommand}"
               CommandParameter="{Binding}"
@@ -250,6 +251,7 @@
            cómo navegar que se toma mientras se navega, y desde aquí se ve el efecto al instante. -->
       <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" Margin="36,0,36,12">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+          <Button Classes="pill-primary" Command="{Binding NewSkillCommand}" Content="{loc:Tr Skills_NewSkill, Converter={StaticResource UpperCaseConverter}}" />
           <Button Classes="pill" Command="{Binding ImportSkillsCommand}"
                   ToolTip.Tip="{loc:Tr Skills_Import_Tooltip}">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -316,28 +318,12 @@
       <views:TagFilterView Grid.Row="2" DataContext="{Binding TagFilter}" Margin="36,0,36,12" />
 
       <!-- Banner de comunidad: fila delgada integrada, sin tooltip flotante. -->
-      <Button Grid.Row="3" Classes="card" Margin="36,0,36,18" Padding="18,16"
-              Command="{Binding OpenCommunitySkillsCommand}">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <mi:MaterialIcon Grid.Column="0" Kind="CompassOutline" Width="22" Height="22"
-                           Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,14,0" />
-          <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-            <TextBlock Text="{loc:Tr Skills_Community_Title}" FontWeight="Bold" FontSize="12.5" LetterSpacing="0.3" />
-            <TextBlock Text="{loc:Tr Skills_Community_Description}"
-                       Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
-          </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                      Margin="16,0,0,0">
-            <TextBlock Text="{Binding CommunitySkillsUrlDisplay}" Classes="faint" FontSize="11" VerticalAlignment="Center" />
-            <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" VerticalAlignment="Center" />
-          </StackPanel>
-        </Grid>
-      </Button>
+      <TextBlock Grid.Row="3" Text="{loc:Tr Skills_DropHint}" Classes="muted" Margin="36,0,36,16" TextWrapping="Wrap" />
 
       <!-- Grid principal: panel de carpetas + rejilla + panel de detalle. -->
       <Grid Grid.Row="4" Margin="36,0,36,24">
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="240" MinWidth="180" MaxWidth="420" />
+          <ColumnDefinition Width="240" MinWidth="180" MaxWidth="480" />
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
@@ -443,7 +429,7 @@
               </Border>
               <TextBlock Text="{loc:Tr Skills_Empty_Title}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Tr Skills_Empty_Description}"
-                         Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" />
+                         Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="480" />
               <Button Classes="pill" Command="{Binding ImportSkillsCommand}" HorizontalAlignment="Center" Margin="0,8,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" />
@@ -469,13 +455,13 @@
               </Border>
               <TextBlock Text="{loc:Tr Skills_NoResults_Title}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" />
               <TextBlock Text="{Binding NoSearchResultsMessage}"
-                         Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" />
+                         Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="480" />
             </StackPanel>
           </Panel>
         </Border>
 
         <!-- ===================== Panel de detalle / inspector ===================== -->
-        <Border Grid.Column="3" Width="420" Margin="18,0,0,0"
+        <Border Grid.Column="0" Grid.ColumnSpan="4" Margin="0"
                 IsVisible="{Binding SelectedSkill, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
           <views:SkillDetailView />
         </Border>

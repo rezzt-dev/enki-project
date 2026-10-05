@@ -6152,4 +6152,16 @@ Feliz escritura.</value>
   <data name="Settings_Appearance_Motion_Description" xml:space="preserve"><value>Normales: transiciones completas y efectos decorativos. Sutiles: transiciones breves sin desplazamientos decorativos.</value></data>
   <data name="Settings_Appearance_Motion_Subtle" xml:space="preserve"><value>Sutiles</value></data>
   <data name="Settings_Appearance_Motion_Normal" xml:space="preserve"><value>Normales</value></data>
+  <data name="Skills_NewSkill" xml:space="preserve"><value>Nueva skill</value></data>
+  <data name="Skills_TemplateBody" xml:space="preserve"><value>Describe el objetivo, las instrucciones y el formato de respuesta de esta skill.</value></data>
+  <data name="Skills_WorkspaceTitle" xml:space="preserve"><value>TU BIBLIOTECA DE IA</value></data>
+  <data name="Skills_DropHint" xml:space="preserve"><value>Arrastra archivos Markdown aquí o sobre una carpeta para importarlos.</value></data>
+  <data name="Skills_EditorHelp" xml:space="preserve"><value>Edita el frontmatter y las instrucciones en Markdown. Los cambios se guardan automáticamente.</value></data>
+  <data name="Skills_Source" xml:space="preserve"><value>Código Markdown</value></data>
+  <data name="Skills_Save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="Skills_Preview" xml:space="preserve"><value>Lectura</value></data>
+  <data name="Skills_ExternalChange" xml:space="preserve"><value>El archivo ha cambiado fuera del editor. El borrador se conserva; copia tus cambios antes de volver a abrirlo.</value></data>
+  <data name="Skills_Metadata" xml:space="preserve"><value>Metadatos</value></data>
+  <data name="Skills_Reload" xml:space="preserve"><value>Recargar desde disco</value></data>
+  <data name="Skills_DiscardWarning" xml:space="preserve"><value>Se descartarán los cambios sin guardar de esta skill. Copia el borrador antes de continuar si quieres conservarlo.</value></data>
 </root>

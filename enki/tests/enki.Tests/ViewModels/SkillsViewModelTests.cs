@@ -62,6 +62,7 @@ public class SkillsViewModelTests : IDisposable
         Assert.Same(editor, viewModel.ActiveEditor);
         Assert.True(editor.IsDirty);
         Directory.Delete(path);
+        File.WriteAllText(path, editor.Skill.Content);
         viewModel.CloseEditorCommand.Execute(null);
         Assert.Null(viewModel.ActiveEditor);
         Assert.Contains("Borrador pendiente", File.ReadAllText(path));
@@ -203,4 +204,121 @@ public class SkillsViewModelTests : IDisposable
         Assert.Null(viewModel.PendingDeleteFolder);
         Assert.False(Directory.Exists(folder.FullPath));
     }
+    [Fact]
+    public void NewSkill_UsesActiveFolderAndOpensEditor()
+    {
+        var vm = CreateViewModel(out var directory, out _);
+        Directory.CreateDirectory(Path.Combine(directory, "custom"));
+        vm.Reload();
+        vm.SelectTreeItemCommand.Execute(vm.SkillTreeRoots.Single());
+        vm.NewSkillCommand.Execute(null);
+        vm.NamePrompt!.InputText = "Analista";
+        vm.ConfirmNamePromptCommand.Execute(null);
+        Assert.NotNull(vm.ActiveEditor);
+        Assert.Equal("Analista", vm.ActiveEditor!.Title);
+        Assert.True(File.Exists(Path.Combine(directory, "custom", "Analista.md")));
+        vm.CloseEditorCommand.Execute(null);
+    }
+
+    [Fact]
+    public void ImportConflict_KeepsDropDestinationWhenNavigationChanges()
+    {
+        var vm = CreateViewModel(out var directory, out _);
+        var target = Path.Combine(directory, "target");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "skill.md"), "Anterior");
+        var source = Path.Combine(_storageDirectory, "skill.md");
+        File.WriteAllText(source, "Importada");
+        vm.Reload();
+        vm.BeginImport([source], target);
+        Assert.True(vm.HasImportConflicts);
+        vm.SelectFolderCommand.Execute(null);
+        vm.ResolveImportRenameCommand.Execute(null);
+        Assert.Equal("Anterior", File.ReadAllText(Path.Combine(target, "skill.md")));
+        Assert.Equal("Importada", File.ReadAllText(Path.Combine(target, "skill 2.md")));
+        Assert.False(File.Exists(Path.Combine(directory, "skill.md")));
+    }
+
+    [Fact]
+    public void RenameTreeFolder_ReentrantCommitDoesNotReloadAgain()
+    {
+        var vm = CreateViewModel(out var directory, out _);
+        vm.NewTreeFolderAtRootCommand.Execute(null);
+        var folder = vm.SkillTreeRoots.Single();
+        folder.EditingName = "Renamed";
+        // Simula LostFocus durante la reconstrucción provocada por Enter.
+        vm.SkillTreeRoots.CollectionChanged += (_, _) => vm.CommitRenameTreeItemCommand.Execute(folder);
+        vm.CommitRenameTreeItemCommand.Execute(folder);
+        Assert.True(Directory.Exists(Path.Combine(directory, "Renamed")));
+        Assert.False(folder.IsRenaming);
+    }
+
+    [Fact]
+    public void MoveOpenSkill_FlushesDraftWithoutRecreatingOldPath()
+    {
+        var (vm, path) = CreateViewModelWithOneSkill();
+        var skill = vm.Skills.Single();
+        vm.EditSkillCommand.Execute(skill);
+        vm.ActiveEditor!.Text = "Borrador";
+        var target = Path.Combine(Path.GetDirectoryName(path)!, "target");
+        vm.MoveSkillToFolder(skill, target);
+        Assert.Null(vm.ActiveEditor);
+        Assert.False(File.Exists(path));
+        Assert.Contains("Borrador", File.ReadAllText(Path.Combine(target, Path.GetFileName(path))));
+    }
+
+    [Fact]
+    public void EmptyFolder_ShowsEmptyStateDespiteParentNavigationCard()
+    {
+        var vm = CreateViewModel(out var directory, out _);
+        Directory.CreateDirectory(Path.Combine(directory, "empty"));
+        vm.Reload();
+        vm.SelectFolderCommand.Execute(vm.RootFolders.Single());
+        Assert.True(vm.IsCurrentFolderEmpty);
+    }
+
+    [Fact]
+    public void Reload_PreservesExportSelection()
+    {
+        var (vm, _) = CreateViewModelWithOneSkill();
+        vm.Skills.Single().IsCheckedForExport = true;
+        vm.NewTreeFolderAtRootCommand.Execute(null);
+        Assert.True(vm.Skills.Single().IsCheckedForExport);
+    }
+
+    [Fact]
+    public void ExternalChange_ReloadRequiresExplicitConfirmationAndKeepsDraftUntilThen()
+    {
+        var (vm, path) = CreateViewModelWithOneSkill();
+        vm.EditSkillCommand.Execute(vm.Skills.Single());
+        var editor = vm.ActiveEditor!;
+        editor.Text = "Borrador";
+        File.WriteAllText(path, "Contenido externo");
+        editor.FlushPendingSave();
+        Assert.True(editor.IsDirty);
+        Assert.NotNull(editor.SaveError);
+        editor.RequestReloadCommand.Execute(null);
+        Assert.Equal("Borrador", editor.Text);
+        editor.CancelReloadCommand.Execute(null);
+        Assert.Equal("Borrador", editor.Text);
+        editor.RequestReloadCommand.Execute(null);
+        editor.ConfirmReloadCommand.Execute(null);
+        Assert.Equal("Contenido externo", editor.Text);
+        Assert.False(editor.IsDirty);
+        vm.CloseEditorCommand.Execute(null);
+        Assert.Null(vm.ActiveEditor);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Export_FlushesPendingDraftBeforeOpeningPicker()
+    {
+        var (vm, path) = CreateViewModelWithOneSkill();
+        vm.EditSkillCommand.Execute(vm.Skills.Single());
+        vm.ActiveEditor!.Text = "Última edición";
+        await vm.ExportSkillsCommand.ExecuteAsync(null);
+        Assert.Contains("Última edición", File.ReadAllText(path));
+        Assert.False(vm.ActiveEditor.IsDirty);
+        vm.CloseEditorCommand.Execute(null);
+    }
+
 }

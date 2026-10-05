@@ -5,66 +5,41 @@
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:views="clr-namespace:enki.Views"
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="440" d:DesignHeight="760"
              x:Class="enki.Views.SkillDetailView"
              x:Name="DetailRoot"
              x:DataType="vm:SkillsViewModel">
 
-  <!-- Inspector de la skill seleccionada. Su DataContext es el SkillsViewModel de la sección, no la
-       propia SkillViewModel: los botones de abajo (editar, duplicar, exportar, eliminar) son comandos de
-       la sección, y hacer que el control cuelgue del viewmodel de sección es lo que permite reutilizarlo
-       tal cual desde las dos disposiciones —la rejilla del explorador y el panel derecho del árbol— sin
-       que ninguna tenga que reencaminar bindings.
-
-       Los datos de la skill se leen del DataContext anidado de la tarjeta interior. -->
-
-  <Border Classes="card" Background="{DynamicResource AppBackgroundAltBrush}" Padding="24"
-          DataContext="{Binding SelectedSkill}" x:DataType="vm:SkillViewModel">
-    <ScrollViewer>
-      <StackPanel Spacing="20">
-        <Grid ColumnDefinitions="*,Auto">
-          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
-            <TextBlock Text="{Binding Emoji}" FontSize="26"
-                       IsVisible="{Binding Emoji, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-            <StackPanel Spacing="4">
-              <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="17" TextWrapping="Wrap" />
-              <Border Background="{DynamicResource Ink10}" Padding="6,3" HorizontalAlignment="Left" IsVisible="{Binding IsDefault}">
-                <TextBlock Text="{loc:Tr Skills_Badge_DefaultReadOnly, Converter={StaticResource UpperCaseConverter}}" FontFamily="{DynamicResource InterfaceLabelFontFamily}" FontSize="9"
-                           FontWeight="Bold" LetterSpacing="0.8" Foreground="{DynamicResource TextSecondaryBrush}" />
-              </Border>
-            </StackPanel>
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundAltBrush}">
+    <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,1,0" Padding="24">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding SelectedSkill.Emoji}" FontSize="22" IsVisible="{Binding SelectedSkill.Emoji, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding SelectedSkill.Name}" FontSize="28" FontWeight="Bold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding SelectedSkill.Description}" Classes="muted" TextWrapping="Wrap" FontSize="14" />
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="{Binding SelectedSkill.RelativeFolderPath}" Classes="muted" IsVisible="{Binding SelectedSkill.HasFolder}" />
+            <TextBlock Text="{loc:Tr Skills_Detail_Location_Root}" Classes="muted" IsVisible="{Binding !SelectedSkill.HasFolder}" />
+            <TextBlock Text="{loc:Tr Skills_Badge_DefaultReadOnly}" Classes="muted" IsVisible="{Binding SelectedSkill.IsDefault}" />
           </StackPanel>
-          <Button Grid.Column="1" Classes="icon-btn" Width="28" Height="28"
-                  Command="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).SelectSkillCommand}"
-                  ToolTip.Tip="{loc:Tr Skills_Detail_Close_Tooltip}"
-                  AutomationProperties.Name="{loc:Tr Skills_Detail_Close_Tooltip}">
-            <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
-          </Button>
-        </Grid>
-
-        <!-- Ubicación en la biblioteca: la carpeta en la que vive la skill, o "raíz" si no está en
-             ninguna. Es la única pieza del inspector que la organización por carpetas añade, y va arriba
-             del todo porque responde al "¿dónde está esto?" antes que a cualquier otra cosa. -->
-        <StackPanel Spacing="6">
-          <TextBlock Text="{loc:Tr Skills_Detail_Location_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-          <StackPanel Orientation="Horizontal" Spacing="7">
-            <mi:MaterialIcon Kind="FolderOutline" Width="12" Height="12" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding RelativeFolderPath}" Classes="muted" FontSize="12" VerticalAlignment="Center"
-                       TextTrimming="CharacterEllipsis" IsVisible="{Binding HasFolder}" />
-            <TextBlock Text="{loc:Tr Skills_Detail_Location_Root}" Classes="faint" FontSize="12" VerticalAlignment="Center"
-                       IsVisible="{Binding !HasFolder}" />
-          </StackPanel>
-        </StackPanel>
-
-        <StackPanel Spacing="6">
-          <TextBlock Text="{loc:Tr Skills_Detail_Description_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-          <TextBlock Text="{Binding Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap"
-                     IsVisible="{Binding HasDescription}" />
-          <TextBlock Text="{loc:Tr Skills_NoDescription}" Classes="faint" FontStyle="Italic" FontSize="12"
-                     IsVisible="{Binding !HasDescription}" />
-        </StackPanel>
-
+          <StackPanel x:Name="MetadataSection" IsVisible="{Binding SelectedSkill.HasMetadata}">
+            <ToggleButton x:Name="MetadataToggle" Classes="tag-chip toolbar-chip"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Center" IsChecked="False"
+                          AutomationProperties.Name="{loc:Tr Skills_Metadata}">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Tr Skills_Metadata, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+                <mi:MaterialIcon Grid.Column="1" Width="16" Height="16" Margin="12,0,0,0"
+                                 Kind="{Binding #MetadataToggle.IsChecked, Converter={StaticResource ExpandChevronConverter}}" />
+              </Grid>
+            </ToggleButton>
+            <Border x:Name="MetadataContent" IsVisible="{Binding #MetadataToggle.IsChecked}"
+                    BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,1,1"
+                    Background="{DynamicResource AppBackgroundAltBrush}" Padding="16" CornerRadius="0">
+            <ScrollViewer MaxHeight="180" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel DataContext="{Binding SelectedSkill}" x:DataType="vm:SkillViewModel" Spacing="12">
         <StackPanel Spacing="6" IsVisible="{Binding Model.Vibe, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}">
           <TextBlock Text="{loc:Tr Skills_Detail_Vibe_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
           <TextBlock Text="{Binding Model.Vibe}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
@@ -133,70 +108,37 @@
           </ItemsControl>
         </StackPanel>
 
-        <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="{loc:Tr Skills_Detail_Content_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="icon-btn" Width="24" Height="24"
-                    Command="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).CopySkillContentCommand}"
-                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Skills_Detail_CopyContent_Tooltip}"
-                    AutomationProperties.Name="{loc:Tr Skills_Detail_CopyContent_Tooltip}">
-              <mi:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
-            </Button>
-          </Grid>
-          <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
-                  BorderThickness="1" Padding="14,12" MaxHeight="280">
-            <ScrollViewer>
-              <TextBlock Text="{Binding Model.Content}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="11"
-                         TextWrapping="Wrap" LineHeight="18" />
+              </StackPanel>
             </ScrollViewer>
-          </Border>
+            </Border>
+          </StackPanel>
         </StackPanel>
-
-        <Grid ColumnDefinitions="Auto,*">
-          <mi:MaterialIcon Grid.Column="0" Kind="FileOutline" Width="12" Height="12"
-                            Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,7,0" />
-          <TextBlock Grid.Column="1" Text="{Binding Model.FilePath}" Classes="faint" VerticalAlignment="Center"
-                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Model.FilePath}" />
-        </Grid>
-
-        <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
-
-        <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,*,*">
-            <Button Grid.Column="0" Classes="pill" HorizontalAlignment="Stretch" Margin="0,0,6,0"
-                    Command="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).EditSkillCommand}"
-                    CommandParameter="{Binding}">
-              <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
-                <TextBlock Text="{loc:Tr Skills_Detail_EditButton, Converter={StaticResource UpperCaseConverter}}" />
-              </StackPanel>
-            </Button>
-            <Button Grid.Column="1" Classes="pill" HorizontalAlignment="Stretch" Margin="0,0,6,0"
-                    Command="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).DuplicateSkillCommand}"
-                    CommandParameter="{Binding}">
-              <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
-                <TextBlock Text="{loc:Tr Skills_Detail_DuplicateButton, Converter={StaticResource UpperCaseConverter}}" />
-              </StackPanel>
-            </Button>
-            <Button Grid.Column="2" Classes="pill export-hover" Classes.pill-primary="{Binding IsDefault}" HorizontalAlignment="Stretch"
-                    Command="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).ExportSkillsCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="TrayArrowUp" Width="13" Height="13" />
-                <TextBlock Text="{loc:Tr Skills_Export_Button, Converter={StaticResource UpperCaseConverter}}" />
-              </StackPanel>
-            </Button>
-          </Grid>
-          <Button Classes="pill-primary-danger" HorizontalAlignment="Stretch" IsVisible="{Binding !IsDefault}"
-                  Command="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).RequestDeleteSkillCommand}"
-                  CommandParameter="{Binding}">
-            <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
-              <TextBlock Text="{loc:Tr Skills_Detail_DeleteButton, Converter={StaticResource UpperCaseConverter}}" />
-            </StackPanel>
+        <Button Grid.Column="1" Classes="icon-btn" VerticalAlignment="Top" Command="{Binding SelectSkillCommand}"
+                ToolTip.Tip="{loc:Tr Skills_Detail_Close_Tooltip}" AutomationProperties.Name="{loc:Tr Skills_Detail_Close_Tooltip}">
+          <mi:MaterialIcon Kind="Close" Width="18" Height="18" />
+        </Button>
+      </Grid>
+    </Border>
+    <Border Grid.Row="1" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="0">
+      <views:SkillEditorView PreviewText="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).SelectedSkill.Model.Content}" DataContext="{x:Null}" IsReadOnly="True" />
+    </Border>
+    <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,1,1" Padding="16">
+      <StackPanel Spacing="12">
+        <TextBlock Text="{Binding SelectedSkill.FilePath}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SelectedSkill.FilePath}" />
+        <WrapPanel Orientation="Horizontal">
+          <Button Classes="pill-primary" Command="{Binding EditSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,8" Content="{loc:Tr Skills_Detail_EditButton, Converter={StaticResource UpperCaseConverter}}" />
+          <Button Classes="pill" Command="{Binding DuplicateSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,8" Content="{loc:Tr Skills_Detail_DuplicateButton, Converter={StaticResource UpperCaseConverter}}" />
+          <Button Classes="pill" Command="{Binding ExportSkillsCommand}" Margin="0,0,8,8" Content="{loc:Tr Skills_Export_Button, Converter={StaticResource UpperCaseConverter}}" />
+          <Button Classes="icon-btn" Command="{Binding CopySkillContentCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,8"
+                  ToolTip.Tip="{loc:Tr Skills_Detail_CopyContent_Tooltip}" AutomationProperties.Name="{loc:Tr Skills_Detail_CopyContent_Tooltip}">
+            <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" />
           </Button>
-        </StackPanel>
+          <Button Classes="icon-btn icon-btn-danger" Command="{Binding RequestDeleteSkillCommand}" CommandParameter="{Binding SelectedSkill}" IsVisible="{Binding !SelectedSkill.IsDefault}"
+                  ToolTip.Tip="{loc:Tr Skills_Detail_DeleteButton}" AutomationProperties.Name="{loc:Tr Skills_Detail_DeleteButton}">
+            <mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
+          </Button>
+        </WrapPanel>
       </StackPanel>
-    </ScrollViewer>
-  </Border>
+    </Border>
+  </Grid>
 </UserControl>

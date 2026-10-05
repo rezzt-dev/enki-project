@@ -1602,7 +1602,7 @@
   <Style Selector="Button.file-card:focus-visible /template/ ContentPresenter">
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
   </Style>
-  <Style Selector="Button.file-card.drag-over /template/ ContentPresenter">
+  <Style Selector="Button.file-card.drag-over /template/ ContentPresenter, Button.skill-card.drag-over /template/ ContentPresenter">
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
     <Setter Property="Background" Value="{DynamicResource Ink05}" />
   </Style>

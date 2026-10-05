@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using AvaloniaEdit.Search;
 using enki.Services;
@@ -16,12 +18,103 @@ namespace enki.Views;
 /// §13: "no reutilizar EditorViewModel/EditorView... sí reutilizar los colorizadores").</summary>
 public partial class SkillEditorView : UserControl
 {
+    public static readonly StyledProperty<string?> PreviewTextProperty =
+        AvaloniaProperty.Register<SkillEditorView, string?>(nameof(PreviewText));
+    public static readonly StyledProperty<bool> IsReadOnlyProperty =
+        AvaloniaProperty.Register<SkillEditorView, bool>(nameof(IsReadOnly));
+
+    public string? PreviewText { get => GetValue(PreviewTextProperty); set => SetValue(PreviewTextProperty, value); }
+    public bool IsReadOnly { get => GetValue(IsReadOnlyProperty); set => SetValue(IsReadOnlyProperty, value); }
+
+    private MarkdownLivePreviewColorizer? _colorizer;
+    private MarkdownElementGenerator? _elementGenerator;
+    private MarkdownBackgroundRenderer? _backgroundRenderer;
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (Editor is null) return;
+        if (change.Property == PreviewTextProperty && IsReadOnly)
+            SetPreviewDocument();
+        if (change.Property == IsReadOnlyProperty)
+        {
+            Editor.IsReadOnly = IsReadOnly;
+            Editor.ShowLineNumbers = !IsReadOnly || SourceToggle.IsChecked == true;
+            SaveButton.IsVisible = !IsReadOnly;
+            FormattingTools.IsVisible = !IsReadOnly;
+            EditorStatus.IsVisible = !IsReadOnly;
+            if (IsReadOnly) SetPreviewDocument();
+        }
+    }
+
+    private void SourceToggle_Changed(object? sender, RoutedEventArgs e)
+    {
+        if (_colorizer is null) return;
+        var view = Editor.TextArea.TextView;
+        view.LineTransformers.Remove(_colorizer);
+        view.ElementGenerators.Remove(_elementGenerator!);
+        view.BackgroundRenderers.Remove(_backgroundRenderer!);
+        _livePreviewState.TableFolding?.Reset();
+        if (SourceToggle.IsChecked != true)
+        {
+            view.LineTransformers.Add(_colorizer);
+            view.ElementGenerators.Add(_elementGenerator!);
+            view.BackgroundRenderers.Add(_backgroundRenderer!);
+        }
+        Editor.FontFamily = SourceToggle.IsChecked == true ? _style.MonoFontFamily : _style.BodyFontFamily;
+        Editor.ShowLineNumbers = SourceToggle.IsChecked == true || !IsReadOnly;
+        if (IsReadOnly) SetPreviewDocument();
+        view.Redraw();
+    }
+
+    private void Format_Click(object? sender, RoutedEventArgs e)
+    {
+        if (IsReadOnly || sender is not Button { Tag: string action }) return;
+        ApplyFormat(action);
+    }
+
+    private void ApplyFormat(string action)
+    {
+        var selection = Editor.SelectionLength > 0
+            ? new MdSelection(Editor.SelectionStart, Editor.SelectionLength) : MdSelection.Caret(Editor.CaretOffset);
+        var result = action switch
+        {
+            "bold" => MarkdownEditing.ToggleInline(Editor.Document, selection, "**"),
+            "italic" => MarkdownEditing.ToggleInline(Editor.Document, selection, "_"),
+            "heading" => MarkdownEditing.ToggleHeading(Editor.Document, selection, 2),
+            "list" => MarkdownEditing.ToggleList(Editor.Document, selection, MdBlockKind.BulletList),
+            "code" => MarkdownEditing.InsertCodeBlock(Editor.Document, selection),
+            _ => selection
+        };
+        Editor.Select(result.Start, result.Length);
+        Editor.CaretOffset = result.End;
+        Editor.Focus();
+    }
+
+    private void SetPreviewDocument() => SetDocument(SourceToggle.IsChecked == true
+        ? PreviewText ?? string.Empty : SkillService.GetMarkdownBody(PreviewText ?? string.Empty));
+
+    private void SetDocument(string text)
+    {
+        _suppressTextChanged = true;
+        try
+        {
+            _livePreviewState.TableFolding?.Reset();
+            Editor.Text = text;
+            Editor.Document.UndoStack.ClearAll();
+            RecomputeFences();
+            OnCaretOrSelectionChanged();
+        }
+        finally { _suppressTextChanged = false; }
+    }
+
     private static readonly FontFamily BundledEditorFontFamily = new("avares://enki/assets/fonts#Space Grotesk");
     private static readonly FontFamily BundledCodeFontFamily = new("avares://enki/assets/fonts#JetBrainsMono Nerd Font Mono");
 
     private readonly LivePreviewState _livePreviewState = new();
     private readonly MarkdownStyle _style;
     private bool _suppressTextChanged;
+    private SkillEditorViewModel? _subscribedViewModel;
 
     public SkillEditorView()
     {
@@ -36,9 +129,9 @@ public partial class SkillEditorView : UserControl
         // del generador de elementos porque este le pregunta qué hay plegado.
         _livePreviewState.TableFolding = new MarkdownTableFolding(textView, _livePreviewState, _style);
 
-        textView.LineTransformers.Add(new MarkdownLivePreviewColorizer(_livePreviewState, _style));
-        textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
-        textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
+        textView.LineTransformers.Add(_colorizer = new MarkdownLivePreviewColorizer(_livePreviewState, _style));
+        textView.ElementGenerators.Add(_elementGenerator = new MarkdownElementGenerator(_livePreviewState, textArea, _style));
+        textView.BackgroundRenderers.Add(_backgroundRenderer = new MarkdownBackgroundRenderer(_livePreviewState, _style));
 
         textView.CurrentLineBackground = ResolveCurrentLineBrush();
         textView.CurrentLineBorder = null;
@@ -58,6 +151,22 @@ public partial class SkillEditorView : UserControl
         Editor.Options.InheritWordWrapIndentation = true;
 
         SearchPanel.Install(Editor);
+        Editor.KeyDown += (_, e) =>
+        {
+            if (!IsReadOnly && (e.KeyModifiers == KeyModifiers.Control || e.KeyModifiers == KeyModifiers.Meta)
+                && e.Key is Key.B or Key.I)
+            {
+                ApplyFormat(e.Key == Key.B ? "bold" : "italic");
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Key.S && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta))
+                && !IsReadOnly && DataContext is SkillEditorViewModel vm)
+            {
+                vm.FlushPendingSave();
+                e.Handled = true;
+            }
+        };
 
         textArea.Caret.PositionChanged += (_, _) => OnCaretOrSelectionChanged();
         textArea.SelectionChanged += (_, _) => OnCaretOrSelectionChanged();
@@ -69,8 +178,13 @@ public partial class SkillEditorView : UserControl
             EditorPreferences.Changed -= OnEditorPreferencesChanged;
             EditorPreferences.Changed += OnEditorPreferencesChanged;
             OnEditorPreferencesChanged();
+            SubscribeToEditor();
         };
-        DetachedFromVisualTree += (_, _) => EditorPreferences.Changed -= OnEditorPreferencesChanged;
+        DetachedFromVisualTree += (_, _) =>
+        {
+            EditorPreferences.Changed -= OnEditorPreferencesChanged;
+            if (_subscribedViewModel is not null) _subscribedViewModel.PropertyChanged -= OnEditorPropertyChanged;
+        };
     }
 
     private static IBrush ResolveCurrentLineBrush()
@@ -102,7 +216,7 @@ public partial class SkillEditorView : UserControl
         Editor.FontFamily = _style.BodyFontFamily = ResolveEditorFontFamily();
         Editor.FontSize = _style.BaseFontSize = EditorPreferences.FontSize;
         _style.MonoFontFamily = ResolveCodeFontFamily();
-        _livePreviewState.TableFolding?.Refresh();
+        RefreshTableFolding();
         Editor.TextArea.TextView.InvalidateMeasure();
         Editor.TextArea.TextView.Redraw();
     }
@@ -110,7 +224,7 @@ public partial class SkillEditorView : UserControl
     private void OnCaretOrSelectionChanged()
     {
         var textArea = Editor.TextArea;
-        _livePreviewState.CaretOffset = textArea.Caret.Offset;
+        _livePreviewState.CaretOffset = IsReadOnly ? -1 : textArea.Caret.Offset;
 
         var selections = new List<(int Start, int End)>();
         foreach (var segment in textArea.Selection.Segments)
@@ -119,8 +233,14 @@ public partial class SkillEditorView : UserControl
         }
         _livePreviewState.Selections = selections;
 
-        _livePreviewState.TableFolding?.Refresh();
+        RefreshTableFolding();
         textArea.TextView.Redraw();
+    }
+
+    private void RefreshTableFolding()
+    {
+        if (SourceToggle.IsChecked == true) _livePreviewState.TableFolding?.Reset();
+        else _livePreviewState.TableFolding?.Refresh();
     }
 
     private void RecomputeFences()
@@ -136,22 +256,28 @@ public partial class SkillEditorView : UserControl
     /// falta preservar el historial de deshacer entre skills, así que basta con volcar el texto.</summary>
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (DataContext is not SkillEditorViewModel vm) return;
+        SubscribeToEditor();
+        if (DataContext is SkillEditorViewModel vm && !IsReadOnly) SetDocument(vm.Text);
+    }
 
-        _suppressTextChanged = true;
-        // Una skill distinta es otro texto entero: los pliegues de la anterior ya no significan nada.
-        _livePreviewState.TableFolding?.Reset();
-        Editor.Text = vm.Text;
-        RecomputeFences();
-        OnCaretOrSelectionChanged();
-        _suppressTextChanged = false;
+    private void SubscribeToEditor()
+    {
+        if (_subscribedViewModel is not null) _subscribedViewModel.PropertyChanged -= OnEditorPropertyChanged;
+        _subscribedViewModel = DataContext as SkillEditorViewModel;
+        if (_subscribedViewModel is not null) _subscribedViewModel.PropertyChanged += OnEditorPropertyChanged;
+    }
+
+    private void OnEditorPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SkillEditorViewModel.Text) && sender is SkillEditorViewModel vm
+            && !IsReadOnly && Editor.Text != vm.Text) SetDocument(vm.Text);
     }
 
     private void OnEditorTextChanged(object? sender, EventArgs e)
     {
         RecomputeFences();
-        _livePreviewState.TableFolding?.Refresh();
+        RefreshTableFolding();
         if (_suppressTextChanged) return;
-        if (DataContext is SkillEditorViewModel vm) vm.Text = Editor.Text ?? string.Empty;
+        if (!IsReadOnly && DataContext is SkillEditorViewModel vm) vm.Text = Editor.Text ?? string.Empty;
     }
 }

@@ -23,6 +23,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - incorporar en `ajustes > notificaciones` un interruptor global, activo por defecto y persistido por vault, que detiene todos los avisos nuevos, toasts y sonidos sin borrar el historial; al reactivarlo se recuperan las preferencias de categoria, toast y sonido.
 - popup del boton "Hoy" del calendario: resumen del dia con los items pendientes y completados en orden alfabetico, cada uno abriendo su editor real, y un acceso "ver en el calendario" que cierra el popup y lleva la vista activa a hoy.
 - selector `ajustes > apariencia > animaciones` para elegir entre el perfil normal, predeterminado, y el sutil, guardado por vault y aplicado al instante; sutiles acorta las transiciones, elimina desplazamientos decorativos y reduce la animacion del grafo de sesiones sin ocultar indicadores funcionales.
+- crear skills desde la carpeta activa con una plantilla Markdown inicial, atajos `ctrl+n` y `ctrl+shift+n`, y un espacio vacio que permite importar o empezar una biblioteca de habilidades.
+- permitir soltar archivos Markdown externos sobre las carpetas, tarjetas, raiz y area de trabajo de Habilidades, conservando el destino elegido durante la resolucion de conflictos.
 
 #### CAMBIOS
 - actualizar en vivo las listas de recordatorios cuando otra pantalla modifica sus entidades, conservar el detalle abierto aunque deje de cumplir un filtro y ampliar los formularios y detalles para facilitar la lectura en ventanas estrechas.
@@ -44,6 +46,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - ajustar la cabecera, los estados vacios y los textos auxiliares de Kanban para que el selector de tablero y las acciones de gestion se adapten a ventanas estrechas y sean mas legibles.
 - unificar en mayusculas las acciones de menus contextuales, submenus, desplegables y dialogos de `kanban`, `archivos`, `notas`, `habilidades`, `calendario` y `ajustes`, con tipografia comun y pruebas de regresion, conservando el texto escrito por el usuario.
 - centralizar los perfiles de movimiento en `MotionService` y reemplazar revelados y transiciones dispersos por `MotionReveal`; preparar cada seccion antes de mostrarla, cancelar animaciones obsoletas y eliminar la interpolacion de ancho del panel del editor para evitar recomposiciones y repintados innecesarios.
+- redisenar el detalle y editor de Habilidades con lector Markdown a ancho completo, metadatos desplegables solo cuando existen, herramientas de formato, vista de codigo, guardado manual y atajos `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` y `ctrl+shift+n`.
+- ocultar las carpetas `*.attachments` de las vistas, busquedas y recuentos de Notas y Archivos, sin eliminar sus imagenes ni impedir que las notas las muestren.
 
 #### CORREGIDO
 - corregir la altura y la alineacion vertical de las filas de tablas Markdown con celdas en varias lineas, reservando el descenso del editor para que la rejilla no deje espacio adicional bajo el contenido.
@@ -55,6 +59,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - exportar a 2x sin ampliar ni recortar la imagen: el contenido rasterizado se pegaba con su tamano logico en vez de en pixeles del bitmap, asi que a 2x solo se copiaba el cuadrante superior izquierdo estirado al doble.
 - borde derecho de la ultima columna del tablero kanban vertical perdiendose con escalado fraccional (125%, 150%...); el margen negativo que alinea las columnas con la barra de herramientas ahora vive en el `ScrollViewer`, no en su contenido.
 - popup de comandos `/` del editor apareciendo un instante en su posicion anterior antes de recolocarse, y mal posicionado en una nota con scroll porque `CalculateCaretRectangle` no descontaba el desplazamiento del `TextView`.
+- evitar reentradas al renombrar carpetas de Habilidades, preservar las marcas de exportacion y el borrador al mover, borrar o cambiar de skill, y limpiar el historial de deshacer al abrir otro documento.
+- impedir que el editor de Habilidades sobrescriba cambios externos, conservar el borrador ante un fallo y permitir recargar desde disco tras confirmar el descarte; limpiar tambien los temporales fallidos.
+- impedir que un arrastre sobre una carpeta de Habilidades se propague a la raiz, admitir nombres que colisionan con archivos o carpetas y evitar importaciones de un archivo sobre si mismo.
+- corregir la alineacion vertical del boton `codigo markdown` y ocultar el desplegable de metadatos vacio en el detalle de Habilidades.
 
 ### ENGLISH
 
@@ -72,6 +80,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add a global switch under `settings > notifications`, enabled by default and persisted per vault, that stops all new log entries, toasts and sounds without deleting history; restoring it keeps the category, toast and sound preferences.
 - calendar "today" button popover: a summary of the day with pending and completed items in alphabetical order, each one opening its real editor, plus a "show in calendar" shortcut that closes the popover and jumps the active view to today.
 - a `settings > appearance > animations` selector for the default normal or subtle profile, persisted per vault and applied immediately; subtle shortens transitions, removes decorative translation and reduces session-graph animation without hiding functional indicators.
+- create skills from the active folder with an initial Markdown template, `ctrl+n` and `ctrl+shift+n` shortcuts, and an empty workspace that can import or start a skill library.
+- allow dropping external Markdown files onto Skills folders, cards, root and workspace, while retaining the chosen destination during conflict resolution.
 
 #### CHANGED
 - update reminder lists live when another screen modifies their entities, keep the open detail visible even when it no longer matches a filter, and widen forms and details for easier reading in narrow windows.
@@ -93,6 +103,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - adjust Kanban's header, empty states and supporting text so the board selector and management actions adapt to narrow windows and are more legible.
 - standardise actions in context menus, submenus, dropdowns and dialogs across `kanban`, `files`, `notes`, `skills`, `calendar` and `settings` in uppercase with shared typography and regression tests while preserving user-authored text.
 - centralise motion profiles in `MotionService` and replace scattered reveals and transitions with `MotionReveal`; prepare each section before showing it, cancel stale animations, and remove editor-side-panel width interpolation to avoid unnecessary relayouts and redraws.
+- redesign the Skills detail and editor with a full-width Markdown reader, metadata shown only when present, formatting tools, source view, manual save, and `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` and `ctrl+shift+n` shortcuts.
+- hide `*.attachments` folders from Notes and Files views, searches and counts without deleting their images or preventing notes from rendering them.
 
 #### FIXED
 - fix the height and vertical alignment of Markdown table rows with multiline cells, reserving the editor descent so the grid does not leave extra space below the content.
@@ -104,6 +116,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - export at 2x without enlarging or cropping the image: the rendered content was pasted using its logical size instead of the bitmap's pixel size, so at 2x only the top-left quadrant got copied and stretched.
 - vertical kanban board losing its last column's right border under fractional scaling (125%, 150%...); the negative margin that aligns the columns with the toolbar now lives on the `ScrollViewer`, not its content.
 - editor's `/` command popup flashing at its previous position before repositioning, and misplaced in a scrolled note because `CalculateCaretRectangle` didn't subtract the `TextView`'s scroll offset.
+- avoid re-entering Skills folder rename, preserve export selections and drafts when moving, deleting or switching skills, and clear undo history when opening another document.
+- prevent the Skills editor from overwriting external changes, retain the draft after a failure and allow reloading from disk after confirming discard; also clean up failed temporary files.
+- prevent a drop over a Skills folder from propagating to root, accept names colliding with files or folders, and skip importing a file onto itself.
+- fix vertical alignment for the `markdown source` button and hide empty metadata disclosure in the Skills detail.
 
 ## [0.2.0] - 2026-09-23
 
