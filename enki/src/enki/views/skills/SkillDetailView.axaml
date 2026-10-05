@@ -15,7 +15,7 @@
   <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundAltBrush}">
     <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,1,0" Padding="24">
       <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Spacing="8">
+        <StackPanel Spacing="8" Margin="0,0,16,0">
           <TextBlock Text="{Binding SelectedSkill.Emoji}" FontSize="22" IsVisible="{Binding SelectedSkill.Emoji, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
           <TextBlock Text="{Binding SelectedSkill.Name}" FontSize="28" FontWeight="Bold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding SelectedSkill.Description}" Classes="muted" TextWrapping="Wrap" FontSize="14" />
@@ -120,24 +120,31 @@
       </Grid>
     </Border>
     <Border Grid.Row="1" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="0">
-      <views:SkillEditorView PreviewText="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).SelectedSkill.Model.Content}" DataContext="{x:Null}" IsReadOnly="True" />
+      <views:SkillEditorView x:Name="DetailEditor" PreviewText="{Binding #DetailRoot.((vm:SkillsViewModel)DataContext).SelectedSkill.Model.Content}" DataContext="{x:Null}" IsReadOnly="True" />
     </Border>
-    <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,1,1" Padding="16">
+    <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,1,1" Padding="24,16">
       <StackPanel Spacing="12">
         <TextBlock Text="{Binding SelectedSkill.FilePath}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SelectedSkill.FilePath}" />
-        <WrapPanel Orientation="Horizontal">
-          <Button Classes="pill-primary" Command="{Binding EditSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,8" Content="{loc:Tr Skills_Detail_EditButton, Converter={StaticResource UpperCaseConverter}}" />
-          <Button Classes="pill" Command="{Binding DuplicateSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,8" Content="{loc:Tr Skills_Detail_DuplicateButton, Converter={StaticResource UpperCaseConverter}}" />
-          <Button Classes="pill" Command="{Binding ExportSkillsCommand}" Margin="0,0,8,8" Content="{loc:Tr Skills_Export_Button, Converter={StaticResource UpperCaseConverter}}" />
-          <Button Classes="icon-btn" Command="{Binding CopySkillContentCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,8"
-                  ToolTip.Tip="{loc:Tr Skills_Detail_CopyContent_Tooltip}" AutomationProperties.Name="{loc:Tr Skills_Detail_CopyContent_Tooltip}">
-            <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" />
-          </Button>
-          <Button Classes="icon-btn icon-btn-danger" Command="{Binding RequestDeleteSkillCommand}" CommandParameter="{Binding SelectedSkill}" IsVisible="{Binding !SelectedSkill.IsDefault}"
-                  ToolTip.Tip="{loc:Tr Skills_Detail_DeleteButton}" AutomationProperties.Name="{loc:Tr Skills_Detail_DeleteButton}">
-            <mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
-          </Button>
-        </WrapPanel>
+        <Grid ColumnDefinitions="*,Auto">
+          <WrapPanel Orientation="Horizontal" Margin="0,0,16,0">
+            <Button Classes="pill-primary" Command="{Binding EditSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Detail_EditButton, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="pill" Command="{Binding DuplicateSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Detail_DuplicateButton, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="pill" Command="{Binding ExportSkillsCommand}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Export_Button, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="icon-btn" Width="40" Height="40" Command="{Binding CopySkillContentCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center"
+                    ToolTip.Tip="{loc:Tr Skills_Detail_CopyContent_Tooltip}" AutomationProperties.Name="{loc:Tr Skills_Detail_CopyContent_Tooltip}">
+              <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger" Width="40" Height="40" VerticalAlignment="Center" Command="{Binding RequestDeleteSkillCommand}" CommandParameter="{Binding SelectedSkill}" IsVisible="{Binding !SelectedSkill.IsDefault}"
+                    ToolTip.Tip="{loc:Tr Skills_Detail_DeleteButton}" AutomationProperties.Name="{loc:Tr Skills_Detail_DeleteButton}">
+              <mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
+            </Button>
+          </WrapPanel>
+          <ToggleButton x:Name="DetailSourceToggle" Grid.Column="1" Classes="tag-chip toolbar-chip" Height="40"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                        IsChecked="{Binding IsSourceMode, ElementName=DetailEditor, Mode=TwoWay}"
+                        Content="{loc:Tr Skills_Source, Converter={StaticResource UpperCaseConverter}}" />
+        </Grid>
       </StackPanel>
     </Border>
   </Grid>

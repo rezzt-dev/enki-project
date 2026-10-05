@@ -10,10 +10,11 @@
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="enki.Views.SkillEditorView"
+             x:Name="EditorRoot"
              x:DataType="vm:SkillEditorViewModel">
 
   <Grid RowDefinitions="Auto,*,Auto">
-    <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="16,10">
+    <Border IsVisible="{Binding !IsReadOnly, ElementName=EditorRoot}" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="16,10">
       <Grid ColumnDefinitions="*,Auto,Auto">
         <StackPanel x:Name="FormattingTools" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
           <Button Classes="icon-btn" Tag="bold" Click="Format_Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_Bold_Tooltip}" AutomationProperties.Name="{loc:Tr Editor_Toolbar_Bold_Tooltip}"><mi:MaterialIcon Kind="FormatBold" Width="16" Height="16" /></Button>
@@ -23,6 +24,7 @@
           <Button Classes="icon-btn" Tag="code" Click="Format_Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}" AutomationProperties.Name="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}"><mi:MaterialIcon Kind="CodeBraces" Width="16" Height="16" /></Button>
         </StackPanel>
         <ToggleButton Grid.Column="1" x:Name="SourceToggle" Classes="tag-chip toolbar-chip" Content="{loc:Tr Skills_Source, Converter={StaticResource UpperCaseConverter}}"
+                      IsChecked="{Binding IsSourceMode, ElementName=EditorRoot, Mode=TwoWay}"
                       IsCheckedChanged="SourceToggle_Changed" Margin="8,0"
                       VerticalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" />
         <Button Grid.Column="2" x:Name="SaveButton" Classes="pill" Command="{Binding SaveCommand}" Content="{loc:Tr Skills_Save, Converter={StaticResource UpperCaseConverter}}" />

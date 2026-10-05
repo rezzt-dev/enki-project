@@ -23,6 +23,10 @@ public partial class SkillEditorView : UserControl
     public static readonly StyledProperty<bool> IsReadOnlyProperty =
         AvaloniaProperty.Register<SkillEditorView, bool>(nameof(IsReadOnly));
 
+    public static readonly StyledProperty<bool> IsSourceModeProperty =
+        AvaloniaProperty.Register<SkillEditorView, bool>(nameof(IsSourceMode));
+
+    public bool IsSourceMode { get => GetValue(IsSourceModeProperty); set => SetValue(IsSourceModeProperty, value); }
     public string? PreviewText { get => GetValue(PreviewTextProperty); set => SetValue(PreviewTextProperty, value); }
     public bool IsReadOnly { get => GetValue(IsReadOnlyProperty); set => SetValue(IsReadOnlyProperty, value); }
 

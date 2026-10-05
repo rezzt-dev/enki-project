@@ -205,11 +205,13 @@ public class SkillsViewUiTests : IDisposable
         window.Close();
     }
 
-    [Fact]
-    public void Detail_SourceToggleShowsFrontmatterWithoutChangingTheFile()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Detail_SourceToggleShowsFrontmatterWithoutChangingTheFile(bool treeMode)
     {
         SeedLibrary();
-        var (view, vm, window) = CreateView(true);
+        var (view, vm, window) = CreateView(treeMode);
         vm.SelectSkillCommand.Execute(vm.Skills.Single());
         window.GetLayoutManager()!.ExecuteLayoutPass();
         var preview = view.GetVisualDescendants().OfType<SkillEditorView>().Single(v => v.IsReadOnly);
@@ -217,8 +219,15 @@ public class SkillsViewUiTests : IDisposable
         Assert.True(editor.IsReadOnly);
         Assert.False(preview.FindControl<Border>("EditorStatus")!.IsVisible);
         Assert.DoesNotContain("name:", editor.Text);
-        preview.FindControl<Avalonia.Controls.Primitives.ToggleButton>("SourceToggle")!.IsChecked = true;
+        var detail = preview.FindAncestorOfType<SkillDetailView>()!;
+        var sourceToggle = detail.FindControl<Avalonia.Controls.Primitives.ToggleButton>("DetailSourceToggle")!;
+        Assert.True(sourceToggle.IsEffectivelyVisible);
+        Assert.False(preview.FindControl<Avalonia.Controls.Primitives.ToggleButton>("SourceToggle")!.IsEffectivelyVisible);
+        sourceToggle.IsChecked = true;
         Assert.Contains("name: Suelta", editor.Text);
+        sourceToggle.IsChecked = false;
+        Assert.DoesNotContain("name:", editor.Text);
+        Assert.False(editor.ShowLineNumbers);
         Assert.Equal(vm.SelectedSkill!.Model.Content, File.ReadAllText(vm.SelectedSkill.FilePath));
         window.Close();
     }

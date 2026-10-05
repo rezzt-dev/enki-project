@@ -47,6 +47,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - unificar en mayusculas las acciones de menus contextuales, submenus, desplegables y dialogos de `kanban`, `archivos`, `notas`, `habilidades`, `calendario` y `ajustes`, con tipografia comun y pruebas de regresion, conservando el texto escrito por el usuario.
 - centralizar los perfiles de movimiento en `MotionService` y reemplazar revelados y transiciones dispersos por `MotionReveal`; preparar cada seccion antes de mostrarla, cancelar animaciones obsoletas y eliminar la interpolacion de ancho del panel del editor para evitar recomposiciones y repintados innecesarios.
 - redisenar el detalle y editor de Habilidades con lector Markdown a ancho completo, metadatos desplegables solo cuando existen, herramientas de formato, vista de codigo, guardado manual y atajos `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` y `ctrl+shift+n`.
+- reorganizar el pie del detalle de Habilidades para alinear sus acciones, igualar la altura de los botones y situar `codigo markdown` a la derecha junto al resto de controles.
 - ocultar las carpetas `*.attachments` de las vistas, busquedas y recuentos de Notas y Archivos, sin eliminar sus imagenes ni impedir que las notas las muestren.
 
 #### CORREGIDO
@@ -104,6 +105,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - standardise actions in context menus, submenus, dropdowns and dialogs across `kanban`, `files`, `notes`, `skills`, `calendar` and `settings` in uppercase with shared typography and regression tests while preserving user-authored text.
 - centralise motion profiles in `MotionService` and replace scattered reveals and transitions with `MotionReveal`; prepare each section before showing it, cancel stale animations, and remove editor-side-panel width interpolation to avoid unnecessary relayouts and redraws.
 - redesign the Skills detail and editor with a full-width Markdown reader, metadata shown only when present, formatting tools, source view, manual save, and `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` and `ctrl+shift+n` shortcuts.
+- reorganise the Skills detail footer to align its actions, match button heights, and place `markdown code` on the right beside the remaining controls.
 - hide `*.attachments` folders from Notes and Files views, searches and counts without deleting their images or preventing notes from rendering them.
 
 #### FIXED
