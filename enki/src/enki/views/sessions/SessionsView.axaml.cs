@@ -224,16 +224,31 @@ public partial class SessionsView : UserControl
         if (_graphWebView is not null) return _graphWebView;
         if (!WebViewHost.IsEngineAvailable()) return null;
 
-        var webView = new NativeWebView
+        try
         {
-            Background = Application.Current?.TryFindResource("AppBackgroundAltBrush", out var bg) == true
-                ? bg as IBrush
-                : null
-        };
-        webView.WebMessageReceived += OnWebMessageReceived;
-        GraphContentHost.Content = webView;
-        _graphWebView = webView;
-        return webView;
+            var webView = new NativeWebView
+            {
+                Background = Application.Current?.TryFindResource("AppBackgroundAltBrush", out var bg) == true
+                    ? bg as IBrush
+                    : null
+            };
+            webView.WebMessageReceived += OnWebMessageReceived;
+            GraphContentHost.Content = webView;
+            _graphWebView = webView;
+            return webView;
+        }
+        catch (EntryPointNotFoundException ex)
+        {
+            // La verificación de WebViewHost.IsEngineAvailable() puede no capturar todos los casos
+            // donde la librería nativa falta símbolos críticos. Si el constructor de NativeWebView
+            // falla con EntryPointNotFoundException, es que la librería WPE/WebKitGTK no tiene el
+            // símbolo webkit_web_view_backend_new requerido.
+            LogService.Warning("La librería WebView nativa no tiene el símbolo requerido (webkit_web_view_backend_new). " +
+                "El grafo de sesiones no estará disponible.", ex);
+            GraphContentHost.Content = WebViewHost.BuildUnavailablePanel(
+                LocalizationService.Instance["Sessions_Graph_Unavailable"]);
+            return null;
+        }
     }
 
     /// <summary>Fase 10 (docs/analisis-proyecto/roadmap.md — "evaluar si el WebView del grafo de sesiones

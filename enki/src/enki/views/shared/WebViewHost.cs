@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -38,9 +39,43 @@ public static class WebViewHost
                 // Only WPE is safe to trust here: Avalonia's WebView package guards the WPE path with
                 // its own internal availability check before touching it, but falls through to a GTK
                 // adapter unconditionally otherwise — and that path can still crash the whole process
-                // via an unhandled async exception even when GetAdapterInfo(WebKitGtk) reports installed
-                // (observed firsthand: webkit2gtk present, but GTK itself failed to initialize here).
-                available = WebViewAdapterInfo.GetAdapterInfo(WebViewAdapterType.WpeWebKit).IsInstalled;
+                // via an unhandled async exception even when GetAdapterInfo(WebKitGtk) reports installed.
+                //
+                // Observed on rolling-release distros (Arch/XeroLinux): webkit2gtk-4.1 may be present but
+                // the symbol webkit_web_view_backend_new it exposes at runtime can be missing (the function
+                // was added later and some distro versions ship without it). Attaching a NativeWebView then
+                // throws EntryPointNotFoundException and takes down the process. WPE WebKit ships its own
+                // copy of the backend symbols and is therefore the only reliable adapter on Linux.
+                //
+                // When WPE is installed AND actually usable, use it; otherwise fail closed (no WebView) so
+                // the rest of the app keeps working and the user sees the unavailable-panel fallback.
+                //
+                // Defense in depth: even when GetAdapterInfo says WPE is installed, verify at runtime that
+                // the critical symbol webkit_web_view_backend_new exists in libWPEWebKit-2.0.so.1 (the
+                // function Avalonia's WpeWebViewAdapter.Initialize() calls). Some distro versions of WPE
+                // ship without it and would otherwise crash the process the moment a NativeWebView is
+                // attached. Only when the symbol is present do we consider the engine available.
+                var wpeInfo = WebViewAdapterInfo.GetAdapterInfo(WebViewAdapterType.WpeWebKit);
+                bool wpeInstalled = wpeInfo.IsInstalled && wpeInfo.Engine != WebViewEngine.Unknown;
+                if (wpeInstalled)
+                {
+                    // Check the critical symbol directly — this is the one whose absence crashes the
+                    // process. We load the exact same library name Avalonia's WpeInterop uses.
+                    try
+                    {
+                        var handle = NativeLibrary.Load("libWPEWebKit-2.0.so.1");
+                        available = NativeLibrary.TryGetExport(handle, "webkit_web_view_backend_new", out _);
+                        NativeLibrary.Free(handle);
+                    }
+                    catch
+                    {
+                        available = false;
+                    }
+                }
+                else
+                {
+                    available = false;
+                }
             }
             else
             {
