@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### ANADIDO
+- abrir la ventana principal y la de error de arranque centradas en la pantalla donde este el cursor, usando las APIs nativas de Windows, macOS y X11; si la posicion no esta disponible, incluido Wayland nativo, se conserva la colocacion habitual del sistema.
 - renderizador nativo de respaldo para el grafo de sesiones cuando `WebView2`, `WKWebView` o WPE no estan disponibles o no se cargan; conserva filtros, enlaces, apertura de notas, arrastre, posiciones y zoom sin dependencias del navegador.
 - busqueda y filtros para las listas de notificaciones y recordatorios, con resultados visibles, estado sin coincidencias, ordenacion por fecha y acciones para completar o reabrir recordatorios sin abandonar la lista.
 - reproductor integrado de audio y video en Archivos, con reproducir/pausar, detener, busqueda de posicion, volumen y silencio; libera el motor y las copias temporales cifradas al cerrar, cambiar, mover, renombrar, borrar o bloquear la sesion, y mantiene la accion para abrir con el sistema ante errores o formatos no compatibles.
@@ -70,6 +71,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- open the main window and the startup error window centred on the screen containing the cursor, using native Windows, macOS and X11 APIs; when the position is unavailable, including native Wayland, retain the system's usual placement.
 - a native fallback renderer for the session graph when `WebView2`, `WKWebView` or WPE are unavailable or fail to load; it retains filters, links, note opening, dragging, positions and zoom without browser dependencies.
 - search and filters for the notifications and reminders lists, with visible result counts, no-match state, date sorting and actions to complete or reopen reminders without leaving the list.
 - an integrated audio and video player in Files with play/pause, stop, seek, volume and mute controls; it releases the engine and encrypted temporary copies when closing, switching, moving, renaming, deleting or locking the session, and keeps the system-open action for errors or unsupported formats.

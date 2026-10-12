@@ -36,6 +36,7 @@ public partial class App : Application
                 MotionService.Apply(settingsService.Settings.UseSubtleAnimations);
 
                 var window = new MainWindow(settingsService);
+                StartupWindowPlacement.Apply(window);
                 MainWindowRef = window;
                 desktop.MainWindow = window;
             }
@@ -43,6 +44,7 @@ public partial class App : Application
             {
                 LogService.Error("No se pudo completar el arranque de Enki", ex);
                 var errorWindow = BuildStartupErrorWindow();
+                StartupWindowPlacement.Apply(errorWindow);
                 MainWindowRef = errorWindow;
                 desktop.MainWindow = errorWindow;
             }
