@@ -75,3 +75,8 @@ Pruebas en `SessionGraphAnalysisServiceTests`, `SessionsViewModelGraphFilterTest
 QA manual recomendado: abrir un vault con notas conectadas entre dos sesiones y notas sin sesión;
 combinar sesión/etiqueta/modo/grupo; comprobar el estado sin resultados y restablecer; navegar mediante
 doble clic; recorrer el popover con teclado y comprobar scroll con muchas sesiones/etiquetas.
+
+## Compatibilidad del renderizado
+
+Si el navegador del sistema no es utilizable, el grafo dispone de un renderizador Avalonia con las
+mismas acciones y filtros. Ver [grafo-compatibilidad-nativa.md](grafo-compatibilidad-nativa.md).

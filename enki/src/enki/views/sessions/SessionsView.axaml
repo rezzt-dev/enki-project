@@ -169,8 +169,7 @@
                 Background="{DynamicResource AppBackgroundAltBrush}">
 
           <Grid>
-            <!-- The NativeWebView (or the "unavailable" fallback) is attached here in code-behind, lazily
-                 and only after confirming the platform's WebView runtime is actually installed. -->
+            <!-- Renderizador web cuando es compatible; grafo Avalonia en ausencia de motor utilizable. -->
             <ContentControl x:Name="GraphContentHost" />
 
             <!-- Loading screen shown from the moment the graph document is handed to the WebView until it

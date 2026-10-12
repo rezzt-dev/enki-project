@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
 using Avalonia.Styling;
@@ -13,6 +15,7 @@ using enki.Localization;
 using enki.Services;
 using enki.ViewModels;
 using enki.Views;
+using enki.Views.Sessions;
 using Xunit;
 
 namespace enki.UITests;
@@ -86,6 +89,89 @@ public class SessionsGraphFiltersUiTests
             LocalizationService.Instance.SetLanguage(previousLanguage);
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnavailableOrUnresponsiveWebRuntime_ShowsInteractiveGraph_AndReattaches(bool unresponsive)
+    {
+        HeadlessApp.EnsureInitialized();
+        var directory = Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
+        Window? window = null;
+        try
+        {
+            var settings = new SettingsService(directory);
+            var vault = new VaultService(settings);
+            vault.InitializeVault(Path.Combine(directory, "vault"), false);
+            File.WriteAllText(Path.Combine(vault.VaultPath, "A.md"), "---\ntags: [ideas]\n---\n# A");
+            File.WriteAllText(Path.Combine(vault.VaultPath, "B.md"), "# B");
+            string? openedPath = null;
+            var vm = new SessionsViewModel(vault, new SessionService(vault),
+                new NotificationService(settings, directory), (_, note) => openedPath = note?.FullPath, () => { });
+            AwaitLoad(vm);
+            var view = new SessionsView(() => unresponsive) { DataContext = vm };
+            if (unresponsive)
+            {
+                // Sin adjuntar al árbol visual no se inicia ningún adaptador de sistema: simulamos
+                // un documento que nunca confirma «ready», y comprobamos el temporizador real.
+                vm.GraphTagFilters.Single(f => f.GroupId == "ideas").IsActive = true;
+                AwaitNativeGraph(view);
+                Assert.Equal(1, ((NativeSessionGraph)view.FindControl<ContentControl>("GraphContentHost")!.Content!).NodeCount);
+                vm.ResetGraphFiltersCommand.Execute(null);
+            }
+            window = new Window { Content = view, Width = 1200, Height = 850 };
+            window.Show();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var graph = view.GetVisualDescendants().OfType<NativeSessionGraph>().Single();
+            Assert.DoesNotContain(view.GetVisualDescendants(), control => control is NativeWebView);
+            Assert.Equal(2, graph.NodeCount);
+            // El mismo filtro que utiliza el popover debe actualizar el renderizador de compatibilidad.
+            vm.GraphTagFilters.Single(f => f.GroupId == "ideas").IsActive = true;
+            Assert.Equal(1, graph.NodeCount);
+            vm.ResetGraphFiltersCommand.Execute(null);
+            Assert.Equal(2, graph.NodeCount);
+            using (var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(1200, 850)))
+                bitmap.Render(view);
+            var point = graph.TranslatePoint(graph.NodeScreenPosition(enki.Models.SessionGraph.RootGroupId + "::A.md"), window)!.Value;
+            window.MouseMove(point);
+            window.MouseDown(point, MouseButton.Left);
+            window.MouseUp(point, MouseButton.Left);
+            window.MouseDown(point, MouseButton.Left);
+            window.MouseUp(point, MouseButton.Left);
+            Assert.Equal(Path.Combine(vault.VaultPath, "A.md"), openedPath);
+
+            window.Content = null;
+            // Esta instancia vuelve a comprobar el motor al reentrar; ahora forzamos que falte.
+            unresponsive = false;
+            window.Content = view;
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var recreated = view.GetVisualDescendants().OfType<NativeSessionGraph>().Single();
+            Assert.NotSame(graph, recreated);
+            Assert.Equal(2, recreated.NodeCount);
+            vm.GraphExplorationIndex = 1;
+            Assert.Equal(vm.NodeCount, recreated.NodeCount);
+        }
+        finally
+        {
+            window?.Close();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    private static void AwaitNativeGraph(SessionsView view)
+    {
+        var host = view.FindControl<ContentControl>("GraphContentHost")!;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        void OnContentChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
+        {
+            if (args.Property == ContentControl.ContentProperty && host.Content is NativeSessionGraph)
+                timeout.Cancel();
+        }
+        host.PropertyChanged += OnContentChanged;
+        try { Dispatcher.UIThread.MainLoop(timeout.Token); }
+        finally { host.PropertyChanged -= OnContentChanged; }
+        Assert.IsType<NativeSessionGraph>(host.Content);
     }
 
     private static void AwaitLoad(SessionsViewModel vm)

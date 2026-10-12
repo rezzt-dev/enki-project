@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### ANADIDO
+- renderizador nativo de respaldo para el grafo de sesiones cuando `WebView2`, `WKWebView` o WPE no estan disponibles o no se cargan; conserva filtros, enlaces, apertura de notas, arrastre, posiciones y zoom sin dependencias del navegador.
 - busqueda y filtros para las listas de notificaciones y recordatorios, con resultados visibles, estado sin coincidencias, ordenacion por fecha y acciones para completar o reabrir recordatorios sin abandonar la lista.
 - reproductor integrado de audio y video en Archivos, con reproducir/pausar, detener, busqueda de posicion, volumen y silencio; libera el motor y las copias temporales cifradas al cerrar, cambiar, mover, renombrar, borrar o bloquear la sesion, y mantiene la accion para abrir con el sistema ante errores o formatos no compatibles.
 - previsualizacion de texto para documentos DOCX, XLSX, PPTX y OpenDocument, y listado seguro de rutas y tamanos para ZIP, JAR y paquetes NuGet; limita tamano, entradas, XML y salida, prohibe DTD y entidades externas, y no ejecuta macros, scripts, formulas ni enlaces externos.
@@ -51,6 +52,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - ocultar las carpetas `*.attachments` de las vistas, busquedas y recuentos de Notas y Archivos, sin eliminar sus imagenes ni impedir que las notas las muestren.
 
 #### CORREGIDO
+- evitar que el grafo de sesiones quede vacio o inutilizable si el navegador no confirma la carga o las bibliotecas WPE de linux son incompatibles; validar los simbolos nativos necesarios, cambiar al renderizador de respaldo y comprobarlo en la ci de linux, windows y macos.
 - corregir la altura y la alineacion vertical de las filas de tablas Markdown con celdas en varias lineas, reservando el descenso del editor para que la rejilla no deje espacio adicional bajo el contenido.
 - bloquear el empaquetado linux cuando faltan bibliotecas nativas requeridas junto al ejecutable publicado, incluso al reutilizar una publicacion con `--skip-publish`, para evitar distribuir paquetes que no arrancan.
 - incluir la configuracion publica de supabase que necesita polar en `polar.properties` dentro de los instaladores de linux, windows y macos; generar solo `SUPABASE_URL` y la clave publicable, rechazar urls inseguras, claves secretas y configuraciones parciales, exigir una configuracion valida al publicar y permitir que github actions la reciba mediante variables o secrets para evitar instalaciones con polar deshabilitado.
@@ -68,6 +70,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- a native fallback renderer for the session graph when `WebView2`, `WKWebView` or WPE are unavailable or fail to load; it retains filters, links, note opening, dragging, positions and zoom without browser dependencies.
 - search and filters for the notifications and reminders lists, with visible result counts, no-match state, date sorting and actions to complete or reopen reminders without leaving the list.
 - an integrated audio and video player in Files with play/pause, stop, seek, volume and mute controls; it releases the engine and encrypted temporary copies when closing, switching, moving, renaming, deleting or locking the session, and keeps the system-open action for errors or unsupported formats.
 - text previews for DOCX, XLSX, PPTX and OpenDocument files, plus safe path and size listings for ZIP, JAR and NuGet packages; it limits file size, entries, XML and output, prohibits DTDs and external entities, and never runs macros, scripts, formulas or external links.
@@ -109,6 +112,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - hide `*.attachments` folders from Notes and Files views, searches and counts without deleting their images or preventing notes from rendering them.
 
 #### FIXED
+- prevent the session graph from becoming blank or unusable when the browser does not confirm loading or linux WPE libraries are incompatible; validate required native symbols, switch to the fallback renderer and cover it in linux, windows and macos ci.
 - fix the height and vertical alignment of Markdown table rows with multiline cells, reserving the editor descent so the grid does not leave extra space below the content.
 - block linux packaging when native libraries required beside the published executable are missing, including when reusing a publication with `--skip-publish`, to avoid distributing packages that cannot start.
 - include the public supabase configuration required by polar in `polar.properties` inside the linux, windows and macos installers; generate only `SUPABASE_URL` and the publishable key, reject insecure urls, secret keys and partial configurations, require valid configuration when publishing, and let github actions receive it through variables or secrets to prevent installations with polar disabled.
