@@ -19,10 +19,16 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
         MotionService.Apply(false);
+        // Las dos marcas de arriba y esta separan las tres partes de "casi dos segundos antes de poder
+        // pintar nada": inicializar la plataforma gráfica, cargar los estilos de la aplicación, y el
+        // trabajo propio de Enki (ver StartupTrace). Sin ese corte, «el arranque tarda» no distingue lo que
+        // se puede recortar de lo que cuesta el toolkit.
+        StartupTrace.Mark("estilos de la aplicación cargados");
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
+        StartupTrace.Mark("plataforma gráfica lista");
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             try
@@ -34,23 +40,36 @@ public partial class App : Application
                 ApplyStoredLanguage(settingsService);
                 ApplyStoredThemeVariant(settingsService);
                 MotionService.Apply(settingsService.Settings.UseSubtleAnimations);
+                StartupTrace.Mark("ajustes, idioma y tema");
 
                 var window = new MainWindow(settingsService);
                 StartupWindowPlacement.Apply(window);
                 MainWindowRef = window;
                 desktop.MainWindow = window;
+                StartupTrace.Mark("ventana entregada al ciclo de vida");
             }
             catch (Exception ex)
             {
                 LogService.Error("No se pudo completar el arranque de Enki", ex);
-                var errorWindow = BuildStartupErrorWindow();
-                StartupWindowPlacement.Apply(errorWindow);
-                MainWindowRef = errorWindow;
-                desktop.MainWindow = errorWindow;
+                ShowStartupError();
             }
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Enseña la ventana de error de arranque y la deja como ventana principal. Público dentro del
+    /// ensamblado porque el arranque ya no cabe entero en el constructor de <c>MainWindow</c>: la shell se
+    /// construye después, cuando la pantalla de arranque ya está delante (ver <c>MainWindow.BuildShell</c>),
+    /// y un fallo en ese tramo tiene que acabar en la misma ventana que un fallo en este bloque — si no,
+    /// saldría por el dispatcher y el usuario se quedaría mirando la cortina para siempre.</summary>
+    internal static void ShowStartupError()
+    {
+        var errorWindow = BuildStartupErrorWindow();
+        StartupWindowPlacement.Apply(errorWindow);
+        MainWindowRef = errorWindow;
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.MainWindow = errorWindow;
+        errorWindow.Show();
     }
 
     /// <summary>Applies the user's saved UI language, if any, before any window/viewmodel is constructed —

@@ -6227,4 +6227,16 @@ Feliz escritura.</value>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
     <value>Arrastra para explorar · Rueda para zoom · Doble clic para abrir</value>
   </data>
+  <data name="Startup_Initializing" xml:space="preserve">
+    <value>Iniciando</value>
+  </data>
+  <data name="Startup_IndexingNotes" xml:space="preserve">
+    <value>Indexando notas</value>
+  </data>
+  <data name="Startup_PreparingSection" xml:space="preserve">
+    <value>Preparando {0}</value>
+  </data>
+  <data name="Startup_Finalizing" xml:space="preserve">
+    <value>Terminando</value>
+  </data>
 </root>

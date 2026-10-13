@@ -6227,4 +6227,16 @@ Bonne rédaction.</value>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
     <value>Glisser pour explorer · Molette pour zoomer · Double-clic pour ouvrir</value>
   </data>
+  <data name="Startup_Initializing" xml:space="preserve">
+    <value>Démarrage</value>
+  </data>
+  <data name="Startup_IndexingNotes" xml:space="preserve">
+    <value>Indexation des notes</value>
+  </data>
+  <data name="Startup_PreparingSection" xml:space="preserve">
+    <value>Préparation de {0}</value>
+  </data>
+  <data name="Startup_Finalizing" xml:space="preserve">
+    <value>Finalisation</value>
+  </data>
 </root>

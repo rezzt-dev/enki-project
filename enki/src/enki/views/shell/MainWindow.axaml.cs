@@ -5,12 +5,14 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using enki.Services;
 using enki.ViewModels;
+using enki.Views;
 
 namespace enki;
 
@@ -20,12 +22,35 @@ public partial class MainWindow : Window
     private QuickCaptureWindow? _quickCaptureWindow;
     private bool _isExplicitExit;
 
+    /// <summary>Si este arranque empieza con la pantalla de arranque puesta (ver <see cref="StartupGate"/>
+    /// y <see cref="BuildShell"/>). Se resuelve en el constructor y no cambia: la cortina puede volver a
+    /// aparecer más tarde —al elegir idioma, al abrir el primer vault—, pero eso ya lo pide el ViewModel
+    /// enlazando <c>IsSectionWarmUpActive</c>, no esta bandera.</summary>
+    private readonly bool _startsCovered;
+
+    /// <summary>La shell en sí (sidebar, barra de título, host de secciones), construida por
+    /// <see cref="BuildShell"/> y nula hasta entonces.</summary>
+    private ShellView? _shell;
+
+    /// <summary>Igual que <see cref="_shell"/>, pero para el ViewModel que la alimenta: casi todo el trabajo
+    /// de arranque vive en su constructor, así que no puede existir antes de que haya cortina que lo tape.</summary>
+    private MainWindowViewModel? _viewModel;
+
+    /// <summary>Logo ya resuelto para el tema actual. Se guarda porque la cortina puede estar sola durante
+    /// los primeros segundos —sin ViewModel y sin shell— y porque la shell que se construya después tiene
+    /// que nacer con el logo puesto en vez de con un hueco hasta el próximo cambio de tema.</summary>
+    private IImage? _brandLogo;
+
+    private bool _shellBuilt;
+    private bool _closed;
+
     public MainWindow() : this(new SettingsService()) { }
 
     public MainWindow(SettingsService settingsService)
     {
         _settingsService = settingsService;
         InitializeComponent();
+        StartupTrace.Mark("XAML de la ventana inflado");
 
         // Tamaño inicial vía ClientSize en vez de Width/Height en el XAML: Avalonia deja Width/Height
         // como un valor de layout persistente que en X11 compite con los ConfigureNotify nativos del
@@ -46,33 +71,16 @@ public partial class MainWindow : Window
                 UpdateBrandIcon();
             };
 
-        var viewModel = new MainWindowViewModel(settingsService);
-        DataContext = viewModel;
-        viewModel.QuickCaptureRequested += ShowQuickCapture;
-        viewModel.SectionPreloadRequested += page => PageHost.Preload(page);
-
-        // Después de fijar el DataContext, no antes: el logo puede ser la imagen personalizada del
-        // usuario, y quien sabe si lo es y con qué bytes es el viewmodel (Ajustes › Apariencia › Logo).
+        // El logo se resuelve ya, sin ViewModel: es lo único que la cortina enseña mientras no exista (ver
+        // ApplyBrandLogo). El de Ajustes › Apariencia › Logo lo volverá a poner UpdateBrandIcon en cuanto el
+        // ViewModel exista, que es quien sabe si el usuario tiene uno personalizado.
         UpdateBrandIcon();
-        viewModel.BrandLogoChanged += UpdateBrandIcon;
 
-        // Atajos globales del shell (propuesta 29, docs/propuesta-nuevas-funcionalidades.md): ya no son
-        // literales en MainWindow.axaml — se construyen aquí a partir de ShortcutRegistry y se reconstruyen
-        // cada vez que Ajustes › Atajos remapea o restaura uno, sin necesidad de reiniciar Enki.
-        BuildKeyBindings(viewModel);
-        ShortcutRegistry.Changed += () => BuildKeyBindings(viewModel);
-
-        ApplyTitleBarMode(viewModel.UseCustomTitleBar);
-        viewModel.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(MainWindowViewModel.UseCustomTitleBar))
-                ApplyTitleBarMode(viewModel.UseCustomTitleBar);
-        };
-
-        PropertyChanged += (_, e) =>
-        {
-            if (e.Property == WindowStateProperty) UpdateMaximizeRestoreGlyph();
-        };
+        // Si este arranque abre la shell directamente (idioma elegido, vault configurado, una sola
+        // instancia), la cortina entra en OnOpened y todo lo pesado queda detrás de ella. Si no —primer
+        // arranque, pantalla de vault, segunda instancia— no hay nada que tapar y la shell se construye sin
+        // más: no se cubre una pantalla de configuración con una cortina que nadie va a retirar.
+        _startsCovered = StartupGate.OpensShellDirectly(settingsService);
 
         // Ctrl+rueda del ratón para el zoom de interfaz (docs/funcionalidad-zoom-interfaz.md §3),
         // igual que Obsidian. Se registra en fase Tunnel (de la ventana hacia el control bajo el
@@ -80,45 +88,173 @@ public partial class MainWindow : Window
         // de que llegue a un ScrollViewer normal (Kanban, listas…) sin tocar el scroll de siempre.
         AddHandler(PointerWheelChangedEvent, OnCtrlWheelChanged, RoutingStrategies.Tunnel);
 
-        // The note editor's autosave is debounced (EditorViewModel.SaveDebounceDelay) — without this, a
-        // tab closed right as the window closes could lose whatever was typed in that last window. Same
-        // reasoning for Ajustes' own slider debounce (SettingsViewModel.SettingsSaveDebounceDelay), which
-        // now also flushes the vault-scoped zoom level.
-        Closing += (_, e) =>
+        // La precarga de fondo solo trabaja en los huecos en los que el usuario no está tocando nada, y para
+        // saberlo necesita esta señal (ver MainWindowViewModel.NoteUserInteraction): construir una sección
+        // cuesta cientos de milisegundos de hilo de interfaz, así que no puede empezar justo cuando alguien
+        // se pone a escribir. Va en fase Tunnel para que llegue aunque el control que acabe recibiendo el
+        // evento lo marque como manejado. Nulo mientras la shell no exista: hasta entonces el usuario no
+        // puede tocar nada del programa, pero la ventana ya recibe eventos.
+        AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NoteUserInteraction(), RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, (_, _) => _viewModel?.NoteUserInteraction(), RoutingStrategies.Tunnel);
+
+        PropertyChanged += OnWindowPropertyChanged;
+        Closing += OnWindowClosing;
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        StartupTrace.Mark("ventana visible");
+
+        // La cortina entra aquí y no en el constructor a propósito: mientras la ventana no está en
+        // pantalla el reloj de animación no avanza, y la espera acotada de StartupScreen daría su entrada
+        // por terminada antes de que hubiera un solo fotograma que dibujarla — y con ella dispararía
+        // BuildShell, que es justo el trabajo que tiene que quedar detrás de la cortina.
+        if (_startsCovered)
         {
-            if (!_isExplicitExit && _settingsService.Settings.MinimizeToTray)
+            StartupOverlay.Entered += BuildShell;
+            StartupOverlay.IsWarmUpActive = true;
+            return;
+        }
+
+        BuildShell();
+    }
+
+    /// <summary>Construye la shell —su vista y los servicios que la alimentan— y la deja lista para el
+    /// usuario. Es el corazón del launcher: todo lo que cuesta cientos de milisegundos de hilo de interfaz
+    /// (inflar el XAML de la shell, levantar los servicios, construir las secciones, medir la ventana por
+    /// primera vez) pasa aquí, y no antes del primer fotograma.
+    ///
+    /// <para>El reparto es lo que hace que el arranque se lea como un arranque y no como un cuelgue. Antes
+    /// de este método la ventana ya está en pantalla con la cortina entera y su fundido de entrada hecho, y
+    /// el hilo de interfaz no tiene nada más que hacer, así que ese fundido va fluido. A partir de aquí hay
+    /// trabajo pesado, pero cae detrás de una cortina ya opaca: lo único que se ve es el avance de la barra
+    /// —que se mueve a pasos, no en continuo, para que un tramo largo no se note como un tirón— y el texto
+    /// de estado.</para>
+    ///
+    /// <para>Se llama exactamente una vez: en el arranque normal lo dispara la cortina al quedar opaca
+    /// (<c>StartupScreen.Entered</c>), y cuando no va a haber cortina lo llama el propio <c>OnOpened</c>.
+    /// Cualquier fallo por el camino no puede dejar la cortina puesta —ni la ventana a medias—, así que
+    /// acaba en la misma ventana de error de arranque que usaba <c>App</c> cuando todo esto cabía en un
+    /// constructor.</para></summary>
+    private void BuildShell()
+    {
+        if (_shellBuilt || _closed) return;
+        _shellBuilt = true;
+        StartupOverlay.Entered -= BuildShell;
+
+        try
+        {
+            // 1. La vista de la shell. Su XAML no está en la ventana (ver ShellView) precisamente para
+            //    poder construirla aquí.
+            var shell = new ShellView();
+            shell.SetBrandIcon(_brandLogo);
+            ShellHost.Content = shell;
+            _shell = shell;
+            StartupTrace.Mark("vista de la shell construida");
+
+            // 2. Los servicios y el ViewModel de todas las secciones. Es el otro tramo caro del arranque, y
+            //    a partir de aquí ya hay un ViewModel al que enlazar los avisos que se quedaron sin receptor.
+            var viewModel = new MainWindowViewModel(_settingsService);
+            _viewModel = viewModel;
+            DataContext = viewModel;
+            StartupTrace.Mark("servicios y ViewModels listos");
+
+            viewModel.QuickCaptureRequested += ShowQuickCapture;
+            viewModel.SectionPreloadRequested += page => _shell?.Preload(page);
+            viewModel.BrandLogoChanged += UpdateBrandIcon;
+            viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+            // Atajos globales del shell (propuesta 29, docs/propuesta-nuevas-funcionalidades.md): ya no son
+            // literales en MainWindow.axaml — se construyen aquí a partir de ShortcutRegistry y se reconstruyen
+            // cada vez que Ajustes › Atajos remapea o restaura uno, sin necesidad de reiniciar Enki.
+            BuildKeyBindings(viewModel);
+            ShortcutRegistry.Changed += () => BuildKeyBindings(viewModel);
+
+            ApplyTitleBarMode(viewModel.UseCustomTitleBar);
+
+            // El logo personalizado solo lo conoce el ViewModel; el icono por defecto ya está resuelto desde
+            // el constructor y no depende de él.
+            if (viewModel.CustomBrandLogoBytes is { Length: > 0 }) UpdateBrandIcon();
+
+            // 3. La primera medida de la shell —sidebar entera, barra de título, host de secciones— se paga
+            //    aquí a propósito, con la cortina delante y sin nada animándose. Si se dejara al siguiente
+            //    fotograma, competiría con el avance de la barra de progreso, que es la otra mitad de que la
+            //    animación de carga no vaya a tirones.
+            UpdateLayout();
+            StartupTrace.Mark("primer layout de la shell");
+        }
+        catch (Exception ex)
+        {
+            // Sin esto, un fallo al levantar los servicios saldría por el dispatcher —dentro de la llamada
+            // de vuelta de la cortina, fuera de cualquier try/catch— y dejaría al usuario mirando la
+            // pantalla de arranque para siempre.
+            LogService.Error("No se pudo completar el arranque de Enki", ex);
+            StartupOverlay.IsWarmUpActive = false;
+            App.ShowStartupError();
+            _isExplicitExit = true;
+            Close();
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.UseCustomTitleBar))
+            ApplyTitleBarMode(_viewModel?.UseCustomTitleBar ?? false);
+    }
+
+    private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == WindowStateProperty) UpdateMaximizeRestoreGlyph();
+    }
+
+    /// <summary>Cierre de la ventana. El editor de notas guarda con retardo (EditorViewModel.SaveDebounceDelay)
+    /// y sin volcar lo pendiente aquí, una pestaña cerrada justo al cerrar la ventana perdería lo último
+    /// escrito; lo mismo vale para el retardo propio de Ajustes (SettingsViewModel.SettingsSaveDebounceDelay),
+    /// que además vuelca el zoom del vault.
+    ///
+    /// <para>Si la shell todavía no se ha construido —la ventana se ha cerrado durante el segundo largo que
+    /// tarda el arranque— no hay nada que volcar ni que cerrar: se sale por donde se entró.</para></summary>
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (!_isExplicitExit && _settingsService.Settings.MinimizeToTray)
+        {
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+
+        _closed = true;
+        if (_viewModel is not { } viewModel) return;
+
+        if (viewModel.Notes is { } notes)
+        {
+            foreach (var editor in notes.OpenEditors)
             {
+                if (editor.TryPrepareClose()) continue;
                 e.Cancel = true;
-                Hide();
-                return;
-            }
-            if (viewModel.Notes is { } notes)
-            {
-                foreach (var editor in notes.OpenEditors)
-                {
-                    if (editor.TryPrepareClose()) continue;
-                    e.Cancel = true;
-                    _isExplicitExit = false;
-                    ShowFromTray();
-                    return;
-                }
-            }
-            viewModel.Settings?.FlushPendingSave();
-            // Fase 1 (docs/analisis-proyecto/roadmap.md): the Skills editor debounces its own autosave the
-            // same 600ms as Notes/Ajustes but was never flushed here, so closing the app right after
-            // editing a skill silently dropped the last pending change.
-            viewModel.Skills?.ActiveEditor?.FlushPendingSave();
-            if (viewModel.Skills?.ActiveEditor?.IsDirty == true)
-            {
-                e.Cancel = true;
+                _closed = false;
                 _isExplicitExit = false;
                 ShowFromTray();
                 return;
             }
-            // Fase 1 (docs/version-alfa-3/02-roadmap-implementacion.md): locks every unlocked session's DEK
-            // and sweeps decrypted temp files, so nothing decrypted survives the process past this point.
-            viewModel.Shutdown();
-        };
+        }
+        viewModel.Settings?.FlushPendingSave();
+        // Fase 1 (docs/analisis-proyecto/roadmap.md): the Skills editor debounces its own autosave the
+        // same 600ms as Notes/Ajustes but was never flushed here, so closing the app right after
+        // editing a skill silently dropped the last pending change.
+        viewModel.Skills?.ActiveEditor?.FlushPendingSave();
+        if (viewModel.Skills?.ActiveEditor?.IsDirty == true)
+        {
+            e.Cancel = true;
+            _closed = false;
+            _isExplicitExit = false;
+            ShowFromTray();
+            return;
+        }
+        // Fase 1 (docs/version-alfa-3/02-roadmap-implementacion.md): locks every unlocked session's DEK
+        // and sweeps decrypted temp files, so nothing decrypted survives the process past this point.
+        viewModel.Shutdown();
     }
 
     /// <summary>Rebuilds every remappable shell-level <c>KeyBinding</c> from the current effective gestures
@@ -234,7 +370,7 @@ public partial class MainWindow : Window
         // en vez de dejar el sidebar sin logo.
         if (BrandLogoImage.Decode(customBytes, BrandLogoImage.SidebarPixels) is { } customLogo)
         {
-            BrandIcon.Source = customLogo;
+            ApplyBrandLogo(customLogo);
             return;
         }
 
@@ -243,8 +379,9 @@ public partial class MainWindow : Window
         try
         {
             using var stream = AssetLoader.Open(uri);
-            BrandIcon.Source = Bitmap.DecodeToWidth(stream, BrandLogoImage.SidebarPixels,
+            var logo = Bitmap.DecodeToWidth(stream, BrandLogoImage.SidebarPixels,
                 BitmapInterpolationMode.HighQuality);
+            ApplyBrandLogo(logo);
         }
         catch (Exception ex)
         {
@@ -253,22 +390,25 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Deja el mismo mapa de bits en las dos superficies donde aparece la marca: la pantalla de
+    /// arranque y el brand header de la shell. 128 px de lado dan de sobra para los 56 px de la cortina, así
+    /// que no se decodifica dos veces el PNG de 1024 que va empaquetado.
+    ///
+    /// <para>Se guarda en <see cref="_brandLogo"/> porque las dos superficies pueden llegar tarde: la
+    /// cortina existe desde el primer fotograma, pero la shell no se construye hasta que la cortina está
+    /// opaca (ver <see cref="BuildShell"/>) y tiene que nacer con el logo puesto.</para></summary>
+    private void ApplyBrandLogo(IImage logo)
+    {
+        _brandLogo = logo;
+        StartupOverlay.SetLogo(logo);
+        _shell?.SetBrandIcon(logo);
+    }
+
     private void UpdateMaximizeRestoreGlyph()
     {
         var isMaximized = WindowState == WindowState.Maximized;
         MaximizeGlyph.IsVisible = !isMaximized;
         RestoreGlyph.IsVisible = isMaximized;
-    }
-
-    private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.ClickCount == 2)
-        {
-            ToggleMaximizeRestore();
-            return;
-        }
-
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
     }
 
     private void Minimize_Click(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;

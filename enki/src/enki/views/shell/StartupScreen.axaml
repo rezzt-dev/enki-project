@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="820"
+             x:Class="enki.Views.StartupScreen"
+             x:DataType="vm:MainWindowViewModel"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <!-- Pantalla de arranque (ver MainWindow.axaml). Sustituye al velo que solo tapaba la shell con un
+       spinner: aquí el usuario ve de qué programa se trata (logo + marca) y en qué punto va la carga
+       (barra + estado), que es lo que hace que la espera se lea como un arranque y no como un cuelgue.
+
+       Todo lo que se mueve aquí lo hace por `Opacity` y por el ancho de la barra — nada de giros ni de
+       geometría recalculada por fotograma —, y el ancho viaja con una transición para que un avance de
+       progreso se lea como un deslizamiento y no como un salto. El giro de un spinner es justo lo que
+       peor lleva un hilo de UI ocupado: cualquier trabajo pesado del arranque lo deja a tirones, que es
+       exactamente lo que esta pantalla viene a eliminar. -->
+
+  <StackPanel Name="StartupContent" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Spacing="26" Width="260">
+    <StackPanel.RenderTransform>
+      <TranslateTransform />
+    </StackPanel.RenderTransform>
+
+    <StackPanel Spacing="16" HorizontalAlignment="Center">
+      <Image Name="StartupLogo" Width="56" Height="56" HorizontalAlignment="Center"
+             RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+      <StackPanel Spacing="7" HorizontalAlignment="Center">
+        <!-- "ENKI" es una de las cadenas exentas de recurso del proyecto (VisibleTextCoverageTests):
+             es la marca, no interfaz. -->
+        <TextBlock Text="ENKI" FontSize="20" FontWeight="Bold" LetterSpacing="9" Margin="9,0,0,0"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="{loc:Tr Shell_BrandTagline}" Classes="faint" FontSize="10"
+                   LetterSpacing="3" HorizontalAlignment="Center" />
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel Spacing="12">
+      <!-- Barra fina de 2 px, esquinas a cero y un único relleno: el mismo lenguaje editorial del resto
+           de la interfaz (docs/project-info/sistema-diseno-web.md) en vez de un ProgressBar de Fluent,
+           que traería su radio, su color de acento y su animación propia. -->
+      <Border Height="2" Background="{DynamicResource Ink10}" ClipToBounds="True">
+        <Panel>
+          <!-- Progreso real: pasos ya completados sobre el total. El ancho viaja con una transición de
+               300 ms para que un avance se lea como un deslizamiento y no como un salto, que es el otro
+               motivo por el que el arranque se percibía a tirones. -->
+          <Border Height="2" HorizontalAlignment="Left" Background="{DynamicResource InkBrush}"
+                  Width="{Binding WarmUpBarFillWidth}">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Width" Duration="0:0:0.3" Easing="CubicEaseOut" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
+
+          <!-- Fase que no tiene pasos que contar —la indexación del vault—: un segmento que recorre la
+               barra. Duración y recorrido van fijados en el estilo Border.startup-glide (Styles.axaml),
+               junto al ancho del segmento (78 px) y el de la barra (260 px, el de StartupContent). -->
+          <Border Classes="startup-glide" Height="2" Width="78" HorizontalAlignment="Left"
+                  Background="{DynamicResource InkBrush}"
+                  IsVisible="{Binding IsWarmUpIndeterminate}" />
+        </Panel>
+      </Border>
+
+      <TextBlock Text="{Binding WarmUpStatus}" Classes="faint" FontSize="10.5"
+                 LetterSpacing="1.5" HorizontalAlignment="Center" TextAlignment="Center"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

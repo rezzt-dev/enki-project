@@ -6228,4 +6228,16 @@ Happy writing.</value>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
     <value>Drag to pan · Scroll to zoom · Double-click to open</value>
   </data>
+  <data name="Startup_Initializing" xml:space="preserve">
+    <value>Starting up</value>
+  </data>
+  <data name="Startup_IndexingNotes" xml:space="preserve">
+    <value>Indexing notes</value>
+  </data>
+  <data name="Startup_PreparingSection" xml:space="preserve">
+    <value>Preparing {0}</value>
+  </data>
+  <data name="Startup_Finalizing" xml:space="preserve">
+    <value>Finishing up</value>
+  </data>
 </root>

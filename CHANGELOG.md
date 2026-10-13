@@ -31,6 +31,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
+- reconstruir el arranque en dos fases: el índice del vault se lee en segundo plano mientras se anima la pantalla de arranque, y la cortina se retira en cuanto está lista la sección de inicio elegida en lugar de esperar a las catorce; el resto se prepara después, en los huecos libres del hilo de interfaz, y cada tramo pesado devuelve un fotograma entero antes del siguiente.
+- sustituir el velo de arranque —fondo liso con un spinner girando— por una pantalla con logo, marca, progreso real y estado de la carga, traducida a los seis idiomas soportados; la barra muestra un segmento en movimiento mientras no hay pasos que contar y el avance real en cuanto los hay.
 - corregir la ortografía de `CHANGELOG.md`, incluidas las tildes y los caracteres `ñ`, sin alterar su estructura ni sus entradas funcionales.
 - actualizar en vivo las listas de recordatorios cuando otra pantalla modifica sus entidades, conservar el detalle abierto aunque deje de cumplir un filtro y ampliar los formularios y detalles para facilitar la lectura en ventanas estrechas.
 - ajustar el espaciado de los pies de las vistas simplificada de notas y árbol de archivos para alinear sus controles con el resto de la interfaz.
@@ -110,6 +112,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 
 #### CHANGED
+- rebuild startup in two phases: the vault index is read in the background while the launch screen animates, and the curtain lifts as soon as the configured start section is ready instead of waiting for all fourteen; the rest is prepared afterwards in the UI thread's idle slots, and every heavy slice gives the compositor a full frame back before the next one.
+- replace the startup veil —a flat background with a spinning indicator— with a screen carrying the logo, wordmark, real progress and load status, translated into all six supported languages; the bar shows a travelling segment while there are no steps to count and real progress as soon as there are.
 - correct `CHANGELOG.md` spelling, including accents and `ñ` characters, without altering its structure or functional entries.
 - update reminder lists live when another screen modifies their entities, keep the open detail visible even when it no longer matches a filter, and widen forms and details for easier reading in narrow windows.
 - adjust footer spacing in the simplified notes and file tree views so their controls align with the rest of the interface.

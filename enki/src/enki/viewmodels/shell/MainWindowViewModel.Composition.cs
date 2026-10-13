@@ -389,7 +389,10 @@ public sealed partial class MainWindowViewModel
     {
         LanguageSetup = null;
 
-        if (_vaultService.IsVaultConfigured && SingleInstanceGuard.IsFirstInstance)
+        // La misma condición que consulta MainWindow para decidir si arranca con la pantalla de arranque
+        // puesta (ver StartupGate): escrita una sola vez, porque la ventana decide antes de que este método
+        // exista y las dos respuestas tienen que coincidir.
+        if (StartupGate.OpensShellDirectly(_settingsService))
         {
             InitializeShell();
         }
@@ -563,7 +566,9 @@ public sealed partial class MainWindowViewModel
         foreach (var item in BottomNavItems) item.IsActive = item.Page == startupPage;
         VaultSetup = null;
         IsVaultReady = true;
-        StartSectionWarmUp();
+        // La página de inicio se prepara antes que las demás y es la que fija en qué momento se retira la
+        // pantalla de arranque: ver RunSectionWarmUpAsync.
+        StartSectionWarmUp(startupPage);
 
         UpdateTrashBadge();
         UpdateCalendarBadge();

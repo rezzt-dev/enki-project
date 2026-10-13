@@ -36,6 +36,11 @@ pero no es una opción para desactivar absolutamente todas las animaciones.
   interacción al comenzar su retirada; se conserva el temporizador de seguridad si el WebView falla.
 - El grafo limita el trabajo de canvas, omite efectos decorativos en Sutiles y acota el salto temporal
   tras pausas. El indicador usa memoria de pila para las posiciones de sus diez nodos.
+- La pantalla de arranque no gira nada: mueve una barra por `Opacity`, por el ancho de su relleno y por una
+  `TranslateTransform` en su fase sin pasos que contar, y ninguno de esos gestos obliga a recalcular la
+  geometría de un giro por fotograma. El rótulo y el estado de la carga se actualizan en pasos discretos, así
+  que un fotograma perdido no se lee como un tirón —al revés que un spinner, que es lo que peor tolera que el
+  hilo de interfaz esté ocupado—. Ver `.docs/project-info/pantalla-de-arranque.md`.
 
 ## Validación y medición en Arch Linux
 

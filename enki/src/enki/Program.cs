@@ -14,6 +14,11 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Primer cronómetro del proceso: a partir de aquí cada hito del arranque (ver StartupTrace) queda
+        // fechado en el log con lo que costó su tramo, que es lo único que permite saber qué parte de la
+        // puesta en marcha hay que arreglar cuando "tarda mucho en abrir".
+        StartupTrace.Start();
+
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         // El motor WebView embebido (grafo de sesiones, vía NativeWebView/WebViewHost — las notas solo se
@@ -69,6 +74,7 @@ class Program
             Environment.Exit(1);
         }
 
+        StartupTrace.Mark("listo para inicializar Avalonia");
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
