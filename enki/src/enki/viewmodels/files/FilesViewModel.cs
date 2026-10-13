@@ -166,6 +166,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         _vaultService = vaultService;
         _sessionService = sessionService;
         _notificationService = notificationService;
+        InitializeFolderManager();
         _settingsService = settingsService;
         _searchDebounceTimer.Tick += (_, _) =>
         {
@@ -185,6 +186,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// un cambio de idioma en tiempo real (i18n Fase 4).</summary>
     public void RefreshLocalizedLabels()
     {
+        FolderManager.RefreshLocalizedLabels();
         BuildSortOptions();
         OnPropertyChanged(nameof(CurrentFolderLabel));
         OnPropertyChanged(nameof(FilesCountLabel));
@@ -234,6 +236,7 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
+        FolderManager.CloseCommand.Execute(null);
         OnPropertyChanged(nameof(IsSelectedSessionLocked));
         OnPropertyChanged(nameof(ShowTreeEmptyState));
         SetCurrentFolderQuietly(null);
@@ -292,6 +295,7 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     public void Reload()
     {
+        if (IsSelectedSessionLocked) FolderManager.CloseCommand.Execute(null);
         PasteEntryCommand.NotifyCanExecuteChanged();
         CopyEntryCommand.NotifyCanExecuteChanged();
         CutEntryCommand.NotifyCanExecuteChanged();
@@ -972,36 +976,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// renombrar la que contenía el archivo abierto dejaba la previsualización leyendo de una ruta muerta.</summary>
     private void RenameFolderAt(NoteFolder folder, string newName)
     {
-        var oldPath = folder.FullPath;
-        if (ActivePreview is { } playing && IsSameOrUnder(playing.File.FullPath, oldPath)) playing.MediaPreview?.Close();
-        NoteFolder? renamed = null;
-        if (!TryVaultOperation("Files_Notify_FolderRenameFailed_Title", () => renamed = VaultService.RenameFolder(folder, newName))
-            || renamed is null)
-        {
-            Refresh();
-            return;
-        }
-
-        if (!PathsEqual(oldPath, renamed.FullPath))
-        {
-            _folderRemap = (oldPath, renamed.FullPath);
-            if (ActivePreview is { } preview && IsSameOrUnder(preview.File.FullPath, oldPath))
-            {
-                preview.File.FullPath = RemapPath(preview.File.FullPath);
-                preview.UpdateFile(preview.File);
-                LoadPreviewContent(preview);
-            }
-        }
-
-        try
-        {
-            RemapTreeSelection();
-            Refresh();
-        }
-        finally
-        {
-            _folderRemap = null;
-        }
+        TryVaultOperation("Files_Notify_FolderRenameFailed_Title", () => _vaultService.RenameManagedFolder(folder.FullPath, newName));
     }
 
     /// <summary>Pide confirmación antes de mandar una carpeta a la papelera, venga de donde venga: la fila del
@@ -1052,6 +1027,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         }
         if (CurrentFolder is not null && IsSameOrUnder(CurrentFolder.FullPath, folderPath)) SetCurrentFolderQuietly(null);
 
+        _notificationService.Push(LocalizationService.Instance["Folders_Done"], Path.GetFileName(folderPath), NotificationSeverity.Warning);
         Refresh();
     }
 

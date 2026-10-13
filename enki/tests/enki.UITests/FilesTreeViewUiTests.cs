@@ -86,7 +86,7 @@ public class FilesTreeViewUiTests : IDisposable
     }
 
     [Fact]
-    public void CollapsedRail_NewFolderOpensForRenaming_AndSessionMenuDismissesNavigator()
+    public void CollapsedRail_NewFolderAsksForNameBeforeCreating_AndSessionMenuDismissesNavigator()
     {
         var (view, vm, _, _, window) = CreateView(treeMode: true);
         try
@@ -97,10 +97,14 @@ public class FilesTreeViewUiTests : IDisposable
             create.Command!.Execute(create.CommandParameter);
             window.GetLayoutManager()!.ExecuteLayoutPass();
 
-            Assert.True(vm.IsTreeNavigatorOpen);
+            Assert.True(vm.FolderManager.IsOpen);
+            Assert.True(vm.FolderManager.IsCreate);
             Assert.False(vm.IsTreeSidebarVisible);
-            Assert.True(vm.FileTreeRoots.Single().IsRenaming);
-            Assert.True(tree.FindControl<Border>("TreeNavigator")!.IsEffectivelyVisible);
+            Assert.Empty(vm.FileTreeRoots);
+            vm.FolderManager.Name = "Project";
+            vm.FolderManager.ApplyCommand.Execute(null);
+            Assert.False(vm.FolderManager.IsOpen);
+            Assert.Equal("Project", vm.FileTreeRoots.Single().Name);
 
             var session = tree.FindControl<Button>("RailSessionButton")!;
             session.Command!.Execute(session.CommandParameter);

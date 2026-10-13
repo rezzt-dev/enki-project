@@ -184,5 +184,6 @@
       </Border>
     </controls:ModalOverlayHost>
 
+    <views:FolderManagerView DataContext="{Binding FolderManager}" />
   </Grid>
 </UserControl>

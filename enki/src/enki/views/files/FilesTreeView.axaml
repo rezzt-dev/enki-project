@@ -53,8 +53,10 @@
             <!-- Un menú para los dos tipos de nodo, con lo que tiene sentido en cada uno: "crear subcarpeta"
                  sobre un archivo creaba una carpeta hermana sin decirlo. -->
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFile}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFile}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Folders_Manage, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}" />
+              <Separator />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
               <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
               <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFile}"
@@ -65,7 +67,7 @@
                 </MenuItem.Icon>
               </MenuItem>
               <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}"
-                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateTreeSubfolderCommand}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateFolderDialogCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
@@ -209,7 +211,7 @@
             </Button>
             <Border Height="1" Margin="6,8" Background="{DynamicResource Ink10}" />
             <Button x:Name="RailNewFolderButton" Classes="icon-btn" Width="36" Height="36"
-                    Command="{Binding NewTreeFolderAtRootCommand}"
+                    Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}"
                     ToolTip.Tip="{loc:Tr Files_NewFolderButton}" ToolTip.Placement="Right"
                     AutomationProperties.Name="{loc:Tr Files_NewFolderButton}">
               <mi:MaterialIcon Kind="FolderPlusOutline" Width="18" Height="18" />
@@ -396,7 +398,7 @@
                contextual en el árbol. -->
           <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" Margin="8,8,8,4"
                       HorizontalAlignment="Center">
-            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewTreeFolderAtRootCommand}"
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}"
                     ToolTip.Tip="{loc:Tr Files_NewFolderButton}"
                     AutomationProperties.Name="{loc:Tr Files_NewFolderButton}">
               <mi:MaterialIcon Kind="FolderPlusOutline" Width="16" Height="16" />
@@ -480,6 +482,8 @@
                           PointerPressed="SearchResult_PointerPressed">
                     <Border.ContextMenu>
                       <ContextMenu>
+              <MenuItem Header="{loc:Tr Folders_Manage, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}" />
+              <Separator />
                         <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C"
                                   Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}"
                                   CommandParameter="{Binding}" />

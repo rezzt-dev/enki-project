@@ -168,6 +168,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         _onOpenLinkedCard = onOpenLinkedCard;
         _settingsService = settingsService;
         _notificationService = notificationService;
+        InitializeFolderManager();
         _templateService = templateService ?? new NoteTemplateService(vaultService);
         _vaultSettingsService = vaultSettingsService;
         _dailyNoteService = new DailyNoteService(vaultService, _templateService, vaultSettingsService);
@@ -199,6 +200,7 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// un cambio de idioma en tiempo real (i18n Fase 4).</summary>
     public void RefreshLocalizedLabels()
     {
+        FolderManager.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(NotesCountLabel));
         OnPropertyChanged(nameof(CurrentFolderLabel));
         // Solo se anunciaba desde OnIsSimplifiedViewChanged, y el modo de vista no cambia al cambiar de
@@ -225,6 +227,7 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
+        FolderManager.CloseCommand.Execute(null);
         OnPropertyChanged(nameof(IsSelectedSessionLocked));
         OnPropertyChanged(nameof(ShowEmptyState));
         CurrentFolder = null;
@@ -356,6 +359,7 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public void Reload()
     {
+        if (IsSelectedSessionLocked) FolderManager.CloseCommand.Execute(null);
         PasteEntryCommand.NotifyCanExecuteChanged();
         CopyEntryCommand.NotifyCanExecuteChanged();
         CutEntryCommand.NotifyCanExecuteChanged();
@@ -855,10 +859,15 @@ public sealed partial class NotesViewModel : ViewModelBase
     [RelayCommand]
     private void CommitRenameFolder(NoteFolderViewModel folder)
     {
-        if (!string.IsNullOrWhiteSpace(folder.EditingName) && folder.EditingName != folder.Name)
+        try
         {
-            var updated = VaultService.RenameFolder(folder.Folder, folder.EditingName);
-            folder.UpdateFolder(updated);
+            if (!string.IsNullOrWhiteSpace(folder.EditingName) && folder.EditingName != folder.Name)
+                folder.UpdateFolder(_vaultService.RenameManagedFolder(folder.FullPath, folder.EditingName));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            NotifyVaultWriteFailed(ex);
+            return;
         }
         folder.IsRenaming = false;
         ReloadFolders();
@@ -868,14 +877,8 @@ public sealed partial class NotesViewModel : ViewModelBase
     [RelayCommand]
     private void DeleteFolder(NoteFolderViewModel folder)
     {
-        var affectsCurrent = CurrentFolder is not null &&
-                              (CurrentFolder == folder || IsDescendant(folder, CurrentFolder));
-
-        _vaultService.DeleteFolder(folder.Folder);
-        if (affectsCurrent) CurrentFolder = null;
-
-        ReloadFolders();
-        Reload();
+        FolderManager.Open(folder.FullPath, EffectiveRootPath);
+        FolderManager.SelectOperationCommand.Execute("Delete");
     }
 
     private static bool IsDescendant(NoteFolderViewModel ancestor, NoteFolderViewModel node)

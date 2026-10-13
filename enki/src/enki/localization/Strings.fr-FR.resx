@@ -6164,4 +6164,31 @@ Bonne rédaction.</value>
   <data name="Skills_Metadata" xml:space="preserve"><value>Métadonnées</value></data>
   <data name="Skills_Reload" xml:space="preserve"><value>Recharger depuis le disque</value></data>
   <data name="Skills_DiscardWarning" xml:space="preserve"><value>Les modifications non enregistrées de cette skill seront perdues. Copiez votre brouillon avant de continuer pour le conserver.</value></data>
+  <data name="Folders_Manage" xml:space="preserve"><value>GÉRER LE DOSSIER</value></data>
+  <data name="Folders_Create" xml:space="preserve"><value>NOUVEAU DOSSIER</value></data>
+  <data name="Folders_Rename" xml:space="preserve"><value>RENOMMER</value></data>
+  <data name="Folders_Move" xml:space="preserve"><value>DÉPLACER</value></data>
+  <data name="Folders_Copy" xml:space="preserve"><value>COPIER</value></data>
+  <data name="Folders_Delete" xml:space="preserve"><value>SUPPRIMER</value></data>
+  <data name="Folders_Name" xml:space="preserve"><value>NOM DU DOSSIER</value></data>
+  <data name="Folders_Destination" xml:space="preserve"><value>DOSSIER DE DESTINATION</value></data>
+  <data name="Folders_Root" xml:space="preserve"><value>Racine</value></data>
+  <data name="Folders_CreateHint" xml:space="preserve"><value>Le dossier sera créé ici après confirmation du nom.</value></data>
+  <data name="Folders_ContentsHint" xml:space="preserve"><value>Les opérations incluent toutes les notes, fichiers, sous-dossiers et pièces jointes.</value></data>
+  <data name="Folders_CollisionHint" xml:space="preserve"><value>Si le nom existe déjà, un numéro sera ajouté. Le contenu existant est conservé.</value></data>
+  <data name="Folders_DeleteHint" xml:space="preserve"><value>Le dossier entier sera envoyé à la corbeille. Vous pourrez le restaurer.</value></data>
+  <data name="Folders_Reveal" xml:space="preserve"><value>OUVRIR L’EMPLACEMENT</value></data>
+  <data name="Folders_Error" xml:space="preserve"><value>Impossible de terminer l’opération</value></data>
+  <data name="Folders_Done" xml:space="preserve"><value>Dossier mis à jour</value></data>
+  <data name="Folders_Trash" xml:space="preserve"><value>DOSSIERS</value></data>
+  <data name="Folders_Restore" xml:space="preserve"><value>RESTAURER</value></data>
+  <data name="Folders_Error_OutsideVault" xml:space="preserve"><value>Le dossier doit se trouver dans le coffre.</value></data>
+  <data name="Folders_Error_Internal" xml:space="preserve"><value>Les dossiers internes du coffre ne peuvent pas être modifiés.</value></data>
+  <data name="Folders_Error_RootProtected" xml:space="preserve"><value>Gérez la racine du coffre et les sessions depuis Paramètres et Sessions.</value></data>
+  <data name="Folders_Error_SymbolicLink" xml:space="preserve"><value>Les dossiers contenant des liens symboliques ne peuvent pas être transférés.</value></data>
+  <data name="Folders_Error_InvalidName" xml:space="preserve"><value>Utilisez un nom visible sans caractères réservés ni espaces au début ou à la fin.</value></data>
+  <data name="Folders_Error_Descendant" xml:space="preserve"><value>La destination ne peut pas être le dossier lui-même ni un de ses sous-dossiers.</value></data>
+  <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Résolvez les modifications en attente dans les notes ouvertes avant de continuer.</value></data>
+  <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Dossier de corbeille non valide.</value></data>
+  <data name="Folders_Error_Changed" xml:space="preserve"><value>Le dossier a changé pendant le transfert. Réessayez.</value></data>
 </root>

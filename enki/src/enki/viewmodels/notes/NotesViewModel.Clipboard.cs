@@ -12,6 +12,7 @@ public sealed partial class NotesViewModel
 {
     private string? _clipboardNotePath;
     private bool _clipboardCut;
+    private bool _clipboardIsFolder;
 
     private static NoteFile? ClipboardNote(object? item) => item switch
     {
@@ -20,7 +21,7 @@ public sealed partial class NotesViewModel
         _ => null
     };
 
-    private bool CanCopyEntry(object? item) => !IsSelectedSessionLocked && ClipboardNote(item) is not null;
+    private bool CanCopyEntry(object? item) => !IsSelectedSessionLocked && (ClipboardNote(item) is not null || ManagedFolderPath(item) is not null);
 
     [RelayCommand(CanExecute = nameof(CanCopyEntry))]
     private void CopyEntry(object? item) => SetClipboardNote(item, false);
@@ -31,7 +32,8 @@ public sealed partial class NotesViewModel
     private void SetClipboardNote(object? item, bool cut)
     {
         if (!CanCopyEntry(item)) return;
-        _clipboardNotePath = ClipboardNote(item)!.FullPath;
+        _clipboardIsFolder = ManagedFolderPath(item) is not null;
+        _clipboardNotePath = ManagedFolderPath(item) ?? ClipboardNote(item)!.FullPath;
         _clipboardCut = cut;
         PasteEntryCommand.NotifyCanExecuteChanged();
         CancelClipboardCommand.NotifyCanExecuteChanged();
@@ -67,6 +69,14 @@ public sealed partial class NotesViewModel
         };
         try
         {
+            if (_clipboardIsFolder)
+            {
+                var folder = _vaultService.TransferFolder(source, destination, _clipboardCut);
+                if (_clipboardCut) CancelClipboard();
+                _notificationService?.PushLocalized(LocalizedTextFormatter.Format("Explorer_Pasted"),
+                    LocalizedTextFormatter.Literal(folder.Name), NotificationSeverity.Success);
+                return;
+            }
             var editor = OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, source));
             if (editor is not null && !editor.PrepareFileTransfer()) return;
             var note = _vaultService.GetNote(source) ?? throw new FileNotFoundException(null, source);

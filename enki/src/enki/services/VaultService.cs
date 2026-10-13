@@ -695,7 +695,8 @@ public sealed partial class VaultService
                      .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
         {
             var name = Path.GetFileName(dir);
-            if (string.IsNullOrEmpty(name) || IsHiddenDirectoryName(name)) continue;
+            if (string.IsNullOrEmpty(name) || IsHiddenDirectoryName(name) ||
+                (File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0) continue;
             result.Add(new NoteFolder { FullPath = dir, Children = BuildFolderChildren(dir) });
         }
         return result;
@@ -706,7 +707,7 @@ public sealed partial class VaultService
         var safeName = SanitizeFileName(desiredName ?? LocalizationService.Instance["Vault_DefaultFolderName"]);
         var path = Path.Combine(parentPath, safeName);
         var suffix = 2;
-        while (Directory.Exists(path))
+        while (Directory.Exists(path) || File.Exists(path))
         {
             path = Path.Combine(parentPath, $"{safeName} {suffix}");
             suffix++;
@@ -731,7 +732,7 @@ public sealed partial class VaultService
         var newPath = Path.Combine(parent, safeName);
         if (PathsEqual(newPath, folder.FullPath)) return folder;
 
-        if (Directory.Exists(newPath)) newPath = ResolveCollision(parent, safeName, extension: null);
+        if (Directory.Exists(newPath) || File.Exists(newPath)) newPath = ResolveCollision(parent, safeName, extension: null);
 
         Directory.Move(folder.FullPath, newPath);
         folder.FullPath = newPath;
@@ -740,18 +741,18 @@ public sealed partial class VaultService
 
     public void DeleteFolder(NoteFolder folder)
     {
-        if (!Directory.Exists(folder.FullPath)) return;
-
+        ValidateFolderPath(folder.FullPath);
+        var change = new FolderMutation(folder.FullPath, null);
+        FolderChanging?.Invoke(change);
+        if (change.Cancel) throw new IOException(LocalizationService.Instance["Folders_Error_PendingChanges"]);
         Directory.CreateDirectory(TrashPath);
-        var destination = Path.Combine(TrashPath, Path.GetFileName(folder.FullPath));
-        var suffix = 2;
-        while (Directory.Exists(destination))
-        {
-            destination = Path.Combine(TrashPath, $"{Path.GetFileName(folder.FullPath)} {suffix}");
-            suffix++;
-        }
-
-        Directory.Move(folder.FullPath, destination);
+        var destination = UniqueFolderPath(TrashPath, string.Equals(folder.Name, "sessions", StringComparison.OrdinalIgnoreCase) ? folder.Name + " 2" : folder.Name);
+        // Guardar el origen antes del traslado conserva la asociación de cifrado incluso ante un cierre.
+        RecordTrashOrigin(destination, folder.FullPath);
+        try { Directory.Move(folder.FullPath, destination); }
+        catch { RemoveTrashOrigin(destination); throw; }
+        InvalidateVaultSizeCache();
+        FolderChanged?.Invoke(change);
     }
 
     public NoteFile MoveNote(NoteFile note, string destinationFolderPath)
@@ -920,7 +921,7 @@ public sealed partial class VaultService
         {
             candidate = Path.Combine(dir, $"{safeName} {suffix}{extension}");
             suffix++;
-        } while (extension is null ? Directory.Exists(candidate) : File.Exists(candidate));
+        } while (Directory.Exists(candidate) || File.Exists(candidate));
 
         return candidate;
     }

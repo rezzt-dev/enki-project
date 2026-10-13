@@ -36,6 +36,10 @@
                 DragDrop.Drop="FolderRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
+              <MenuItem Header="{loc:Tr Folders_Manage, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
               <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
               <MenuItem Header="{loc:Tr Notes_RenameMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}">
@@ -44,7 +48,7 @@
                 </MenuItem.Icon>
               </MenuItem>
               <MenuItem Header="{loc:Tr Notes_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
-                        Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateSubfolderCommand}"
+                        Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateFolderDialogCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
@@ -80,10 +84,10 @@
                       KeyDown="FolderNameEdit_KeyDown" LostFocus="FolderNameEdit_LostFocus"
                       Initialized="FolderNameEdit_Initialized"
                       PropertyChanged="FolderNameEdit_PropertyChanged" />
-            <Button Grid.Column="3" Classes="icon-btn" Width="20" Height="20" Command="{Binding BeginRenameCommand}"
-                    ToolTip.Tip="{loc:Tr Notes_RenameFolderTooltip}"
-                    AutomationProperties.Name="{loc:Tr Notes_RenameFolderTooltip}">
-              <mi:MaterialIcon Kind="FolderEditOutline" Width="14" Height="14" />
+            <Button Grid.Column="3" Classes="icon-btn" Width="20" Height="20" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}"
+                    ToolTip.Tip="{loc:Tr Folders_Manage}"
+                    AutomationProperties.Name="{loc:Tr Folders_Manage}">
+              <mi:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14" />
             </Button>
             <Button Grid.Column="4" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
                     Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).DeleteFolderCommand}"
@@ -110,6 +114,11 @@
               CommandParameter="{Binding}">
         <Button.ContextMenu>
           <ContextMenu>
+              <MenuItem Header="{loc:Tr Folders_Manage, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding !IsParent}" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding !IsParent}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding !IsParent}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Folders_Create, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding !IsParent}" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateFolderDialogCommand}" CommandParameter="{Binding}" />
+              <Separator />
             <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}"
                       Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}"
                       CommandParameter="{Binding}" />
@@ -254,7 +263,7 @@
             </StackPanel>
 
             <Button Grid.Row="1" Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    Padding="10,8" Margin="0,0,0,12" Command="{Binding NewFolderCommand}">
+                    Padding="10,8" Margin="0,0,0,12" Command="{Binding CreateFolderDialogCommand}">
               <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <mi:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" />
                 <TextBlock Text="{loc:Tr Notes_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" FontSize="11" />
@@ -317,7 +326,7 @@
                   <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Notes_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" Command="{Binding NewFolderCommand}">
+              <MenuItem Header="{loc:Tr Notes_NewFolderButton, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CreateFolderDialogCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>

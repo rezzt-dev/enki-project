@@ -11,6 +11,7 @@ public sealed partial class FilesViewModel
 {
     private string? _clipboardFilePath;
     private bool _clipboardCut;
+    private bool _clipboardIsFolder;
 
     private static FileCardViewModel? ClipboardCard(object? item) => item switch
     {
@@ -19,7 +20,7 @@ public sealed partial class FilesViewModel
         _ => null
     };
 
-    private bool CanCopyEntry(object? item) => !IsSelectedSessionLocked && ClipboardCard(item) is not null;
+    private bool CanCopyEntry(object? item) => !IsSelectedSessionLocked && (ClipboardCard(item) is not null || ManagedFolderPath(item) is not null);
 
     [RelayCommand(CanExecute = nameof(CanCopyEntry))]
     private void CopyEntry(object? item) => SetClipboardFile(item, false);
@@ -30,7 +31,8 @@ public sealed partial class FilesViewModel
     private void SetClipboardFile(object? item, bool cut)
     {
         if (!CanCopyEntry(item)) return;
-        _clipboardFilePath = ClipboardCard(item)!.File.FullPath;
+        _clipboardIsFolder = ManagedFolderPath(item) is not null;
+        _clipboardFilePath = ManagedFolderPath(item) ?? ClipboardCard(item)!.File.FullPath;
         _clipboardCut = cut;
         PasteEntryCommand.NotifyCanExecuteChanged();
         CancelClipboardCommand.NotifyCanExecuteChanged();
@@ -66,6 +68,12 @@ public sealed partial class FilesViewModel
         };
         if (!TryVaultOperation("Files_Notify_MoveFailed_Title", () =>
             {
+                if (_clipboardIsFolder)
+                {
+                    _vaultService.TransferFolder(source, destination, _clipboardCut);
+                    if (_clipboardCut) CancelClipboard();
+                    return;
+                }
                 if (_vaultService.IsPathInLockedSession(source)) throw new SessionLockedException(source);
                 if (_vaultService.IsPathInLockedSession(destination)) throw new SessionLockedException(destination);
                 if (!Directory.Exists(destination)) throw new DirectoryNotFoundException(destination);

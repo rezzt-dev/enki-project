@@ -27,6 +27,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - selector `ajustes > apariencia > animaciones` para elegir entre el perfil normal, predeterminado, y el sutil, guardado por vault y aplicado al instante; sutiles acorta las transiciones, elimina desplazamientos decorativos y reduce la animacion del grafo de sesiones sin ocultar indicadores funcionales.
 - crear skills desde la carpeta activa con una plantilla Markdown inicial, atajos `ctrl+n` y `ctrl+shift+n`, y un espacio vacio que permite importar o empezar una biblioteca de habilidades.
 - permitir soltar archivos Markdown externos sobre las carpetas, tarjetas, raiz y area de trabajo de Habilidades, conservando el destino elegido durante la resolucion de conflictos.
+- gestion completa de carpetas compartida por Notas y Archivos: crear con nombre confirmado, renombrar, copiar, mover, cortar, pegar, abrir en el sistema y eliminar desde la rejilla o el arbol; conserva subcarpetas, adjuntos y carpetas vacias, evita sobrescrituras y mantiene sincronizadas las pestañas abiertas, previsualizaciones e integraciones Kanban.
+- categoria Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ambito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
 - actualizar en vivo las listas de recordatorios cuando otra pantalla modifica sus entidades, conservar el detalle abierto aunque deje de cumplir un filtro y ampliar los formularios y detalles para facilitar la lectura en ventanas estrechas.
@@ -51,6 +53,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - redisenar el detalle y editor de Habilidades con lector Markdown a ancho completo, metadatos desplegables solo cuando existen, herramientas de formato, vista de codigo, guardado manual y atajos `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` y `ctrl+shift+n`.
 - reorganizar el pie del detalle de Habilidades para alinear sus acciones, igualar la altura de los botones y situar `codigo markdown` a la derecha junto al resto de controles.
 - ocultar las carpetas `*.attachments` de las vistas, busquedas y recuentos de Notas y Archivos, sin eliminar sus imagenes ni impedir que las notas las muestren.
+- refinar el grafo nativo de sesiones con una malla contextual, etiquetas de sesion sin solapamientos, ficha de detalle dentro del area visible y una distribucion estable al cambiar enlaces o filtros.
 
 #### CORREGIDO
 - evitar que el grafo de sesiones quede vacio o inutilizable si el navegador no confirma la carga o las bibliotecas WPE de linux son incompatibles; validar los simbolos nativos necesarios, cambiar al renderizador de respaldo y comprobarlo en la ci de linux, windows y macos.
@@ -88,6 +91,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a `settings > appearance > animations` selector for the default normal or subtle profile, persisted per vault and applied immediately; subtle shortens transitions, removes decorative translation and reduces session-graph animation without hiding functional indicators.
 - create skills from the active folder with an initial Markdown template, `ctrl+n` and `ctrl+shift+n` shortcuts, and an empty workspace that can import or start a skill library.
 - allow dropping external Markdown files onto Skills folders, cards, root and workspace, while retaining the chosen destination during conflict resolution.
+- complete folder management shared by Notes and Files: create after confirming a name, rename, copy, move, cut, paste, reveal in the system and delete from grid or tree views; it preserves subfolders, attachments and empty folders, avoids overwrites, and keeps open tabs, previews and Kanban integrations in sync.
+- a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 
 #### CHANGED
 - update reminder lists live when another screen modifies their entities, keep the open detail visible even when it no longer matches a filter, and widen forms and details for easier reading in narrow windows.
@@ -112,6 +117,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - redesign the Skills detail and editor with a full-width Markdown reader, metadata shown only when present, formatting tools, source view, manual save, and `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` and `ctrl+shift+n` shortcuts.
 - reorganise the Skills detail footer to align its actions, match button heights, and place `markdown code` on the right beside the remaining controls.
 - hide `*.attachments` folders from Notes and Files views, searches and counts without deleting their images or preventing notes from rendering them.
+- refine the native session graph with a contextual mesh, non-overlapping session labels, an in-viewport detail card, and a stable layout when links or filters change.
 
 #### FIXED
 - prevent the session graph from becoming blank or unusable when the browser does not confirm loading or linux WPE libraries are incompatible; validate required native symbols, switch to the fallback renderer and cover it in linux, windows and macos ci.

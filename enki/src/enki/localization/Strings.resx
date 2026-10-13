@@ -6165,4 +6165,31 @@ Happy writing.</value>
   <data name="Skills_Metadata" xml:space="preserve"><value>Metadata</value></data>
   <data name="Skills_Reload" xml:space="preserve"><value>Reload from disk</value></data>
   <data name="Skills_DiscardWarning" xml:space="preserve"><value>Unsaved changes to this skill will be discarded. Copy your draft before continuing if you want to keep it.</value></data>
+  <data name="Folders_Manage" xml:space="preserve"><value>MANAGE FOLDER</value></data>
+  <data name="Folders_Create" xml:space="preserve"><value>NEW FOLDER</value></data>
+  <data name="Folders_Rename" xml:space="preserve"><value>RENAME</value></data>
+  <data name="Folders_Move" xml:space="preserve"><value>MOVE</value></data>
+  <data name="Folders_Copy" xml:space="preserve"><value>COPY</value></data>
+  <data name="Folders_Delete" xml:space="preserve"><value>DELETE</value></data>
+  <data name="Folders_Name" xml:space="preserve"><value>FOLDER NAME</value></data>
+  <data name="Folders_Destination" xml:space="preserve"><value>DESTINATION FOLDER</value></data>
+  <data name="Folders_Root" xml:space="preserve"><value>Root</value></data>
+  <data name="Folders_CreateHint" xml:space="preserve"><value>The folder will be created here when you confirm its name.</value></data>
+  <data name="Folders_ContentsHint" xml:space="preserve"><value>Operations include all notes, files, subfolders and attachments.</value></data>
+  <data name="Folders_CollisionHint" xml:space="preserve"><value>If the name already exists, a number is added. Existing content is preserved.</value></data>
+  <data name="Folders_DeleteHint" xml:space="preserve"><value>The entire folder will be sent to Trash. You can restore it from there.</value></data>
+  <data name="Folders_Reveal" xml:space="preserve"><value>OPEN LOCATION</value></data>
+  <data name="Folders_Error" xml:space="preserve"><value>Could not complete the operation</value></data>
+  <data name="Folders_Done" xml:space="preserve"><value>Folder updated</value></data>
+  <data name="Folders_Trash" xml:space="preserve"><value>FOLDERS</value></data>
+  <data name="Folders_Restore" xml:space="preserve"><value>RESTORE</value></data>
+  <data name="Folders_Error_OutsideVault" xml:space="preserve"><value>The folder must be inside the vault.</value></data>
+  <data name="Folders_Error_Internal" xml:space="preserve"><value>Internal vault folders cannot be modified.</value></data>
+  <data name="Folders_Error_RootProtected" xml:space="preserve"><value>Manage the vault root and sessions from Settings and Sessions.</value></data>
+  <data name="Folders_Error_SymbolicLink" xml:space="preserve"><value>Folders containing symbolic links cannot be transferred.</value></data>
+  <data name="Folders_Error_InvalidName" xml:space="preserve"><value>Use a visible name without reserved characters or leading or trailing spaces.</value></data>
+  <data name="Folders_Error_Descendant" xml:space="preserve"><value>The destination cannot be the folder itself or one of its subfolders.</value></data>
+  <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Resolve pending changes in open notes before continuing.</value></data>
+  <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Invalid trash folder.</value></data>
+  <data name="Folders_Error_Changed" xml:space="preserve"><value>The folder changed during the transfer. Please try again.</value></data>
 </root>

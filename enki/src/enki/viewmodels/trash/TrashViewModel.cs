@@ -36,6 +36,8 @@ public sealed partial class TrashViewModel : ViewModelBase
     private readonly SessionService _sessionService;
     private readonly Action? _onSessionsChanged;
 
+    public ObservableCollection<NoteFolder> Folders { get; } = [];
+
     public ObservableCollection<NoteCardViewModel> Notes { get; } = [];
     public ObservableCollection<TrashedTaskCardViewModel> Tasks { get; } = [];
     public ObservableCollection<FileCardViewModel> Files { get; } = [];
@@ -77,7 +79,7 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     /// <summary>Drives the "VACIAR PAPELERA" button, which purges documentos, tareas, archivos, tareas de
     /// Polar, recordatorios y sesiones.</summary>
-    public bool IsFullyEmpty => IsEmpty && IsTasksEmpty && IsFilesEmpty && IsPolarTasksEmpty && IsRemindersEmpty && IsSessionsEmpty;
+    public bool IsFullyEmpty => Folders.Count == 0 && IsEmpty && IsTasksEmpty && IsFilesEmpty && IsPolarTasksEmpty && IsRemindersEmpty && IsSessionsEmpty;
 
     /// <summary>Combined item count across every section — drives the "Papelera" nav badge so the user
     /// can tell there's something to review without opening the page.</summary>
@@ -115,6 +117,7 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     private static string Describe(object item) => item switch
     {
+        NoteFolder folder => folder.Name,
         NoteCardViewModel note => note.Title,
         FileCardViewModel file => file.FileName,
         TrashedTaskCardViewModel task => task.Title,
@@ -162,6 +165,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         _notificationService = notificationService;
         _sessionService = sessionService;
         _onSessionsChanged = onSessionsChanged;
+        _vaultService.FolderChanged += _ => Reload();
 
         Reload();
     }
@@ -226,7 +230,10 @@ public sealed partial class TrashViewModel : ViewModelBase
         foreach (var session in _sessionService.ListTrashedSessions()) Sessions.Add(new TrashedSessionCardViewModel(session));
         IsSessionsEmpty = Sessions.Count == 0;
 
-        TotalCount = Notes.Count + Tasks.Count + Files.Count + PolarLists.Count + PolarTasks.Count + Reminders.Count + Sessions.Count;
+        Folders.Clear();
+        foreach (var folder in _vaultService.GetTrashedFolders()) Folders.Add(folder);
+        OnPropertyChanged(nameof(IsFullyEmpty));
+        TotalCount = Folders.Count + Notes.Count + Tasks.Count + Files.Count + PolarLists.Count + PolarTasks.Count + Reminders.Count + Sessions.Count;
     }
 
     [RelayCommand]
@@ -274,6 +281,9 @@ public sealed partial class TrashViewModel : ViewModelBase
     {
         switch (PendingPermanentDelete)
         {
+            case NoteFolder folder:
+                if (!TryFolderTrashOperation(() => _vaultService.PermanentlyDeleteFolder(folder))) return;
+                break;
             case NoteCardViewModel note:
                 _vaultService.PermanentlyDelete(note.Note);
                 break;
@@ -298,6 +308,27 @@ public sealed partial class TrashViewModel : ViewModelBase
 
         PendingPermanentDelete = null;
         Reload();
+    }
+
+    [RelayCommand]
+    private void RestoreFolder(NoteFolder folder)
+    {
+        if (!TryFolderTrashOperation(() => _vaultService.RestoreFolder(folder))) return;
+        _notificationService.Push(LocalizationService.Instance["Folders_Done"], folder.Name, NotificationSeverity.Success);
+        Reload();
+    }
+
+    [RelayCommand]
+    private void RequestDeleteFolderForever(NoteFolder folder) => PendingPermanentDelete = folder;
+
+    private bool TryFolderTrashOperation(Action action)
+    {
+        try { action(); return true; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            _notificationService.Push(LocalizationService.Instance["Folders_Error"], ex.Message, NotificationSeverity.Error);
+            return false;
+        }
     }
 
     [RelayCommand]
@@ -450,6 +481,10 @@ public sealed partial class TrashViewModel : ViewModelBase
         var polarTasksDeleted = 0;
         var remindersDeleted = 0;
         var sessionsDeleted = 0;
+
+        if (PendingEmptyTarget is TrashEmptyTarget.All)
+            foreach (var folder in _vaultService.GetTrashedFolders())
+                if (!TryFolderTrashOperation(() => _vaultService.PermanentlyDeleteFolder(folder))) { Reload(); return; }
 
         if (PendingEmptyTarget is TrashEmptyTarget.Documents or TrashEmptyTarget.All)
         {

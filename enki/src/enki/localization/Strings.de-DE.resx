@@ -6164,4 +6164,31 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Skills_Metadata" xml:space="preserve"><value>Metadaten</value></data>
   <data name="Skills_Reload" xml:space="preserve"><value>Von Datenträger neu laden</value></data>
   <data name="Skills_DiscardWarning" xml:space="preserve"><value>Nicht gespeicherte Änderungen an diesem Skill werden verworfen. Kopiere deinen Entwurf vorher, wenn du ihn behalten möchtest.</value></data>
+  <data name="Folders_Manage" xml:space="preserve"><value>ORDNER VERWALTEN</value></data>
+  <data name="Folders_Create" xml:space="preserve"><value>NEUER ORDNER</value></data>
+  <data name="Folders_Rename" xml:space="preserve"><value>UMBENENNEN</value></data>
+  <data name="Folders_Move" xml:space="preserve"><value>VERSCHIEBEN</value></data>
+  <data name="Folders_Copy" xml:space="preserve"><value>KOPIEREN</value></data>
+  <data name="Folders_Delete" xml:space="preserve"><value>LÖSCHEN</value></data>
+  <data name="Folders_Name" xml:space="preserve"><value>ORDNERNAME</value></data>
+  <data name="Folders_Destination" xml:space="preserve"><value>ZIELORDNER</value></data>
+  <data name="Folders_Root" xml:space="preserve"><value>Stammverzeichnis</value></data>
+  <data name="Folders_CreateHint" xml:space="preserve"><value>Der Ordner wird hier erstellt, sobald du den Namen bestätigst.</value></data>
+  <data name="Folders_ContentsHint" xml:space="preserve"><value>Die Vorgänge umfassen alle Notizen, Dateien, Unterordner und Anhänge.</value></data>
+  <data name="Folders_CollisionHint" xml:space="preserve"><value>Wenn der Name bereits existiert, wird eine Nummer angehängt. Vorhandene Inhalte bleiben erhalten.</value></data>
+  <data name="Folders_DeleteHint" xml:space="preserve"><value>Der gesamte Ordner wird in den Papierkorb verschoben. Du kannst ihn dort wiederherstellen.</value></data>
+  <data name="Folders_Reveal" xml:space="preserve"><value>SPEICHERORT ÖFFNEN</value></data>
+  <data name="Folders_Error" xml:space="preserve"><value>Vorgang konnte nicht abgeschlossen werden</value></data>
+  <data name="Folders_Done" xml:space="preserve"><value>Ordner aktualisiert</value></data>
+  <data name="Folders_Trash" xml:space="preserve"><value>ORDNER</value></data>
+  <data name="Folders_Restore" xml:space="preserve"><value>WIEDERHERSTELLEN</value></data>
+  <data name="Folders_Error_OutsideVault" xml:space="preserve"><value>Der Ordner muss sich im Vault befinden.</value></data>
+  <data name="Folders_Error_Internal" xml:space="preserve"><value>Interne Vault-Ordner können nicht geändert werden.</value></data>
+  <data name="Folders_Error_RootProtected" xml:space="preserve"><value>Verwalte den Vault und Sitzungen unter Einstellungen und Sitzungen.</value></data>
+  <data name="Folders_Error_SymbolicLink" xml:space="preserve"><value>Ordner mit symbolischen Links können nicht übertragen werden.</value></data>
+  <data name="Folders_Error_InvalidName" xml:space="preserve"><value>Verwende einen sichtbaren Namen ohne reservierte Zeichen oder Leerzeichen am Anfang oder Ende.</value></data>
+  <data name="Folders_Error_Descendant" xml:space="preserve"><value>Das Ziel darf weder der Ordner selbst noch einer seiner Unterordner sein.</value></data>
+  <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Kläre ausstehende Änderungen in offenen Notizen, bevor du fortfährst.</value></data>
+  <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Ungültiger Papierkorbordner.</value></data>
+  <data name="Folders_Error_Changed" xml:space="preserve"><value>Der Ordner wurde während der Übertragung geändert. Versuche es erneut.</value></data>
 </root>

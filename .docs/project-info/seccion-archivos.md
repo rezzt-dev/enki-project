@@ -335,8 +335,8 @@ comando o un manejador de arrastre.
   que apuntaba a la vieja (`_folderRemap`): la carpeta actual, las carpetas expandidas de los dos árboles, la
   selección del árbol y el archivo abierto, que se recarga desde su ruta nueva.
 - **Borrar carpeta**: siempre pasa por `RequestDeleteFolder` (fila, tarjeta o nodo), que pide confirmación si
-  `ConfirmBeforeDelete` está activo. La carpeta se mueve a `<vault>/.trash`; como la sección Papelera solo
-  lista archivos sueltos, el modal lo dice. Si contenía el archivo abierto o la carpeta actual, se cierran.
+  `ConfirmBeforeDelete` está activo. La carpeta se mueve a `<vault>/.trash` y se puede restaurar desde la categoría Carpetas de
+  la Papelera. Si contenía el archivo abierto o la carpeta actual, se cierran.
 - **Borrar archivo**: confirmación igual, a la papelera del vault (restaurable desde Papelera). Si era el
   archivo abierto, se abre el siguiente (o el anterior) en su lugar.
 - **Mover** (arrastrar una tarjeta o fila sobre una carpeta; formato interno `com.enki.file-path`, el mismo
@@ -399,7 +399,8 @@ Todo con `CornerRadius="0"`, según `docs/sistema-diseno-web.md`.
 - **No enlaza notas con archivos** vía wikilinks; la relación con Documentos es estructural (mismas carpetas,
   mismo selector de sesión).
 - **No hay caché de miniaturas persistente** (§5).
-- **La sección Papelera no lista carpetas borradas**: quedan en `<vault>/.trash` y se recuperan a mano (§10).
+- **La sección Papelera lista las carpetas borradas** y permite restaurarlas o eliminarlas permanentemente.
+  Ver [Gestión de carpetas](manejo-carpetas.md) para las operaciones compartidas con Notas.
 
 ## 15. Verificación de compatibilidad (2026-10-01)
 

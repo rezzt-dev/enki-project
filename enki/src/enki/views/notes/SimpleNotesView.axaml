@@ -46,8 +46,10 @@
                 DragDrop.Drop="TreeRow_Drop">
           <Border.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
-              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsNote}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Folders_Manage, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}" />
+              <Separator />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
               <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
               <Separator />
               <MenuItem Header="{loc:Tr Notes_SimpleView_NewNoteInFolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
@@ -60,7 +62,7 @@
               </MenuItem>
               <MenuItem Header="{loc:Tr Notes_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         IsVisible="{Binding IsFolder}"
-                        Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateTreeSubfolderCommand}"
+                        Command="{Binding $parent[UserControl].((vm:NotesViewModel)DataContext).CreateFolderDialogCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
@@ -354,7 +356,7 @@
                     AutomationProperties.Name="{loc:Tr Notes_Templates_Tooltip}">
               <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="16" Height="16" />
             </Button>
-            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewFolderAtRootCommand}"
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}"
                     ToolTip.Tip="{loc:Tr Notes_SimpleView_NewFolder_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Notes_SimpleView_NewFolder_Tooltip}">
               <mi:MaterialIcon Kind="FolderPlusOutline" Width="16" Height="16" />

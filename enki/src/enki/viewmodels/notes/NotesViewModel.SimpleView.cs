@@ -450,7 +450,7 @@ public sealed partial class NotesViewModel
         {
             try
             {
-                node.UpdateFolder(VaultService.RenameFolder(node.Folder!, newName));
+                node.UpdateFolder(_vaultService.RenameManagedFolder(node.FullPath, newName));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
             {
@@ -490,7 +490,8 @@ public sealed partial class NotesViewModel
             return;
         }
 
-        _vaultService.DeleteFolder(node.Folder!);
+        FolderManager.Open(node.FullPath, EffectiveRootPath);
+        FolderManager.SelectOperationCommand.Execute("Delete");
         ReloadFolders();
         Reload(); // recarga también el árbol del panel lateral
     }

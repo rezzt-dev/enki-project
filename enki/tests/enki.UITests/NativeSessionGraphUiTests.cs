@@ -93,6 +93,34 @@ public class NativeSessionGraphUiTests
     }
 
     [Fact]
+    public void LinkUpdate_PreservesZoomAndNodePositions()
+    {
+        HeadlessApp.EnsureInitialized();
+        var graph = CreateGraph();
+        var control = new NativeSessionGraph();
+        control.SetGraph(graph, reset: true);
+        var window = new Window { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(800, 600));
+            bitmap.Render(control);
+            window.MouseWheel(new Point(200, 200), new Vector(0, 2));
+            var before = graph.Nodes.Select(n => control.NodeScreenPosition(n.GlobalId)).ToArray();
+            graph.Edges.Clear();
+            control.SetGraph(graph, reset: false);
+            bitmap.Render(control);
+            Assert.Equal(before, graph.Nodes.Select(n => control.NodeScreenPosition(n.GlobalId)).ToArray());
+        }
+        finally
+        {
+            window.Close();
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
+
+    [Fact]
     public void Layout_HandlesLargeGraphsAndInvalidStoredCoordinates()
     {
         HeadlessApp.EnsureInitialized();
@@ -116,6 +144,64 @@ public class NativeSessionGraphUiTests
             var point = control.NodeScreenPosition(node.GlobalId);
             Assert.True(double.IsFinite(point.X) && double.IsFinite(point.Y));
             Assert.True(new Rect(control.Bounds.Size).Contains(point));
+        }
+    }
+
+    [Theory]
+    [InlineData(616, 508)]
+    [InlineData(360, 300)]
+    public void CrowdedStoredGraph_LabelsStayInsideViewportWithoutOverlapping(int width, int height)
+    {
+        HeadlessApp.EnsureInitialized();
+        var graph = new SessionGraph();
+        for (var i = 0; i < 150; i++)
+            graph.Nodes.Add(new SessionGraphNode
+            {
+                SessionId = $"session-{i % 9}", SessionName = $"Session with a long name {i % 9}",
+                RelativePath = $"{i}.md", Title = new string('X', 300),
+                HasStoredPosition = true, X = Math.Cos(i) * 100, Y = Math.Sin(i) * 100
+            });
+        var control = new NativeSessionGraph();
+        var saved = false;
+        control.PositionsChanged += _ => saved = true;
+        control.SetGraph(graph, reset: true);
+        var window = new Window { Width = width, Height = height, Content = control };
+        try
+        {
+            window.Show();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(width, height));
+            bitmap.Render(control);
+            Assert.NotEmpty(control.LabelBounds);
+            AssertLabels();
+            var point = control.NodeScreenPosition(graph.Nodes[0].GlobalId);
+            window.MouseMove(point);
+            bitmap.Render(control);
+            Assert.Null(ToolTip.GetTip(control));
+            AssertLabels();
+            window.MouseWheel(point, new Vector(0, 3));
+            bitmap.Render(control);
+            AssertLabels();
+            Assert.False(saved);
+        }
+        finally
+        {
+            window.Close();
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        void AssertLabels()
+        {
+            var labels = control.LabelBounds;
+            var viewport = new Rect(control.Bounds.Size);
+            for (var i = 0; i < labels.Count; i++)
+            {
+                Assert.True(viewport.Contains(labels[i]));
+                for (var j = i + 1; j < labels.Count; j++)
+                    Assert.False(labels[i].Intersects(labels[j]));
+                foreach (var node in graph.Nodes)
+                    Assert.False(labels[i].Contains(control.NodeScreenPosition(node.GlobalId)));
+            }
         }
     }
 

@@ -6164,4 +6164,31 @@ Feliz escritura.</value>
   <data name="Skills_Metadata" xml:space="preserve"><value>Metadatos</value></data>
   <data name="Skills_Reload" xml:space="preserve"><value>Recargar desde disco</value></data>
   <data name="Skills_DiscardWarning" xml:space="preserve"><value>Se descartarán los cambios sin guardar de esta skill. Copia el borrador antes de continuar si quieres conservarlo.</value></data>
+  <data name="Folders_Manage" xml:space="preserve"><value>GESTIONAR CARPETA</value></data>
+  <data name="Folders_Create" xml:space="preserve"><value>NUEVA CARPETA</value></data>
+  <data name="Folders_Rename" xml:space="preserve"><value>RENOMBRAR</value></data>
+  <data name="Folders_Move" xml:space="preserve"><value>MOVER</value></data>
+  <data name="Folders_Copy" xml:space="preserve"><value>COPIAR</value></data>
+  <data name="Folders_Delete" xml:space="preserve"><value>ELIMINAR</value></data>
+  <data name="Folders_Name" xml:space="preserve"><value>NOMBRE DE LA CARPETA</value></data>
+  <data name="Folders_Destination" xml:space="preserve"><value>CARPETA DE DESTINO</value></data>
+  <data name="Folders_Root" xml:space="preserve"><value>Raíz</value></data>
+  <data name="Folders_CreateHint" xml:space="preserve"><value>La carpeta se creará aquí cuando confirmes el nombre.</value></data>
+  <data name="Folders_ContentsHint" xml:space="preserve"><value>Las operaciones incluyen todas las notas, archivos, subcarpetas y adjuntos.</value></data>
+  <data name="Folders_CollisionHint" xml:space="preserve"><value>Si el nombre ya existe, se añadirá un número. El contenido existente se conserva.</value></data>
+  <data name="Folders_DeleteHint" xml:space="preserve"><value>Se enviará la carpeta completa a la Papelera. Podrás restaurarla desde allí.</value></data>
+  <data name="Folders_Reveal" xml:space="preserve"><value>ABRIR UBICACIÓN</value></data>
+  <data name="Folders_Error" xml:space="preserve"><value>No se pudo completar la operación</value></data>
+  <data name="Folders_Done" xml:space="preserve"><value>Carpeta actualizada</value></data>
+  <data name="Folders_Trash" xml:space="preserve"><value>CARPETAS</value></data>
+  <data name="Folders_Restore" xml:space="preserve"><value>RESTAURAR</value></data>
+  <data name="Folders_Error_OutsideVault" xml:space="preserve"><value>La carpeta debe pertenecer al vault.</value></data>
+  <data name="Folders_Error_Internal" xml:space="preserve"><value>No se pueden gestionar carpetas internas del vault.</value></data>
+  <data name="Folders_Error_RootProtected" xml:space="preserve"><value>La raíz del vault y las sesiones se gestionan desde Ajustes y Sesiones.</value></data>
+  <data name="Folders_Error_SymbolicLink" xml:space="preserve"><value>No se pueden gestionar enlaces simbólicos.</value></data>
+  <data name="Folders_Error_InvalidName" xml:space="preserve"><value>Usa un nombre visible, sin caracteres reservados ni espacios al principio o al final.</value></data>
+  <data name="Folders_Error_Descendant" xml:space="preserve"><value>El destino no puede ser la propia carpeta ni una de sus subcarpetas.</value></data>
+  <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Resuelve los cambios pendientes en las notas abiertas antes de continuar.</value></data>
+  <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Carpeta de papelera no válida.</value></data>
+  <data name="Folders_Error_Changed" xml:space="preserve"><value>La carpeta ha cambiado durante el traslado. Inténtalo de nuevo.</value></data>
 </root>

@@ -19,6 +19,7 @@ internal sealed class NativeSessionGraph : Control
     private readonly Dictionary<string, Point> _positions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IBrush> _colors = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SessionGraphNode> _nodes = new(StringComparer.Ordinal);
+    private IReadOnlyList<(string From, string To)> _mesh = [];
     private double _scale = 1;
     private Vector _offset;
     private bool _needsFit = true;
@@ -36,6 +37,9 @@ internal sealed class NativeSessionGraph : Control
     public event Action<string>? NodeClicked;
     public event Action<string>? NodeDoubleClicked;
     public event Action<IReadOnlyList<(string RelativePath, double X, double Y, double Z)>>? PositionsChanged;
+
+    private readonly List<Rect> _labelBounds = [];
+    internal IReadOnlyList<Rect> LabelBounds => _labelBounds;
 
     internal int NodeCount => _nodes.Count;
     internal Point NodeScreenPosition(string id) => ToScreen(_positions[id]);
@@ -58,7 +62,10 @@ internal sealed class NativeSessionGraph : Control
         _pointer?.Capture(null);
         _hovered = null;
         ToolTip.SetTip(this, null);
-        if (reset) _positions.Clear();
+        var membershipChanged = graph.Nodes.Count != _positions.Count || graph.Nodes.Any(n => !_positions.ContainsKey(n.GlobalId));
+        var hasNewNodes = graph.Nodes.Any(n => !_positions.ContainsKey(n.GlobalId));
+        // No mezcla coordenadas de dos distribuciones al añadir notas o ampliar un filtro.
+        if (reset || hasNewNodes) _positions.Clear();
         _graph = graph;
         _nodes.Clear();
         _colors.Clear();
@@ -67,33 +74,15 @@ internal sealed class NativeSessionGraph : Control
             _positions.Remove(id);
         if (_pending is not null && !visible.Contains(_pending)) _pending = null;
 
-        // Distribución determinista por sesión. Las posiciones guardadas o arrastradas tienen prioridad.
-        // Coste lineal: también funciona con vaults grandes sin una simulación cuadrática en el hilo UI.
-        var groups = graph.Nodes.GroupBy(n => n.SessionId).OrderBy(g => g.Key, StringComparer.Ordinal).ToArray();
-        var largestRadius = groups.Length == 0 ? 0 : 30 * Math.Sqrt(groups.Max(g => g.Count()));
-        var orbit = groups.Length <= 1 ? 0 : (largestRadius + 100) / Math.Sin(Math.PI / groups.Length);
-        for (var groupIndex = 0; groupIndex < groups.Length; groupIndex++)
+        var layout = NativeSessionGraphLayout.Create(graph);
+        foreach (var node in graph.Nodes)
         {
-            var group = groups[groupIndex];
-            var angle = 2 * Math.PI * groupIndex / groups.Length;
-            var center = new Point(Math.Cos(angle) * orbit, Math.Sin(angle) * orbit);
-            var index = 0;
-            foreach (var node in group.OrderBy(n => n.GlobalId, StringComparer.Ordinal))
-            {
-                _nodes[node.GlobalId] = node;
-                _colors[node.GlobalId] = new SolidColorBrush(Color.Parse(SessionGraphRenderer.NodeBrightness.ColorFor(node.SessionId, node.SessionColor)));
-                if (!_positions.ContainsKey(node.GlobalId))
-                {
-                    var radius = 30 * Math.Sqrt(index);
-                    var theta = index * 2.399963229728653;
-                    _positions[node.GlobalId] = node.HasStoredPosition && double.IsFinite(node.X) && double.IsFinite(node.Y)
-                        ? new Point(node.X, node.Y)
-                        : center + new Vector(Math.Cos(theta) * radius, Math.Sin(theta) * radius);
-                }
-                index++;
-            }
+            _nodes[node.GlobalId] = node;
+            _colors[node.GlobalId] = new SolidColorBrush(Color.Parse(SessionGraphRenderer.NodeBrightness.ColorFor(node.SessionId, node.SessionColor)));
+            _positions.TryAdd(node.GlobalId, layout[node.GlobalId]);
         }
-        _needsFit = true;
+        _mesh = NativeSessionGraphLayout.CreateMesh(graph, _positions);
+        _needsFit |= reset || membershipChanged;
         InvalidateVisual();
     }
 
@@ -141,9 +130,12 @@ internal sealed class NativeSessionGraph : Control
         context.FillRectangle(Brush("GraphBackdropDotsBrush", Brushes.Transparent), rect);
         context.FillRectangle(Brush("GraphBackdropBloomBrush", Brushes.Transparent), rect);
         var ink = Brush("Ink90", Brushes.White);
-        var edgePen = new Pen(Brush("Ink20", Brushes.Gray), 1);
-        var manualPen = new Pen(Brush("Ink60", Brushes.Gray), 1.5);
-        var highlightPen = new Pen(ink, 1.5);
+        var meshPen = new Pen(Brush("Ink20", Brushes.DimGray), 0.65);
+        var edgePen = new Pen(Brush("Ink60", Brushes.Gray), 1.6);
+        var manualPen = new Pen(Brush("Ink80", Brushes.Gray), 1.9);
+        var highlightPen = new Pen(ink, 2.4);
+        foreach (var (from, to) in _mesh)
+            context.DrawLine(meshPen, ToScreen(_positions[from]), ToScreen(_positions[to]));
         foreach (var edge in _graph.Edges)
         {
             if (!_positions.TryGetValue(edge.FromGlobalId, out var from) || !_positions.TryGetValue(edge.ToGlobalId, out var to)) continue;
@@ -154,29 +146,64 @@ internal sealed class NativeSessionGraph : Control
         {
             var point = NodeScreenPosition(node.GlobalId);
             if (!rect.Inflate(12).Contains(point)) continue;
-            var radius = node.GlobalId == _pending ? 8 : 5;
+            var radius = Math.Clamp(7 * _scale, 0.75, 5) * (node.GlobalId == _pending ? 1.6 : 1);
             context.DrawEllipse(_colors[node.GlobalId], null, point, radius, radius);
             if (node.GlobalId == _pending || node.GlobalId == _hovered || _rejected.Contains(node.GlobalId))
                 context.DrawEllipse(null, new Pen(_rejected.Contains(node.GlobalId) ? Brush("DangerBrush", Brushes.Red) : ink, 1.5), point, radius + 4, radius + 4);
         }
         var font = this.TryFindResource("MonoFontFamily", out var resource) && resource is FontFamily family ? family : FontFamily.Default;
-        foreach (var group in _graph.Nodes.GroupBy(n => n.SessionId))
+        _labelBounds.Clear();
+        var occupied = new List<Rect>();
+        var nodeBounds = _graph.Nodes.Select(n => new Rect(NodeScreenPosition(n.GlobalId) - new Vector(9, 9), new Size(18, 18))).ToArray();
+        // Reserva primero la ficha enfocada para que ninguna etiqueta la tape.
+        FormattedText? detail = null;
+        Rect detailBounds = default;
+        if (_hovered is { } id && _nodes.TryGetValue(id, out var hovered) && rect.Contains(NodeScreenPosition(id)) && Bounds.Width > 24 && Bounds.Height > 24)
         {
-            var points = group.Select(n => NodeScreenPosition(n.GlobalId)).ToArray();
-            var text = new FormattedText(group.First().SessionName, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                new Typeface(font), 11, ink) { MaxTextWidth = 180, Trimming = TextTrimming.CharacterEllipsis };
-            var origin = new Point(points.Average(p => p.X) - text.Width / 2, points.Min(p => p.Y) - text.Height - 18);
-            context.FillRectangle(Brush("GraphChipBackgroundBrush", Brushes.Black), new Rect(origin - new Vector(6, 3), new Size(text.Width + 12, text.Height + 6)));
-            context.DrawText(text, origin);
-        }
-        // El título enfocado también se muestra sin depender del retardo del tooltip del sistema.
-        if (_hovered is { } id && _nodes.TryGetValue(id, out var hovered))
-        {
-            var text = new FormattedText(hovered.Title, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(font), 12, ink);
+            detail = new FormattedText($"{hovered.Title}\n{hovered.SessionName}", CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight, new Typeface(font), 12, ink)
+            {
+                MaxTextWidth = Math.Max(1, Math.Min(320, Bounds.Width - 32)),
+                MaxTextHeight = Math.Max(1, Math.Min(100, Bounds.Height - 32)),
+                Trimming = TextTrimming.CharacterEllipsis
+            };
             var point = NodeScreenPosition(id);
-            var origin = new Point(Math.Clamp(point.X + 14, 4, Math.Max(4, Bounds.Width - text.Width - 8)), Math.Max(4, point.Y - text.Height - 10));
-            context.FillRectangle(Brush("GraphChipBackgroundBrush", Brushes.Black), new Rect(origin - new Vector(4, 2), new Size(text.Width + 8, text.Height + 4)));
-            context.DrawText(text, origin);
+            var size = new Size(detail.Width + 16, detail.Height + 12);
+            var top = point.Y + 16;
+            if (top + size.Height > Bounds.Height - 8) top = point.Y - size.Height - 16;
+            detailBounds = new Rect(new Point(Math.Clamp(point.X + 16, 8, Math.Max(8, Bounds.Width - size.Width - 8)),
+                Math.Clamp(top, 8, Math.Max(8, Bounds.Height - size.Height - 8))), size);
+            occupied.Add(detailBounds.Inflate(4));
+        }
+        foreach (var group in _graph.Nodes.GroupBy(n => n.SessionId).OrderBy(g => g.Key, StringComparer.Ordinal))
+        {
+            var points = group.Select(n => NodeScreenPosition(n.GlobalId)).Where(rect.Contains).ToArray();
+            if (points.Length == 0 || Bounds.Width < 40) continue;
+            var text = new FormattedText(group.First().SessionName, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                new Typeface(font), 11, ink)
+            {
+                MaxTextWidth = Math.Max(1, Math.Min(180, Bounds.Width - 28)),
+                MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis
+            };
+            var size = new Size(text.Width + 12, text.Height + 6);
+            var left = Math.Clamp(points.Average(p => p.X) - size.Width / 2, 8, Math.Max(8, Bounds.Width - size.Width - 8));
+            // Solo posiciones cercanas al grupo: si no caben, el zoom o la ficha permiten identificarlo.
+            foreach (var top in new[] { points.Min(p => p.Y) - size.Height - 14, points.Max(p => p.Y) + 14 })
+            {
+                var label = new Rect(new Point(left, top), size);
+                if (!rect.Contains(label) || occupied.Any(r => r.Intersects(label.Inflate(4))) || nodeBounds.Any(r => r.Intersects(label))) continue;
+                occupied.Add(label);
+                _labelBounds.Add(label);
+                context.FillRectangle(Brush("GraphChipBackgroundBrush", Brushes.Black), label);
+                context.DrawText(text, label.TopLeft + new Vector(6, 3));
+                break;
+            }
+        }
+        if (detail is not null)
+        {
+            context.FillRectangle(Brush("GraphChipBackgroundBrush", Brushes.Black), detailBounds);
+            context.DrawRectangle(new Pen(Brush("Ink20", Brushes.Gray), 1), detailBounds);
+            context.DrawText(detail, detailBounds.TopLeft + new Vector(8, 6));
         }
     }
 
@@ -189,8 +216,8 @@ internal sealed class NativeSessionGraph : Control
         var maxX = _positions.Values.Max(p => p.X);
         var minY = _positions.Values.Min(p => p.Y);
         var maxY = _positions.Values.Max(p => p.Y);
-        _scale = Math.Clamp(Math.Min(Math.Max(1, Bounds.Width - 180) / Math.Max(100, maxX - minX),
-            Math.Max(1, Bounds.Height - 200) / Math.Max(100, maxY - minY)), 0.001, 4);
+        _scale = Math.Clamp(Math.Min(Math.Max(1, Bounds.Width - 80) / Math.Max(100, maxX - minX),
+            Math.Max(1, Bounds.Height - 140) / Math.Max(100, maxY - minY)), 0.001, 4);
         _offset = new Vector(Bounds.Width / 2 - (minX + maxX) / 2 * _scale, Bounds.Height / 2 - (minY + maxY) / 2 * _scale);
     }
 
@@ -244,12 +271,7 @@ internal sealed class NativeSessionGraph : Control
         }
         else
         {
-            var hovered = HitNode(point);
-            if (hovered != _hovered)
-            {
-                _hovered = hovered;
-                ToolTip.SetTip(this, hovered is not null ? $"{_nodes[hovered].Title}\n{_nodes[hovered].SessionName}" : null);
-            }
+            _hovered = HitNode(point);
         }
         InvalidateVisual();
     }
