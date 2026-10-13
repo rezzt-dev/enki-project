@@ -1,7 +1,10 @@
 using System;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
+using enki.Models;
 using Avalonia.VisualTree;
 using enki.Localization;
 using enki.Services;
@@ -26,7 +29,7 @@ public class RemindersViewUiTests : IDisposable
         if (Directory.Exists(_tempDir)) Directory.Delete(_tempDir, recursive: true);
     }
 
-    private (RemindersView View, RemindersViewModel ViewModel, Window Window) CreateView()
+    private (RemindersView View, RemindersViewModel ViewModel, Window Window) CreateView(double width = 1100)
     {
         var settings = new SettingsService(_tempDir);
         var authService = new PolarAuthService(settings);
@@ -37,7 +40,7 @@ public class RemindersViewUiTests : IDisposable
         var viewModel = new RemindersViewModel(reminderService, authService, syncService);
 
         var view = new RemindersView { DataContext = viewModel };
-        var window = new Window { Content = view, Width = 1100, Height = 800 };
+        var window = new Window { Content = view, Width = width, Height = 800 };
         window.Show();
 
         return (view, viewModel, window);
@@ -46,6 +49,52 @@ public class RemindersViewUiTests : IDisposable
     private static string RenderedText(Window window) => string.Join(
         " | ",
         window.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).Where(t => !string.IsNullOrEmpty(t)));
+
+    /// <summary>La fecha y las acciones siguen dentro de la fila con textos largos y poco ancho.</summary>
+    [Theory]
+    [InlineData(480)]
+    [InlineData(1100)]
+    public void ReminderRows_KeepContentAndActionsInside_AndCommandsWork(double width)
+    {
+        var service = new ReminderService(_tempDir);
+        service.Create(new string('W', 100), "Descripción extensa de un recordatorio para comprobar el ajuste del contenido en una ventana estrecha.",
+            DateTime.UtcNow.AddDays(-2), "BellRingOutline", recurrence: PolarRecurrence.Daily);
+        var (view, vm, window) = CreateView(width);
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var row = view.GetVisualDescendants().OfType<Border>().Single(b => b.Classes.Contains("reminder-row"));
+            var rowBounds = new Rect(row.TranslatePoint(default, window)!.Value, row.Bounds.Size);
+            var buttons = row.GetVisualDescendants().OfType<Button>().ToArray();
+            Assert.Equal(2, buttons.Length);
+            foreach (var button in buttons)
+            {
+                var bounds = new Rect(button.TranslatePoint(default, window)!.Value, button.Bounds.Size);
+                Assert.True(rowBounds.Contains(bounds));
+                Assert.InRange(bounds.Right, 0, width);
+            }
+            var metadata = row.GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.Classes.Contains("reminder-meta")).ToArray();
+            Assert.Equal(3, metadata.Length);
+            foreach (var text in metadata)
+            {
+                var bounds = new Rect(text.TranslatePoint(default, window)!.Value, text.Bounds.Size);
+                Assert.True(rowBounds.Contains(bounds));
+                Assert.True(bounds.Width > 0);
+            }
+            var complete = buttons.Single(b => b.Command == vm.ToggleCompletedCommand);
+            complete.Command!.Execute(complete.CommandParameter);
+            Assert.True(Assert.Single(vm.Items).IsCompleted);
+            Assert.Null(vm.Detail);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var open = view.GetVisualDescendants().OfType<Button>().Single(b => b.Command == vm.OpenDetailCommand);
+            open.Command!.Execute(open.CommandParameter);
+            Assert.NotNull(vm.Detail);
+        }
+        finally { window.Close(); }
+    }
 
     [Fact]
     public void RemindersView_RendersWithoutThrowing()

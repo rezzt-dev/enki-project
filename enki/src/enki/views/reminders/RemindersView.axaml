@@ -17,6 +17,35 @@
        abierto. Remapeable (propuesta 29, docs/propuesta-nuevas-funcionalidades.md) — ver
        RemindersView.axaml.cs (BuildKeyBindings). -->
 
+  <UserControl.Styles>
+    <Style Selector="Border.reminder-row">
+      <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Border.reminder-row:pointerover, Border.reminder-row:focus-within">
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
+    </Style>
+    <Style Selector="Border.reminder-status">
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="7,3" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Border.reminder-status.overdue">
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerMutedBrush}" />
+    </Style>
+    <Style Selector="TextBlock.reminder-meta">
+      <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.reminder-meta.overdue">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+    </Style>
+  </UserControl.Styles>
+
   <UserControl.DataTemplates>
     <!-- ===================== Celda del calendario (misma VM que Kanban, ver ReminderEditorViewModel) ===================== -->
     <DataTemplate DataType="vm:KanbanCalendarDayViewModel">
@@ -138,55 +167,59 @@
         <ItemsControl ItemsSource="{Binding VisibleItems}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <StackPanel Spacing="0" />
+              <StackPanel Spacing="10" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate DataType="vm:ReminderListItemViewModel">
-              <Grid ColumnDefinitions="*,Auto">
-                <Button Grid.Column="0" Classes="note-card activity-row" Classes.unread="{Binding !IsRead}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                        Padding="18"
-                        Command="{Binding $parent[ItemsControl].((vm:RemindersViewModel)DataContext).OpenDetailCommand}"
-                        CommandParameter="{Binding}"
-                        AutomationProperties.Name="{Binding Title}">
-                  <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Grid.Column="0" Width="38" Height="38" Background="{DynamicResource Ink05}"
-                            VerticalAlignment="Top">
-                      <mi:MaterialIcon Kind="{Binding IconKind}" Width="17" Height="17"
-                                        Foreground="{DynamicResource Ink70}"
-                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
-               </Border>
-
-                    <StackPanel Grid.Column="1" Spacing="4" Margin="14,0">
-                      <Grid ColumnDefinitions="Auto,*">
-                        <Ellipse Grid.Column="0" Margin="0,0,8,0" Width="6" Height="6" Fill="{DynamicResource Ink90}" IsVisible="{Binding !IsRead}" />
-                        <TextBlock Grid.Column="1" Text="{Binding Title}" Classes="subtask-title" Classes.done="{Binding IsCompleted}"
-                                   FontWeight="Bold" FontSize="14" LetterSpacing="0.2"
-                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
-                      </Grid>
-                      <TextBlock Text="{Binding Description}" Classes="muted" FontSize="12"
-                                 TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
-                                 IsVisible="{Binding HasDescription}" />
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Top">
-                      <TextBlock Text="{Binding NotifyAtLabel}" Classes="faint" Classes.overdue="{Binding IsOverdue}" />
-                      <TextBlock Text="{Binding StatusLabel}" Classes="faint" Classes.overdue="{Binding IsOverdue}" />
-                      <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" IsVisible="{Binding HasRecurrence}">
-                        <mi:MaterialIcon Kind="RepeatVariant" Width="11" Height="11" Foreground="{DynamicResource Ink40}" />
-                        <TextBlock Text="{Binding RecurrenceLabel, Converter={StaticResource UpperCaseConverter}}" Classes="faint" />
+              <Border Classes="reminder-row">
+                <Grid ColumnDefinitions="*,Auto">
+                  <Button Grid.Column="0" Classes="dropdown-item" Margin="0" Padding="16" MinHeight="112"
+                          HorizontalContentAlignment="Stretch" VerticalAlignment="Stretch"
+                          Command="{Binding $parent[ItemsControl].((vm:RemindersViewModel)DataContext).OpenDetailCommand}"
+                          CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                      <Border Width="36" Height="36" Background="{DynamicResource Ink05}" VerticalAlignment="Top" CornerRadius="0">
+                        <mi:MaterialIcon Kind="{Binding IconKind}" Width="18" Height="18"
+                                         Foreground="{DynamicResource Ink70}" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16" LetterSpacing="-0.2"
+                                     TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                          <Ellipse Grid.Column="1" Width="6" Height="6" Fill="{DynamicResource Ink90}"
+                                   VerticalAlignment="Center" IsVisible="{Binding !IsRead}" />
+                        </Grid>
+                        <TextBlock Text="{Binding Description}" Classes="muted" FontSize="13" LineHeight="20"
+                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
+                                   IsVisible="{Binding HasDescription}" />
+                        <WrapPanel Margin="0,2,0,-6">
+                          <Border Classes="reminder-status" Classes.overdue="{Binding IsOverdue}" Margin="0,0,12,6">
+                            <TextBlock Text="{Binding StatusLabel, Converter={StaticResource UpperCaseConverter}}"
+                                       Classes="reminder-meta" Classes.overdue="{Binding IsOverdue}" FontSize="10" LetterSpacing="0.8" />
+                          </Border>
+                          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,12,6">
+                            <mi:MaterialIcon Kind="CalendarClockOutline" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding NotifyAtLabel}" Classes="reminder-meta" Classes.overdue="{Binding IsOverdue}" />
+                          </StackPanel>
+                          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,6" IsVisible="{Binding HasRecurrence}">
+                            <mi:MaterialIcon Kind="RepeatVariant" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding RecurrenceLabel}" Classes="reminder-meta" />
+                          </StackPanel>
+                        </WrapPanel>
                       </StackPanel>
-                    </StackPanel>
-                  </Grid>
-                </Button>
-                <Button Grid.Column="1" Classes="icon-btn" Width="44" Height="44" Margin="8,0,0,0"
-                        VerticalAlignment="Center"
-                        Command="{Binding $parent[ItemsControl].((vm:RemindersViewModel)DataContext).ToggleCompletedCommand}"
-                        CommandParameter="{Binding}" ToolTip.Tip="{Binding CompletedToggleLabel}"
-                        AutomationProperties.Name="{Binding CompletedToggleLabel}">
-                  <mi:MaterialIcon Kind="{Binding CompletedToggleIcon}" Width="20" Height="20" />
-                </Button>
-              </Grid>
+                    </Grid>
+                  </Button>
+                  <Border Grid.Column="1" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,0,0" Padding="6">
+                    <Button Classes="icon-btn icon-only-hover" Width="40" Height="40" VerticalAlignment="Center"
+                            Command="{Binding $parent[ItemsControl].((vm:RemindersViewModel)DataContext).ToggleCompletedCommand}"
+                            CommandParameter="{Binding}" ToolTip.Tip="{Binding CompletedToggleLabel}"
+                            AutomationProperties.Name="{Binding CompletedToggleLabel}">
+                      <mi:MaterialIcon Kind="{Binding CompletedToggleIcon}" Width="20" Height="20" />
+                    </Button>
+                  </Border>
+                </Grid>
+              </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

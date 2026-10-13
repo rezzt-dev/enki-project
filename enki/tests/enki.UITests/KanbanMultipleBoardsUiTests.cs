@@ -179,6 +179,41 @@ public sealed class KanbanMultipleBoardsUiTests : IDisposable
         finally { window.Close(); }
     }
 
+    /// <summary>El selector limita la lista y mantiene accesible el pie con muchos tableros.</summary>
+    [Theory]
+    [InlineData(480)]
+    [InlineData(1100)]
+    public void Selector_LongNamesAndManyBoards_KeepActionsWithinPopover(double width)
+    {
+        var (view, vm, service, window, _) = Create(width);
+        try
+        {
+            for (var i = 0; i < 12; i++) service.CreateBoard($"{i} {new string('W', 70)}");
+            vm.Reload();
+            vm.ToggleBoardSelectorCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var list = view.FindControl<ListBox>("BoardList")!;
+            var popover = list.GetVisualAncestors().OfType<Border>().First(b => b.Classes.Contains("dropdown-popover"));
+            Assert.InRange(popover.Bounds.Width, 1, width);
+            Assert.InRange(list.Bounds.Height, 1, 300);
+            var create = popover.GetVisualDescendants().OfType<Button>().Single(b => b.Command == vm.CreateBoardCommand);
+            var createOrigin = create.TranslatePoint(default, popover)!.Value;
+            Assert.True(createOrigin.Y >= list.TranslatePoint(default, popover)!.Value.Y + list.Bounds.Height);
+            Assert.True(createOrigin.Y + create.Bounds.Height <= popover.Bounds.Height);
+            foreach (var button in list.GetVisualDescendants().OfType<Button>())
+            {
+                var origin = button.TranslatePoint(default, popover)!.Value;
+                Assert.InRange(origin.X, 0, popover.Bounds.Width);
+                Assert.True(origin.X + button.Bounds.Width <= popover.Bounds.Width);
+            }
+            create.Command!.Execute(create.CommandParameter);
+            Assert.True(vm.IsBoardNameEditorOpen);
+            Assert.False(vm.IsBoardSelectorOpen);
+        }
+        finally { window.Close(); }
+    }
+
     [Fact]
     public void NameDialog_ReceivesFocus_AndCreatesEmptyBoard()
     {

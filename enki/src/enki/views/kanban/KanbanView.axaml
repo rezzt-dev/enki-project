@@ -54,6 +54,16 @@
     <Style Selector="ListBox#BoardList ListBoxItem:focus-visible Border.board-choice">
       <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
     </Style>
+    <Style Selector="Border.board-choice">
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Margin" Value="0,2" />
+    </Style>
+    <Style Selector="Border.board-choice:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    </Style>
+    <Style Selector="Button.board-title-selector.open, Button.board-title-selector:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    </Style>
     <Style Selector="Border.board-choice.selected">
       <Setter Property="Background" Value="{DynamicResource Ink10}" />
       <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
@@ -893,7 +903,7 @@
         <TextBlock Text="{loc:Tr Kanban_Board_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
         <TextBlock Grid.Row="1" Text="{Binding BoardName, Converter={StaticResource UpperCaseSpacedBulletConverter}}"
                    Classes="page-title" TextTrimming="CharacterEllipsis" IsVisible="{Binding !MultipleBoardsEnabled}" />
-        <Button Grid.Row="1" x:Name="BoardSelectorButton" Classes="board-title-selector" MaxWidth="460"
+        <Button Grid.Row="1" x:Name="BoardSelectorButton" Classes="board-title-selector" Classes.open="{Binding IsBoardSelectorOpen}" MaxWidth="460"
                 HorizontalAlignment="Left" IsVisible="{Binding MultipleBoardsEnabled}"
                 Command="{Binding ToggleBoardSelectorCommand}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Select}">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -949,42 +959,69 @@
 
         <Popup Grid.Row="1" IsOpen="{Binding IsBoardSelectorOpen, Mode=TwoWay}" PlacementTarget="{Binding #BoardSelectorButton}"
                Placement="BottomEdgeAlignedLeft" VerticalOffset="8" IsLightDismissEnabled="True">
-          <Border Classes="dropdown-popover" Width="340" Padding="14" KeyDown="BoardSelector_KeyDown">
-            <StackPanel Spacing="12">
-              <TextBox x:Name="BoardSearchBox" Text="{Binding BoardSearchText}" PlaceholderText="{loc:Tr Kanban_Multi_Search}"
-                       AutomationProperties.Name="{loc:Tr Kanban_Multi_Search}" />
-              <ListBox x:Name="BoardList" Focusable="True" KeyDown="BoardList_KeyDown" SelectedItem="{Binding CurrentBoardOption, Mode=OneWay}" ItemsSource="{Binding BoardOptions}" MaxHeight="300" AutomationProperties.Name="{loc:Tr Kanban_Multi_Boards}">
+          <Border Classes="dropdown-popover" Width="380" MaxWidth="{Binding $parent[UserControl].Bounds.Width}"
+                  MaxHeight="520" Padding="16" KeyDown="BoardSelector_KeyDown">
+            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Tr Kanban_Multi_Boards, Converter={StaticResource UpperCaseConverter}}"
+                           Classes="eyebrow" LetterSpacing="2" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding BoardOptions.Count}" Classes="faint" />
+              </Grid>
+              <Grid Grid.Row="1">
+                <TextBox Classes="search" MinHeight="40" Padding="34,0,12,0" VerticalContentAlignment="Center"
+                         x:Name="BoardSearchBox" Text="{Binding BoardSearchText}" PlaceholderText="{loc:Tr Kanban_Multi_Search}"
+                         AutomationProperties.Name="{loc:Tr Kanban_Multi_Search}" />
+                <mi:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="12,0,0,0"
+                                 HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Grid>
+              <ListBox Grid.Row="2" x:Name="BoardList" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Focusable="True" KeyDown="BoardList_KeyDown" SelectedItem="{Binding CurrentBoardOption, Mode=OneWay}" ItemsSource="{Binding BoardOptions}" MaxHeight="300" AutomationProperties.Name="{loc:Tr Kanban_Multi_Boards}">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:KanbanBoardOption">
-                    <Border Classes="board-choice" Classes.selected="{Binding IsSelected}" BorderThickness="2,0,0,0" Padding="4,6">
-                    <Grid ColumnDefinitions="*,Auto">
-                    <Button Classes="dropdown-item" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                            Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).SelectBoardCommand}" CommandParameter="{Binding}"
-                            AutomationProperties.Name="{Binding Label}">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="{Binding Board.Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Board.Name}" />
-                        <TextBlock Text="{loc:Tr Kanban_Multi_Default, Converter={StaticResource UpperCaseConverter}}"
-                                   FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding IsDefault}" />
-                      </StackPanel>
-                    </Button>
-                      <Button Grid.Column="1" Classes="icon-btn" Width="28" Height="28" AutomationProperties.Name="{loc:Tr Kanban_Multi_Manage}">
-                        <mi:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14" />
-                        <Button.Flyout>
-                          <MenuFlyout>
-                            <MenuItem Header="{loc:Tr Kanban_Multi_Rename, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RenameSelectedBoardCommand}" CommandParameter="{Binding}" />
-                            <MenuItem Header="{loc:Tr Kanban_Multi_SetDefault, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).UseSelectedBoardAsDefaultCommand}" CommandParameter="{Binding}" IsEnabled="{Binding !IsDefault}" />
-                            <MenuItem Header="{loc:Tr Kanban_Multi_Delete, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).DeleteSelectedBoardCommand}" CommandParameter="{Binding}" />
-                          </MenuFlyout>
-                        </Button.Flyout>
-                      </Button>
-                    </Grid>
+                    <Border Classes="board-choice" Classes.selected="{Binding IsSelected}" BorderThickness="2,0,0,0" Padding="0">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <Button Classes="dropdown-item" Margin="0" Padding="12" MinHeight="60" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                          Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).SelectBoardCommand}" CommandParameter="{Binding}"
+                          AutomationProperties.Name="{Binding Label}">
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="6" VerticalAlignment="Center">
+                              <TextBlock Text="{Binding Board.Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Board.Name}" />
+                              <TextBlock Text="{loc:Tr Kanban_Multi_Default, Converter={StaticResource UpperCaseConverter}}"
+                                FontSize="10" LetterSpacing="1" FontFamily="{DynamicResource InterfaceLabelFontFamily}"
+                                Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding IsDefault}" />
+                            </StackPanel>
+                            <mi:MaterialIcon Grid.Column="1" Kind="Check" Width="18" Height="18"
+                              IsVisible="{Binding IsSelected}" VerticalAlignment="Center" />
+                          </Grid>
+                        </Button>
+                        <Button Grid.Column="1" Classes="icon-btn icon-only-hover" Width="36" Height="36" Margin="4,0,6,0" VerticalAlignment="Center" ToolTip.Tip="{loc:Tr Kanban_Multi_Manage}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Manage}">
+                          <mi:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14" />
+                          <Button.Flyout>
+                            <MenuFlyout>
+                              <MenuItem Header="{loc:Tr Kanban_Multi_Rename, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).RenameSelectedBoardCommand}" CommandParameter="{Binding}" />
+                              <MenuItem Header="{loc:Tr Kanban_Multi_SetDefault, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).UseSelectedBoardAsDefaultCommand}" CommandParameter="{Binding}" IsEnabled="{Binding !IsDefault}" />
+                              <MenuItem Header="{loc:Tr Kanban_Multi_Delete, Converter={StaticResource UpperCaseConverter}}" Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).DeleteSelectedBoardCommand}" CommandParameter="{Binding}" />
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                      </Grid>
                     </Border>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
               </ListBox>
-              <TextBlock Text="{loc:Tr Search_NoResults}" Classes="muted" IsVisible="{Binding !HasBoardSearchResults}" />
-              <Button Classes="pill" HorizontalAlignment="Stretch" Content="{loc:Tr Kanban_Multi_Create, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CreateBoardCommand}" />
-            </StackPanel>
+              <StackPanel Grid.Row="2" Spacing="10" Margin="12,20" IsVisible="{Binding !HasBoardSearchResults}">
+                <mi:MaterialIcon Kind="Magnify" Width="24" Height="24" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Search_NoResults}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+              </StackPanel>
+              <Border Grid.Row="3" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+                <Button Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="40" Command="{Binding CreateBoardCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="Plus" Width="16" Height="16" />
+                    <TextBlock Text="{loc:Tr Kanban_Multi_Create, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+              </Border>
+            </Grid>
           </Border>
         </Popup>
       <Button Grid.Row="1" Classes="ghost" HorizontalAlignment="Left" Margin="0,0,0,8"

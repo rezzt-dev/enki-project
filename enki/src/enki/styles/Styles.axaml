@@ -212,6 +212,12 @@
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
   </Style>
 
+  <!-- Acciones integradas en filas: el hover resalta el icono sin dibujar otra caja.
+       Se conservan el área de clic y el indicador de foco para el teclado. -->
+  <Style Selector="Button.icon-btn.icon-only-hover:pointerover /template/ ContentPresenter, Button.icon-btn.icon-only-hover:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
   <!-- Collapsed rail: nav items shrink from a stretched, left-aligned row into a centered square
        matching the logo and the icon-only buttons (32x32 — see Button.icon-btn.sidebar-toggle below
        and the logo Border in MainWindow.axaml), so every rail element — including the hover/active
