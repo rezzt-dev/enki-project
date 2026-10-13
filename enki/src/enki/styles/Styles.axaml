@@ -212,18 +212,14 @@
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
   </Style>
 
-  <!-- Acciones integradas en filas: el hover resalta el icono sin dibujar otra caja.
-       Se conservan el área de clic y el indicador de foco para el teclado. -->
-  <Style Selector="Button.icon-btn.icon-only-hover:pointerover /template/ ContentPresenter, Button.icon-btn.icon-only-hover:pressed /template/ ContentPresenter">
-    <Setter Property="Background" Value="Transparent" />
-  </Style>
-
   <!-- Collapsed rail: nav items shrink from a stretched, left-aligned row into a centered square
        matching the logo and the icon-only buttons (32x32 — see Button.icon-btn.sidebar-toggle below
-       and the logo Border in MainWindow.axaml), so every rail element — including the hover/active
-       highlight, which is painted on this same box — lines up and reads as the same shape. The
-       active-state left border only makes sense against a full-width row, so it's dropped here in
-       favor of the plain background fill. -->
+       and the logo Border in MainWindow.axaml), so every rail element lines up and reads as the same
+       shape. En el raíl no hay caja: con el texto oculto el icono es todo el botón, así que el hover y
+       el activo se resaltan sobre él (secundario → tinta plena), igual que en cualquier botón de icono
+       sin contorno. La barra desplegada conserva su relleno y su barra izquierda de 3px (§7.8), que
+       necesitan la fila completa con su etiqueta para leerse; por eso estas reglas van solo en
+       .collapsed y después de las de arriba, además de ser más específicas. -->
   <Style Selector="Button.nav-item.collapsed">
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -231,8 +227,23 @@
     <Setter Property="Height" Value="32" />
     <Setter Property="Padding" Value="0" />
   </Style>
+  <Style Selector="Button.nav-item.collapsed:pointerover /template/ ContentPresenter, Button.nav-item.collapsed:pressed /template/ ContentPresenter, Button.nav-item.collapsed.active /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
   <Style Selector="Button.nav-item.collapsed.active /template/ ContentPresenter">
     <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.nav-item.collapsed mi|MaterialIcon">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- El icono de Papelera ya es rojo en reposo (clase danger), así que se excluye: aclararlo a tinta
+       plena al pasar el cursor le quitaría justo lo que lo hace reconocible. -->
+  <Style Selector="Button.nav-item.collapsed:pointerover mi|MaterialIcon:not(.danger), Button.nav-item.collapsed:pressed mi|MaterialIcon:not(.danger)">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
   <!-- Brand header: centers on the logo alone once the sidebar text disappears (see MainWindow.axaml
@@ -862,7 +873,17 @@
     <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
   </Style>
 
-  <!-- ===================== Icon-only buttons ===================== -->
+  <!-- ===================== Icon-only buttons =====================
+       Un botón que es solo un icono y no dibuja contorno propio no tiene caja: toda su señal de uso vive
+       en el icono (secundario en reposo → tinta plena al pasar el cursor, al pulsarlo y mientras siga
+       activo). Es la variante ghost del sistema de diseño (§7.2: sin borde, el hover no añade fondo) y
+       el mismo trato que ya tenían las acciones integradas en filas, ahora aplicado a toda la familia en
+       vez de una clase por botón: en un cuadro de 34x34 con un icono de 14, el recuadro gris del
+       hover/pulsado leía como una caja ajena al botón, no como parte de él.
+
+       Se conservan el área de clic completa y el indicador de foco por teclado. Los botones CON contorno
+       (pill, titlebar-btn, code-copy-btn, tab-add, link-mode-toggle, side-panel-tab…) no se tocan: ahí el
+       recuadro sí es el botón, y su hover lo sigue pintando como siempre. -->
   <Style Selector="Button.icon-btn">
     <Setter Property="Width" Value="34" />
     <Setter Property="Height" Value="34" />
@@ -874,9 +895,9 @@
     <Setter Property="Padding" Value="0" />
     <Setter Property="Cursor" Value="Hand" />
   </Style>
-  <!-- Transitions have to sit on the exact element whose property the hover/danger states below
-       change — Background on the ContentPresenter template part, Foreground on the icon/text
-       children — otherwise the color snaps instead of fading. -->
+  <!-- Las transiciones van en el elemento exacto cuya propiedad cambia —el Foreground de los hijos
+       (icono y texto) en hover/pulsado/activo, el Background del ContentPresenter al deshabilitarse—
+       porque declaradas en el propio Button animan una propiedad que nadie lee y el cambio salta. -->
   <Style Selector="Button.icon-btn /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
@@ -898,26 +919,33 @@
       </Transitions>
     </Setter>
   </Style>
-  <Style Selector="Button.icon-btn:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource Ink10}" />
-  </Style>
   <Style Selector="Button.icon-btn:pointerover TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
   <Style Selector="Button.icon-btn:pointerover mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
-  <Style Selector="Button.icon-btn:pressed /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource Ink20}" />
-  </Style>
-  <!-- Toggle activo (p. ej. el botón de búsqueda de IA Skills mientras el cuadro está abierto) — mismo
-       tratamiento visual que :pointerover pero persistente mientras la clase esté presente. -->
-  <Style Selector="Button.icon-btn.active /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource Ink10}" />
-  </Style>
+  <!-- Toggle activo (p. ej. el conmutador Explorador/Árbol de Archivos, o el botón de búsqueda de IA
+       Skills mientras el cuadro está abierto): el mismo resalte que :pointerover, pero persistente
+       mientras la clase siga puesta. :pressed no necesita regla propia — al pulsar con el puntero
+       encima el botón sigue en :pointerover, que ya deja el icono en tinta plena. -->
   <Style Selector="Button.icon-btn.active mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
+  <!-- Check de exportar de las tarjetas de habilidades: dos iconos que se alternan con el estado. Su color
+       va por clase y no en el XAML de la vista porque un valor local en el icono le gana a cualquier
+       estilo, y este botón se quedaría sin ninguna señal al pasar el cursor: apagado se resalta a tinta
+       plena, marcado ya está en tinta plena y no cambia. -->
+  <Style Selector="Button.icon-btn mi|MaterialIcon.skill-export-on">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.icon-btn mi|MaterialIcon.skill-export-off">
+    <Setter Property="Foreground" Value="{DynamicResource Ink40}" />
+  </Style>
+  <Style Selector="Button.icon-btn:pointerover mi|MaterialIcon.skill-export-off">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
   <!-- Deshabilitado (p. ej. "archivo siguiente" en el último archivo, o subir un nivel en la raíz): sin el cuadro
        gris que el tema Fluent pone de fondo a un botón deshabilitado —el mismo fallo que ya se corrigió para
        :pointerover y :pressed—, solo el icono atenuado. -->
@@ -1013,14 +1041,14 @@
     <Setter Property="Height" Value="40" />
   </Style>
 
+  <!-- Acción destructiva: el icono es neutro en reposo y solo se tiñe de danger al apuntarlo con el
+       cursor, que es todo el resalte que necesita (sin relleno DangerMuted: la familia de botones de
+       icono ya no pinta caja, ver el comentario de Button.icon-btn). -->
   <Style Selector="Button.icon-btn-danger:pointerover TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
   </Style>
   <Style Selector="Button.icon-btn-danger:pointerover mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
-  </Style>
-  <Style Selector="Button.icon-btn-danger:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
   </Style>
 
   <!-- Collapsed rail: the sidebar toggle sits right-aligned next to the brand text when expanded,
@@ -1058,6 +1086,16 @@
        only the sharp-cornered Border above paints the hover, instead of two overlapping fills of
        possibly-different sizes. -->
   <Style Selector="Button.icon-btn.sidebar-toggle:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <!-- Plegado, el botón vive en el raíl, donde ningún elemento pinta caja (ver Button.nav-item.collapsed):
+       esta regla garantiza que la caja de 32x32 no aparezca ahí, y el hover se queda en el icono, que el
+       :pointerover base ya aclara. Desplegado conserva su caja: ahí es chrome del encabezado, no una celda
+       del raíl. Ojo: los dos Borders de MainWindow.axaml llevan un Background local que hoy le gana a estas
+       reglas, así que en la ventana real esa caja no llega a verse en ninguno de los dos estados — se deja
+       como estaba a propósito, pero si algún día se quita ese valor local, el desplegado la recupera y el
+       raíl (gracias a esta regla) sigue sin ella. -->
+  <Style Selector="Button.icon-btn.sidebar-toggle.collapsed:pointerover Border.sidebar-toggle-box">
     <Setter Property="Background" Value="Transparent" />
   </Style>
 

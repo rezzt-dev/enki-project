@@ -85,7 +85,7 @@
                       <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
                         <!-- Nombre acotado por la rejilla; las acciones nunca invaden esta línea. -->
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                          <Button Classes="icon-btn icon-only-hover" Width="24" Height="28" Padding="0"
+                          <Button Classes="icon-btn" Width="24" Height="28" Padding="0"
                                   VerticalAlignment="Center" IsVisible="{Binding !IsRenaming}"
                                   Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginChangeSessionColorCommand}"
                                   CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Color_Tooltip}"
@@ -111,27 +111,27 @@
                                      Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
                                      TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding NoteCountLabel}" Margin="0,0,6,0" />
                           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
-                            <Button Classes="icon-btn icon-only-hover" Width="28" Height="28"
+                            <Button Classes="icon-btn" Width="28" Height="28"
                                     IsVisible="{Binding ShowLockedIndicator}"
                                     Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestUnlockSessionCommand}"
                                     CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Locked_Tooltip}"
                                     AutomationProperties.Name="{loc:Tr Sessions_Locked_Tooltip}">
                               <mi:MaterialIcon Kind="LockOutline" Width="14" Height="14" />
                             </Button>
-                            <Button Classes="icon-btn icon-only-hover" Width="28" Height="28"
+                            <Button Classes="icon-btn" Width="28" Height="28"
                                     IsVisible="{Binding ShowUnlockedIndicator}"
                                     Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).LockSessionCommand}"
                                     CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_LockAction_Label}"
                                     AutomationProperties.Name="{loc:Tr Sessions_LockAction_Label}">
                               <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="14" Height="14" />
                             </Button>
-                            <Button Classes="icon-btn icon-only-hover" Width="28" Height="28"
+                            <Button Classes="icon-btn" Width="28" Height="28"
                                     Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginRenameSessionCommand}"
                                     CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_RenameTooltip}"
                                     AutomationProperties.Name="{loc:Tr Sessions_RenameTooltip}">
                               <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                             </Button>
-                            <Button Classes="icon-btn icon-btn-danger icon-only-hover" Width="28" Height="28"
+                            <Button Classes="icon-btn icon-btn-danger" Width="28" Height="28"
                                     IsVisible="{Binding !IsDefault}"
                                     Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestDeleteSessionCommand}"
                                     CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_DeleteTooltip}"

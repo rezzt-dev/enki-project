@@ -994,7 +994,7 @@
                               IsVisible="{Binding IsSelected}" VerticalAlignment="Center" />
                           </Grid>
                         </Button>
-                        <Button Grid.Column="1" Classes="icon-btn icon-only-hover" Width="36" Height="36" Margin="4,0,6,0" VerticalAlignment="Center" ToolTip.Tip="{loc:Tr Kanban_Multi_Manage}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Manage}">
+                        <Button Grid.Column="1" Classes="icon-btn" Width="36" Height="36" Margin="4,0,6,0" VerticalAlignment="Center" ToolTip.Tip="{loc:Tr Kanban_Multi_Manage}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Manage}">
                           <mi:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14" />
                           <Button.Flyout>
                             <MenuFlyout>

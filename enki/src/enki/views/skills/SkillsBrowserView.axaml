@@ -163,9 +163,9 @@
                     Command="{Binding ToggleExportCommand}" ToolTip.Tip="{loc:Tr Skills_Card_ToggleExport_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Skills_Card_ToggleExport_Tooltip}">
               <Panel>
-                <mi:MaterialIcon Kind="CheckboxMarked" Width="16" Height="16" Foreground="{DynamicResource InkBrush}"
+                <mi:MaterialIcon Kind="CheckboxMarked" Classes="skill-export-on" Width="16" Height="16"
                                  IsVisible="{Binding IsCheckedForExport}" />
-                <mi:MaterialIcon Kind="CheckboxBlankOutline" Width="16" Height="16" Foreground="{DynamicResource Ink40}"
+                <mi:MaterialIcon Kind="CheckboxBlankOutline" Classes="skill-export-off" Width="16" Height="16"
                                  IsVisible="{Binding !IsCheckedForExport}" />
               </Panel>
             </Button>

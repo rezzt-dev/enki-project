@@ -148,4 +148,59 @@ public class RemindersViewUiTests : IDisposable
 
         window.Close();
     }
+
+    /// <summary>La fila "Sincronizado con Polar · {fecha}" (escudo + etiqueta + botón de sync) tiene que
+    /// quedar centrada verticalmente. Sin <c>VerticalAlignment="Center"</c> el <see cref="TextBlock"/> se
+    /// estiraba a la altura del botón (20 px) mientras el icono, de 12 px fijos, sí se centraba — y como
+    /// Avalonia dibuja el texto desde el borde superior de la caja, la etiqueta salía pegada arriba.</summary>
+    [Fact]
+    public void PolarSyncStatusRow_IsVerticallyCentered()
+    {
+        var settings = new SettingsService(_tempDir);
+        var authService = new PolarAuthService(settings, baseUrl: "https://test.example", anonKey: "test-key");
+        settings.Settings.PolarLinked = true;
+        settings.Settings.PolarUserId = "user-1";
+        settings.Settings.PolarAccessToken = "test-token";
+        var syncService = new PolarSyncService(authService, new SupabaseRestClient(authService),
+            new PolarTaskService(_tempDir), new ReminderService(_tempDir), settings);
+        var viewModel = new RemindersViewModel(new ReminderService(_tempDir), authService, syncService)
+        {
+            LastSyncedLabel = "13 de oct, 12:10"
+        };
+
+        var view = new RemindersView { DataContext = viewModel };
+        var window = new Window { Content = view, Width = 1100, Height = 800 };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var label = view.GetVisualDescendants().OfType<TextBlock>()
+                .Single(t => t.Text == viewModel.PolarSyncStatusLabel);
+            var panel = (Control)label.Parent!;
+            var icon = panel.GetVisualChildren().OfType<Control>().First(c => !ReferenceEquals(c, label));
+            var row = (Control)panel.Parent!;
+
+            static Rect BoundsIn(Control control, Window window) =>
+                new(control.TranslatePoint(default, window)!.Value, control.Bounds.Size);
+
+            var rowBounds = BoundsIn(row, window);
+            var labelBounds = BoundsIn(label, window);
+            var iconBounds = BoundsIn(icon, window);
+
+            // El label conserva la altura de su propia línea de texto: estirado a la altura de la fila,
+            // el texto se dibuja desde arriba y se ve desalineado del icono aunque su caja esté centrada.
+            Assert.True(labelBounds.Height < rowBounds.Height,
+                $"La etiqueta de sync no debe estirarse a la altura de la fila ({labelBounds.Height} de {rowBounds.Height}).");
+            Assert.InRange(labelBounds.Center.Y, rowBounds.Center.Y - 1, rowBounds.Center.Y + 1);
+            Assert.InRange(iconBounds.Center.Y, rowBounds.Center.Y - 1, rowBounds.Center.Y + 1);
+            Assert.InRange(Math.Abs(labelBounds.Center.Y - iconBounds.Center.Y), 0, 1);
+        }
+        finally
+        {
+            window.Close();
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
 }

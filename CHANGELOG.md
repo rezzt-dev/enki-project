@@ -59,6 +59,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - presentar cada recordatorio en una fila enmarcada con su acción de completar o reabrir integrada, admitiendo título y descripción de hasta dos líneas y distribuyendo fecha, estado y recurrencia en una línea inferior que salta de línea cuando falta ancho; los vencidos usan el color de peligro, los completados conservan el título legible y se mantiene el punto de no leído.
 - reservar 260 px al panel de sesiones y repartir cada fila en dos líneas —color y nombre arriba, contador de notas y acciones debajo—, con el nombre acotado por la rejilla, recortado con elipsis y accesible por teclado para seleccionar la sesión, el renombrado ocupando el ancho completo y acciones de bloqueo, renombrado y eliminación de 28 px.
 - resaltar solo el icono al pasar el puntero por las acciones integradas de kanban, recordatorios y sesiones, sin fondo ni caja cuadrada, conservando el área de clic y el indicador de foco por teclado.
+- extender ese mismo resalte a todos los botones de la interfaz que son únicamente un icono y no dibujan contorno: el hover, el pulsado y el estado activo —conmutadores de vista como el de explorador/árbol de archivos, controles de formato del editor, acciones de tarjeta, navegación del calendario, ajustes— aclaran el icono sin pintar ningún recuadro, y la acción destructiva solo se tiñe de rojo; el raíl plegado de la barra lateral sigue la misma regla, mientras que la barra desplegada y los botones con contorno, como las píldoras o los controles de la barra de título, conservan su caja.
 - documentar el rediseño en `.docs/project-info/mejoras-selector-tableros-recordatorios.md` y cubrir teclado, búsqueda, nombres largos, muchos tableros, textos de recordatorios y límites de las acciones a 480, 800, 1100 y 1200 px en `KanbanMultipleBoardsUiTests`, `RemindersViewUiTests` y `SessionsListUiTests`.
 - unificar el fondo de los paneles laterales de las vistas simplificadas de Notas y Archivos con el de la aplicación (`AppBackgroundBrush`), tanto plegados como desplegados, para que la sección se lea como un bloque en vez de como una franja más oscura.
 
@@ -77,6 +78,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - impedir que el editor de Habilidades sobrescriba cambios externos, conservar el borrador ante un fallo y permitir recargar desde disco tras confirmar el descarte; limpiar también los temporales fallidos.
 - impedir que un arrastre sobre una carpeta de Habilidades se propague a la raíz, admitir nombres que colisionan con archivos o carpetas y evitar importaciones de un archivo sobre si mismo.
 - corregir la alineación vertical del botón `código markdown` y ocultar el desplegable de metadatos vacío en el detalle de Habilidades.
+- centrar verticalmente la fila de estado «sincronizado con polar» de la cabecera de recordatorios: sin alineación propia, la etiqueta se estiraba a la altura del botón de sincronización y avalonia dibuja el texto desde el borde superior de su caja, así que quedaba pegada arriba respecto al escudo y al botón.
 
 ### ENGLISH
 
@@ -130,6 +132,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - present each reminder as a framed row with its complete or reopen action integrated, allowing a two-line title and description and laying date, status and recurrence on a lower line that wraps when width runs short; overdue reminders use the danger colour, completed ones keep a readable title, and the unread dot is preserved.
 - reserve 260px for the sessions panel and split each row into two lines — colour and name on top, note count and actions below — with the name bounded by the grid, truncated with ellipsis and keyboard-accessible to select the session, renaming taking the full width and lock, rename and delete actions sized at 28px.
 - highlight only the icon on hover for the integrated kanban, reminders and sessions actions, with no background or square box, keeping the click area and the keyboard focus indicator.
+- extend that same highlight to every interface button that is just an icon and draws no outline: hover, press and the active state —view switchers such as the Files browser/tree toggle, editor formatting controls, card actions, calendar navigation, settings— brighten the icon without painting any box, and the destructive action only tints red; the collapsed sidebar rail follows the same rule, while the expanded sidebar and the outlined buttons, such as pills or the title bar controls, keep their box.
 - document the redesign in `.docs/project-info/mejoras-selector-tableros-recordatorios.md` and cover keyboard, search, long names, many boards, reminder text and action bounds at 480, 800, 1100 and 1200px in `KanbanMultipleBoardsUiTests`, `RemindersViewUiTests` and `SessionsListUiTests`.
 - unify the background of the sidebar panels in the simplified Notes and Files views with the app background (`AppBackgroundBrush`), both collapsed and expanded, so the section reads as a single block instead of a darker stripe.
 
@@ -148,6 +151,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - prevent the Skills editor from overwriting external changes, retain the draft after a failure and allow reloading from disk after confirming discard; also clean up failed temporary files.
 - prevent a drop over a Skills folder from propagating to root, accept names colliding with files or folders, and skip importing a file onto itself.
 - fix vertical alignment for the `markdown source` button and hide empty metadata disclosure in the Skills detail.
+- vertically centre the `synchronised with polar` status row in the reminders header: without its own alignment the label stretched to the height of the sync button and avalonia draws text from the top of its box, leaving it stuck to the top next to the shield and the button.
 
 ## [0.2.0] - 2026-09-23
 

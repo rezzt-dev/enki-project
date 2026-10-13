@@ -69,12 +69,15 @@
         <TextBlock Text="{loc:Tr Reminders_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
         <TextBlock Text="{loc:Tr Reminders_Subtitle}"
                    Classes="page-subtitle" TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0" IsVisible="{Binding IsPolarLinked}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="ShieldCheckOutline" Width="12" Height="12" Foreground="{DynamicResource Ink40}" />
-            <TextBlock Text="{Binding PolarSyncStatusLabel}" Classes="faint" />
+        <!-- Escudo + etiqueta + botón centrados verticalmente entre sí: el label es el más bajo del grupo y
+             un TextBlock estirado a la altura de la fila (los 20 px del botón) dibuja el texto desde arriba,
+             que es lo que dejaba la etiqueta desalineada respecto al icono. -->
+        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0" VerticalAlignment="Center" IsVisible="{Binding IsPolarLinked}">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" Width="12" Height="12" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{Binding PolarSyncStatusLabel}" Classes="faint" VerticalAlignment="Center" />
           </StackPanel>
-          <Button Classes="icon-btn" Width="20" Height="20" Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}" ToolTip.Tip="{loc:Tr Reminders_SyncNowTooltip}"
+          <Button Classes="icon-btn" Width="20" Height="20" VerticalAlignment="Center" Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}" ToolTip.Tip="{loc:Tr Reminders_SyncNowTooltip}"
                   AutomationProperties.Name="{loc:Tr Reminders_SyncNowTooltip}">
             <mi:MaterialIcon Kind="Autorenew" Width="12" Height="12" Classes.spin="{Binding IsSyncing}" />
           </Button>
@@ -211,7 +214,7 @@
                     </Grid>
                   </Button>
                   <Border Grid.Column="1" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,0,0" Padding="6">
-                    <Button Classes="icon-btn icon-only-hover" Width="40" Height="40" VerticalAlignment="Center"
+                    <Button Classes="icon-btn" Width="40" Height="40" VerticalAlignment="Center"
                             Command="{Binding $parent[ItemsControl].((vm:RemindersViewModel)DataContext).ToggleCompletedCommand}"
                             CommandParameter="{Binding}" ToolTip.Tip="{Binding CompletedToggleLabel}"
                             AutomationProperties.Name="{Binding CompletedToggleLabel}">
