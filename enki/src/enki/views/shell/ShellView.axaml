@@ -51,20 +51,21 @@
                  because the collapsed rail (76px) never has to fit the logo and a 34px button side by
                  side — the middle "*" column's contribution drops to 0 once the title StackPanel hides,
                  so centering the Grid makes the logo sit with equal margins on both sides instead of
-                 flush left. The logo is sized to 32x32 so its solid fill reads at the same visual weight
-                 as the borderless 20px icons in the rail below it, instead of looking undersized next to
-                 them.
+                 flush left. El Border es también el recorte del logo: con una imagen personalizada circular
+                 (Ajustes › Apariencia › Logo) BrandLogoCornerRadius pasa a half-side y ClipToBounds la
+                 redondea. Es la única forma circular del sistema de diseño; con el icono por defecto, o con
+                 una imagen cuadrada, el radio vuelve a 0 como todo lo demás.
 
-                 El Border es también el recorte del logo: con una imagen personalizada circular
-                 (Ajustes › Apariencia › Logo) BrandLogoCornerRadius pasa a 16 y ClipToBounds la redondea.
-                 Es la única forma circular del sistema de diseño; con el icono por defecto, o con una
-                 imagen cuadrada, el radio vuelve a 0 como todo lo demás. -->
+                 El logo se redujo de 32x32 a 24x24 para que el icono personalizado del panel lateral no
+                 dominara visualmente la fila del header junto al texto ENKI / NOTAS MARKDOWN y al toggle de
+                 pliegue, mientras que los 24px siguen una proporción coherente con los 20px de los íconos
+                 del raíl y con la vista previa de Ajustes › Apariencia (44px). -->
             <Grid Grid.Row="0" Classes="brand-header" Classes.collapsed="{Binding !IsSidebarExpanded}"
                   ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,14"
                   Background="Transparent" PointerPressed="TitleBar_PointerPressed">
-              <Border Grid.Column="0" Width="32" Height="32"
+              <Border Grid.Column="0" Width="24" Height="24"
                       CornerRadius="{Binding BrandLogoCornerRadius}" ClipToBounds="True">
-                <Image Name="BrandIcon" Width="32" Height="32" Stretch="{Binding BrandLogoStretch}"
+                <Image Name="BrandIcon" Width="24" Height="24" Stretch="{Binding BrandLogoStretch}"
                        RenderOptions.BitmapInterpolationMode="HighQuality" />
               </Border>
 

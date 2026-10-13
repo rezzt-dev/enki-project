@@ -227,8 +227,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     // único sitio que lo hace. Ver docs/agent-docs/logo-personalizado.md.
 
     /// <summary>Lado del cuadro del logo en el sidebar, en px — el mismo valor que
-    /// <c>MainWindow.axaml</c>, aquí porque la mitad es el radio que lo vuelve un círculo exacto.</summary>
-    private const double BrandLogoSize = 32;
+    /// <c>ShellView.axaml</c>, aquí porque la mitad es el radio que lo vuelve un círculo exacto.
+    /// Se redujo de 32 a 24 para hacer el icono personalizado del panel lateral más pequeño y menos
+    /// dominante junto al texto del header.</summary>
+    private const double BrandLogoSize = 24;
 
     /// <summary>Bytes de la imagen personalizada, o <c>null</c> para usar el icono de Enki. Se pasan como
     /// bytes y no como ruta para que la vista no mantenga abierto el archivo que Ajustes puede estar a

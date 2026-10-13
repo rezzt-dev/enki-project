@@ -24,9 +24,12 @@ namespace enki.ViewModels;
 /// </summary>
 internal static class BrandLogoImage
 {
-    /// <summary>Lado del logo del sidebar en píxeles físicos, en el peor caso: 32 px de cuadro × 2 de
-    /// HiDPI × 2 del zoom de interfaz al 200 %.</summary>
-    public const int SidebarPixels = 128;
+    /// <summary>Lado del logo del sidebar en píxeles físicos, en el peor caso: 24 px de cuadro × 2 de
+    /// HiDPI × 2 del zoom de interfaz al 200 %. Se redujo de 128 a 96 para que el icono personalizado del
+    /// panel lateral llegue al control ya cercano a su tamaño final y no haya que descartar píxeles de más.
+    /// El peor caso de zoom (200 %) sigue cubierto durante el arranque con un vault de muestra en desarrollo.
+    /// </summary>
+    public const int SidebarPixels = 96;
 
     /// <summary>Lo mismo para la vista previa de 44 px de Ajustes › Apariencia.</summary>
     public const int PreviewPixels = 176;
