@@ -31,6 +31,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - categoria Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ambito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
+- corregir la ortografia de `CHANGELOG.md`, incluidas las tildes y los caracteres `ñ`, sin alterar su estructura ni sus entradas funcionales.
 - actualizar en vivo las listas de recordatorios cuando otra pantalla modifica sus entidades, conservar el detalle abierto aunque deje de cumplir un filtro y ampliar los formularios y detalles para facilitar la lectura en ventanas estrechas.
 - ajustar el espaciado de los pies de las vistas simplificada de notas y arbol de archivos para alinear sus controles con el resto de la interfaz.
 - incluir el motor multimedia y sus codecs en el instalador de Windows, integrarlo en `Enki.app` para Intel y Apple Silicon, y preparar automaticamente las dependencias de audio y video en los instaladores Linux sin requerir que el usuario instale VLC por separado.
@@ -95,6 +96,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 
 #### CHANGED
+- correct `CHANGELOG.md` spelling, including accents and `ñ` characters, without altering its structure or functional entries.
 - update reminder lists live when another screen modifies their entities, keep the open detail visible even when it no longer matches a filter, and widen forms and details for easier reading in narrow windows.
 - adjust footer spacing in the simplified notes and file tree views so their controls align with the rest of the interface.
 - bundle the media engine and codecs in the Windows installer, embed it in `Enki.app` for Intel and Apple Silicon, and automatically prepare audio and video dependencies in Linux installers without requiring users to install VLC separately.
