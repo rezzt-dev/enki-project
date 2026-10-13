@@ -181,8 +181,10 @@
 
       <!-- · Contraído: raíl · -->
       <!-- Accesos persistentes, con las mismas medidas que el raíl de Notas. -->
+      <!-- El raíl usa el fondo de la app (`AppBackgroundBrush`, no el alterno) para leerse como el mismo
+           bloque que el panel desplegado y que la página; el alterno es más oscuro y marcaba una franja. -->
       <Grid x:Name="CollapsedRail" RowDefinitions="Auto,*,Auto" Width="52" IsVisible="{Binding !IsTreeSidebarVisible}"
-            Background="{DynamicResource AppBackgroundAltBrush}">
+            Background="{DynamicResource AppBackgroundBrush}">
         <Border Grid.Row="0" Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
                 Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
         <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
@@ -351,8 +353,10 @@
             Width="{Binding TreeSidebarWidth}" HorizontalAlignment="Left"
             Padding="0" MaxHeight="Infinity" IsVisible="{Binding IsTreeNavigatorVisible}">
       <!-- · Desplegado · -->
+      <!-- Mismo fondo de app que el raíl (`AppBackgroundBrush`) y que la barra superior de este panel,
+           para que plegado y desplegado se lean como un único bloque con el resto de la página. -->
       <Grid RowDefinitions="Auto,*,Auto"
-            Background="{DynamicResource AppBackgroundAltBrush}">
+            Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Barra superior: modo árbol / modo búsqueda a la izquierda, ocultar el panel a la derecha.
              Alto fijo de 58 para casar al píxel con la barra de la previsualización. -->

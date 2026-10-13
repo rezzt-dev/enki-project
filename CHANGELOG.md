@@ -60,6 +60,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - reservar 260 px al panel de sesiones y repartir cada fila en dos líneas —color y nombre arriba, contador de notas y acciones debajo—, con el nombre acotado por la rejilla, recortado con elipsis y accesible por teclado para seleccionar la sesión, el renombrado ocupando el ancho completo y acciones de bloqueo, renombrado y eliminación de 28 px.
 - resaltar solo el icono al pasar el puntero por las acciones integradas de kanban, recordatorios y sesiones, sin fondo ni caja cuadrada, conservando el área de clic y el indicador de foco por teclado.
 - documentar el rediseño en `.docs/project-info/mejoras-selector-tableros-recordatorios.md` y cubrir teclado, búsqueda, nombres largos, muchos tableros, textos de recordatorios y límites de las acciones a 480, 800, 1100 y 1200 px en `KanbanMultipleBoardsUiTests`, `RemindersViewUiTests` y `SessionsListUiTests`.
+- unificar el fondo de los paneles laterales de las vistas simplificadas de Notas y Archivos con el de la aplicación (`AppBackgroundBrush`), tanto plegados como desplegados, para que la sección se lea como un bloque en vez de como una franja más oscura.
 
 #### CORREGIDO
 - evitar que el grafo de sesiones quede vacío o inutilizable si el navegador no confirma la carga o las bibliotecas WPE de linux son incompatibles; validar los símbolos nativos necesarios, cambiar al renderizador de respaldo y comprobarlo en la ci de linux, windows y macos.
@@ -130,6 +131,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - reserve 260px for the sessions panel and split each row into two lines — colour and name on top, note count and actions below — with the name bounded by the grid, truncated with ellipsis and keyboard-accessible to select the session, renaming taking the full width and lock, rename and delete actions sized at 28px.
 - highlight only the icon on hover for the integrated kanban, reminders and sessions actions, with no background or square box, keeping the click area and the keyboard focus indicator.
 - document the redesign in `.docs/project-info/mejoras-selector-tableros-recordatorios.md` and cover keyboard, search, long names, many boards, reminder text and action bounds at 480, 800, 1100 and 1200px in `KanbanMultipleBoardsUiTests`, `RemindersViewUiTests` and `SessionsListUiTests`.
+- unify the background of the sidebar panels in the simplified Notes and Files views with the app background (`AppBackgroundBrush`), both collapsed and expanded, so the section reads as a single block instead of a darker stripe.
 
 #### FIXED
 - prevent the session graph from becoming blank or unusable when the browser does not confirm loading or linux WPE libraries are incompatible; validate required native symbols, switch to the fallback renderer and cover it in linux, windows and macos ci.

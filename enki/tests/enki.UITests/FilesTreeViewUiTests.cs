@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using enki.Localization;
 using enki.Services;
@@ -116,6 +118,27 @@ public class FilesTreeViewUiTests : IDisposable
         finally { window.Close(); }
     }
 
+    /// <summary>El raíl y el panel desplegado de Archivos comparten el fondo de la app
+    /// (`AppBackgroundBrush`), igual que la vista simplificada de Notas: la sección se lee como un bloque
+    /// con el resto de la página y no como una franja más oscura, en los dos estados.</summary>
+    [Fact]
+    public void SidebarRailAndExpandedPanel_ShareTheAppBackground()
+    {
+        var (view, _, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            var rail = tree.FindControl<Grid>("CollapsedRail")!;
+            var panel = Assert.IsType<Grid>(tree.FindControl<Border>("TreeNavigator")!.Child);
+
+            var appBackground = ResourceColor(rail, "AppBackgroundBrush");
+            Assert.NotEqual(appBackground, ResourceColor(rail, "AppBackgroundAltBrush"));
+            Assert.Equal(appBackground, ColorOf(rail.Background));
+            Assert.Equal(appBackground, ColorOf(panel.Background));
+        }
+        finally { window.Close(); }
+    }
+
     [Fact]
     public void TemporarySearch_EscapeAndOpeningResultCloseIt_WithoutPinning()
     {
@@ -143,6 +166,14 @@ public class FilesTreeViewUiTests : IDisposable
             Assert.False(vm.IsTreeSidebarVisible);
         }
         finally { window.Close(); }
+    }
+
+    private static Color? ColorOf(IBrush? brush) => (brush as ISolidColorBrush)?.Color;
+
+    private static Color ResourceColor(StyledElement host, string key)
+    {
+        Assert.True(host.TryFindResource(key, out var value), $"Recurso no encontrado: {key}");
+        return ColorOf(value as IBrush) ?? throw new Xunit.Sdk.XunitException($"{key} no es un brush sólido");
     }
 
     /// <summary>Una carpeta "diseno" con "logo.png" dentro y un "suelto.pdf" en la raíz del vault.</summary>

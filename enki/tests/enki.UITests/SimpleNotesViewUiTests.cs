@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Services;
@@ -362,6 +363,37 @@ public class SimpleNotesViewUiTests : IDisposable
             Assert.Equal(0, Grid.GetColumn(navigator));
         }
         finally { window.Close(); }
+    }
+
+    /// <summary>El raíl y el panel desplegado comparten el fondo de la app (`AppBackgroundBrush`) y no el
+    /// alterno: este último es más oscuro que la propia página, así que marcaba la sección como una franja
+    /// aparte en vez de como un bloque. La invariante se fija en las dos mitades porque plegado y
+    /// desplegado son dos contenedores distintos, y volver a `AppBackgroundAltBrush` en uno solo de ellos
+    /// no rompería ningún otro test.</summary>
+    [Fact]
+    public void SidebarRailAndExpandedPanel_ShareTheAppBackground()
+    {
+        var (view, _, window) = CreateView(simplified: true);
+        try
+        {
+            var simple = view.GetVisualDescendants().OfType<SimpleNotesView>().Single();
+            var rail = simple.FindControl<Grid>("CollapsedRail")!;
+            var panel = Assert.IsType<Grid>(simple.FindControl<Border>("SimpleNavigator")!.Child);
+
+            var appBackground = ResourceColor(rail, "AppBackgroundBrush");
+            Assert.NotEqual(appBackground, ResourceColor(rail, "AppBackgroundAltBrush"));
+            Assert.Equal(appBackground, ColorOf(rail.Background));
+            Assert.Equal(appBackground, ColorOf(panel.Background));
+        }
+        finally { window.Close(); }
+    }
+
+    private static Color? ColorOf(IBrush? brush) => (brush as ISolidColorBrush)?.Color;
+
+    private static Color ResourceColor(StyledElement host, string key)
+    {
+        Assert.True(host.TryFindResource(key, out var value), $"Recurso no encontrado: {key}");
+        return ColorOf(value as IBrush) ?? throw new Xunit.Sdk.XunitException($"{key} no es un brush sólido");
     }
 
     private static void ClickControl(Window window, Control control)
