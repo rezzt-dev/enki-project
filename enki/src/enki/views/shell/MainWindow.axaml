@@ -397,10 +397,9 @@
 
       <Grid Grid.Row="1">
         <!-- Una entrada cancelable por navegación, después de construir la sección. -->
-        <ContentControl Content="{Binding CurrentPage}"
+        <views:SectionHost x:Name="PageHost" Page="{Binding CurrentPage}" Scope="{Binding Notes}"
                          motion:MotionReveal.AllowTranslation="{Binding PageRevealAllowsTranslation}"
-                         motion:MotionReveal.Revision="{Binding PageRevealRevision}">
-        </ContentControl>
+                         motion:MotionReveal.Revision="{Binding PageRevealRevision}" />
 
         <!-- Grano de película sutil sobre todo el shell (§5.1) -->
         <Border Background="{DynamicResource GrainBrush}" IsHitTestVisible="False" />
@@ -408,6 +407,14 @@
     </Grid>
 
   </Grid>
+
+  <!-- Velo de arranque: mientras se construyen y cargan todas las secciones (ver
+       MainWindowViewModel.StartSectionWarmUp) la ventana no es interactiva. Cubre toda la ventana, incluida
+       la barra lateral, para que el usuario no pueda navegar a medio cargar. -->
+  <Border Background="{DynamicResource AppBackgroundBrush}" IsVisible="{Binding IsSectionWarmUpActive}">
+    <mi:MaterialIcon Classes="spin" Kind="Loading" Width="28" Height="28"
+                     Foreground="{DynamicResource Ink40}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+  </Border>
 
   <views:LanguageSetupView DataContext="{Binding LanguageSetup}"
                            IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LanguageSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />

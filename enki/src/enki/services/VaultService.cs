@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -37,6 +38,10 @@ public sealed partial class VaultService
     public string VaultPath { get; private set; }
 
     public bool IsVaultConfigured => !string.IsNullOrWhiteSpace(VaultPath) && Directory.Exists(VaultPath);
+
+    /// <summary>Una escritura ha cambiado el contenido o la estructura del vault. Permite invalidar
+    /// las proyecciones de otras secciones sin volver a enumerarlas en cada navegación.</summary>
+    public event Action? ContentChanged;
 
     /// <summary>The comparison to use when deciding whether two paths identify the same file or folder on
     /// disk. Windows and macOS' default filesystems are case-insensitive, but Linux (ext4, btrfs, ...) is
@@ -394,6 +399,7 @@ public sealed partial class VaultService
     private void InvalidateVaultSizeCache()
     {
         lock (_vaultSizeLock) { _vaultSizeCacheValid = false; }
+        ContentChanged?.Invoke();
     }
 
     /// <summary>Drops every note cached under <paramref name="rootPath"/> from <see cref="_noteCache"/> —
@@ -643,8 +649,32 @@ public sealed partial class VaultService
     /// <see cref="FileInfo.LastWriteTimeUtc"/> for free, which <see cref="_noteCache"/> needs to validate a
     /// cached entry without an extra per-file stat call.</summary>
     private static IEnumerable<FileInfo> EnumerateMarkdownFiles(string root, SearchOption option) =>
-        new DirectoryInfo(root).EnumerateFiles("*.md", option)
-            .Where(info => !info.Name.StartsWith('.'));
+        EnumerateVisibleFileInfos(root, option == SearchOption.AllDirectories, markdownOnly: true);
+
+    /// <summary>Poda las carpetas internas antes de descender a ellas. Filtrar rutas al terminar
+    /// el recorrido ya habría enumerado todo el historial, papelera y sesiones. No sigue enlaces de
+    /// directorio y conserva lo accesible si una subcarpeta desaparece durante el recorrido.</summary>
+    internal static IEnumerable<FileInfo> EnumerateVisibleFileInfos(string root, bool recursive = true,
+        bool markdownOnly = false, bool includeNoteAttachments = false)
+    {
+        var options = new EnumerationOptions
+        {
+            RecurseSubdirectories = recursive,
+            IgnoreInaccessible = true,
+            AttributesToSkip = 0
+        };
+        return new FileSystemEnumerable<FileInfo>(root, (ref FileSystemEntry entry) =>
+            (FileInfo)entry.ToFileSystemInfo(), options)
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory
+                && !entry.FileName.StartsWith(".", StringComparison.Ordinal)
+                && (!markdownOnly || entry.FileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)),
+            ShouldRecursePredicate = (ref FileSystemEntry entry) =>
+                (entry.Attributes & FileAttributes.ReparsePoint) == 0
+                && !entry.FileName.StartsWith(".", StringComparison.Ordinal)
+                && (includeNoteAttachments || !entry.FileName.EndsWith(NoteImageAttachments.FolderSuffix, StringComparison.OrdinalIgnoreCase))
+        };
+    }
 
     /// <summary>Los ficheros que <see cref="EnumerateMarkdownFiles"/> llega a leer, ya materializados y sin
     /// dejar escapar un fallo de disco. El <c>Directory.Exists</c> que cada recorrido hace justo antes no

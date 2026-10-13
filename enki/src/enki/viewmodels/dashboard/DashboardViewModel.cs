@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private readonly CalendarAggregationService _calendarAggregationService;
     private readonly HabitService _habitService;
     private readonly VaultSettingsService? _vaultSettingsService;
+    private readonly bool _loadInBackground;
+    private int _vaultLoadRevision;
+    public Task PendingVaultLoad { get; private set; } = Task.CompletedTask;
     private readonly Action<NoteFile> _openNote;
     private readonly Action _newNote;
     private readonly Action _navigateToKanban;
@@ -346,7 +350,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         Action openSettings,
         Action navigateToHabits,
         bool showScrollbar,
-        VaultSettingsService? vaultSettingsService = null)
+        VaultSettingsService? vaultSettingsService = null, bool loadOnCreate = true, bool loadInBackground = false)
     {
         _vaultService = vaultService;
         _sessionService = sessionService;
@@ -357,6 +361,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         _calendarAggregationService = calendarAggregationService;
         _habitService = habitService;
         _vaultSettingsService = vaultSettingsService;
+        _loadInBackground = loadInBackground;
         _openNote = openNote;
         _newNote = newNote;
         _navigateToKanban = navigateToKanban;
@@ -378,7 +383,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
         // uses for other background-computed values (e.g. FileCardViewModel's thumbnail).
         _vaultService.VaultSizeChanged += () => Dispatcher.UIThread.Post(RefreshVaultSizeLabel);
 
-        Reload();
+        if (loadOnCreate) Reload();
     }
 
     private void OnNotificationsChanged() => ReloadNotifications();
@@ -413,22 +418,11 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
     public void Reload()
     {
-        var notes = _vaultService.GetNotes();
         VaultPath = _vaultService.VaultPath;
-        var sessions = _sessionService.List();
-        SessionCount = sessions.Count;
         RefreshVaultSizeLabel();
-        TotalNoteCount = VaultService.CountNotesRecursive(_vaultService.VaultPath)
-            + sessions.Sum(session => session.NoteCount);
-        TotalFileCount = VaultService.CountFilesRecursive(_vaultService.VaultPath)
-            + sessions.Sum(session => VaultService.CountFilesRecursive(session.RootPath));
-
-        var recentNotes = notes.Take(6).Select(n => new NoteCardViewModel(n)).ToList();
-        FeaturedNote = recentNotes.Count > 0 ? recentNotes[0] : null;
-        OtherRecentNotes.Clear();
-        foreach (var note in recentNotes.Skip(1)) OtherRecentNotes.Add(note);
-        OnPropertyChanged(nameof(HasFeaturedNote));
-        OnPropertyChanged(nameof(HasOtherRecentNotes));
+        var revision = ++_vaultLoadRevision;
+        if (_loadInBackground) PendingVaultLoad = ReloadVaultOverviewAsync(revision, PendingVaultLoad);
+        else ApplyVaultOverview(ReadVaultOverview());
 
         // Matched by explicit CoreColumnRole so renaming or reordering the Kanban columns never empties
         // this widget silently. Non-core columns and legacy columns without a role are ignored.
@@ -475,6 +469,53 @@ public sealed partial class DashboardViewModel : ViewModelBase
         _ = LoadGraphAsync();
 
         RebuildSections();
+    }
+
+    private sealed record VaultOverview(string VaultPath, List<NoteFile> RecentNotes,
+        int Sessions, int Notes, int Files);
+
+    private VaultOverview ReadVaultOverview()
+    {
+        var root = _vaultService.VaultPath;
+        var notes = _vaultService.GetNotes().Take(6).ToList();
+        var sessions = _sessionService.List();
+        return new(root, notes, sessions.Count,
+            VaultService.CountNotesRecursive(root) + sessions.Sum(s => s.NoteCount),
+            VaultService.CountFilesRecursive(root) + sessions.Sum(s => VaultService.CountFilesRecursive(s.RootPath)));
+    }
+
+    /// <summary>Los recuentos recorren el vault, por eso se leen fuera de la UI. Una carga sustituida
+    /// no publica resultados; los cambios rápidos se reducen al recorrido en curso y al último pedido.</summary>
+    private async Task ReloadVaultOverviewAsync(int revision, Task previousLoad)
+    {
+        try
+        {
+            await previousLoad.ConfigureAwait(false);
+            if (revision != System.Threading.Volatile.Read(ref _vaultLoadRevision)) return;
+            var overview = await Task.Run(ReadVaultOverview).ConfigureAwait(false);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (revision == _vaultLoadRevision && VaultService.PathsEqual(overview.VaultPath, _vaultService.VaultPath))
+                    ApplyVaultOverview(overview);
+            });
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            LogService.Warning("No se pudo actualizar el resumen del vault", ex);
+        }
+    }
+
+    private void ApplyVaultOverview(VaultOverview overview)
+    {
+        SessionCount = overview.Sessions;
+        TotalNoteCount = overview.Notes;
+        TotalFileCount = overview.Files;
+        var recentNotes = overview.RecentNotes.Select(n => new NoteCardViewModel(n)).ToList();
+        FeaturedNote = recentNotes.Count > 0 ? recentNotes[0] : null;
+        OtherRecentNotes.Clear();
+        foreach (var note in recentNotes.Skip(1)) OtherRecentNotes.Add(note);
+        OnPropertyChanged(nameof(HasFeaturedNote));
+        OnPropertyChanged(nameof(HasOtherRecentNotes));
     }
 
     /// <summary>Populates <see cref="TodayHabits"/> for the compact "Habits" card — same read-projection

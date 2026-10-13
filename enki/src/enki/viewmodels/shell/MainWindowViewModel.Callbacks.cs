@@ -131,6 +131,7 @@ public sealed partial class MainWindowViewModel
     {
         Notes!.ReloadSessions();
         Files!.ReloadSessions();
+        InvalidatePages(AppPage.Dashboard, AppPage.Sessions, AppPage.Statistics, AppPage.Trash);
     }
 
     private void OnTitleBarModeChanged(bool value) => UseCustomTitleBar = value;

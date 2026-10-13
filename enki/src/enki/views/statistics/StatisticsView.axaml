@@ -80,7 +80,9 @@
       </Grid>
 
       <!-- ═══════════════════════════ Estado vacío ═══════════════════════════ -->
-      <StackPanel IsVisible="{Binding !HasEnoughData}" Spacing="14" Margin="0,60,0,0" HorizontalAlignment="Center">
+      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Height="2"
+                   AutomationProperties.Name="{loc:Tr Statistics_Title}" />
+      <StackPanel IsVisible="{Binding ShowEmptyState}" Spacing="14" Margin="0,60,0,0" HorizontalAlignment="Center">
         <mi:MaterialIcon Kind="ChartBoxOutline" Width="28" Height="28" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
         <TextBlock Text="{loc:Tr Statistics_EmptyState}" Classes="muted" FontSize="12.5" HorizontalAlignment="Center"
                    TextWrapping="Wrap" MaxWidth="340" TextAlignment="Center" />

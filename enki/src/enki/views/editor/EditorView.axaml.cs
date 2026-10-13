@@ -102,6 +102,7 @@ public partial class EditorView : UserControl, IDisposable
         _transclusionRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _transclusionRefreshTimer.Tick += (_, _) =>
         {
+            if (!IsEffectivelyVisible) return;
             if (!_livePreviewState.HasTransclusions)
             {
                 _transclusionRefreshTimer.Stop();

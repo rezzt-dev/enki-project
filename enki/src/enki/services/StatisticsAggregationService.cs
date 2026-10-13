@@ -45,8 +45,6 @@ public sealed partial class StatisticsAggregationService(
         var rangeEndLocal = DateOnly.FromDateTime(rangeEndUtc.ToLocalTime());
         var today = DateOnly.FromDateTime(DateTime.Today);
 
-        var weekStarts = BuildWeekStarts(rangeStartLocal, rangeEndLocal);
-
         var notes = vaultService.VaultPath is { Length: > 0 } vaultPath
             ? vaultService.GetAllNotesRecursive(vaultPath)
             : [];
@@ -67,18 +65,27 @@ public sealed partial class StatisticsAggregationService(
 
         var activeHabits = habitService.Store.Habits.Where(h => !h.Archived).ToList();
 
-        var points = new List<WeeklyStatsPoint>();
+        return BuildWeeklySeriesFromDates(rangeStartLocal, rangeEndLocal, noteCreatedDates, noteEditedDates,
+            kanbanCompletedDates.Concat(polarCompletedDates), activeHabits, today);
+    }
+
+    /// <summary>Agrupa cada fecha una sola vez, en vez de recorrer todas las notas y tareas de nuevo
+    /// por cada semana. El informe reutiliza también su lectura de notas para esta serie.</summary>
+    private static List<WeeklyStatsPoint> BuildWeeklySeriesFromDates(DateOnly rangeStartLocal, DateOnly rangeEndLocal,
+        IEnumerable<DateOnly> createdDates, IEnumerable<DateOnly> editedDates, IEnumerable<DateOnly> completedDates,
+        List<Habit> activeHabits, DateOnly today)
+    {
+        var weekStarts = BuildWeekStarts(rangeStartLocal, rangeEndLocal);
+        var created = CountByDay(createdDates.Select(MondayOnOrBefore));
+        var edited = CountByDay(editedDates.Select(MondayOnOrBefore));
+        var completed = CountByDay(completedDates.Select(MondayOnOrBefore));
+        var points = new List<WeeklyStatsPoint>(weekStarts.Count);
         foreach (var weekStart in weekStarts)
         {
             var weekEndExclusive = weekStart.AddDays(7);
-
-            var notesCreated = noteCreatedDates.Count(d => d >= weekStart && d < weekEndExclusive);
-            var notesEdited = noteEditedDates.Count(d => d >= weekStart && d < weekEndExclusive);
-            var tasksCompleted = kanbanCompletedDates.Count(d => d >= weekStart && d < weekEndExclusive)
-                + polarCompletedDates.Count(d => d >= weekStart && d < weekEndExclusive);
-
             points.Add(new WeeklyStatsPoint(
-                weekStart, notesCreated, notesEdited, tasksCompleted,
+                weekStart, created.GetValueOrDefault(weekStart), edited.GetValueOrDefault(weekStart),
+                completed.GetValueOrDefault(weekStart),
                 BuildHabitCompletionPercent(activeHabits, weekStart, weekEndExclusive, today)));
         }
 

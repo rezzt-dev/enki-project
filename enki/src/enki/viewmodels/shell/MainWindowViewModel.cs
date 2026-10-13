@@ -395,24 +395,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         };
         if (ReferenceEquals(CurrentPage, targetPage)) return;
 
-        if (page == AppPage.Dashboard) Dashboard!.Reload();
-        if (page == AppPage.Files) Files!.Refresh();
-        if (page == AppPage.Skills) Skills!.Reload();
-        if (page == AppPage.Sessions) Sessions!.Reload();
-        if (page == AppPage.Kanban) Kanban!.Reload();
-        if (page == AppPage.Habits) Habits!.Reload();
-        if (page == AppPage.Statistics) Statistics!.Reload();
-        if (page == AppPage.Reminders) Reminders!.Reload();
-        if (page == AppPage.Notifications) Notifications!.Reload();
-        if (page == AppPage.Trash)
-        {
-            Trash!.Reload();
-            UpdateTrashBadge();
-        }
-        if (page == AppPage.TagManager) TagManager!.Reload();
-
         CurrentPage = targetPage;
         AnimatePageReveal();
+        // Si no hay vigilancia nativa, releer los módulos de disco conserva los cambios externos.
+        if (!_settingsService.Settings.VaultWatchExternalChanges || _vaultChangeWatcher.IsPolling)
+            _dirtyPages.UnionWith([AppPage.Dashboard, AppPage.Files, AppPage.Skills, AppPage.Sessions,
+                AppPage.Trash, AppPage.TagManager, AppPage.Statistics]);
+        QueueCurrentPageRefresh();
     }
 
     [RelayCommand]
@@ -555,6 +544,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (_shutdownCompleted) return;
         _shutdownCompleted = true;
+
+        StopPageRefresh();
+        _reminderTimer.Stop();
+        _autoBackupTimer.Stop();
+        _polarSyncTimer.Stop();
 
         MarkdownImageCache.Clear();
         ShortcutRegistry.Changed -= _shortcutChangedHandler;

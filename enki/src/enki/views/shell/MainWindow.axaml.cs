@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         var viewModel = new MainWindowViewModel(settingsService);
         DataContext = viewModel;
         viewModel.QuickCaptureRequested += ShowQuickCapture;
+        viewModel.SectionPreloadRequested += page => PageHost.Preload(page);
 
         // Después de fijar el DataContext, no antes: el logo puede ser la imagen personalizada del
         // usuario, y quien sabe si lo es y con qué bytes es el viewmodel (Ajustes › Apariencia › Logo).

@@ -92,6 +92,7 @@ public sealed partial class MainWindowViewModel
         _polarTaskService = new PolarTaskService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
         _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService, _vaultSettingsService);
         _polarRealtimeService = new PolarRealtimeService(_polarAuthService, _polarSyncService);
+        InitializePageRefresh();
 
         // Fase 1 (docs/analisis-proyecto/roadmap.md): extiende el patrón de KanbanService.LoadedFromCorruptData
         // (antes el único caso) al resto de los stores JSON de arranque, para que un archivo dañado avise
@@ -188,8 +189,7 @@ public sealed partial class MainWindowViewModel
             {
                 if (result.Destination == Models.QuickCaptureDestination.InboxNote) Notes?.Reload();
                 else Kanban?.Reload();
-                Dashboard?.Reload();
-                Statistics?.Reload();
+                InvalidatePages(AppPage.Dashboard, AppPage.Statistics);
             });
         _globalHotkeyService = new GlobalHotkeyService();
         _shortcutChangedHandler = () => ApplyQuickCaptureHotkey(notifyOnFailure: true);
@@ -485,14 +485,16 @@ public sealed partial class MainWindowViewModel
         Kanban = new KanbanViewModel(_kanbanService, _polarAuthService, taskManagement, _vaultService, _sessionService, OpenLinkedNoteFromKanban, _settingsService, _notificationService);
         Habits = new HabitsViewModel(_habitService, _settingsService);
         var statisticsAggregationService = new StatisticsAggregationService(_vaultService, _kanbanService, _polarTaskService, _polarAuthService, _habitService, _reminderService, _sessionService);
-        Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService, _settingsService);
+        Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService, _settingsService,
+            loadOnCreate: false, loadInBackground: true, notificationService: _notificationService);
         Dashboard = new DashboardViewModel(_vaultService, _sessionService, _kanbanService, _polarTaskService,
             _polarAuthService, _notificationService, calendarAggregationService, _habitService, OpenNoteFromDashboard,
             () => Notes.NewNoteCommand.Execute(null), () => Navigate(AppPage.Kanban), () => Navigate(AppPage.Sessions),
             () => Navigate(AppPage.Notes), () => Navigate(AppPage.Trash),
             CalendarPanelEnabled, () => Navigate(AppPage.Calendar), OpenReminders, OpenNotifications, OpenSettings,
             () => Navigate(AppPage.Habits),
-            _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService);
+            _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService,
+            loadOnCreate: false, loadInBackground: true);
         Sessions = new SessionsViewModel(_vaultService, _sessionService, _notificationService, OpenSessionInNotes, OnSessionsChanged,
             _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession);
         Trash = new TrashViewModel(_vaultService, _kanbanService, _polarTaskService, _reminderService, _notificationService, _sessionService, OnSessionsChanged);
@@ -517,8 +519,7 @@ public sealed partial class MainWindowViewModel
                 Notes.Reload();
                 Kanban.Reload();
                 Kanban.TaskManagement.Reload();
-                Dashboard?.Reload();
-                Statistics?.Reload();
+                InvalidatePages(AppPage.Dashboard, AppPage.Statistics);
             });
         Settings = new SettingsViewModel(_settingsService, _customThemeService, _brandLogoService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, SwitchToVaultAsync, OnTitleBarModeChanged,
@@ -541,6 +542,10 @@ public sealed partial class MainWindowViewModel
 
         RebuildNavItems();
 
+        _dirtyPages.Clear();
+        _dirtyPages.Add(AppPage.Statistics);
+        _dirtyPages.Add(AppPage.Dashboard);
+
         var startupPage = ResolveStartupPage();
         CurrentPage = startupPage switch
         {
@@ -550,12 +555,15 @@ public sealed partial class MainWindowViewModel
             AppPage.Files => Files,
             AppPage.Sessions => Sessions,
             AppPage.TagManager => TagManager,
+            AppPage.Habits => Habits,
+            AppPage.Statistics => Statistics,
             _ => Dashboard
         };
         foreach (var item in NavItems) item.IsActive = item.Page == startupPage;
         foreach (var item in BottomNavItems) item.IsActive = item.Page == startupPage;
         VaultSetup = null;
         IsVaultReady = true;
+        StartSectionWarmUp();
 
         UpdateTrashBadge();
         UpdateCalendarBadge();

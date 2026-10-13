@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
@@ -36,17 +39,31 @@ public sealed partial class StatisticsViewModel : ViewModelBase
 
     private readonly StatisticsAggregationService _aggregationService;
     private readonly PolarAuthService _polarAuthService;
+    private readonly bool _loadInBackground;
+    private readonly NotificationService? _notificationService;
+    private int _loadRevision;
+    private StatisticsAggregationService.VaultStatisticsSnapshot? _vaultSnapshot;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState))]
+    private bool _isLoading;
+
+    public bool ShowEmptyState => !IsLoading && !HasEnoughData;
+    public Task PendingLoad { get; private set; } = Task.CompletedTask;
 
     /// <summary>Opcional a propósito: los tests construyen el ViewModel sin ajustes y entonces el estado
     /// plegado/desplegado simplemente vive lo que dure la instancia, sin tocar disco.</summary>
     private readonly SettingsService? _settingsService;
 
     public StatisticsViewModel(StatisticsAggregationService aggregationService, PolarAuthService polarAuthService,
-        SettingsService? settingsService = null)
+        SettingsService? settingsService = null, bool loadOnCreate = true, bool loadInBackground = false,
+        NotificationService? notificationService = null)
     {
         _aggregationService = aggregationService;
         _polarAuthService = polarAuthService;
         _settingsService = settingsService;
+        _loadInBackground = loadInBackground;
+        _notificationService = notificationService;
 
         var collapsed = settingsService?.Settings.StatisticsCollapsedSections ?? [];
         PulseSection = BuildSection(SectionKeys.Pulse, "Statistics_Section_Pulse", collapsed);
@@ -56,7 +73,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         HabitsSection = BuildSection(SectionKeys.Habits, "Statistics_Section_Habits", collapsed);
         StorageSection = BuildSection(SectionKeys.Storage, "Statistics_Section_Storage", collapsed);
 
-        Reload();
+        if (loadOnCreate) Reload();
     }
 
     // ===================== Sub-secciones plegables =====================
@@ -373,10 +390,66 @@ public sealed partial class StatisticsViewModel : ViewModelBase
 
     public void Reload()
     {
+        var revision = ++_loadRevision;
+        if (_loadInBackground)
+        {
+            IsLoading = true;
+            PendingLoad = ReloadAsync(revision, PendingLoad);
+            return;
+        }
         IsPolarLinked = _polarAuthService.IsLinked;
 
         var (startUtc, endUtc) = BuildRangeUtc(Range);
         var report = _aggregationService.BuildReport(startUtc, endUtc);
+
+        ApplyReport(report);
+    }
+
+    /// <summary>Serializa los recorridos del disco y descarta solicitudes sustituidas antes de
+    /// empezar otra lectura. Solo las lecturas usan el pool; agregar los almacenes mutables y
+    /// publicar propiedades siempre ocurre en el dispatcher.</summary>
+    private async Task ReloadAsync(int revision, Task previousLoad)
+    {
+        try
+        {
+            await previousLoad.ConfigureAwait(false);
+            if (revision != Volatile.Read(ref _loadRevision)) return;
+            var snapshot = await _aggregationService.ReadVaultSnapshotAsync().ConfigureAwait(false);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (revision != _loadRevision || !_aggregationService.IsSnapshotCurrent(snapshot)) return;
+                _vaultSnapshot = snapshot;
+                ApplySnapshot(snapshot);
+            });
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            LogService.Warning("No se pudieron actualizar las estadísticas", ex);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (revision != _loadRevision) return;
+                _notificationService?.PushLocalized(LocalizedTextFormatter.Format("Statistics_Title"),
+                    VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Warning);
+            });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (revision == _loadRevision) IsLoading = false;
+            });
+        }
+    }
+
+    private void ApplySnapshot(StatisticsAggregationService.VaultStatisticsSnapshot snapshot)
+    {
+        IsPolarLinked = _polarAuthService.IsLinked;
+        var (startUtc, endUtc) = BuildRangeUtc(Range);
+        ApplyReport(_aggregationService.BuildReport(startUtc, endUtc, snapshot));
+    }
+
+    private void ApplyReport(StatisticsReport report)
+    {
 
         ApplyWeeklySeries(report);
         ApplyDailySeries(report);
@@ -406,6 +479,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
 
         UpdateSectionSummaries();
         RaiseDerived();
+        OnPropertyChanged(nameof(ShowEmptyState));
     }
 
     /// <summary>El dato que cada cabecera sigue mostrando con su sección plegada.</summary>
@@ -590,7 +664,13 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         OnPropertyChanged(nameof(RemindersRecurringLabel));
     }
 
-    partial void OnRangeChanged(StatisticsRange value) => Reload();
+    partial void OnRangeChanged(StatisticsRange value)
+    {
+        // Cambiar la ventana del gráfico no cambia el vault: reutilizar la lectura evita otra E/S.
+        if (_loadInBackground && !IsLoading && _vaultSnapshot is { } snapshot
+            && _aggregationService.IsSnapshotCurrent(snapshot)) ApplySnapshot(snapshot);
+        else Reload();
+    }
 
     [RelayCommand]
     private void SelectRange(string rangeName)

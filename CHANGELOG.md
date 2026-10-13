@@ -62,6 +62,12 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - extender ese mismo resalte a todos los botones de la interfaz que son únicamente un icono y no dibujan contorno: el hover, el pulsado y el estado activo —conmutadores de vista como el de explorador/árbol de archivos, controles de formato del editor, acciones de tarjeta, navegación del calendario, ajustes— aclaran el icono sin pintar ningún recuadro, y la acción destructiva solo se tiñe de rojo; el raíl plegado de la barra lateral sigue la misma regla, mientras que la barra desplegada y los botones con contorno, como las píldoras o los controles de la barra de título, conservan su caja.
 - documentar el rediseño en `.docs/project-info/mejoras-selector-tableros-recordatorios.md` y cubrir teclado, búsqueda, nombres largos, muchos tableros, textos de recordatorios y límites de las acciones a 480, 800, 1100 y 1200 px en `KanbanMultipleBoardsUiTests`, `RemindersViewUiTests` y `SessionsListUiTests`.
 - unificar el fondo de los paneles laterales de las vistas simplificadas de Notas y Archivos con el de la aplicación (`AppBackgroundBrush`), tanto plegados como desplegados, para que la sección se lea como un bloque en vez de como una franja más oscura.
+- acelerar el cambio entre secciones: la vista se muestra antes de completar las recargas pendientes y, al volver a una sección, se reutiliza su vista ya construida, conservando el editor y su desplazamiento.
+- precargar todas las secciones al arrancar, en segundo plano y con un velo de carga mientras dura, para que los clics en el panel lateral solo muestren una vista ya construida.
+- agrupar las ráfagas de cambios del vault en `VaultChangeWatcher`, invalidando los listados de notas no abiertas, adjuntos y carpetas, sin recargar por el historial, los ajustes internos ni los temporales de guardado.
+- leer el resumen del dashboard y las estadísticas fuera de la interfaz, con indicador de carga y descartando lecturas sustituidas, y reutilizar la lectura del vault al cambiar el rango del gráfico en vez de recorrer el disco de nuevo.
+- calcular las series semanales de estadísticas en una sola pasada por fecha, en lugar de recorrer todas las notas y tareas por cada semana.
+- recorrer el vault podando las carpetas ocultas antes de descender a ellas, en vez de enumerar y filtrar después; `EnumerateVisibleFileInfos` tampoco sigue enlaces de directorio.
 
 #### CORREGIDO
 - evitar que el grafo de sesiones quede vacío o inutilizable si el navegador no confirma la carga o las bibliotecas WPE de linux son incompatibles; validar los símbolos nativos necesarios, cambiar al renderizador de respaldo y comprobarlo en la ci de linux, windows y macos.
@@ -135,6 +141,12 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - extend that same highlight to every interface button that is just an icon and draws no outline: hover, press and the active state —view switchers such as the Files browser/tree toggle, editor formatting controls, card actions, calendar navigation, settings— brighten the icon without painting any box, and the destructive action only tints red; the collapsed sidebar rail follows the same rule, while the expanded sidebar and the outlined buttons, such as pills or the title bar controls, keep their box.
 - document the redesign in `.docs/project-info/mejoras-selector-tableros-recordatorios.md` and cover keyboard, search, long names, many boards, reminder text and action bounds at 480, 800, 1100 and 1200px in `KanbanMultipleBoardsUiTests`, `RemindersViewUiTests` and `SessionsListUiTests`.
 - unify the background of the sidebar panels in the simplified Notes and Files views with the app background (`AppBackgroundBrush`), both collapsed and expanded, so the section reads as a single block instead of a darker stripe.
+- speed up switching between sections: the view is shown before pending reloads finish, and returning to a section reuses its already built view, keeping the editor and its scroll position.
+- preload every section at startup in the background behind a loading veil, so sidebar clicks only show an already built view.
+- coalesce vault change bursts in `VaultChangeWatcher`, invalidating the listings of unopened notes, attachments and folders, without reloading for history, internal settings or temporary save files.
+- read the dashboard overview and statistics off the UI thread with a loading indicator, discarding superseded reads, and reuse the vault read when the statistics range changes instead of walking the disk again.
+- compute the statistics weekly series in a single pass per date instead of scanning every note and task for each week.
+- prune hidden folders before descending into them when walking the vault, instead of enumerating and filtering afterwards; `EnumerateVisibleFileInfos` also skips directory links.
 
 #### FIXED
 - prevent the session graph from becoming blank or unusable when the browser does not confirm loading or linux WPE libraries are incompatible; validate required native symbols, switch to the fallback renderer and cover it in linux, windows and macos ci.
