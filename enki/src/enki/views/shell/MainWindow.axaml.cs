@@ -71,16 +71,18 @@ public partial class MainWindow : Window
                 UpdateBrandIcon();
             };
 
-        // El logo se resuelve ya, sin ViewModel: es lo único que la cortina enseña mientras no exista (ver
-        // ApplyBrandLogo). El de Ajustes › Apariencia › Logo lo volverá a poner UpdateBrandIcon en cuanto el
-        // ViewModel exista, que es quien sabe si el usuario tiene uno personalizado.
+        // Resuelve también el logo personalizado antes del primer fotograma, desde los mismos ajustes
+        // y archivo que usa la shell. Así no hay un primer launcher con la E y otro con el logo elegido.
         UpdateBrandIcon();
 
         // Si este arranque abre la shell directamente (idioma elegido, vault configurado, una sola
-        // instancia), la cortina entra en OnOpened y todo lo pesado queda detrás de ella. Si no —primer
+        // instancia), el primer fotograma ya lleva la cortina opaca. OnOpened inicia solo su animación.
+        // Si no —primer
         // arranque, pantalla de vault, segunda instancia— no hay nada que tapar y la shell se construye sin
         // más: no se cubre una pantalla de configuración con una cortina que nadie va a retirar.
         _startsCovered = StartupGate.OpensShellDirectly(settingsService);
+        ApplyTitleBarMode(settingsService.Settings.UseCustomTitleBar);
+        if (_startsCovered) StartupOverlay.PrepareForOpening();
 
         // Ctrl+rueda del ratón para el zoom de interfaz (docs/funcionalidad-zoom-interfaz.md §3),
         // igual que Obsidian. Se registra en fase Tunnel (de la ventana hacia el control bajo el
@@ -104,39 +106,26 @@ public partial class MainWindow : Window
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
+        if (_shellBuilt || _closed) return;
         StartupTrace.Mark("ventana visible");
 
-        // La cortina entra aquí y no en el constructor a propósito: mientras la ventana no está en
-        // pantalla el reloj de animación no avanza, y la espera acotada de StartupScreen daría su entrada
-        // por terminada antes de que hubiera un solo fotograma que dibujarla — y con ella dispararía
-        // BuildShell, que es justo el trabajo que tiene que quedar detrás de la cortina.
+        // La cortina ya estaba preparada antes de Show. Solo ahora se ponen en marcha los relojes:
+        // esperar antes de mostrar la ventana no debe consumir los dos segundos ni construir la shell.
         if (_startsCovered)
         {
             StartupOverlay.Entered += BuildShell;
-            StartupOverlay.IsWarmUpActive = true;
+            StartupOverlay.BeginOpening();
             return;
         }
 
         BuildShell();
     }
 
-    /// <summary>Construye la shell —su vista y los servicios que la alimentan— y la deja lista para el
-    /// usuario. Es el corazón del launcher: todo lo que cuesta cientos de milisegundos de hilo de interfaz
-    /// (inflar el XAML de la shell, levantar los servicios, construir las secciones, medir la ventana por
-    /// primera vez) pasa aquí, y no antes del primer fotograma.
-    ///
-    /// <para>El reparto es lo que hace que el arranque se lea como un arranque y no como un cuelgue. Antes
-    /// de este método la ventana ya está en pantalla con la cortina entera y su fundido de entrada hecho, y
-    /// el hilo de interfaz no tiene nada más que hacer, así que ese fundido va fluido. A partir de aquí hay
-    /// trabajo pesado, pero cae detrás de una cortina ya opaca: lo único que se ve es el avance de la barra
-    /// —que se mueve a pasos, no en continuo, para que un tramo largo no se note como un tirón— y el texto
-    /// de estado.</para>
-    ///
-    /// <para>Se llama exactamente una vez: en el arranque normal lo dispara la cortina al quedar opaca
-    /// (<c>StartupScreen.Entered</c>), y cuando no va a haber cortina lo llama el propio <c>OnOpened</c>.
-    /// Cualquier fallo por el camino no puede dejar la cortina puesta —ni la ventana a medias—, así que
-    /// acaba en la misma ventana de error de arranque que usaba <c>App</c> cuando todo esto cabía en un
-    /// constructor.</para></summary>
+    /// <summary>Construye la shell y sus servicios después de entregar el primer fotograma al
+    /// compositor. El logo ya está delante y la barra se anima en el hilo de renderizado mientras la
+    /// UI construye las vistas. La precarga retira la pantalla cuando la sección inicial está lista y
+    /// ha concluido el avance de dos segundos. Un error muestra la ventana de diagnóstico y cierra esta
+    /// ventana para no dejar una cortina bloqueada ni una interfaz parcialmente construida.</summary>
     private void BuildShell()
     {
         if (_shellBuilt || _closed) return;
@@ -365,7 +354,11 @@ public partial class MainWindow : Window
     /// la nota de <see cref="BrandLogoImage"/>—, y le pasaba igual al icono por defecto.</para></summary>
     private void UpdateBrandIcon()
     {
-        var customBytes = (DataContext as MainWindowViewModel)?.CustomBrandLogoBytes;
+        var customBytes = DataContext is MainWindowViewModel viewModel
+            ? viewModel.CustomBrandLogoBytes
+            : _settingsService.Settings.UseCustomBrandLogo
+                ? new BrandLogoService(_settingsService).ReadLogoBytes()
+                : null;
         // Una imagen ilegible (corrupción en disco) devuelve null y cae al icono de Enki de aquí abajo,
         // en vez de dejar el sidebar sin logo.
         if (BrandLogoImage.Decode(customBytes, BrandLogoImage.SidebarPixels) is { } customLogo)

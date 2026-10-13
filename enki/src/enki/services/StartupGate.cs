@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using enki.Localization;
 
@@ -15,6 +16,10 @@ namespace enki.Services;
 /// va a retirar — que es un cuelgue a ojos del usuario.</para></summary>
 public static class StartupGate
 {
+    /// <summary>Tiempo mínimo visible del arranque. La carga transcurre dentro de este intervalo;
+    /// si tarda más, la pantalla permanece hasta que la sección inicial esté lista.</summary>
+    public static readonly TimeSpan MinimumDisplayDuration = TimeSpan.FromSeconds(2);
+
     /// <summary>Si hay un vault abierto de verdad: una ruta guardada que además sigue existiendo en disco.
     /// Una carpeta movida o una unidad externa desenchufada no cuentan, y eso es lo que hace que la shell
     /// caiga a la pantalla de vault en vez de arrancar contra una ruta que ya no está.</summary>

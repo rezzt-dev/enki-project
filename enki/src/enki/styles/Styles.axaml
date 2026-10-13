@@ -1769,30 +1769,6 @@
     </Style.Animations>
   </Style>
 
-  <!-- Segmento de la barra de la pantalla de arranque mientras la fase en curso no tiene pasos que contar
-       (la indexación del vault, ver StartupScreen.axaml y MainWindowViewModel.IsWarmUpIndeterminate). Es el
-       mismo mecanismo que .spin de arriba —una animación de estilo sobre el RenderTransform— pero en lineal
-       y de ida y vuelta: un recorrido de ida con easing de entrada/salida se leería como una animación de
-       entrada que se repite, no como un indicador de actividad. Solo mueve la transformada, así que no
-       obliga a recalcular el layout en ningún fotograma. Cuando la barra pasa a tener progreso real, el
-       segmento se oculta y Avalonia pausa sola su animación (una animación de estilo solo corre mientras el
-       control es visible de verdad). -->
-  <Style Selector="Border.startup-glide">
-    <Setter Property="RenderTransform">
-      <TranslateTransform />
-    </Setter>
-    <Style.Animations>
-      <Animation Duration="0:0:1.4" IterationCount="INFINITE">
-        <KeyFrame Cue="0%">
-          <Setter Property="TranslateTransform.X" Value="-78" />
-        </KeyFrame>
-        <KeyFrame Cue="100%">
-          <Setter Property="TranslateTransform.X" Value="260" />
-        </KeyFrame>
-      </Animation>
-    </Style.Animations>
-  </Style>
-
   <!-- Button variante de Border.card (§ arriba): la misma tarjeta plana con borde de 1px, pero clicable,
        con el mismo hover "eleva + aclara borde" que Button.note-card — para vistas previas navegables
        (p.ej. la tarjeta de Sesiones y los accesos rápidos del Dashboard) que deben leerse como la MISMA

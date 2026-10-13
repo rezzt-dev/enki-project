@@ -35,12 +35,6 @@ public sealed partial class MainWindowViewModel
     /// precarga viene a evitar.</para></summary>
     private static readonly TimeSpan SectionWarmUpMaxWait = TimeSpan.FromSeconds(60);
 
-    /// <summary>Anchura de la barra de progreso de la pantalla de arranque, en px lógicos. Tiene que
-    /// coincidir con el ancho de <c>StartupContent</c> en <c>StartupScreen.axaml</c>: el progreso llega a
-    /// la vista ya convertido a píxeles (<see cref="WarmUpBarFillWidth"/>) para no necesitar un convertidor
-    /// por medio.</summary>
-    public const double WarmUpBarTrackWidth = 260;
-
     /// <summary>Un tramo de UI por debajo de este umbral no llega a notarse: el propio dispatcher ya da paso
     /// al compositor entre dos entregas de fondo. Por encima, se le devuelve un fotograma entero antes de
     /// encadenar el siguiente (ver <see cref="RunStepAsync"/>).</summary>
@@ -102,23 +96,6 @@ public sealed partial class MainWindowViewModel
     /// shell con la pantalla de arranque para que el usuario no vea vistas a medio cargar.</summary>
     [ObservableProperty]
     private bool _isSectionWarmUpActive;
-
-    /// <summary>Progreso de la precarga visible (0 a <see cref="WarmUpBarTrackWidth"/> px). Los pasos son
-    /// discretos y el ancho viaja con una transición en la vista, así que el avance se lee como un
-    /// deslizamiento continuo en vez de como un salto.</summary>
-    [ObservableProperty]
-    private double _warmUpBarFillWidth;
-
-    /// <summary>Mientras la fase que se está ejecutando no tiene pasos que contar —la indexación del vault,
-    /// que es una sola lectura larga en segundo plano— la barra se muestra con un segmento que va y viene en
-    /// lugar de con un relleno que se quedaría clavado en un valor concreto.</summary>
-    [ObservableProperty]
-    private bool _isWarmUpIndeterminate = true;
-
-    /// <summary>Qué está haciendo el arranque ahora mismo. Es la línea que se lee bajo la barra; sin ella,
-    /// una espera larga no se distingue de un cuelgue.</summary>
-    [ObservableProperty]
-    private string _warmUpStatus = LocalizationService.Instance["Startup_Initializing"];
 
     /// <summary>Pide a <c>MainWindow</c> que construya la vista de una sección sin mostrarla
     /// (ver <c>SectionHost.Preload</c>). Un evento y no una referencia directa porque la vista
@@ -285,9 +262,6 @@ public sealed partial class MainWindowViewModel
         // El arranque ya carga todas las secciones; las pendientes de antes no hacen falta.
         _dirtyPages.Clear();
         IsSectionWarmUpActive = true;
-        IsWarmUpIndeterminate = true;
-        WarmUpBarFillWidth = 0;
-        WarmUpStatus = LocalizationService.Instance["Startup_IndexingNotes"];
         var warmUp = Stopwatch.StartNew();
 
         try
@@ -301,12 +275,6 @@ public sealed partial class MainWindowViewModel
             var index = 0;
             var waited = Stopwatch.StartNew();
 
-            // La barra mide solo lo que el usuario está esperando de verdad: de la indexación a su sección
-            // de inicio. Contar también las otras doce dejaría el relleno a un séptimo justo en el momento
-            // de retirar la cortina, que es cuando tiene que leerse como "listo", y lo que se prepare
-            // después ya no lo mira nadie.
-            var launchStepCount = Math.Max(1, steps.TakeWhile(step => step.Page == startupPage).Count());
-
             bool StillCurrent() => !_shutdownCompleted && generation == _warmUpGeneration;
 
             // Momento a partir del cual se permite el siguiente tramo de fondo, más allá de la calma del
@@ -314,25 +282,30 @@ public sealed partial class MainWindowViewModel
             var nextStepAllowedUtc = DateTime.UtcNow;
 
             // ===================== Fase 2: la sección de inicio =====================
-            IsWarmUpIndeterminate = false;
             while (index < total && steps[index].Page == startupPage && StillCurrent())
             {
                 await RunStepAsync(steps[index]);
-                WarmUpBarFillWidth = WarmUpBarTrackWidth * ++index / launchStepCount;
+                if (!StillCurrent()) return;
+                index++;
             }
+
+            // El dashboard también completa sus recuentos y notas en segundo plano: espera su resultado
+            // para que el fundido revele el contenido definitivo, no un resumen que se rellena después.
+            if (startupPage == AppPage.Dashboard && Dashboard is not null)
+                await Dashboard.PendingVaultLoad.WaitAsync(SectionWarmUpMaxWait);
 
             // Estadísticas lee el vault en segundo plano: si es la página de inicio, es justo la pantalla
             // que el usuario está mirando, así que aquí sí se espera a que termine (con límite). Para
             // cualquier otra página de inicio no tiene sentido esperar por una sección que no se ve.
             if (startupPage == AppPage.Statistics && Statistics?.IsLoading == true)
             {
-                WarmUpStatus = LocalizationService.Instance["Startup_Finalizing"];
                 while (Statistics.IsLoading && waited.Elapsed < SectionWarmUpMaxWait && StillCurrent())
                     await Task.Delay(30);
             }
 
-            // La cortina se retira aquí, no al final del método: lo que queda por preparar ya no puede
-            // retrasar a nadie.
+            if (!StillCurrent()) return;
+
+            // La vista puede conservar la cortina hasta completar sus dos segundos mínimos.
             IsSectionWarmUpActive = false;
             QueueCurrentPageRefresh();
             LogService.Debug($"[arranque] pantalla de arranque retirada a los {warmUp.ElapsedMilliseconds} ms "
@@ -345,6 +318,9 @@ public sealed partial class MainWindowViewModel
             // clic: si el usuario se pone a trabajar, la precarga no compite — se aparta y espera a su
             // siguiente pausa. Lo que no llegue a prepararse se construye al abrir su sección, como funcionaba
             // antes de que existiera esta precarga.
+            // Deja terminar la permanencia mínima y el fundido antes de construir más vistas: arrancar
+            // aquí inmediatamente robaba el hilo de UI a la propia animación de salida.
+            await Task.Delay(StartupGate.MinimumDisplayDuration);
             while (index < total && StillCurrent() && waited.Elapsed < SectionWarmUpMaxWait)
             {
                 await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.ApplicationIdle);
@@ -399,9 +375,8 @@ public sealed partial class MainWindowViewModel
     /// fotograma es acotado y solo se paga cuando de verdad había algo que perder.</summary>
     /// <summary>Ejecuta un tramo y devuelve lo que tardó en el hilo de interfaz, que es lo que decide
     /// cuánto tiene que esperar la precarga antes del siguiente (ver <see cref="BreathAfter"/>).</summary>
-    private async Task<long> RunStepAsync(WarmUpStep step)
+    private static async Task<long> RunStepAsync(WarmUpStep step)
     {
-        WarmUpStatus = step.Status;
         var slice = Stopwatch.StartNew();
         try
         {

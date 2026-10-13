@@ -88,6 +88,7 @@
        RenderTransform suelto porque mide a su hijo y reporta el tamaño YA escalado como su propio
        DesiredSize — así el layout entero (sidebar + contenido + botones flotantes de la barra de
        título) reflowea correctamente al hacer zoom en vez de recortarse o dejar hueco muerto. -->
+  <Grid>
   <LayoutTransformControl>
     <LayoutTransformControl.LayoutTransform>
       <ScaleTransform ScaleX="{Binding UiZoomScale}" ScaleY="{Binding UiZoomScale}" />
@@ -98,8 +99,8 @@
   <!-- La shell no se declara aquí: se construye cuando la pantalla de arranque ya está delante, para que
        el primer fotograma de la ventana no tenga que esperar a inflar sus ~300 líneas de XAML (ver
        MainWindow.BuildShell y views/shell/ShellView.axaml). Ocupa el primer puesto del árbol porque lo que
-       venga después —la cortina, las pantallas de configuración, los botones de la barra de título— se
-       dibuja por encima. -->
+       venga después —las pantallas de configuración y los botones de la barra de título— se
+       dibuja por encima. La cortina usa ZIndex para cubrirlos también durante la carga. -->
   <ContentControl x:Name="ShellHost" />
 
 
@@ -108,13 +109,14 @@
        la barra lateral, para que nadie navegue a medio cargar. La vista lleva su propia entrada/salida
        animada y su propio logo (SetLogo, desde UpdateBrandIcon de este mismo code-behind), así que aquí
        solo se le pasa el estado. -->
-  <views:StartupScreen x:Name="StartupOverlay" IsWarmUpActive="{Binding IsSectionWarmUpActive}" />
 
-  <views:LanguageSetupView DataContext="{Binding LanguageSetup}"
-                           IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LanguageSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+  <!-- Sin ViewModel los enlaces todavía no pueden resolverse: el valor por defecto de IsVisible es
+       true. El fallback impide que la bienvenida se dibuje antes de saber si realmente hace falta. -->
+  <views:LanguageSetupView x:Name="LanguageSetupScreen" DataContext="{Binding LanguageSetup}"
+                           IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LanguageSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}, FallbackValue=False}" />
 
-  <views:VaultSetupView DataContext="{Binding VaultSetup}"
-                        IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).VaultSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+  <views:VaultSetupView x:Name="VaultSetupScreen" DataContext="{Binding VaultSetup}"
+                        IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).VaultSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}, FallbackValue=False}" />
 
     <!-- ===================== Resize grips (§ ajuste "Usar barra de título propia") =====================
          WindowDecorations.None (see MainWindow.axaml.cs) drops the OS/Avalonia-drawn resize border
@@ -744,4 +746,7 @@
 
   </Grid>
   </LayoutTransformControl>
+  <!-- Fuera del zoom del vault: restaurar su escala no mueve ni redimensiona el launcher. -->
+  <views:StartupScreen x:Name="StartupOverlay" ZIndex="1" IsWarmUpActive="{Binding IsSectionWarmUpActive}" />
+  </Grid>
 </Window>

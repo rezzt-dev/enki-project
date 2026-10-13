@@ -1,8 +1,13 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media.Imaging;
+using Avalonia.Rendering.Composition;
+using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Services;
@@ -31,8 +36,17 @@ public sealed class StartupScreenUiTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"enki-tests-{Guid.NewGuid():N}");
     private MainWindowViewModel? _vm;
-
     public StartupScreenUiTests() => HeadlessApp.EnsureInitialized();
+
+    /// <summary>Solo durante cada test: cambiar el contexto en el constructor también afectaría a las
+    /// continuaciones del runner xUnit, que no bombea el dispatcher entre tests.</summary>
+    private sealed class UiContext : IDisposable
+    {
+        private readonly SynchronizationContext? _original = SynchronizationContext.Current;
+
+        public UiContext() => SynchronizationContext.SetSynchronizationContext(new AvaloniaSynchronizationContext());
+        public void Dispose() => SynchronizationContext.SetSynchronizationContext(_original);
+    }
 
     public void Dispose()
     {
@@ -52,18 +66,6 @@ public sealed class StartupScreenUiTests : IDisposable
         window.UpdateLayout();
         return (screen, _vm, window);
     }
-
-    /// <summary>La barra se localiza por el segmento que solo existe en modo indeterminado, no por un nombre
-    /// añadido al XAML para el test.</summary>
-    private static Panel FindTrack(StartupScreen screen) => screen.GetVisualDescendants()
-        .OfType<Panel>()
-        .First(p => p.Children.OfType<Border>().Any(b => b.Classes.Contains("startup-glide")));
-
-    private static Border FindGlide(Panel track) =>
-        track.Children.OfType<Border>().Single(b => b.Classes.Contains("startup-glide"));
-
-    private static Border FindFill(Panel track) =>
-        track.Children.OfType<Border>().Single(b => !b.Classes.Contains("startup-glide"));
 
     /// <summary>Avanza el reloj real y deja que el dispatcher procese lo que se encoló, hasta que
     /// <paramref name="condition"/> se cumple o se agota el margen. Se apoya en el reloj de pared a
@@ -88,8 +90,185 @@ public sealed class StartupScreenUiTests : IDisposable
     }
 
     [Fact]
+    public void BeforeTheViewModelExists_SetupScreensAreHidden()
+    {
+        using var context = new UiContext();
+        var window = new MainWindow(new SettingsService(_directory));
+        try
+        {
+            Assert.False(window.FindControl<LanguageSetupView>("LanguageSetupScreen")!.IsVisible);
+            Assert.False(window.FindControl<VaultSetupView>("VaultSetupScreen")!.IsVisible);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void AQuickWarmUp_KeepsTheScreenVisibleForTwoSeconds()
+    {
+        using var context = new UiContext();
+        var (screen, _, window) = Mount();
+        try
+        {
+            var visible = Stopwatch.StartNew();
+            Show(screen, window);
+            screen.IsWarmUpActive = false;
+            SpinUntil(() => !screen.IsVisible);
+
+            Assert.False(screen.IsVisible);
+            Assert.True(visible.Elapsed >= TimeSpan.FromSeconds(2));
+            Assert.True(visible.Elapsed < TimeSpan.FromSeconds(3));
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void ASlowWarmUp_DoesNotDisappearAfterTheMinimumTime()
+    {
+        using var context = new UiContext();
+        var (screen, _, window) = Mount();
+        try
+        {
+            var visible = Stopwatch.StartNew();
+            Show(screen, window);
+            SpinUntil(() => visible.Elapsed >= TimeSpan.FromMilliseconds(2200));
+            Assert.True(screen.IsVisible);
+            Assert.Equal(1, screen.Opacity);
+
+            screen.IsWarmUpActive = false;
+            SpinUntil(() => !screen.IsVisible);
+            Assert.False(screen.IsVisible);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void ClosingDuringTheEntrance_DoesNotBuildTheShellLater()
+    {
+        using var context = new UiContext();
+        var (screen, _, window) = Mount();
+        var entered = false;
+        screen.Entered += () => entered = true;
+        Show(screen, window);
+        window.Close();
+
+        var elapsed = Stopwatch.StartNew();
+        SpinUntil(() => elapsed.Elapsed >= TimeSpan.FromMilliseconds(600));
+        Assert.False(entered);
+    }
+
+    [Fact]
+    public void ReattachingDuringTheEntrance_RestartsTheAnimation()
+    {
+        using var context = new UiContext();
+        var (screen, _, window) = Mount();
+        try
+        {
+            var entered = false;
+            screen.Entered += () => entered = true;
+            Show(screen, window);
+            window.Content = null;
+            window.Content = screen;
+            SpinUntil(() => entered);
+            Assert.True(entered);
+            Assert.Equal(1, screen.Opacity);
+
+            screen.IsWarmUpActive = false;
+            SpinUntil(() => !screen.IsVisible);
+            Assert.False(screen.IsVisible);
+        }
+        finally { window.Close(); }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TheMainWindow_WithAnExistingVault_NeverShowsSetupAndReleasesTheOverlay(bool customTitleBar)
+    {
+        using var context = new UiContext();
+        // Evita adquirir el mutex real del usuario; restaura el estado global al terminar.
+        var firstInstance = typeof(SingleInstanceGuard).GetProperty(nameof(SingleInstanceGuard.IsFirstInstance))!;
+        var previous = SingleInstanceGuard.IsFirstInstance;
+        MainWindow? window = null;
+        try
+        {
+            firstInstance.SetValue(null, true);
+            var settings = new SettingsService(_directory);
+            settings.Settings.Language = "es-ES";
+            settings.Settings.UseCustomTitleBar = customTitleBar;
+            settings.Settings.VaultPath = Path.Combine(_directory, "vault");
+            Directory.CreateDirectory(settings.Settings.VaultPath);
+            var customLogoPath = Path.Combine(_directory, "chosen-logo.png");
+            using (var source = new SkiaSharp.SKBitmap(32, 32))
+            {
+                source.Erase(SkiaSharp.SKColors.Magenta);
+                using var png = source.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                File.WriteAllBytes(customLogoPath, png.ToArray());
+            }
+            Assert.True(new BrandLogoService(settings).Import(customLogoPath).Success);
+            settings.Settings.UseCustomBrandLogo = true;
+            window = new MainWindow(settings);
+            var setup = window.FindControl<VaultSetupView>("VaultSetupScreen")!;
+            var language = window.FindControl<LanguageSetupView>("LanguageSetupScreen")!;
+            var overlay = window.FindControl<StartupScreen>("StartupOverlay")!;
+            Assert.True(overlay.IsVisible);
+            Assert.Equal(1, overlay.Opacity);
+            Assert.Equal(customTitleBar ? WindowDecorations.None : WindowDecorations.Full, window.WindowDecorations);
+            Assert.DoesNotContain(overlay.GetVisualAncestors(), ancestor => ancestor is LayoutTransformControl);
+            Assert.Null(window.DataContext);
+            using (var savedLogo = new MemoryStream())
+            {
+                var logo = Assert.IsType<Bitmap>(overlay.FindControl<Image>("StartupLogo")!.Source);
+                logo.Save(savedLogo, PngBitmapEncoderOptions.Default);
+                using var decoded = SkiaSharp.SKBitmap.Decode(savedLogo.ToArray());
+                Assert.Equal(SkiaSharp.SKColors.Magenta, decoded.GetPixel(decoded.Width / 2, decoded.Height / 2));
+            }
+            var beforeOpening = Stopwatch.StartNew();
+            SpinUntil(() => beforeOpening.Elapsed >= TimeSpan.FromMilliseconds(600));
+            Assert.Null(window.DataContext);
+            Assert.Equal(1, overlay.Opacity);
+            var setupWasVisible = setup.IsVisible || language.IsVisible;
+            setup.PropertyChanged += (_, _) => setupWasVisible |= setup.IsVisible;
+            language.PropertyChanged += (_, _) => setupWasVisible |= language.IsVisible;
+
+            var visible = Stopwatch.StartNew();
+            window.Show();
+            Assert.True(overlay.IsVisible);
+            Assert.Equal(1, overlay.Opacity);
+            window.UpdateLayout();
+            Assert.Equal(window.ClientSize, overlay.Bounds.Size);
+            Assert.NotNull(overlay.FindControl<Image>("StartupLogo")!.Source);
+            if (Environment.GetEnvironmentVariable("ENKI_GRAPH_PREVIEW") is { Length: > 0 } preview)
+            {
+                Directory.CreateDirectory(preview);
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                using var bitmap = window.CaptureRenderedFrame()!;
+                bitmap.Save(Path.Combine(preview, $"startup-first-frame-{customTitleBar}.png"), PngBitmapEncoderOptions.Default);
+            }
+            SpinUntil(() => !overlay.IsVisible);
+
+            Assert.False(overlay.IsVisible);
+            Assert.True(visible.Elapsed >= TimeSpan.FromSeconds(2));
+            Assert.False(setupWasVisible);
+            var vm = Assert.IsType<MainWindowViewModel>(window.DataContext);
+            Assert.True(vm.IsVaultReady);
+            Assert.NotNull(vm.CurrentPage);
+            window.Hide();
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(overlay.IsVisible);
+        }
+        finally
+        {
+            window?.Close();
+            Dispatcher.UIThread.RunJobs();
+            firstInstance.SetValue(null, previous);
+        }
+    }
+
+    [Fact]
     public void AtRest_ItCoversNothing()
     {
+        using var context = new UiContext();
         var (screen, _, window) = Mount();
         try
         {
@@ -102,6 +281,7 @@ public sealed class StartupScreenUiTests : IDisposable
     [Fact]
     public void WhileTheWarmUpRuns_ItCoversTheWindow_AndLeavesWhenTheWarmUpEnds()
     {
+        using var context = new UiContext();
         var (screen, _, window) = Mount();
         try
         {
@@ -126,6 +306,7 @@ public sealed class StartupScreenUiTests : IDisposable
     [Fact]
     public void AnEntranceThatInterruptsAnExit_Wins()
     {
+        using var context = new UiContext();
         var (screen, _, window) = Mount();
         try
         {
@@ -145,48 +326,42 @@ public sealed class StartupScreenUiTests : IDisposable
     }
 
     [Fact]
-    public void TheBar_GlidesWhileNothingCanBeCounted_AndFillsWhileItCan()
+    public void TheSameBar_CompletesItsTimelineWithoutChangingLoadingModes()
     {
+        using var context = new UiContext();
         var (screen, vm, window) = Mount();
         try
         {
+            var progress = screen.FindControl<Border>("StartupProgress")!;
             Show(screen, window);
-
-            var track = FindTrack(screen);
-            var glide = FindGlide(track);
-            var fill = FindFill(track);
-
-            // Fase sin pasos que contar (la indexación del vault): segmento a la vista, relleno a cero.
-            Assert.True(vm.IsWarmUpIndeterminate);
-            Assert.True(glide.IsVisible);
-            Assert.Equal(0, fill.Width);
-
-            // El ancho del relleno se anima con una transición, y en un host headless el reloj de animación
-            // no avanza: se anula para leer el valor de destino y no uno intermedio.
-            fill.Transitions = null;
-            vm.IsWarmUpIndeterminate = false;
-            vm.WarmUpBarFillWidth = 130;
-            Dispatcher.UIThread.RunJobs();
-
-            Assert.False(glide.IsVisible);
-            Assert.Equal(130, fill.Width);
-        }
-        finally { window.Close(); }
-    }
-
-    [Fact]
-    public void TheStatusLine_ShowsWhatTheWarmUpIsDoing()
-    {
-        var (screen, vm, window) = Mount();
-        try
-        {
-            Show(screen, window);
-
-            vm.WarmUpStatus = "Preparando Documentos";
-            Dispatcher.UIThread.RunJobs();
-
-            Assert.Contains(screen.GetVisualDescendants().OfType<TextBlock>(),
-                block => block.Text == vm.WarmUpStatus);
+            var visual = ElementComposition.GetElementVisual(progress)!;
+            Assert.NotNull(visual);
+            Assert.InRange(visual.Scale.X, 0, 0.1);
+            if (Environment.GetEnvironmentVariable("ENKI_GRAPH_PREVIEW") is { Length: > 0 } preview)
+            {
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                // No se bombea la UI durante este intervalo: la barra debe avanzar en el compositor.
+                Thread.Sleep(650);
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                using var frame = window.CaptureRenderedFrame()!;
+                Directory.CreateDirectory(preview);
+                frame.Save(Path.Combine(preview, "startup-progress-midpoint.png"), PngBitmapEncoderOptions.Default);
+                using var pixels = new MemoryStream();
+                frame.Save(pixels, PngBitmapEncoderOptions.Default);
+                using var decoded = SkiaSharp.SKBitmap.Decode(pixels.ToArray());
+                var origin = progress.TranslatePoint(default, window)!.Value;
+                Assert.NotEqual(decoded.GetPixel((int)origin.X + 15, (int)origin.Y + 1),
+                    decoded.GetPixel((int)origin.X + 240, (int)origin.Y + 1));
+            }
+            screen.DataContext = null;
+            screen.DataContext = vm;
+            Assert.Same(progress, screen.FindControl<Border>("StartupProgress"));
+            SpinUntil(() => visual.Scale.X == 1);
+            Assert.Equal(1, visual.Scale.X);
+            Assert.True(screen.IsVisible);
+            screen.IsWarmUpActive = false;
+            SpinUntil(() => !screen.IsVisible);
+            Assert.False(screen.IsVisible);
         }
         finally { window.Close(); }
     }
@@ -197,6 +372,7 @@ public sealed class StartupScreenUiTests : IDisposable
     [Fact]
     public void TheMainWindow_WithNoVault_KeepsTheLaunchScreenOutOfTheWay()
     {
+        using var context = new UiContext();
         var window = new MainWindow(new SettingsService(_directory));
         try
         {
