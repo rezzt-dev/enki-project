@@ -121,6 +121,26 @@ public class NativeSessionGraphUiTests
     }
 
     [Fact]
+    public void Resizing_PreservesZoomAndWorldCenter()
+    {
+        HeadlessApp.EnsureInitialized();
+        var graph = CreateGraph();
+        var control = new NativeSessionGraph();
+        control.SetGraph(graph, true);
+        control.Measure(new Size(800, 600));
+        control.Arrange(new Rect(0, 0, 800, 600));
+        using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(1000, 700));
+        bitmap.Render(control);
+        control.MoveCamera("in");
+        var before = graph.Nodes.Select(n => control.NodeScreenPosition(n.GlobalId)).ToArray();
+        control.Measure(new Size(1000, 700));
+        control.Arrange(new Rect(0, 0, 1000, 700));
+        bitmap.Render(control);
+        for (var i = 0; i < graph.Nodes.Count; i++)
+            Assert.Equal(before[i] + new Vector(100, 50), control.NodeScreenPosition(graph.Nodes[i].GlobalId));
+    }
+
+    [Fact]
     public void Layout_HandlesLargeGraphsAndInvalidStoredCoordinates()
     {
         HeadlessApp.EnsureInitialized();

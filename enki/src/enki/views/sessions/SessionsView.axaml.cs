@@ -58,6 +58,9 @@ public partial class SessionsView : UserControl
     {
         _isWebEngineAvailable = isWebEngineAvailable;
         InitializeComponent();
+        // El panel lateral nunca comprime el lienzo en ventanas pequeñas; Filtrar conserva
+        // todas las acciones de visibilidad cuando el panel no cabe.
+        GraphHostPanel.SizeChanged += (_, e) => GraphSessionPanel.IsVisible = e.NewSize.Width >= 900;
         DataContextChanged += OnDataContextChanged;
         AttachedToVisualTree += (_, _) =>
         {
@@ -91,6 +94,7 @@ public partial class SessionsView : UserControl
     {
         if (Vm is not { } vm) return;
         if (e.Key != Key.Escape) return;
+        if (vm.IsGraphFilterOpen) { vm.IsGraphFilterOpen = false; e.Handled = true; return; }
 
         if (vm.SessionPendingColor is not null)
         {
@@ -135,6 +139,8 @@ public partial class SessionsView : UserControl
             return;
         }
 
+        _subscribedVm.GraphDisplayChanged += ApplyGraphDisplay;
+        _subscribedVm.GraphCameraRequested += OnGraphCameraRequested;
         _subscribedVm.GraphReady += OnGraphReady;
         _subscribedVm.GraphUpdated += OnGraphUpdated;
         _subscribedVm.SessionColorChanged += OnSessionColorChanged;
@@ -151,6 +157,8 @@ public partial class SessionsView : UserControl
     private void Unsubscribe()
     {
         if (_subscribedVm is null) return;
+        _subscribedVm.GraphDisplayChanged -= ApplyGraphDisplay;
+        _subscribedVm.GraphCameraRequested -= OnGraphCameraRequested;
         _subscribedVm.GraphReady -= OnGraphReady;
         _subscribedVm.GraphUpdated -= OnGraphUpdated;
         _subscribedVm.SessionColorChanged -= OnSessionColorChanged;
@@ -291,6 +299,7 @@ public partial class SessionsView : UserControl
         }
         _nativeGraph.SetGraph(_currentGraph, reset: true);
         _nativeGraph.SetPendingLink(_pendingLink);
+        ApplyGraphDisplay();
     }
 
     private async Task InvokeGraphScriptAsync(string script)
@@ -401,12 +410,28 @@ public partial class SessionsView : UserControl
     {
         if (_graphWebView is null) return;
         _webGraphReady = true;
+        ApplyGraphDisplay();
         HideGraphLoadingOverlay();
         // Un filtro puede cambiar mientras carga el documento: aplica el estado más reciente.
         if (_graphChangedWhileLoading && _currentGraph is { } graph)
             _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetGraphDataScript(graph));
         _graphChangedWhileLoading = false;
         _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetPendingLinkScript(_pendingLink));
+    }
+
+    private void ApplyGraphDisplay()
+    {
+        if (Vm is not { } vm) return;
+        _nativeGraph?.SetDisplay(vm.ShowGraphMesh, vm.ShowGraphLabels, vm.GraphNodeSize, vm.GraphLinkThickness);
+        var json = JsonSerializer.Serialize(new { mesh = vm.ShowGraphMesh, labels = vm.ShowGraphLabels,
+            nodeSize = vm.GraphNodeSize, linkThickness = vm.GraphLinkThickness });
+        _ = InvokeGraphScriptAsync($"window.__enkiSetDisplay && window.__enkiSetDisplay({json});");
+    }
+
+    private void OnGraphCameraRequested(string action)
+    {
+        _nativeGraph?.MoveCamera(action);
+        _ = InvokeGraphScriptAsync($"window.__enkiCamera && window.__enkiCamera({JsonSerializer.Serialize(action)});");
     }
 
     private void OnGraphUpdated(SessionGraph graph)

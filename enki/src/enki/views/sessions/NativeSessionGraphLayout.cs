@@ -38,7 +38,7 @@ internal static class NativeSessionGraphLayout
             var halfAngle = ringRadius == 0 ? 0 : Math.Asin(group.Radius / ringRadius);
             angle += previousHalfAngle + halfAngle;
             var center = new Point(Math.Cos(angle) * ringRadius, Math.Sin(angle) * ringRadius);
-            var points = group.Cells.Select(ToPoint).ToArray();
+            var points = group.Points;
             var mean = new Vector(points.Average(p => p.X), points.Average(p => p.Y));
             for (var i = 0; i < group.Nodes.Length; i++)
                 result[group.Nodes[i].GlobalId] = center + (Vector)points[i] - mean;
@@ -63,48 +63,25 @@ internal static class NativeSessionGraphLayout
         return pairs;
     }
 
-    private const double Spacing = 38;
-    private static readonly (int Q, int R)[] Directions = [(1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1)];
-    private sealed record Group(SessionGraphNode[] Nodes, (int Q, int R)[] Cells, double Radius);
+    private sealed record Group(SessionGraphNode[] Nodes, Point[] Points, double Radius);
 
     private static Group[] CreateGroups(SessionGraph graph) => graph.Nodes.GroupBy(n => n.SessionId)
         .OrderBy(g => g.Key, StringComparer.Ordinal)
         .Select(g =>
         {
-            // El orden no depende de los enlaces: añadir un wikilink no mueve la nota ni cambia la malla.
+            // Una distribución de ángulo áureo evita las filas de una rejilla y mantiene una
+            // densidad uniforme. El orden estable impide saltos al editar enlaces o reordenar notas.
             var nodes = g.OrderBy(n => n.GlobalId, StringComparer.Ordinal).ToArray();
-            var cells = HexCells(nodes.Length);
-            var points = cells.Select(ToPoint).ToArray();
-            var center = new Point(points.Average(p => p.X), points.Average(p => p.Y));
-            // El margen incluye el nombre de sesión y la separación entre grupos.
-            var radius = points.Max(p => ((Vector)(p - center)).Length) + 90;
-            return new Group(nodes, cells, radius);
-        }).ToArray();
-
-    private static Point ToPoint((int Q, int R) cell) =>
-        new(Spacing * (cell.Q + cell.R / 2d), Spacing * Math.Sqrt(3) / 2 * cell.R);
-
-    private static (int Q, int R)[] HexCells(int count)
-    {
-        var result = new List<(int Q, int R)> { (0, 0) };
-        for (var radius = 1; result.Count < count; radius++)
-        {
-            var ring = new List<(int Q, int R)>();
-            var q = 0;
-            var r = -radius;
-            foreach (var direction in Directions)
-            for (var step = 0; step < radius; step++)
+            var points = Enumerable.Range(0, nodes.Length).Select(i =>
             {
-                ring.Add((q, r));
-                q += direction.Q;
-                r += direction.R;
-            }
-            // Reparte también un anillo incompleto por todo el perímetro, evitando colas laterales.
-            var take = Math.Min(ring.Count, count - result.Count);
-            for (var i = 0; i < take; i++) result.Add(ring[i * ring.Count / take]);
-        }
-        return result.ToArray();
-    }
+                var angle = i * Math.PI * (3 - Math.Sqrt(5));
+                var radius = 28 * Math.Sqrt(i);
+                return new Point(Math.Cos(angle) * radius, Math.Sin(angle) * radius);
+            }).ToArray();
+            var center = new Point(points.Average(p => p.X), points.Average(p => p.Y));
+            var radius = points.Max(p => ((Vector)(p - center)).Length) + 70;
+            return new Group(nodes, points, radius);
+        }).ToArray();
 
     private static bool IsReadable(SessionGraph graph, Dictionary<string, Point> positions)
     {

@@ -56,7 +56,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     /// <summary>Whether any group filter is currently narrowing the graph — drives the filter chip's
     /// "active" visual state, same convention as <see cref="IsLinkMode"/>'s toggle button.</summary>
-    public bool IsGraphFiltered => GraphGroupFilters.Any(f => !f.IsActive)
+    public bool IsGraphFiltered => !string.IsNullOrWhiteSpace(GraphSearchText) || GraphGroupFilters.Any(f => !f.IsActive)
         || GraphTagFilters.Any(f => f.IsActive) || GraphExplorationIndex != 0
         || !string.IsNullOrEmpty(SelectedGraphCluster?.Id);
 
@@ -491,7 +491,8 @@ public sealed partial class SessionsViewModel : ViewModelBase
         foreach (var (groupId, name) in groups)
         {
             var isActive = !previousSelection.TryGetValue(groupId, out var previouslyActive) || previouslyActive;
-            GraphGroupFilters.Add(new GraphGroupFilterItemViewModel(groupId, name, isActive, OnGraphFilterToggled));
+            GraphGroupFilters.Add(new GraphGroupFilterItemViewModel(groupId, name, isActive, OnGraphFilterToggled,
+                graph.Nodes.Count(n => n.SessionId == groupId)));
         }
 
         RebuildGraphDiscoveryFilters(graph);

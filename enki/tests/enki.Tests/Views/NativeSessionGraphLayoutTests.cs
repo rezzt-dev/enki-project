@@ -122,12 +122,15 @@ public class NativeSessionGraphLayoutTests
     }
 
     [Fact]
-    public void HexagonalMesh_HasOnlyShortLocalEdgesAndRemainsStableWhenLinksChange()
+    public void OrganicMesh_IsLocallyConnectedAndRemainsStableWhenLinksChange()
     {
         var graph = CreateGraph(1, 127);
         var positions = NativeSessionGraphLayout.Create(graph);
         var mesh = NativeSessionGraphLayout.CreateMesh(graph, positions);
-        foreach (var (from, to) in mesh) Assert.Equal(38, Distance(positions[from], positions[to]), 6);
+        foreach (var (from, to) in mesh) Assert.InRange(Distance(positions[from], positions[to]), 24, 200);
+        Assert.True(mesh.Average(e => Distance(positions[e.From], positions[e.To])) < 65);
+        // Sin filas de rejilla: la mayoría de las notas tiene una altura distinta.
+        Assert.True(positions.Values.Select(p => Math.Round(p.Y, 3)).Distinct().Count() > graph.Nodes.Count * 0.9);
         foreach (var node in graph.Nodes) node.ConnectionCount = 100 - node.ConnectionCount;
         var updated = NativeSessionGraphLayout.Create(graph);
         foreach (var (id, point) in positions) Assert.Equal(point, updated[id]);

@@ -6191,4 +6191,40 @@ Happy writing.</value>
   <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Resolve pending changes in open notes before continuing.</value></data>
   <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Invalid trash folder.</value></data>
   <data name="Folders_Error_Changed" xml:space="preserve"><value>The folder changed during the transfer. Please try again.</value></data>
+  <data name="Sessions_Graph_Search" xml:space="preserve">
+    <value>Search notes, paths or tags…</value>
+  </data>
+  <data name="Sessions_Graph_Display" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="Sessions_Graph_Labels" xml:space="preserve">
+    <value>Note labels</value>
+  </data>
+  <data name="Sessions_Graph_Mesh" xml:space="preserve">
+    <value>Session mesh</value>
+  </data>
+  <data name="Sessions_Graph_MeshHint" xml:space="preserve">
+    <value>Visual proximity guide. Does not represent links between notes.</value>
+  </data>
+  <data name="Sessions_Graph_NodeSize" xml:space="preserve">
+    <value>Node size</value>
+  </data>
+  <data name="Sessions_Graph_LinkThickness" xml:space="preserve">
+    <value>Link thickness</value>
+  </data>
+  <data name="Sessions_Graph_Isolate" xml:space="preserve">
+    <value>Show only this session</value>
+  </data>
+  <data name="Sessions_Graph_ZoomOut" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="Sessions_Graph_ZoomIn" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="Sessions_Graph_Fit" xml:space="preserve">
+    <value>Fit graph</value>
+  </data>
+  <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
+    <value>Drag to pan · Scroll to zoom · Double-click to open</value>
+  </data>
 </root>

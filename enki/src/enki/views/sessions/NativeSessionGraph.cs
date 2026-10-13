@@ -20,6 +20,12 @@ internal sealed class NativeSessionGraph : Control
     private readonly Dictionary<string, IBrush> _colors = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SessionGraphNode> _nodes = new(StringComparer.Ordinal);
     private IReadOnlyList<(string From, string To)> _mesh = [];
+    private readonly Dictionary<string, Point> _positionCache = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, HashSet<string>> _neighbors = new(StringComparer.Ordinal);
+    private bool _showMesh = true;
+    private bool _showLabels = true;
+    private double _nodeSize = 1;
+    private double _linkThickness = 1;
     private double _scale = 1;
     private Vector _offset;
     private bool _needsFit = true;
@@ -47,6 +53,7 @@ internal sealed class NativeSessionGraph : Control
     public NativeSessionGraph()
     {
         Focusable = true;
+        Cursor = new Cursor(StandardCursorType.Hand);
         ClipToBounds = true;
         DetachedFromVisualTree += (_, _) =>
         {
@@ -62,13 +69,13 @@ internal sealed class NativeSessionGraph : Control
         _pointer?.Capture(null);
         _hovered = null;
         ToolTip.SetTip(this, null);
-        var membershipChanged = graph.Nodes.Count != _positions.Count || graph.Nodes.Any(n => !_positions.ContainsKey(n.GlobalId));
-        var hasNewNodes = graph.Nodes.Any(n => !_positions.ContainsKey(n.GlobalId));
-        // No mezcla coordenadas de dos distribuciones al añadir notas o ampliar un filtro.
-        if (reset || hasNewNodes) _positions.Clear();
+        // Conserva también las coordenadas ocultas para restaurarlas sin mover el resto.
+        if (reset) { _positions.Clear(); _positionCache.Clear(); }
+        foreach (var pair in _positions) _positionCache[pair.Key] = pair.Value;
         _graph = graph;
         _nodes.Clear();
         _colors.Clear();
+        _neighbors.Clear();
         var visible = graph.Nodes.Select(n => n.GlobalId).ToHashSet(StringComparer.Ordinal);
         foreach (var id in _positions.Keys.Where(id => !visible.Contains(id)).ToArray())
             _positions.Remove(id);
@@ -79,12 +86,50 @@ internal sealed class NativeSessionGraph : Control
         {
             _nodes[node.GlobalId] = node;
             _colors[node.GlobalId] = new SolidColorBrush(Color.Parse(SessionGraphRenderer.NodeBrightness.ColorFor(node.SessionId, node.SessionColor)));
-            _positions.TryAdd(node.GlobalId, layout[node.GlobalId]);
+            _positions.TryAdd(node.GlobalId, _positionCache.TryGetValue(node.GlobalId, out var cached) ? cached : layout[node.GlobalId]);
+            _neighbors[node.GlobalId] = new HashSet<string>(StringComparer.Ordinal);
         }
-        _mesh = NativeSessionGraphLayout.CreateMesh(graph, _positions);
-        _needsFit |= reset || membershipChanged;
+        foreach (var edge in graph.Edges)
+        {
+            if (!_neighbors.ContainsKey(edge.FromGlobalId) || !_neighbors.ContainsKey(edge.ToGlobalId)) continue;
+            _neighbors[edge.FromGlobalId].Add(edge.ToGlobalId);
+            _neighbors[edge.ToGlobalId].Add(edge.FromGlobalId);
+        }
+        _mesh = _showMesh ? NativeSessionGraphLayout.CreateMesh(graph, _positions) : [];
+        _needsFit |= reset;
         InvalidateVisual();
     }
+
+    public void SetDisplay(bool mesh, bool labels, double nodeSize, double linkThickness)
+    {
+        if (mesh && !_showMesh) _mesh = NativeSessionGraphLayout.CreateMesh(_graph, _positions);
+        _showMesh = mesh;
+        _showLabels = labels;
+        _nodeSize = Math.Clamp(nodeSize, 0.5, 2);
+        _linkThickness = Math.Clamp(linkThickness, 0.5, 2);
+        InvalidateVisual();
+    }
+
+    public void MoveCamera(string action)
+    {
+        if (action == "fit") _needsFit = true;
+        else
+        {
+            if (_needsFit) Fit();
+            var center = new Point(Bounds.Width / 2, Bounds.Height / 2);
+            var world = ToWorld(center);
+            _scale = Math.Clamp(_scale * (action == "in" ? 1.25 : 0.8), 0.001, 12);
+            _offset = new Vector(center.X - world.X * _scale, center.Y - world.Y * _scale);
+        }
+        InvalidateVisual();
+    }
+
+    private double NodeRadius(string id) => Math.Clamp(
+        (4 + Math.Min(4, Math.Sqrt(_neighbors[id].Count))) * _scale * _nodeSize,
+        3 * _nodeSize, 12) * (id == _pending ? 1.6 : 1);
+
+    private bool IsEmphasized(string id) => _hovered is null || id == _hovered ||
+        (_neighbors.TryGetValue(_hovered, out var neighbors) && neighbors.Contains(id));
 
     public void SetPendingLink(string? id)
     {
@@ -115,7 +160,9 @@ internal sealed class NativeSessionGraph : Control
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
-        _needsFit = true;
+        if (!_needsFit && e.PreviousSize.Width > 0 && e.PreviousSize.Height > 0)
+            _offset += new Vector((e.NewSize.Width - e.PreviousSize.Width) / 2,
+                (e.NewSize.Height - e.PreviousSize.Height) / 2);
         InvalidateVisual();
     }
 
@@ -131,30 +178,37 @@ internal sealed class NativeSessionGraph : Control
         context.FillRectangle(Brush("GraphBackdropBloomBrush", Brushes.Transparent), rect);
         var ink = Brush("Ink90", Brushes.White);
         var meshPen = new Pen(Brush("Ink20", Brushes.DimGray), 0.65);
-        var edgePen = new Pen(Brush("Ink60", Brushes.Gray), 1.6);
-        var manualPen = new Pen(Brush("Ink80", Brushes.Gray), 1.9);
+        var edgePen = new Pen(Brush("Ink60", Brushes.Gray), 0.9 * _linkThickness);
+        var manualPen = new Pen(Brush("Ink80", Brushes.Gray), 1.4 * _linkThickness);
         var highlightPen = new Pen(ink, 2.4);
-        foreach (var (from, to) in _mesh)
-            context.DrawLine(meshPen, ToScreen(_positions[from]), ToScreen(_positions[to]));
+        using (context.PushOpacity(_hovered is null ? 1 : 0.25))
+            foreach (var (from, to) in _showMesh ? _mesh : [])
+                context.DrawLine(meshPen, ToScreen(_positions[from]), ToScreen(_positions[to]));
         foreach (var edge in _graph.Edges)
         {
             if (!_positions.TryGetValue(edge.FromGlobalId, out var from) || !_positions.TryGetValue(edge.ToGlobalId, out var to)) continue;
             var pen = edge.FromGlobalId == _hovered || edge.ToGlobalId == _hovered ? highlightPen : edge.IsManual ? manualPen : edgePen;
-            context.DrawLine(pen, ToScreen(from), ToScreen(to));
+            using (context.PushOpacity(_hovered is null || edge.FromGlobalId == _hovered || edge.ToGlobalId == _hovered ? 1 : 0.12))
+                context.DrawLine(pen, ToScreen(from), ToScreen(to));
         }
         foreach (var node in _graph.Nodes)
         {
             var point = NodeScreenPosition(node.GlobalId);
             if (!rect.Inflate(12).Contains(point)) continue;
-            var radius = Math.Clamp(7 * _scale, 0.75, 5) * (node.GlobalId == _pending ? 1.6 : 1);
-            context.DrawEllipse(_colors[node.GlobalId], null, point, radius, radius);
+            var radius = NodeRadius(node.GlobalId);
+            using (context.PushOpacity(IsEmphasized(node.GlobalId) ? 1 : 0.18))
+                context.DrawEllipse(_colors[node.GlobalId], null, point, radius, radius);
             if (node.GlobalId == _pending || node.GlobalId == _hovered || _rejected.Contains(node.GlobalId))
                 context.DrawEllipse(null, new Pen(_rejected.Contains(node.GlobalId) ? Brush("DangerBrush", Brushes.Red) : ink, 1.5), point, radius + 4, radius + 4);
         }
         var font = this.TryFindResource("MonoFontFamily", out var resource) && resource is FontFamily family ? family : FontFamily.Default;
         _labelBounds.Clear();
         var occupied = new List<Rect>();
-        var nodeBounds = _graph.Nodes.Select(n => new Rect(NodeScreenPosition(n.GlobalId) - new Vector(9, 9), new Size(18, 18))).ToArray();
+        var nodeBounds = _graph.Nodes.Select(n =>
+        {
+            var radius = NodeRadius(n.GlobalId) + 3;
+            return new Rect(NodeScreenPosition(n.GlobalId) - new Vector(radius, radius), new Size(radius * 2, radius * 2));
+        }).ToArray();
         // Reserva primero la ficha enfocada para que ninguna etiqueta la tape.
         FormattedText? detail = null;
         Rect detailBounds = default;
@@ -199,6 +253,20 @@ internal sealed class NativeSessionGraph : Control
                 break;
             }
         }
+        if (_showLabels)
+        foreach (var node in _graph.Nodes.OrderByDescending(n => n.GlobalId == _hovered).ThenByDescending(n => _neighbors[n.GlobalId].Count))
+        {
+            if (!IsEmphasized(node.GlobalId) || node.GlobalId == _hovered || (_scale < 0.7 && _hovered is null)) continue;
+            var point = NodeScreenPosition(node.GlobalId);
+            var title = new FormattedText(node.Title, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                new Typeface(font), 11, Brush("Ink70", Brushes.Gray))
+                { MaxTextWidth = 160, MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis };
+            var label = new Rect(point + new Vector(NodeRadius(node.GlobalId) + 6, -title.Height / 2), new Size(title.Width, title.Height));
+            if (!rect.Contains(label) || occupied.Any(r => r.Intersects(label.Inflate(3))) || nodeBounds.Any(r => r.Intersects(label))) continue;
+            occupied.Add(label);
+            _labelBounds.Add(label);
+            context.DrawText(title, label.TopLeft);
+        }
         if (detail is not null)
         {
             context.FillRectangle(Brush("GraphChipBackgroundBrush", Brushes.Black), detailBounds);
@@ -229,11 +297,11 @@ internal sealed class NativeSessionGraph : Control
     private string? HitNode(Point point)
     {
         string? hit = null;
-        var closest = 14d * 14;
+        var closest = double.PositiveInfinity;
         foreach (var (id, position) in _positions)
         {
             var distance = DistanceSquared(ToScreen(position), point);
-            if (distance > closest) continue;
+            if (distance > closest || distance > Math.Pow(Math.Max(14, NodeRadius(id) + 4), 2)) continue;
             closest = distance;
             hit = id;
         }
@@ -288,6 +356,8 @@ internal sealed class NativeSessionGraph : Control
         {
             if (dragged)
             {
+                if (_showMesh) _mesh = NativeSessionGraphLayout.CreateMesh(_graph, _positions);
+                InvalidateVisual();
                 // Guarda todas las posiciones visibles: los vecinos mantienen su lugar al recargar.
                 PositionsChanged?.Invoke(_positions.Select(p => (p.Key, p.Value.X, p.Value.Y, 0d)).ToArray());
             }
@@ -314,6 +384,24 @@ internal sealed class NativeSessionGraph : Control
         _hovered = null;
         ToolTip.SetTip(this, null);
         InvalidateVisual();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        switch (e.Key)
+        {
+            case Key.Add: case Key.OemPlus: MoveCamera("in"); break;
+            case Key.Subtract: case Key.OemMinus: MoveCamera("out"); break;
+            case Key.Home: MoveCamera("fit"); break;
+            case Key.Left: _offset += new Vector(40, 0); break;
+            case Key.Right: _offset += new Vector(-40, 0); break;
+            case Key.Up: _offset += new Vector(0, 40); break;
+            case Key.Down: _offset += new Vector(0, -40); break;
+            default: return;
+        }
+        InvalidateVisual();
+        e.Handled = true;
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)

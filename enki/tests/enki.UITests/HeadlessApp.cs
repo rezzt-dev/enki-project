@@ -27,7 +27,11 @@ internal static class HeadlessApp
         {
             if (_initialized) return;
             AppBuilder.Configure<App>()
-                .UseHeadless(new AvaloniaHeadlessPlatformOptions())
+                .UseSkia()
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions
+                {
+                    UseHeadlessDrawing = System.Environment.GetEnvironmentVariable("ENKI_GRAPH_PREVIEW") is null
+                })
                 .SetupWithoutStarting();
             _initialized = true;
         }

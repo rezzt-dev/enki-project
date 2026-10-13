@@ -39,25 +39,25 @@ Edge Legacy no es una alternativa adecuada para el JavaScript del documento.
 - Utiliza los recursos de tema y las fuentes empaquetadas. El título aparece al pasar por un nodo.
 - La distribución inicial es estática y determinista. Conserva las coordenadas guardadas cuando las
   notas están separadas y los límites de las sesiones no se cruzan. Si hay coordenadas inválidas,
-  notas apiladas o sesiones mezcladas, reconstruye grupos hexagonales y coloca las sesiones en un
-  anillo circular. Cada sesión reserva un sector según su tamaño, con margen para el nombre y las sesiones vecinas. Los anillos hexagonales
-  incompletos reparten las notas por el perímetro para mantener una silueta equilibrada.
+  notas apiladas o sesiones mezcladas, reconstruye grupos orgánicos de densidad uniforme y coloca las sesiones en un
+  anillo circular. Cada sesión reserva un sector según su tamaño, con margen para el nombre y las sesiones vecinas. La distribución por ángulo áureo
+  evita filas rígidas y mantiene una silueta equilibrada.
   Esta recuperación solo afecta a la vista: los manifiestos se escriben mediante el flujo existente
-  al arrastrar una nota. No reproduce la física ni la rotación ambiental del navegador.
-- Cada sesión tiene su propia malla visual: triangulación de Delaunay de sus nodos vecinos.
+  al arrastrar una nota. No reproduce la física del navegador; ambos visores mantienen la escena estable después del layout.
+- La opción **Malla de sesión**, activada de inicio, dibuja una malla visual por sesión: triangulación de Delaunay de sus nodos vecinos.
   No hay puentes decorativos entre sesiones; las sesiones de una sola nota quedan sin malla.
   Los enlaces reales entre notas de distintas sesiones siguen visibles.
   Usa las posiciones visibles, también al filtrar o recuperar coordenadas manuales. Su topología
   se calcula al actualizar el grafo, con un número lineal de aristas; no se recalcula
   durante el repintado. Estas líneas no son enlaces, no modifican notas, filtros ni contadores.
-- La malla usa `Ink20` y 0,65 px; los wikilinks usan `Ink60` y 1,6 px; los enlaces manuales,
-  `Ink80` y 1,9 px. Al pasar sobre una nota, sus enlaces reales destacan con `Ink90` y 2,4 px.
+- La malla usa `Ink20` y 0,65 px; los wikilinks usan `Ink60` y 0,9 px; los enlaces manuales,
+  `Ink80` y 1,4 px, modulados por el control de grosor. Al pasar sobre una nota, sus enlaces reales destacan con `Ink90` y 2,4 px.
   Los grosores se mantienen en unidades de pantalla para conservar la jerarquía al hacer zoom.
 - El radio de los nodos acompaña al zoom. Los nombres de sesión evitan nodos, otras etiquetas y los
   límites de la vista; cuando no caben se omiten hasta que haya espacio. Una única ficha al pasar el ratón muestra título y sesión,
   recorta textos largos y permanece dentro de la vista.
-- Cambiar enlaces conserva la cámara y las posiciones; añadir nodos reconstruye la distribución
-  completa para no mezclar coordenadas de dos anillos. Al reducir un filtro, las notas restantes
+- Cambiar enlaces conserva la cámara y las posiciones; las notas ocultas conservan una caché de
+  coordenadas para volver a mostrarse sin recolocar el resto. Al reducir un filtro, las notas restantes
   conservan sus coordenadas. Una distribución guardada legible sigue respetándose, incluido el
   arrastre manual de notas; la forma circular se aplica a las distribuciones nuevas o recuperadas.
 - Al salir se cancelan temporizadores y captura del puntero. Volver a adjuntar la vista restaura sus
@@ -71,7 +71,7 @@ notas con sesiones mezcladas no se solapen en vistas de 616×508 y 360×300, inc
 `NativeSessionGraphLayoutTests` verifica separación, determinismo, conservación de coordenadas legibles
 y ausencia de cambios sobre el modelo original. También comprueba centros circulares, separación
 entre sesiones de tamaños desiguales, conectividad de la malla dentro de cada sesión y ausencia de puentes entre sesiones, ausencia de aristas duplicadas,
-vecindad hexagonal y estabilidad al cambiar enlaces. `NativeSessionGraphMeshTests` verifica que
+vecindad espacial y estabilidad al cambiar enlaces. `NativeSessionGraphMeshTests` verifica que
 la malla no se cruce con posiciones irregulares y que los nodos colineales o coincidentes sigan
 conectados. Las pruebas UI cubren además que editar enlaces no reinicie el zoom.
 `SessionsGraphFiltersUiTests` fuerza la ausencia de navegador y verifica el grafo real ligado al viewmodel, apertura de una nota, filtros y reentrada.
@@ -80,3 +80,16 @@ La CI ejecuta estos casos en Linux, Windows y macOS sin instalar motores web adi
 Antes de publicar, comprobar también una ventana real en cada sistema: abrir Sesiones en un equipo
 sin motor web utilizable, aplicar filtros, enlazar notas, arrastrar, cerrar y volver a entrar. Las
 pruebas headless no validan los adaptadores de navegador ni los controladores gráficos del equipo.
+
+## Controles y estabilidad
+
+El panel de sesiones ocupa una columna propia y deja libre el lienzo. Por debajo de 900 px de
+ancho del visor se oculta; el popover **Filtrar** mantiene búsqueda, visibilidad y ajustes. La barra
+inferior contiene las acciones de cámara y una guía breve de ratón. En el lienzo enfocado, `+`/`−`
+controlan el zoom y `Inicio` encuadra; en el visor nativo las flechas desplazan la cámara.
+Redimensionar el visor nativo conserva el zoom y el punto central. Al terminar un arrastre se
+recalcula la triangulación para que las líneas decorativas vuelvan a unir vecinos espaciales.
+
+Para generar una captura de la vista real con Skia, ejecutar los tests `GraphPresentationUiTests`
+con `ENKI_GRAPH_PREVIEW` apuntando a una carpeta temporal. El test crea su propio vault aislado,
+exporta `workspace.png` y el documento web `graph.html`; no utiliza datos del usuario.

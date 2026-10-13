@@ -6191,4 +6191,40 @@ Bonne rédaction.</value>
   <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Résolvez les modifications en attente dans les notes ouvertes avant de continuer.</value></data>
   <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Dossier de corbeille non valide.</value></data>
   <data name="Folders_Error_Changed" xml:space="preserve"><value>Le dossier a changé pendant le transfert. Réessayez.</value></data>
+  <data name="Sessions_Graph_Search" xml:space="preserve">
+    <value>Rechercher des notes, chemins ou tags…</value>
+  </data>
+  <data name="Sessions_Graph_Display" xml:space="preserve">
+    <value>Affichage</value>
+  </data>
+  <data name="Sessions_Graph_Labels" xml:space="preserve">
+    <value>Noms des notes</value>
+  </data>
+  <data name="Sessions_Graph_Mesh" xml:space="preserve">
+    <value>Maillage de session</value>
+  </data>
+  <data name="Sessions_Graph_MeshHint" xml:space="preserve">
+    <value>Repère de proximité visuelle. Ne représente pas les liens entre notes.</value>
+  </data>
+  <data name="Sessions_Graph_NodeSize" xml:space="preserve">
+    <value>Taille des nœuds</value>
+  </data>
+  <data name="Sessions_Graph_LinkThickness" xml:space="preserve">
+    <value>Épaisseur des liens</value>
+  </data>
+  <data name="Sessions_Graph_Isolate" xml:space="preserve">
+    <value>Afficher uniquement cette session</value>
+  </data>
+  <data name="Sessions_Graph_ZoomOut" xml:space="preserve">
+    <value>Dézoomer</value>
+  </data>
+  <data name="Sessions_Graph_ZoomIn" xml:space="preserve">
+    <value>Zoomer</value>
+  </data>
+  <data name="Sessions_Graph_Fit" xml:space="preserve">
+    <value>Cadrer le graphe</value>
+  </data>
+  <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
+    <value>Glisser pour explorer · Molette pour zoomer · Double-clic pour ouvrir</value>
+  </data>
 </root>

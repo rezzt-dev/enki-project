@@ -6191,4 +6191,40 @@ Feliz escritura.</value>
   <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Resuelve los cambios pendientes en las notas abiertas antes de continuar.</value></data>
   <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Carpeta de papelera no válida.</value></data>
   <data name="Folders_Error_Changed" xml:space="preserve"><value>La carpeta ha cambiado durante el traslado. Inténtalo de nuevo.</value></data>
+  <data name="Sessions_Graph_Search" xml:space="preserve">
+    <value>Buscar notas, rutas o etiquetas…</value>
+  </data>
+  <data name="Sessions_Graph_Display" xml:space="preserve">
+    <value>Visualización</value>
+  </data>
+  <data name="Sessions_Graph_Labels" xml:space="preserve">
+    <value>Nombres de notas</value>
+  </data>
+  <data name="Sessions_Graph_Mesh" xml:space="preserve">
+    <value>Malla de sesión</value>
+  </data>
+  <data name="Sessions_Graph_MeshHint" xml:space="preserve">
+    <value>Guía visual de proximidad. No representa enlaces entre notas.</value>
+  </data>
+  <data name="Sessions_Graph_NodeSize" xml:space="preserve">
+    <value>Tamaño de los nodos</value>
+  </data>
+  <data name="Sessions_Graph_LinkThickness" xml:space="preserve">
+    <value>Grosor de los enlaces</value>
+  </data>
+  <data name="Sessions_Graph_Isolate" xml:space="preserve">
+    <value>Mostrar solo esta sesión</value>
+  </data>
+  <data name="Sessions_Graph_ZoomOut" xml:space="preserve">
+    <value>Alejar</value>
+  </data>
+  <data name="Sessions_Graph_ZoomIn" xml:space="preserve">
+    <value>Acercar</value>
+  </data>
+  <data name="Sessions_Graph_Fit" xml:space="preserve">
+    <value>Encuadrar grafo</value>
+  </data>
+  <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
+    <value>Arrastra para explorar · Rueda para zoom · Doble clic para abrir</value>
+  </data>
 </root>

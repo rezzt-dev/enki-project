@@ -6,6 +6,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Input.Raw;
+using Avalonia.Media.Imaging;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
 using Avalonia.Styling;
@@ -54,6 +56,44 @@ public class SessionsGraphFiltersUiTests
             window = new Window { Content = panel, Width = 340, Height = 520 };
             window.Show();
             window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            // Las plantillas propias mantienen teclado y arrastre, además del binding al grafo.
+            var labels = panel.GetVisualDescendants().OfType<CheckBox>().First();
+            labels.Focus();
+            window.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.None, null);
+            window.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.None, null);
+            Assert.False(vm.ShowGraphLabels);
+            var slider = panel.GetVisualDescendants().OfType<Slider>().First();
+            slider.Focus();
+            window.KeyPress(Key.Right, RawInputModifiers.None, PhysicalKey.None, null);
+            window.KeyRelease(Key.Right, RawInputModifiers.None, PhysicalKey.None, null);
+            Assert.Equal(1.1, vm.GraphNodeSize, 5);
+            slider.BringIntoView();
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var thumb = slider.GetVisualDescendants().OfType<Thumb>().Single();
+            var point = thumb.TranslatePoint(new Point(thumb.Bounds.Width / 2, thumb.Bounds.Height / 2), window)!.Value;
+            window.MouseDown(point, MouseButton.Left);
+            window.MouseMove(point + new Vector(35, 0), RawInputModifiers.LeftMouseButton);
+            window.MouseUp(point + new Vector(35, 0), MouseButton.Left);
+            Assert.True(vm.GraphNodeSize > 1.1);
+            var beforeTrackClick = vm.GraphNodeSize;
+            var decrease = slider.GetVisualDescendants().OfType<RepeatButton>().First();
+            var trackPoint = decrease.TranslatePoint(new Point(decrease.Bounds.Width / 2, decrease.Bounds.Height / 2), window)!.Value;
+            window.MouseDown(trackPoint, MouseButton.Left);
+            window.MouseUp(trackPoint, MouseButton.Left);
+            Assert.True(vm.GraphNodeSize < beforeTrackClick);
+            panel.GetVisualDescendants().OfType<Slider>().Last().BringIntoView();
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            window.MouseMove(new Point(10, 10));
+            if (Environment.GetEnvironmentVariable("ENKI_GRAPH_PREVIEW") is { Length: > 0 } preview)
+            {
+                Directory.CreateDirectory(preview);
+                using var bitmap = new RenderTargetBitmap(new PixelSize(340, 520));
+                bitmap.Render(panel);
+                bitmap.Save(Path.Combine(preview, light ? "filters-light.png" : "filters-dark.png"), PngBitmapEncoderOptions.Default);
+            }
 
             var tag = panel.GetVisualDescendants().OfType<ToggleSwitch>()
                 .Single(t => t.DataContext is GraphGroupFilterItemViewModel { GroupId: "ideas" });
