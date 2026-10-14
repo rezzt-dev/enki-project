@@ -235,97 +235,7 @@
               </StackPanel>
             </Grid>
 
-            <Popup PlacementTarget="{Binding #GraphFilterTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
-                   IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #GraphFilterTrigger}"
-                   IsOpen="{Binding IsGraphFilterOpen}">
-              <Border Classes="dropdown-popover" Width="340" CornerRadius="0">
-                <Grid RowDefinitions="Auto,*,Auto" Margin="4" MaxHeight="520">
-                  <TextBlock Grid.Row="0" Text="{loc:Tr Sessions_Graph_GlobalTitle, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" FontSize="15" Margin="0,0,0,14" />
-                  <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Spacing="10">
-                      <TextBox Text="{Binding GraphSearchText, UpdateSourceTrigger=PropertyChanged}"
-                               PlaceholderText="{loc:Tr Sessions_Graph_Search}" AutomationProperties.Name="{loc:Tr Sessions_Graph_Search}" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Explore, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
-                      <ComboBox ItemsSource="{Binding GraphExplorationOptions}" SelectedIndex="{Binding GraphExplorationIndex}"
-                                HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Sessions_Graph_Explore}" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Clusters, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
-                      <ComboBox ItemsSource="{Binding GraphClusters}" SelectedItem="{Binding SelectedGraphCluster}"
-                                IsEnabled="{Binding HasGraphClusters}" HorizontalAlignment="Stretch"
-                                AutomationProperties.Name="{loc:Tr Sessions_Graph_Clusters}">
-                        <ComboBox.ItemTemplate>
-                          <DataTemplate DataType="vm:GraphClusterFilterItemViewModel">
-                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
-                          </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                      </ComboBox>
-                      <TextBlock Text="{loc:Tr Sessions_Graph_ClustersHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
-                                 FontSize="12" FontWeight="Bold" />
-                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
-                              <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,3">
-                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
-                                           VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
-                                              AutomationProperties.Name="{Binding Label}" />
-                                <Button Grid.Column="2" Classes="icon-btn" Width="28" Height="28" Margin="8,0,0,0"
-                                        Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).IsolateGraphSessionCommand}"
-                                        CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Graph_Isolate}"
-                                        AutomationProperties.Name="{loc:Tr Sessions_Graph_Isolate}">
-                                  <mi:MaterialIcon Kind="Target" Width="14" Height="14" />
-                                </Button>
-                              </Grid>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </ScrollViewer>
-                      <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,6" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Display, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
-                      <CheckBox Theme="{StaticResource RectangularCheckBox}" Content="{loc:Tr Sessions_Graph_Labels}" IsChecked="{Binding ShowGraphLabels}" />
-                      <CheckBox Theme="{StaticResource RectangularCheckBox}" Content="{loc:Tr Sessions_Graph_Mesh}" IsChecked="{Binding ShowGraphMesh}" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_MeshHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
-                      <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="{loc:Tr Sessions_Graph_NodeSize}" FontSize="12" />
-                        <TextBlock Grid.Column="1" Text="{Binding GraphNodeSize, StringFormat='{}{0:0.0}×'}"
-                                   FontFamily="{DynamicResource MonoFontFamily}" Foreground="{DynamicResource Ink60}" FontSize="11" />
-                      </Grid>
-                      <Slider Theme="{StaticResource RectangularSlider}" Minimum="0.5" Maximum="2" Value="{Binding GraphNodeSize}" SmallChange="0.1" LargeChange="0.2" TickFrequency="0.1" IsSnapToTickEnabled="True"
-                              AutomationProperties.Name="{loc:Tr Sessions_Graph_NodeSize}" />
-                      <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="{loc:Tr Sessions_Graph_LinkThickness}" FontSize="12" />
-                        <TextBlock Grid.Column="1" Text="{Binding GraphLinkThickness, StringFormat='{}{0:0.0}×'}"
-                                   FontFamily="{DynamicResource MonoFontFamily}" Foreground="{DynamicResource Ink60}" FontSize="11" />
-                      </Grid>
-                      <Slider Theme="{StaticResource RectangularSlider}" Minimum="0.5" Maximum="2" Value="{Binding GraphLinkThickness}" SmallChange="0.1" LargeChange="0.2" TickFrequency="0.1" IsSnapToTickEnabled="True"
-                              AutomationProperties.Name="{loc:Tr Sessions_Graph_LinkThickness}" />
-                      <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,6" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Tags, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_TagsHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_NoTags}" Classes="muted" FontSize="12" IsVisible="{Binding !HasGraphTags}" />
-                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGraphTags}">
-                        <ItemsControl ItemsSource="{Binding GraphTagFilters}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
-                              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
-                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
-                                           VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
-                                              AutomationProperties.Name="{Binding Label}" />
-                              </Grid>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </ScrollViewer>
-                    </StackPanel>
-                  </ScrollViewer>
-                  <Button Grid.Row="2" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
-                          Margin="0,14,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                          Content="{loc:Tr Sessions_Graph_ResetFilters, Converter={StaticResource UpperCaseConverter}}" />
-                </Grid>
-              </Border>
-            </Popup>
+
 
             <!-- Panel de sesiones fuera del lienzo; en ventanas estrechas siguen en Filtrar. -->
             <Border x:Name="GraphSessionPanel" Grid.Column="1" Grid.RowSpan="3" Width="260"
@@ -399,6 +309,106 @@
         </Border>
       </Grid>
     </Grid>
+
+    <!-- Filtros del grafo: diálogo centrado en toda la ventana, con secciones navegables. -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsGraphFilterOpen}">
+      <Border Classes="modal-card" Width="740" MaxWidth="740" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18" Height="510">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <TextBlock Text="{loc:Tr Sessions_Graph_GlobalTitle, Converter={StaticResource UpperCaseConverter}}"
+                       FontWeight="Bold" FontSize="19" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="icon-btn" Width="32" Height="32"
+                    Command="{Binding CloseGraphFilterCommand}"
+                    ToolTip.Tip="{loc:Tr Common_Close}" AutomationProperties.Name="{loc:Tr Common_Close}">
+              <mi:MaterialIcon Kind="Close" Width="17" Height="17" />
+            </Button>
+          </Grid>
+          <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="24">
+            <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="12">
+                <TextBox Text="{Binding GraphSearchText, UpdateSourceTrigger=PropertyChanged}"
+                         PlaceholderText="{loc:Tr Sessions_Graph_Search}" AutomationProperties.Name="{loc:Tr Sessions_Graph_Search}" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_Explore, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <ComboBox ItemsSource="{Binding GraphExplorationOptions}" SelectedIndex="{Binding GraphExplorationIndex}"
+                          HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Sessions_Graph_Explore}" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_Clusters, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <ComboBox ItemsSource="{Binding GraphClusters}" SelectedItem="{Binding SelectedGraphCluster}"
+                          IsEnabled="{Binding HasGraphClusters}" HorizontalAlignment="Stretch"
+                          AutomationProperties.Name="{loc:Tr Sessions_Graph_Clusters}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="vm:GraphClusterFilterItemViewModel">
+                      <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{loc:Tr Sessions_Graph_ClustersHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
+                           FontSize="12" FontWeight="Bold" />
+                <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                      <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,3">
+                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                      AutomationProperties.Name="{Binding Label}" />
+                        <Button Grid.Column="2" Classes="icon-btn" Width="28" Height="28" Margin="8,0,0,0"
+                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).IsolateGraphSessionCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Graph_Isolate}"
+                                AutomationProperties.Name="{loc:Tr Sessions_Graph_Isolate}">
+                          <mi:MaterialIcon Kind="Target" Width="14" Height="14" />
+                        </Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="12">
+                <TextBlock Text="{loc:Tr Sessions_Graph_Display, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <CheckBox Theme="{StaticResource RectangularCheckBox}" Content="{loc:Tr Sessions_Graph_Labels}" IsChecked="{Binding ShowGraphLabels}" />
+                <CheckBox Theme="{StaticResource RectangularCheckBox}" Content="{loc:Tr Sessions_Graph_Mesh}" IsChecked="{Binding ShowGraphMesh}" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_MeshHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{loc:Tr Sessions_Graph_NodeSize}" FontSize="12" />
+                  <TextBlock Grid.Column="1" Text="{Binding GraphNodeSize, StringFormat='{}{0:0.0}×'}"
+                             FontFamily="{DynamicResource MonoFontFamily}" Foreground="{DynamicResource Ink60}" FontSize="11" />
+                </Grid>
+                <Slider Theme="{StaticResource RectangularSlider}" Minimum="0.5" Maximum="2" Value="{Binding GraphNodeSize}" SmallChange="0.1" LargeChange="0.2" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_NodeSize}" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{loc:Tr Sessions_Graph_LinkThickness}" FontSize="12" />
+                  <TextBlock Grid.Column="1" Text="{Binding GraphLinkThickness, StringFormat='{}{0:0.0}×'}"
+                             FontFamily="{DynamicResource MonoFontFamily}" Foreground="{DynamicResource Ink60}" FontSize="11" />
+                </Grid>
+                <Slider Theme="{StaticResource RectangularSlider}" Minimum="0.5" Maximum="2" Value="{Binding GraphLinkThickness}" SmallChange="0.1" LargeChange="0.2" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_LinkThickness}" />
+                <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,6" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_Tags, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_TagsHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_NoTags}" Classes="muted" FontSize="12" IsVisible="{Binding !HasGraphTags}" />
+                <ItemsControl ItemsSource="{Binding GraphTagFilters}" IsVisible="{Binding HasGraphTags}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                      <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                      AutomationProperties.Name="{Binding Label}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+          <Button Grid.Row="2" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  Content="{loc:Tr Sessions_Graph_ResetFilters, Converter={StaticResource UpperCaseConverter}}" />
+        </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: nueva sesión (§7.10) ===================== -->
     <controls:ModalOverlayHost IsOpen="{Binding IsCreateDialogOpen}">

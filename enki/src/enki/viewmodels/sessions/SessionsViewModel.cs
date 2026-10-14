@@ -945,6 +945,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleGraphFilterPopover() => IsGraphFilterOpen = !IsGraphFilterOpen;
 
+    [RelayCommand]
+    private void CloseGraphFilter() => IsGraphFilterOpen = false;
+
     // ===================== Messages posted from the graph's WebView =====================
     // The combined graph's node ids are "{sessionId}::{relativePath}" (SessionGraphNode.GlobalId) since
     // plain relative paths collide across sessions — every message coming back from it has to be
