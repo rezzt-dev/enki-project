@@ -84,6 +84,75 @@ public sealed class ExplorerClipboardUiTests : IDisposable
         finally { window.Close(); }
     }
 
+    [Fact]
+    public void Notes_TreeBackgroundMenu_OffersRootActions_WithoutCoveringTheEditor()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.NotesViewMode = "Simple";
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var vm = new NotesViewModel(vault, new SessionService(vault), settingsService: settings);
+        var view = new NotesView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1400, Height = 900 };
+        window.Show();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        try
+        {
+            var simple = view.GetVisualDescendants().OfType<SimpleNotesView>().Single();
+            Assert.Null(simple.ContextMenu);
+            var body = simple.FindControl<Grid>("SimpleTreeBody")!;
+            body.ContextMenu!.Open(body);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var items = body.ContextMenu.Items.OfType<MenuItem>().ToArray();
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.NewNoteAtRootCommand));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.ShowTemplatePickerCommand));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.OpenDailyNoteCommand));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.CollapseSimpleTreeCommand));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.CreateFolderDialogCommand)
+                && Equals(item.CommandParameter, vm.EffectiveRootPath));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.PasteEntryCommand)
+                && Equals(item.CommandParameter, vm.EffectiveRootPath));
+            body.ContextMenu.Close();
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void Files_TreeBackgroundMenu_OffersRootActions_WithoutCoveringThePreview()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.FilesViewMode = "Tree";
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var vm = new FilesViewModel(vault, new SessionService(vault), new NotificationService(settings, _directory), settings);
+        var view = new FilesView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1400, Height = 900 };
+        window.Show();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        try
+        {
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            Assert.Null(tree.ContextMenu);
+            var body = tree.FindControl<Grid>("TreeBody")!;
+            body.ContextMenu!.Open(body);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var items = body.ContextMenu.Items.OfType<MenuItem>().ToArray();
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.CollapseTreeCommand));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.CreateFolderDialogCommand)
+                && Equals(item.CommandParameter, vm.EffectiveRootPath));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.ImportCommand)
+                && Equals(item.CommandParameter, vm.EffectiveRootPath));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.PasteEntryCommand)
+                && Equals(item.CommandParameter, vm.EffectiveRootPath));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.RevealFolderCommand)
+                && Equals(item.CommandParameter, vm.EffectiveRootPath));
+            Assert.Contains(items, item => ReferenceEquals(item.Command, vm.CopyPathCommand)
+                && Equals(item.CommandParameter, vm.EffectiveRootPath));
+            body.ContextMenu.Close();
+        }
+        finally { window.Close(); }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

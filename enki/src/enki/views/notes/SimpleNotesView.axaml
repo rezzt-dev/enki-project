@@ -11,13 +11,6 @@
              x:Class="enki.Views.SimpleNotesView"
              x:Name="SimpleRoot"
              x:DataType="vm:NotesViewModel">
-  <UserControl.ContextMenu>
-    <ContextMenu>
-      <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" Command="{Binding PasteEntryCommand}"
-                CommandParameter="{Binding EffectiveRootPath}" />
-    </ContextMenu>
-  </UserControl.ContextMenu>
-
   <!-- Vista simplificada de la página de Notas (Ajustes › Editor › Vista del editor). Solo lo mínimo
        para escribir: a la izquierda un árbol con las carpetas y las notas markdown de la sesión activa,
        a la derecha las pestañas abiertas sobre el mismo editor de la vista completa. Lo que esta vista
@@ -396,12 +389,42 @@
 
           <!-- La raíz de la sesión también es destino de arrastre, para poder sacar una nota de una
                carpeta soltándola sobre el fondo vacío del árbol. -->
-          <Grid Grid.Row="1" Background="Transparent"
+          <Grid Grid.Row="1" x:Name="SimpleTreeBody" Background="Transparent"
                 DragDrop.AllowDrop="True"
                 DragDrop.DragEnter="TreeRoot_DragEnter"
                 DragDrop.DragOver="TreeRoot_DragOver"
                 DragDrop.DragLeave="TreeRoot_DragLeave"
                 DragDrop.Drop="TreeRoot_Drop">
+            <Grid.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="{loc:Tr Notes_SimpleView_NewNote_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding NewNoteAtRootCommand}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Notes_Templates_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding ShowTemplatePickerCommand}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Notes_SimpleView_NewFolder_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Notes_SimpleView_DailyNote_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding OpenDailyNoteCommand}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="CalendarToday" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V"
+                          Command="{Binding PasteEntryCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="ContentPaste" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="{loc:Tr Notes_SimpleView_Collapse_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CollapseSimpleTreeCommand}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="UnfoldLessHorizontal" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+              </ContextMenu>
+            </Grid.ContextMenu>
             <ScrollViewer Padding="0,0,0,10">
               <ItemsControl ItemsSource="{Binding SimpleTreeRoots}" Margin="8,0,0,0">
                 <ItemsControl.ItemsPanel>

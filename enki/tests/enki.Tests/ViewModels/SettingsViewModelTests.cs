@@ -633,6 +633,40 @@ public class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void DashboardChanges_NotifyAfterSaving_ForLiveRefresh()
+    {
+        var (vm, _, _, vaultSettings) = CreateViewModel();
+        var notifications = 0;
+        vaultSettings.SettingsChanged += () =>
+        {
+            notifications++;
+            // La vista que recibe el evento debe poder leer ya el cambio persistido.
+            var saved = System.Text.Json.JsonSerializer.Deserialize<enki.Models.VaultSettings>(
+                File.ReadAllText(Path.Combine(_vaultPath, ".enki", "settings.json")));
+            Assert.NotNull(saved);
+            if (notifications == 1)
+                Assert.Contains("Vault", saved.DashboardHiddenSections);
+        };
+
+        vm.ToggleDashboardSectionVisibilityCommand.Execute("Vault");
+        Assert.True(notifications > 0);
+        var afterVisibility = notifications;
+
+        vm.SelectDashboardLayoutStyleCommand.Execute(DashboardLayoutEngine.Custom);
+        Assert.True(notifications > afterVisibility);
+        var afterStyle = notifications;
+
+        vm.DashboardGridColumns = 4;
+        Assert.True(notifications > afterStyle);
+        var afterColumns = notifications;
+
+        vm.ResetDashboardLayoutCommand.Execute(null);
+        Assert.True(notifications > afterColumns);
+        Assert.Equal(DashboardLayoutEngine.Classic, vaultSettings.Settings.DashboardLayoutStyle);
+        Assert.Empty(vaultSettings.Settings.DashboardHiddenSections!);
+    }
+
+    [Fact]
     public void DashboardLayoutOptions_HasOneCardPerEngineStyle_ClassicSelectedByDefault()
     {
         var (vm, _, _, _) = CreateViewModel();

@@ -118,6 +118,7 @@ public sealed partial class MainWindowViewModel
         _polarAuthService.LinkStateChanged += OnPolarDataChanged;
         _habitService.HabitsChanged += OnHabitDataChanged;
         _reminderService.RemindersChanged += OnReminderDataChanged;
+        _vaultSettingsService.SettingsChanged += OnVaultSettingsChanged;
     }
 
     private void OnVaultContentChanged()
@@ -139,6 +140,7 @@ public sealed partial class MainWindowViewModel
         AppPage.TagManager, AppPage.Trash);
     private void OnHabitDataChanged() => InvalidatePages(AppPage.Habits, AppPage.Dashboard, AppPage.Statistics);
     private void OnReminderDataChanged() => InvalidatePages(AppPage.Dashboard, AppPage.Statistics, AppPage.Trash);
+    private void OnVaultSettingsChanged() => InvalidatePages(AppPage.Dashboard);
 
     private void InvalidatePages(params AppPage[] pages)
     {
@@ -485,6 +487,7 @@ public sealed partial class MainWindowViewModel
         _polarAuthService.LinkStateChanged -= OnPolarDataChanged;
         _habitService.HabitsChanged -= OnHabitDataChanged;
         _reminderService.RemindersChanged -= OnReminderDataChanged;
+        _vaultSettingsService.SettingsChanged -= OnVaultSettingsChanged;
         _dirtyPages.Clear();
         // Un tramo de precarga que vuelva después de esto se descarta en vez de seguir trabajando.
         _warmUpGeneration++;

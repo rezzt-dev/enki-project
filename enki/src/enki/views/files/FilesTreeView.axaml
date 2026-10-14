@@ -11,13 +11,6 @@
              x:Class="enki.Views.FilesTreeView"
              x:Name="TreeRoot"
              x:DataType="vm:FilesViewModel">
-  <UserControl.ContextMenu>
-    <ContextMenu>
-      <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" Command="{Binding PasteEntryCommand}"
-                CommandParameter="{Binding EffectiveRootPath}" />
-    </ContextMenu>
-  </UserControl.ContextMenu>
-
   <!-- Modo "árbol" de la sección Archivos: el panel lateral de la vista simplificada de Notas adaptado a
        los adjuntos del vault. Carpetas y archivos se entremezclan en una misma lista jerárquica a la
        izquierda, y a la derecha va la previsualización del archivo abierto.
@@ -430,6 +423,36 @@
                 DragDrop.DragEnter="TreeBackground_DragOver"
                 DragDrop.DragOver="TreeBackground_DragOver"
                 DragDrop.Drop="TreeBackground_Drop">
+            <Grid.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="{loc:Tr Files_NewFolderButton, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding ImportCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V"
+                          Command="{Binding PasteEntryCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="ContentPaste" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding RevealFolderCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CopyPathCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Files_Tree_Collapse_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CollapseTreeCommand}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="UnfoldLessHorizontal" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+              </ContextMenu>
+            </Grid.ContextMenu>
             <ScrollViewer Padding="0,0,0,10">
               <ItemsControl ItemsSource="{Binding FileTreeRoots}" Margin="8,0,0,0">
                 <ItemsControl.ItemsPanel>

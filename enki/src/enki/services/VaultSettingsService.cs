@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.Json;
 using enki.Models;
@@ -16,6 +17,10 @@ public sealed class VaultSettingsService
     private readonly VaultService _vaultService;
 
     public VaultSettings Settings { get; private set; }
+
+    /// <summary>Se dispara tras guardar los ajustes del vault para actualizar las vistas que dependen
+    /// de ellos sin esperar a reiniciar la aplicación.</summary>
+    public event Action? SettingsChanged;
 
     public VaultSettingsService(VaultService vaultService)
     {
@@ -50,5 +55,6 @@ public sealed class VaultSettingsService
             foreach (var entry in own) merged[entry.Key] = entry.Value?.DeepClone();
             JsonFileStore.Save(SettingsPath, merged);
         });
+        SettingsChanged?.Invoke();
     }
 }

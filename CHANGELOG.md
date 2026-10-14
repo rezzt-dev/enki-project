@@ -32,6 +32,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
+- actualizar en caliente el dashboard cuando se modifica su visibilidad, orden, plantilla o rejilla en ajustes, notificando los cambios guardados de `VaultSettingsService` y recargando solo la página afectada mediante la cola de refresco de `MainWindowViewModel`.
+- sustituir el menú contextual reducido del fondo de los árboles laterales de Notas y Archivos por acciones de raíz para crear, importar, pegar, abrir la ubicación, copiar la ruta y contraer el árbol, manteniendo los comandos específicos de cada elemento y sus destinos de sesión.
 - rediseñar la vista de la papelera con un estado vacío único y centrado, ocultar las categorías sin elementos, mostrar solo las secciones con contenido y conservar las acciones de restauración y borrado permanente.
 - ampliar el rail plegado de habilidades con accesos a arbol, busqueda, creacion, importacion, exportacion, plegado, comunidad y explorador; arbol y busqueda abren el panel en el modo elegido y enfocan su campo cuando corresponde.
 - actualizar el sdk de desarrollo a `.net 10.0.112` y publicar la aplicacion linux como autocontenida para `linux-x64` y `linux-arm64`.
@@ -123,6 +125,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 
 #### CHANGED
+- refresh the dashboard live when its visibility, order, template or grid changes in settings, publishing saved `VaultSettingsService` changes and reloading only the affected page through `MainWindowViewModel`'s refresh queue.
+- replace the reduced background context menu in the Notes and Files sidebar trees with root actions to create, import, paste, reveal the location, copy the path and collapse the tree, while preserving item-specific commands and session-aware destinations.
 - extend the collapsed Skills rail with shortcuts for tree, search, creation, import, export, collapse, community and browser; tree and search open the panel in the selected mode and focus its field when appropriate.
 - update the development sdk to `.net 10.0.112` and publish the Linux app as self-contained for `linux-x64` and `linux-arm64`.
 - rebuild startup in two phases: the vault index is read in the background while the launch screen animates, and the curtain lifts as soon as the configured start section is ready instead of waiting for all fourteen; the rest is prepared afterwards in the UI thread's idle slots, and every heavy slice gives the compositor a full frame back before the next one.
