@@ -6239,4 +6239,10 @@ Bonne rédaction.</value>
   <data name="Startup_Finalizing" xml:space="preserve">
     <value>Finalisation</value>
   </data>
+  <data name="Trash_OverviewEmptyTitle" xml:space="preserve">
+    <value>La corbeille est vide</value>
+  </data>
+  <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
+    <value>Les éléments supprimés apparaîtront ici pour être restaurés ou supprimés définitivement.</value>
+  </data>
 </root>

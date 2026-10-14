@@ -6239,4 +6239,10 @@ A disfrutar escribiendo.</value>
   <data name="Startup_Finalizing" xml:space="preserve">
     <value>Terminando</value>
   </data>
+  <data name="Trash_OverviewEmptyTitle" xml:space="preserve">
+    <value>La papelera está vacía</value>
+  </data>
+  <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
+    <value>Los elementos que elimines aparecerán aquí para que puedas restaurarlos o borrarlos definitivamente.</value>
+  </data>
 </root>

@@ -31,6 +31,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
+- rediseñar la vista de la papelera con un estado vacío único y centrado, ocultar las categorías sin elementos, mostrar solo las secciones con contenido y conservar las acciones de restauración y borrado permanente.
 - ampliar el rail plegado de habilidades con accesos a arbol, busqueda, creacion, importacion, exportacion, plegado, comunidad y explorador; arbol y busqueda abren el panel en el modo elegido y enfocan su campo cuando corresponde.
 - actualizar el sdk de desarrollo a `.net 10.0.112` y publicar la aplicacion linux como autocontenida para `linux-x64` y `linux-arm64`.
 - reconstruir el arranque en dos fases: el índice del vault se lee en segundo plano mientras se anima la pantalla de arranque, y la cortina se retira en cuanto está lista la sección de inicio elegida en lugar de esperar a las catorce; el resto se prepara después, en los huecos libres del hilo de interfaz, y cada tramo pesado devuelve un fotograma entero antes del siguiente.
@@ -357,6 +358,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - warn the user when a local edit loses a synchronisation conflict (last-write-wins) against a newer remote version.
 
 #### CHANGED
+- redesign the trash view with one centred empty state, hide categories without items, show only sections with content, and preserve restore and permanent-delete actions.
 - rebuild paragraph, list, task and quote justification to distribute word spacing before limited character tracking, preserve caret and selection geometry, respect final rows and code, and keep wrapping stable across redraws.
 - route formatting-toolbar buttons and shortcuts through the same editing operations so headings, lists, tasks, quotes and inline formatting toggle or replace existing markers instead of stacking syntax.
 - document editor behaviour and limits in `.docs/project-info/editor-markdown.md` and expand `MarkdownEditingTests`, `MarkdownCalloutsTests`, `EditorEditingUiTests`, `MarkdownCodeHighlightUiTests` and `MarkdownJustificationUiTests` with regressions for selections, undo, lf/crlf line endings, code fences, callouts, highlighting and text geometry.

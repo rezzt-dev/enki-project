@@ -6239,4 +6239,10 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Startup_Finalizing" xml:space="preserve">
     <value>Wird abgeschlossen</value>
   </data>
+  <data name="Trash_OverviewEmptyTitle" xml:space="preserve">
+    <value>Der Papierkorb ist leer</value>
+  </data>
+  <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
+    <value>Gelöschte Elemente erscheinen hier, bis du sie wiederherstellst oder endgültig löschst.</value>
+  </data>
 </root>

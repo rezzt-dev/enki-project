@@ -66,6 +66,34 @@ public class TrashViewUiTests : IDisposable
     }
 
     [Fact]
+    public void EmptyOverview_GivesWayToThePopulatedSection()
+    {
+        var (_, viewModel, kanban, window) = CreateView();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        var overview = Assert.Single(window.GetVisualDescendants().OfType<Border>(),
+            b => b.Classes.Contains("trash-overview-empty"));
+        Assert.True(overview.IsVisible);
+        Assert.Contains(LocalizationService.Instance["Trash_OverviewEmptyTitle"],
+            RenderedText(window), StringComparison.OrdinalIgnoreCase);
+
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
+        {
+            Card = new KanbanCard { Id = "c1", Title = "Tarea borrada" },
+            ColumnId = "col-1",
+            ColumnTitle = "Pendiente"
+        });
+        viewModel.Reload();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+
+        Assert.False(overview.IsVisible);
+        Assert.Single(window.GetVisualDescendants().OfType<Border>(),
+            b => b.Classes.Contains("trash-card"));
+
+        window.Close();
+    }
+
+    [Fact]
     public void RequestEmptyDocuments_OpensEmptyConfirmationDialog()
     {
         var (_, viewModel, _, window) = CreateView();

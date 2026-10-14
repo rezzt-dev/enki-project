@@ -1421,16 +1421,36 @@
     <Setter Property="TextAlignment" Value="Center" />
   </Style>
 
-  <!-- Estado vacío de sección: una caja real de alto fijo en vez de una línea suelta de texto, para
-       que una sección vacía ocupe un bloque reconocible y las secciones llenas y vacías mantengan el
-       mismo ritmo vertical al recorrer la página. -->
-  <Style Selector="Border.trash-empty-state">
-    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  <!-- Estado vacío único de la página: un marco editorial, sin repetir las categorías sin contenido. -->
+  <Style Selector="Border.trash-overview-empty">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Height" Value="72" />
-    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="MinHeight" Value="300" />
+    <Setter Property="MaxWidth" Value="720" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.trash-overview-icon">
+    <Setter Property="Width" Value="76" />
+    <Setter Property="Height" Value="76" />
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="20" />
+  </Style>
+  <Style Selector="TextBlock.trash-overview-title">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="-0.5" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="TextBlock.trash-overview-description">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="LineHeight" Value="20" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
   </Style>
 
   <!-- Aviso de sección (Polar sin purgar, recordatorios sin borrado permanente): barra de acento a la

@@ -6239,4 +6239,10 @@ Happy writing.</value>
   <data name="Startup_Finalizing" xml:space="preserve">
     <value>Finishing up</value>
   </data>
+  <data name="Trash_OverviewEmptyTitle" xml:space="preserve">
+    <value>Trash empty</value>
+  </data>
+  <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
+    <value>Deleted items will appear here until you restore or permanently remove them.</value>
+  </data>
 </root>
