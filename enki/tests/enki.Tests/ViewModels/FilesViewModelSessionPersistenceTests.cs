@@ -134,6 +134,45 @@ public class FilesViewModelSessionPersistenceTests : IDisposable
         Assert.Null(settings.Settings.WorkspaceSessionId);
     }
 
+    [Fact]
+    public void ChangingSession_UpdatesFolderButtonDestinationInNotesAndFiles()
+    {
+        var (vault, sessions, notifications, settings) = CreateServices();
+        var session = sessions.Create("Trabajo");
+        var notes = new NotesViewModel(vault, sessions, settingsService: settings);
+        var files = new FilesViewModel(vault, sessions, notifications, settings);
+        var notesButtonPath = notes.EffectiveRootPath;
+        var filesButtonPath = files.EffectiveRootPath;
+        notes.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(notes.EffectiveRootPath)) notesButtonPath = notes.EffectiveRootPath;
+        };
+        files.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(files.EffectiveRootPath)) filesButtonPath = files.EffectiveRootPath;
+        };
+
+        notes.SelectSession(session.Id);
+
+        Assert.Equal(session.RootPath, notesButtonPath);
+        Assert.Equal(session.RootPath, filesButtonPath);
+        notes.CreateFolderDialogCommand.Execute(notesButtonPath);
+        Assert.True(notes.FolderManager.IsOpen);
+        notes.FolderManager.Name = "Notas";
+        notes.FolderManager.ApplyCommand.Execute(null);
+        files.CreateFolderDialogCommand.Execute(filesButtonPath);
+        Assert.True(files.FolderManager.IsOpen);
+        files.FolderManager.Name = "Archivos";
+        files.FolderManager.ApplyCommand.Execute(null);
+        Assert.True(Directory.Exists(Path.Combine(session.RootPath, "Notas")));
+        Assert.True(Directory.Exists(Path.Combine(session.RootPath, "Archivos")));
+
+        files.SelectSession(null);
+
+        Assert.Equal(vault.VaultPath, notesButtonPath);
+        Assert.Equal(vault.VaultPath, filesButtonPath);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

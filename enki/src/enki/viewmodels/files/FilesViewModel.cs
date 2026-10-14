@@ -239,6 +239,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
         FolderManager.CloseCommand.Execute(null);
+        OnPropertyChanged(nameof(EffectiveRootPath));
         OnPropertyChanged(nameof(IsSelectedSessionLocked));
         OnPropertyChanged(nameof(ShowTreeEmptyState));
         SetCurrentFolderQuietly(null);

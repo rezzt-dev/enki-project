@@ -96,6 +96,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - impedir que un arrastre sobre una carpeta de Habilidades se propague a la raíz, admitir nombres que colisionan con archivos o carpetas y evitar importaciones de un archivo sobre si mismo.
 - corregir la alineación vertical del botón `código markdown` y ocultar el desplegable de metadatos vacío en el detalle de Habilidades.
 - centrar verticalmente la fila de estado «sincronizado con polar» de la cabecera de recordatorios: sin alineación propia, la etiqueta se estiraba a la altura del botón de sincronización y avalonia dibuja el texto desde el borde superior de su caja, así que quedaba pegada arriba respecto al escudo y al botón.
+- actualizar la ruta de destino de los botones de crear carpeta al cambiar la sesión seleccionada en Notas y Archivos, notificando el cambio de `EffectiveRootPath` y cubriéndolo con `FilesViewModelSessionPersistenceTests`.
 
 ### ENGLISH
 
@@ -185,6 +186,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - prevent a drop over a Skills folder from propagating to root, accept names colliding with files or folders, and skip importing a file onto itself.
 - fix vertical alignment for the `markdown source` button and hide empty metadata disclosure in the Skills detail.
 - vertically centre the `synchronised with polar` status row in the reminders header: without its own alignment the label stretched to the height of the sync button and avalonia draws text from the top of its box, leaving it stuck to the top next to the shield and the button.
+- update the destination path of the create-folder buttons when the selected session changes in Notes and Files, notifying the `EffectiveRootPath` change and covering it with `FilesViewModelSessionPersistenceTests`.
 
 ## [0.2.0] - 2026-09-23
 

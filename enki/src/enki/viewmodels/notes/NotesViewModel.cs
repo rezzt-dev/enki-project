@@ -230,6 +230,7 @@ public sealed partial class NotesViewModel : ViewModelBase
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
         FolderManager.CloseCommand.Execute(null);
+        OnPropertyChanged(nameof(EffectiveRootPath));
         // Al elegir otra sesión en el selector, el editor anterior ya no representa el espacio visible.
         if (!_syncingEditorSession && ActiveEditor is { } editor &&
             !VaultService.IsWithinFolder(editor.Note.FullPath, EffectiveRootPath))
