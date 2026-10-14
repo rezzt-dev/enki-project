@@ -119,6 +119,44 @@ public class SkillsViewUiTests : IDisposable
         window.Close();
     }
 
+    [Fact]
+    public void CollapsedTreeRail_ExposesActions_AndOpensBrowseOrSearch()
+    {
+        var (view, vm, window) = CreateView(treeMode: true);
+        try
+        {
+            vm.IsTreeSidebarVisible = false;
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var tree = view.GetVisualDescendants().OfType<SkillsTreeView>().Single();
+            var rail = tree.FindControl<Grid>("CollapsedRail")!;
+            Assert.True(rail.IsEffectivelyVisible);
+            Assert.Equal(52, rail.Bounds.Width);
+
+            foreach (var name in new[] { "RailTreeButton", "RailSearchButton", "RailNewSkillButton",
+                         "RailNewFolderButton", "RailImportButton", "RailExportButton",
+                         "RailCollapseButton", "RailCommunityButton", "RailBrowserButton" })
+            {
+                var button = tree.FindControl<Button>(name)!;
+                Assert.True(button.IsEffectivelyVisible, name);
+                Assert.NotNull(button.Command);
+            }
+
+            var search = tree.FindControl<Button>("RailSearchButton")!;
+            search.Command!.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(vm.IsTreeSidebarVisible);
+            Assert.True(vm.IsTreeSearchMode);
+            Assert.True(tree.FindControl<TextBox>("TreeSearchBox")!.IsEffectivelyVisible);
+
+            vm.IsTreeSidebarVisible = false;
+            var browse = tree.FindControl<Button>("RailTreeButton")!;
+            browse.Command!.Execute(null);
+            Assert.True(vm.IsTreeSidebarVisible);
+            Assert.False(vm.IsTreeSearchMode);
+        }
+        finally { window.Close(); }
+    }
+
     /// <summary>Cambiar de disposición intercambia la vista montada en vez de dejar las dos vivas — cada
     /// una lleva su propio editor de skills, y dos editores sobre el mismo viewmodel escribirían los dos
     /// sobre su texto (mismo motivo que en <c>NotesView</c>).</summary>

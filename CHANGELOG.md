@@ -31,6 +31,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
+- ampliar el rail plegado de habilidades con accesos a arbol, busqueda, creacion, importacion, exportacion, plegado, comunidad y explorador; arbol y busqueda abren el panel en el modo elegido y enfocan su campo cuando corresponde.
+- actualizar el sdk de desarrollo a `.net 10.0.112` y publicar la aplicacion linux como autocontenida para `linux-x64` y `linux-arm64`.
 - reconstruir el arranque en dos fases: el índice del vault se lee en segundo plano mientras se anima la pantalla de arranque, y la cortina se retira en cuanto está lista la sección de inicio elegida en lugar de esperar a las catorce; el resto se prepara después, en los huecos libres del hilo de interfaz, y cada tramo pesado devuelve un fotograma entero antes del siguiente.
 - sustituir el velo de arranque —fondo liso con un spinner girando— por una pantalla con logo, marca, progreso real y estado de la carga, traducida a los seis idiomas soportados; la barra muestra un segmento en movimiento mientras no hay pasos que contar y el avance real en cuanto los hay.
 - corregir la ortografía de `CHANGELOG.md`, incluidas las tildes y los caracteres `ñ`, sin alterar su estructura ni sus entradas funcionales.
@@ -72,6 +74,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - recorrer el vault podando las carpetas ocultas antes de descender a ellas, en vez de enumerar y filtrar después; `EnumerateVisibleFileInfos` tampoco sigue enlaces de directorio.
 
 #### CORREGIDO
+- centrar verticalmente el texto, el icono y el fondo de los avisos del editor markdown, y alinear las cabeceras de tablas con sus filas de contenido.
 - evitar que el grafo de sesiones quede vacío o inutilizable si el navegador no confirma la carga o las bibliotecas WPE de linux son incompatibles; validar los símbolos nativos necesarios, cambiar al renderizador de respaldo y comprobarlo en la ci de linux, windows y macos.
 - corregir la altura y la alineación vertical de las filas de tablas Markdown con celdas en varias líneas, reservando el descenso del editor para que la rejilla no deje espacio adicional bajo el contenido.
 - bloquear el empaquetado linux cuando faltan bibliotecas nativas requeridas junto al ejecutable publicado, incluso al reutilizar una publicación con `--skip-publish`, para evitar distribuir paquetes que no arrancan.
@@ -112,6 +115,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 
 #### CHANGED
+- extend the collapsed Skills rail with shortcuts for tree, search, creation, import, export, collapse, community and browser; tree and search open the panel in the selected mode and focus its field when appropriate.
+- update the development sdk to `.net 10.0.112` and publish the Linux app as self-contained for `linux-x64` and `linux-arm64`.
 - rebuild startup in two phases: the vault index is read in the background while the launch screen animates, and the curtain lifts as soon as the configured start section is ready instead of waiting for all fourteen; the rest is prepared afterwards in the UI thread's idle slots, and every heavy slice gives the compositor a full frame back before the next one.
 - replace the startup veil —a flat background with a spinning indicator— with a screen carrying the logo, wordmark, real progress and load status, translated into all six supported languages; the bar shows a travelling segment while there are no steps to count and real progress as soon as there are.
 - correct `CHANGELOG.md` spelling, including accents and `ñ` characters, without altering its structure or functional entries.
@@ -153,6 +158,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - prune hidden folders before descending into them when walking the vault, instead of enumerating and filtering afterwards; `EnumerateVisibleFileInfos` also skips directory links.
 
 #### FIXED
+- vertically centre callout text, icon and background in the Markdown editor, and align table headers with their content rows.
 - prevent the session graph from becoming blank or unusable when the browser does not confirm loading or linux WPE libraries are incompatible; validate required native symbols, switch to the fallback renderer and cover it in linux, windows and macos ci.
 - fix the height and vertical alignment of Markdown table rows with multiline cells, reserving the editor descent so the grid does not leave extra space below the content.
 - block linux packaging when native libraries required beside the published executable are missing, including when reusing a publication with `--skip-publish`, to avoid distributing packages that cannot start.

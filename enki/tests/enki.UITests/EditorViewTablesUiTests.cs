@@ -240,6 +240,22 @@ public class EditorViewTablesUiTests : IDisposable
     }
 
     [Fact]
+    public void TableHeader_UsesTheSameVerticalCenterAsBodyRows()
+    {
+        var (view, viewModel, window) = CreateView();
+        try
+        {
+            var editor = OpenNoteWith(view, viewModel, window, Table + "\nFin.\n");
+            var header = VisualLineOf(editor, 1).TextLines[0];
+            var body = VisualLineOf(editor, 3).TextLines[0];
+
+            Assert.Equal(body.Height, header.Height, precision: 1);
+            Assert.InRange(Math.Abs(body.Baseline - header.Baseline), 0, 1);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
     public void CaretInsideTheTable_ShowsTheRawMarkdownAgain()
     {
         var (view, viewModel, window) = CreateView();

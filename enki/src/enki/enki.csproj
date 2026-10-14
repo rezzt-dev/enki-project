@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RollForward>LatestMajor</RollForward>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
+    <SelfContained>true</SelfContained>
     <!-- Fase 10 (docs/analisis-proyecto/roadmap.md — "añadir un icono de aplicación real"): embebe
          assets/icon/enki.ico en el .exe publicado en Windows (icono en el Explorador/taskbar antes incluso
          de ejecutar la app). El icono de la ventana en tiempo de ejecución (las tres plataformas) se fija

@@ -111,10 +111,18 @@ public sealed partial class SkillsViewModel
     private void ShowTreeView() => IsTreeView = true;
 
     [RelayCommand]
-    private void ShowTreeBrowse() => IsTreeSearchMode = false;
+    private void ShowTreeBrowse()
+    {
+        IsTreeSearchMode = false;
+        IsTreeSidebarVisible = true;
+    }
 
     [RelayCommand]
-    private void ShowTreeSearch() => IsTreeSearchMode = true;
+    private void ShowTreeSearch()
+    {
+        IsTreeSearchMode = true;
+        IsTreeSidebarVisible = true;
+    }
 
     [RelayCommand]
     private void ToggleTreeSidebar() => IsTreeSidebarVisible = !IsTreeSidebarVisible;

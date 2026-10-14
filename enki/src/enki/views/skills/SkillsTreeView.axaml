@@ -289,10 +289,9 @@
       </Grid>
 
       <!-- · Contraído: raíl · -->
-      <!-- Con el panel oculto solo quedan las dos cosas que no se pueden dejar sin salida: volver a
-           mostrarlo y volver al modo explorador. -->
-      <Grid RowDefinitions="Auto,*,Auto" Width="46" IsVisible="{Binding !IsTreeSidebarVisible}"
-            Background="{DynamicResource AppBackgroundAltBrush}">
+      <!-- Los accesos del árbol siguen disponibles con el panel plegado, igual que en Notas y Archivos. -->
+      <Grid x:Name="CollapsedRail" RowDefinitions="Auto,*,Auto" Width="52" IsVisible="{Binding !IsTreeSidebarVisible}"
+            Background="{DynamicResource AppBackgroundBrush}">
         <Border Grid.Row="0" Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
                 Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
         <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
@@ -305,13 +304,69 @@
           </Button>
         </Border>
 
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="4" Margin="7,10" HorizontalAlignment="Center">
+            <Button x:Name="RailTreeButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ShowTreeBrowseCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_Tree_Browse_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_Tree_Browse_Tooltip}">
+              <mi:MaterialIcon Kind="FileTreeOutline" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailSearchButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ShowTreeSearchCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_Search_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_Search_Tooltip}">
+              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" />
+            </Button>
+            <Border Height="1" Margin="6,8" Background="{DynamicResource Ink10}" />
+            <Button x:Name="RailNewSkillButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding NewSkillCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_NewSkill}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_NewSkill}">
+              <mi:MaterialIcon Kind="FilePlusOutline" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailNewFolderButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding NewTreeFolderAtRootCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_NewFolder_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_NewFolder_Tooltip}">
+              <mi:MaterialIcon Kind="FolderPlusOutline" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailImportButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ImportSkillsCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_Import_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_Import_Tooltip}">
+              <mi:MaterialIcon Kind="TrayArrowDown" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailExportButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ExportSkillsCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_Export_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_Export_Tooltip}">
+              <mi:MaterialIcon Kind="TrayArrowUp" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailCollapseButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding CollapseTreeCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_Tree_Collapse_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_Tree_Collapse_Tooltip}">
+              <mi:MaterialIcon Kind="UnfoldLessHorizontal" Width="18" Height="18" />
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
+
         <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,8">
-          <Button Classes="icon-btn" HorizontalAlignment="Center"
-                  Command="{Binding ShowBrowserViewCommand}"
-                  ToolTip.Tip="{loc:Tr Skills_Nav_Browser}"
-                  AutomationProperties.Name="{loc:Tr Skills_Nav_Browser}">
-            <mi:MaterialIcon Kind="ViewGridOutline" Width="17" Height="17" />
-          </Button>
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <Button x:Name="RailCommunityButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding OpenCommunitySkillsCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_Community_Title}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_Community_Title}">
+              <mi:MaterialIcon Kind="CompassOutline" Width="17" Height="17" />
+            </Button>
+            <Button x:Name="RailBrowserButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ShowBrowserViewCommand}"
+                    ToolTip.Tip="{loc:Tr Skills_Nav_Browser}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Skills_Nav_Browser}">
+              <mi:MaterialIcon Kind="ViewGridOutline" Width="17" Height="17" />
+            </Button>
+          </StackPanel>
         </Border>
       </Grid>
     </Panel>

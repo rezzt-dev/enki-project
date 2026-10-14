@@ -32,6 +32,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     /// <summary>Lado del icono de un aviso. Algo menor que el cuerpo de texto a propósito: el icono
     /// acompaña al título, no compite con él.</summary>
     private const double CalloutIconSize = 15;
+    private const double CalloutVerticalPadding = 4;
 
     private enum ZoneKind { Hide, Bullet, Checkbox, Callout, Align, JustifySpace, Image, Transclusion, Math, SpecialBlock, TableRule, TableRow }
 
@@ -192,7 +193,13 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // El formateador reserva el ancho de cada nivel para todas las filas visuales; el
                 // marcador puede ocultarse sin alterar el documento ni falsear el hit testing.
                 if (model.MarkerStart < model.MarkerEnd)
-                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0));
+                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0)
+                    {
+                        // El fondo del aviso ocupa toda la línea. Este relleno desplaza la línea base
+                        // hacia el centro y deja el mismo aire por arriba y por abajo, también al editar.
+                        Metrics = _state.GetCallout(lineNumber) is not null
+                            ? new SpacerMetrics(0, CalloutVerticalPadding) : default
+                    });
                 // Cabecera de un aviso: el "[!warning]" se sustituye por el icono del tipo (y por su
                 // nombre, si el aviso no trae título propio). Con el cursor dentro se enseña en crudo,
                 // igual que cualquier otro marcador del live preview.
@@ -875,10 +882,13 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             Width = CalloutIconSize,
             Height = CalloutIconSize,
             Foreground = brush,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            // El espaciador de la cita amplía la franja unos píxeles más que la caja inline.
+            // Compensa la mitad de ese hueco sin alterar el alto de la línea ni el hit testing.
+            RenderTransform = new TranslateTransform(0, CalloutVerticalPadding / 2)
         };
 
-        Control content = icon;
+        Control content;
         if (model.CalloutTitleStart >= line.EndOffset)
         {
             var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = CheckboxSpacing };
@@ -894,12 +904,16 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             });
             content = panel;
         }
+        else
+        {
+            // El contenedor inline se coloca arriba para respetar su línea base. Si el icono fuese ese
+            // contenedor, esa alineación sustituiría su Center y lo dejaría pegado arriba.
+            content = new Grid { Children = { icon } };
+        }
 
         content.IsHitTestVisible = false;
         content.Margin = new Thickness(leadingWidth, 0, CheckboxSpacing, 0);
         content.VerticalAlignment = VerticalAlignment.Top;
-        // Misma mecánica que la casilla de una tarea: se centra el distintivo contra el alto de línea y se
-        // fija su línea base a la del texto, para que la línea no crezca por llevar un icono.
         var height = Math.Max(CalloutIconSize, textView.DefaultLineHeight);
         content.Height = height;
         TextBlock.SetBaselineOffset(content, textView.DefaultBaseline);

@@ -66,8 +66,9 @@ public partial class SkillsTreeView : UserControl
     /// gratuita.</summary>
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(SkillsViewModel.IsTreeSearchMode)) return;
-        if (Vm is not { IsTreeSearchMode: true }) return;
+        if (e.PropertyName is not (nameof(SkillsViewModel.IsTreeSearchMode) or
+            nameof(SkillsViewModel.IsTreeSidebarVisible))) return;
+        if (Vm is not { IsTreeSearchMode: true, IsTreeSidebarVisible: true }) return;
 
         Dispatcher.UIThread.Post(() =>
         {
