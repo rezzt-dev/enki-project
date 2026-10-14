@@ -136,6 +136,33 @@ public class NativeSessionGraphLayoutTests
         foreach (var (id, point) in positions) Assert.Equal(point, updated[id]);
     }
 
+    [Fact]
+    public void Sessions_HaveDistinctStableShapesAndReadableSpacing()
+    {
+        var graph = new SessionGraph
+        {
+            Nodes = Enumerable.Range(0, 80).SelectMany(i => new[] { "alpha", "beta" }.Select(session =>
+                new SessionGraphNode { SessionId = session, SessionName = session,
+                    RelativePath = $"{i:000}.md", Title = $"Note {i}" })).ToList()
+        };
+        var first = NativeSessionGraphLayout.Create(graph);
+        graph.Nodes.Reverse();
+        var second = NativeSessionGraphLayout.Create(graph);
+        foreach (var (id, point) in first) Assert.Equal(point, second[id]);
+
+        var shapes = graph.Nodes.GroupBy(node => node.SessionId).ToDictionary(group => group.Key, group =>
+        {
+            var points = group.OrderBy(node => node.RelativePath)
+                .Select(node => first[node.GlobalId]).ToArray();
+            for (var i = 0; i < points.Length; i++)
+            for (var j = i + 1; j < points.Length; j++)
+                Assert.True(Distance(points[i], points[j]) >= 26.9);
+            var center = new Point(points.Average(point => point.X), points.Average(point => point.Y));
+            return points.Select(point => Distance(point, center)).ToArray();
+        });
+        Assert.True(shapes["alpha"].Zip(shapes["beta"]).Count(pair => Math.Abs(pair.First - pair.Second) > 5) > 40);
+    }
+
     private static SessionGraph CreateGraph(int sessions, int count) => new()
     {
         Nodes = Enumerable.Range(0, count).Select(i => new SessionGraphNode

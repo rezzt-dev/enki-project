@@ -57,8 +57,25 @@ internal static class NativeSessionGraphLayout
         {
             // La triangulación usa las posiciones visibles: sigue siendo una malla de vecinos
             // después de filtrar notas o recuperar una distribución manual anterior.
-            foreach (var (from, to) in NativeSessionGraphMesh.Create(group.Nodes.Select(n => positions[n.GlobalId]).ToArray()))
+            var points = group.Nodes.Select(n => positions[n.GlobalId]).ToArray();
+            var edges = NativeSessionGraphMesh.Create(points)
+                .Select(edge => (edge.From, edge.To, Length: ((Vector)(points[edge.From] - points[edge.To])).Length))
+                .OrderBy(edge => edge.Length).ToArray();
+            var parent = Enumerable.Range(0, points.Length).ToArray();
+            int Root(int index)
+            {
+                while (parent[index] != index) index = parent[index] = parent[parent[index]];
+                return index;
+            }
+            // Mantiene las conexiones cercanas y añade solo los puentes largos imprescindibles.
+            foreach (var (from, to, length) in edges)
+            {
+                var a = Root(from);
+                var b = Root(to);
+                if (length > 150 && a == b) continue;
                 pairs.Add((group.Nodes[from].GlobalId, group.Nodes[to].GlobalId));
+                parent[a] = b;
+            }
         }
         return pairs;
     }
@@ -69,19 +86,84 @@ internal static class NativeSessionGraphLayout
         .OrderBy(g => g.Key, StringComparer.Ordinal)
         .Select(g =>
         {
-            // Una distribución de ángulo áureo evita las filas de una rejilla y mantiene una
-            // densidad uniforme. El orden estable impide saltos al editar enlaces o reordenar notas.
             var nodes = g.OrderBy(n => n.GlobalId, StringComparer.Ordinal).ToArray();
-            var points = Enumerable.Range(0, nodes.Length).Select(i =>
-            {
-                var angle = i * Math.PI * (3 - Math.Sqrt(5));
-                var radius = 28 * Math.Sqrt(i);
-                return new Point(Math.Cos(angle) * radius, Math.Sin(angle) * radius);
-            }).ToArray();
+            var points = CreateOrganicPoints(g.Key, nodes.Length);
             var center = new Point(points.Average(p => p.X), points.Average(p => p.Y));
             var radius = points.Max(p => ((Vector)(p - center)).Length) + 70;
             return new Group(nodes, points, radius);
         }).ToArray();
+
+    /// <summary>Crea una silueta distinta para cada sesión sin que cambie entre recargas.
+    /// La deformación suave produce lóbulos; la separación mínima evita nodos superpuestos.</summary>
+    private static Point[] CreateOrganicPoints(string sessionId, int count)
+    {
+        var points = new Point[count];
+        var cells = new Dictionary<(int X, int Y), List<Point>>();
+        var random = StableSeed(sessionId);
+        var rotation = Next() * Math.Tau;
+        var phaseA = Next() * Math.Tau;
+        var phaseB = Next() * Math.Tau;
+        var stretch = 0.88 + Next() * 0.24;
+        var lobes = 3 + (int)(Next() * 3);
+        const double spacing = 27;
+        for (var i = 0; i < count; i++)
+        {
+            var angle = i * Math.PI * (3 - Math.Sqrt(5)) + (Next() - 0.5) * 0.34;
+            var wave = 1 + 0.15 * Math.Sin(lobes * angle + phaseA)
+                + 0.07 * Math.Sin((lobes + 2) * angle + phaseB);
+            var radius = i == 0 ? 0 : 30 * Math.Sqrt(i) * wave;
+            Point point;
+            var attempt = 0;
+            do
+            {
+                var candidateAngle = angle + attempt * 0.14;
+                var candidateRadius = radius + attempt * 2.5;
+                var x = Math.Cos(candidateAngle) * candidateRadius * stretch;
+                var y = Math.Sin(candidateAngle) * candidateRadius / stretch;
+                point = new Point(x * Math.Cos(rotation) - y * Math.Sin(rotation),
+                    x * Math.Sin(rotation) + y * Math.Cos(rotation));
+                attempt++;
+            } while (TooClose(point));
+
+            points[i] = point;
+            var cell = Cell(point);
+            if (!cells.TryGetValue(cell, out var bucket)) cells[cell] = bucket = [];
+            bucket.Add(point);
+        }
+        return points;
+
+        bool TooClose(Point point)
+        {
+            var cell = Cell(point);
+            for (var x = -1; x <= 1; x++)
+            for (var y = -1; y <= 1; y++)
+                if (cells.TryGetValue((cell.X + x, cell.Y + y), out var neighbors) &&
+                    neighbors.Any(other => ((Vector)(other - point)).SquaredLength < spacing * spacing)) return true;
+            return false;
+        }
+
+        static (int X, int Y) Cell(Point point) =>
+            ((int)Math.Floor(point.X / spacing), (int)Math.Floor(point.Y / spacing));
+
+        double Next()
+        {
+            random ^= random << 13;
+            random ^= random >> 17;
+            random ^= random << 5;
+            return random / (double)uint.MaxValue;
+        }
+    }
+
+    private static uint StableSeed(string value)
+    {
+        uint hash = 2166136261;
+        foreach (var character in value)
+        {
+            hash ^= character;
+            hash *= 16777619;
+        }
+        return hash == 0 ? 1u : hash;
+    }
 
     private static bool IsReadable(SessionGraph graph, Dictionary<string, Point> positions)
     {
