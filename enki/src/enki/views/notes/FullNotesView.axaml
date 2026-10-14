@@ -26,10 +26,11 @@
          implícita (por DataType) a cualquier profundidad, sin necesidad de TreeView. -->
     <DataTemplate DataType="vm:NoteFolderViewModel">
       <StackPanel>
-        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.cut="{Binding IsCut}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource DepthIndentConverter}}"
                 DragDrop.AllowDrop="True"
                 PointerPressed="FolderRow_PointerPressed"
+                PointerMoved="FolderRow_PointerMoved"
                 DragDrop.DragEnter="FolderRow_DragEnter"
                 DragDrop.DragOver="FolderRow_DragOver"
                 DragDrop.DragLeave="FolderRow_DragLeave"
@@ -109,7 +110,13 @@
     </DataTemplate>
 
     <DataTemplate DataType="vm:NoteFolderCardViewModel">
-      <Button Classes="note-card" Margin="0,0,16,16" Width="224" Height="150"
+      <Button Classes="note-card" Classes.cut="{Binding IsCut}" Classes.drag-over="{Binding IsDropTarget}" Margin="0,0,16,16" Width="224" Height="150"
+              Initialized="NoteCard_Initialized"
+              DragDrop.AllowDrop="True"
+              DragDrop.DragEnter="FolderCard_DragEnter"
+              DragDrop.DragOver="FolderCard_DragOver"
+              DragDrop.DragLeave="FolderCard_DragLeave"
+              DragDrop.Drop="FolderCard_Drop"
               Command="{Binding $parent[ItemsControl].((vm:NotesViewModel)DataContext).OpenFolderCardCommand}"
               CommandParameter="{Binding}">
         <Button.ContextMenu>
@@ -134,7 +141,7 @@
     </DataTemplate>
   </UserControl.DataTemplates>
 
-  <Grid>
+  <Grid x:Name="DragSurface">
     <!-- ===================== Browsing mode ===================== -->
     <Grid RowDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding ActiveEditor, Converter={x:Static conv:ObjectConverters.IsNull}}">
 
@@ -351,7 +358,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:NoteCardViewModel">
-                      <Button Classes="note-card" Margin="0,0,16,16" Width="224" Height="150"
+                      <Button Classes="note-card" Classes.cut="{Binding IsCut}" Margin="0,0,16,16" Width="224" Height="150"
                               Command="{Binding $parent[ItemsControl].((vm:NotesViewModel)DataContext).OpenCardCommand}"
                               CommandParameter="{Binding}"
                               Initialized="NoteCard_Initialized"

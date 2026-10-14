@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace enki.Models;
 
@@ -9,8 +10,7 @@ public sealed class AppSettings
     /// <summary>Reduce los desplazamientos decorativos y acorta las transiciones de interfaz.</summary>
     public bool UseSubtleAnimations { get; set; }
 
-    /// <summary>Devuelve cada preferencia numérica al rango que su control de Ajustes permite elegir, y
-    /// reemplaza por el valor por defecto lo que quede fuera. Lo llama
+    /// <summary>Acota las preferencias numéricas y migra las claves heredadas de sesión. Lo llama
     /// <see cref="Services.SettingsService"/> tras cada deserialización —carga, cambio de vault e
     /// importación— igual que <see cref="VaultSettings.Normalize"/> hace con las suyas.
     ///
@@ -28,6 +28,10 @@ public sealed class AppSettings
     /// rompe nada.</para></summary>
     public void Normalize()
     {
+        // Las versiones anteriores guardaban dos elecciones. Notas tiene prioridad si ambas existían.
+        WorkspaceSessionId ??= NotesSessionId ?? FilesSessionId;
+        NotesSessionId = null;
+        FilesSessionId = null;
         // Los rangos son los de los controles de Ajustes (views/settings/SettingsView.axaml); cambiar uno
         // allí sin cambiarlo aquí solo significa que el archivo admite algo que la UI no deja elegir.
         EditorFontSize = Clamp(EditorFontSize, 12, 20, 14);
@@ -528,12 +532,11 @@ public sealed class AppSettings
     /// navegar en uno reorganizara el otro a la espalda del usuario.</summary>
     public List<string> NotesSimpleExpandedFolderPaths { get; set; } = [];
 
-    /// <summary>Id de la sesión elegida en el selector de espacio de trabajo de la página de Notas, o null
-    /// si lo elegido era el vault entero. Es estado de ventana como <see cref="NotesSimpleSidebarVisible"/>,
-    /// no una preferencia de Ajustes: se guarda al cambiar de sesión para que la app reabra en el mismo
-    /// espacio en el que se cerró, en vez de volver siempre al vault. Una sesión que ya no exista —borrada,
-    /// o de otro vault tras cambiar de vault— cae en silencio al vault, mismo criterio tolerante que
-    /// <see cref="OpenNotePaths"/>.</summary>
+    /// <summary>Sesión compartida por Notas y Archivos; null selecciona el vault entero.</summary>
+    public string? WorkspaceSessionId { get; set; }
+
+    /// <summary>Clave heredada de Notas, solo para migrar ajustes anteriores.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NotesSessionId { get; set; }
 
     // ===================== Notificaciones — horario "no molestar" y sonido =====================
@@ -672,11 +675,8 @@ public sealed class AppSettings
     /// separador. Se acota al rango permitido al leerlo.</summary>
     public double FilesTreeSidebarWidth { get; set; } = 272;
 
-    /// <summary>Id de la sesión elegida en el selector de espacio de trabajo de la página de Archivos, o
-    /// null si lo elegido era el vault entero. Gemelo de <see cref="NotesSessionId"/> y por los mismos
-    /// motivos —es estado de ventana, no una preferencia de Ajustes, y una sesión que ya no exista cae en
-    /// silencio al vault—, pero con clave propia: son dos selectores independientes, y compartir la clave
-    /// haría que cambiar de espacio en una sección moviera la otra a la espalda del usuario.</summary>
+    /// <summary>Clave heredada de Archivos, solo para migrar ajustes anteriores.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? FilesSessionId { get; set; }
 
     // ===================== Hábitos y Estadísticas (propuestas 13/15, docs/propuesta-nuevas-funcionalidades.md) =====================

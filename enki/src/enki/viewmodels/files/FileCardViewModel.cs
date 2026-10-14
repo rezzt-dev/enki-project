@@ -22,6 +22,8 @@ namespace enki.ViewModels;
 /// con cientos de archivos no decodifica nada que no llegue a pintarse.</summary>
 public sealed partial class FileCardViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     /// <summary>Ancho en píxeles de la miniatura de la rejilla. La tarjeta la pinta a unos 150 DIP, así que el
     /// doble sigue nítido en una pantalla al 200 % sin retener en memoria la foto entera de cada tarjeta — que es
     /// lo que pasaba al decodificar a tamaño completo: una carpeta de fotos de móvil eran cientos de MB.</summary>

@@ -35,6 +35,7 @@ public sealed partial class NotesViewModel
         _clipboardIsFolder = ManagedFolderPath(item) is not null;
         _clipboardNotePath = ManagedFolderPath(item) ?? ClipboardNote(item)!.FullPath;
         _clipboardCut = cut;
+        UpdateCutAppearance();
         PasteEntryCommand.NotifyCanExecuteChanged();
         CancelClipboardCommand.NotifyCanExecuteChanged();
         _notificationService?.PushLocalized(
@@ -48,8 +49,29 @@ public sealed partial class NotesViewModel
     private void CancelClipboard()
     {
         _clipboardNotePath = null;
+        _clipboardCut = false;
+        UpdateCutAppearance();
         PasteEntryCommand.NotifyCanExecuteChanged();
         CancelClipboardCommand.NotifyCanExecuteChanged();
+    }
+
+    private void UpdateCutAppearance()
+    {
+        bool IsCut(string path) => _clipboardCut && _clipboardNotePath is { } source &&
+            VaultService.PathsEqual(source, path);
+        void MarkFolders(System.Collections.Generic.IEnumerable<NoteFolderViewModel> folders)
+        {
+            foreach (var folder in folders)
+            {
+                folder.IsCut = IsCut(folder.FullPath);
+                MarkFolders(folder.Children);
+            }
+        }
+        MarkFolders(RootFolders);
+        foreach (var card in Notes) card.IsCut = IsCut(card.Note.FullPath);
+        foreach (var card in SimpleSearchResults) card.IsCut = IsCut(card.Note.FullPath);
+        foreach (var item in BrowserItems.OfType<NoteFolderCardViewModel>()) item.IsCut = IsCut(item.FullPath);
+        foreach (var node in Flatten(SimpleTreeRoots)) node.IsCut = IsCut(node.FullPath);
     }
 
     private bool CanPasteEntry(object? _) => _clipboardNotePath is not null && !IsSelectedSessionLocked;

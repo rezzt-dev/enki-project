@@ -34,7 +34,7 @@
          plantilla implícita por DataType, a cualquier profundidad. -->
     <DataTemplate DataType="vm:NoteTreeItemViewModel">
       <StackPanel>
-        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.cut="{Binding IsCut}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource TreeIndentConverter}}"
                 DragDrop.AllowDrop="True"
                 PointerPressed="TreeRow_PointerPressed"
@@ -124,7 +124,7 @@
     </DataTemplate>
   </UserControl.DataTemplates>
 
-  <Grid ColumnDefinitions="Auto,Auto,*">
+  <Grid x:Name="DragSurface" ColumnDefinitions="Auto,Auto,*">
 
     <!-- ===================== Panel lateral ===================== -->
     <!-- El contenedor reserva el ancho del panel fijado o del raíl y sirve de ancla al selector
@@ -440,7 +440,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="vm:NoteCardViewModel">
-                  <Border Focusable="True" Classes="folder-row" Padding="6,0,10,0"
+                  <Border Focusable="True" Classes="folder-row" Classes.cut="{Binding IsCut}" Padding="6,0,10,0"
                           PointerPressed="SearchResult_PointerPressed" KeyDown="SearchResult_KeyDown">
                     <Border.ContextMenu>
                       <ContextMenu>

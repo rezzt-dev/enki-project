@@ -143,6 +143,7 @@ public sealed partial class FilesViewModel
         // estaban abiertas y reutiliza la tarjeta de la previsualización que hubiera abierta.
         if (value) RebuildTree();
         RefreshPreviewNavigation();
+        UpdateCutAppearance();
 
         if (_settingsService is null) return;
         _settingsService.Settings.FilesViewMode = value ? "Tree" : "Browser";
@@ -164,6 +165,7 @@ public sealed partial class FilesViewModel
     {
         if (!value) TreeSearchText = string.Empty;
         OnPropertyChanged(nameof(ShowTreeSearchEmptyState));
+        UpdateCutAppearance();
     }
 
     partial void OnHasTreeItemsChanged(bool value) => OnPropertyChanged(nameof(ShowTreeEmptyState));
@@ -659,13 +661,20 @@ public sealed partial class FilesViewModel
 
     /// <summary>Soltar un archivo sobre un nodo del árbol lo mueve a esa carpeta (o a la carpeta que
     /// contiene el archivo sobre el que se soltó, que es lo que el usuario ve como "aquí").</summary>
-    public void DropOnTreeNode(FileTreeItemViewModel target, string sourceFilePath) =>
-        MoveTreeFileTo(sourceFilePath, target.ContainerPath);
+    public void DropOnTreeNode(FileTreeItemViewModel target, string sourceFilePath)
+    {
+        if (Directory.Exists(sourceFilePath)) MoveFolderTo(sourceFilePath, target.ContainerPath);
+        else MoveTreeFileTo(sourceFilePath, target.ContainerPath);
+    }
 
     /// <summary>Soltar sobre el fondo vacío del árbol saca el archivo de su carpeta y lo devuelve a la
     /// raíz efectiva —la del vault, o la de la sesión elegida—, que es el equivalente de la fila "TODOS"
     /// del panel del modo explorador.</summary>
-    public void DropOnTreeRoot(string sourceFilePath) => MoveTreeFileTo(sourceFilePath, EffectiveRootPath);
+    public void DropOnTreeRoot(string sourceFilePath)
+    {
+        if (Directory.Exists(sourceFilePath)) MoveFolderTo(sourceFilePath, EffectiveRootPath);
+        else MoveTreeFileTo(sourceFilePath, EffectiveRootPath);
+    }
 
     private void MoveTreeFileTo(string sourceFilePath, string destinationFolderPath)
     {

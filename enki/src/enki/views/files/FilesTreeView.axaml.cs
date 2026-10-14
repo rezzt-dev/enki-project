@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,11 +9,12 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.ViewModels;
+using enki.Services;
 
 namespace enki.Views;
 
 /// <summary>Code-behind del modo árbol de Archivos: selección, teclado y renombrado en línea de las filas,
-/// arrastrar un archivo a otra carpeta, importar lo que se suelte desde el explorador del sistema y el separador
+/// arrastrar archivos y carpetas, importar lo que se suelte desde el explorador del sistema y el separador
 /// que ajusta el ancho del panel lateral. Mismo reparto que <see cref="SkillsTreeView"/> y
 /// <see cref="SimpleNotesView"/>, de los que esta vista es la adaptación: solo mecánica de vista — todo lo
 /// que toca el vault, y la propia selección, vive en <see cref="FilesViewModel"/>.</summary>
@@ -38,6 +40,7 @@ public partial class FilesTreeView : UserControl
     public FilesTreeView()
     {
         InitializeComponent();
+        _dragGhost = new ExplorerDragGhost(this, DragSurface, FilesBrowserView.FileDragFormat);
         KeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape || Vm is not { IsTreeNavigatorOpen: true } vm) return;
@@ -55,6 +58,8 @@ public partial class FilesTreeView : UserControl
             _subscribedViewModel = null;
         };
     }
+
+    private readonly ExplorerDragGhost _dragGhost;
 
     private FilesViewModel? Vm => DataContext as FilesViewModel;
 
@@ -155,9 +160,7 @@ public partial class FilesTreeView : UserControl
         // pulsar una fila el teclado seguía en lo último que tuvo el foco.
         TreeBody.Focus();
 
-        // Solo los archivos se arrastran: mover una carpeta entera arrastra consigo todo su contenido y
-        // aquí no hay ninguna confirmación de por medio.
-        if (!node.IsFile) return;
+        // La validación del servicio impide mover una carpeta dentro de sí misma.
         _dragPressArgs = e;
         _dragStartPoint = e.GetPosition(null);
         _dragging = false;
@@ -167,7 +170,7 @@ public partial class FilesTreeView : UserControl
     {
         if (_dragging || _dragPressArgs is null) return;
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-        if (sender is not Border { DataContext: FileTreeItemViewModel node } || !node.IsFile || node.IsRenaming) return;
+        if (sender is not Border { DataContext: FileTreeItemViewModel node } || node.IsRenaming) return;
 
         var current = e.GetPosition(null);
         var dx = current.X - _dragStartPoint.X;
@@ -187,6 +190,7 @@ public partial class FilesTreeView : UserControl
         finally
         {
             _dragging = false;
+            _dragGhost.Hide();
         }
     }
 
@@ -283,9 +287,15 @@ public partial class FilesTreeView : UserControl
     {
         if (sender is not Border { DataContext: FileTreeItemViewModel node }) return;
 
-        var effects = node.IsFolder ? EffectsFor(e) : DragDropEffects.None;
+        var effects = node.IsFolder ? EffectsFor(e, node.FullPath) : DragDropEffects.None;
         var valid = effects != DragDropEffects.None;
         node.IsDropTarget = isOver && valid;
+        if (node.IsFolder && e.DataTransfer.Contains(FilesBrowserView.FileDragFormat) && !valid)
+        {
+            e.DragEffects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
         if (!isOver || !valid) return;
 
         // Mientras la carpeta es el destino, el realce de la vista entera sobra: encendidos los dos a la
@@ -299,7 +309,12 @@ public partial class FilesTreeView : UserControl
     {
         if (sender is not Border { DataContext: FileTreeItemViewModel node }) return;
         node.IsDropTarget = false;
-        if (!node.IsFolder || Vm is not { } vm || EffectsFor(e) == DragDropEffects.None) return;
+        if (!node.IsFolder || Vm is not { } vm) return;
+        if (EffectsFor(e, node.FullPath) == DragDropEffects.None)
+        {
+            if (e.DataTransfer.Contains(FilesBrowserView.FileDragFormat)) e.Handled = true;
+            return;
+        }
 
         if (e.DataTransfer.TryGetValue(FilesBrowserView.FileDragFormat) is { } sourcePath)
         {
@@ -316,11 +331,11 @@ public partial class FilesTreeView : UserControl
     // ===================== Fondo del árbol: soltar en la raíz efectiva =====================
 
     /// <summary>El fondo acepta las dos clases de arrastre que llegan hasta aquí: el interno de una fila
-    /// (mover el archivo a la raíz efectiva) y el del explorador del sistema (importar), igual que la
+    /// (mover el elemento a la raíz efectiva) y el del explorador del sistema (importar), igual que la
     /// rejilla del modo explorador.</summary>
     private void TreeBackground_DragOver(object? sender, DragEventArgs e)
     {
-        var effects = EffectsFor(e);
+        var effects = EffectsFor(e, Vm?.EffectiveRootPath);
         e.DragEffects = effects;
         if (effects == DragDropEffects.None) return;
 
@@ -334,7 +349,7 @@ public partial class FilesTreeView : UserControl
     {
         if (Vm is not { } vm) return;
         vm.IsGridDropTarget = false;
-        if (EffectsFor(e) == DragDropEffects.None) return;
+        if (EffectsFor(e, vm.EffectiveRootPath) == DragDropEffects.None) return;
 
         if (e.DataTransfer.TryGetValue(FilesBrowserView.FileDragFormat) is { } sourcePath)
         {
@@ -382,10 +397,15 @@ public partial class FilesTreeView : UserControl
     /// (importar) lo que llega del explorador del sistema, o nada reconocible. Con una sesión protegida y
     /// bloqueada elegida no se acepta nada: escribir ahí dentro necesita una clave que no está en memoria,
     /// así que es mejor no ofrecer el gesto que aceptarlo y contestar con un aviso de error.</summary>
-    private DragDropEffects EffectsFor(DragEventArgs e)
+    private DragDropEffects EffectsFor(DragEventArgs e, string? destination = null)
     {
         if (Vm is not { IsSelectedSessionLocked: false }) return DragDropEffects.None;
-        if (e.DataTransfer.Contains(FilesBrowserView.FileDragFormat)) return DragDropEffects.Move;
+        if (e.DataTransfer.TryGetValue(FilesBrowserView.FileDragFormat) is { } source)
+        {
+            if (destination is not null && Directory.Exists(source) && VaultService.IsWithinFolder(destination, source))
+                return DragDropEffects.None;
+            return DragDropEffects.Move;
+        }
         if (e.DataTransfer.Contains(DataFormat.File)) return DragDropEffects.Copy;
         return DragDropEffects.None;
     }

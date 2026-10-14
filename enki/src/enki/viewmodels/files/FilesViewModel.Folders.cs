@@ -33,6 +33,10 @@ public sealed partial class FilesViewModel
             FolderManager.Open(ManagedFolderPath(item) ?? CurrentFolderPath, EffectiveRootPath, create: true);
     }
 
+    /// <summary>Mueve una carpeta real; el evento del servicio actualiza árbol, selección y visor.</summary>
+    public void MoveFolderTo(string source, string destination) =>
+        TryVaultOperation("Files_Notify_MoveFailed_Title", () => _vaultService.TransferFolder(source, destination, cut: true));
+
     private void InitializeFolderManager()
     {
         FolderManager = new FolderManagerViewModel(_vaultService, _notificationService);

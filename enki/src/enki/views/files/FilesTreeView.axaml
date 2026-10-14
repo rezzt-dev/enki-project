@@ -39,7 +39,7 @@
          como dos listas apiladas. -->
     <DataTemplate DataType="vm:FileTreeItemViewModel">
       <StackPanel>
-        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.cut="{Binding IsCut}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource TreeIndentConverter}}"
                 ToolTip.Tip="{Binding Name}" ToolTip.ShowDelay="700"
                 DragDrop.AllowDrop="True"
@@ -166,7 +166,7 @@
        hacía parecer que soltar archivos en esta disposición no funcionaba. Lo que se suelte fuera del árbol
        se importa en la raíz efectiva. Los destinos de dentro (filas de carpeta y fondo del árbol) marcan el
        evento como manejado, de modo que este de fuera solo ve lo que ninguno de ellos ha recogido. -->
-  <Grid ColumnDefinitions="Auto,Auto,*"
+  <Grid x:Name="DragSurface" ColumnDefinitions="Auto,Auto,*"
         DragDrop.AllowDrop="True"
         DragDrop.DragEnter="TreeView_DragEnter"
         DragDrop.DragOver="TreeView_DragOver"
@@ -482,7 +482,7 @@
                    la sangría del árbol contaba y aquí se pierde. -->
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="vm:FileTreeItemViewModel">
-                  <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Padding="6,0,10,0"
+                  <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.cut="{Binding IsCut}" Padding="6,0,10,0"
                           PointerPressed="SearchResult_PointerPressed">
                     <Border.ContextMenu>
                       <ContextMenu>

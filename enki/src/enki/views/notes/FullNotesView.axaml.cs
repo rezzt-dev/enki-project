@@ -4,26 +4,29 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using enki.ViewModels;
 
 namespace enki.Views;
 
 /// <summary>Code-behind de la vista completa de Notas (ver FullNotesView.axaml): selección de carpeta,
-/// renombrado en línea de carpetas y tarjetas, y arrastrar una nota a otra carpeta. Todo esto vivía en
+/// renombrado en línea de carpetas y tarjetas, y arrastrar notas y carpetas. Todo esto vivía en
 /// NotesView.axaml.cs hasta que la página se partió en dos disposiciones; NotesView se quedó solo con lo
 /// común a ambas (atajos y elección de disposición).</summary>
 public partial class FullNotesView : UserControl
 {
-    private static readonly DataFormat<string> NoteDragFormat =
+    internal static readonly DataFormat<string> NoteDragFormat =
         DataFormat.CreateStringApplicationFormat("com.enki.note-path");
 
     private PointerPressedEventArgs? _dragPressArgs;
     private Point _dragStartPoint;
     private bool _dragging;
+    private readonly ExplorerDragGhost _dragGhost;
 
     public FullNotesView()
     {
         InitializeComponent();
+        _dragGhost = new ExplorerDragGhost(this, DragSurface, NoteDragFormat);
     }
 
     private NotesViewModel? Vm => DataContext as NotesViewModel;
@@ -32,12 +35,27 @@ public partial class FullNotesView : UserControl
 
     private void FolderRow_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is Border { DataContext: NoteFolderViewModel folder } && Vm is { } vm)
-            vm.SelectFolderCommand.Execute(folder);
+        if (sender is not Border { DataContext: NoteFolderViewModel { IsRenaming: false } folder } row || Vm is not { } vm)
+            return;
+        if (!e.GetCurrentPoint(row).Properties.IsLeftButtonPressed ||
+            (e.Source as Visual)?.FindAncestorOfType<Button>(includeSelf: true) is not null ||
+            (e.Source as Visual)?.FindAncestorOfType<TextBox>(includeSelf: true) is not null)
+            return;
+        vm.SelectFolderCommand.Execute(folder);
+        ArmDrag(e);
     }
 
-    private void RootFolderRow_PointerPressed(object? sender, PointerPressedEventArgs e) =>
-        Vm?.SelectFolderCommand.Execute(null);
+    private void FolderRow_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (sender is Border { DataContext: NoteFolderViewModel folder })
+            StartDrag(e, folder.FullPath);
+    }
+
+    private void RootFolderRow_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control row && e.GetCurrentPoint(row).Properties.IsLeftButtonPressed)
+            Vm?.SelectFolderCommand.Execute(null);
+    }
 
     // ===================== Inline folder rename =====================
 
@@ -140,16 +158,33 @@ public partial class FullNotesView : UserControl
 
     private void NoteCard_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
+        if (sender is Control { DataContext: NoteFolderCardViewModel { IsParent: true } }) return;
+        ArmDrag(e);
+    }
+
+    private void ArmDrag(PointerPressedEventArgs e)
+    {
         _dragPressArgs = e;
         _dragStartPoint = e.GetPosition(null);
         _dragging = false;
     }
 
-    private async void NoteCard_PointerMoved(object? sender, PointerEventArgs e)
+    private void NoteCard_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        var path = sender switch
+        {
+            Control { DataContext: NoteCardViewModel card } => card.Note.FullPath,
+            Control { DataContext: NoteFolderCardViewModel { IsParent: false } folder } => folder.FullPath,
+            _ => null
+        };
+        if (path is not null) StartDrag(e, path);
+    }
+
+    private async void StartDrag(PointerEventArgs e, string path)
     {
         if (_dragging || _dragPressArgs is null) return;
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-        if (sender is not Control { DataContext: NoteCardViewModel card }) return;
 
         var current = e.GetPosition(null);
         var dx = current.X - _dragStartPoint.X;
@@ -163,12 +198,13 @@ public partial class FullNotesView : UserControl
         try
         {
             using var transfer = new DataTransfer();
-            transfer.Add(DataTransferItem.Create(NoteDragFormat, card.Note.FullPath));
+            transfer.Add(DataTransferItem.Create(NoteDragFormat, path));
             await DragDrop.DoDragDropAsync(pressArgs, transfer, DragDropEffects.Move);
         }
         finally
         {
             _dragging = false;
+            _dragGhost.Hide();
         }
     }
 
@@ -178,11 +214,11 @@ public partial class FullNotesView : UserControl
     private void FolderRow_DragOver(object? sender, DragEventArgs e) => UpdateFolderDragOver(sender, e, true);
     private void FolderRow_DragLeave(object? sender, DragEventArgs e) => UpdateFolderDragOver(sender, e, false);
 
-    private static void UpdateFolderDragOver(object? sender, DragEventArgs e, bool isOver)
+    private void UpdateFolderDragOver(object? sender, DragEventArgs e, bool isOver)
     {
         if (sender is not Border { DataContext: NoteFolderViewModel folder }) return;
 
-        var valid = e.DataTransfer.Contains(NoteDragFormat);
+        var valid = CanDropInto(e, folder.FullPath);
         e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
         folder.IsDropTarget = isOver && valid;
     }
@@ -191,13 +227,26 @@ public partial class FullNotesView : UserControl
     {
         if (sender is not Border { DataContext: NoteFolderViewModel folder }) return;
         folder.IsDropTarget = false;
-        if (Vm is not { } vm) return;
+        if (CanDropInto(e, folder.FullPath)) DropInto(e, folder.FullPath);
+    }
 
-        var sourcePath = e.DataTransfer.TryGetValue(NoteDragFormat);
-        if (sourcePath is null) return;
+    private void FolderCard_DragEnter(object? sender, DragEventArgs e) => UpdateFolderCardDragOver(sender, e, true);
+    private void FolderCard_DragOver(object? sender, DragEventArgs e) => UpdateFolderCardDragOver(sender, e, true);
+    private void FolderCard_DragLeave(object? sender, DragEventArgs e) => UpdateFolderCardDragOver(sender, e, false);
 
-        var card = FindCard(vm, sourcePath);
-        if (card is not null) vm.MoveNoteToFolder(card, folder.FullPath);
+    private void UpdateFolderCardDragOver(object? sender, DragEventArgs e, bool isOver)
+    {
+        if (sender is not Button { DataContext: NoteFolderCardViewModel card }) return;
+        var valid = !card.IsParent && CanDropInto(e, card.FullPath);
+        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
+        card.IsDropTarget = isOver && valid;
+    }
+
+    private void FolderCard_Drop(object? sender, DragEventArgs e)
+    {
+        if (sender is not Button { DataContext: NoteFolderCardViewModel card }) return;
+        card.IsDropTarget = false;
+        if (!card.IsParent && CanDropInto(e, card.FullPath)) DropInto(e, card.FullPath);
     }
 
     // ===================== Drop target: root ("TODAS") row =====================
@@ -208,21 +257,40 @@ public partial class FullNotesView : UserControl
 
     private void UpdateRootDragOver(DragEventArgs e, bool isOver)
     {
-        var valid = e.DataTransfer.Contains(NoteDragFormat);
+        var valid = Vm is { } vm && CanDropInto(e, vm.EffectiveRootPath);
         e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
-        if (Vm is { } vm) vm.IsRootDropTarget = isOver && valid;
+        if (Vm is { } current) current.IsRootDropTarget = isOver && valid;
+    }
+
+    private bool CanDropInto(DragEventArgs e, string destination)
+    {
+        if (Vm is not { IsSelectedSessionLocked: false }) return false;
+        var source = e.DataTransfer.TryGetValue(NoteDragFormat);
+        return source is not null && (!System.IO.Directory.Exists(source) ||
+            !enki.Services.VaultService.IsWithinFolder(destination, source));
     }
 
     private void RootFolderRow_Drop(object? sender, DragEventArgs e)
     {
         if (Vm is not { } vm) return;
         vm.IsRootDropTarget = false;
+        if (CanDropInto(e, vm.EffectiveRootPath)) DropInto(e, vm.EffectiveRootPath);
+    }
 
+    private void DropInto(DragEventArgs e, string destination)
+    {
+        if (Vm is not { IsSelectedSessionLocked: false } vm) return;
         var sourcePath = e.DataTransfer.TryGetValue(NoteDragFormat);
         if (sourcePath is null) return;
 
+        if (System.IO.Directory.Exists(sourcePath))
+        {
+            vm.MoveFolderTo(sourcePath, destination);
+            return;
+        }
+
         var card = FindCard(vm, sourcePath);
-        if (card is not null) vm.MoveNoteToFolder(card, vm.EffectiveRootPath);
+        if (card is not null) vm.MoveNoteToFolder(card, destination);
     }
 
     private static NoteCardViewModel? FindCard(NotesViewModel vm, string fullPath)

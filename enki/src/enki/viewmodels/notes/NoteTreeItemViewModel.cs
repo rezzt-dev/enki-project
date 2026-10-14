@@ -15,6 +15,8 @@ namespace enki.ViewModels;
 /// (expandido, seleccionado, renombrando) que el árbol necesita.</summary>
 public sealed partial class NoteTreeItemViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     /// <summary>La carpeta que representa este nodo, o null si es una nota.</summary>
     public NoteFolder? Folder { get; private set; }
 

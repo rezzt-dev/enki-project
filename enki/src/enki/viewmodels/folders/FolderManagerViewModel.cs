@@ -39,6 +39,9 @@ public sealed partial class FolderManagerViewModel(VaultService vault, Notificat
         IsOpen = false;
         try
         {
+            vault.ValidateFolderPath(root, allowRoot: true);
+            if (!VaultService.IsWithinFolder(source, root))
+                throw new IOException(LocalizationService.Instance["Folders_Error_OutsideVault"]);
             vault.ValidateFolderPath(source, allowRoot: create);
             _source = source;
             _root = root;

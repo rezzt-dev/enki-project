@@ -10,7 +10,7 @@ using enki.ViewModels;
 namespace enki.Views;
 
 /// <summary>Code-behind de la vista simplificada de Notas: selección y renombrado en línea de las filas
-/// del árbol, arrastrar una nota a otra carpeta, y el separador que ajusta el ancho del panel lateral.
+/// del árbol, arrastrar notas y carpetas, y el separador que ajusta el ancho del panel lateral.
 /// Solo mecánica de vista — cualquier cosa que toque el vault vive en <see cref="NotesViewModel"/>.</summary>
 public partial class SimpleNotesView : UserControl
 {
@@ -38,6 +38,7 @@ public partial class SimpleNotesView : UserControl
     public SimpleNotesView()
     {
         InitializeComponent();
+        _dragGhost = new ExplorerDragGhost(this, DragSurface, NoteDragFormat);
         KeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape || Vm is not { IsSimpleNavigatorOpen: true } vm) return;
@@ -58,6 +59,8 @@ public partial class SimpleNotesView : UserControl
             if (Vm is { } vm) vm.PropertyChanged -= OnViewModelPropertyChanged;
         };
     }
+
+    private readonly ExplorerDragGhost _dragGhost;
 
     private NotesViewModel? Vm => DataContext as NotesViewModel;
 
@@ -177,9 +180,7 @@ public partial class SimpleNotesView : UserControl
         ((Control)sender).Focus();
         vm.ActivateTreeItemCommand.Execute(node);
 
-        // Solo las notas se arrastran: mover carpetas enteras es una operación bastante más destructiva
-        // y aquí no hay ninguna confirmación de por medio.
-        if (!node.IsNote) return;
+        // La validación del servicio impide soltar una carpeta dentro de sí misma.
         _dragPressArgs = e;
         _dragStartPoint = e.GetPosition(null);
         _dragging = false;
@@ -189,7 +190,7 @@ public partial class SimpleNotesView : UserControl
     {
         if (_dragging || _dragPressArgs is null) return;
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-        if (sender is not Border { DataContext: NoteTreeItemViewModel node } || !node.IsNote || node.IsRenaming) return;
+        if (sender is not Border { DataContext: NoteTreeItemViewModel node } || node.IsRenaming) return;
 
         var current = e.GetPosition(null);
         var dx = current.X - _dragStartPoint.X;
@@ -209,22 +210,24 @@ public partial class SimpleNotesView : UserControl
         finally
         {
             _dragging = false;
+            _dragGhost.Hide();
         }
     }
 
-    private static void TreeRow_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
-    private static void TreeRow_DragOver(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
-    private static void TreeRow_DragLeave(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, false);
+    private void TreeRow_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
+    private void TreeRow_DragOver(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
+    private void TreeRow_DragLeave(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, false);
 
     /// <summary>Solo las carpetas aceptan una nota soltada encima — una nota sobre otra nota no significa
     /// nada, así que ni se resalta ni se marca el gesto como válido.</summary>
-    private static void UpdateTreeRowDragOver(object? sender, DragEventArgs e, bool isOver)
+    private void UpdateTreeRowDragOver(object? sender, DragEventArgs e, bool isOver)
     {
         if (sender is not Border { DataContext: NoteTreeItemViewModel node }) return;
 
-        var valid = node.IsFolder && e.DataTransfer.Contains(NoteDragFormat);
+        var valid = node.IsFolder && CanDropInto(e, node.FullPath);
         e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
         node.IsDropTarget = isOver && valid;
+        if (node.IsFolder && e.DataTransfer.Contains(NoteDragFormat) && !valid) e.Handled = true;
     }
 
     private void TreeRow_Drop(object? sender, DragEventArgs e)
@@ -232,26 +235,49 @@ public partial class SimpleNotesView : UserControl
         if (sender is not Border { DataContext: NoteTreeItemViewModel node }) return;
         node.IsDropTarget = false;
         if (!node.IsFolder || Vm is not { } vm) return;
+        if (!CanDropInto(e, node.FullPath))
+        {
+            if (e.DataTransfer.Contains(NoteDragFormat)) e.Handled = true;
+            return;
+        }
 
         var sourcePath = e.DataTransfer.TryGetValue(NoteDragFormat);
-        if (sourcePath is not null) vm.MoveTreeNoteToFolder(sourcePath, node.FullPath);
+        if (sourcePath is not null)
+        {
+            if (System.IO.Directory.Exists(sourcePath)) vm.MoveFolderTo(sourcePath, node.FullPath);
+            else vm.MoveTreeNoteToFolder(sourcePath, node.FullPath);
+            e.Handled = true;
+        }
     }
 
     // ===================== Fondo del árbol: soltar en la raíz de la sesión =====================
 
-    private static void TreeRoot_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
-    private static void TreeRoot_DragOver(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
+    private void TreeRoot_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
+    private void TreeRoot_DragOver(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
     private static void TreeRoot_DragLeave(object? sender, DragEventArgs e) => e.DragEffects = DragDropEffects.None;
 
-    private static void UpdateTreeRootDragOver(DragEventArgs e) =>
-        e.DragEffects = e.DataTransfer.Contains(NoteDragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+    private void UpdateTreeRootDragOver(DragEventArgs e) =>
+        e.DragEffects = Vm is { } vm && CanDropInto(e, vm.EffectiveRootPath)
+            ? DragDropEffects.Move : DragDropEffects.None;
+
+    private bool CanDropInto(DragEventArgs e, string destination)
+    {
+        if (Vm is not { IsSelectedSessionLocked: false }) return false;
+        var source = e.DataTransfer.TryGetValue(NoteDragFormat);
+        return source is not null && (!System.IO.Directory.Exists(source) ||
+            !enki.Services.VaultService.IsWithinFolder(destination, source));
+    }
 
     private void TreeRoot_Drop(object? sender, DragEventArgs e)
     {
         if (Vm is not { } vm) return;
 
         var sourcePath = e.DataTransfer.TryGetValue(NoteDragFormat);
-        if (sourcePath is not null) vm.MoveTreeNoteToFolder(sourcePath, vm.EffectiveRootPath);
+        if (sourcePath is not null)
+        {
+            if (System.IO.Directory.Exists(sourcePath)) vm.MoveFolderTo(sourcePath, vm.EffectiveRootPath);
+            else vm.MoveTreeNoteToFolder(sourcePath, vm.EffectiveRootPath);
+        }
     }
 
     // ===================== Resultados de búsqueda =====================

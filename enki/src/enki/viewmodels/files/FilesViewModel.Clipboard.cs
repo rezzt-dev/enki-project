@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using CommunityToolkit.Mvvm.Input;
 using enki.Models;
 using enki.Localization;
@@ -34,6 +35,7 @@ public sealed partial class FilesViewModel
         _clipboardIsFolder = ManagedFolderPath(item) is not null;
         _clipboardFilePath = ManagedFolderPath(item) ?? ClipboardCard(item)!.File.FullPath;
         _clipboardCut = cut;
+        UpdateCutAppearance();
         PasteEntryCommand.NotifyCanExecuteChanged();
         CancelClipboardCommand.NotifyCanExecuteChanged();
         _notificationService.PushLocalized(
@@ -47,8 +49,28 @@ public sealed partial class FilesViewModel
     private void CancelClipboard()
     {
         _clipboardFilePath = null;
+        _clipboardCut = false;
+        UpdateCutAppearance();
         PasteEntryCommand.NotifyCanExecuteChanged();
         CancelClipboardCommand.NotifyCanExecuteChanged();
+    }
+
+    private void UpdateCutAppearance()
+    {
+        bool IsCut(string path) => _clipboardCut && _clipboardFilePath is { } source && PathsEqual(source, path);
+        foreach (var folder in FlattenFolders(RootFolders)) folder.IsCut = IsCut(folder.FullPath);
+        foreach (var card in Files) card.IsCut = IsCut(card.File.FullPath);
+        foreach (var item in BrowserItems.OfType<FileFolderCardViewModel>()) item.IsCut = IsCut(item.FullPath);
+        foreach (var node in Flatten(FileTreeRoots))
+        {
+            node.IsCut = IsCut(node.FullPath);
+            if (node.Card is { } card) card.IsCut = node.IsCut;
+        }
+        foreach (var node in TreeSearchResults)
+        {
+            node.IsCut = IsCut(node.FullPath);
+            if (node.Card is { } card) card.IsCut = node.IsCut;
+        }
     }
 
     private bool CanPasteEntry(object? _) => _clipboardFilePath is not null && !IsSelectedSessionLocked;

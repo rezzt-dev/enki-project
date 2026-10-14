@@ -355,13 +355,13 @@ public sealed partial class MainWindowViewModel
 
         Dashboard!.Reload();
         Notes!.Reload();
-        Notes!.ReloadSessions();
+        Notes!.ReloadSessions(restoreStoredSelection: true);
         Kanban!.Reload();
         Kanban.TaskManagement.Reload();
         Reminders?.Reload();
         Notifications?.Reload();
         Files!.Reload();
-        Files!.ReloadSessions();
+        Files!.ReloadSessions(restoreStoredSelection: true);
         Skills!.Reload();
         Sessions!.Reload();
         Trash!.Reload();

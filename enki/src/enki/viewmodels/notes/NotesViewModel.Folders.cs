@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using CommunityToolkit.Mvvm.Input;
@@ -36,6 +37,17 @@ public sealed partial class NotesViewModel
             FolderManager.Open(ManagedFolderPath(item) ?? CurrentFolderPath, EffectiveRootPath, create: true);
     }
 
+    /// <summary>Mueve una carpeta soltada en el árbol o en la rejilla. El servicio valida que el
+    /// destino no sea la propia carpeta ni uno de sus descendientes.</summary>
+    public void MoveFolderTo(string source, string destination)
+    {
+        try { _vaultService.TransferFolder(source, destination, cut: true); }
+        catch (System.Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            NotifyVaultWriteFailed(ex);
+        }
+    }
+
     private void InitializeFolderManager()
     {
         FolderManager = new FolderManagerViewModel(_vaultService, _notificationService);
@@ -65,12 +77,15 @@ public sealed partial class NotesViewModel
             if (change.DestinationPath is not null && Directory.Exists(change.DestinationPath))
                 foreach (var newPath in Directory.GetFiles(change.DestinationPath, "*.md", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }))
                     _kanbanService?.RelinkNotePath(Path.Combine(change.SourcePath, Path.GetRelativePath(change.DestinationPath, newPath)), newPath);
+            if (ActiveEditor is { } active) SelectSessionForEditor(active);
             var current = CurrentFolder?.FullPath;
             if (current is not null && VaultService.IsWithinFolder(current, change.SourcePath))
             {
                 var remapped = change.DestinationPath is null ? Path.GetDirectoryName(change.SourcePath)! :
                     Path.Combine(change.DestinationPath, Path.GetRelativePath(change.SourcePath, current));
-                CurrentFolder = VaultService.PathsEqual(remapped, EffectiveRootPath) ? null : new NoteFolderViewModel(new NoteFolder { FullPath = remapped });
+                CurrentFolder = !VaultService.IsWithinFolder(remapped, EffectiveRootPath) ||
+                    VaultService.PathsEqual(remapped, EffectiveRootPath)
+                    ? null : new NoteFolderViewModel(new NoteFolder { FullPath = remapped });
             }
             PersistOpenTabs();
         }

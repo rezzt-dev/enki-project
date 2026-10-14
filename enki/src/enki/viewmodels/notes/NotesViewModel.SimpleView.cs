@@ -174,6 +174,7 @@ public sealed partial class NotesViewModel
         foreach (var item in BuildTreeLevel(EffectiveRootPath, 0, expandedPaths)) SimpleTreeRoots.Add(item);
 
         SyncSimpleTreeSelection();
+        UpdateCutAppearance();
     }
 
     /// <summary>Un nivel del árbol: primero las subcarpetas (recursivamente), después las notas markdown
@@ -354,7 +355,7 @@ public sealed partial class NotesViewModel
         NoteFolder created;
         try
         {
-            created = VaultService.CreateFolder(EffectiveRootPath);
+            created = _vaultService.CreateManagedFolder(EffectiveRootPath, LocalizationService.Instance["Vault_DefaultFolderName"]);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -376,7 +377,7 @@ public sealed partial class NotesViewModel
         NoteFolder created;
         try
         {
-            created = VaultService.CreateFolder(node.FullPath);
+            created = _vaultService.CreateManagedFolder(node.FullPath, LocalizationService.Instance["Vault_DefaultFolderName"]);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -524,6 +525,7 @@ public sealed partial class NotesViewModel
         var matches = _noteSearchService.SearchTree(EffectiveRootPath, SimpleSearchText, maxResults: 200);
 
         foreach (var hit in matches) SimpleSearchResults.Add(new NoteCardViewModel(hit.Note));
+        UpdateCutAppearance();
         OnPropertyChanged(nameof(ShowSimpleSearchEmptyState));
     }
 }

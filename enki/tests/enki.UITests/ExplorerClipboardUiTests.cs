@@ -84,6 +84,36 @@ public sealed class ExplorerClipboardUiTests : IDisposable
         finally { window.Close(); }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Notes_CutDimsTheVisibleNote_AndCancelRestoresIt(bool simplified)
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.NotesViewMode = simplified ? "Simple" : "Full";
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        vault.CreateNote("Nota");
+        var vm = new NotesViewModel(vault, new SessionService(vault), settingsService: settings);
+        var view = new NotesView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1400, Height = 900 };
+        window.Show();
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        try
+        {
+            var row = view.GetVisualDescendants().OfType<Control>().First(c =>
+                c.ContextMenu is not null && c.DataContext is NoteCardViewModel or NoteTreeItemViewModel { IsNote: true });
+            vm.CutEntryCommand.Execute(row.DataContext);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.Contains("cut", row.Classes);
+
+            vm.CancelClipboardCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.DoesNotContain("cut", row.Classes);
+        }
+        finally { window.Close(); }
+    }
+
     private static void Press(Control control, Key key, KeyModifiers modifiers = KeyModifiers.Control) =>
         control.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key, KeyModifiers = modifiers });
 

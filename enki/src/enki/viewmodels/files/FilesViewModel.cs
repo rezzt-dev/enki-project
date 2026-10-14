@@ -168,6 +168,8 @@ public sealed partial class FilesViewModel : ViewModelBase
         _notificationService = notificationService;
         InitializeFolderManager();
         _settingsService = settingsService;
+        if (_settingsService is not null)
+            _settingsService.WorkspaceSessionChanged += SelectSession;
         _searchDebounceTimer.Tick += (_, _) =>
         {
             _searchDebounceTimer.Stop();
@@ -245,17 +247,10 @@ public sealed partial class FilesViewModel : ViewModelBase
         Reload();
     }
 
-    /// <summary>Guarda qué sesión está elegida en <see cref="Models.AppSettings.FilesSessionId"/> para que la
-    /// app reabra Archivos en el mismo espacio de trabajo en vez de volver siempre al vault — mismo
-    /// mecanismo, y por el mismo motivo, que <c>NotesViewModel.PersistSelectedSession</c>, con la que esta
-    /// sección comparte selector. No-op en los tests que construyen este viewmodel sin
-    /// <see cref="SettingsService"/>. Se escribe en cada cambio de selección, así que el ajuste y la
-    /// selección viva nunca se separan.</summary>
+    /// <summary>Publica la sesión común a Notas y Archivos y la guarda entre arranques.</summary>
     private void PersistSelectedSession()
     {
-        if (_settingsService is null) return;
-        _settingsService.Settings.FilesSessionId = SelectedSessionOption?.Session?.Id;
-        _settingsService.Save();
+        _settingsService?.SelectWorkspaceSession(SelectedSessionOption?.Session?.Id);
     }
 
     partial void OnIsEmptyChanged(bool value) => NotifyBrowserStateChanged();
@@ -263,13 +258,14 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// <summary>Rehace el selector de espacio de trabajo (el vault más cada sesión) conservando la elección
     /// actual si sigue existiendo. Se llama en el arranque y cada vez que se crea/renombra/borra una sesión,
     /// haya pasado aquí o en la página de Sesiones.</summary>
-    public void ReloadSessions()
+    public void ReloadSessions(bool restoreStoredSelection = false)
     {
         // En el arranque todavía no hay selección viva, y ahí es donde entra la guardada: la sesión con la
-        // que se cerró la app. Pasado el arranque las dos coinciden siempre —cada cambio de selección
-        // reescribe el ajuste—, así que este mismo orden vale para las recargas posteriores sin resucitar
-        // nada que el usuario ya dejó atrás. Mismo criterio que NotesViewModel.ReloadSessions.
-        var targetId = SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.FilesSessionId;
+        // que se cerró la app. Las recargas normales conservan la selección viva; al cambiar de vault
+        // se restaura expresamente la elección guardada para el nuevo vault.
+        var targetId = restoreStoredSelection
+            ? _settingsService?.Settings.WorkspaceSessionId
+            : SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.WorkspaceSessionId;
 
         SessionOptions.Clear();
         SessionOptions.Add(new SessionOptionViewModel(null));
@@ -379,6 +375,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         RebuildBreadcrumbs();
         NotifyBrowserStateChanged();
         AfterReload();
+        UpdateCutAppearance();
     }
 
     /// <summary>Lo que va detrás de cada recarga en las dos disposiciones. El árbol se reconstruye aquí, pero
@@ -949,7 +946,8 @@ public sealed partial class FilesViewModel : ViewModelBase
     private NoteFolder? TryCreateFolder(string parentPath)
     {
         NoteFolder? created = null;
-        TryVaultOperation("Files_Notify_FolderCreateFailed_Title", () => created = VaultService.CreateFolder(parentPath));
+        TryVaultOperation("Files_Notify_FolderCreateFailed_Title", () => created =
+            _vaultService.CreateManagedFolder(parentPath, LocalizationService.Instance["Vault_DefaultFolderName"]));
         return created;
     }
 

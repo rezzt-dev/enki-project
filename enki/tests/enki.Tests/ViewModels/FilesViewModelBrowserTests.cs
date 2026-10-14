@@ -65,6 +65,27 @@ public class FilesViewModelBrowserTests : IDisposable
         File.WriteAllText(path, content);
     }
 
+    [Fact]
+    public void CutFileAndFolder_ShowPendingStateUntilPasteOrCancel()
+    {
+        SeedVault();
+        var (vm, _, _) = CreateViewModel();
+        var folder = Folder(vm, "diseno");
+
+        vm.CutEntryCommand.Execute(folder);
+        Assert.True(folder.IsCut);
+        Assert.True(vm.BrowserItems.OfType<FileFolderCardViewModel>().Single(c => c.Name == "diseno").IsCut);
+        vm.CancelClipboardCommand.Execute(null);
+        Assert.False(folder.IsCut);
+
+        var file = vm.Files.Single(c => c.FileName == "notas.txt");
+        vm.CutEntryCommand.Execute(file);
+        Assert.True(file.IsCut);
+        vm.PasteEntryCommand.Execute(folder);
+        Assert.False(file.IsCut);
+        Assert.True(File.Exists(Path.Combine(_vaultPath, "diseno", "notas.txt")));
+    }
+
     private static FileFolderViewModel Folder(FilesViewModel vm, string name) =>
         Flatten(vm.RootFolders).First(f => f.Name == name);
 

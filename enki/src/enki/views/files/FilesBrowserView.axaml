@@ -25,10 +25,11 @@
          un panel con veinte carpetas eran cuarenta iconos compitiendo con los nombres. -->
     <DataTemplate DataType="vm:FileFolderViewModel">
       <StackPanel>
-        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.cut="{Binding IsCut}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource DepthIndentConverter}}"
                 DragDrop.AllowDrop="True"
                 PointerPressed="FolderRow_PointerPressed"
+                PointerMoved="FolderRow_PointerMoved"
                 DragDrop.DragEnter="FolderRow_DragEnter"
                 DragDrop.DragOver="FolderRow_DragOver"
                 DragDrop.DragLeave="FolderRow_DragLeave"
@@ -131,7 +132,8 @@
     <!-- Tarjeta de carpeta (incluida la ".." de subir un nivel). Es destino de arrastre como la fila del
          panel —mover ahí una tarjeta, o importar ahí lo que venga del sistema—, y se renombra en línea. -->
     <DataTemplate DataType="vm:FileFolderCardViewModel">
-      <Button Classes="file-card" Classes.drag-over="{Binding IsDropTarget}" Margin="0,0,16,16" Width="184" Height="204"
+      <Button Classes="file-card" Classes.cut="{Binding IsCut}" Classes.drag-over="{Binding IsDropTarget}" Margin="0,0,16,16" Width="184" Height="204"
+              Initialized="FolderDrag_Initialized"
               Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenFolderCardCommand}"
               CommandParameter="{Binding}"
               ToolTip.Tip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
@@ -218,7 +220,7 @@
     <!-- Tarjeta de archivo: miniatura (o icono por tipo) con la extensión encima, nombre, carpeta —solo en
          resultados de búsqueda, que bajan a las subcarpetas— y tamaño · fecha. -->
     <DataTemplate DataType="vm:FileCardViewModel">
-      <Button Classes="file-card" Margin="0,0,16,16" Width="184" Height="204"
+      <Button Classes="file-card" Classes.cut="{Binding IsCut}" Margin="0,0,16,16" Width="184" Height="204"
               Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenCardCommand}"
               CommandParameter="{Binding}"
               ToolTip.Tip="{Binding FileName}" AutomationProperties.Name="{Binding FileName}"
@@ -307,7 +309,7 @@
     </DataTemplate>
   </UserControl.DataTemplates>
 
-  <Grid>
+  <Grid x:Name="DragSurface">
 
     <Grid RowDefinitions="Auto,Auto,*" IsVisible="{Binding ActivePreview, Converter={x:Static conv:ObjectConverters.IsNull}}">
 

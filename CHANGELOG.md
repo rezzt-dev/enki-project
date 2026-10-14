@@ -27,7 +27,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - selector `ajustes > apariencia > animaciones` para elegir entre el perfil normal, predeterminado, y el sutil, guardado por vault y aplicado al instante; sutiles acorta las transiciones, elimina desplazamientos decorativos y reduce la animación del grafo de sesiones sin ocultar indicadores funcionales.
 - crear skills desde la carpeta activa con una plantilla Markdown inicial, atajos `ctrl+n` y `ctrl+shift+n`, y un espacio vacío que permite importar o empezar una biblioteca de habilidades.
 - permitir soltar archivos Markdown externos sobre las carpetas, tarjetas, raíz y área de trabajo de Habilidades, conservando el destino elegido durante la resolución de conflictos.
-- gestión completa de carpetas compartida por Notas y Archivos: crear con nombre confirmado, renombrar, copiar, mover, cortar, pegar, abrir en el sistema y eliminar desde la rejilla o el árbol; conserva subcarpetas, adjuntos y carpetas vacias, evita sobrescrituras y mantiene sincronizadas las pestañas abiertas, previsualizaciones e integraciones Kanban.
+- gestión completa de carpetas compartida por Notas y Archivos: crear con nombre confirmado, renombrar, copiar, mover, cortar, pegar, abrir en el sistema y eliminar desde la rejilla o el árbol; permite arrastrar carpetas completas con una vista flotante, conserva subcarpetas, adjuntos y carpetas vacías, evita sobrescrituras y mantiene sincronizadas las pestañas abiertas, previsualizaciones e integraciones Kanban.
+- compartir en ambos sentidos la sesión seleccionada en Notas y Archivos, guardar una única selección por vault, migrar las preferencias anteriores y seguir la sesión de la nota activa.
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
@@ -58,6 +59,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - centralizar los perfiles de movimiento en `MotionService` y reemplazar revelados y transiciones dispersos por `MotionReveal`; preparar cada sección antes de mostrarla, cancelar animaciones obsoletas y eliminar la interpolación de ancho del panel del editor para evitar recomposiciones y repintados innecesarios.
 - redisenar el detalle y editor de Habilidades con lector Markdown a ancho completo, metadatos desplegables solo cuando existen, herramientas de formato, vista de código, guardado manual y atajos `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` y `ctrl+shift+n`.
 - reorganizar el pie del detalle de Habilidades para alinear sus acciones, igualar la altura de los botones y situar `código markdown` a la derecha junto al resto de controles.
+- atenuar las notas, archivos y carpetas cortados en Notas y Archivos hasta pegarlos o cancelar la operación, reflejando el estado también en los árboles y resultados de búsqueda.
 - ocultar las carpetas `*.attachments` de las vistas, búsquedas y recuentos de Notas y Archivos, sin eliminar sus imágenes ni impedir que las notas las muestren.
 - rediseñar el grafo de sesiones con un panel lateral de visibilidad, búsqueda combinada de notas, rutas, sesiones y etiquetas, aislamiento de sesiones y controles de etiquetas, malla, tamaño de nodos, grosor de enlaces y cámara; unificar los visores web y nativo con una distribución orgánica estable, conservar posiciones y zoom al filtrar o redimensionar y eliminar la rotación y las partículas decorativas para concentrar la lectura en los vínculos reales.
 - convertir el filtro del grafo de sesiones en un diálogo centrado y amplio, con búsqueda, filtros de sesiones, etiquetas y conexiones repartidos en dos columnas navegables, desplazamiento independiente, cierre con `Escape` y restablecimiento siempre accesible.
@@ -77,6 +79,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - recorrer el vault podando las carpetas ocultas antes de descender a ellas, en vez de enumerar y filtrar después; `EnumerateVisibleFileInfos` tampoco sigue enlaces de directorio.
 
 #### CORREGIDO
+- validar el ámbito del gestor de carpetas y rechazar movimientos dentro de la propia carpeta o de sus descendientes para evitar salir de la raíz activa o crear ciclos.
 - centrar verticalmente el texto, el icono y el fondo de los avisos del editor markdown, y alinear las cabeceras de tablas con sus filas de contenido.
 - evitar que el grafo de sesiones quede vacío o inutilizable si el navegador no confirma la carga o las bibliotecas WPE de linux son incompatibles; validar los símbolos nativos necesarios, cambiar al renderizador de respaldo y comprobarlo en la ci de linux, windows y macos.
 - corregir la altura y la alineación vertical de las filas de tablas Markdown con celdas en varias líneas, reservando el descenso del editor para que la rejilla no deje espacio adicional bajo el contenido.
@@ -114,7 +117,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a `settings > appearance > animations` selector for the default normal or subtle profile, persisted per vault and applied immediately; subtle shortens transitions, removes decorative translation and reduces session-graph animation without hiding functional indicators.
 - create skills from the active folder with an initial Markdown template, `ctrl+n` and `ctrl+shift+n` shortcuts, and an empty workspace that can import or start a skill library.
 - allow dropping external Markdown files onto Skills folders, cards, root and workspace, while retaining the chosen destination during conflict resolution.
-- complete folder management shared by Notes and Files: create after confirming a name, rename, copy, move, cut, paste, reveal in the system and delete from grid or tree views; it preserves subfolders, attachments and empty folders, avoids overwrites, and keeps open tabs, previews and Kanban integrations in sync.
+- complete folder management shared by Notes and Files: create after confirming a name, rename, copy, move, cut, paste, reveal in the system and delete from grid or tree views; drag whole folders with a floating preview, preserve subfolders, attachments and empty folders, avoid overwrites, and keep open tabs, previews and Kanban integrations in sync.
+- share the selected session between Notes and Files in both directions, store one selection per vault, migrate previous preferences and follow the active note's session.
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 
 #### CHANGED
@@ -144,6 +148,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - centralise motion profiles in `MotionService` and replace scattered reveals and transitions with `MotionReveal`; prepare each section before showing it, cancel stale animations, and remove editor-side-panel width interpolation to avoid unnecessary relayouts and redraws.
 - redesign the Skills detail and editor with a full-width Markdown reader, metadata shown only when present, formatting tools, source view, manual save, and `ctrl+b`, `ctrl+i`, `ctrl+s`, `ctrl+n` and `ctrl+shift+n` shortcuts.
 - reorganise the Skills detail footer to align its actions, match button heights, and place `markdown code` on the right beside the remaining controls.
+- dim cut notes, files and folders in Notes and Files until they are pasted or the operation is cancelled, including in trees and search results.
 - hide `*.attachments` folders from Notes and Files views, searches and counts without deleting their images or preventing notes from rendering them.
 - redesign the session graph with a side visibility panel, combined search across notes, paths, sessions and tags, session isolation, and controls for labels, mesh, node size, link thickness and camera; align the web and native renderers on a stable organic layout, preserve positions and zoom while filtering or resizing, and remove rotation and decorative particles to focus reading on real links.
 - turn the session graph filter into a wide centred dialog, with search, session, tag and connection filters arranged in two navigable columns, independent scrolling, `Escape` dismissal and an always accessible reset action.
@@ -163,6 +168,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - prune hidden folders before descending into them when walking the vault, instead of enumerating and filtering afterwards; `EnumerateVisibleFileInfos` also skips directory links.
 
 #### FIXED
+- validate the folder manager's scope and reject moves into the source folder or its descendants to prevent leaving the active root or creating cycles.
 - vertically centre callout text, icon and background in the Markdown editor, and align table headers with their content rows.
 - prevent the session graph from becoming blank or unusable when the browser does not confirm loading or linux WPE libraries are incompatible; validate required native symbols, switch to the fallback renderer and cover it in linux, windows and macos ci.
 - fix the height and vertical alignment of Markdown table rows with multiline cells, reserving the editor descent so the grid does not leave extra space below the content.

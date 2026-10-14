@@ -30,6 +30,8 @@ public sealed class SettingsService
     ];
     /// <summary>Notifica un guardado completado para actualizar las preferencias visibles.</summary>
     public event Action? SettingsChanged;
+    /// <summary>Notifica a Notas y Archivos la nueva sesión compartida.</summary>
+    public event Action<string?>? WorkspaceSessionChanged;
     /// <summary>Se dispara cuando una escritura de tokens falla por falta de acceso al almacén seguro.</summary>
     public event Action? CredentialStoreFailed;
     /// <summary>Se dispara al recuperar un <c>.enki/settings.json</c> corrupto e indica dónde quedó su copia.</summary>
@@ -205,6 +207,15 @@ public sealed class SettingsService
         SettingsChanged?.Invoke();
     }
 
+    /// <summary>Guarda la selección común de Notas y Archivos y avisa a ambos selectores.</summary>
+    public void SelectWorkspaceSession(string? sessionId)
+    {
+        if (Settings.WorkspaceSessionId == sessionId) return;
+        Settings.WorkspaceSessionId = sessionId;
+        Save();
+        WorkspaceSessionChanged?.Invoke(sessionId);
+    }
+
     private void RemoveLegacyCredentialsFromDisk()
     {
         JsonFileStore.WithLock(_settingsPath, () =>
@@ -275,7 +286,8 @@ public sealed class SettingsService
             if (previous.TryGetPropertyValue(key, out var value)) global[key] = value?.DeepClone();
         var stored = ReadVaultObject(target, ReportCorruptVaultSettings);
         foreach (var entry in stored)
-            if (!InstallationKeys.Contains(entry.Key) && global.ContainsKey(entry.Key))
+            if (!InstallationKeys.Contains(entry.Key) &&
+                (global.ContainsKey(entry.Key) || entry.Key is nameof(AppSettings.NotesSessionId) or nameof(AppSettings.FilesSessionId)))
                 global[entry.Key] = entry.Value?.DeepClone();
         Settings = global.Deserialize<AppSettings>() ?? new AppSettings();
         // Las preferencias del vault que se acaban de fusionar vienen de su propio settings.json, que es
