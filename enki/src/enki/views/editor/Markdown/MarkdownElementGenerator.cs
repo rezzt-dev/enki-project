@@ -772,7 +772,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         if (span.ContentEnd > span.ContentStart)
         {
             var alt = CurrentContext.Document.GetText(span.ContentStart, span.ContentEnd - span.ContentStart);
-            if (!string.IsNullOrWhiteSpace(alt)) return alt;
+            if (!string.IsNullOrWhiteSpace(alt)) return NoteAttachmentService.UnescapeLabel(alt);
         }
         return MarkdownImageResolver.ShortLabel(span.LinkTarget ?? string.Empty);
     }
@@ -785,6 +785,33 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     {
         var layout = MeasureImage(span, maxWidth);
         var margin = new Thickness(leadingWidth, 0, 0, 0);
+
+        if (NoteAttachmentService.IsAttachmentTarget(span.LinkTarget ?? string.Empty))
+        {
+            var button = new Button
+            {
+                Width = layout.Width, Height = layout.Height, Margin = margin,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal, Spacing = 10,
+                    Children =
+                    {
+                        new MaterialIcon { Kind = MaterialIconKind.Paperclip, Width = 18, Height = 18 },
+                        new TextBlock { Text = AltTextOf(span), MaxWidth = Math.Max(20, layout.Width - 70),
+                            TextTrimming = TextTrimming.CharacterEllipsis, FontFamily = _style.MonoFontFamily,
+                            FontSize = Math.Max(10, _style.BaseFontSize - 2) }
+                    }
+                }
+            };
+            button.Classes.Add("tag-chip");
+            var target = span.LinkTarget!;
+            button.Click += (_, _) => _state.Images.OpenAttachment?.Invoke(target);
+            ToolTip.SetTip(button, target);
+            AutomationProperties.SetName(button, AltTextOf(span));
+            SetImageBaseline(button, layout.Height);
+            return button;
+        }
 
         if (layout.Entry is { State: MarkdownImageState.Ready, Bitmap: { } bitmap })
         {

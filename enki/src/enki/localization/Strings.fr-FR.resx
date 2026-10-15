@@ -6370,4 +6370,23 @@ Bonne rédaction.</value>
   <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>En cas de conflit</value></data>
   <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki signale les changements externes des notes ouvertes et permet de comparer les versions avant de choisir. Gardez les fichiers Syncthing *.sync-conflict-* jusqu’à leur comparaison et fusion manuelle. Les tâches et préférences du coffre stockées en JSON ne sont pas fusionnées entre appareils : évitez de les modifier simultanément.</value></data>
   <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>Un dossier dans le cloud ne garantit pas à lui seul un chiffrement de bout en bout. Les sessions protégées chiffrent le contenu des notes et des pièces jointes, mais les noms et certaines métadonnées restent visibles. Vérifiez la confidentialité du fournisseur.</value></data>
+  <data name="Editor_Attachments_Title" xml:space="preserve"><value>Pièces jointes et multimédia</value></data>
+  <data name="Editor_Attachments_Add" xml:space="preserve"><value>Joindre des fichiers</value></data>
+  <data name="Editor_Attachments_Close" xml:space="preserve"><value>Fermer les pièces jointes</value></data>
+  <data name="Editor_Attachments_Remove" xml:space="preserve"><value>Retirer la référence (garder le fichier)</value></data>
+  <data name="Editor_Attachments_Empty" xml:space="preserve"><value>Cette note ne contient pas encore de pièces jointes. Ajoutez des fichiers ou déposez-les dans l’éditeur.</value></data>
+  <data name="Editor_Attachments_Select" xml:space="preserve"><value>Sélectionnez une pièce jointe pour l’afficher et l’annoter.</value></data>
+  <data name="Editor_Attachments_Open" xml:space="preserve"><value>Ouvrir avec l’application système</value></data>
+  <data name="Editor_Attachments_Annotation" xml:space="preserve"><value>Écrivez une annotation sur ce fichier…</value></data>
+  <data name="Editor_Attachments_Annotate" xml:space="preserve"><value>Ajouter l’annotation à la note</value></data>
+  <data name="Editor_Attachments_Hint" xml:space="preserve"><value>Les annotations sont enregistrées dans le Markdown. Retirer une référence conserve le fichier pour les autres notes. Ctrl+Z annule les modifications.</value></data>
+  <data name="Editor_Attachments_Page" xml:space="preserve"><value>Page {0}</value></data>
+  <data name="Editor_Attachments_Error" xml:space="preserve"><value>Impossible de traiter la pièce jointe</value></data>
+  <data name="Editor_Attachments_ErrorHint" xml:space="preserve"><value>Vérifiez que le fichier existe, est accessible et non vide. La limite est de 128 Mo (64 Mo pour les images). Les fichiers exécutables sont refusés.</value></data>
+  <data name="Editor_Attachments_Previous" xml:space="preserve"><value>Page précédente</value></data>
+  <data name="Editor_Attachments_Next" xml:space="preserve"><value>Page suivante</value></data>
+  <data name="Editor_Attachments_ZoomIn" xml:space="preserve"><value>Agrandir</value></data>
+  <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Réduire</value></data>
+  <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Chargement du document…</value></data>
+  <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>Impossible d’afficher le PDF. Vous pouvez l’ouvrir avec l’application système.</value></data>
 </root>

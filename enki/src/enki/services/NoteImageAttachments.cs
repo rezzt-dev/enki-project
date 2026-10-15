@@ -122,7 +122,11 @@ public static class NoteImageAttachments
         .Replace("%", "%25", StringComparison.Ordinal)
         .Replace(" ", "%20", StringComparison.Ordinal)
         .Replace("(", "%28", StringComparison.Ordinal)
-        .Replace(")", "%29", StringComparison.Ordinal);
+        .Replace(")", "%29", StringComparison.Ordinal)
+        .Replace("#", "%23", StringComparison.Ordinal)
+        .Replace("?", "%3F", StringComparison.Ordinal)
+        .Replace("[", "%5B", StringComparison.Ordinal)
+        .Replace("]", "%5D", StringComparison.Ordinal);
 
     private static string NormalizeExtension(string extension)
     {

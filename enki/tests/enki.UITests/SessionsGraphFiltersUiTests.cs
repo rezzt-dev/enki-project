@@ -14,6 +14,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Localization;
+using enki.Controls;
 using enki.Services;
 using enki.ViewModels;
 using enki.Views;
@@ -49,11 +50,12 @@ public class SessionsGraphFiltersUiTests
                 new NotificationService(settings, directory), (_, _) => { }, () => { });
             AwaitLoad(vm);
             var view = new SessionsView();
-            var popup = view.GetLogicalDescendants().OfType<Popup>().Single();
-            var panel = popup.Child!;
-            popup.Child = null;
+            var host = view.GetLogicalDescendants().OfType<ModalOverlayHost>()
+                .Single(h => h.Content is Border border && border.Width == 740);
+            var panel = Assert.IsType<Border>(host.Content);
+            host.Content = null;
             panel.DataContext = vm;
-            window = new Window { Content = panel, Width = 340, Height = 520 };
+            window = new Window { Content = panel, Width = 800, Height = 650 };
             window.Show();
             window.GetLayoutManager()!.ExecuteLayoutPass();
 
@@ -90,7 +92,7 @@ public class SessionsGraphFiltersUiTests
             if (Environment.GetEnvironmentVariable("ENKI_GRAPH_PREVIEW") is { Length: > 0 } preview)
             {
                 Directory.CreateDirectory(preview);
-                using var bitmap = new RenderTargetBitmap(new PixelSize(340, 520));
+                using var bitmap = new RenderTargetBitmap(new PixelSize(800, 650));
                 bitmap.Render(panel);
                 bitmap.Save(Path.Combine(preview, light ? "filters-light.png" : "filters-dark.png"), PngBitmapEncoderOptions.Default);
             }
@@ -118,8 +120,8 @@ public class SessionsGraphFiltersUiTests
             Assert.False(vm.IsGraphFiltered);
             Assert.Equal(0, explore.SelectedIndex);
             window.GetLayoutManager()!.ExecuteLayoutPass();
-            Assert.InRange(panel.Bounds.Width, 1, 340);
-            Assert.InRange(panel.Bounds.Height, 1, 520);
+            Assert.InRange(panel.Bounds.Width, 1, 800);
+            Assert.InRange(panel.Bounds.Height, 1, 650);
             Assert.True(reset.Bounds.Height > 0);
         }
         finally

@@ -6370,4 +6370,23 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>Bei Konflikten</value></data>
   <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki meldet externe Änderungen an offenen Notizen und lässt dich Versionen vergleichen. Bewahre Syncthing-Dateien mit *.sync-conflict-* auf, bis du sie verglichen und manuell zusammengeführt hast. Aufgaben und Vault-Einstellungen in JSON werden zwischen Geräten nicht zusammengeführt; bearbeite sie nicht gleichzeitig.</value></data>
   <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>Ein Cloud-Ordner bedeutet nicht automatisch Ende-zu-Ende-Verschlüsselung. Geschützte Sitzungen verschlüsseln Notizen und Anhänge, aber Namen und manche Metadaten bleiben sichtbar. Prüfe die Datenschutzeinstellungen des Anbieters.</value></data>
+  <data name="Editor_Attachments_Title" xml:space="preserve"><value>Anhänge und Medien</value></data>
+  <data name="Editor_Attachments_Add" xml:space="preserve"><value>Dateien anhängen</value></data>
+  <data name="Editor_Attachments_Close" xml:space="preserve"><value>Anhänge schließen</value></data>
+  <data name="Editor_Attachments_Remove" xml:space="preserve"><value>Verweis entfernen (Datei behalten)</value></data>
+  <data name="Editor_Attachments_Empty" xml:space="preserve"><value>Diese Notiz hat noch keine Anhänge. Fügen Sie Dateien hinzu oder ziehen Sie sie in den Editor.</value></data>
+  <data name="Editor_Attachments_Select" xml:space="preserve"><value>Wählen Sie einen Anhang zur Vorschau und zum Kommentieren.</value></data>
+  <data name="Editor_Attachments_Open" xml:space="preserve"><value>Mit Systemanwendung öffnen</value></data>
+  <data name="Editor_Attachments_Annotation" xml:space="preserve"><value>Anmerkung zu dieser Datei schreiben…</value></data>
+  <data name="Editor_Attachments_Annotate" xml:space="preserve"><value>Anmerkung zur Notiz hinzufügen</value></data>
+  <data name="Editor_Attachments_Hint" xml:space="preserve"><value>Anmerkungen werden im Markdown gespeichert. Beim Entfernen eines Verweises bleibt die Datei für andere Notizen erhalten. Strg+Z macht Änderungen rückgängig.</value></data>
+  <data name="Editor_Attachments_Page" xml:space="preserve"><value>Seite {0}</value></data>
+  <data name="Editor_Attachments_Error" xml:space="preserve"><value>Anhang konnte nicht verarbeitet werden</value></data>
+  <data name="Editor_Attachments_ErrorHint" xml:space="preserve"><value>Prüfen Sie, ob die Datei vorhanden, zugänglich und nicht leer ist. Maximal 128 MB (64 MB für Bilder). Ausführbare Dateien werden nicht unterstützt.</value></data>
+  <data name="Editor_Attachments_Previous" xml:space="preserve"><value>Vorherige Seite</value></data>
+  <data name="Editor_Attachments_Next" xml:space="preserve"><value>Nächste Seite</value></data>
+  <data name="Editor_Attachments_ZoomIn" xml:space="preserve"><value>Vergrößern</value></data>
+  <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Verkleinern</value></data>
+  <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Dokument wird geladen…</value></data>
+  <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>PDF-Vorschau nicht verfügbar. Sie können die Datei mit der Systemanwendung öffnen.</value></data>
 </root>

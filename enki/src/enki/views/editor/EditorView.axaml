@@ -9,6 +9,7 @@
              xmlns:loc="clr-namespace:enki.Localization"
              xmlns:controls="clr-namespace:enki.Controls"
              xmlns:services="clr-namespace:enki.Services"
+             xmlns:views="clr-namespace:enki.Views"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.EditorView"
              x:DataType="vm:EditorViewModel">
@@ -427,6 +428,12 @@
           <Button Classes="icon-btn" Click="OnNoteLinkClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_NoteLink_Tooltip}"
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_NoteLink_Tooltip}">
             <mi:MaterialIcon Kind="FileLinkOutline" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Click="OnAttachmentClick" ToolTip.Tip="{loc:Tr Editor_Attachments_Add}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Add}">
+            <mi:MaterialIcon Kind="Paperclip" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Command="{Binding ShowAttachmentsCommand}" ToolTip.Tip="{loc:Tr Editor_Attachments_Title}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Title}">
+            <mi:MaterialIcon Kind="FolderImage" Width="16" Height="16" />
           </Button>
           <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}"
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_Image_Tooltip}">
@@ -1087,5 +1094,10 @@
       </Border>
     </controls:ModalOverlayHost>
 
+    <controls:ModalOverlayHost IsOpen="{Binding IsAttachmentsOpen}" ZIndex="20">
+      <Border Classes="modal-card" MaxWidth="1040" Margin="20" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <views:NoteAttachmentsView />
+      </Border>
+    </controls:ModalOverlayHost>
   </Grid>
 </UserControl>

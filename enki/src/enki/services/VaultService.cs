@@ -825,6 +825,15 @@ public sealed partial class VaultService
                 Directory.Move(subfolder, Path.Combine(destination, Path.GetFileName(subfolder)));
 
             if (!Directory.EnumerateFileSystemEntries(source).Any()) Directory.Delete(source);
+            // La carpeta cambia de nombre junto a la nota: sus referencias Markdown también deben cambiar.
+            var oldReference = NoteImageAttachments.MarkdownReference(oldNotePath, source) + "/";
+            var newReference = NoteImageAttachments.MarkdownReference(newNotePath, destination) + "/";
+            if (oldReference != newReference && ReadFromDisk(newNotePath) is { } fresh)
+            {
+                var rewritten = fresh.Content.Replace(oldReference, newReference, StringComparison.Ordinal);
+                if (rewritten != fresh.Content)
+                    WriteContentChecked(new NoteFile { FullPath = newNotePath, Title = Path.GetFileNameWithoutExtension(newNotePath) }, rewritten, fresh.Stamp);
+            }
             InvalidateVaultSizeCache();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)

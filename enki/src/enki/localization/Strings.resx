@@ -6371,4 +6371,23 @@ Happy writing.</value>
   <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>If changes conflict</value></data>
   <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki warns about external changes to open notes and lets you compare versions before choosing one. Keep any Syncthing *.sync-conflict-* file until you compare and merge it manually. Tasks and vault settings in JSON are not merged across devices, so avoid editing them on two computers at once.</value></data>
   <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>A cloud folder does not by itself mean end-to-end encryption. Protected sessions encrypt note and attachment content, but names and some metadata remain visible. Check your provider’s privacy settings.</value></data>
+  <data name="Editor_Attachments_Title" xml:space="preserve"><value>Attachments and media</value></data>
+  <data name="Editor_Attachments_Add" xml:space="preserve"><value>Attach files</value></data>
+  <data name="Editor_Attachments_Close" xml:space="preserve"><value>Close attachments</value></data>
+  <data name="Editor_Attachments_Remove" xml:space="preserve"><value>Remove reference (keep file)</value></data>
+  <data name="Editor_Attachments_Empty" xml:space="preserve"><value>This note has no attachments yet. Add files or drop them into the editor.</value></data>
+  <data name="Editor_Attachments_Select" xml:space="preserve"><value>Select an attachment to preview it and add annotations.</value></data>
+  <data name="Editor_Attachments_Open" xml:space="preserve"><value>Open with system application</value></data>
+  <data name="Editor_Attachments_Annotation" xml:space="preserve"><value>Write an annotation about this file…</value></data>
+  <data name="Editor_Attachments_Annotate" xml:space="preserve"><value>Add annotation to note</value></data>
+  <data name="Editor_Attachments_Hint" xml:space="preserve"><value>Annotations are saved in Markdown. Removing a reference keeps the file for other notes. Ctrl+Z undoes changes.</value></data>
+  <data name="Editor_Attachments_Page" xml:space="preserve"><value>Page {0}</value></data>
+  <data name="Editor_Attachments_Error" xml:space="preserve"><value>Could not process attachment</value></data>
+  <data name="Editor_Attachments_ErrorHint" xml:space="preserve"><value>Check that the file exists, is accessible and is not empty. The limit is 128 MB (64 MB for images). Executable files are not supported.</value></data>
+  <data name="Editor_Attachments_Previous" xml:space="preserve"><value>Previous page</value></data>
+  <data name="Editor_Attachments_Next" xml:space="preserve"><value>Next page</value></data>
+  <data name="Editor_Attachments_ZoomIn" xml:space="preserve"><value>Zoom in</value></data>
+  <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Zoom out</value></data>
+  <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Loading document…</value></data>
+  <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>Could not preview the PDF. You can open it with the system application.</value></data>
 </root>

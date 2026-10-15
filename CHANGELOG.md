@@ -41,6 +41,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 - cuatro plantillas iniciales de notas para diario, reuniones, proyectos y lecturas, con variables de fecha, estructura práctica y posición inicial del cursor; los vaults existentes pueden añadir las plantillas de proyecto y lectura sin sobrescribir personalizaciones.
 - política de privacidad visible para la integración con Polar, con el destino Supabase configurado, los datos sincronizados, el cifrado del transporte, el almacenamiento de credenciales y el comportamiento al desvincular.
+- gestión de adjuntos y multimedia dentro de las notas Markdown: importar varios archivos desde el portapapeles, arrastre o selector, reutilizar rutas del vault, cifrar copias en sesiones protegidas y añadir anotaciones Markdown reversibles.
+- gestor integrado de referencias con vista previa de imágenes, PDF, audio y vídeo, apertura con la aplicación del sistema para formatos no compatibles y límites seguros de tamaño, extensión y rutas.
 
 #### CAMBIOS
 - documentar en `README.md`, `README.en.md` y `cambios-externos-en-el-vault.md` el flujo recomendado para sincronizar el almacén completo, conservar una copia de seguridad y gestionar los conflictos externos sin duplicar datos.
@@ -98,6 +100,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - recorrer el vault podando las carpetas ocultas antes de descender a ellas, en vez de enumerar y filtrar después; `EnumerateVisibleFileInfos` tampoco sigue enlaces de directorio.
 - documentar en `.docs/project-info/plantillas-de-notas.md` el nuevo catálogo de plantillas y añadir una acción segura para incorporar ejemplos faltantes a vaults existentes sin modificar archivos creados por el usuario.
 - integrar la política de datos de Polar en Ajustes, mostrar el endpoint configurado mediante `SupabaseConfig.Url` y mantener la explicación sincronizada con `.docs/project-info/privacidad-polar.md`.
+- ampliar el parser, el renderizador Markdown y la exportación para reconocer adjuntos distintos de imágenes, escapar rutas especiales y representarlos como enlaces en HTML sin empaquetar binarios.
+- conectar los adjuntos con `VaultService`, `NoteImageService` y `PdfDocumentViewModel` para respetar conflictos externos, cifrado, sesiones bloqueadas y limpieza de recursos al cerrar visores.
+- traducir las acciones de adjuntos en los siete recursos de idioma y cubrir el servicio, el viewmodel, la interfaz y las regresiones de imágenes y exportación con pruebas automatizadas.
 
 #### CORREGIDO
 - impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
@@ -120,6 +125,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - corregir la alineación vertical del botón `código markdown` y ocultar el desplegable de metadatos vacío en el detalle de Habilidades.
 - centrar verticalmente la fila de estado «sincronizado con polar» de la cabecera de recordatorios: sin alineación propia, la etiqueta se estiraba a la altura del botón de sincronización y avalonia dibuja el texto desde el borde superior de su caja, así que quedaba pegada arriba respecto al escudo y al botón.
 - actualizar la ruta de destino de los botones de crear carpeta al cambiar la sesión seleccionada en Notas y Archivos, notificando el cambio de `EffectiveRootPath` y cubriéndolo con `FilesViewModelSessionPersistenceTests`.
+- evitar renders de PDF obsoletos y temporales descifrados huérfanos al cerrar o cambiar de adjunto, y conservar los archivos originales al retirar una referencia de la nota.
 
 ### ENGLISH
 
@@ -155,6 +161,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 - four initial note templates for daily notes, meetings, projects and reading, with date variables, practical structure and an initial cursor position; existing vaults can add the project and reading templates without overwriting custom files.
 - a visible privacy policy for the Polar integration covering the configured Supabase destination, synchronised data, transport encryption, credential storage and unlink behaviour.
+- attachment and multimedia management inside Markdown notes: import multiple files from the clipboard, drag and drop or the picker, reuse vault paths, encrypt copies in protected sessions and add reversible Markdown annotations.
+- an integrated reference manager with image, PDF, audio and video previews, system-open fallback for unsupported formats, and safe size, extension and path limits.
 
 #### CHANGED
 - document the recommended workflow in `README.md`, `README.en.md` and `cambios-externos-en-el-vault.md` for syncing the complete vault, keeping a backup and handling external conflicts without duplicating data.
@@ -211,6 +219,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - prune hidden folders before descending into them when walking the vault, instead of enumerating and filtering afterwards; `EnumerateVisibleFileInfos` also skips directory links.
 - document the expanded template catalogue in `.docs/project-info/plantillas-de-notas.md` and add a safe action for bringing missing examples into existing vaults without changing user-created files.
 - integrate the Polar data policy into Settings, expose the configured endpoint through `SupabaseConfig.Url`, and keep the explanation aligned with `.docs/project-info/privacidad-polar.md`.
+- extend the Markdown parser, renderer and exporter to recognise non-image attachments, escape special paths and represent them as HTML links without embedding binaries.
+- connect attachments to `VaultService`, `NoteImageService` and `PdfDocumentViewModel` so external-change checks, encryption, locked sessions and resource cleanup remain enforced.
+- translate attachment actions across all seven language resources and cover the service, viewmodel, UI, image regressions and export behaviour with automated tests.
 
 #### FIXED
 - prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.
@@ -233,6 +244,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - fix vertical alignment for the `markdown source` button and hide empty metadata disclosure in the Skills detail.
 - vertically centre the `synchronised with polar` status row in the reminders header: without its own alignment the label stretched to the height of the sync button and avalonia draws text from the top of its box, leaving it stuck to the top next to the shield and the button.
 - update the destination path of the create-folder buttons when the selected session changes in Notes and Files, notifying the `EffectiveRootPath` change and covering it with `FilesViewModelSessionPersistenceTests`.
+- prevent stale PDF renders and orphaned decrypted temporary files when closing or switching attachments, and preserve original files when removing a note reference.
 
 ## [0.2.0] - 2026-09-23
 

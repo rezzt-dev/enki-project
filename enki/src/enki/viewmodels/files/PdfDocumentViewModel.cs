@@ -54,6 +54,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     private string _fullPath = string.Empty;
 
     private bool _isTempCopy;
+    private bool _isClosed;
 
     /// <summary>Se incrementa en cada render pedido y se compara al terminar: un render adelantado por otro cambio
     /// de página o de zoom antes de acabar se descarta, en vez de pintar un instante la página equivocada.</summary>
@@ -132,6 +133,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
+        if (_isClosed) return;
         IsLoading = true;
         IsFaulted = false;
         try
@@ -141,12 +143,18 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
             // en vez de descifrar el archivo por cada página.
             _fullPath = await Task.Run(() => _vaultService.ResolveReadablePath(_rawFullPath));
             _isTempCopy = _fullPath != _rawFullPath;
+            if (_isClosed)
+            {
+                if (_isTempCopy) VaultService.TryCleanupDecryptedTempFile(_fullPath);
+                return;
+            }
 
             var count = await Task.Run(() => PdfRenderHelper.GetPageCount(_fullPath));
             if (count <= 0) throw new InvalidOperationException("El PDF no tiene páginas.");
 
             _pageSizes = await Task.Run(() => TryReadPageSizes(_fullPath));
 
+            if (_isClosed) return;
             PageCount = count;
             for (var i = 0; i < count; i++) Pages.Add(new PdfPageThumbnailViewModel(i));
             Pages[0].IsCurrent = true;
@@ -311,7 +319,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     private async Task RenderCurrentPageAsync()
     {
-        if (PageCount == 0) return;
+        if (_isClosed || PageCount == 0) return;
 
         var token = ++_renderToken;
         var pageIndex = CurrentPageNumber - 1;
@@ -336,7 +344,11 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
             return;
         }
 
-        if (token != _renderToken) return;
+        if (_isClosed || token != _renderToken)
+        {
+            rendered?.Dispose();
+            return;
+        }
         _lastRenderDpi = renderDpi;
         CurrentPageImage = rendered;
         OnPropertyChanged(nameof(CurrentPageDisplayWidth));
@@ -348,7 +360,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     /// documento de cientos de páginas nunca renderiza más de un puñado de miniaturas a la vez.</summary>
     public void EnsurePageThumbnailLoaded(PdfPageThumbnailViewModel page)
     {
-        if (page.LoadAttempted || _fullPath.Length == 0) return;
+        if (_isClosed || page.LoadAttempted || _fullPath.Length == 0) return;
         page.LoadAttempted = true;
 
         Task.Run(() =>
@@ -356,7 +368,11 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
             try
             {
                 var bitmap = PdfRenderHelper.RenderPageByWidth(_fullPath, page.PageIndex, ThumbnailWidth);
-                Dispatcher.UIThread.Post(() => page.Thumbnail = bitmap);
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (_isClosed) bitmap?.Dispose();
+                    else page.Thumbnail = bitmap;
+                });
             }
             catch (Exception ex)
             {
@@ -451,6 +467,9 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     /// la sección antes de descartar la tarjeta.</summary>
     public void Close()
     {
+        if (_isClosed) return;
+        _isClosed = true;
+        _renderToken++;
         _viewportDebounce.Stop();
         if (_isTempCopy) VaultService.TryCleanupDecryptedTempFile(_fullPath);
     }

@@ -204,3 +204,10 @@ como atributos `width`/`height`, de modo que el documento exportado se ve como s
   sin crear adjuntos. La plataforma headless de Avalonia
   devuelve bitmaps de 1×1, así que las medidas se comprueban contra el tamaño natural leído de la
   cabecera, no contra los píxeles decodificados.
+
+## Adjuntos de otros tipos
+
+El flujo de archivos pegados o arrastrados admite también documentos, PDF, audio y vídeo. La gestión,
+las anotaciones Markdown y los límites de importación se documentan en
+[Adjuntos y multimedia](adjuntos-y-multimedia.md). Las imágenes mantienen su renderizado en línea y
+comparten la carpeta de adjuntos con los demás archivos.

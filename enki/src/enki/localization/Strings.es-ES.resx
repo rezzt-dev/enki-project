@@ -6370,4 +6370,23 @@ A disfrutar escribiendo.</value>
   <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>Si hay conflictos</value></data>
   <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki avisa de cambios externos en notas abiertas y permite comparar versiones antes de elegir. Conserva cualquier archivo *.sync-conflict-* de Syncthing hasta compararlo y combinarlo manualmente. Las tareas y preferencias del almacén guardadas en JSON no se fusionan entre equipos: evita editarlas a la vez.</value></data>
   <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>Una carpeta en la nube no implica por sí sola cifrado de extremo a extremo. Las sesiones protegidas cifran el contenido de notas y adjuntos, pero los nombres y algunos metadatos siguen visibles. Revisa la privacidad del proveedor.</value></data>
+  <data name="Editor_Attachments_Title" xml:space="preserve"><value>Adjuntos y multimedia</value></data>
+  <data name="Editor_Attachments_Add" xml:space="preserve"><value>Adjuntar archivos</value></data>
+  <data name="Editor_Attachments_Close" xml:space="preserve"><value>Cerrar adjuntos</value></data>
+  <data name="Editor_Attachments_Remove" xml:space="preserve"><value>Quitar referencia (conservar archivo)</value></data>
+  <data name="Editor_Attachments_Empty" xml:space="preserve"><value>Esta nota todavía no tiene adjuntos. Añade archivos o arrástralos al editor.</value></data>
+  <data name="Editor_Attachments_Select" xml:space="preserve"><value>Selecciona un adjunto para verlo y añadir anotaciones.</value></data>
+  <data name="Editor_Attachments_Open" xml:space="preserve"><value>Abrir con la aplicación del sistema</value></data>
+  <data name="Editor_Attachments_Annotation" xml:space="preserve"><value>Escribe una anotación sobre este archivo…</value></data>
+  <data name="Editor_Attachments_Annotate" xml:space="preserve"><value>Añadir anotación a la nota</value></data>
+  <data name="Editor_Attachments_Hint" xml:space="preserve"><value>Las anotaciones se guardan en el Markdown. Quitar una referencia conserva el archivo para otras notas. Ctrl+Z deshace los cambios.</value></data>
+  <data name="Editor_Attachments_Page" xml:space="preserve"><value>Página {0}</value></data>
+  <data name="Editor_Attachments_Error" xml:space="preserve"><value>No se pudo procesar el adjunto</value></data>
+  <data name="Editor_Attachments_ErrorHint" xml:space="preserve"><value>Comprueba que el archivo existe, es accesible y no está vacío. El límite es de 128 MB (64 MB para imágenes). Los archivos ejecutables no se admiten.</value></data>
+  <data name="Editor_Attachments_Previous" xml:space="preserve"><value>Página anterior</value></data>
+  <data name="Editor_Attachments_Next" xml:space="preserve"><value>Página siguiente</value></data>
+  <data name="Editor_Attachments_ZoomIn" xml:space="preserve"><value>Ampliar</value></data>
+  <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Reducir</value></data>
+  <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Cargando documento…</value></data>
+  <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>No se pudo mostrar el PDF. Puedes abrirlo con la aplicación del sistema.</value></data>
 </root>

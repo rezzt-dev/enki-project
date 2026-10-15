@@ -554,6 +554,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     {
         if (!TryPrepareClose()) return false;
         _saveTimer.Stop();
+        CloseAttachments();
         UnsubscribeFromExternalChanges();
         _changeWatcher?.Untrack(Note.FullPath);
         return true;
@@ -747,6 +748,13 @@ public sealed partial class EditorViewModel : ViewModelBase
         if (_suppressTitleRename || string.IsNullOrWhiteSpace(value)) return;
         var oldPath = Note.FullPath;
         var oldTitle = Path.GetFileNameWithoutExtension(oldPath);
+        if (!PrepareFileTransfer())
+        {
+            _suppressTitleRename = true;
+            Title = oldTitle;
+            _suppressTitleRename = false;
+            return;
+        }
         // Mismo motivo que en Delete: el renombrado es de Enki, no de fuera.
         _changeWatcher?.Untrack(oldPath);
 
@@ -789,6 +797,7 @@ public sealed partial class EditorViewModel : ViewModelBase
                 NotificationSeverity.Info);
         }
 
+        ReloadAfterTagChange();
         TrackForExternalChanges();
         _kanbanService?.RelinkNotePath(oldPath, Note.FullPath);
         RefreshLinkedCards();
@@ -829,6 +838,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     {
         _changeWatcher?.Untrack(Note.FullPath);
         Note = note;
+        ReloadAfterTagChange();
         TrackForExternalChanges();
         _suppressTitleRename = true;
         Title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -185,7 +186,7 @@ public partial class EditorView : UserControl, IDisposable
 
         Editor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
-        InitializeImageDropTarget();
+        InitializeAttachmentDropTarget();
 
         AttachedToVisualTree += (_, _) =>
         {
@@ -204,6 +205,7 @@ public partial class EditorView : UserControl, IDisposable
     public void Dispose()
     {
         EditorPreferences.Changed -= OnEditorPreferencesChanged;
+        if (_boundVm is { } vm) vm.AttachmentPickerRequested -= OnAttachmentPickerRequested;
         _transclusionRefreshTimer.Stop();
         _formulaCache.Dispose();
         _mermaidCache.Dispose();
@@ -402,6 +404,7 @@ public partial class EditorView : UserControl, IDisposable
             _boundVm.CaretNavigationRequested -= OnOutlineNavigationRequested;
             _boundVm.SlashCommands.CommandSelected -= OnSlashCommandSelected;
             _boundVm.NoteLinkPicker.NoteSelected -= OnNoteLinkSelected;
+            _boundVm.AttachmentPickerRequested -= OnAttachmentPickerRequested;
             _boundVm.FindReplace.OperationRequested -= OnFindReplaceOperationRequested;
         }
         CaptureEditorState(_boundVm);
@@ -431,6 +434,7 @@ public partial class EditorView : UserControl, IDisposable
         vm.CaretNavigationRequested += OnOutlineNavigationRequested;
         vm.SlashCommands.CommandSelected += OnSlashCommandSelected;
         vm.NoteLinkPicker.NoteSelected += OnNoteLinkSelected;
+        vm.AttachmentPickerRequested += OnAttachmentPickerRequested;
         vm.FindReplace.OperationRequested += OnFindReplaceOperationRequested;
 
         // Deferred: the caret's on-screen position depends on visual lines that don't exist yet for a
@@ -626,6 +630,13 @@ public partial class EditorView : UserControl, IDisposable
             Editor.Document.Remove(context.Value.StartOffset, context.Value.Length);
             Editor.CaretOffset = context.Value.StartOffset;
             _ = PickAndInsertImagesAsync(context.Value.StartOffset);
+            return;
+        }
+
+        if (command.Key == "adjunto")
+        {
+            Editor.Document.Remove(context.Value.StartOffset, context.Value.Length);
+            _ = PickAndInsertAttachmentsAsync(context.Value.StartOffset);
             return;
         }
 
@@ -1229,6 +1240,11 @@ public partial class EditorView : UserControl, IDisposable
             return;
         }
 
+        if (File.Exists(safeTarget) && viewModel is not null)
+        {
+            viewModel.OpenAttachmentTarget(target);
+            return;
+        }
         try
         {
             Process.Start(new ProcessStartInfo(safeTarget) { UseShellExecute = true });

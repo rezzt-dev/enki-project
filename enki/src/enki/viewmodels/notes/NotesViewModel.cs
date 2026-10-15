@@ -959,6 +959,8 @@ public sealed partial class NotesViewModel : ViewModelBase
     private NoteFile? RenameNoteFile(NoteFile note, string newName)
     {
         var oldPath = note.FullPath;
+        var editorBeforeRename = OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, oldPath));
+        if (editorBeforeRename is not null && !editorBeforeRename.PrepareFileTransfer()) return null;
         NoteFile updated;
         try
         {
@@ -975,9 +977,7 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         // Keep an already-open tab for this note in sync — otherwise it'd keep pointing at the
         // file's old path/name after the rename happens from the grid instead of the tab itself.
-        var openEditor = OpenEditors.FirstOrDefault(e =>
-            VaultService.PathsEqual(e.Note.FullPath, oldPath));
-        openEditor?.SyncRenamedNote(updated);
+        editorBeforeRename?.SyncRenamedNote(updated);
 
         return updated;
     }

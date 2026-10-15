@@ -35,6 +35,8 @@ internal sealed class MarkdownImageContext
     /// <summary>Lee los bytes en claro de un archivo del vault. Null deshabilita la carga de archivos
     /// (no hay nota enlazada todavía).</summary>
     public Func<string, byte[]>? ReadBytes { get; init; }
+
+    public Action<string>? OpenAttachment { get; init; }
 }
 
 /// <summary>Destino ya resuelto de una imagen: qué es y, si es un archivo, dónde está exactamente.</summary>
