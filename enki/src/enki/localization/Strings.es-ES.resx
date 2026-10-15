@@ -6255,8 +6255,12 @@ A disfrutar escribiendo.</value>
   <data name="Notes_Query_PropertyHint" xml:space="preserve"><value>p. ej., estado</value></data>
   <data name="Notes_Query_Value" xml:space="preserve"><value>Valor contiene</value></data>
   <data name="Notes_Query_ValueHint" xml:space="preserve"><value>p. ej., pendiente</value></data>
-  <data name="Notes_Query_From" xml:space="preserve"><value>Modificada desde</value></data>
-  <data name="Notes_Query_To" xml:space="preserve"><value>Modificada hasta</value></data>
+  <data name="Notes_Query_ExactValue" xml:space="preserve"><value>Valor exacto de la propiedad</value></data>
+  <data name="Notes_Query_DateProperty" xml:space="preserve"><value>Propiedad de fecha (opcional)</value></data>
+  <data name="Notes_Query_DatePropertyHint" xml:space="preserve"><value>p. ej., vencimiento; vacío usa modificación</value></data>
+  <data name="Notes_Query_InvalidDateProperty" xml:space="preserve"><value>Usa letras, números, guiones o guiones bajos para la propiedad de fecha.</value></data>
+  <data name="Notes_Query_From" xml:space="preserve"><value>Fecha desde</value></data>
+  <data name="Notes_Query_To" xml:space="preserve"><value>Fecha hasta</value></data>
   <data name="Notes_Query_Subfolders" xml:space="preserve"><value>Incluir subcarpetas</value></data>
   <data name="Notes_Query_Name" xml:space="preserve"><value>Nombre de la vista</value></data>
   <data name="Notes_Query_Save" xml:space="preserve"><value>Guardar vista</value></data>

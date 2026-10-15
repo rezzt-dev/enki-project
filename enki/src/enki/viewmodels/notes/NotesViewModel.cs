@@ -429,6 +429,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         var hasSearch = !string.IsNullOrWhiteSpace(SearchText) ||
             query.Tag.Length > 0 || query.PropertyKey.Length > 0 ||
             query.ModifiedFrom.Length > 0 || query.ModifiedTo.Length > 0 ||
+            query.DatePropertyKey.Length > 0 ||
             QueryIncludeSubfolders;
         if (!hasSearch)
         {

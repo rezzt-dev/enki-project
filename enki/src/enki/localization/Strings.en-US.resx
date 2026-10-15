@@ -6255,8 +6255,12 @@ Happy writing.</value>
   <data name="Notes_Query_PropertyHint" xml:space="preserve"><value>e.g. status</value></data>
   <data name="Notes_Query_Value" xml:space="preserve"><value>Value contains</value></data>
   <data name="Notes_Query_ValueHint" xml:space="preserve"><value>e.g. pending</value></data>
-  <data name="Notes_Query_From" xml:space="preserve"><value>Modified from</value></data>
-  <data name="Notes_Query_To" xml:space="preserve"><value>Modified to</value></data>
+  <data name="Notes_Query_ExactValue" xml:space="preserve"><value>Exact property value</value></data>
+  <data name="Notes_Query_DateProperty" xml:space="preserve"><value>Date property (optional)</value></data>
+  <data name="Notes_Query_DatePropertyHint" xml:space="preserve"><value>e.g. due; blank uses modified date</value></data>
+  <data name="Notes_Query_InvalidDateProperty" xml:space="preserve"><value>Use a property key with letters, numbers, hyphens or underscores.</value></data>
+  <data name="Notes_Query_From" xml:space="preserve"><value>Date from</value></data>
+  <data name="Notes_Query_To" xml:space="preserve"><value>Date to</value></data>
   <data name="Notes_Query_Subfolders" xml:space="preserve"><value>Include subfolders</value></data>
   <data name="Notes_Query_Name" xml:space="preserve"><value>View name</value></data>
   <data name="Notes_Query_Save" xml:space="preserve"><value>Save view</value></data>

@@ -6255,8 +6255,12 @@ Bonne rédaction.</value>
   <data name="Notes_Query_PropertyHint" xml:space="preserve"><value>p. ex. statut</value></data>
   <data name="Notes_Query_Value" xml:space="preserve"><value>Valeur contient</value></data>
   <data name="Notes_Query_ValueHint" xml:space="preserve"><value>p. ex. en cours</value></data>
-  <data name="Notes_Query_From" xml:space="preserve"><value>Modifiée depuis</value></data>
-  <data name="Notes_Query_To" xml:space="preserve"><value>Modifiée jusqu’au</value></data>
+  <data name="Notes_Query_ExactValue" xml:space="preserve"><value>Valeur exacte de la propriété</value></data>
+  <data name="Notes_Query_DateProperty" xml:space="preserve"><value>Propriété de date (facultatif)</value></data>
+  <data name="Notes_Query_DatePropertyHint" xml:space="preserve"><value>ex. échéance ; vide = date de modification</value></data>
+  <data name="Notes_Query_InvalidDateProperty" xml:space="preserve"><value>Utilisez des lettres, chiffres, tirets ou traits de soulignement pour la propriété de date.</value></data>
+  <data name="Notes_Query_From" xml:space="preserve"><value>Date à partir de</value></data>
+  <data name="Notes_Query_To" xml:space="preserve"><value>Date jusqu’au</value></data>
   <data name="Notes_Query_Subfolders" xml:space="preserve"><value>Inclure les sous-dossiers</value></data>
   <data name="Notes_Query_Name" xml:space="preserve"><value>Nom de la vue</value></data>
   <data name="Notes_Query_Save" xml:space="preserve"><value>Enregistrer la vue</value></data>

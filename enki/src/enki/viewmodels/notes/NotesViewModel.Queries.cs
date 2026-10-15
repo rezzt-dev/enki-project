@@ -21,6 +21,8 @@ public sealed partial class NotesViewModel
     [ObservableProperty] private string _queryTag = string.Empty;
     [ObservableProperty] private string _queryPropertyKey = string.Empty;
     [ObservableProperty] private string _queryPropertyValue = string.Empty;
+    [ObservableProperty] private bool _queryExactPropertyValue;
+    [ObservableProperty] private string _queryDatePropertyKey = string.Empty;
     [ObservableProperty] private string _queryModifiedFrom = string.Empty;
     [ObservableProperty] private string _queryModifiedTo = string.Empty;
     [ObservableProperty] private bool _queryIncludeSubfolders;
@@ -31,6 +33,8 @@ public sealed partial class NotesViewModel
     partial void OnQueryTagChanged(string value) => QueryChanged();
     partial void OnQueryPropertyKeyChanged(string value) => QueryChanged();
     partial void OnQueryPropertyValueChanged(string value) => QueryChanged();
+    partial void OnQueryExactPropertyValueChanged(bool value) => QueryChanged();
+    partial void OnQueryDatePropertyKeyChanged(string value) => QueryChanged();
     partial void OnQueryModifiedFromChanged(string value) => QueryChanged();
     partial void OnQueryModifiedToChanged(string value) => QueryChanged();
     partial void OnQueryIncludeSubfoldersChanged(bool value) => QueryChanged();
@@ -53,6 +57,8 @@ public sealed partial class NotesViewModel
         QueryTag = value.Tag;
         QueryPropertyKey = value.PropertyKey;
         QueryPropertyValue = value.PropertyValue;
+        QueryExactPropertyValue = value.ExactPropertyValue;
+        QueryDatePropertyKey = value.DatePropertyKey;
         QueryModifiedFrom = value.ModifiedFrom;
         QueryModifiedTo = value.ModifiedTo;
         QueryIncludeSubfolders = value.IncludeSubfolders;
@@ -68,6 +74,8 @@ public sealed partial class NotesViewModel
         Name = QueryName.Trim(), Text = SearchText.Trim(), Tag = QueryTag.Trim(),
         SelectedTags = TagFilter.SelectedTags.ToList(),
         PropertyKey = QueryPropertyKey.Trim(), PropertyValue = QueryPropertyValue.Trim(),
+        ExactPropertyValue = QueryExactPropertyValue,
+        DatePropertyKey = QueryDatePropertyKey.Trim(),
         ModifiedFrom = QueryModifiedFrom.Trim(), ModifiedTo = QueryModifiedTo.Trim(),
         IncludeSubfolders = QueryIncludeSubfolders
     };
@@ -89,6 +97,8 @@ public sealed partial class NotesViewModel
     {
         _applyingQuery = true;
         QueryName = QueryTag = QueryPropertyKey = QueryPropertyValue = string.Empty;
+        QueryDatePropertyKey = string.Empty;
+        QueryExactPropertyValue = false;
         QueryModifiedFrom = QueryModifiedTo = string.Empty;
         QueryIncludeSubfolders = false;
         SearchText = string.Empty;

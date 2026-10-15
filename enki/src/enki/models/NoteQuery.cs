@@ -11,6 +11,10 @@ public sealed class NoteQuery
     public List<string> SelectedTags { get; set; } = [];
     public string PropertyKey { get; set; } = string.Empty;
     public string PropertyValue { get; set; } = string.Empty;
+    public bool ExactPropertyValue { get; set; }
+    /// <summary>Si se indica, el intervalo de fechas se aplica a esta propiedad YAML (AAAA-MM-DD)
+    /// en vez de a la fecha de modificación del archivo.</summary>
+    public string DatePropertyKey { get; set; } = string.Empty;
     public string ModifiedFrom { get; set; } = string.Empty;
     public string ModifiedTo { get; set; } = string.Empty;
     public bool IncludeSubfolders { get; set; }

@@ -46,10 +46,13 @@ public static class NotePropertyHelper
         if (!KeyPattern.IsMatch(key) || key.Equals("tags", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Nombre de propiedad no válido.", nameof(key));
         content ??= string.Empty;
+        var withoutCrLf = content.Replace("\r\n", string.Empty, StringComparison.Ordinal);
+        var usesCrLf = content.Contains("\r\n", StringComparison.Ordinal) &&
+                       !withoutCrLf.Contains('\n') && !withoutCrLf.Contains('\r');
         var normalized = content.Replace("\r\n", "\n").Replace('\r', '\n');
         var hasBlock = TryFindBlock(normalized, out var start, out var end);
         if (!hasBlock)
-            return value is null ? normalized : $"---\n{key}: {JsonSerializer.Serialize(value)}\n---\n\n{normalized}";
+            return value is null ? content : RestoreNewlines($"---\n{key}: {JsonSerializer.Serialize(value)}\n---\n\n{normalized}", usesCrLf);
 
         try { Deserializer.Deserialize<object>(normalized[start..end]); }
         catch (YamlDotNet.Core.YamlException ex)
@@ -65,12 +68,15 @@ public static class NotePropertyHelper
                    (string.IsNullOrWhiteSpace(lines[last]) || char.IsWhiteSpace(lines[last][0]))) last++;
             lines.RemoveRange(i, last - i);
             if (value is not null) lines.Insert(i, $"{key}: {JsonSerializer.Serialize(value)}");
-            return Rebuild(normalized, start, end, lines);
+            return RestoreNewlines(Rebuild(normalized, start, end, lines), usesCrLf);
         }
-        if (value is null) return normalized;
+        if (value is null) return content;
         lines.Add($"{key}: {JsonSerializer.Serialize(value)}");
-        return Rebuild(normalized, start, end, lines);
+        return RestoreNewlines(Rebuild(normalized, start, end, lines), usesCrLf);
     }
+
+    private static string RestoreNewlines(string content, bool usesCrLf) =>
+        usesCrLf ? content.Replace("\n", "\r\n", StringComparison.Ordinal) : content;
 
     private static string Rebuild(string content, int start, int end, List<string> lines)
     {

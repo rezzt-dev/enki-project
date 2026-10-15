@@ -270,9 +270,12 @@
               <StackPanel Margin="0,0,10,0"><TextBlock Text="{loc:Tr Notes_Query_Tag}" Classes="faint" /><TextBox Text="{Binding QueryTag}" AutomationProperties.Name="{loc:Tr Notes_Query_Tag}" PlaceholderText="{loc:Tr Notes_Query_TagHint}" /></StackPanel>
               <StackPanel Margin="0,0,10,0"><TextBlock Text="{loc:Tr Notes_Query_Property}" Classes="faint" /><TextBox Text="{Binding QueryPropertyKey}" AutomationProperties.Name="{loc:Tr Notes_Query_Property}" PlaceholderText="{loc:Tr Notes_Query_PropertyHint}" /></StackPanel>
               <StackPanel Margin="0,0,10,0"><TextBlock Text="{loc:Tr Notes_Query_Value}" Classes="faint" /><TextBox Text="{Binding QueryPropertyValue}" AutomationProperties.Name="{loc:Tr Notes_Query_Value}" PlaceholderText="{loc:Tr Notes_Query_ValueHint}" /></StackPanel>
+              <StackPanel Margin="0,0,10,0"><TextBlock Text="{loc:Tr Notes_Query_DateProperty}" Classes="faint" /><TextBox Text="{Binding QueryDatePropertyKey}" AutomationProperties.Name="{loc:Tr Notes_Query_DateProperty}" PlaceholderText="{loc:Tr Notes_Query_DatePropertyHint}" /></StackPanel>
               <StackPanel Margin="0,0,10,0"><TextBlock Text="{loc:Tr Notes_Query_From}" Classes="faint" /><TextBox Text="{Binding QueryModifiedFrom}" AutomationProperties.Name="{loc:Tr Notes_Query_From}" PlaceholderText="YYYY-MM-DD" /></StackPanel>
               <StackPanel Margin="0,0,10,0"><TextBlock Text="{loc:Tr Notes_Query_To}" Classes="faint" /><TextBox Text="{Binding QueryModifiedTo}" AutomationProperties.Name="{loc:Tr Notes_Query_To}" PlaceholderText="YYYY-MM-DD" /></StackPanel>
             </WrapPanel>
+            <TextBlock Text="{loc:Tr Notes_Query_DatePropertyHint}" Classes="faint" TextWrapping="Wrap" />
+            <CheckBox Content="{loc:Tr Notes_Query_ExactValue}" IsChecked="{Binding QueryExactPropertyValue}" />
             <CheckBox Content="{loc:Tr Notes_Query_Subfolders}" IsChecked="{Binding QueryIncludeSubfolders}" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBox Width="200" Text="{Binding QueryName}" AutomationProperties.Name="{loc:Tr Notes_Query_Name}" PlaceholderText="{loc:Tr Notes_Query_Name}" />

@@ -10,6 +10,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- filtro de intervalos por una propiedad de fecha del frontmatter, como `due`, y opción de coincidencia exacta para valores de estado u otras propiedades.
+- localización de los nuevos controles de fecha, coincidencia exacta y validación de claves en los siete recursos de idioma.
+- pruebas de regresión para fechas del frontmatter, valores exactos, consultas guardadas y conservación de saltos de línea `CRLF` al editar propiedades.
 - propiedades estructuradas para las notas desde el frontmatter YAML, con lectura de valores escalares y listas, edición y eliminación individual desde el editor y conservación del resto del documento mediante `NotePropertyHelper`.
 - vistas guardadas de búsqueda avanzada en Notas, persistidas por vault en `VaultSettingsService`, con filtros combinables por texto, etiquetas, propiedades, fechas de modificación y subcarpetas.
 - localización completa de los filtros avanzados, las vistas guardadas y el panel de propiedades en los seis idiomas soportados.
@@ -38,6 +41,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - política de privacidad visible para la integración con Polar, con el destino Supabase configurado, los datos sincronizados, el cifrado del transporte, el almacenamiento de credenciales y el comportamiento al desvincular.
 
 #### CAMBIOS
+- ampliar `NoteQuery` y `NoteQueryService` para persistir y evaluar la propiedad de fecha y la coincidencia exacta sin cambiar el comportamiento de las consultas existentes por defecto.
+- conservar el formato de saltos de línea original al editar o eliminar propiedades mediante `NotePropertyHelper`, incluidas las notas importadas con `CRLF`.
 - integrar las propiedades del frontmatter en `NoteFile` y `VaultNoteCache` para que la búsqueda consulte los datos reales de cada nota sin crear un almacén paralelo.
 - añadir el panel de filtros avanzados a `FullNotesView` y el panel de propiedades al encabezado de `EditorView`, reutilizando los popovers y estilos existentes y manteniendo accesibilidad mediante nombres de automatización.
 - guardar las vistas de consulta junto a la configuración del vault, incluyendo las etiquetas seleccionadas en los chips y el alcance de subcarpetas, y mostrar errores localizados si el guardado falla.
@@ -116,6 +121,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- frontmatter date-property range filtering, such as `due`, and an exact-match option for status and other property values.
+- translations for the new date, exact-match and property-key validation controls across all seven language resources.
+- regression coverage for frontmatter dates, exact values, saved queries and `CRLF` preservation when editing properties.
 - structured note properties from YAML frontmatter, with scalar and list values, individual editing and deletion from the editor, and preservation of the rest of the document through `NotePropertyHelper`.
 - saved advanced search views in Notes, persisted per vault through `VaultSettingsService`, with combinable filters for text, tags, properties, modification dates and subfolders.
 - complete localisation for advanced filters, saved views and the properties panel in all six supported languages.
@@ -144,6 +152,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a visible privacy policy for the Polar integration covering the configured Supabase destination, synchronised data, transport encryption, credential storage and unlink behaviour.
 
 #### CHANGED
+- extend `NoteQuery` and `NoteQueryService` to persist and evaluate the date property and exact matching while keeping existing queries partial by default.
+- preserve the original line-ending format when `NotePropertyHelper` edits or removes properties, including imported notes using `CRLF`.
 - integrate frontmatter properties into `NoteFile` and `VaultNoteCache` so queries use each note's real data without creating a parallel store.
 - add the advanced filter panel to `FullNotesView` and the properties panel to the `EditorView` header, reusing existing popovers and styles while keeping automation names for accessibility.
 - store query views with vault settings, including selected tag chips and subfolder scope, and show localised errors when saving settings fails.

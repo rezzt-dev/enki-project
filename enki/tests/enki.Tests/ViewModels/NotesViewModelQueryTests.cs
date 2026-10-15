@@ -19,8 +19,8 @@ public class NotesViewModelQueryTests
         {
             var nested = Path.Combine(vaultPath, "projects");
             Directory.CreateDirectory(nested);
-            File.WriteAllText(Path.Combine(nested, "A.md"), "---\ntags: [work]\nstatus: active\n---\n\n# A");
-            File.WriteAllText(Path.Combine(nested, "B.md"), "---\ntags: [home]\nstatus: active\n---\n\n# B");
+            File.WriteAllText(Path.Combine(nested, "A.md"), "---\ntags: [work]\nstatus: active\ndue: 2026-10-15\n---\n\n# A");
+            File.WriteAllText(Path.Combine(nested, "B.md"), "---\ntags: [home]\nstatus: active\ndue: 2026-10-16\n---\n\n# B");
             var settings = new SettingsService(temp);
             var vault = new VaultService(settings);
             vault.SetVaultPath(vaultPath);
@@ -32,6 +32,10 @@ public class NotesViewModelQueryTests
             vm.QueryTag = "work";
             vm.QueryPropertyKey = "status";
             vm.QueryPropertyValue = "active";
+            vm.QueryExactPropertyValue = true;
+            vm.QueryDatePropertyKey = "due";
+            vm.QueryModifiedFrom = "2026-10-15";
+            vm.QueryModifiedTo = "2026-10-15";
             vm.QueryName = "Active work";
             vm.Reload();
             vm.TagFilter.Items.Single(item => item.Tag == "work").ToggleCommand.Execute(null);
@@ -43,6 +47,8 @@ public class NotesViewModelQueryTests
             var restored = new NotesViewModel(vault, sessions, vaultSettingsService: restoredSettings);
             Assert.Single(restored.SavedQueries);
             Assert.Equal("work", restored.SavedQueries[0].SelectedTags.Single());
+            Assert.Equal("due", restored.SavedQueries[0].DatePropertyKey);
+            Assert.True(restored.SavedQueries[0].ExactPropertyValue);
             restored.SelectedQuery = restored.SavedQueries.Single();
             restored.Reload();
             Assert.Single(restored.Notes);
