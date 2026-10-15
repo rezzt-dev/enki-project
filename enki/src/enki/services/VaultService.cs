@@ -970,6 +970,7 @@ public sealed partial class VaultService
             Title = title,
             Preview = preview,
             Tags = tags,
+            Properties = NotePropertyHelper.Extract(content),
             ModifiedUtc = info.LastWriteTimeUtc,
             WordCount = CountWords(content)
         };

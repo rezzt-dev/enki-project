@@ -6245,4 +6245,34 @@ Happy writing.</value>
   <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
     <value>Deleted items will appear here until you restore or permanently remove them.</value>
   </data>
+  <data name="Notes_Query_Toggle" xml:space="preserve"><value>Advanced filters</value></data>
+  <data name="Notes_Query_Saved" xml:space="preserve"><value>Saved views</value></data>
+  <data name="Notes_Query_Clear" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="Notes_Query_Title" xml:space="preserve"><value>NOTE QUERY</value></data>
+  <data name="Notes_Query_Tag" xml:space="preserve"><value>Tag</value></data>
+  <data name="Notes_Query_TagHint" xml:space="preserve"><value>e.g. work</value></data>
+  <data name="Notes_Query_Property" xml:space="preserve"><value>Property</value></data>
+  <data name="Notes_Query_PropertyHint" xml:space="preserve"><value>e.g. status</value></data>
+  <data name="Notes_Query_Value" xml:space="preserve"><value>Value contains</value></data>
+  <data name="Notes_Query_ValueHint" xml:space="preserve"><value>e.g. pending</value></data>
+  <data name="Notes_Query_From" xml:space="preserve"><value>Modified from</value></data>
+  <data name="Notes_Query_To" xml:space="preserve"><value>Modified to</value></data>
+  <data name="Notes_Query_Subfolders" xml:space="preserve"><value>Include subfolders</value></data>
+  <data name="Notes_Query_Name" xml:space="preserve"><value>View name</value></data>
+  <data name="Notes_Query_Save" xml:space="preserve"><value>Save view</value></data>
+  <data name="Notes_Query_Delete" xml:space="preserve"><value>Delete view</value></data>
+  <data name="Editor_Properties_Title" xml:space="preserve"><value>PROPERTIES</value></data>
+  <data name="Editor_Properties_Key" xml:space="preserve"><value>Key</value></data>
+  <data name="Editor_Properties_Value" xml:space="preserve"><value>Value</value></data>
+  <data name="Editor_Properties_Save" xml:space="preserve"><value>Save property</value></data>
+  <data name="Editor_Properties_Edit" xml:space="preserve"><value>Edit property</value></data>
+  <data name="Editor_Properties_Delete" xml:space="preserve"><value>Delete property</value></data>
+  <data name="Notes_Query_InvalidFrom" xml:space="preserve"><value>The start date must use YYYY-MM-DD.</value></data>
+  <data name="Notes_Query_InvalidTo" xml:space="preserve"><value>The end date must use YYYY-MM-DD.</value></data>
+  <data name="Notes_Query_InvalidRange" xml:space="preserve"><value>The start date must be before the end date.</value></data>
+  <data name="Notes_Query_NameRequired" xml:space="preserve"><value>Enter a name to save the view.</value></data>
+  <data name="Editor_Properties_InvalidKey" xml:space="preserve"><value>Use letters, digits, hyphens or underscores; the key cannot be tags.</value></data>
+  <data name="Notes_Query_SaveFailed" xml:space="preserve"><value>Could not save the view. Check access to the vault and try again.</value></data>
+  <data name="Notes_Query_PropertyRequired" xml:space="preserve"><value>Enter a property name before filtering its value.</value></data>
+  <data name="Editor_Properties_InvalidYaml" xml:space="preserve"><value>Repair the YAML frontmatter in the note before editing properties.</value></data>
 </root>

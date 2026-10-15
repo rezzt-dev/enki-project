@@ -6245,4 +6245,34 @@ Bonne rédaction.</value>
   <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
     <value>Les éléments supprimés apparaîtront ici pour être restaurés ou supprimés définitivement.</value>
   </data>
+  <data name="Notes_Query_Toggle" xml:space="preserve"><value>Filtres avancés</value></data>
+  <data name="Notes_Query_Saved" xml:space="preserve"><value>Vues enregistrées</value></data>
+  <data name="Notes_Query_Clear" xml:space="preserve"><value>Effacer les filtres</value></data>
+  <data name="Notes_Query_Title" xml:space="preserve"><value>REQUÊTE DE NOTES</value></data>
+  <data name="Notes_Query_Tag" xml:space="preserve"><value>Étiquette</value></data>
+  <data name="Notes_Query_TagHint" xml:space="preserve"><value>p. ex. travail</value></data>
+  <data name="Notes_Query_Property" xml:space="preserve"><value>Propriété</value></data>
+  <data name="Notes_Query_PropertyHint" xml:space="preserve"><value>p. ex. statut</value></data>
+  <data name="Notes_Query_Value" xml:space="preserve"><value>Valeur contient</value></data>
+  <data name="Notes_Query_ValueHint" xml:space="preserve"><value>p. ex. en cours</value></data>
+  <data name="Notes_Query_From" xml:space="preserve"><value>Modifiée depuis</value></data>
+  <data name="Notes_Query_To" xml:space="preserve"><value>Modifiée jusqu’au</value></data>
+  <data name="Notes_Query_Subfolders" xml:space="preserve"><value>Inclure les sous-dossiers</value></data>
+  <data name="Notes_Query_Name" xml:space="preserve"><value>Nom de la vue</value></data>
+  <data name="Notes_Query_Save" xml:space="preserve"><value>Enregistrer la vue</value></data>
+  <data name="Notes_Query_Delete" xml:space="preserve"><value>Supprimer la vue</value></data>
+  <data name="Editor_Properties_Title" xml:space="preserve"><value>PROPRIÉTÉS</value></data>
+  <data name="Editor_Properties_Key" xml:space="preserve"><value>Clé</value></data>
+  <data name="Editor_Properties_Value" xml:space="preserve"><value>Valeur</value></data>
+  <data name="Editor_Properties_Save" xml:space="preserve"><value>Enregistrer la propriété</value></data>
+  <data name="Editor_Properties_Edit" xml:space="preserve"><value>Modifier la propriété</value></data>
+  <data name="Editor_Properties_Delete" xml:space="preserve"><value>Supprimer la propriété</value></data>
+  <data name="Notes_Query_InvalidFrom" xml:space="preserve"><value>La date de début doit suivre AAAA-MM-JJ.</value></data>
+  <data name="Notes_Query_InvalidTo" xml:space="preserve"><value>La date de fin doit suivre AAAA-MM-JJ.</value></data>
+  <data name="Notes_Query_InvalidRange" xml:space="preserve"><value>La date de début doit précéder la date de fin.</value></data>
+  <data name="Notes_Query_NameRequired" xml:space="preserve"><value>Saisissez un nom pour enregistrer la vue.</value></data>
+  <data name="Editor_Properties_InvalidKey" xml:space="preserve"><value>Utilisez des lettres, chiffres, tirets ou tirets bas ; tags est réservé.</value></data>
+  <data name="Notes_Query_SaveFailed" xml:space="preserve"><value>Impossible d’enregistrer la vue. Vérifiez l’accès au coffre et réessayez.</value></data>
+  <data name="Notes_Query_PropertyRequired" xml:space="preserve"><value>Saisissez une propriété avant de filtrer par sa valeur.</value></data>
+  <data name="Editor_Properties_InvalidYaml" xml:space="preserve"><value>Corrigez le frontmatter YAML de la note avant de modifier les propriétés.</value></data>
 </root>

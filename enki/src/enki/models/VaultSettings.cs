@@ -17,6 +17,7 @@ public sealed class VaultSettings
         // También por arriba: el editor no deja pasar de MaxGridDimension, pero un settings.json de otra
         // versión (o editado a mano) sí puede traer un número mayor, y una rejilla de 40 columnas no la
         // rechazaría nadie más — solo se vería un Dashboard de fichas ilegibles.
+        NoteQueries ??= [];
         DashboardGridRows = DashboardGridRows < 1
             ? Services.DashboardLayoutEngine.DefaultRows
             : Services.DashboardLayoutEngine.ClampDimension(DashboardGridRows);
@@ -73,6 +74,9 @@ public sealed class VaultSettings
     /// <summary>Columna preferida. Si desaparece, el formulario presenta un destino válido antes
     /// del siguiente envío; el servicio nunca redirige una selección obsoleta al guardar.</summary>
     public string? QuickCaptureKanbanColumnId { get; set; }
+
+    /// <summary>Consultas guardadas del vault. Solo criterios, nunca copias de notas ni resultados.</summary>
+    public List<NoteQuery> NoteQueries { get; set; } = [];
 
     // ===================== Dashboard configurable (propuesta 27) =====================
 

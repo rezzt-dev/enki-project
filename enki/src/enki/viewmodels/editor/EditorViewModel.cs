@@ -391,6 +391,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         var content = fresh.Content;
         _diskStamp = fresh.Stamp;
         Document = new TextDocument(content);
+        RefreshProperties();
         _lastSavedContent = content;
         // Antes que nada derivado del contenido: la huella de lo que se acaba de leer es la referencia
         // contra la que se detecta cualquier cambio externo a partir de ahora (ver
@@ -617,6 +618,7 @@ public sealed partial class EditorViewModel : ViewModelBase
 
         _lastSavedContent = currentText;
         IsDirty = false;
+        RefreshProperties();
         _lastSavedUtc = DateTime.UtcNow;
         SaveStatus = FormatSaveStatus(_lastSavedUtc);
         _onChanged();
@@ -643,6 +645,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         // escribí yo", y sin refrescarla el siguiente autoguardado se rechazaría a sí mismo.
         AdoptDiskStamp(NoteDiskStamps.TryRead(Note.FullPath));
         TagsInput = string.Join(", ", Note.Tags);
+        RefreshProperties();
         RefreshWikiLinkScopeNotes();
         Backlinks.Refresh(Note);
         Stats.Refresh();

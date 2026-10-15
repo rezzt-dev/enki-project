@@ -188,7 +188,8 @@
            siendo una caja en la que se puede escribir por estrecho que vaya el editor, y el MaxWidth que
            no se estire a lo largo de media cabecera en una ventana ancha. Fuera de la vista simplificada
            (ver ShowFullViewChrome): allí la cabecera se queda en el nombre de la nota y las acciones. -->
-      <Border x:Name="TagsBox" Grid.Column="3" Margin="12,0"
+      <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" IsVisible="{Binding ShowFullViewChrome}">
+      <Border x:Name="TagsBox" Margin="12,0,4,0"
               IsVisible="{Binding ShowFullViewChrome}"
               Classes="card" Padding="8,5" VerticalAlignment="Center" HorizontalAlignment="Left"
               MinWidth="150" MaxWidth="240">
@@ -203,6 +204,42 @@
                    KeyDown="OnTagsKeyDown" LostFocus="OnTagsLostFocus" />
         </Grid>
       </Border>
+        <Panel>
+          <Button x:Name="PropertiesTrigger" Classes="icon-btn" Width="32" Height="32"
+                  Command="{Binding TogglePropertiesCommand}" ToolTip.Tip="{loc:Tr Editor_Properties_Title}"
+                  AutomationProperties.Name="{loc:Tr Editor_Properties_Title}">
+            <mi:MaterialIcon Kind="FormatListBulleted" Width="16" Height="16" />
+          </Button>
+          <Popup PlacementTarget="{Binding #PropertiesTrigger}" Placement="BottomEdgeAlignedRight"
+                 VerticalOffset="4" IsLightDismissEnabled="True" IsOpen="{Binding IsPropertiesOpen, Mode=TwoWay}">
+            <Border Classes="dropdown-popover" Width="330" Padding="14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="{loc:Tr Editor_Properties_Title}" Classes="eyebrow" />
+                <ItemsControl ItemsSource="{Binding Properties}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:NotePropertyItemViewModel">
+                      <Grid ColumnDefinitions="100,*,Auto,Auto" Margin="0,0,0,5">
+                        <TextBlock Grid.Column="0" Text="{Binding Key}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Classes="icon-btn" Width="24" Height="24" Content="✎"
+                                Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).EditPropertyCommand}" CommandParameter="{Binding}"
+                                ToolTip.Tip="{loc:Tr Editor_Properties_Edit}" AutomationProperties.Name="{loc:Tr Editor_Properties_Edit}" />
+                        <Button Grid.Column="3" Classes="icon-btn" Width="24" Height="24" Content="×"
+                                Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).DeletePropertyCommand}" CommandParameter="{Binding}"
+                                ToolTip.Tip="{loc:Tr Editor_Properties_Delete}" AutomationProperties.Name="{loc:Tr Editor_Properties_Delete}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBox Text="{Binding PropertyKeyInput}" AutomationProperties.Name="{loc:Tr Editor_Properties_Key}" PlaceholderText="{loc:Tr Editor_Properties_Key}" />
+                <TextBox Text="{Binding PropertyValueInput}" AutomationProperties.Name="{loc:Tr Editor_Properties_Value}" PlaceholderText="{loc:Tr Editor_Properties_Value}" />
+                <Button Classes="pill" Command="{Binding SavePropertyCommand}" Content="{loc:Tr Editor_Properties_Save, Converter={StaticResource UpperCaseConverter}}" />
+                <TextBlock Text="{Binding PropertyError}" IsVisible="{Binding HasPropertyError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </Popup>
+        </Panel>
+      </StackPanel>
 
       <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <!-- Cambio externo sin resolver (.docs/project-info/cambios-externos-en-el-vault.md): mientras

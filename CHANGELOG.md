@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- propiedades estructuradas para las notas desde el frontmatter YAML, con lectura de valores escalares y listas, edición y eliminación individual desde el editor y conservación del resto del documento mediante `NotePropertyHelper`.
+- vistas guardadas de búsqueda avanzada en Notas, persistidas por vault en `VaultSettingsService`, con filtros combinables por texto, etiquetas, propiedades, fechas de modificación y subcarpetas.
+- localización completa de los filtros avanzados, las vistas guardadas y el panel de propiedades en los seis idiomas soportados.
+- pruebas de servicio y viewmodel para el análisis del frontmatter, la conservación del YAML, el filtrado por propiedades y la persistencia de consultas.
 - abrir la ventana principal y la de error de arranque centradas en la pantalla donde esté el cursor, usando las APIs nativas de Windows, macOS y X11; si la posición no está disponible, incluido Wayland nativo, se conserva la colocación habitual del sistema.
 - renderizador nativo de respaldo para el grafo de sesiones cuando `WebView2`, `WKWebView` o WPE no están disponibles o no se cargan; conserva filtros, enlaces, apertura de notas, arrastre, posiciones y zoom sin dependencias del navegador.
 - búsqueda y filtros para las listas de notificaciones y recordatorios, con resultados visibles, estado sin coincidencias, ordenación por fecha y acciones para completar o reabrir recordatorios sin abandonar la lista.
@@ -32,6 +36,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
 
 #### CAMBIOS
+- integrar las propiedades del frontmatter en `NoteFile` y `VaultNoteCache` para que la búsqueda consulte los datos reales de cada nota sin crear un almacén paralelo.
+- añadir el panel de filtros avanzados a `FullNotesView` y el panel de propiedades al encabezado de `EditorView`, reutilizando los popovers y estilos existentes y manteniendo accesibilidad mediante nombres de automatización.
+- guardar las vistas de consulta junto a la configuración del vault, incluyendo las etiquetas seleccionadas en los chips y el alcance de subcarpetas, y mostrar errores localizados si el guardado falla.
 - actualizar en caliente el dashboard cuando se modifica su visibilidad, orden, plantilla o rejilla en ajustes, notificando los cambios guardados de `VaultSettingsService` y recargando solo la página afectada mediante la cola de refresco de `MainWindowViewModel`.
 - sustituir el menú contextual reducido del fondo de los árboles laterales de Notas y Archivos por acciones de raíz para crear, importar, pegar, abrir la ubicación, copiar la ruta y contraer el árbol, manteniendo los comandos específicos de cada elemento y sus destinos de sesión.
 - rediseñar la vista de la papelera con un estado vacío único y centrado, ocultar las categorías sin elementos, mostrar solo las secciones con contenido y conservar las acciones de restauración y borrado permanente.
@@ -81,6 +88,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - recorrer el vault podando las carpetas ocultas antes de descender a ellas, en vez de enumerar y filtrar después; `EnumerateVisibleFileInfos` tampoco sigue enlaces de directorio.
 
 #### CORREGIDO
+- impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
+- mantener la comprobación de conflictos externos y de sesiones bloqueadas al guardar propiedades desde el editor, igual que en el contenido Markdown y las etiquetas.
 - validar el ámbito del gestor de carpetas y rechazar movimientos dentro de la propia carpeta o de sus descendientes para evitar salir de la raíz activa o crear ciclos.
 - centrar verticalmente el texto, el icono y el fondo de los avisos del editor markdown, y alinear las cabeceras de tablas con sus filas de contenido.
 - evitar que el grafo de sesiones quede vacío o inutilizable si el navegador no confirma la carga o las bibliotecas WPE de linux son incompatibles; validar los símbolos nativos necesarios, cambiar al renderizador de respaldo y comprobarlo en la ci de linux, windows y macos.
@@ -103,6 +112,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- structured note properties from YAML frontmatter, with scalar and list values, individual editing and deletion from the editor, and preservation of the rest of the document through `NotePropertyHelper`.
+- saved advanced search views in Notes, persisted per vault through `VaultSettingsService`, with combinable filters for text, tags, properties, modification dates and subfolders.
+- complete localisation for advanced filters, saved views and the properties panel in all six supported languages.
+- service and viewmodel tests covering frontmatter parsing, YAML preservation, property filtering and query persistence.
 - open the main window and the startup error window centred on the screen containing the cursor, using native Windows, macOS and X11 APIs; when the position is unavailable, including native Wayland, retain the system's usual placement.
 - a native fallback renderer for the session graph when `WebView2`, `WKWebView` or WPE are unavailable or fail to load; it retains filters, links, note opening, dragging, positions and zoom without browser dependencies.
 - search and filters for the notifications and reminders lists, with visible result counts, no-match state, date sorting and actions to complete or reopen reminders without leaving the list.
@@ -125,6 +138,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
 
 #### CHANGED
+- integrate frontmatter properties into `NoteFile` and `VaultNoteCache` so queries use each note's real data without creating a parallel store.
+- add the advanced filter panel to `FullNotesView` and the properties panel to the `EditorView` header, reusing existing popovers and styles while keeping automation names for accessibility.
+- store query views with vault settings, including selected tag chips and subfolder scope, and show localised errors when saving settings fails.
 - refresh the dashboard live when its visibility, order, template or grid changes in settings, publishing saved `VaultSettingsService` changes and reloading only the affected page through `MainWindowViewModel`'s refresh queue.
 - replace the reduced background context menu in the Notes and Files sidebar trees with root actions to create, import, paste, reveal the location, copy the path and collapse the tree, while preserving item-specific commands and session-aware destinations.
 - extend the collapsed Skills rail with shortcuts for tree, search, creation, import, export, collapse, community and browser; tree and search open the panel in the selected mode and focus its field when appropriate.
@@ -173,6 +189,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - prune hidden folders before descending into them when walking the vault, instead of enumerating and filtering afterwards; `EnumerateVisibleFileInfos` also skips directory links.
 
 #### FIXED
+- prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.
+- keep external-change and locked-session checks active when properties are saved from the editor, matching Markdown content and tag writes.
 - validate the folder manager's scope and reject moves into the source folder or its descendants to prevent leaving the active root or creating cycles.
 - vertically centre callout text, icon and background in the Markdown editor, and align table headers with their content rows.
 - prevent the session graph from becoming blank or unusable when the browser does not confirm loading or linux WPE libraries are incompatible; validate required native symbols, switch to the fallback renderer and cover it in linux, windows and macos ci.

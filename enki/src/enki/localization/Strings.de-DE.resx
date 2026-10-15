@@ -6245,4 +6245,34 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
     <value>Gelöschte Elemente erscheinen hier, bis du sie wiederherstellst oder endgültig löschst.</value>
   </data>
+  <data name="Notes_Query_Toggle" xml:space="preserve"><value>Erweiterte Filter</value></data>
+  <data name="Notes_Query_Saved" xml:space="preserve"><value>Gespeicherte Ansichten</value></data>
+  <data name="Notes_Query_Clear" xml:space="preserve"><value>Filter löschen</value></data>
+  <data name="Notes_Query_Title" xml:space="preserve"><value>NOTIZABFRAGE</value></data>
+  <data name="Notes_Query_Tag" xml:space="preserve"><value>Schlagwort</value></data>
+  <data name="Notes_Query_TagHint" xml:space="preserve"><value>z. B. Arbeit</value></data>
+  <data name="Notes_Query_Property" xml:space="preserve"><value>Eigenschaft</value></data>
+  <data name="Notes_Query_PropertyHint" xml:space="preserve"><value>z. B. Status</value></data>
+  <data name="Notes_Query_Value" xml:space="preserve"><value>Wert enthält</value></data>
+  <data name="Notes_Query_ValueHint" xml:space="preserve"><value>z. B. offen</value></data>
+  <data name="Notes_Query_From" xml:space="preserve"><value>Geändert ab</value></data>
+  <data name="Notes_Query_To" xml:space="preserve"><value>Geändert bis</value></data>
+  <data name="Notes_Query_Subfolders" xml:space="preserve"><value>Unterordner einschließen</value></data>
+  <data name="Notes_Query_Name" xml:space="preserve"><value>Ansichtsname</value></data>
+  <data name="Notes_Query_Save" xml:space="preserve"><value>Ansicht speichern</value></data>
+  <data name="Notes_Query_Delete" xml:space="preserve"><value>Ansicht löschen</value></data>
+  <data name="Editor_Properties_Title" xml:space="preserve"><value>EIGENSCHAFTEN</value></data>
+  <data name="Editor_Properties_Key" xml:space="preserve"><value>Schlüssel</value></data>
+  <data name="Editor_Properties_Value" xml:space="preserve"><value>Wert</value></data>
+  <data name="Editor_Properties_Save" xml:space="preserve"><value>Eigenschaft speichern</value></data>
+  <data name="Editor_Properties_Edit" xml:space="preserve"><value>Eigenschaft bearbeiten</value></data>
+  <data name="Editor_Properties_Delete" xml:space="preserve"><value>Eigenschaft löschen</value></data>
+  <data name="Notes_Query_InvalidFrom" xml:space="preserve"><value>Das Startdatum muss JJJJ-MM-TT verwenden.</value></data>
+  <data name="Notes_Query_InvalidTo" xml:space="preserve"><value>Das Enddatum muss JJJJ-MM-TT verwenden.</value></data>
+  <data name="Notes_Query_InvalidRange" xml:space="preserve"><value>Das Startdatum muss vor dem Enddatum liegen.</value></data>
+  <data name="Notes_Query_NameRequired" xml:space="preserve"><value>Gib einen Namen zum Speichern der Ansicht ein.</value></data>
+  <data name="Editor_Properties_InvalidKey" xml:space="preserve"><value>Verwende Buchstaben, Ziffern, Bindestriche oder Unterstriche; tags ist reserviert.</value></data>
+  <data name="Notes_Query_SaveFailed" xml:space="preserve"><value>Die Ansicht konnte nicht gespeichert werden. Prüfe den Zugriff auf den Vault und versuche es erneut.</value></data>
+  <data name="Notes_Query_PropertyRequired" xml:space="preserve"><value>Gib einen Eigenschaftsnamen ein, bevor du nach ihrem Wert filterst.</value></data>
+  <data name="Editor_Properties_InvalidYaml" xml:space="preserve"><value>Repariere den YAML-Frontmatter der Notiz, bevor du Eigenschaften bearbeitest.</value></data>
 </root>

@@ -381,6 +381,7 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public void Reload()
     {
+        EnsureQueryVault();
         if (IsSelectedSessionLocked) FolderManager.CloseCommand.Execute(null);
         PasteEntryCommand.NotifyCanExecuteChanged();
         CopyEntryCommand.NotifyCanExecuteChanged();
@@ -397,7 +398,10 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         // `all` sigue siendo la carpeta entera sin filtrar: es lo que alimenta la lista de etiquetas de
         // TagFilter más abajo, que no debe encogerse según lo que haya escrito el usuario en el buscador.
-        var all = _vaultService.GetNotes(CurrentFolderPath);
+        var query = CurrentQuery();
+        var all = QueryIncludeSubfolders
+            ? _vaultService.GetAllNotesRecursive(CurrentFolderPath)
+            : _vaultService.GetNotes(CurrentFolderPath);
 
         // Con búsqueda activa el filtrado se delega en NoteSearchService, que mira el cuerpo completo de
         // cada nota; antes se comparaba contra NoteFile.Preview y una nota solo aparecía si la palabra
@@ -405,7 +409,11 @@ public sealed partial class NotesViewModel : ViewModelBase
         // de VaultService, así que esto no duplica lecturas de disco.
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? all
-            : _noteSearchService.SearchFolder(CurrentFolderPath, SearchText).Select(h => h.Note);
+            : (QueryIncludeSubfolders
+                ? _noteSearchService.SearchTree(CurrentFolderPath, SearchText)
+                : _noteSearchService.SearchFolder(CurrentFolderPath, SearchText)).Select(h => h.Note);
+
+        filtered = NoteQueryService.Filter(filtered, query);
 
         var selectedTags = TagFilter.SelectedTags.ToList();
         if (selectedTags.Count > 0)
@@ -418,7 +426,10 @@ public sealed partial class NotesViewModel : ViewModelBase
         foreach (var note in filtered) Notes.Add(new NoteCardViewModel(note));
 
         BrowserItems.Clear();
-        var hasSearch = !string.IsNullOrWhiteSpace(SearchText);
+        var hasSearch = !string.IsNullOrWhiteSpace(SearchText) ||
+            query.Tag.Length > 0 || query.PropertyKey.Length > 0 ||
+            query.ModifiedFrom.Length > 0 || query.ModifiedTo.Length > 0 ||
+            QueryIncludeSubfolders;
         if (!hasSearch)
         {
             if (CurrentFolder is not null)
