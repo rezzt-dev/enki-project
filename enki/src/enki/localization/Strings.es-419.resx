@@ -6352,4 +6352,22 @@ Feliz escritura.</value>
   <data name="Settings_Account_PolarPrivacy_Hint" xml:space="preserve">
     <value>Al vincular, las tareas y los recordatorios de Polar se sincronizan con Supabase. Consulta la política completa en Acerca de → Privacidad antes de vincular.</value>
   </data>
+  <data name="Settings_PrivateSync_Title" xml:space="preserve"><value>Sincronización privada del almacén</value></data>
+  <data name="Settings_PrivateSync_Intro" xml:space="preserve"><value>Usa Syncthing, iCloud Drive o Google Drive para llevar este almacén entre equipos. Enki lee la carpeta local; el programa de sincronización traslada sus archivos.</value></data>
+  <data name="Settings_PrivateSync_Toggle" xml:space="preserve"><value>Mostrar u ocultar guía de configuración</value></data>
+  <data name="Settings_PrivateSync_Prepare_Title" xml:space="preserve"><value>Antes de empezar</value></data>
+  <data name="Settings_PrivateSync_Prepare_Body" xml:space="preserve"><value>1. Anota la ruta del almacén que aparece arriba y crea una copia de seguridad fuera de la carpeta sincronizada.
+2. Cierra Enki antes de mover un almacén existente. Sincroniza la carpeta raíz completa, incluidas .enki, .sessions, .tasks y .trash.
+3. Usa un solo proveedor por almacén. En el otro equipo, espera a que termine la descarga y elige «Abrir almacén existente» en Enki.</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Title" xml:space="preserve"><value>Syncthing</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Body" xml:space="preserve"><value>Vincula ambos dispositivos. Comparte la ruta exacta del almacén desde el equipo que tiene la copia completa; en el otro, acéptala en una carpeta local vacía. Usa «Enviar y recibir» para editar en ambos. Espera a que los dos indiquen que están actualizados antes de abrir el almacén.</value></data>
+  <data name="Settings_PrivateSync_iCloud_Title" xml:space="preserve"><value>iCloud Drive (macOS / Windows)</value></data>
+  <data name="Settings_PrivateSync_iCloud_Body" xml:space="preserve"><value>Con Enki cerrado, copia el almacén completo a iCloud Drive. Espera a que terminen la subida y la descarga. Mantén la carpeta descargada en cada equipo: «Mantener descargado» en Finder de macOS o «Mantener siempre en este dispositivo» en el Explorador de Windows. Abre después esa carpeta local en Enki.</value></data>
+  <data name="Settings_PrivateSync_Drive_Title" xml:space="preserve"><value>Google Drive para ordenadores (Windows / macOS)</value></data>
+  <data name="Settings_PrivateSync_Drive_Body" xml:space="preserve"><value>Con Enki cerrado, coloca el almacén completo en Mi unidad. Prefiere «Duplicar archivos» para tener una copia local completa. Si usas «Transmitir archivos», marca la carpeta como «Disponible sin conexión» en ambos equipos. Espera a que terminen las transferencias y abre la carpeta local en Enki.</value></data>
+  <data name="Settings_PrivateSync_Daily_Title" xml:space="preserve"><value>Al cambiar de equipo</value></data>
+  <data name="Settings_PrivateSync_Daily_Body" xml:space="preserve"><value>Deja que Enki termine de guardar, ciérralo y espera a que se suban los cambios. En el siguiente equipo, espera a que se descarguen antes de abrir Enki. Comprueba una nota y un adjunto de prueba en ambos equipos. Conserva un respaldo separado: la sincronización también replica los borrados.</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>Si hay conflictos</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki avisa de cambios externos en notas abiertas y permite comparar versiones antes de elegir. Conserva cualquier archivo *.sync-conflict-* de Syncthing hasta compararlo y combinarlo manualmente. Las tareas y preferencias del almacén guardadas en JSON no se fusionan entre equipos: evita editarlas a la vez.</value></data>
+  <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>Una carpeta en la nube no implica por sí sola cifrado de extremo a extremo. Las sesiones protegidas cifran el contenido de notas y adjuntos, pero los nombres y algunos metadatos siguen visibles. Revisa la privacidad del proveedor.</value></data>
 </root>

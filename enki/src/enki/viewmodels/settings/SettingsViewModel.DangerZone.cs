@@ -28,6 +28,14 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private string _vaultSizeLabel = string.Empty;
 
+    /// <summary>La guía de sincronización se despliega junto a la ruta del almacén para poder
+    /// consultarla sin salir de Ajustes ni depender de una página externa.</summary>
+    [ObservableProperty]
+    private bool _privateSyncGuideOpen;
+
+    [RelayCommand]
+    private void TogglePrivateSyncGuide() => PrivateSyncGuideOpen = !PrivateSyncGuideOpen;
+
     /// <summary>True mientras el diálogo de confirmación de "Restablecer ajustes a valores por defecto"
     /// está abierto — mismo patrón request/cancel/confirm que <c>TrashViewModel.PendingEmptyTarget</c>.</summary>
     [ObservableProperty]

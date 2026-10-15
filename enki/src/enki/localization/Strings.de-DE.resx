@@ -6352,4 +6352,22 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Account_PolarPrivacy_Hint" xml:space="preserve">
     <value>Beim Verknüpfen werden Polar-Aufgaben und Erinnerungen mit Supabase synchronisiert. Lesen Sie zuvor die vollständigen Angaben unter Über → Datenschutz.</value>
   </data>
+  <data name="Settings_PrivateSync_Title" xml:space="preserve"><value>Private Synchronisierung des Vaults</value></data>
+  <data name="Settings_PrivateSync_Intro" xml:space="preserve"><value>Mit Syncthing, iCloud Drive oder Google Drive kannst du diesen Vault auf mehreren Computern nutzen. Enki liest den lokalen Ordner; die Synchronisierungssoftware überträgt seine Dateien.</value></data>
+  <data name="Settings_PrivateSync_Toggle" xml:space="preserve"><value>Einrichtungsanleitung ein- oder ausblenden</value></data>
+  <data name="Settings_PrivateSync_Prepare_Title" xml:space="preserve"><value>Vor dem Start</value></data>
+  <data name="Settings_PrivateSync_Prepare_Body" xml:space="preserve"><value>1. Notiere den Vault-Pfad oben und erstelle ein Backup außerhalb des synchronisierten Ordners.
+2. Schließe Enki, bevor du einen vorhandenen Vault verschiebst. Synchronisiere den gesamten Stammordner einschließlich .enki, .sessions, .tasks und .trash.
+3. Nutze nur einen Anbieter pro Vault. Warte auf dem zweiten Computer, bis der Download abgeschlossen ist, und wähle in Enki „Vorhandenen Vault öffnen“.</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Title" xml:space="preserve"><value>Syncthing</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Body" xml:space="preserve"><value>Verbinde beide Geräte miteinander. Gib den genauen Vault-Ordner auf dem Computer mit der vollständigen Kopie frei; nimm ihn auf dem anderen in einem leeren lokalen Ordner an. Wähle „Senden &amp; Empfangen“, um auf beiden Geräten zu bearbeiten. Öffne den Vault erst, wenn beide Geräte aktuell sind.</value></data>
+  <data name="Settings_PrivateSync_iCloud_Title" xml:space="preserve"><value>iCloud Drive (macOS / Windows)</value></data>
+  <data name="Settings_PrivateSync_iCloud_Body" xml:space="preserve"><value>Schließe Enki und kopiere den gesamten Vault nach iCloud Drive. Warte, bis Upload und Download abgeschlossen sind. Halte den Ordner auf jedem Computer heruntergeladen: „Geladen behalten“ im macOS Finder oder „Immer auf diesem Gerät behalten“ im Windows Explorer. Öffne dann diesen lokalen Ordner in Enki.</value></data>
+  <data name="Settings_PrivateSync_Drive_Title" xml:space="preserve"><value>Google Drive für Desktop (Windows / macOS)</value></data>
+  <data name="Settings_PrivateSync_Drive_Body" xml:space="preserve"><value>Schließe Enki und lege den gesamten Vault in „Meine Ablage“ ab. Wähle möglichst „Dateien spiegeln“ für eine vollständige lokale Kopie. Bei „Dateien streamen“ markiere den Vault-Ordner auf beiden Computern als „Offline verfügbar“. Warte auf alle Übertragungen und öffne den lokalen Ordner in Enki.</value></data>
+  <data name="Settings_PrivateSync_Daily_Title" xml:space="preserve"><value>Beim Wechsel des Computers</value></data>
+  <data name="Settings_PrivateSync_Daily_Body" xml:space="preserve"><value>Lass Enki fertig speichern, schließe es und warte auf den Upload. Warte auf dem nächsten Computer vor dem Öffnen von Enki auf den Download. Prüfe eine Testnotiz und einen Anhang auf beiden Geräten. Bewahre ein separates Backup auf: Auch Löschungen werden synchronisiert.</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>Bei Konflikten</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki meldet externe Änderungen an offenen Notizen und lässt dich Versionen vergleichen. Bewahre Syncthing-Dateien mit *.sync-conflict-* auf, bis du sie verglichen und manuell zusammengeführt hast. Aufgaben und Vault-Einstellungen in JSON werden zwischen Geräten nicht zusammengeführt; bearbeite sie nicht gleichzeitig.</value></data>
+  <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>Ein Cloud-Ordner bedeutet nicht automatisch Ende-zu-Ende-Verschlüsselung. Geschützte Sitzungen verschlüsseln Notizen und Anhänge, aber Namen und manche Metadaten bleiben sichtbar. Prüfe die Datenschutzeinstellungen des Anbieters.</value></data>
 </root>

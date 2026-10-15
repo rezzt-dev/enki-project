@@ -6352,4 +6352,22 @@ Bonne rédaction.</value>
   <data name="Settings_Account_PolarPrivacy_Hint" xml:space="preserve">
     <value>Lier Polar synchronise les tâches et rappels avec Supabase. Consultez la politique complète dans À propos → Confidentialité avant de continuer.</value>
   </data>
+  <data name="Settings_PrivateSync_Title" xml:space="preserve"><value>Synchronisation privée du coffre</value></data>
+  <data name="Settings_PrivateSync_Intro" xml:space="preserve"><value>Utilisez Syncthing, iCloud Drive ou Google Drive pour retrouver ce coffre sur plusieurs ordinateurs. Enki lit le dossier local ; l’application de synchronisation transfère ses fichiers.</value></data>
+  <data name="Settings_PrivateSync_Toggle" xml:space="preserve"><value>Afficher ou masquer le guide</value></data>
+  <data name="Settings_PrivateSync_Prepare_Title" xml:space="preserve"><value>Avant de commencer</value></data>
+  <data name="Settings_PrivateSync_Prepare_Body" xml:space="preserve"><value>1. Notez le chemin du coffre ci-dessus et créez une sauvegarde hors du dossier synchronisé.
+2. Fermez Enki avant de déplacer un coffre existant. Synchronisez tout le dossier racine, y compris .enki, .sessions, .tasks et .trash.
+3. Utilisez un seul fournisseur par coffre. Sur l’autre ordinateur, attendez la fin du téléchargement, puis choisissez « Ouvrir un coffre existant » dans Enki.</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Title" xml:space="preserve"><value>Syncthing</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Body" xml:space="preserve"><value>Associez les deux appareils. Partagez le dossier exact du coffre depuis l’ordinateur qui contient la copie complète ; sur l’autre, acceptez-le dans un dossier local vide. Choisissez « Envoyer et recevoir » pour modifier sur les deux. Attendez que les deux appareils soient à jour avant d’ouvrir le coffre.</value></data>
+  <data name="Settings_PrivateSync_iCloud_Title" xml:space="preserve"><value>iCloud Drive (macOS / Windows)</value></data>
+  <data name="Settings_PrivateSync_iCloud_Body" xml:space="preserve"><value>Enki fermé, copiez tout le coffre dans iCloud Drive. Attendez la fin de l’envoi et du téléchargement. Gardez le dossier téléchargé sur chaque ordinateur : « Conserver téléchargé » dans le Finder ou « Toujours conserver sur cet appareil » dans l’Explorateur Windows. Ouvrez ensuite ce dossier local dans Enki.</value></data>
+  <data name="Settings_PrivateSync_Drive_Title" xml:space="preserve"><value>Google Drive pour ordinateur (Windows / macOS)</value></data>
+  <data name="Settings_PrivateSync_Drive_Body" xml:space="preserve"><value>Enki fermé, placez tout le coffre dans Mon Drive. Préférez « Dupliquer les fichiers » pour une copie locale complète. Avec « Diffuser les fichiers », rendez le dossier « Disponible hors connexion » sur les deux ordinateurs. Attendez la fin des transferts, puis ouvrez le dossier local dans Enki.</value></data>
+  <data name="Settings_PrivateSync_Daily_Title" xml:space="preserve"><value>Quand vous changez d’ordinateur</value></data>
+  <data name="Settings_PrivateSync_Daily_Body" xml:space="preserve"><value>Laissez Enki terminer l’enregistrement, fermez-le et attendez l’envoi. Sur l’autre ordinateur, attendez le téléchargement avant d’ouvrir Enki. Vérifiez une note et une pièce jointe de test sur les deux appareils. Conservez une sauvegarde distincte : la synchronisation réplique aussi les suppressions.</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>En cas de conflit</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki signale les changements externes des notes ouvertes et permet de comparer les versions avant de choisir. Gardez les fichiers Syncthing *.sync-conflict-* jusqu’à leur comparaison et fusion manuelle. Les tâches et préférences du coffre stockées en JSON ne sont pas fusionnées entre appareils : évitez de les modifier simultanément.</value></data>
+  <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>Un dossier dans le cloud ne garantit pas à lui seul un chiffrement de bout en bout. Les sessions protégées chiffrent le contenu des notes et des pièces jointes, mais les noms et certaines métadonnées restent visibles. Vérifiez la confidentialité du fournisseur.</value></data>
 </root>

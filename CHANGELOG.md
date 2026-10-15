@@ -10,6 +10,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- guía de sincronización privada del almacén en `.docs/project-info/sincronizacion-privada-notas.md`, con instrucciones para Syncthing, iCloud Drive y Google Drive, trabajo sin conexión y resolución de conflictos.
+- consulta integrada de la guía en `ajustes > vault y archivos`, con despliegue dentro de la pantalla, búsqueda por proveedor y contenido, y traducciones en los siete recursos de idioma.
 - filtro de intervalos por una propiedad de fecha del frontmatter, como `due`, y opción de coincidencia exacta para valores de estado u otras propiedades.
 - localización de los nuevos controles de fecha, coincidencia exacta y validación de claves en los siete recursos de idioma.
 - pruebas de regresión para fechas del frontmatter, valores exactos, consultas guardadas y conservación de saltos de línea `CRLF` al editar propiedades.
@@ -41,6 +43,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - política de privacidad visible para la integración con Polar, con el destino Supabase configurado, los datos sincronizados, el cifrado del transporte, el almacenamiento de credenciales y el comportamiento al desvincular.
 
 #### CAMBIOS
+- documentar en `README.md`, `README.en.md` y `cambios-externos-en-el-vault.md` el flujo recomendado para sincronizar el almacén completo, conservar una copia de seguridad y gestionar los conflictos externos sin duplicar datos.
 - ampliar `NoteQuery` y `NoteQueryService` para persistir y evaluar la propiedad de fecha y la coincidencia exacta sin cambiar el comportamiento de las consultas existentes por defecto.
 - conservar el formato de saltos de línea original al editar o eliminar propiedades mediante `NotePropertyHelper`, incluidas las notas importadas con `CRLF`.
 - integrar las propiedades del frontmatter en `NoteFile` y `VaultNoteCache` para que la búsqueda consulte los datos reales de cada nota sin crear un almacén paralelo.
@@ -121,6 +124,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- a private vault sync guide in `.docs/project-info/sincronizacion-privada-notas.md` covering Syncthing, iCloud Drive, Google Drive, offline access and conflict handling.
+- an integrated guide under `settings > vault and files`, expandable inside the settings screen, searchable by provider and content, and translated across all seven language resources.
 - frontmatter date-property range filtering, such as `due`, and an exact-match option for status and other property values.
 - translations for the new date, exact-match and property-key validation controls across all seven language resources.
 - regression coverage for frontmatter dates, exact values, saved queries and `CRLF` preservation when editing properties.
@@ -152,6 +157,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a visible privacy policy for the Polar integration covering the configured Supabase destination, synchronised data, transport encryption, credential storage and unlink behaviour.
 
 #### CHANGED
+- document the recommended workflow in `README.md`, `README.en.md` and `cambios-externos-en-el-vault.md` for syncing the complete vault, keeping a backup and handling external conflicts without duplicating data.
 - extend `NoteQuery` and `NoteQueryService` to persist and evaluate the date property and exact matching while keeping existing queries partial by default.
 - preserve the original line-ending format when `NotePropertyHelper` edits or removes properties, including imported notes using `CRLF`.
 - integrate frontmatter properties into `NoteFile` and `VaultNoteCache` so queries use each note's real data without creating a parallel store.

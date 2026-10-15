@@ -386,6 +386,64 @@
          </Border>
             </controls:SettingsSearchOption>
 
+            <!-- Guía integrada: usa el mismo scroll de Ajustes y la ruta real del almacén queda justo encima. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Vault Settings_PrivateSync_Title Settings_PrivateSync_Intro
+                              Settings_PrivateSync_Toggle Settings_PrivateSync_Prepare_Title Settings_PrivateSync_Prepare_Body
+                              Settings_PrivateSync_Syncthing_Title Settings_PrivateSync_Syncthing_Body
+                              Settings_PrivateSync_iCloud_Title Settings_PrivateSync_iCloud_Body
+                              Settings_PrivateSync_Drive_Title Settings_PrivateSync_Drive_Body
+                              Settings_PrivateSync_Daily_Title Settings_PrivateSync_Daily_Body
+                              Settings_PrivateSync_Conflicts_Title Settings_PrivateSync_Conflicts_Body
+                              Settings_PrivateSync_Privacy">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="Sync" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_PrivateSync_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_PrivateSync_Intro}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <Button Classes="pill" Command="{Binding TogglePrivateSyncGuideCommand}" HorizontalAlignment="Left"
+                          AutomationProperties.Name="{loc:Tr Settings_PrivateSync_Toggle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="BookOpenOutline" Width="14" Height="14" />
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Toggle, Converter={StaticResource UpperCaseConverter}}" />
+                    </StackPanel>
+                  </Button>
+
+                  <StackPanel IsVisible="{Binding PrivateSyncGuideOpen}" Spacing="16">
+                    <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Prepare_Title}" Classes="section-title" />
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Prepare_Body}" FontSize="12.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Syncthing_Title}" Classes="section-title" />
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Syncthing_Body}" FontSize="12.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_iCloud_Title}" Classes="section-title" />
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_iCloud_Body}" FontSize="12.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Drive_Title}" Classes="section-title" />
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Drive_Body}" FontSize="12.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Daily_Title}" Classes="section-title" />
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Daily_Body}" FontSize="12.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Conflicts_Title}" Classes="section-title" />
+                      <TextBlock Text="{loc:Tr Settings_PrivateSync_Conflicts_Body}" FontSize="12.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock Text="{loc:Tr Settings_PrivateSync_Privacy}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="Settings_Nav_Vault Settings_General_DangerZone_VaultSize_Label">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">

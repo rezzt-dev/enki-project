@@ -26,6 +26,7 @@ it grew out of a simple frustration: having to open several applications just to
 ## WHAT MAKES ENKI DIFFERENT
 
 - **your data is yours.** notes are ordinary markdown files inside a folder you choose. you can open them in another editor, copy them, sync them or back them up with whichever tool you prefer.
+- **private syncing.** read the built-in guide under **settings → vault and files**, or the [full guide for syncthing, icloud drive and google drive (in spanish)](.docs/project-info/sincronizacion-privada-notas.md), including migration, offline access and conflict handling.
 - **local comes first.** notes, files, kanban, calendar, reminders, habits, statistics and sessions work without the internet. polar is an optional extension for anyone who wants to sync tasks.
 - **connected without becoming cluttered.** each module can work on its own, but they all read the same notes, tasks, dates and tags when they need to work together.
 - **your work is protected quietly.** autosave, version history, trash and external-change detection reduce the risk of losing content without interrupting your writing.

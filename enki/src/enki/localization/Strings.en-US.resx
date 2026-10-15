@@ -6352,4 +6352,22 @@ Happy writing.</value>
   <data name="Settings_Account_PolarPrivacy_Hint" xml:space="preserve">
     <value>Linking syncs Polar tasks and reminders to Supabase. Read the full data policy in About → Privacy before linking.</value>
   </data>
+  <data name="Settings_PrivateSync_Title" xml:space="preserve"><value>Private vault sync</value></data>
+  <data name="Settings_PrivateSync_Intro" xml:space="preserve"><value>Use Syncthing, iCloud Drive or Google Drive to carry this vault between computers. Enki reads the local folder; the sync app transfers its files.</value></data>
+  <data name="Settings_PrivateSync_Toggle" xml:space="preserve"><value>Show or hide setup guide</value></data>
+  <data name="Settings_PrivateSync_Prepare_Title" xml:space="preserve"><value>Before you start</value></data>
+  <data name="Settings_PrivateSync_Prepare_Body" xml:space="preserve"><value>1. Note the vault path above and make a backup outside the folder being synced.
+2. Close Enki before moving an existing vault. Sync the entire root folder, including hidden .enki, .sessions, .tasks and .trash folders.
+3. Use one sync provider per vault. On another computer, wait for the first download to finish, then choose “Open existing vault” in Enki.</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Title" xml:space="preserve"><value>Syncthing</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Body" xml:space="preserve"><value>Add the two devices to each other. Share the exact vault folder from the computer holding the complete copy; on the other, accept it into an empty local folder. Use “Send &amp; Receive” to edit on both. Wait until both devices show “Up to Date” before opening the vault.</value></data>
+  <data name="Settings_PrivateSync_iCloud_Title" xml:space="preserve"><value>iCloud Drive (macOS / Windows)</value></data>
+  <data name="Settings_PrivateSync_iCloud_Body" xml:space="preserve"><value>With Enki closed, copy the entire vault into iCloud Drive. Wait for upload and download to finish. Keep the vault folder downloaded on each computer: “Keep Downloaded” in macOS Finder or “Always keep on this device” in Windows Explorer. Then open that local folder in Enki.</value></data>
+  <data name="Settings_PrivateSync_Drive_Title" xml:space="preserve"><value>Google Drive for desktop (Windows / macOS)</value></data>
+  <data name="Settings_PrivateSync_Drive_Body" xml:space="preserve"><value>With Enki closed, place the entire vault in My Drive. Prefer “Mirror files” for a full local copy. With “Stream files”, mark the vault folder “Available offline” on both computers. Wait for all transfers to finish, then open the local folder in Enki.</value></data>
+  <data name="Settings_PrivateSync_Daily_Title" xml:space="preserve"><value>When switching computers</value></data>
+  <data name="Settings_PrivateSync_Daily_Body" xml:space="preserve"><value>Let Enki finish saving, close it and wait for upload. On the next computer, wait for download before opening Enki. Verify a test note and attachment on both computers. Keep a separate backup: syncing also copies deletions.</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>If changes conflict</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki warns about external changes to open notes and lets you compare versions before choosing one. Keep any Syncthing *.sync-conflict-* file until you compare and merge it manually. Tasks and vault settings in JSON are not merged across devices, so avoid editing them on two computers at once.</value></data>
+  <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>A cloud folder does not by itself mean end-to-end encryption. Protected sessions encrypt note and attachment content, but names and some metadata remain visible. Check your provider’s privacy settings.</value></data>
 </root>
