@@ -2086,7 +2086,8 @@
 
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Account Settings_Account_LinkPolar_Title Settings_Account_LinkForm_Description
-                              Settings_Account_EmailLabel Settings_Account_EmailPlaceholder Settings_Account_PasswordLabel">
+                              Settings_Account_EmailLabel Settings_Account_EmailPlaceholder Settings_Account_PasswordLabel
+                              Settings_Account_PolarPrivacy_Hint">
               <Border Classes="card" Padding="22" IsVisible="{Binding !IsPolarLinked}">
                 <StackPanel Spacing="14" IsEnabled="{Binding IsSupabaseConfigured}">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2095,6 +2096,8 @@
                   </StackPanel>
                   <TextBlock Text="{loc:Tr Settings_Account_LinkForm_Description}"
                              Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Settings_Account_PolarPrivacy_Hint}"
+                             Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
 
                   <StackPanel Spacing="6">
                     <TextBlock Text="{loc:Tr Settings_Account_EmailLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
@@ -2510,6 +2513,33 @@
              </Border>
                 </StackPanel>
          </Border>
+            </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_About Settings_About_Privacy_Title Settings_About_PolarPrivacy_Title
+                              Settings_About_PolarPrivacy_1 Settings_About_PolarPrivacy_2
+                              Settings_About_PolarPrivacy_3 Settings_About_PolarPrivacy_4
+                              Settings_About_PolarPrivacy_Endpoint">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="CloudLockOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_About_PolarPrivacy_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_About_PolarPrivacy_1}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Settings_About_PolarPrivacy_2}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Settings_About_PolarPrivacy_3}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{loc:Tr Settings_About_PolarPrivacy_Endpoint, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                    <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource Ink10}"
+                            BorderThickness="1" Padding="12,10">
+                      <TextBlock Text="{Binding PolarProjectEndpoint}" FontFamily="{DynamicResource InterfaceLabelFontFamily}"
+                                 FontSize="12" TextWrapping="Wrap" />
+                    </Border>
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_About_PolarPrivacy_4}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption

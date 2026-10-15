@@ -6275,4 +6275,77 @@ A disfrutar escribiendo.</value>
   <data name="Notes_Query_SaveFailed" xml:space="preserve"><value>No se pudo guardar la vista. Comprueba el acceso al vault e inténtalo de nuevo.</value></data>
   <data name="Notes_Query_PropertyRequired" xml:space="preserve"><value>Escribe una propiedad antes de filtrar por su valor.</value></data>
   <data name="Editor_Properties_InvalidYaml" xml:space="preserve"><value>Repara el frontmatter YAML de la nota antes de editar propiedades.</value></data>
+  <data name="Templates_Seed_Project_Name" xml:space="preserve">
+    <value>Proyecto</value>
+  </data>
+  <data name="Templates_Seed_Project_Description" xml:space="preserve">
+    <value>Objetivo, hitos y próximas acciones de un proyecto.</value>
+  </data>
+  <data name="Templates_Seed_Project_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Inicio:** {{date}}
+- **Estado:** En planificación
+
+## Objetivo
+{{cursor}}
+
+## Hitos
+- [ ]
+
+## Próximas acciones
+- [ ]
+
+## Notas y decisiones
+</value>
+  </data>
+  <data name="Templates_Seed_Reading_Name" xml:space="preserve">
+    <value>Lectura</value>
+  </data>
+  <data name="Templates_Seed_Reading_Description" xml:space="preserve">
+    <value>Ideas clave, citas y conclusiones de un libro o artículo.</value>
+  </data>
+  <data name="Templates_Seed_Reading_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Autoría / fuente:**
+- **Inicio:** {{date}}
+- **Enlace:**
+
+## Ideas clave
+- {{cursor}}
+
+## Citas y referencias
+
+## Qué pondré en práctica
+- [ ]
+</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_1" xml:space="preserve">
+    <value>Las notas, archivos, tableros Kanban y sesiones permanecen en tu vault local. Al vincular Polar, solo se envían al proyecto Supabase compartido con Polar las listas, tareas, subtareas y recordatorios de Polar. Se incluyen los datos de ubicación de un recordatorio si los introduces.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_2" xml:space="preserve">
+    <value>El correo y la contraseña de Polar se envían a Supabase Auth por HTTPS para iniciar sesión. Enki no guarda la contraseña. Los tokens de sesión se guardan en el almacén de credenciales del sistema operativo. La sincronización usa HTTPS y WebSocket seguro; los datos de tareas no tienen cifrado de extremo a extremo y el servicio puede procesarlos.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_3" xml:space="preserve">
+    <value>Los registros en la nube se almacenan en el proyecto Supabase configurado para esta compilación. La región y el cifrado en reposo dependen de quien administre el proyecto; Enki no puede verificar ni mostrar aquí una ubicación física. Debajo se muestra el servidor del proyecto.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_4" xml:space="preserve">
+    <value>Desvincular detiene la sincronización y borra la caché local de tareas Polar y las credenciales de sesión. No elimina los datos de la nube; los recordatorios permanecen localmente. Para borrar los registros remotos o la cuenta, contacta con quien administre el proyecto Polar/Supabase.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_Title" xml:space="preserve">
+    <value>Polar y datos en la nube</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_Endpoint" xml:space="preserve">
+    <value>Servidor del proyecto</value>
+  </data>
+  <data name="Notes_Templates_AddSuggestions" xml:space="preserve">
+    <value>Añadir plantillas de proyecto y lectura</value>
+  </data>
+  <data name="Notes_Templates_AddSuggestions_Tooltip" xml:space="preserve">
+    <value>Añade los ejemplos que faltan sin modificar las plantillas existentes.</value>
+  </data>
+  <data name="Settings_Account_PolarPrivacy_Hint" xml:space="preserve">
+    <value>Al vincular, las tareas y los recordatorios de Polar se sincronizan con Supabase. Consulta la política completa en Acerca de → Privacidad antes de vincular.</value>
+  </data>
 </root>

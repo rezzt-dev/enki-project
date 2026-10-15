@@ -6276,4 +6276,77 @@ Happy writing.</value>
   <data name="Notes_Query_SaveFailed" xml:space="preserve"><value>Could not save the view. Check access to the vault and try again.</value></data>
   <data name="Notes_Query_PropertyRequired" xml:space="preserve"><value>Enter a property name before filtering its value.</value></data>
   <data name="Editor_Properties_InvalidYaml" xml:space="preserve"><value>Repair the YAML frontmatter in the note before editing properties.</value></data>
+  <data name="Templates_Seed_Project_Name" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Templates_Seed_Project_Description" xml:space="preserve">
+    <value>Goal, milestones and next actions for a project.</value>
+  </data>
+  <data name="Templates_Seed_Project_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Started:** {{date}}
+- **Status:** Planning
+
+## Goal
+{{cursor}}
+
+## Milestones
+- [ ]
+
+## Next actions
+- [ ]
+
+## Notes and decisions
+</value>
+  </data>
+  <data name="Templates_Seed_Reading_Name" xml:space="preserve">
+    <value>Reading notes</value>
+  </data>
+  <data name="Templates_Seed_Reading_Description" xml:space="preserve">
+    <value>Key ideas, quotes and takeaways from a book or article.</value>
+  </data>
+  <data name="Templates_Seed_Reading_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Author / source:**
+- **Started:** {{date}}
+- **Link:**
+
+## Key ideas
+- {{cursor}}
+
+## Quotes and references
+
+## What I will apply
+- [ ]
+</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_1" xml:space="preserve">
+    <value>Your notes, files, Kanban boards and sessions stay in your local vault. Linking Polar sends only Polar task lists, tasks, subtasks and reminders to the shared Polar/Enki Supabase project. Reminder location fields, if entered, are included.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_2" xml:space="preserve">
+    <value>Your Polar email and password are sent to Supabase Auth over HTTPS to sign in. Enki does not save the password. Session tokens are held in the operating system credential store. Sync uses HTTPS and secure WebSocket connections; the task data is not end-to-end encrypted, so the service can process it.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_3" xml:space="preserve">
+    <value>Cloud records are stored in the Supabase project configured for this build. Its hosting region and encryption at rest are set by the project operator; Enki cannot verify or display a physical location here. The project endpoint is shown below.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_4" xml:space="preserve">
+    <value>Unlinking stops sync and clears the local Polar task cache and session credentials. It does not delete cloud data; reminders remain locally. To remove cloud records or the account, contact the Polar/Supabase project operator.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_Title" xml:space="preserve">
+    <value>Polar and cloud data</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_Endpoint" xml:space="preserve">
+    <value>Project endpoint</value>
+  </data>
+  <data name="Notes_Templates_AddSuggestions" xml:space="preserve">
+    <value>Add project and reading templates</value>
+  </data>
+  <data name="Notes_Templates_AddSuggestions_Tooltip" xml:space="preserve">
+    <value>Adds missing examples without changing existing templates.</value>
+  </data>
+  <data name="Settings_Account_PolarPrivacy_Hint" xml:space="preserve">
+    <value>Linking syncs Polar tasks and reminders to Supabase. Read the full data policy in About → Privacy before linking.</value>
+  </data>
 </root>

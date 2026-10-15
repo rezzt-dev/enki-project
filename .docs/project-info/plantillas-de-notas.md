@@ -28,10 +28,18 @@ Se admiten subcarpetas (`trabajo/reunion.md`) para organizar una biblioteca gran
 plantilla es su **ruta relativa** a `templates/`, no su nombre: dos subcarpetas pueden tener una
 `diario.md` cada una y el ajuste de la nota diaria sigue sabiendo a cuál apunta.
 
-La primera vez que se abre un vault, Enki siembra la carpeta con dos ejemplos traducidos (`daily.md` y
-`meeting.md`). La marca de "ya sembrado" es **que la carpeta exista**, no que tenga archivos: quien borra
+La primera vez que se abre un vault, Enki siembra la carpeta con cuatro ejemplos traducidos: nota diaria
+(`daily.md`), reunión (`meeting.md`), proyecto (`project.md`) y lectura (`reading.md`). Los dos últimos
+proponen, respectivamente, objetivo/hitos/próximas acciones e ideas/citas/aplicación práctica; todos
+colocan el cursor en el primer campo libre. Son archivos editables del vault, no modelos internos. La marca
+de "ya sembrado" es **que la carpeta exista**, no que tenga archivos: quien borra
 todas sus plantillas está diciendo que no las quiere, y volver a ponérselas en el siguiente arranque sería
 devolverle lo que acaba de tirar.
+
+Los vaults que ya tienen la carpeta conservan exactamente sus plantillas al arrancar: la ampliación del
+conjunto inicial no añade ni sobrescribe archivos en ellos. El selector ofrece **Añadir plantillas de
+proyecto y lectura** si falta alguna; esa acción solo crea los archivos ausentes y desaparece cuando ya
+están los dos. Así, quien quiera los ejemplos nuevos puede incorporarlos sin perder sus cambios.
 
 ## 2. Formato de una plantilla
 

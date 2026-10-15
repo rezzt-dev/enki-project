@@ -35,6 +35,12 @@ public sealed partial class NotesViewModel
     /// estado vacío que explica qué es una plantilla y ofrece crear la primera.</summary>
     public bool HasTemplates => Templates.Count > 0;
 
+    /// <summary>Permite traer los ejemplos nuevos a un vault anterior sin resembrar los que el usuario
+    /// eliminó o editó. La acción desaparece cuando ambos archivos ya existen.</summary>
+    public bool HasMissingSuggestedTemplates =>
+        !File.Exists(Path.Combine(_templateService.TemplatesDirectory, "project.md")) ||
+        !File.Exists(Path.Combine(_templateService.TemplatesDirectory, "reading.md"));
+
     /// <summary>Dónde nace una nota creada desde plantilla: la carpeta que se está mirando en la rejilla
     /// (vista completa) o la raíz del espacio de trabajo activo (vista simplificada, que no tiene concepto
     /// de "carpeta actual"). Exactamente el mismo destino que elegiría el botón "Nueva nota" de cada una de
@@ -71,6 +77,7 @@ public sealed partial class NotesViewModel
         }
 
         OnPropertyChanged(nameof(HasTemplates));
+        OnPropertyChanged(nameof(HasMissingSuggestedTemplates));
     }
 
     /// <summary>Crea la nota a partir de la plantilla elegida y la abre, con el cursor ya donde la
@@ -129,6 +136,19 @@ public sealed partial class NotesViewModel
 
         CloseTemplatePicker();
         OpenTemplateFile(template);
+    }
+
+    [RelayCommand]
+    private void AddSuggestedTemplates()
+    {
+        try { _templateService.AddSuggestedTemplates(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            NotifyVaultWriteFailed(ex);
+            return;
+        }
+
+        ReloadTemplates();
     }
 
     [RelayCommand]

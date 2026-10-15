@@ -34,6 +34,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - gestión completa de carpetas compartida por Notas y Archivos: crear con nombre confirmado, renombrar, copiar, mover, cortar, pegar, abrir en el sistema y eliminar desde la rejilla o el árbol; permite arrastrar carpetas completas con una vista flotante, conserva subcarpetas, adjuntos y carpetas vacías, evita sobrescrituras y mantiene sincronizadas las pestañas abiertas, previsualizaciones e integraciones Kanban.
 - compartir en ambos sentidos la sesión seleccionada en Notas y Archivos, guardar una única selección por vault, migrar las preferencias anteriores y seguir la sesión de la nota activa.
 - categoría Carpetas en Papelera para restaurar o eliminar permanentemente directorios enviados al vault, conservando el origen y el ámbito cifrado; las carpetas de sesiones bloqueadas permanecen ocultas.
+- cuatro plantillas iniciales de notas para diario, reuniones, proyectos y lecturas, con variables de fecha, estructura práctica y posición inicial del cursor; los vaults existentes pueden añadir las plantillas de proyecto y lectura sin sobrescribir personalizaciones.
+- política de privacidad visible para la integración con Polar, con el destino Supabase configurado, los datos sincronizados, el cifrado del transporte, el almacenamiento de credenciales y el comportamiento al desvincular.
 
 #### CAMBIOS
 - integrar las propiedades del frontmatter en `NoteFile` y `VaultNoteCache` para que la búsqueda consulte los datos reales de cada nota sin crear un almacén paralelo.
@@ -86,6 +88,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - leer el resumen del dashboard y las estadísticas fuera de la interfaz, con indicador de carga y descartando lecturas sustituidas, y reutilizar la lectura del vault al cambiar el rango del gráfico en vez de recorrer el disco de nuevo.
 - calcular las series semanales de estadísticas en una sola pasada por fecha, en lugar de recorrer todas las notas y tareas por cada semana.
 - recorrer el vault podando las carpetas ocultas antes de descender a ellas, en vez de enumerar y filtrar después; `EnumerateVisibleFileInfos` tampoco sigue enlaces de directorio.
+- documentar en `.docs/project-info/plantillas-de-notas.md` el nuevo catálogo de plantillas y añadir una acción segura para incorporar ejemplos faltantes a vaults existentes sin modificar archivos creados por el usuario.
+- integrar la política de datos de Polar en Ajustes, mostrar el endpoint configurado mediante `SupabaseConfig.Url` y mantener la explicación sincronizada con `.docs/project-info/privacidad-polar.md`.
 
 #### CORREGIDO
 - impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
@@ -136,6 +140,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - complete folder management shared by Notes and Files: create after confirming a name, rename, copy, move, cut, paste, reveal in the system and delete from grid or tree views; drag whole folders with a floating preview, preserve subfolders, attachments and empty folders, avoid overwrites, and keep open tabs, previews and Kanban integrations in sync.
 - share the selected session between Notes and Files in both directions, store one selection per vault, migrate previous preferences and follow the active note's session.
 - a Folders category in Trash to restore or permanently delete directories sent to the vault, preserving their origin and encryption scope; folders from locked sessions remain hidden.
+- four initial note templates for daily notes, meetings, projects and reading, with date variables, practical structure and an initial cursor position; existing vaults can add the project and reading templates without overwriting custom files.
+- a visible privacy policy for the Polar integration covering the configured Supabase destination, synchronised data, transport encryption, credential storage and unlink behaviour.
 
 #### CHANGED
 - integrate frontmatter properties into `NoteFile` and `VaultNoteCache` so queries use each note's real data without creating a parallel store.
@@ -187,6 +193,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - read the dashboard overview and statistics off the UI thread with a loading indicator, discarding superseded reads, and reuse the vault read when the statistics range changes instead of walking the disk again.
 - compute the statistics weekly series in a single pass per date instead of scanning every note and task for each week.
 - prune hidden folders before descending into them when walking the vault, instead of enumerating and filtering afterwards; `EnumerateVisibleFileInfos` also skips directory links.
+- document the expanded template catalogue in `.docs/project-info/plantillas-de-notas.md` and add a safe action for bringing missing examples into existing vaults without changing user-created files.
+- integrate the Polar data policy into Settings, expose the configured endpoint through `SupabaseConfig.Url`, and keep the explanation aligned with `.docs/project-info/privacidad-polar.md`.
 
 #### FIXED
 - prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.
