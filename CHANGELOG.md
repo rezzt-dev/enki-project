@@ -44,6 +44,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - gestión de adjuntos y multimedia dentro de las notas Markdown: importar varios archivos desde el portapapeles, arrastre o selector, reutilizar rutas del vault, cifrar copias en sesiones protegidas y añadir anotaciones Markdown reversibles.
 - gestor integrado de referencias con vista previa de imágenes, PDF, audio y vídeo, apertura con la aplicación del sistema para formatos no compatibles y límites seguros de tamaño, extensión y rutas.
 - importación desde exportaciones locales de Obsidian, Notion, Todoist y Google Calendar desde `ajustes > copias de seguridad`, con notas y adjuntos en el vault, tareas en Kanban y eventos en el calendario.
+- añadir suscripciones externas iCalendar de solo lectura desde `ajustes > calendario`, con soporte para enlaces privados de Google, enlaces `webcal://` de iCloud, varias fuentes y capas independientes.
+- actualizar automáticamente los calendarios externos cada quince minutos, conservar la caché local de la última respuesta válida, expandir recurrencias, excepciones, zonas horarias y eventos de varios días, y avisar cuando una fuente falla.
+- documentar las suscripciones externas en `.docs/project-info/calendar-feature/14-suscripciones-externas-solo-lectura.md` y cubrir con pruebas de servicio la caché, las redirecciones, los enlaces `webcal://`, las recurrencias, los eventos de varios días y la proyección de solo lectura.
 
 #### CAMBIOS
 - documentar en `README.md`, `README.en.md` y `cambios-externos-en-el-vault.md` el flujo recomendado para sincronizar el almacén completo, conservar una copia de seguridad y gestionar los conflictos externos sin duplicar datos.
@@ -105,6 +108,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - conectar los adjuntos con `VaultService`, `NoteImageService` y `PdfDocumentViewModel` para respetar conflictos externos, cifrado, sesiones bloqueadas y limpieza de recursos al cerrar visores.
 - traducir las acciones de adjuntos en los siete recursos de idioma y cubrir el servicio, el viewmodel, la interfaz y las regresiones de imágenes y exportación con pruebas automatizadas.
 - añadir `ExternalImportService`, lectores seguros para Markdown, ZIP, CSV e ICS y pruebas de regresión para rutas inseguras, campos entrecomillados, zonas horarias y escrituras sobre las entidades reales.
+- añadir `Ical.Net` para analizar y expandir fuentes iCalendar sin crear entidades editables ni un almacén paralelo de eventos.
 
 #### CORREGIDO
 - impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
@@ -129,6 +133,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - centrar verticalmente la fila de estado «sincronizado con polar» de la cabecera de recordatorios: sin alineación propia, la etiqueta se estiraba a la altura del botón de sincronización y avalonia dibuja el texto desde el borde superior de su caja, así que quedaba pegada arriba respecto al escudo y al botón.
 - actualizar la ruta de destino de los botones de crear carpeta al cambiar la sesión seleccionada en Notas y Archivos, notificando el cambio de `EffectiveRootPath` y cubriéndolo con `FilesViewModelSessionPersistenceTests`.
 - evitar renders de PDF obsoletos y temporales descifrados huérfanos al cerrar o cambiar de adjunto, y conservar los archivos originales al retirar una referencia de la nota.
+- corregir el rango diario de `StatisticsViewModel` para usar el día local completo y no ocultar la actividad de hoy alrededor de la medianoche UTC; cubrir el caso en las pruebas de estadísticas.
 
 ### ENGLISH
 
@@ -167,6 +172,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - attachment and multimedia management inside Markdown notes: import multiple files from the clipboard, drag and drop or the picker, reuse vault paths, encrypt copies in protected sessions and add reversible Markdown annotations.
 - an integrated reference manager with image, PDF, audio and video previews, system-open fallback for unsupported formats, and safe size, extension and path limits.
 - local import from Obsidian, Notion, Todoist and Google Calendar exports under `settings > backups`, placing notes and attachments in the vault, tasks in Kanban, and events in the calendar.
+- add read-only external iCalendar subscriptions under `settings > calendar`, supporting private Google links, iCloud `webcal://` links, multiple sources and independent layers.
+- refresh external calendars every fifteen minutes, keep a local cache of the last valid response, expand recurrence, exceptions, time zones and multi-day events, and show localised failure notices.
+- document external subscriptions in `.docs/project-info/calendar-feature/14-suscripciones-externas-solo-lectura.md` and cover caching, redirects, `webcal://` links, recurrence, multi-day events and read-only projection with service tests.
 
 #### CHANGED
 - document the recommended workflow in `README.md`, `README.en.md` and `cambios-externos-en-el-vault.md` for syncing the complete vault, keeping a backup and handling external conflicts without duplicating data.
@@ -227,6 +235,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - connect attachments to `VaultService`, `NoteImageService` and `PdfDocumentViewModel` so external-change checks, encryption, locked sessions and resource cleanup remain enforced.
 - translate attachment actions across all seven language resources and cover the service, viewmodel, UI, image regressions and export behaviour with automated tests.
 - add `ExternalImportService`, safe Markdown, ZIP, CSV and ICS readers, and regression coverage for unsafe paths, quoted fields, time zones, and writes to the existing entities.
+- add `Ical.Net` to parse and expand iCalendar feeds without creating editable entities or a parallel event store.
 
 #### FIXED
 - prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.
@@ -251,6 +260,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - vertically centre the `synchronised with polar` status row in the reminders header: without its own alignment the label stretched to the height of the sync button and avalonia draws text from the top of its box, leaving it stuck to the top next to the shield and the button.
 - update the destination path of the create-folder buttons when the selected session changes in Notes and Files, notifying the `EffectiveRootPath` change and covering it with `FilesViewModelSessionPersistenceTests`.
 - prevent stale PDF renders and orphaned decrypted temporary files when closing or switching attachments, and preserve original files when removing a note reference.
+- fix `StatisticsViewModel` daily ranges to use the complete local day so today's activity is not hidden around UTC midnight, and cover the case in statistics tests.
 
 ## [0.2.0] - 2026-09-23
 

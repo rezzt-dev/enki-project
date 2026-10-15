@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:models="clr-namespace:enki.Models"
              xmlns:views="clr-namespace:enki.Views"
              xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
@@ -1953,6 +1954,46 @@
         <controls:SettingsSearchOption Section="Calendar" MatchDescendants="True" ResourceKeys="Settings_Nav_Calendar">
           <StackPanel Spacing="20">
             <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Calendar, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption ResourceKeys="Calendar_External_Title Calendar_External_Hint Calendar_External_GoogleGuide Calendar_External_AppleGuide Calendar_External_Name Calendar_External_Url">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="CalendarImport" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Calendar_External_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Calendar_External_Hint}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Calendar_External_GoogleGuide}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{loc:Tr Calendar_External_AppleGuide}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+                  <TextBox PlaceholderText="{loc:Tr Calendar_External_Name}" Text="{Binding ExternalCalendarName}" MaxLength="80" />
+                  <TextBox PlaceholderText="{loc:Tr Calendar_External_Url}" Text="{Binding ExternalCalendarUrl}" />
+                  <Button Classes="pill" HorizontalAlignment="Left" Content="{loc:Tr Calendar_External_Add, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding AddExternalCalendarCommand}" IsEnabled="{Binding !IsExternalCalendarBusy}" />
+                  <TextBlock Text="{loc:Tr Calendar_External_Updating}" Classes="faint" FontSize="11.5"
+                             IsVisible="{Binding IsExternalCalendarBusy}" />
+                  <TextBlock Text="{Binding ExternalCalendarMessage}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                  <ItemsControl ItemsSource="{Binding ExternalCalendars}" IsEnabled="{Binding !IsExternalCalendarBusy}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="models:ExternalCalendarSubscription">
+                        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,10">
+                          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <StackPanel Grid.Column="0" Spacing="2">
+                              <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Text="{Binding LastUpdatedLocalLabel}" Classes="faint" FontSize="10.5" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="ghost" Content="{loc:Tr Calendar_External_Refresh, Converter={StaticResource UpperCaseConverter}}"
+                                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).RefreshExternalCalendarCommand}"
+                                    CommandParameter="{Binding}" />
+                            <Button Grid.Column="2" Classes="ghost" Content="{loc:Tr Calendar_External_Remove, Converter={StaticResource UpperCaseConverter}}"
+                                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).RemoveExternalCalendarCommand}"
+                                    CommandParameter="{Binding}" />
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Calendar Settings_Calendar_DefaultView_Title Settings_Calendar_DefaultView_Description
                               Settings_Calendar_View_Month Settings_Calendar_View_Week Settings_Calendar_View_Day
@@ -3082,6 +3123,25 @@
       </StackPanel>
     </ScrollViewer>
     </Grid>
+
+    <!-- ===================== Diálogo: restaurar copia de seguridad ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding PendingExternalCalendarRemoval}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <TextBlock Text="{loc:Tr Calendar_External_RemoveTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <TextBlock Text="{loc:Tr Calendar_External_RemoveHint}" FontSize="14" TextWrapping="Wrap" MaxWidth="360" />
+          <TextBlock Text="{Binding PendingExternalCalendarRemoval.Name}" Classes="muted" FontSize="12" />
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelExternalCalendarRemovalCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmExternalCalendarRemovalCommand}">
+              <TextBlock Text="{loc:Tr Calendar_External_Remove, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: restaurar copia de seguridad ===================== -->
     <controls:ModalOverlayHost IsOpen="{Binding PendingRestoreBackup}">

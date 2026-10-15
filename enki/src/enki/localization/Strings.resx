@@ -6405,4 +6405,22 @@ Happy writing.</value>
   <data name="ExternalImport_PartialMessage" xml:space="preserve"><value>Import stopped. Already added: {0} notes, {1} tasks, {2} events and {3} attachments.</value></data>
   <data name="ExternalImport_RecurringTitle" xml:space="preserve"><value>Recurring events</value></data>
   <data name="ExternalImport_RecurringMessage" xml:space="preserve"><value>Only the first date was imported for {0} recurring series. Review these entries in the calendar.</value></data>
+  <data name="Calendar_External_Title" xml:space="preserve"><value>External calendars</value></data>
+  <data name="Calendar_External_Hint" xml:space="preserve"><value>Subscribe to an iCalendar feed. Events refresh every 15 minutes and are read only. Links and cached events stay on this device.</value></data>
+  <data name="Calendar_External_Name" xml:space="preserve"><value>Calendar name</value></data>
+  <data name="Calendar_External_Url" xml:space="preserve"><value>HTTPS iCalendar link (.ics)</value></data>
+  <data name="Calendar_External_Add" xml:space="preserve"><value>Add calendar</value></data>
+  <data name="Calendar_External_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Calendar_External_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Calendar_External_Source" xml:space="preserve"><value>External calendar</value></data>
+  <data name="Calendar_External_Updated" xml:space="preserve"><value>Calendar updated.</value></data>
+  <data name="Calendar_External_Failed" xml:space="preserve"><value>Could not refresh. Check the link and connection; previous events are kept.</value></data>
+  <data name="Calendar_External_Removed" xml:space="preserve"><value>Subscription removed.</value></data>
+  <data name="Calendar_External_Invalid" xml:space="preserve"><value>Enter a valid name and HTTPS URL; each calendar can only be added once.</value></data>
+  <data name="Calendar_External_RemoveTitle" xml:space="preserve"><value>Remove external calendar</value></data>
+  <data name="Calendar_External_RemoveHint" xml:space="preserve"><value>Its events will disappear, and the private link and local cache will be deleted.</value></data>
+  <data name="Calendar_External_GoogleGuide" xml:space="preserve"><value>Google: Settings → your calendar → Integrate calendar → Secret address in iCal format.</value></data>
+  <data name="Calendar_External_AppleGuide" xml:space="preserve"><value>Apple iCloud: share the calendar as Public Calendar and copy its webcal link. Anyone with the link can view those events.</value></data>
+  <data name="Calendar_External_Updating" xml:space="preserve"><value>Updating calendar…</value></data>
+  <data name="Calendar_External_SaveFailed" xml:space="preserve"><value>Could not save the calendar subscription. Check access to Enki’s data folder.</value></data>
 </root>

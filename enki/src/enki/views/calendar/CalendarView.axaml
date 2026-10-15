@@ -86,7 +86,7 @@
           </Panel>
           <Button Grid.Column="2" Classes="ghost" Padding="4,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenTodayItemCommand}"
-                  CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Common_Edit}">
+                  CommandParameter="{Binding}" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{loc:Tr Common_Edit}">
             <StackPanel Spacing="3">
               <TextBlock Text="{Binding Title}" Classes="calendar-detail-title" Classes.completed="{Binding IsCompleted}"
                          FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
@@ -180,7 +180,7 @@
               <TextBlock Text="{Binding CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
             </StackPanel>
           </Button>
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CanEdit}">
             <Button Grid.Column="0" Classes="ghost" Padding="0" HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Left"
                     Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
@@ -233,8 +233,8 @@
 
           <!-- Menú contextual — doc 05 §7: mismas acciones que el popover de detalle. -->
           <ToggleButton.ContextMenu>
-            <ContextMenu>
-              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+            <ContextMenu IsVisible="{Binding CanEdit}">
+              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanEdit}"
                         Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
                         CommandParameter="{Binding}" />
               <MenuItem Header="{Binding CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanToggleComplete}"
@@ -293,8 +293,8 @@
           </Panel>
 
           <ToggleButton.ContextMenu>
-            <ContextMenu>
-              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+            <ContextMenu IsVisible="{Binding CanEdit}">
+              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanEdit}"
                         Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
                         CommandParameter="{Binding}" />
               <MenuItem Header="{Binding CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanToggleComplete}"
@@ -361,8 +361,8 @@
           </Panel>
 
           <ToggleButton.ContextMenu>
-            <ContextMenu>
-              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+            <ContextMenu IsVisible="{Binding Item.CanEdit}">
+              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding Item.CanEdit}"
                         Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
                         CommandParameter="{Binding Item}" />
               <MenuItem Header="{Binding Item.CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding Item.CanToggleComplete}"

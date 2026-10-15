@@ -84,8 +84,8 @@ internal sealed class CalendarItemDragController
             if (child is Button || child is Control c && c.Classes.Contains("calendar-chip-resize-handle")) return;
         _item = source.DataContext switch
         {
-            CalendarItemViewModel { IsGhostOccurrence: false } item => (item.SourceType, item.SourceId, item.IsOpeningMilestone),
-            CalendarTimedItemViewModel { Item.IsGhostOccurrence: false } timed => (timed.Item.SourceType, timed.Item.SourceId, timed.Item.IsOpeningMilestone),
+            CalendarItemViewModel { CanMove: true } item => (item.SourceType, item.SourceId, item.IsOpeningMilestone),
+            CalendarTimedItemViewModel { Item.CanMove: true } timed => (timed.Item.SourceType, timed.Item.SourceId, timed.Item.IsOpeningMilestone),
             CalendarUnscheduledItemViewModel item => (item.SourceType, item.SourceId, false),
             _ => null
         };

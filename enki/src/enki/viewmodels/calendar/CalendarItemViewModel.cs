@@ -33,7 +33,8 @@ public enum CalendarItemSourceType
     Kanban,
     PolarTask,
     PolarSubtask,
-    Reminder
+    Reminder,
+    ExternalCalendar
 }
 
 /// <summary>In-memory projection unifying a <see cref="KanbanCard"/>, <see cref="Models.PolarTask"/>/
@@ -155,16 +156,19 @@ public sealed record CalendarItemViewModel
     /// 03-glosario-y-modelo-de-datos.md §3) — the popover simply doesn't offer the checkbox for them.
     /// A ghost occurrence is never real enough to complete either (docs/calendar-feature/
     /// 03-glosario-y-modelo-de-datos.md §4: "no se puede... completar").</summary>
-    public bool CanToggleComplete => SourceType != CalendarItemSourceType.Kanban && !IsGhostOccurrence;
+    public bool CanToggleComplete => SourceType is not (CalendarItemSourceType.Kanban or CalendarItemSourceType.ExternalCalendar) && !IsGhostOccurrence;
 
     /// <summary>Same "no se puede eliminar" rule as <see cref="CanToggleComplete"/> for a ghost occurrence
     /// — real items are always deletable through the popover/context menu.</summary>
-    public bool CanDelete => !IsGhostOccurrence;
+    public bool CanDelete => !IsGhostOccurrence && SourceType != CalendarItemSourceType.ExternalCalendar;
+
+    public bool CanEdit => SourceType != CalendarItemSourceType.ExternalCalendar;
+    public bool CanMove => CanEdit && !IsGhostOccurrence;
 
     /// <summary>Backs the resize handle on the Semana/Día timed chip (docs/calendar-feature/
     /// 05-interacciones-y-microinteracciones.md §2b) — any real, timed item can persist a dragged duration
     /// via its source service (Kanban/Polar/Reminder). All-day and ghost occurrences never show the handle.</summary>
-    public bool CanResize => !IsOpeningMilestone && SourceType != CalendarItemSourceType.PolarSubtask && !IsGhostOccurrence && !IsAllDay;
+    public bool CanResize => !IsOpeningMilestone && SourceType is not (CalendarItemSourceType.PolarSubtask or CalendarItemSourceType.ExternalCalendar) && !IsGhostOccurrence && !IsAllDay;
 
     /// <summary>Transparent regardless of <see cref="EffectiveCalendarColorHex"/> for a ghost occurrence (docs/
     /// calendar-feature/10-diseno-visual-y-componentes.md §4: "sin fondo relleno" — the alpha-zero hex
@@ -192,7 +196,7 @@ public sealed record CalendarItemViewModel
     /// <summary>Reuses <see cref="KanbanCard.IsPastDue"/> verbatim for all three sources, applied to
     /// whichever moment positions this item — see docs/calendar-feature/03-glosario-y-modelo-de-datos.md
     /// §3. A completed item is never shown as overdue regardless of its date.</summary>
-    public bool IsPastDue => !IsCompleted && !IsOpeningMilestone && KanbanCard.IsPastDue(MomentUtc);
+    public bool IsPastDue => SourceType != CalendarItemSourceType.ExternalCalendar && !IsCompleted && !IsOpeningMilestone && KanbanCard.IsPastDue(MomentUtc);
 
     /// <summary>"Vencido siempre gana visualmente sobre el color de origen" (docs/calendar-feature/
     /// 10-diseno-visual-y-componentes.md §4) — only the chip's border switches to the danger color; the
@@ -232,6 +236,7 @@ public sealed record CalendarItemViewModel
         CalendarItemSourceType.PolarTask => LocalizationService.Instance["Calendar_Source_PolarTask"],
         CalendarItemSourceType.PolarSubtask => LocalizationService.Instance["Calendar_Source_PolarSubtask"],
         CalendarItemSourceType.Reminder => LocalizationService.Instance["Calendar_Label_Reminder"],
+        CalendarItemSourceType.ExternalCalendar => LocalizationService.Instance["Calendar_External_Source"],
         _ => string.Empty
     };
 }

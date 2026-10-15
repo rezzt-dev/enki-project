@@ -470,8 +470,12 @@ public sealed partial class MainWindowViewModel
         IsZenMode = false;
 
         var calendarLayerColorService = new CalendarLayerColorService(_kanbanService, _polarTaskService, _polarAuthService, _settingsService);
-        var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService);
-        Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
+        var externalCalendarService = new ExternalCalendarService(System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath));
+        externalCalendarService.RefreshFailed += _ => _notificationService.Push(
+            LocalizationService.Instance["Calendar_External_Source"],
+            LocalizationService.Instance["Calendar_External_Failed"], enki.Models.NotificationSeverity.Warning);
+        var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService, externalCalendarService);
+        Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor, externalCalendarService);
         Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService,
             _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics), _vaultChangeWatcher);
         Notes.PropertyChanged += OnNotesPropertyChanged;
@@ -532,7 +536,7 @@ public sealed partial class MainWindowViewModel
             OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService,
             OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
             () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; },
-            _reminderService, () => { Notes.Reload(); Kanban.Reload(); });
+            _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

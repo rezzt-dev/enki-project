@@ -194,10 +194,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         KanbanService? kanbanService = null,
         Action? onManageKanbanBoards = null,
         ReminderService? reminderService = null,
-        Action? onExternalImportCompleted = null)
+        Action? onExternalImportCompleted = null,
+        ExternalCalendarService? externalCalendarService = null)
     {
         _reminderImportService = reminderService;
         _onExternalImportCompleted = onExternalImportCompleted;
+        _externalCalendarService = externalCalendarService;
         _kanbanService = kanbanService;
         _onManageKanbanBoards = onManageKanbanBoards;
         _updateCheckService = updateCheckService;
@@ -430,6 +432,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         ApplyInterfaceFont(settingsService.Settings.InterfaceFontFamily);
         ApplyCodeFont(settingsService.Settings.CodeFontFamily);
+        InitializeExternalCalendars();
     }
 
     private void DebouncedSave()

@@ -681,7 +681,9 @@ public sealed partial class StatisticsViewModel : ViewModelBase
     private static (DateTime StartUtc, DateTime EndUtc) BuildRangeUtc(StatisticsRange range)
     {
         var nowUtc = DateTime.UtcNow;
-        var endUtc = DateTime.UtcNow.Date.AddDays(1).ToUniversalTime();
+        // El informe agrupa por días locales. Cerca de medianoche, el día UTC todavía puede ser
+        // ayer en la zona del usuario y dejar fuera toda la actividad de hoy.
+        var endUtc = DateTime.Today.AddDays(1).ToUniversalTime();
         var startUtc = range switch
         {
             StatisticsRange.Week => nowUtc.AddDays(-7),

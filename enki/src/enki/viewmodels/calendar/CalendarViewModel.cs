@@ -41,6 +41,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private const int AgendaWindowDays = 30;
 
     private readonly CalendarAggregationService _aggregationService;
+    private readonly ExternalCalendarService? _externalCalendarService;
     private readonly CalendarLayerColorService _layerColorService;
     private readonly KanbanService _kanbanService;
     private readonly PolarTaskService _polarTaskService;
@@ -376,9 +377,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
         PolarAuthService polarAuthService,
         SettingsService settingsService,
         NotificationService notificationService,
-        Action<CalendarItemViewModel> openItemEditor)
+        Action<CalendarItemViewModel> openItemEditor,
+        ExternalCalendarService? externalCalendarService = null)
     {
         _aggregationService = aggregationService;
+        _externalCalendarService = externalCalendarService;
         _layerColorService = layerColorService;
         _kanbanService = kanbanService;
         _polarTaskService = polarTaskService;
@@ -418,12 +421,17 @@ public sealed partial class CalendarViewModel : ViewModelBase
         _polarTaskService.DataChanged += Rebuild;
         _reminderService.RemindersChanged += Rebuild;
         _polarAuthService.LinkStateChanged += HandlePolarLinkChanged;
+        if (_externalCalendarService is not null) _externalCalendarService.DataChanged += Rebuild;
 
         // The "now" line (docs/calendar-feature/10-diseno-visual-y-componentes.md §3) needs to creep
         // forward even when nothing else changes — refreshed on its own light timer instead of piggy-
         // backing on a full Rebuild, so it never re-flows the rest of the hour grid just to move a line.
         _nowTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
-        _nowTimer.Tick += (_, _) => RefreshNowIndicator();
+        _nowTimer.Tick += async (_, _) =>
+        {
+            RefreshNowIndicator();
+            if (_externalCalendarService is not null) await _externalCalendarService.RefreshAllAsync();
+        };
         _nowTimer.Start();
 
         _searchDebounceTimer = new DispatcherTimer { Interval = EditorDebounce.Delay };
@@ -434,6 +442,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         };
 
         Rebuild();
+        if (_externalCalendarService is not null) _ = _externalCalendarService.RefreshAllAsync();
     }
 
     /// <summary>Refresca las etiquetas localizadas cuando <see cref="MainWindowViewModel"/> coordina
@@ -544,7 +553,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private void OpenTodayItem(CalendarItemViewModel item)
     {
         IsTodayPopoverOpen = false;
-        _openItemEditor(item);
+        if (item.CanEdit) _openItemEditor(item);
     }
 
     [RelayCommand]
@@ -837,6 +846,17 @@ public sealed partial class CalendarViewModel : ViewModelBase
                     CanEditColor: true, _layerColorService.HasCustomColor(l.Id), IsChildRow: false)));
         }
 
+        if (_externalCalendarService is not null)
+        {
+            var index = 0;
+            foreach (var feed in _externalCalendarService.Subscriptions)
+            {
+                desired.Add(new LayerRow(CalendarAggregationService.ExternalLayerPrefix + feed.Id,
+                    string.Empty, feed.Name, CalendarLayerPalette.PickerSwatches[index++ % CalendarLayerPalette.PickerSwatches.Count],
+                    CanEditColor: false, HasCustomColor: false, IsChildRow: false));
+            }
+        }
+
         // La identidad de una fila es su clave de color (única por fila, a diferencia de Key, que las
         // sub-filas de Kanban comparten con su fila madre) más si es sub-fila o no.
         if (Layers.Count == desired.Count &&
@@ -1102,7 +1122,10 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// read-only detail, since from the calendar there's no reason to make "ver" and "editar" two separate
     /// hops when the destination screen already gates further changes behind its own save button.</summary>
     [RelayCommand]
-    private void RequestEditItem(CalendarItemViewModel item) => _openItemEditor(item);
+    private void RequestEditItem(CalendarItemViewModel item)
+    {
+        if (item.CanEdit) _openItemEditor(item);
+    }
 
     [RelayCommand]
     private void ToggleCompleteItem(CalendarItemViewModel item)

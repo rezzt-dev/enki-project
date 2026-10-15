@@ -6404,4 +6404,22 @@ Viel Erfolg beim Schreiben.</value>
   <data name="ExternalImport_PartialMessage" xml:space="preserve"><value>Der Import wurde unterbrochen. Bereits hinzugefügt: {0} Notizen, {1} Aufgaben, {2} Termine und {3} Anhänge.</value></data>
   <data name="ExternalImport_RecurringTitle" xml:space="preserve"><value>Wiederkehrende Termine</value></data>
   <data name="ExternalImport_RecurringMessage" xml:space="preserve"><value>Bei {0} wiederkehrenden Serien wurde nur der erste Termin importiert. Prüfen Sie diese im Kalender.</value></data>
+  <data name="Calendar_External_Title" xml:space="preserve"><value>Externe Kalender</value></data>
+  <data name="Calendar_External_Hint" xml:space="preserve"><value>Abonniere einen iCalendar-Feed. Termine werden alle 15 Minuten aktualisiert und sind schreibgeschützt. Links und zwischengespeicherte Termine bleiben auf diesem Gerät.</value></data>
+  <data name="Calendar_External_Name" xml:space="preserve"><value>Kalendername</value></data>
+  <data name="Calendar_External_Url" xml:space="preserve"><value>HTTPS-iCalendar-Link (.ics)</value></data>
+  <data name="Calendar_External_Add" xml:space="preserve"><value>Kalender hinzufügen</value></data>
+  <data name="Calendar_External_Refresh" xml:space="preserve"><value>Aktualisieren</value></data>
+  <data name="Calendar_External_Remove" xml:space="preserve"><value>Entfernen</value></data>
+  <data name="Calendar_External_Source" xml:space="preserve"><value>Externer Kalender</value></data>
+  <data name="Calendar_External_Updated" xml:space="preserve"><value>Kalender aktualisiert.</value></data>
+  <data name="Calendar_External_Failed" xml:space="preserve"><value>Aktualisierung fehlgeschlagen. Prüfe Link und Verbindung; bisherige Termine bleiben erhalten.</value></data>
+  <data name="Calendar_External_Removed" xml:space="preserve"><value>Abonnement entfernt.</value></data>
+  <data name="Calendar_External_Invalid" xml:space="preserve"><value>Gib einen gültigen Namen und eine HTTPS-URL ein; jeder Kalender kann nur einmal hinzugefügt werden.</value></data>
+  <data name="Calendar_External_RemoveTitle" xml:space="preserve"><value>Externen Kalender entfernen</value></data>
+  <data name="Calendar_External_RemoveHint" xml:space="preserve"><value>Seine Termine verschwinden; der private Link und der lokale Cache werden gelöscht.</value></data>
+  <data name="Calendar_External_GoogleGuide" xml:space="preserve"><value>Google: Einstellungen → Kalender auswählen → Kalender integrieren → Geheime Adresse im iCal-Format.</value></data>
+  <data name="Calendar_External_AppleGuide" xml:space="preserve"><value>Apple iCloud: Aktiviere „Öffentlicher Kalender“ und kopiere den webcal-Link. Jeder mit dem Link kann die Termine sehen.</value></data>
+  <data name="Calendar_External_Updating" xml:space="preserve"><value>Kalender wird aktualisiert…</value></data>
+  <data name="Calendar_External_SaveFailed" xml:space="preserve"><value>Das Kalenderabonnement konnte nicht gespeichert werden. Prüfe den Zugriff auf Enkis Datenordner.</value></data>
 </root>

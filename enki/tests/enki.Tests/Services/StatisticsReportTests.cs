@@ -50,7 +50,7 @@ public class StatisticsReportTests : IDisposable
     }
 
     private static (DateTime StartUtc, DateTime EndUtc) LastMonthRange() =>
-        (DateTime.UtcNow.AddDays(-28), DateTime.UtcNow.Date.AddDays(1).ToUniversalTime());
+        (DateTime.Today.AddDays(-28).ToUniversalTime(), DateTime.Today.AddDays(1).ToUniversalTime());
 
     private string WriteNote(string relativePath, int words, params string[] tags)
     {

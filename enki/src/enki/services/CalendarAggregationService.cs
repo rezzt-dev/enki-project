@@ -17,7 +17,8 @@ public sealed class CalendarAggregationService(
     PolarTaskService polarTaskService,
     ReminderService reminderService,
     PolarAuthService polarAuthService,
-    CalendarLayerColorService? layerColorService = null)
+    CalendarLayerColorService? layerColorService = null,
+    ExternalCalendarService? externalCalendarService = null)
 {
     /// <summary>Hard safety cap on chained <c>CalculateNextDueDate</c> calls per recurring task when
     /// expanding ghost occurrences (docs/calendar-feature/03-glosario-y-modelo-de-datos.md §4) — every
@@ -31,6 +32,7 @@ public sealed class CalendarAggregationService(
     /// <c>Layers</c> panel with the exact same keys these items are tagged with.</summary>
     public const string KanbanLayerKey = "kanban";
     public const string ReminderLayerKey = "reminder";
+    public const string ExternalLayerPrefix = "external:";
 
     /// <summary>Every <see cref="CalendarItemViewModel"/> whose positioning moment falls in
     /// [<paramref name="rangeStartUtc"/>, <paramref name="rangeEndUtc"/>), ordered the same way Google
@@ -177,6 +179,32 @@ public sealed class CalendarAggregationService(
             // the reminder's *real* NotifyAtUtc itself falls in this range (análisis alfa-3 §4.4, Media).
             if (includeGhostOccurrences)
                 items.AddRange(BuildGhostOccurrences(reminder, rangeStartUtc, rangeEndUtc, Resolve(colors, ReminderLayerKey)));
+        }
+
+        if (externalCalendarService is not null)
+        {
+            var externalColors = externalCalendarService.Subscriptions
+                .Select((feed, index) => (feed.Id, Color: CalendarLayerPalette.PickerSwatches[index % CalendarLayerPalette.PickerSwatches.Count]))
+                .ToDictionary(entry => entry.Id, entry => entry.Color);
+            foreach (var entry in externalCalendarService.GetEvents(rangeStartUtc, rangeEndUtc))
+            {
+                var color = externalColors[entry.Feed.Id];
+                items.Add(new CalendarItemViewModel
+                {
+                    SourceId = entry.Feed.Id + ":" + entry.Uid + ":" + entry.StartUtc.Ticks,
+                    SourceType = CalendarItemSourceType.ExternalCalendar,
+                    Title = entry.Title,
+                    Description = entry.Description,
+                    MomentUtc = entry.StartUtc,
+                    IsAllDay = entry.IsAllDay,
+                    IsCompleted = false,
+                    DurationMinutes = entry.DurationMinutes,
+                    LayerColorHex = color,
+                    LayerKey = ExternalLayerPrefix + entry.Feed.Id,
+                    ParentContextLabel = entry.Feed.Name,
+                    IconKind = MaterialIconKind.CalendarOutline
+                });
+            }
         }
 
         return items
