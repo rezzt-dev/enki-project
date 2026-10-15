@@ -6389,4 +6389,19 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Verkleinern</value></data>
   <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Dokument wird geladen…</value></data>
   <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>PDF-Vorschau nicht verfügbar. Sie können die Datei mit der Systemanwendung öffnen.</value></data>
+  <data name="ExternalImport_Title" xml:space="preserve"><value>Daten importieren</value></data>
+  <data name="ExternalImport_Hint" xml:space="preserve"><value>Wählen Sie einen lokalen Export: Obsidian-Ordner mit Markdown, Notion-ZIP, Todoist-CSV oder Google-Calendar-ICS. Notizen kommen in einen neuen Ordner, Aufgaben ins Kanban und Termine als Erinnerungen ohne Benachrichtigung in den Kalender. Ein erneuter Import erzeugt Kopien. Von wiederkehrenden Serien wird nur der erste Termin importiert.</value></data>
+  <data name="ExternalImport_Obsidian" xml:space="preserve"><value>Obsidian-Ordner…</value></data>
+  <data name="ExternalImport_Notion" xml:space="preserve"><value>Notion-ZIP-Datei…</value></data>
+  <data name="ExternalImport_Todoist" xml:space="preserve"><value>Todoist-CSV-Datei…</value></data>
+  <data name="ExternalImport_GoogleCalendar" xml:space="preserve"><value>Google-Calendar-ICS-Datei…</value></data>
+  <data name="ExternalImport_EmptyTitle" xml:space="preserve"><value>Keine Daten zum Importieren</value></data>
+  <data name="ExternalImport_EmptyMessage" xml:space="preserve"><value>Der Export enthält keine unterstützten Einträge.</value></data>
+  <data name="ExternalImport_SuccessTitle" xml:space="preserve"><value>Import abgeschlossen</value></data>
+  <data name="ExternalImport_SuccessMessage" xml:space="preserve"><value>Notizen: {0}; Aufgaben: {1}; Termine: {2}; Anhänge: {3}.</value></data>
+  <data name="ExternalImport_ErrorTitle" xml:space="preserve"><value>Import fehlgeschlagen</value></data>
+  <data name="ExternalImport_ErrorMessage" xml:space="preserve"><value>Die Daten konnten nicht importiert werden. Prüfen Sie Format und Dateiberechtigungen.</value></data>
+  <data name="ExternalImport_PartialMessage" xml:space="preserve"><value>Der Import wurde unterbrochen. Bereits hinzugefügt: {0} Notizen, {1} Aufgaben, {2} Termine und {3} Anhänge.</value></data>
+  <data name="ExternalImport_RecurringTitle" xml:space="preserve"><value>Wiederkehrende Termine</value></data>
+  <data name="ExternalImport_RecurringMessage" xml:space="preserve"><value>Bei {0} wiederkehrenden Serien wurde nur der erste Termin importiert. Prüfen Sie diese im Kalender.</value></data>
 </root>

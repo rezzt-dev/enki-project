@@ -43,6 +43,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - política de privacidad visible para la integración con Polar, con el destino Supabase configurado, los datos sincronizados, el cifrado del transporte, el almacenamiento de credenciales y el comportamiento al desvincular.
 - gestión de adjuntos y multimedia dentro de las notas Markdown: importar varios archivos desde el portapapeles, arrastre o selector, reutilizar rutas del vault, cifrar copias en sesiones protegidas y añadir anotaciones Markdown reversibles.
 - gestor integrado de referencias con vista previa de imágenes, PDF, audio y vídeo, apertura con la aplicación del sistema para formatos no compatibles y límites seguros de tamaño, extensión y rutas.
+- importación desde exportaciones locales de Obsidian, Notion, Todoist y Google Calendar desde `ajustes > copias de seguridad`, con notas y adjuntos en el vault, tareas en Kanban y eventos en el calendario.
 
 #### CAMBIOS
 - documentar en `README.md`, `README.en.md` y `cambios-externos-en-el-vault.md` el flujo recomendado para sincronizar el almacén completo, conservar una copia de seguridad y gestionar los conflictos externos sin duplicar datos.
@@ -103,6 +104,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - ampliar el parser, el renderizador Markdown y la exportación para reconocer adjuntos distintos de imágenes, escapar rutas especiales y representarlos como enlaces en HTML sin empaquetar binarios.
 - conectar los adjuntos con `VaultService`, `NoteImageService` y `PdfDocumentViewModel` para respetar conflictos externos, cifrado, sesiones bloqueadas y limpieza de recursos al cerrar visores.
 - traducir las acciones de adjuntos en los siete recursos de idioma y cubrir el servicio, el viewmodel, la interfaz y las regresiones de imágenes y exportación con pruebas automatizadas.
+- añadir `ExternalImportService`, lectores seguros para Markdown, ZIP, CSV e ICS y pruebas de regresión para rutas inseguras, campos entrecomillados, zonas horarias y escrituras sobre las entidades reales.
 
 #### CORREGIDO
 - impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
@@ -119,6 +121,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - exportar a 2x sin ampliar ni recortar la imagen: el contenido rasterizado se pegaba con su tamaño lógico en vez de en píxeles del bitmap, así que a 2x solo se copiaba el cuadrante superior izquierdo estirado al doble.
 - borde derecho de la última columna del tablero kanban vertical perdiendose con escalado fraccional (125%, 150%...); el margen negativo que alinea las columnas con la barra de herramientas ahora vive en el `ScrollViewer`, no en su contenido.
 - popup de comandos `/` del editor apareciendo un instante en su posición anterior antes de recolocarse, y mal posicionado en una nota con scroll porque `CalculateCaretRectangle` no descontaba el desplazamiento del `TextView`.
+- corregir la inicialización de las herramientas de desarrollo de Avalonia en Debug mediante `AttachDeveloperTools`, eliminando la llamada incompatible de `Program.BuildAvaloniaApp`.
 - evitar reentradas al renombrar carpetas de Habilidades, preservar las marcas de exportación y el borrador al mover, borrar o cambiar de skill, y limpiar el historial de deshacer al abrir otro documento.
 - impedir que el editor de Habilidades sobrescriba cambios externos, conservar el borrador ante un fallo y permitir recargar desde disco tras confirmar el descarte; limpiar también los temporales fallidos.
 - impedir que un arrastre sobre una carpeta de Habilidades se propague a la raíz, admitir nombres que colisionan con archivos o carpetas y evitar importaciones de un archivo sobre si mismo.
@@ -163,6 +166,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - a visible privacy policy for the Polar integration covering the configured Supabase destination, synchronised data, transport encryption, credential storage and unlink behaviour.
 - attachment and multimedia management inside Markdown notes: import multiple files from the clipboard, drag and drop or the picker, reuse vault paths, encrypt copies in protected sessions and add reversible Markdown annotations.
 - an integrated reference manager with image, PDF, audio and video previews, system-open fallback for unsupported formats, and safe size, extension and path limits.
+- local import from Obsidian, Notion, Todoist and Google Calendar exports under `settings > backups`, placing notes and attachments in the vault, tasks in Kanban, and events in the calendar.
 
 #### CHANGED
 - document the recommended workflow in `README.md`, `README.en.md` and `cambios-externos-en-el-vault.md` for syncing the complete vault, keeping a backup and handling external conflicts without duplicating data.
@@ -222,6 +226,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - extend the Markdown parser, renderer and exporter to recognise non-image attachments, escape special paths and represent them as HTML links without embedding binaries.
 - connect attachments to `VaultService`, `NoteImageService` and `PdfDocumentViewModel` so external-change checks, encryption, locked sessions and resource cleanup remain enforced.
 - translate attachment actions across all seven language resources and cover the service, viewmodel, UI, image regressions and export behaviour with automated tests.
+- add `ExternalImportService`, safe Markdown, ZIP, CSV and ICS readers, and regression coverage for unsafe paths, quoted fields, time zones, and writes to the existing entities.
 
 #### FIXED
 - prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.
@@ -238,6 +243,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - export at 2x without enlarging or cropping the image: the rendered content was pasted using its logical size instead of the bitmap's pixel size, so at 2x only the top-left quadrant got copied and stretched.
 - vertical kanban board losing its last column's right border under fractional scaling (125%, 150%...); the negative margin that aligns the columns with the toolbar now lives on the `ScrollViewer`, not its content.
 - editor's `/` command popup flashing at its previous position before repositioning, and misplaced in a scrolled note because `CalculateCaretRectangle` didn't subtract the `TextView`'s scroll offset.
+- fix Avalonia developer-tools initialisation in Debug through `AttachDeveloperTools`, removing the incompatible call from `Program.BuildAvaloniaApp`.
 - avoid re-entering Skills folder rename, preserve export selections and drafts when moving, deleting or switching skills, and clear undo history when opening another document.
 - prevent the Skills editor from overwriting external changes, retain the draft after a failure and allow reloading from disk after confirming discard; also clean up failed temporary files.
 - prevent a drop over a Skills folder from propagating to root, accept names colliding with files or folders, and skip importing a file onto itself.
@@ -352,6 +358,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - purgar los descartes de recordatorios huérfanos cuando se borra para siempre la tarjeta asociada, liberar el webview del grafo de sesiones al salir de la pestaña, y cancelar una búsqueda global en vuelo cuando el usuario sigue escribiendo para que no pise resultados más recientes con otros obsoletos.
 
 #### SEGURIDAD
+- validar rutas relativas y enlaces simbólicos al importar, limitar a 100 MB y 10 000 elementos cada exportación y omitir entradas ZIP inseguras para evitar escapes de carpeta y consumos descontrolados.
 - proteger los tokens de sesión de polar con dpapi en windows, secret service mediante libsecret en linux y keychain en macos, fuera de `settings.json`.
 - migrar los tokens heredados solo tras confirmar su escritura segura y avisar de los fallos sin guardar nuevas sesiones en texto plano.
 - mantener la redaccion de tokens en la exportación de ajustes y los backups de `settings.json` global y del vault, incluidos los archivos heredados.
@@ -471,6 +478,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - purge orphaned reminder dismissals when their card is permanently deleted, dispose of the session graph's webview on leaving the tab, and cancel an in-flight global search when the user keeps typing so stale results can't overwrite newer ones.
 
 #### SECURITY
+- validate relative paths and symbolic links during import, limit each export to 100 MB and 10,000 items, and skip unsafe ZIP entries to prevent folder escapes and unbounded resource use.
 - protect polar session tokens with dpapi on windows, secret service through libsecret on linux, and keychain on macos, outside `settings.json`.
 - migrate legacy tokens only after secure storage succeeds and report failures without saving new sessions in plain text.
 - keep tokens redacted in settings exports and backups of global and vault `settings.json`, including legacy files.

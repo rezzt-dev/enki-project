@@ -6389,4 +6389,19 @@ Bonne rédaction.</value>
   <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Réduire</value></data>
   <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Chargement du document…</value></data>
   <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>Impossible d’afficher le PDF. Vous pouvez l’ouvrir avec l’application système.</value></data>
+  <data name="ExternalImport_Title" xml:space="preserve"><value>Importer des données</value></data>
+  <data name="ExternalImport_Hint" xml:space="preserve"><value>Choisissez une exportation locale : dossier Markdown Obsidian, archive ZIP Notion, fichier CSV Todoist ou fichier ICS Google Agenda. Les notes sont ajoutées dans un nouveau dossier, les tâches dans Kanban et les événements dans le calendrier sous forme de rappels sans alerte. Un nouvel import crée des copies. Seule la première date des séries récurrentes est importée.</value></data>
+  <data name="ExternalImport_Obsidian" xml:space="preserve"><value>Dossier Obsidian…</value></data>
+  <data name="ExternalImport_Notion" xml:space="preserve"><value>Archive ZIP Notion…</value></data>
+  <data name="ExternalImport_Todoist" xml:space="preserve"><value>Fichier CSV Todoist…</value></data>
+  <data name="ExternalImport_GoogleCalendar" xml:space="preserve"><value>Fichier ICS Google Agenda…</value></data>
+  <data name="ExternalImport_EmptyTitle" xml:space="preserve"><value>Aucune donnée à importer</value></data>
+  <data name="ExternalImport_EmptyMessage" xml:space="preserve"><value>L’exportation ne contient aucun élément pris en charge.</value></data>
+  <data name="ExternalImport_SuccessTitle" xml:space="preserve"><value>Importation terminée</value></data>
+  <data name="ExternalImport_SuccessMessage" xml:space="preserve"><value>Notes : {0} ; tâches : {1} ; événements : {2} ; pièces jointes : {3}.</value></data>
+  <data name="ExternalImport_ErrorTitle" xml:space="preserve"><value>Échec de l’importation</value></data>
+  <data name="ExternalImport_ErrorMessage" xml:space="preserve"><value>Impossible d’importer les données. Vérifiez le format et les autorisations du fichier.</value></data>
+  <data name="ExternalImport_PartialMessage" xml:space="preserve"><value>L’importation a été interrompue. Éléments déjà ajoutés : {0} notes, {1} tâches, {2} événements et {3} pièces jointes.</value></data>
+  <data name="ExternalImport_RecurringTitle" xml:space="preserve"><value>Événements récurrents</value></data>
+  <data name="ExternalImport_RecurringMessage" xml:space="preserve"><value>Seule la première date de {0} séries récurrentes a été importée. Vérifiez ces éléments dans le calendrier.</value></data>
 </root>

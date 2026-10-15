@@ -1,3 +1,6 @@
+#if DEBUG
+using AvaloniaUI.DiagnosticsSupport;
+#endif
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -18,6 +21,9 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+#if DEBUG
+        this.AttachDeveloperTools();
+#endif
         MotionService.Apply(false);
         // Las dos marcas de arriba y esta separan las tres partes de "casi dos segundos antes de poder
         // pintar nada": inicializar la plataforma gráfica, cargar los estilos de la aplicación, y el

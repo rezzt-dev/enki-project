@@ -192,8 +192,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action<bool>? onVaultSwitcherChanged = null,
         UpdateCheckService? updateCheckService = null,
         KanbanService? kanbanService = null,
-        Action? onManageKanbanBoards = null)
+        Action? onManageKanbanBoards = null,
+        ReminderService? reminderService = null,
+        Action? onExternalImportCompleted = null)
     {
+        _reminderImportService = reminderService;
+        _onExternalImportCompleted = onExternalImportCompleted;
         _kanbanService = kanbanService;
         _onManageKanbanBoards = onManageKanbanBoards;
         _updateCheckService = updateCheckService;

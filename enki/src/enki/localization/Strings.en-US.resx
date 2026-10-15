@@ -6389,4 +6389,19 @@ Happy writing.</value>
   <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Zoom out</value></data>
   <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Loading document…</value></data>
   <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>Could not preview the PDF. You can open it with the system application.</value></data>
+  <data name="ExternalImport_Title" xml:space="preserve"><value>Import data</value></data>
+  <data name="ExternalImport_Hint" xml:space="preserve"><value>Choose a local export. Obsidian: Markdown folder; Notion: ZIP with Markdown; Todoist: CSV; Google Calendar: ICS. Notes go into a new folder, tasks into Kanban, and calendar events become reminders without alerts. Importing again creates copies. Recurring series import only their first date.</value></data>
+  <data name="ExternalImport_Obsidian" xml:space="preserve"><value>Obsidian (folder)…</value></data>
+  <data name="ExternalImport_Notion" xml:space="preserve"><value>Notion (ZIP)…</value></data>
+  <data name="ExternalImport_Todoist" xml:space="preserve"><value>Todoist (CSV)…</value></data>
+  <data name="ExternalImport_GoogleCalendar" xml:space="preserve"><value>Google Calendar (ICS)…</value></data>
+  <data name="ExternalImport_EmptyTitle" xml:space="preserve"><value>Nothing to import</value></data>
+  <data name="ExternalImport_EmptyMessage" xml:space="preserve"><value>The export contains no supported items.</value></data>
+  <data name="ExternalImport_SuccessTitle" xml:space="preserve"><value>Import complete</value></data>
+  <data name="ExternalImport_SuccessMessage" xml:space="preserve"><value>Notes: {0}; tasks: {1}; events: {2}; attachments: {3}.</value></data>
+  <data name="ExternalImport_ErrorTitle" xml:space="preserve"><value>Import failed</value></data>
+  <data name="ExternalImport_ErrorMessage" xml:space="preserve"><value>Could not import data. Check the file format and permissions.</value></data>
+  <data name="ExternalImport_PartialMessage" xml:space="preserve"><value>Import stopped. Already added: {0} notes, {1} tasks, {2} events and {3} attachments.</value></data>
+  <data name="ExternalImport_RecurringTitle" xml:space="preserve"><value>Recurring events</value></data>
+  <data name="ExternalImport_RecurringMessage" xml:space="preserve"><value>Only the first date was imported for {0} recurring series. Review these entries in the calendar.</value></data>
 </root>

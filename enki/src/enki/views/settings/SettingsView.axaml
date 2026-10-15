@@ -588,6 +588,21 @@
                 </StackPanel>
               </Border>
             </controls:SettingsSearchOption>
+
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="ExternalImport_Title ExternalImport_Hint ExternalImport_Obsidian ExternalImport_Notion ExternalImport_Todoist ExternalImport_GoogleCalendar">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Classes="section-title" Text="{loc:Tr ExternalImport_Title, Converter={StaticResource UpperCaseConverter}}" />
+                  <TextBlock Classes="muted" FontSize="11.5" TextWrapping="Wrap" Text="{loc:Tr ExternalImport_Hint}" />
+                  <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" IsEnabled="{Binding !IsExternalImporting}">
+                    <Button Classes="pill" Command="{Binding ImportObsidianCommand}" Content="{loc:Tr ExternalImport_Obsidian, Converter={StaticResource UpperCaseConverter}}" />
+                    <Button Classes="pill" Command="{Binding ImportNotionCommand}" Content="{loc:Tr ExternalImport_Notion, Converter={StaticResource UpperCaseConverter}}" />
+                    <Button Classes="pill" Command="{Binding ImportTodoistCommand}" Content="{loc:Tr ExternalImport_Todoist, Converter={StaticResource UpperCaseConverter}}" />
+                    <Button Classes="pill" Command="{Binding ImportGoogleCalendarCommand}" Content="{loc:Tr ExternalImport_GoogleCalendar, Converter={StaticResource UpperCaseConverter}}" />
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
           </StackPanel>
         </controls:SettingsSearchOption>
 

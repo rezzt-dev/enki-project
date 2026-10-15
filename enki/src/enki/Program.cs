@@ -22,7 +22,7 @@ class Program
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         // El motor WebView embebido (grafo de sesiones, vía NativeWebView/WebViewHost — las notas solo se
-        // exportan a HTML hoy, sin vista de impresión ni WebView propios, ver NoteExportService) usa
+        // exportan a HTML sin vista de impresión propia, ver NoteExportService) usa
         // WPEWebKit en Linux. Su renderer DMA-BUF por defecto produce una
         // superficie en negro/blanco con ciertas combinaciones de driver gráfico y compositor Wayland
         // aunque el motor se reporte "instalado" y la navegación termine con éxito — variable de entorno
@@ -82,9 +82,6 @@ class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
-#if DEBUG
-            .WithDeveloperTools()
-#endif
             .WithInterFont()
             .LogToTrace(Avalonia.Logging.LogEventLevel.Debug);
 }

@@ -405,7 +405,7 @@ public sealed class PolarSyncService
 
     private async Task<bool> PushRemindersAsync(string userId, List<string> overwrittenTitles, CancellationToken ct)
     {
-        var dirty = SelectOwnedDirty(_reminderService.Reminders, userId, r => r.Dirty, r => r.UserId, (r, id) => r.UserId = id);
+        var dirty = SelectOwnedDirty(_reminderService.Reminders, userId, r => r.Dirty && !r.IsImportedCalendarEvent, r => r.UserId, (r, id) => r.UserId = id);
         if (dirty.Count == 0) return false;
 
         var dtos = dirty.Select(r => new ReminderDto

@@ -6389,4 +6389,19 @@ Feliz escritura.</value>
   <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Reducir</value></data>
   <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Cargando documento…</value></data>
   <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>No se pudo mostrar el PDF. Puedes abrirlo con la aplicación del sistema.</value></data>
+  <data name="ExternalImport_Title" xml:space="preserve"><value>Importar datos</value></data>
+  <data name="ExternalImport_Hint" xml:space="preserve"><value>Selecciona una exportación local. Obsidian: carpeta Markdown; Notion: ZIP con Markdown; Todoist: CSV; Google Calendar: ICS. Las notas se añaden a una carpeta nueva, las tareas al Kanban y los eventos al calendario como recordatorios sin aviso. Importar de nuevo creará copias. Las series recurrentes solo importan su primera fecha.</value></data>
+  <data name="ExternalImport_Obsidian" xml:space="preserve"><value>Obsidian (carpeta)…</value></data>
+  <data name="ExternalImport_Notion" xml:space="preserve"><value>Notion (ZIP)…</value></data>
+  <data name="ExternalImport_Todoist" xml:space="preserve"><value>Todoist (CSV)…</value></data>
+  <data name="ExternalImport_GoogleCalendar" xml:space="preserve"><value>Google Calendar (ICS)…</value></data>
+  <data name="ExternalImport_EmptyTitle" xml:space="preserve"><value>Nada que importar</value></data>
+  <data name="ExternalImport_EmptyMessage" xml:space="preserve"><value>La exportación no contiene elementos compatibles.</value></data>
+  <data name="ExternalImport_SuccessTitle" xml:space="preserve"><value>Importación completada</value></data>
+  <data name="ExternalImport_SuccessMessage" xml:space="preserve"><value>Notas: {0}; tareas: {1}; eventos: {2}; adjuntos: {3}.</value></data>
+  <data name="ExternalImport_ErrorTitle" xml:space="preserve"><value>Error de importación</value></data>
+  <data name="ExternalImport_ErrorMessage" xml:space="preserve"><value>No se pudieron importar los datos. Comprueba el formato y los permisos del archivo.</value></data>
+  <data name="ExternalImport_PartialMessage" xml:space="preserve"><value>La importación se interrumpió. Ya se añadieron {0} notas, {1} tareas, {2} eventos y {3} adjuntos.</value></data>
+  <data name="ExternalImport_RecurringTitle" xml:space="preserve"><value>Series recurrentes</value></data>
+  <data name="ExternalImport_RecurringMessage" xml:space="preserve"><value>Se importó solo la primera fecha de {0} series recurrentes. Revisa esas entradas en el calendario.</value></data>
 </root>
