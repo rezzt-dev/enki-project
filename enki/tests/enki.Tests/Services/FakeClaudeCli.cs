@@ -13,7 +13,7 @@ internal sealed class FakeClaudeCli : IDisposable
 {
     public const string HelpText =
         "  --output-format <format>\n  --include-partial-messages\n  --resume [value]\n  --tools <tools...>\n" +
-        "  --strict-mcp-config\n  --disable-slash-commands\n  --safe-mode\n  --model <model>\n" +
+        "  --strict-mcp-config\n  --disable-slash-commands\n  --safe-mode\n  --model <model>\n  --effort <level>\n" +
         "  --system-prompt <prompt>\n  --bare  ... --system-prompt[-file], --append-system-prompt[-file]\n";
 
     public FakeClaudeCli()

@@ -23,22 +23,29 @@
     <KeyBinding Gesture="Ctrl+N" Command="{Binding NewChatCommand}" />
   </UserControl.KeyBindings>
 
-  <Grid ColumnDefinitions="280,*">
+  <Grid ColumnDefinitions="Auto,*">
 
     <!-- ===================== Historial ===================== -->
-    <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundAltBrush}">
+    <Grid x:Name="HistoryPanel" Grid.Column="0" Width="280" IsVisible="{Binding !IsHistoryCollapsed}"
+          RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundAltBrush}">
       <Border Grid.Row="0" Grid.RowSpan="4" Width="1" HorizontalAlignment="Right"
               Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
 
       <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,1"
               Background="{DynamicResource AppBackgroundBrush}" Padding="16,0,8,0">
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto">
           <TextBlock Grid.Column="0" Text="{loc:Tr Assistant_History_Title, Converter={StaticResource UpperCaseConverter}}"
                      Classes="eyebrow" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="icon-btn" Command="{Binding NewChatCommand}"
                   IsEnabled="{Binding CanStartNewChat}"
                   ToolTip.Tip="{loc:Tr Assistant_NewChat_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_NewChat_Tooltip}">
             <mi:MaterialIcon Kind="MessagePlusOutline" Width="17" Height="17" />
+          </Button>
+          <Button x:Name="CollapseHistoryButton" Grid.Column="2" Classes="icon-btn"
+                  Command="{Binding ToggleHistoryCommand}"
+                  ToolTip.Tip="{loc:Tr Assistant_History_Hide_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Assistant_History_Hide_Tooltip}">
+            <mi:MaterialIcon Kind="ChevronDoubleLeft" Width="17" Height="17" />
           </Button>
         </Grid>
       </Border>
@@ -54,43 +61,53 @@
 
       <Grid Grid.Row="2">
         <ScrollViewer Padding="0,0,1,10" IsEnabled="{Binding !IsSending}">
-          <ItemsControl ItemsSource="{Binding Sessions}" Margin="8,0,9,0">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
+          <ItemsControl ItemsSource="{Binding ChatGroups}" Margin="8,0,9,0">
             <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="vm:AiChatSessionItemViewModel">
-                <Border Classes="folder-row" Classes.active="{Binding IsActive}" Padding="10,0,4,0"
-                        PointerPressed="SessionRow_PointerPressed">
-                  <Border.ContextMenu>
-                    <ContextMenu>
-                      <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
-                                Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestDeleteSessionCommand}"
-                                CommandParameter="{Binding}">
-                        <MenuItem.Icon>
-                          <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
-                        </MenuItem.Icon>
-                      </MenuItem>
-                    </ContextMenu>
-                  </Border.ContextMenu>
-                  <Grid ColumnDefinitions="Auto,*,Auto" Height="48">
-                    <mi:MaterialIcon Grid.Column="0" Kind="MessageTextOutline" Width="15" Height="15" Margin="0,0,10,0"
-                                     Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                      <TextBlock Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Text="{Binding Subtitle}" Classes="faint" FontSize="10.5" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                    <Button Grid.Column="2" Classes="icon-btn row-action icon-btn-danger" Width="28" Height="28"
-                            Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestDeleteSessionCommand}"
-                            CommandParameter="{Binding}"
-                            ToolTip.Tip="{loc:Tr Assistant_History_Delete_Tooltip}"
-                            AutomationProperties.Name="{loc:Tr Assistant_History_Delete_Tooltip}">
-                      <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
-                    </Button>
-                  </Grid>
-                </Border>
+              <DataTemplate DataType="vm:AiChatGroupViewModel">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{Binding Title}" Classes="eyebrow" FontSize="10" Margin="10,14,8,4"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                  <ItemsControl ItemsSource="{Binding Chats}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:AiChatSessionItemViewModel">
+                        <Border Classes="folder-row" Classes.active="{Binding IsActive}" Padding="10,0,4,0"
+                                PointerPressed="SessionRow_PointerPressed">
+                          <Border.ContextMenu>
+                            <ContextMenu>
+                              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
+                                        Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestDeleteSessionCommand}"
+                                        CommandParameter="{Binding}">
+                                <MenuItem.Icon>
+                                  <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                              </MenuItem>
+                            </ContextMenu>
+                          </Border.ContextMenu>
+                          <Grid ColumnDefinitions="Auto,*,Auto" Height="48">
+                            <mi:MaterialIcon Grid.Column="0" Kind="MessageTextOutline" Width="15" Height="15" Margin="0,0,10,0"
+                                             Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                              <TextBlock Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Text="{Binding Subtitle}" Classes="faint" FontSize="10.5" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <Button Grid.Column="2" Classes="icon-btn row-action icon-btn-danger" Width="28" Height="28"
+                                    Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestDeleteSessionCommand}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip.Tip="{loc:Tr Assistant_History_Delete_Tooltip}"
+                                    AutomationProperties.Name="{loc:Tr Assistant_History_Delete_Tooltip}">
+                              <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                            </Button>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -106,7 +123,7 @@
                    IsVisible="{Binding HasNoSearchMatches}" />
       </Grid>
 
-      <!-- Pie: con qué CLI y cuenta se está hablando. Transparencia: siempre visible. -->
+      <!-- Pie del historial desplegado: CLI y cuenta con los que se está hablando. -->
       <Border Grid.Row="3" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,1,0" Padding="14,10,8,10">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,0,10,0" VerticalAlignment="Center"
@@ -123,6 +140,41 @@
             <mi:MaterialIcon Kind="CogOutline" Width="15" Height="15" />
           </Button>
         </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Historial plegado: conserva los accesos a nuevo chat, estado del CLI y ajustes. -->
+    <Grid x:Name="HistoryRail" Grid.Column="0" Width="52" RowDefinitions="Auto,*,Auto"
+          IsVisible="{Binding IsHistoryCollapsed}" Background="{DynamicResource AppBackgroundAltBrush}">
+      <Border Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
+              Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
+      <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+              Background="{DynamicResource AppBackgroundBrush}">
+        <Button x:Name="ExpandHistoryButton" Classes="icon-btn" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Command="{Binding ToggleHistoryCommand}"
+                ToolTip.Tip="{loc:Tr Assistant_History_Show_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Assistant_History_Show_Tooltip}">
+          <mi:MaterialIcon Kind="ChevronDoubleRight" Width="17" Height="17" />
+        </Button>
+      </Border>
+      <Button Grid.Row="1" Classes="icon-btn" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"
+              Command="{Binding NewChatCommand}" IsEnabled="{Binding CanStartNewChat}"
+              ToolTip.Tip="{loc:Tr Assistant_NewChat_Tooltip}"
+              AutomationProperties.Name="{loc:Tr Assistant_NewChat_Tooltip}">
+        <mi:MaterialIcon Kind="MessagePlusOutline" Width="17" Height="17" />
+      </Button>
+      <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,10">
+        <StackPanel Spacing="8" HorizontalAlignment="Center">
+          <Ellipse Width="7" Height="7" Fill="{DynamicResource SuccessBrush}" IsVisible="{Binding Cli.IsReady}"
+                   ToolTip.Tip="{Binding Cli.StateLabel}" />
+          <Ellipse Width="7" Height="7" Fill="{DynamicResource Ink30}" IsVisible="{Binding !Cli.IsReady}"
+                   ToolTip.Tip="{Binding Cli.StateLabel}" />
+          <Button Classes="icon-btn" Width="28" Height="28" Command="{Binding OpenSettingsCommand}"
+                  ToolTip.Tip="{loc:Tr Assistant_OpenSettings_Tooltip}"
+                  AutomationProperties.Name="{loc:Tr Assistant_OpenSettings_Tooltip}">
+            <mi:MaterialIcon Kind="CogOutline" Width="15" Height="15" />
+          </Button>
+        </StackPanel>
       </Border>
     </Grid>
 
@@ -177,16 +229,46 @@
           <TextBlock Grid.Column="2" Text="{loc:Tr Assistant_Model_Label, Converter={StaticResource UpperCaseConverter}}"
                      Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center" Margin="16,0,10,0"
                      IsVisible="{Binding Cli.IsReady}" />
-          <ComboBox Grid.Column="3" ItemsSource="{Binding ModelOptions}" SelectedItem="{Binding SelectedModel}"
-                    Width="170" VerticalAlignment="Center" IsEnabled="{Binding !IsSending}"
-                    IsVisible="{Binding Cli.IsReady}"
-                    ToolTip.Tip="{loc:Tr Assistant_Model_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Model_Label}">
-            <ComboBox.ItemTemplate>
-              <DataTemplate DataType="vm:AiModelOption">
-                <TextBlock Text="{Binding Label}" />
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                      IsVisible="{Binding Cli.IsReady}">
+            <ComboBox ItemsSource="{Binding ModelOptions}" SelectedItem="{Binding SelectedModel}"
+                      Width="170" VerticalAlignment="Center" IsEnabled="{Binding !IsSending}"
+                      IsVisible="{Binding Cli.IsReady}"
+                      ToolTip.Tip="{loc:Tr Assistant_Model_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Model_Label}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate DataType="vm:AiModelOption">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button x:Name="EffortTrigger" Classes="date-picker-trigger" Padding="10,7"
+                    Command="{Binding ToggleEffortPickerCommand}"
+                    ToolTip.Tip="{loc:Tr Assistant_Effort_Help}" AutomationProperties.Name="{loc:Tr Assistant_Effort_Title}">
+              <TextBlock Text="{Binding EffortSummary}" FontSize="12" />
+            </Button>
+            <Popup PlacementTarget="{Binding #EffortTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="6"
+                   IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #EffortTrigger}"
+                   IsOpen="{Binding IsEffortPickerOpen, Mode=TwoWay}">
+              <Border Classes="dropdown-popover" Width="260">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="{loc:Tr Assistant_Effort_Title}" Classes="eyebrow" />
+                  <TextBlock Text="{Binding EffortLabel}" FontSize="13" />
+                  <Slider x:Name="EffortSlider" Theme="{StaticResource RectangularSlider}"
+                          Minimum="0" Maximum="2" SmallChange="1" LargeChange="1" TickFrequency="1" IsSnapToTickEnabled="True"
+                          Value="{Binding EffortLevel, Mode=TwoWay}" IsEnabled="{Binding CanChangeEffort}"
+                          AutomationProperties.Name="{loc:Tr Assistant_Effort_Title}" />
+                  <Grid ColumnDefinitions="*,*,*">
+                    <TextBlock Text="{loc:Tr Assistant_Effort_low}" Classes="faint" />
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Effort_medium}" Classes="faint" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{loc:Tr Assistant_Effort_high}" Classes="faint" HorizontalAlignment="Right" />
+                  </Grid>
+                  <TextBlock Text="{loc:Tr Assistant_Effort_Help}" Classes="muted" TextWrapping="Wrap" FontSize="11" />
+                  <TextBlock Text="{loc:Tr Assistant_Effort_Unavailable}" IsVisible="{Binding ShowEffortUnavailable}"
+                             Classes="muted" TextWrapping="Wrap" FontSize="11" />
+                </StackPanel>
+              </Border>
+            </Popup>
+          </StackPanel>
           <Button Grid.Column="4" Classes="icon-btn" Width="32" Height="32" Margin="8,0,0,0"
                   Command="{Binding NewChatCommand}" IsEnabled="{Binding CanStartNewChat}"
                   ToolTip.Tip="{loc:Tr Assistant_NewChat_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_NewChat_Tooltip}">
@@ -231,7 +313,7 @@
                 <TextBlock Text="{loc:Tr Assistant_Scope_FixedWorkspace}" Classes="faint" FontSize="11" TextWrapping="Wrap"
                            IsVisible="{Binding !CanChangeWorkspace}" />
                 <Rectangle Classes="section-rule" />
-                <Grid ColumnDefinitions="*,Auto">
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !IsSessionChat}">
                   <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,12,0">
                     <TextBlock Text="{Binding FullAccessLabel}" FontSize="12.5" />
                     <TextBlock Text="{Binding FullAccessDescription}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />

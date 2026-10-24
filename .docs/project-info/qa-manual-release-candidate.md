@@ -519,8 +519,13 @@ Requiere una máquina con Claude Code instalado y otra (o una cuenta de usuario)
 
 ### Herramientas del asistente sobre el vault
 
-- [ ] Probar un chat del vault y otro abierto desde Sesiones: el chip y el resumen muestran su ámbito;
-  los adjuntos y las herramientas no acceden a otros espacios sin activar el acceso ampliado.
+- [ ] Probar un chat del vault y otro abierto desde Sesiones: el historial los agrupa y el chip muestra
+  el ámbito. Un chat de sesión nunca accede a la raíz ni a otras sesiones, incluso con acceso ampliado
+  heredado en su JSON; solo los chats del vault pueden activar acceso a sesiones sin protección.
+- [ ] Sin preferencias previas, un chat nuevo usa Sonnet 5.5 y capacidad media. Mover el slider a ligera
+  o alta, enviar y reabrir: conserva el nivel por chat. Otro chat empieza en media. Con CLI sin
+  `--effort`, el control está deshabilitado y explica cómo actualizar; durante una respuesta no cambia.
+- [ ] Revisar el popover de capacidad con teclado, ambos temas y zoom; comprobar su cierre con Escape.
 - [ ] Una sesión protegida, bloqueada o desbloqueada, queda fuera del acceso ampliado de otro chat.
   Su chat propio funciona al desbloquearla y deja de leerla al bloquearla.
 - [ ] Crear/editar/mover una nota abierta: la pestaña y los wikilinks se actualizan; un cambio externo

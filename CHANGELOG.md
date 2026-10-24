@@ -10,6 +10,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- historial del asistente agrupado por vault y sesiones, aislamiento estricto de los chats de sesión y selector de capacidad por conversación mediante slider; Sonnet 5.5 y capacidad media para nuevos chats sin preferencias previas.
+- panel lateral de conversaciones del asistente plegable y desplegable, con un raíl de `52px` que conserva los accesos a nuevo chat, ajustes y el estado del CLI mientras libera espacio para la conversación.
 - herramientas del asistente sobre notas, sesiones, carpetas, archivos, Kanban, Polar, recordatorios, agenda y papelera; ámbitos por chat, modo de solo lectura, actividad persistida y confirmación para acciones irreversibles, con escrituras comprobadas e integración MCP local autenticada.
 - catálogo operativo de herramientas del vault en `AiVaultToolbox` y servidor MCP local en `EnkiMcpServer`, con 52 acciones sobre notas, archivos, sesiones, Kanban, Polar, recordatorios, agenda y papelera usando las entidades y servicios existentes.
 - selector de ámbito por conversación para trabajar en el vault o en una sesión, acceso ampliado opcional, apertura de chats desde Sesiones y resumen visible del alcance bajo el compositor.
@@ -160,6 +162,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- assistant history grouped by vault and session, strict session chat isolation, and a per-chat effort slider; Sonnet 5.5 and medium effort for new chats without previous preferences.
+- collapsible assistant conversation sidebar with a `52px` rail that keeps new chat, settings and CLI status actions available while giving the conversation more room.
 - assistant tools for notes, sessions, folders, files, Kanban, Polar, reminders, agenda and trash; per-chat scopes, read-only mode, persisted activity and confirmation for irreversible actions, with checked writes and authenticated local MCP integration.
 - an operational vault tool catalogue in `AiVaultToolbox` and a local MCP server in `EnkiMcpServer`, with 52 actions for notes, files, sessions, Kanban, Polar, reminders, agenda and trash using the existing entities and services.
 - a per-conversation scope selector for the vault or a session, optional expanded access, chat opening from Sessions, and a visible scope summary below the composer.

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -12,11 +13,9 @@ using Material.Icons;
 
 namespace enki.ViewModels;
 
-/// <summary>Ámbito del chat (ver <see cref="AiAccessScope"/>): en qué espacio se abrió —el vault, por
-/// defecto, o una sesión— y si tiene acceso ampliado ("acceso a las sesiones" en un chat del vault, "modo
-/// auto" en uno de sesión). El espacio se elige antes del primer mensaje; el acceso ampliado se puede cambiar
-/// en cualquier momento y vale desde el turno siguiente. Lo que se ve en la cabecera y bajo el compositor
-/// dice siempre, en claro, hasta dónde llega el asistente.</summary>
+/// <summary>Ámbito de la conversación: vault o sesión fija. Solo los chats del vault pueden habilitar
+/// acceso a sesiones sin protección; un chat de sesión nunca sale de su espacio. El ámbito se elige antes
+/// del primer mensaje y se muestra siempre en la cabecera y bajo el compositor.</summary>
 public sealed partial class AssistantViewModel
 {
     /// <summary>Ámbito elegido para el chat que se va a empezar.</summary>
@@ -27,6 +26,7 @@ public sealed partial class AssistantViewModel
     /// <summary>La sesión del ámbito tal como está ahora en el vault (se resuelve en <see cref="RefreshScope"/>
     /// y no en cada lectura: listar sesiones lee sus manifiestos del disco).</summary>
     private Session? _scopeSession;
+    private readonly Dictionary<string, string> _scopeNames = new(StringComparer.Ordinal);
 
     private string? ScopeSessionId => _activeSession is not null ? _activeSession.SessionId : _draftSessionId;
 
@@ -37,10 +37,10 @@ public sealed partial class AssistantViewModel
 
     public bool FullVaultAccess
     {
-        get => _activeSession?.FullVaultAccess ?? _draftFullAccess;
+        get => !IsSessionChat && (_activeSession?.FullVaultAccess ?? _draftFullAccess);
         set
         {
-            if (value == FullVaultAccess || IsSending) return;
+            if (value == FullVaultAccess || IsSending || IsSessionChat) return;
             if (_activeSession is { } session)
             {
                 session.FullVaultAccess = value;
@@ -179,11 +179,14 @@ public sealed partial class AssistantViewModel
     public void RefreshScope()
     {
         _scopeSession = null;
-        if (ScopeSessionId is { } id && _sessionService is not null && _vaultService.IsVaultConfigured)
+        _scopeNames.Clear();
+        if (_sessionService is not null && _vaultService.IsVaultConfigured)
         {
             try
             {
-                _scopeSession = _sessionService.List().FirstOrDefault(s => s.Id == id);
+                var sessions = _sessionService.List();
+                foreach (var session in sessions) _scopeNames[session.Id] = session.Name;
+                _scopeSession = sessions.FirstOrDefault(s => s.Id == ScopeSessionId);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -206,10 +209,11 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(ScopeWarning));
         OnPropertyChanged(nameof(HasScopeWarning));
         RefreshActiveNote();
+        RebuildSessionList();
     }
 
-    /// <summary>Si una nota cae dentro del ámbito del chat: la raíz del vault solo con un chat del vault o en
-    /// modo auto; una sesión, si es la del chat o —sin contraseña— con acceso ampliado, y siempre desbloqueada.
+    /// <summary>Si una nota cae dentro del ámbito del chat: la raíz del vault solo con un chat del vault; una sesión, si es la del chat o —sin contraseña— con acceso ampliado del vault,
+    /// y siempre desbloqueada.
     /// Rige también qué notas se pueden adjuntar, para que adjuntar no sea una forma de saltarse el ámbito.</summary>
     private bool IsInScope(NoteFile note)
     {

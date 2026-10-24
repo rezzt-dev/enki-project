@@ -92,6 +92,19 @@ public sealed class ClaudeCliServiceTests : IDisposable
         Assert.Equal(SimpleTurn.SystemPrompt, arguments[arguments.IndexOf("--system-prompt") + 1]);
         Assert.DoesNotContain("--model", arguments);
         Assert.DoesNotContain("--resume", arguments);
+        Assert.DoesNotContain("--effort", arguments);
+    }
+
+    [Theory]
+    [InlineData("low", "low")]
+    [InlineData("medium", "medium")]
+    [InlineData("high", "high")]
+    [InlineData("invalid", "medium")]
+    public void BuildTurnArguments_PassesValidatedEffort_WhenCliSupportsIt(string effort, string expected)
+    {
+        var arguments = ClaudeCliService.BuildTurnArguments(SimpleTurn with { Effort = effort },
+            ClaudeCliService.ParseCapabilities(FakeClaudeCli.HelpText), null, true);
+        Assert.Equal(expected, arguments[arguments.IndexOf("--effort") + 1]);
     }
 
     [Fact]

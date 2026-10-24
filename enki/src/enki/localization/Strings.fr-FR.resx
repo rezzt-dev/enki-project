@@ -7195,4 +7195,28 @@ Bonne rédaction.</value>
   <data name="Sessions_OpenInAssistantButton" xml:space="preserve">
     <value>Interroger l’assistant</value>
   </data>
+  <data name="Assistant_Effort_Title" xml:space="preserve">
+    <value>EFFORT DE RÉFLEXION</value>
+  </data>
+  <data name="Assistant_Effort_low" xml:space="preserve">
+    <value>Faible</value>
+  </data>
+  <data name="Assistant_Effort_medium" xml:space="preserve">
+    <value>Moyen</value>
+  </data>
+  <data name="Assistant_Effort_high" xml:space="preserve">
+    <value>Élevé</value>
+  </data>
+  <data name="Assistant_Effort_Help" xml:space="preserve">
+    <value>Un effort supérieur prend plus de temps et peut consommer davantage de quota. Applicable à la prochaine réponse.</value>
+  </data>
+  <data name="Assistant_Effort_Unavailable" xml:space="preserve">
+    <value>Mettez Claude Code à jour pour régler l’effort. Ce CLI utilise sa configuration par défaut.</value>
+  </data>
+  <data name="Assistant_History_Hide_Tooltip" xml:space="preserve">
+    <value>Masquer les conversations</value>
+  </data>
+  <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
+    <value>Afficher les conversations</value>
+  </data>
 </root>

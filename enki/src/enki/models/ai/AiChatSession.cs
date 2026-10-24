@@ -27,6 +27,9 @@ public sealed class AiChatSession
     /// <summary>Alias de modelo con el que se envían los turnos de este chat; vacío para el del CLI.</summary>
     public string Model { get; set; } = string.Empty;
 
+    /// <summary>Esfuerzo de razonamiento para los turnos siguientes: low, medium o high.</summary>
+    public string Effort { get; set; } = "medium";
+
     /// <summary>Nombre visible de la skill con la que se inició el chat, si la hay.</summary>
     public string? SkillName { get; set; }
 
@@ -46,8 +49,8 @@ public sealed class AiChatSession
     public string? SessionName { get; set; }
 
     /// <summary>Acceso ampliado del asistente. En un chat del vault es "acceso a las sesiones"; en un chat de
-    /// sesión, el "modo auto" que abre el vault entero. Apagado por defecto y modificable en cualquier
-    /// momento: se aplica a partir del siguiente turno.</summary>
+    /// sesión este valor heredado se ignora: el ámbito queda limitado a esa sesión. Apagado por defecto;
+    /// en chats del vault se puede modificar entre turnos.</summary>
     public bool FullVaultAccess { get; set; }
 
     public List<AiChatMessage> Messages { get; set; } = [];

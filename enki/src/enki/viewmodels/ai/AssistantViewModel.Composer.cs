@@ -93,6 +93,7 @@ public sealed partial class AssistantViewModel
     {
         OnPropertyChanged(nameof(CanChangeWorkspace));
         OnPropertyChanged(nameof(CanChangeAccess));
+        OnPropertyChanged(nameof(CanChangeEffort));
     }
 
     private void RefreshActiveNote()
@@ -152,6 +153,7 @@ public sealed partial class AssistantViewModel
         IsSkillPickerOpen = false;
         IsConfirmSendOpen = false;
         IsScopePickerOpen = false;
+        IsEffortPickerOpen = false;
         _confirmedNotes = null;
         _allNotesCache = [];
         if (_activeSession is null) ResetDraftScope();
@@ -392,6 +394,7 @@ public sealed partial class AssistantViewModel
             {
                 Title = AiPromptBuilder.SuggestTitle(text),
                 Model = SelectedModel?.Alias ?? string.Empty,
+                Effort = SelectedEffort,
                 SkillName = DraftSkillName,
                 SkillInstructions = DraftSkillInstructions,
                 SessionId = _draftSessionId,
@@ -501,7 +504,7 @@ public sealed partial class AssistantViewModel
             toolAccess = vaultTools ? RegisterTurnTools(session, bubble, activitySignal, cancellation.Token) : null;
             var turnPrompt = toolAccess is null ? prompt : AiPromptBuilder.WithScope(BuildScopeNotice(), prompt);
             result = await _cli.RunTurnAsync(new ClaudeTurnRequest(turnPrompt, systemPrompt, session.CliSessionId, model,
-                toolAccess, activitySignal), OnEvent, cancellation.Token);
+                toolAccess, activitySignal, session.Effort), OnEvent, cancellation.Token);
             if (result.Failure == ClaudeFailureKind.SessionNotFound && session.CliSessionId is not null)
             {
                 // El CLI ya no tiene esta conversación (se borró su historial, o el chat viene de otra
@@ -512,7 +515,7 @@ public sealed partial class AssistantViewModel
                 var lastUser = session.Messages.FindLastIndex(m => m.Role == AiChatRole.User);
                 var history = session.Messages.Take(Math.Max(0, lastUser)).ToList();
                 var recovery = AiPromptBuilder.BuildRecoveryPrompt(history, turnPrompt, RecoveryHistoryChars);
-                result = await _cli.RunTurnAsync(new ClaudeTurnRequest(recovery, systemPrompt, null, model, toolAccess, activitySignal),
+                result = await _cli.RunTurnAsync(new ClaudeTurnRequest(recovery, systemPrompt, null, model, toolAccess, activitySignal, session.Effort),
                     OnEvent, cancellation.Token);
             }
         }

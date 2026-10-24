@@ -12,6 +12,7 @@ public sealed record AiModelOption(string Alias, string Label)
     public static IReadOnlyList<AiModelOption> Build() =>
     [
         new(string.Empty, LocalizationService.Instance["Assistant_Model_Default"]),
+        new("claude-sonnet-5-5", "Sonnet 5.5"),
         new("fable", "Fable"),
         new("opus", "Opus"),
         new("sonnet", "Sonnet"),

@@ -140,7 +140,10 @@ public sealed class AiVaultToolboxTests : IDisposable
         Assert.True((await Call("list_notes", new { workspace = other.Id }, context)).IsError);
         Assert.True((await Call("list_kanban", new { }, context)).IsError);
         var expanded = Context(new AiAccessScope(session.Id, true));
-        Json(await Call("list_notes", new { workspace = other.Id }, expanded));
+        Assert.True((await Call("list_notes", new { workspace = other.Id }, expanded)).IsError);
+        Assert.True((await Call("list_notes", new { workspace = "vault" }, expanded)).IsError);
+        var vaultAccess = Context(new AiAccessScope(null, true));
+        Json(await Call("list_notes", new { workspace = other.Id }, vaultAccess));
         Assert.True((await Call("list_notes", new { workspace = secret.Id }, expanded)).IsError);
         Assert.True((await Call("list_notes", new { workspace = session.Id })).IsError);
     }

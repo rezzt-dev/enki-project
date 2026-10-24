@@ -7195,4 +7195,28 @@ Feliz escritura.</value>
   <data name="Sessions_OpenInAssistantButton" xml:space="preserve">
     <value>Preguntar al asistente</value>
   </data>
+  <data name="Assistant_Effort_Title" xml:space="preserve">
+    <value>CAPACIDAD</value>
+  </data>
+  <data name="Assistant_Effort_low" xml:space="preserve">
+    <value>Ligera</value>
+  </data>
+  <data name="Assistant_Effort_medium" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="Assistant_Effort_high" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="Assistant_Effort_Help" xml:space="preserve">
+    <value>Más capacidad dedica más razonamiento y puede tardar y consumir más cuota. Se aplica a la siguiente respuesta.</value>
+  </data>
+  <data name="Assistant_Effort_Unavailable" xml:space="preserve">
+    <value>Actualiza Claude Code para ajustar la capacidad. Este CLI usa su configuración predeterminada.</value>
+  </data>
+  <data name="Assistant_History_Hide_Tooltip" xml:space="preserve">
+    <value>Ocultar conversaciones</value>
+  </data>
+  <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
+    <value>Mostrar conversaciones</value>
+  </data>
 </root>

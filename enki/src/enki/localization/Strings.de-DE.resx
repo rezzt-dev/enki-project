@@ -7195,4 +7195,28 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Sessions_OpenInAssistantButton" xml:space="preserve">
     <value>Assistenten fragen</value>
   </data>
+  <data name="Assistant_Effort_Title" xml:space="preserve">
+    <value>DENKAUFWAND</value>
+  </data>
+  <data name="Assistant_Effort_low" xml:space="preserve">
+    <value>Niedrig</value>
+  </data>
+  <data name="Assistant_Effort_medium" xml:space="preserve">
+    <value>Mittel</value>
+  </data>
+  <data name="Assistant_Effort_high" xml:space="preserve">
+    <value>Hoch</value>
+  </data>
+  <data name="Assistant_Effort_Help" xml:space="preserve">
+    <value>Höherer Aufwand benötigt mehr Denkzeit und kann mehr Kontingent verbrauchen. Gilt ab der nächsten Antwort.</value>
+  </data>
+  <data name="Assistant_Effort_Unavailable" xml:space="preserve">
+    <value>Aktualisiere Claude Code, um den Aufwand anzupassen. Dieses CLI verwendet seine Standardeinstellung.</value>
+  </data>
+  <data name="Assistant_History_Hide_Tooltip" xml:space="preserve">
+    <value>Unterhaltungen ausblenden</value>
+  </data>
+  <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
+    <value>Unterhaltungen anzeigen</value>
+  </data>
 </root>

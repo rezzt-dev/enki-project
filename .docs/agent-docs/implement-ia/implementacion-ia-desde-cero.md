@@ -3,6 +3,11 @@
 > guia para el desarrollador que vaya a conectar enki con un modelo de ia real. fecha de redaccion: 2026-10-24.
 > estado: propuesta, nada de esto esta implementado todavia.
 
+> Actualización 2026-10-25: el estado anterior describe la propuesta original. Ya existe un asistente
+> con Claude Code y herramientas del vault. Para su estado real consultar
+> [Asistente de IA](../../project-info/asistente-ia.md); para las decisiones confirmadas de producto,
+> interfaz y aislamiento consultar [Interfaz y agentes](interfaz-ux-agentes-ia.md).
+
 ## RESUMEN
 
 la ia en enki debe ser **opcional, apagada por defecto y sin claves gestionadas por la app**. la prioridad es usar la suscripcion de pago que el usuario ya tiene (claude pro/max o chatgpt plus/pro) en lugar de una api key con cobro por token. el camino viable no es llamar a los endpoints privados de esas suscripciones con tokens extraidos, sino **lanzar como subproceso el cli oficial que el usuario ya tiene instalado y autenticado**: `claude -p` para claude y `codex exec` para openai. enki nunca ve ni guarda el token, solo envia el prompt por stdin y lee la respuesta. como tercera via, para quien quiera privacidad total o no tenga suscripcion, se habla con un servidor local de ollama (qwen, llama, etc.) por http en `localhost:11434`.

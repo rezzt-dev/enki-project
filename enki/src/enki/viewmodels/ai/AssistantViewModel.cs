@@ -118,6 +118,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(ScopeSummary));
         OnPropertyChanged(nameof(ScopeWarning));
         OnPropertyChanged(nameof(HasScopeWarning));
+        OnPropertyChanged(nameof(CanChangeEffort));
+        OnPropertyChanged(nameof(ShowEffortUnavailable));
+        OnPropertyChanged(nameof(EffortSummary));
         RefreshComposerState();
     }
 
@@ -171,7 +174,16 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
     // ===================== Historial =====================
 
+    /// <summary>Pliega el historial para dejar más espacio a la conversación sin perder su estado.</summary>
+    [ObservableProperty]
+    private bool _isHistoryCollapsed;
+
+    [RelayCommand]
+    private void ToggleHistory() => IsHistoryCollapsed = !IsHistoryCollapsed;
+
     public ObservableCollection<AiChatSessionItemViewModel> Sessions { get; } = [];
+
+    public ObservableCollection<AiChatGroupViewModel> ChatGroups { get; } = [];
 
     [ObservableProperty]
     private string _sessionSearchText = string.Empty;
@@ -186,12 +198,23 @@ public sealed partial class AssistantViewModel : ViewModelBase
         var query = SessionSearchText.Trim();
         var matches = _chats.Sessions.Where(s => query.Length == 0
             || s.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+            || (s.SessionId is { } id && _scopeNames.GetValueOrDefault(id, s.SessionName ?? id)
+                .Contains(query, StringComparison.CurrentCultureIgnoreCase))
             || (s.SkillName?.Contains(query, StringComparison.CurrentCultureIgnoreCase) ?? false)
             || s.Messages.Any(m => m.Text.Contains(query, StringComparison.CurrentCultureIgnoreCase)));
 
         Sessions.Clear();
         foreach (var session in matches)
             Sessions.Add(new AiChatSessionItemViewModel(session) { IsActive = session == _activeSession });
+        ChatGroups.Clear();
+        foreach (var group in Sessions.GroupBy(item => item.Session.SessionId)
+                     .OrderBy(group => group.Key is null ? 0 : 1))
+        {
+            var title = group.Key is null
+                ? LocalizationService.Instance["Assistant_Scope_Vault"]
+                : _scopeNames.GetValueOrDefault(group.Key, group.First().Session.SessionName ?? group.Key);
+            ChatGroups.Add(new AiChatGroupViewModel(title, group.ToList()));
+        }
         OnPropertyChanged(nameof(HasAnySessions));
         OnPropertyChanged(nameof(HasNoSearchMatches));
     }
@@ -222,6 +245,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         IsRenamingTitle = false;
         _settingsService.Settings.Ai.LastChatId = null;
         SelectedModel = FindModel(_settingsService.Settings.Ai.DefaultModel);
+        RestoreEffort("medium");
         // Un chat nuevo nace siempre en el vault y sin acceso a las sesiones.
         ResetDraftScope();
         RefreshHeader();
@@ -245,6 +269,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         ClearError();
         IsRenamingTitle = false;
         SelectedModel = FindModel(session.Model);
+        RestoreEffort(session.Effort);
         foreach (var item in Sessions) item.IsActive = item.Session == session;
         RememberActiveChat();
         RefreshHeader();
@@ -490,6 +515,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
         RefreshScopeLocalizedLabels();
         foreach (var session in Sessions) session.RefreshLocalizedLabels();
         foreach (var message in Messages) message.RefreshLocalizedLabels();
+        OnPropertyChanged(nameof(EffortLabel));
+        OnPropertyChanged(nameof(EffortSummary));
+        RebuildSessionList();
         if (_lastFailure is { } failure) ShowFailure(failure);
     }
 }

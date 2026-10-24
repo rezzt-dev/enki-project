@@ -108,6 +108,11 @@ stdout → líneas JSON (init, fragmentos de texto, límite de uso, resultado)
 
 ## Historial y sesiones
 
+- El panel de conversaciones se pliega con la flecha de su cabecera y se despliega desde la barra
+  estrecha resultante. El chat gana ese espacio sin perder la conversación, el borrador ni la búsqueda.
+  La barra conserva los accesos a nuevo chat y ajustes y el indicador del estado del CLI. El estado
+  plegado se mantiene al navegar entre secciones durante la ejecución actual.
+
 - Enki guarda su propia copia de cada conversación (`AiChatService`) para mostrar el historial sin leer
   los archivos internos del CLI. El CLI guarda la suya, que se retoma con `--resume <CliSessionId>`.
 - Si el CLI ya no tiene la conversación ("No conversation found": su historial se borró, o el chat viene
@@ -199,10 +204,21 @@ Cada herramienta describe su entrada JSON, su efecto (lectura, cambio recuperabl
 - **Papelera:** listar, restaurar y eliminar definitivamente elementos de los módulos anteriores.
 
 El chip de la cabecera muestra el espacio del chat. Antes del primer mensaje permite elegir el vault o
-una sesión desbloqueada; después el espacio queda fijado. El acceso ampliado puede cambiar entre turnos:
-«acceso a las sesiones» en un chat del vault y «modo auto» en un chat de sesión. Siempre excluye las
+una sesión desbloqueada; después el espacio queda fijado. El historial agrupa las conversaciones del
+vault y las de cada sesión. Un chat de sesión no puede ampliar su acceso a otros espacios, aunque un
+historial antiguo conserve `FullVaultAccess=true`: el servicio ignora ese valor para chats de sesión.
+En un chat del vault se conserva el acceso opcional a sesiones sin protección. Siempre se excluyen las
 sesiones protegidas ajenas, incluso desbloqueadas. Para trabajar con una sesión protegida hay que abrir
 un chat dentro de ella. Los adjuntos respetan el mismo ámbito y se vuelven a comprobar al enviarlos.
+
+El modelo inicial de instalaciones nuevas es Sonnet 5.5 (`claude-sonnet-5-5`); las preferencias existentes
+se conservan. Cada chat tiene capacidad propia, inicialmente media, ajustable con un slider de tres
+posiciones (ligera, media, alta). El nivel se pasa con `--effort` si el CLI anuncia ese flag; de lo
+contrario el control está deshabilitado y explica cómo actualizar. Durante un turno queda deshabilitado.
+La capacidad se guarda en `AiChatSession.Effort` y se recupera al reabrir el chat; los archivos antiguos
+sin ese campo usan media. Ver la especificación de evolución de UX en
+[Interfaz y agentes](../agent-docs/implement-ia/interfaz-ux-agentes-ia.md), que distingue estas mejoras
+implementadas del panel lateral, permiso de búsqueda por chat e historial separado por vault pendientes.
 
 `AiSettings.AllowVaultChanges` permite pasar a solo lectura en caliente. Las herramientas de escritura
 se ocultan y sus llamadas se rechazan. La actividad de cada respuesta muestra acción, destino y estado,

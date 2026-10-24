@@ -32,7 +32,7 @@ public sealed class AiSettings
 
     /// <summary>Alias de modelo por defecto para los chats nuevos (<c>opus</c>, <c>sonnet</c>, <c>haiku</c>…).
     /// Vacío para usar el que tenga configurado el propio CLI.</summary>
-    public string DefaultModel { get; set; } = string.Empty;
+    public string DefaultModel { get; set; } = "claude-sonnet-5-5";
 
     /// <summary>Segundos sin recibir nada del CLI antes de darlo por colgado y cancelar la respuesta. Es un
     /// límite de inactividad, no de duración total: una respuesta larga que sigue llegando no se corta.</summary>

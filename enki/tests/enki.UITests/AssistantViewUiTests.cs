@@ -42,7 +42,7 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     /// <summary>CLI mínimo: solo responde a la comprobación de versión, ayuda y sesión.</summary>
-    private string FakeCli(bool loggedIn)
+    private string FakeCli(bool loggedIn, bool supportsEffort = true)
     {
         // El CLI vive fuera del almacenamiento privado: SettingsService restringe sus archivos a 0600.
         Directory.CreateDirectory(_cliDirectory);
@@ -51,7 +51,7 @@ public sealed class AssistantViewUiTests : IDisposable
             #!/bin/sh
             case "$1" in
               --version) echo "2.1.280 (Claude Code)";;
-              --help) echo "--output-format --include-partial-messages --resume --tools --safe-mode --model --system-prompt[-file]";;
+              --help) echo "--output-format --include-partial-messages --resume --tools --safe-mode --model --system-prompt[-file] {{(supportsEffort ? "--effort" : "")}}";;
               auth) echo '{"loggedIn":{{(loggedIn ? "true" : "false")}},"authMethod":"claude.ai","email":"ana@example.com","subscriptionType":"pro"}';;
             esac
             """.Replace("\r\n", "\n", StringComparison.Ordinal) + "\n");
@@ -115,6 +115,50 @@ public sealed class AssistantViewUiTests : IDisposable
         using var bitmap = new RenderTargetBitmap(new PixelSize(width, height));
         bitmap.Render(view);
         bitmap.Save(Path.Combine(preview, name + ".png"), PngBitmapEncoderOptions.Default);
+    }
+
+    [Fact]
+    public void HistoryToggle_ReclaimsConversationSpace_AndPreservesDraftAndSearch()
+    {
+        var (view, vm, window, _) = Create(Path.Combine(_directory, "no-existe"));
+        try
+        {
+            var panel = view.FindControl<Grid>("HistoryPanel")!;
+            var rail = view.FindControl<Grid>("HistoryRail")!;
+            var collapse = view.FindControl<Button>("CollapseHistoryButton")!;
+            var expand = view.FindControl<Button>("ExpandHistoryButton")!;
+            vm.DraftText = "Borrador pendiente";
+            vm.SessionSearchText = "Mi búsqueda";
+            Assert.True(panel.IsEffectivelyVisible);
+            Assert.False(rail.IsEffectivelyVisible);
+            var initialWidth = panel.Bounds.Width;
+
+            collapse.Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.False(panel.IsEffectivelyVisible);
+            Assert.True(expand.IsEffectivelyVisible);
+            Assert.Equal(52, rail.Bounds.Width);
+            Assert.True(rail.Bounds.Width < initialWidth);
+            Assert.Equal(rail.Bounds.Width, ((Grid)rail.Parent!).Children.OfType<Grid>()
+                .Single(g => Grid.GetColumn(g) == 1).Bounds.X);
+            SavePreview(view, "assistant-history-collapsed");
+
+            expand.Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.True(panel.IsEffectivelyVisible);
+            Assert.False(rail.IsEffectivelyVisible);
+            Assert.Equal(initialWidth, panel.Bounds.Width);
+            Assert.Equal("Borrador pendiente", vm.DraftText);
+            Assert.Equal("Mi búsqueda", vm.SessionSearchText);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [Fact]
@@ -207,6 +251,35 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.Contains("Redactor", text);
             Assert.Equal("sonnet", vm.SelectedModel!.Alias);
             SavePreview(view, "assistant-conversation");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EffortSlider_UsesRealCliCapability_AndUpdatesChatEffort(bool supportsEffort)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true, supportsEffort: supportsEffort));
+        try
+        {
+            vm.ToggleEffortPickerCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var slider = view.FindControl<Slider>("EffortSlider")!;
+            Assert.Equal(supportsEffort, slider.IsEnabled);
+            Assert.Equal(!supportsEffort, vm.ShowEffortUnavailable);
+            if (supportsEffort)
+            {
+                slider.Value = 2;
+                Dispatcher.UIThread.RunJobs();
+                Assert.Equal("high", vm.SelectedEffort);
+            }
+            SavePreview(view, supportsEffort ? "assistant-effort" : "assistant-effort-unavailable");
         }
         finally
         {

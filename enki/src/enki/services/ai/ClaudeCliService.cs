@@ -43,6 +43,8 @@ public sealed record ClaudeCliStatus(
     /// sin ninguna otra: servidor MCP propio, solo esas herramientas permitidas y las integradas apagadas.
     /// Si falta algo, el asistente sigue funcionando, pero solo con texto.</summary>
     public bool SupportsVaultTools => ClaudeCliService.VaultToolFlags.All(Capabilities.Contains);
+
+    public bool SupportsEffort => Capabilities.Contains("--effort");
 }
 
 public enum ClaudeFailureKind
@@ -65,7 +67,7 @@ public enum ClaudeFailureKind
 /// <see langword="null"/> para un turno solo de texto.</param>
 /// <param name="Activity">Señal con la que quien atiende las herramientas avisa de que el turno sigue vivo.</param>
 public sealed record ClaudeTurnRequest(string Prompt, string SystemPrompt, string? ResumeSessionId, string? Model,
-    ClaudeToolAccess? Tools = null, CliActivitySignal? Activity = null);
+    ClaudeToolAccess? Tools = null, CliActivitySignal? Activity = null, string Effort = "medium");
 
 /// <summary>Dónde está el servidor MCP del vault (<see cref="EnkiMcpServer"/>) y el token, válido solo
 /// durante un turno, con el que el CLI se identifica ante él.</summary>
@@ -355,6 +357,8 @@ public sealed class ClaudeCliService
         else if (!systemPromptInStdin) arguments.AddRange(["--system-prompt", request.SystemPrompt]);
 
         if (!string.IsNullOrWhiteSpace(request.Model)) arguments.AddRange(["--model", request.Model.Trim()]);
+        if (capabilities.Contains("--effort"))
+            arguments.AddRange(["--effort", request.Effort is "low" or "high" ? request.Effort : "medium"]);
         if (!string.IsNullOrWhiteSpace(request.ResumeSessionId)) arguments.AddRange(["--resume", request.ResumeSessionId]);
         return arguments;
     }
@@ -378,7 +382,7 @@ public sealed class ClaudeCliService
         {
             "--output-format", "--resume", "--include-partial-messages", "--tools", "--strict-mcp-config",
             "--disable-slash-commands", "--safe-mode", "--model", "--system-prompt", "--mcp-config",
-            "--allowedTools", "--permission-mode", "--setting-sources"
+            "--allowedTools", "--permission-mode", "--setting-sources", "--effort"
         };
         var capabilities = known.Where(flag => ContainsFlag(helpOutput, flag)).ToHashSet();
         // La ayuda no lista --system-prompt-file por separado: aparece como "--system-prompt[-file]".

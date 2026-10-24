@@ -7196,4 +7196,28 @@ Happy writing.</value>
   <data name="Sessions_OpenInAssistantButton" xml:space="preserve">
     <value>Ask the assistant</value>
   </data>
+  <data name="Assistant_Effort_Title" xml:space="preserve">
+    <value>EFFORT</value>
+  </data>
+  <data name="Assistant_Effort_low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="Assistant_Effort_medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Assistant_Effort_high" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="Assistant_Effort_Help" xml:space="preserve">
+    <value>Higher effort spends more reasoning time and may use more quota. Applies to the next response.</value>
+  </data>
+  <data name="Assistant_Effort_Unavailable" xml:space="preserve">
+    <value>Update Claude Code to adjust effort. This CLI uses its default configuration.</value>
+  </data>
+  <data name="Assistant_History_Hide_Tooltip" xml:space="preserve">
+    <value>Hide conversations</value>
+  </data>
+  <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
+    <value>Show conversations</value>
+  </data>
 </root>

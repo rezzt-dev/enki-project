@@ -370,12 +370,63 @@ public sealed class AssistantViewModelTests : IDisposable
         await SendAsync(vm, "Organiza el proyecto");
         var saved = Assert.Single(new AiChatService(_storageDirectory).Sessions);
         Assert.Equal(session.Id, saved.SessionId);
-        Assert.True(saved.FullVaultAccess);
+        Assert.False(saved.FullVaultAccess);
         Assert.False(vm.CanChangeWorkspace);
         vm.NewChatCommand.Execute(null);
         Assert.False(vm.IsSessionChat);
         Assert.False(vm.FullVaultAccess);
         Assert.True(vm.CanChangeWorkspace);
+    }
+
+    [Fact]
+    public async Task Effort_IsAppliedPerTurn_PersistedAndRestored_WithoutChangingOtherChats()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var vm = await CreateAsync();
+        Assert.Equal("claude-sonnet-5-5", vm.SelectedModel!.Alias);
+        Assert.Equal("medium", vm.SelectedEffort);
+        Assert.True(vm.CanChangeEffort);
+        vm.EffortLevel = 2;
+        await SendAsync(vm, "uno");
+        var arguments = _fake.Arguments(0);
+        Assert.Equal("high", arguments[Array.IndexOf(arguments, "--effort") + 1]);
+        var first = Assert.Single(vm.Sessions).Session;
+        Assert.Equal("high", Assert.Single(new AiChatService(_storageDirectory).Sessions).Effort);
+
+        vm.NewChatCommand.Execute(null);
+        Assert.Equal("medium", vm.SelectedEffort);
+        await SendAsync(vm, "dos");
+        vm.SelectSessionCommand.Execute(vm.Sessions.Single(s => s.Id == first.Id));
+        Assert.Equal("high", vm.SelectedEffort);
+        vm.EffortLevel = 0;
+        await SendAsync(vm, "tres");
+        Assert.Equal("low", first.Effort);
+        Assert.Equal("medium", _chats.Sessions.Single(s => s.Id != first.Id).Effort);
+    }
+
+    [Fact]
+    public async Task History_GroupsChatsBySession_AndVaultSeparately()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await CreateAsync();
+        var sessions = new SessionService(_vault);
+        var project = sessions.Create("Proyecto");
+        var vm = new AssistantViewModel(new ClaudeCliService(_settings, _storageDirectory), _chats, _settings, _vault,
+            _notifications, sessionService: sessions, dispatch: action => action());
+        await vm.Cli.RefreshAsync();
+        await SendAsync(vm, "Vault");
+        vm.StartChatInSession(project);
+        await SendAsync(vm, "Sesión");
+        Assert.Equal(2, vm.ChatGroups.Count);
+        Assert.Null(Assert.Single(vm.ChatGroups[0].Chats).Session.SessionId);
+        Assert.Equal(project.Id, Assert.Single(vm.ChatGroups[1].Chats).Session.SessionId);
+        vm.SessionSearchText = "Sesión";
+        Assert.Equal(project.Id, Assert.Single(Assert.Single(vm.ChatGroups).Chats).Session.SessionId);
+        sessions.Rename(project, "Renombrada");
+        vm.RefreshScope();
+        Assert.Equal("Renombrada", Assert.Single(vm.ChatGroups).Title);
+        vm.SessionSearchText = "Renombrada";
+        Assert.Equal(project.Id, Assert.Single(Assert.Single(vm.ChatGroups).Chats).Session.SessionId);
     }
 
     [Fact]

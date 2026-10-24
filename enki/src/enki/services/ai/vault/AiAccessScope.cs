@@ -9,8 +9,9 @@ namespace enki.Services;
 /// <summary>Hasta dónde llega el asistente en un chat. Un chat del vault (<see cref="SessionId"/> nulo, el
 /// caso por defecto) ve la raíz del vault y sus módulos —Kanban, Polar, recordatorios, agenda y papelera—,
 /// pero ninguna sesión. Un chat abierto dentro de una sesión ve solo el contenido de esa sesión.
-/// <see cref="FullVaultAccess"/> amplía cualquiera de los dos al vault entero: "acceso a las sesiones" en un
-/// chat del vault, "modo auto" en uno de sesión.
+/// <see cref="FullVaultAccess"/> permite a un chat del vault consultar las sesiones sin protección.
+/// En un chat de sesión se ignora siempre, incluso si viene activado en un historial antiguo: su ámbito
+/// no puede ampliarse a otros espacios.
 ///
 /// <para>Las sesiones protegidas con contraseña son la excepción: ni con acceso ampliado entran en el ámbito
 /// de un chat que no se abrió dentro de ellas. Una contraseña dice "esto es sensible", y su contenido
@@ -22,12 +23,12 @@ public sealed record AiAccessScope(string? SessionId, bool FullVaultAccess)
     public bool IsSessionChat => SessionId is not null;
 
     /// <summary>La raíz del vault y los módulos que cuelgan de él.</summary>
-    public bool IncludesVault => !IsSessionChat || FullVaultAccess;
+    public bool IncludesVault => !IsSessionChat;
 
     /// <summary>Si <paramref name="session"/> está dentro del ámbito (aunque esté bloqueada: eso se resuelve
     /// al usarla, con su propio error).</summary>
     public bool Includes(Session session) =>
-        string.Equals(session.Id, SessionId, StringComparison.Ordinal) || (FullVaultAccess && !session.IsEncrypted);
+        string.Equals(session.Id, SessionId, StringComparison.Ordinal) || (!IsSessionChat && FullVaultAccess && !session.IsEncrypted);
 }
 
 /// <summary>Un espacio de notas al que puede llegar el asistente: la raíz del vault o una sesión. Las rutas
