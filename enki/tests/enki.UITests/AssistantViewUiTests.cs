@@ -288,9 +288,48 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     [Fact]
-    public void Settings_AiSection_ExplainsHowClaudeIsUsed()
+    public void OpenAi_UsesProviderSelectorAndSharedChatLayout()
     {
+        if (OperatingSystem.IsWindows()) return;
+        Directory.CreateDirectory(_cliDirectory);
+        var codex = Path.Combine(_cliDirectory, "codex");
+        File.WriteAllText(codex, """
+            #!/bin/sh
+            case "$1" in
+              --version) echo 'codex-cli 1.0.0';;
+              exec) echo '--ignore-user-config --ignore-rules --ephemeral --json --sandbox --strict-config';;
+              login) echo 'Logged in using ChatGPT' >&2;;
+            esac
+            """ + "\n");
+        File.SetUnixFileMode(codex, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var (view, vm, window, _) = Create(Path.Combine(_directory, "missing-claude"), (_, settings) =>
+        {
+            settings.Settings.Ai.Provider = AiProvider.OpenAi;
+            settings.Settings.Ai.CodexCliPath = codex;
+        });
+        try
+        {
+            var picker = view.FindControl<ComboBox>("ProviderPicker")!;
+            Assert.True(picker.IsEffectivelyVisible);
+            Assert.Equal(3, picker.ItemCount);
+            Assert.Equal(AiProvider.OpenAi, ((AiProviderOption)picker.SelectedItem!).Provider);
+            Assert.Contains("OpenAI", RenderedText(view));
+            Assert.True(view.FindControl<TextBox>("ComposerBox")!.IsEffectivelyVisible);
+            Assert.False(vm.ShowSetupPanel);
+            SavePreview(view, "assistant-openai");
+            vm.IsSending = true;
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(picker.IsEnabled);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void Settings_AiSection_ExplainsProvidersAndConsent()
+    {
+        if (OperatingSystem.IsWindows()) return;
         var settings = new SettingsService(_directory);
+        settings.Settings.Ai.ClaudeCliPath = FakeCli(loggedIn: true);
         var vault = new VaultService(settings);
         vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
         var auth = new PolarAuthService(settings);

@@ -98,7 +98,7 @@ public sealed partial class MainWindowViewModel
         _polarRealtimeService = new PolarRealtimeService(_polarAuthService, _polarSyncService);
         _claudeCliService = new ClaudeCliService(_settingsService);
         _aiChatService = new AiChatService();
-        AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService);
+        AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService, backend: new AiBackendService(_claudeCliService, _settingsService));
         InitializePageRefresh();
 
         // Fase 1 (docs/analisis-proyecto/roadmap.md): extiende el patrón de KanbanService.LoadedFromCorruptData

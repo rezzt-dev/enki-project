@@ -125,6 +125,10 @@
 
       <!-- Pie del historial desplegado: CLI y cuenta con los que se está hablando. -->
       <Border Grid.Row="3" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="14,10,8,10">
+        <StackPanel Spacing="8">
+          <ComboBox x:Name="ProviderPicker" ItemsSource="{Binding ProviderOptions}" SelectedItem="{Binding SelectedProvider}"
+                    HorizontalAlignment="Stretch" IsEnabled="{Binding !IsSending}"
+                    AutomationProperties.Name="{loc:Tr Ai_Provider}" ToolTip.Tip="{loc:Tr Ai_ProviderHelp}" />
         <Grid ColumnDefinitions="Auto,*,Auto">
           <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,0,10,0" VerticalAlignment="Center"
                    Fill="{DynamicResource SuccessBrush}" IsVisible="{Binding Cli.IsReady}" />
@@ -140,6 +144,7 @@
             <mi:MaterialIcon Kind="CogOutline" Width="15" Height="15" />
           </Button>
         </Grid>
+        </StackPanel>
       </Border>
     </Grid>
 

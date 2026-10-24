@@ -119,6 +119,21 @@ public class AiPromptBuilderTests
     }
 
     [Fact]
+    public void RecoveryPrompt_IncludesCompletedActionsAndInterruption_WithoutLocalPaths()
+    {
+        var prompt = AiPromptBuilder.BuildRecoveryPrompt([new AiChatMessage
+        {
+            Role = AiChatRole.Assistant, IsInterrupted = true,
+            Activities = [new AiToolActivity { Tool = "create_note", Target = "Plan", TargetId = "/private/vault/Plan.md",
+                State = AiToolActivityState.Succeeded }]
+        }], "continúa", 5000);
+        Assert.Contains("create_note; Succeeded; Plan", prompt);
+        Assert.Contains("Response interrupted", prompt);
+        Assert.Contains("do not repeat", prompt);
+        Assert.DoesNotContain("/private/vault", prompt);
+    }
+
+    [Fact]
     public void RecoveryPrompt_WithoutHistory_IsTheTurnPrompt() =>
         Assert.Equal("x", AiPromptBuilder.BuildRecoveryPrompt([], "x", 100));
 

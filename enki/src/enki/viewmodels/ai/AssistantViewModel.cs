@@ -16,14 +16,14 @@ using enki.Services;
 
 namespace enki.ViewModels;
 
-/// <summary>Sección "Asistente": chat con Claude a través del CLI oficial que el usuario tiene instalado y
-/// con su sesión iniciada (ver <see cref="ClaudeCliService"/>), con historial de conversaciones, notas del
+/// <summary>Sección "Asistente": chat con Claude, OpenAI o modelos locales (ver
+/// <see cref="AiBackendService"/>), con historial de conversaciones, notas del
 /// vault como contexto y skills como instrucciones de partida. Este archivo lleva el estado del CLI, el
 /// historial y la conversación abierta; el compositor y el envío de turnos viven en
 /// <c>AssistantViewModel.Composer.cs</c>. Ver <c>.docs/project-info/asistente-ia.md</c>.</summary>
 public sealed partial class AssistantViewModel : ViewModelBase
 {
-    private readonly ClaudeCliService _cli;
+    private readonly AiBackendService _cli;
     private readonly AiChatService _chats;
     private readonly SettingsService _settingsService;
     private readonly VaultService _vaultService;
@@ -74,7 +74,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         _openKanbanCard = openKanbanCard ?? (_ => { });
         _isVisible = isVisible ?? (() => true);
         _isPolarLinked = isPolarLinked ?? (() => false);
-        _cli = cli;
+        _cli = cliStatus?.Backend ?? new AiBackendService(cli, settingsService);
         _chats = chats;
         _settingsService = settingsService;
         _vaultService = vaultService;
@@ -86,10 +86,17 @@ public sealed partial class AssistantViewModel : ViewModelBase
         _openSettings = openSettings ?? (() => { });
         _dispatch = dispatch ?? (action => Dispatcher.UIThread.Post(action));
 
-        ModelOptions = new ObservableCollection<AiModelOption>(AiModelOption.Build());
-        _selectedModel = FindModel(_settingsService.Settings.Ai.DefaultModel);
-        Cli = cliStatus ?? new ClaudeCliStatusViewModel(cli, _dispatch);
+        ModelOptions = new ObservableCollection<AiModelOption>(AiModelOption.Build(_cli.Provider, _cli.LocalModels));
+        _selectedModel = FindModel(_settingsService.Settings.Ai.ModelFor(_cli.Provider));
+        Cli = cliStatus ?? new ClaudeCliStatusViewModel(cli, _dispatch, _cli);
         Cli.PropertyChanged += OnCliPropertyChanged;
+        _cli.ProviderChanged += () =>
+        {
+            CancelAll();
+            StartNewChat();
+            OnPropertyChanged(nameof(SelectedProvider));
+            if (_settingsService.Settings.Ai.Enabled) _ = Cli.RefreshAsync();
+        };
         _chats.ChatsChanged += () => _dispatch(OnChatsChanged);
 
         Messages.CollectionChanged += (_, _) => RefreshConversationState();
@@ -111,7 +118,13 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
     private void OnCliPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(ClaudeCliStatusViewModel.IsChecking))
+        {
+            RefreshComposerState();
+            return;
+        }
         if (e.PropertyName != nameof(ClaudeCliStatusViewModel.Status)) return;
+        RefreshModels();
         OnPropertyChanged(nameof(ShowSetupPanel));
         OnPropertyChanged(nameof(ShowWelcome));
         OnPropertyChanged(nameof(VaultToolsAvailable));
@@ -159,10 +172,10 @@ public sealed partial class AssistantViewModel : ViewModelBase
     private void OpenSettings() => _openSettings();
 
     [RelayCommand]
-    private static void OpenSetupDocumentation() => UrlOpener.Open(ClaudeCliService.SetupDocumentationUrl);
+    private void OpenSetupDocumentation() => UrlOpener.Open(Cli.SetupDocumentationUrl);
 
     [RelayCommand]
-    private static void OpenTerms() => UrlOpener.Open(ClaudeCliService.LegalAndComplianceUrl);
+    private void OpenTerms() => UrlOpener.Open(Cli.TermsUrl);
 
     [RelayCommand]
     private static async Task CopyTextAsync(string? text)
@@ -244,7 +257,8 @@ public sealed partial class AssistantViewModel : ViewModelBase
         ClearError();
         IsRenamingTitle = false;
         _settingsService.Settings.Ai.LastChatId = null;
-        SelectedModel = FindModel(_settingsService.Settings.Ai.DefaultModel);
+        RefreshModels();
+        SelectedModel = FindModel(_settingsService.Settings.Ai.ModelFor(_cli.Provider));
         RestoreEffort("medium");
         // Un chat nuevo nace siempre en el vault y sin acceso a las sesiones.
         ResetDraftScope();
@@ -262,7 +276,10 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
     private void OpenSession(AiChatSession session)
     {
+        if (!Enum.IsDefined(session.Provider)) return;
+        _cli.SelectProvider(session.Provider);
         _activeSession = session;
+        RefreshModels();
         Messages.Clear();
         foreach (var message in session.Messages) Messages.Add(new AiChatMessageViewModel(message));
         PendingAttachments.Clear();
@@ -367,13 +384,39 @@ public sealed partial class AssistantViewModel : ViewModelBase
     // ===================== Modelo =====================
 
     public ObservableCollection<AiModelOption> ModelOptions { get; }
+    public IReadOnlyList<AiProviderOption> ProviderOptions { get; } = AiProviderOption.Build();
+    public AiProviderOption SelectedProvider
+    {
+        get => ProviderOptions.First(p => p.Provider == _cli.Provider);
+        set
+        {
+            if (value is null || IsSending) return;
+            _settingsService.Settings.Ai.Provider = value.Provider;
+            _cli.SelectProvider(value.Provider);
+            TrySaveSettings();
+        }
+    }
+
+    private void RefreshModels()
+    {
+        var alias = _activeSession?.Model ?? _settingsService.Settings.Ai.ModelFor(_cli.Provider);
+        var options = AiModelOption.Build(_cli.Provider, _cli.LocalModels, alias);
+        if (ModelOptions.SequenceEqual(options)) return;
+        ModelOptions.Clear();
+        foreach (var option in options) ModelOptions.Add(option);
+        SelectedModel = FindModel(alias);
+    }
 
     [ObservableProperty]
     private AiModelOption? _selectedModel;
 
     partial void OnSelectedModelChanged(AiModelOption? value)
     {
-        if (value is null || _activeSession is null || _activeSession.Model == value.Alias) return;
+        if (value is null) return;
+        var modelChanged = _cli.Model != value.Alias;
+        _cli.Model = value.Alias;
+        if (modelChanged && _cli.Provider == AiProvider.Ollama && !IsSending && _settingsService.Settings.Ai.Enabled) _ = Cli.RefreshAsync();
+        if (_activeSession is null || _activeSession.Model == value.Alias) return;
         // El cambio se aplica a los turnos siguientes del mismo chat: el CLI retoma la conversación con el
         // modelo nuevo sin perder el contexto.
         _activeSession.Model = value.Alias;
@@ -507,7 +550,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
     {
         var alias = SelectedModel?.Alias;
         ModelOptions.Clear();
-        foreach (var option in AiModelOption.Build()) ModelOptions.Add(option);
+        foreach (var option in AiModelOption.Build(_cli.Provider, _cli.LocalModels, alias)) ModelOptions.Add(option);
         SelectedModel = FindModel(alias);
 
         OnPropertyChanged(nameof(ActiveNoteLabel));

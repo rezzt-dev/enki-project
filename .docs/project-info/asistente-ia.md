@@ -1,17 +1,61 @@
-# Asistente de IA con Claude Code
+# Asistente de IA: Claude, OpenAI y modelos locales
 
-> Referencia viva del módulo de IA. Concreta, para Claude, la propuesta de
+> Referencia viva del módulo de IA. Concreta, para los proveedores implementados, la propuesta de
 > `.docs/agent-docs/implement-ia/implementacion-ia-desde-cero.md`. Si algo de aquí deja de coincidir con
 > el código, el código manda.
 
 ## Resumen
 
-La sección **Asistente** es un chat con Claude dentro de Enki, con historial de conversaciones, notas del
-vault como contexto y skills como instrucciones de partida. No habla con la API de Anthropic ni con
-ningún endpoint privado: lanza como subproceso **el Claude Code (CLI oficial) que el propio usuario
-instaló y en el que inició sesión**, en modo no interactivo (`claude -p`), le pasa el mensaje por stdin y
-lee la respuesta en streaming. La IA está **apagada por defecto**, no se enciende sin aceptar un aviso de
-privacidad y términos, y apagada no ejecuta nada.
+La sección **Asistente** permite elegir Claude, OpenAI mediante la cuenta de Codex o modelos locales
+servidos por Ollama. Comparte historial, notas adjuntas, skills, ámbitos y herramientas del vault.
+La IA está **apagada por defecto**, exige aceptar el aviso de privacidad y términos y, apagada, no ejecuta
+comprobaciones ni envía contenido. Claude conserva su integración mediante el CLI oficial (`claude -p`).
+
+## Configurar OpenAI
+
+1. Instalar el [CLI oficial de Codex](https://developers.openai.com/codex/cli) e iniciar sesión desde una
+   terminal con `codex login`. El propio CLI administra la cuenta; Enki no lee ni copia sus tokens.
+2. En Ajustes › Inteligencia artificial, seleccionar **OpenAI · ChatGPT**, activar el asistente y comprobar
+   la conexión. Se puede indicar la ruta del ejecutable si no se encuentra automáticamente.
+3. El modelo vacío usa el predeterminado de Codex; un identificador explícito se configura en Ajustes y
+   aparece en el selector del chat. El acceso efectivo al modelo lo verifica la respuesta del proveedor.
+
+La [autenticación de Codex](https://developers.openai.com/codex/auth) puede usar una cuenta de ChatGPT
+con acceso a Codex o una clave API configurada por el usuario en el CLI. La interfaz distingue ambos
+métodos; el uso de API se factura por separado. Enki no implementa un inicio de sesión alternativo.
+
+Los turnos usan `codex exec --strict-config --json --ephemeral --ignore-user-config --ignore-rules`, directorio privado,
+sandbox de solo lectura, búsqueda web y herramientas de shell desactivadas. No se carga la configuración
+personal de MCP, reglas o instrucciones del proyecto. Se exige que el CLI anuncie los flags de aislamiento;
+una versión antigua muestra el estado de actualización y no ejecuta el chat. El único MCP configurado es
+el de Enki; el token efímero viaja por una variable del proceso hijo, nunca por argumentos. Se exigen tanto
+el evento `turn.completed` como un código de salida correcto. Los mensajes del agente se muestran conforme
+se completan; el razonamiento y los resultados internos de MCP no se pintan como respuesta.
+
+## Configurar modelos locales
+
+1. Instalar [Ollama](https://docs.ollama.com/quickstart), descargar un modelo, por ejemplo con
+   `ollama pull qwen3:8b`, e iniciar el servidor con `ollama serve`.
+2. Seleccionar **Ollama** en Ajustes y comprobar la dirección, por defecto `http://localhost:11434`.
+   Solo se admiten direcciones HTTP/HTTPS de loopback, sin rutas ni credenciales. El cliente de producción
+   no usa proxies ni sigue redirecciones.
+3. Elegir uno de los modelos instalados y abrir un chat. No se descarga ni instala nada automáticamente.
+
+La API `/api/tags` descubre el catálogo y `/api/show` comprueba las capacidades del modelo seleccionado.
+Los modelos que no anuncian herramientas funcionan con texto y notas adjuntas. Los que anuncian `tools`
+reciben el catálogo existente mediante MCP y sus acciones pasan por los mismos controles de ámbito,
+confirmaciones, conflictos de disco y permisos en caliente. No hay una segunda implementación del vault.
+Los modelos remotos de Ollama se excluyen del catálogo y se rechazan antes de enviar una conversación,
+incluso cuando tienen un alias local. El esfuerzo usa el predeterminado del modelo y el control se muestra
+deshabilitado. Las respuestas se leen como NDJSON; una conexión cortada sin `done` conserva el texto
+parcial como interrumpido. Los ciclos de herramientas tienen un límite de 16 rondas y 32 llamadas por ronda.
+
+Cada chat conserva `AiChatSession.Provider`; los archivos anteriores sin ese campo pertenecen a Claude.
+Cambiar de proveedor abre otro chat; reabrir uno restaura su proveedor. Los modelos predeterminados se
+guardan por proveedor, y los selectores se bloquean durante una respuesta. Codex y Ollama reconstruyen el
+contexto desde el historial local de Enki con el mismo límite de recuperación existente (60 000 caracteres),
+sin reutilizar identificadores de sesión de Claude. Los adjuntos antiguos conservan sus metadatos, no una
+copia del contenido; para volver a enviar ese contenido hay que adjuntarlo de nuevo o consultarlo con herramientas.
 
 ## Cómo se usa Claude (y por qué así)
 
@@ -39,7 +83,7 @@ Traducido a Enki:
 | Uso del usuario | Cada usuario usa su propia cuenta; las respuestas cuentan contra su plan. Enki no paga ni revende uso. |
 | Nombres y marcas | La sección se llama "Asistente"; los textos dicen "a través de Claude Code" y que Enki es independiente, no afiliada ni respaldada por Anthropic. Sin logos. |
 
-Todo esto se explica en **Ajustes › Inteligencia artificial › Cómo se usa Claude** (visible también con la
+Todo esto se explica en **Ajustes › Inteligencia artificial › Cómo funciona el asistente** (visible también con la
 IA apagada), en el aviso que aparece la primera vez que se activa, en el panel de puesta en marcha y en una
 línea bajo el compositor del chat. **Decisión pendiente del responsable del proyecto**: antes de
 distribuir una versión, volver a leer esos términos; si cambian, el backend se puede retirar sin tocar el
@@ -55,6 +99,9 @@ services/ai/CliProcessRunner.cs      subproceso: argumentos con ArgumentList, st
 services/ai/ClaudeCliLocator.cs      ruta configurada → PATH → ~/.local/bin, ~/.claude/local, npm, Homebrew
 services/ai/ClaudeStreamParser.cs    salida stream-json → eventos (sesión, fragmento, límite, resultado)
 services/ai/ClaudeCliService.cs      detección (versión, flags, sesión) y ejecución de un turno
+services/ai/CodexCliService.cs       cuenta de ChatGPT por CLI oficial, turnos efímeros JSONL
+services/ai/OllamaService.cs         catálogo local, capacidades, streaming y herramientas por MCP
+services/ai/AiBackendService.cs      selección de transporte y estado compartido
 services/ai/AiPromptBuilder.cs       prompt de sistema + skill, contexto de notas, recuperación de historial
 services/ai/AiChatService.cs         historial: un JSON por chat en %AppData%/Enki/ai/chats/
 services/ai/ChatMarkdownParser.cs    subconjunto de Markdown para pintar las respuestas
@@ -71,10 +118,12 @@ viewmodels/settings/SettingsViewModel.Ai.cs + sección "Ai" de SettingsView.axam
   de visibilidad **es** `AiSettings.Enabled`: el interruptor de Ajustes › Inteligencia artificial y la fila
   de Ajustes › Navegación son el mismo y pasan por el mismo aviso. `Ctrl+9` navega a ella solo si está
   encendida.
-- No hay interfaz `IAiBackend`: hoy existe un único backend real. Los tests usan un ejecutable `claude`
-  falso (script de shell, `tests/enki.Tests/Services/FakeClaudeCli.cs`) en vez de un doble en memoria, así
-  que el camino probado es el mismo que en producción. Si se añaden Codex u Ollama, ese es el momento de
-  extraer la interfaz que propone la guía.
+- `AiBackendService` selecciona los servicios concretos `ClaudeCliService`, `CodexCliService` y
+  `OllamaService`, sin contenedor de DI ni jerarquías genéricas. Los contratos de turno y estado originales
+  conservan sus nombres `Claude*` por compatibilidad y se reutilizan en los tres transportes. Ajustes y el
+  Asistente comparten una única instancia de este selector a través del estado compuesto por el shell.
+- Los tests usan ejecutables falsos de los CLI, HTTP inyectable para Ollama y el MCP real con servicios
+  aislados. Comprueban streaming, cancelación, autenticación, historial, aislamiento y permisos del vault.
 
 ## Cada turno
 
@@ -239,7 +288,7 @@ Solo se activa con un CLI que anuncie `--tools`, `--mcp-config`, `--strict-mcp-c
 solo se permite `mcp__enki`, y no se cargan configuraciones del usuario. La configuración MCP con el
 token va en un temporal privado que se elimina al terminar. Sin esas capacidades se mantiene el modo
 texto anterior, indicado bajo el compositor. El catálogo y el servidor pueden reutilizarse con futuros
-proveedores MCP; este cambio conecta únicamente el backend de Claude ya existente.
+proveedores MCP; los tres proveedores usan este mismo catálogo y sus permisos.
 
 Las rutas son relativas a cada espacio; se rechazan rutas absolutas, segmentos `..`, carpetas internas
 y enlaces simbólicos. Una nota vinculada fuera del ámbito no revela título ni ruta. Los cambios de

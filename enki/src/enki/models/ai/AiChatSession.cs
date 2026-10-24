@@ -9,6 +9,7 @@ namespace enki.Models;
 /// (<c>~/.claude/</c>); el CLI conserva su propia copia, que se retoma con <see cref="CliSessionId"/>.</summary>
 public sealed class AiChatSession
 {
+    public AiProvider Provider { get; set; }
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
 
     /// <summary>Título visible en el historial: el principio del primer mensaje, o el que el usuario le

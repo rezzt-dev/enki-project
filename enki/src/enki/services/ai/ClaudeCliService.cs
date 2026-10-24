@@ -38,13 +38,15 @@ public sealed record ClaudeCliStatus(
     public static ClaudeCliStatus Unknown { get; } = new(ClaudeCliState.Unknown);
 
     internal IReadOnlySet<string> Capabilities { get; init; } = new HashSet<string>();
+    internal bool? VaultToolsSupported { get; init; }
+    internal bool? EffortSupported { get; init; }
 
     /// <summary>El CLI entiende todo lo necesario para trabajar sobre el vault con las herramientas de Enki
     /// sin ninguna otra: servidor MCP propio, solo esas herramientas permitidas y las integradas apagadas.
     /// Si falta algo, el asistente sigue funcionando, pero solo con texto.</summary>
-    public bool SupportsVaultTools => ClaudeCliService.VaultToolFlags.All(Capabilities.Contains);
+    public bool SupportsVaultTools => VaultToolsSupported ?? ClaudeCliService.VaultToolFlags.All(Capabilities.Contains);
 
-    public bool SupportsEffort => Capabilities.Contains("--effort");
+    public bool SupportsEffort => EffortSupported ?? Capabilities.Contains("--effort");
 }
 
 public enum ClaudeFailureKind
@@ -153,8 +155,12 @@ public sealed class ClaudeCliService
     public ClaudeCliService(SettingsService settingsService, string? storageDirectory = null)
     {
         _settingsService = settingsService;
-        _workingDirectory = Path.Combine(storageDirectory ?? AppDataDirectory.Resolve(), "ai", "claude-workspace");
+        StorageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
+        _workingDirectory = Path.Combine(StorageDirectory, "ai", "claude-workspace");
     }
+
+    /// <summary>Raíz compartida por los transportes, también cuando la composición usa un disco de pruebas.</summary>
+    internal string StorageDirectory { get; }
 
     /// <summary>Último estado conocido. <see cref="ClaudeCliState.Unknown"/> hasta la primera comprobación.</summary>
     public ClaudeCliStatus Status { get; private set; } = ClaudeCliStatus.Unknown;

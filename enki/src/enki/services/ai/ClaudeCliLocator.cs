@@ -13,8 +13,6 @@ namespace enki.Services;
 /// su terminal.</summary>
 internal static class ClaudeCliLocator
 {
-    private static readonly string[] WindowsExecutableNames = ["claude.exe", "claude.cmd", "claude.bat"];
-    private static readonly string[] UnixExecutableNames = ["claude"];
 
     /// <summary>Ruta absoluta del ejecutable, o <see langword="null"/> si no está en ningún sitio conocido.
     /// Una ruta configurada que no existe no cae a la búsqueda automática: el usuario eligió esa, y
@@ -26,7 +24,7 @@ internal static class ClaudeCliLocator
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
     internal static string? Resolve(string? configuredPath, string? pathVariable, bool isWindows,
-        string userProfile, string appData, string localAppData)
+        string userProfile, string appData, string localAppData, string executableName = "claude")
     {
         if (!string.IsNullOrWhiteSpace(configuredPath))
         {
@@ -34,7 +32,7 @@ internal static class ClaudeCliLocator
             return File.Exists(trimmed) ? Path.GetFullPath(trimmed) : null;
         }
 
-        var names = isWindows ? WindowsExecutableNames : UnixExecutableNames;
+        var names = isWindows ? new[] { executableName + ".exe", executableName + ".cmd", executableName + ".bat" } : new[] { executableName };
         var separator = isWindows ? ';' : ':';
         var pathDirectories = (pathVariable ?? string.Empty)
             .Split(separator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -66,6 +64,8 @@ internal static class ClaudeCliLocator
         if (!string.IsNullOrEmpty(userProfile))
         {
             yield return Path.Combine(userProfile, ".npm-global", "bin");
+            yield return Path.Combine(userProfile, ".volta", "bin");
+            yield return Path.Combine(userProfile, ".local", "share", "pnpm");
             yield return Path.Combine(userProfile, ".bun", "bin");
         }
         yield return "/opt/homebrew/bin";

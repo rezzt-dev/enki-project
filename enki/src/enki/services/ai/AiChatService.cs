@@ -62,6 +62,7 @@ public sealed class AiChatService
     /// haría que guardar escribiera en otro archivo y el chat apareciera duplicado.</summary>
     private static bool IsValid(AiChatSession session, string file) =>
         IsValidId(session.Id)
+        && Enum.IsDefined(session.Provider)
         && string.Equals(Path.GetFileNameWithoutExtension(file), session.Id, StringComparison.Ordinal);
 
     /// <summary>Persiste <paramref name="session"/> y la sube al principio del historial. Lanza

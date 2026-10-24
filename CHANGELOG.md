@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- selección del proveedor del asistente entre Claude, OpenAI mediante el CLI oficial de Codex y modelos locales de Ollama, con configuración de ejecutables, endpoints y modelos desde `ajustes > inteligencia artificial`.
+- backends `CodexCliService`, `OllamaService` y `AiBackendService` que comparten el historial, el contexto, las herramientas del vault y los permisos existentes sin duplicar la integración de Enki.
+- soporte para descubrir modelos locales de Ollama, streaming NDJSON, capacidades de herramientas, autenticación de Codex y detección de versiones no compatibles antes de iniciar una conversación.
+- persistencia del proveedor y del modelo en `AiSettings` y `AiChatSession`, con historiales separados por proveedor, migración compatible de chats anteriores y restauración del proveedor al reabrir una conversación.
 - ajuste independiente de la posición del panel lateral para Notas, Archivos, Habilidades y Asistente desde `ajustes > apariencia`, con izquierda por defecto, aplicación inmediata, persistencia por vault y adaptación de las vistas completas, simplificadas, árboles, raíles y navegadores temporales.
 - historial del asistente agrupado por vault y sesiones, aislamiento estricto de los chats de sesión y selector de capacidad por conversación mediante slider; Sonnet 5.5 y capacidad media para nuevos chats sin preferencias previas.
 - panel lateral de conversaciones del asistente plegable y desplegable, con un raíl de `52px` que conserva los accesos a nuevo chat, ajustes y el estado del CLI mientras libera espacio para la conversación.
@@ -63,6 +67,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - documentación del módulo en `.docs/project-info/asistente-ia.md`, sección 8.9 del checklist de qa manual y pruebas de servicio, viewmodel e interfaz contra un cli de claude simulado.
 
 #### CAMBIOS
+- ejecutar Codex con configuración efímera y aislamiento estricto, desactivar sus herramientas integradas y limitar Ollama a endpoints de loopback, rechazando modelos remotos y redirecciones antes de enviar contenido.
+- reconstruir el contexto local para Codex y Ollama con las acciones del vault y las respuestas interrumpidas, evitando repetir escrituras ya realizadas cuando un turno se reintenta.
+- actualizar la interfaz del asistente, los ajustes y los siete recursos de idioma para mostrar el proveedor, sus estados, comandos de inicio de sesión, modelos disponibles y limitaciones de cada transporte.
+- documentar la configuración y las garantías de seguridad de OpenAI y Ollama en `.docs/project-info/asistente-ia.md`, y ampliar las pruebas de servicios, ajustes e interfaz para cubrir streaming, cancelación, autenticación, aislamiento y permisos del vault.
 - conectar las escrituras de las herramientas del asistente con `VaultService.WriteContentChecked`, el historial `NoteVersionTrigger.Assistant`, la preparación de pestañas abiertas y la propagación de cambios a Notas, Archivos, Kanban, Sesiones, Papelera y Calendario.
 - restringir el transporte MCP a `127.0.0.1` con puerto efímero, token de turno, validación de `Host` y `Origin`, configuración estricta de herramientas del CLI y revocación automática al terminar, cancelar o cambiar de vault.
 - ampliar `AiSettings` con `AllowVaultChanges` para activar el modo de solo lectura en caliente y exigir que el ámbito, las sesiones protegidas, las rutas internas y los enlaces simbólicos se validen en cada llamada.
@@ -163,6 +171,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- provider selection for the assistant between Claude, OpenAI through the official Codex CLI and local Ollama models, with executable, endpoint and model settings in `settings > artificial intelligence`.
+- `CodexCliService`, `OllamaService` and `AiBackendService` backends that share Enki's existing history, context, vault tools and permissions without duplicating the integration.
+- local Ollama model discovery, NDJSON streaming, tool capability detection, Codex authentication and unsupported-version checks before starting a conversation.
+- provider and model persistence in `AiSettings` and `AiChatSession`, with provider-separated histories, backward-compatible migration of existing chats and provider restoration when reopening a conversation.
 - independent side-panel position settings for Notes, Files, Skills and Assistant under `settings > appearance`, defaulting to the left with immediate application, vault persistence and support for full, simplified, tree, rail and temporary navigator layouts.
 - assistant history grouped by vault and session, strict session chat isolation, and a per-chat effort slider; Sonnet 5.5 and medium effort for new chats without previous preferences.
 - collapsible assistant conversation sidebar with a `52px` rail that keeps new chat, settings and CLI status actions available while giving the conversation more room.
@@ -216,6 +228,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - module documentation in `.docs/project-info/asistente-ia.md`, section 8.9 of the manual qa checklist, and service, viewmodel and ui tests against a simulated claude cli.
 
 #### CHANGED
+- run Codex with ephemeral configuration and strict isolation, disable its integrated tools, and limit Ollama to loopback endpoints while rejecting remote models and redirects before sending content.
+- rebuild local context for Codex and Ollama with vault actions and interrupted responses, avoiding repeated writes when a turn is retried.
+- update the assistant UI, settings and all seven language resources to show each provider's status, login commands, available models and transport limitations.
+- document OpenAI and Ollama setup and security guarantees in `.docs/project-info/asistente-ia.md`, and expand service, settings and UI tests for streaming, cancellation, authentication, isolation and vault permissions.
 - connect assistant tool writes to `VaultService.WriteContentChecked`, `NoteVersionTrigger.Assistant`, open-tab preparation and change propagation across Notes, Files, Kanban, Sessions, Trash and Calendar.
 - restrict MCP transport to `127.0.0.1` with an ephemeral port, per-turn token, `Host` and `Origin` validation, strict CLI tool configuration and automatic revocation when a turn ends, is cancelled or the vault changes.
 - extend `AiSettings` with `AllowVaultChanges` for hot read-only mode and validate scope, protected sessions, internal paths and symbolic links on every call.

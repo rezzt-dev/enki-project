@@ -48,7 +48,7 @@ public sealed partial class AssistantViewModel
     [NotifyCanExecuteChangedFor(nameof(SendCommand), nameof(StopCommand), nameof(RetryCommand))]
     private bool _isSending;
 
-    public bool CanSend => Cli.IsReady && !IsSending && !string.IsNullOrWhiteSpace(DraftText);
+    public bool CanSend => Cli.IsReady && !Cli.IsChecking && !IsSending && !string.IsNullOrWhiteSpace(DraftText);
 
     public bool CanStartNewChat => !IsSending;
 
@@ -392,6 +392,7 @@ public sealed partial class AssistantViewModel
         {
             session = new AiChatSession
             {
+                Provider = _cli.Provider,
                 Title = AiPromptBuilder.SuggestTitle(text),
                 Model = SelectedModel?.Alias ?? string.Empty,
                 Effort = SelectedEffort,
@@ -503,6 +504,14 @@ public sealed partial class AssistantViewModel
             if (vaultTools) _flushPendingEdits();
             toolAccess = vaultTools ? RegisterTurnTools(session, bubble, activitySignal, cancellation.Token) : null;
             var turnPrompt = toolAccess is null ? prompt : AiPromptBuilder.WithScope(BuildScopeNotice(), prompt);
+            if (session.Provider != AiProvider.Claude)
+            {
+                var lastUser = session.Messages.FindLastIndex(m => m.Role == AiChatRole.User);
+                // En un reintento se incluyen también las acciones de la respuesta interrumpida:
+                // ya ocurrieron en el vault aunque el modelo no conserve una sesión remota.
+                turnPrompt = AiPromptBuilder.BuildRecoveryPrompt(session.Messages.Where((_, index) => index != lastUser).ToList(),
+                    turnPrompt, RecoveryHistoryChars);
+            }
             result = await _cli.RunTurnAsync(new ClaudeTurnRequest(turnPrompt, systemPrompt, session.CliSessionId, model,
                 toolAccess, activitySignal, session.Effort), OnEvent, cancellation.Token);
             if (result.Failure == ClaudeFailureKind.SessionNotFound && session.CliSessionId is not null)
@@ -681,8 +690,8 @@ public sealed partial class AssistantViewModel
 
     private LocalizedText DescribeFailure(ClaudeTurnResult result) => result.Failure switch
     {
-        ClaudeFailureKind.NotInstalled => LocalizedTextFormatter.Format("Assistant_Error_NotInstalled"),
-        ClaudeFailureKind.SignedOut => LocalizedTextFormatter.Format("Assistant_Error_SignedOut", ClaudeCliService.LoginCommand),
+        ClaudeFailureKind.NotInstalled => LocalizedTextFormatter.Format(_cli.Provider == AiProvider.Claude ? "Assistant_Error_NotInstalled" : "Ai_NotInstalled"),
+        ClaudeFailureKind.SignedOut => LocalizedTextFormatter.Format("Assistant_Error_SignedOut", Cli.LoginCommand),
         ClaudeFailureKind.RateLimited when result.RateLimitResetsAt is { } resetsAt =>
             LocalizedTextFormatter.Format("Assistant_Error_RateLimitedUntil",
                 RelativeTimeFormatter.FormatAbsoluteShort(resetsAt.UtcDateTime)),

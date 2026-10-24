@@ -140,13 +140,16 @@ public static partial class AiPromptBuilder
         foreach (var message in history.Reverse())
         {
             var entry = $"[{(message.Role == AiChatRole.User ? "user" : "assistant")}]\n{message.Text.Trim()}\n";
+            if (message.IsInterrupted) entry += "[Response interrupted]\n";
+            foreach (var activity in message.Activities)
+                entry += $"[Vault action: {activity.Tool}; {activity.State}; {activity.Target}]\n";
             if (used + entry.Length > maxChars) break;
             lines.Insert(0, entry);
             used += entry.Length;
         }
         if (lines.Count == 0) return turnPrompt;
 
-        return "<enki_previous_conversation>\nThis conversation started earlier; this is the transcript so far.\n"
+        return "<enki_previous_conversation>\nThis conversation started earlier; this is the transcript so far. Completed vault actions already happened; do not repeat them.\n"
             + NeutralizeTags(string.Join('\n', lines)) + "</enki_previous_conversation>\n\n" + turnPrompt;
     }
 

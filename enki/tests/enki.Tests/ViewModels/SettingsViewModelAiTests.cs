@@ -50,8 +50,29 @@ public sealed class SettingsViewModelAiTests : IDisposable
             onSidebarSectionChanged: (page, value) => _sidebarChanges.Add((page, value)), onSidebarSectionOrderChanged: () => { },
             onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { }, onKanbanBoardOrientationChanged: _ => { },
             onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { }, onLanguageChanged: () => { },
-            aiCliStatus: new ClaudeCliStatusViewModel(cli, action => action()), aiChatService: chats);
+            aiCliStatus: new ClaudeCliStatusViewModel(cli, action => action(), new AiBackendService(cli, settingsService, _storageDirectory)), aiChatService: chats);
         return (vm, settingsService, chats, vaultPath);
+    }
+
+    [Fact]
+    public void ProviderSettings_KeepModelsSeparate_WithoutProbingWhenDisabled()
+    {
+        var (vm, settings, _, _) = Create();
+        vm.AiProvider = vm.AiProviderOptions.Single(p => p.Provider == AiProvider.OpenAi);
+        vm.AiCustomModel = "my-openai-model";
+        Assert.True(vm.IsAiOpenAi);
+        Assert.Equal(AiProvider.OpenAi, vm.AiCliStatus!.Backend!.Provider);
+        Assert.Equal("my-openai-model", settings.Settings.Ai.OpenAiModel);
+        Assert.False(vm.CheckClaudeCliCommand.CanExecute(null));
+        Assert.Equal(ClaudeCliState.Unknown, vm.AiCliStatus.Status.State);
+        vm.AiProvider = vm.AiProviderOptions.Single(p => p.Provider == AiProvider.Ollama);
+        Assert.True(vm.IsAiLocal);
+        vm.AiLocalEndpoint = "http://127.0.0.1:11435";
+        Assert.Equal("http://127.0.0.1:11435", settings.Settings.Ai.OllamaEndpoint);
+        vm.AiProvider = vm.AiProviderOptions.Single(p => p.Provider == AiProvider.Claude);
+        Assert.True(vm.IsAiClaude);
+        Assert.Equal("claude-sonnet-5-5", settings.Settings.Ai.DefaultModel);
+        Assert.Equal("my-openai-model", settings.Settings.Ai.OpenAiModel);
     }
 
     [Fact]

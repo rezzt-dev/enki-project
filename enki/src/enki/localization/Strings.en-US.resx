@@ -6429,7 +6429,7 @@ Happy writing.</value>
     <value>Artificial intelligence</value>
   </data>
   <data name="Settings_Summary_Ai" xml:space="preserve">
-    <value>Claude assistant, privacy and conversation history</value>
+    <value>AI providers, privacy and conversation history</value>
   </data>
   <data name="Settings_Navigation_ToAssistant" xml:space="preserve">
     <value>Go to Assistant</value>
@@ -6465,25 +6465,25 @@ Happy writing.</value>
     <value>API key</value>
   </data>
   <data name="Assistant_Status_Version" xml:space="preserve">
-    <value>Claude Code {0}</value>
+    <value>Version {0}</value>
   </data>
   <data name="Assistant_Setup_Eyebrow" xml:space="preserve">
     <value>Assistant setup</value>
   </data>
   <data name="Assistant_Setup_NotInstalled_Title" xml:space="preserve">
-    <value>Install Claude Code to start</value>
+    <value>Install the provider CLI</value>
   </data>
   <data name="Assistant_Setup_NotInstalled_Message" xml:space="preserve">
-    <value>The assistant works through Claude Code, Anthropic's official command-line app, installed on this computer. Install it with the command below in a terminal, sign in with your own Claude account and check again.</value>
+    <value>Install the official CLI, sign in from a terminal and check again. You can specify its path in Settings.</value>
   </data>
   <data name="Assistant_Setup_SignedOut_Title" xml:space="preserve">
-    <value>Sign in to Claude Code</value>
+    <value>Sign in to your account</value>
   </data>
   <data name="Assistant_Setup_SignedOut_Message" xml:space="preserve">
-    <value>Claude Code is installed but has no account signed in. Run the command below in a terminal: sign-in finishes in your browser, on Anthropic's own page. Enki never sees or stores your credentials.</value>
+    <value>Run the command below in a terminal and complete sign-in on the provider’s website. Then check again. Enki does not read your credentials.</value>
   </data>
   <data name="Assistant_Setup_Unsupported_Title" xml:space="preserve">
-    <value>Update Claude Code</value>
+    <value>Check the provider connection</value>
   </data>
   <data name="Assistant_Setup_Unsupported_Message" xml:space="preserve">
     <value>The Claude Code found on this computer (version {0}) is older than the minimum Enki supports ({1}) or did not respond as expected. Reinstall the latest version with the command below and check again.</value>
@@ -6501,13 +6501,13 @@ Happy writing.</value>
     <value>Set a custom path</value>
   </data>
   <data name="Assistant_Privacy_Title" xml:space="preserve">
-    <value>How Claude is used</value>
+    <value>Assistant privacy</value>
   </data>
   <data name="Assistant_Privacy_Message" xml:space="preserve">
-    <value>Enki launches your own installation of Claude Code, unmodified, and only sends what you type and the notes you attach. Usage counts against your Claude plan. Enki is an independent app, not affiliated with or endorsed by Anthropic.</value>
+    <value>Context and tool results are shared with the selected provider within the chat scope. With local Ollama they are processed on this computer.</value>
   </data>
   <data name="Assistant_Privacy_TermsLink" xml:space="preserve">
-    <value>Claude Code terms</value>
+    <value>Provider terms</value>
   </data>
   <data name="Assistant_History_Title" xml:space="preserve">
     <value>Conversations</value>
@@ -6552,7 +6552,7 @@ Happy writing.</value>
     <value>Model</value>
   </data>
   <data name="Assistant_Model_Default" xml:space="preserve">
-    <value>Claude Code default</value>
+    <value>Provider default</value>
   </data>
   <data name="Assistant_Model_Tooltip" xml:space="preserve">
     <value>Model used for the next messages of this conversation</value>
@@ -6564,10 +6564,10 @@ Happy writing.</value>
     <value>How can I help?</value>
   </data>
   <data name="Assistant_Welcome_Message" xml:space="preserve">
-    <value>Ask Claude anything, attach notes from your vault as context with the clip, or start from one of your skills. Replies are never written into your notes unless you choose to save them.</value>
+    <value>Ask the assistant, attach notes as context or start from a skill. Vault actions appear in the conversation.</value>
   </data>
   <data name="Assistant_Welcome_Privacy" xml:space="preserve">
-    <value>Claude runs without tools: it cannot read your vault, open files or run commands. Only your message and the notes you attach are sent.</value>
+    <value>Vault access is limited to the chat scope. You can disable writes in Settings.</value>
   </data>
   <data name="Assistant_Suggestion_SummarizeNote_Label" xml:space="preserve">
     <value>Summarize the open note</value>
@@ -6596,7 +6596,7 @@ Happy writing.</value>
     <value>Give me ten varied ideas about </value>
   </data>
   <data name="Assistant_Message_Author" xml:space="preserve">
-    <value>Claude's reply</value>
+    <value>Assistant</value>
   </data>
   <data name="Assistant_Message_Thinking" xml:space="preserve">
     <value>Thinking…</value>
@@ -6656,13 +6656,13 @@ Happy writing.</value>
     <value>There are no skills in this vault yet. Create one in the Skills section.</value>
   </data>
   <data name="Assistant_Composer_Disclaimer" xml:space="preserve">
-    <value>Sent to Anthropic through your Claude Code. Claude can make mistakes: review replies before relying on them.</value>
+    <value>Processed by your selected provider. AI can make mistakes: review responses and actions.</value>
   </data>
   <data name="Assistant_Confirm_Title" xml:space="preserve">
     <value>Review what will be sent</value>
   </data>
   <data name="Assistant_Confirm_Message" xml:space="preserve">
-    <value>Your message will be sent to Anthropic together with the content of these notes:</value>
+    <value>Your message will be sent to the selected provider with the contents of these notes:</value>
   </data>
   <data name="Assistant_Confirm_Summary" xml:space="preserve">
     <value>About {0} characters in total.</value>
@@ -6677,28 +6677,28 @@ Happy writing.</value>
     <value>Claude Code could not be found on this computer. Install it or set its path in Settings › Artificial intelligence.</value>
   </data>
   <data name="Assistant_Error_SignedOut" xml:space="preserve">
-    <value>Claude Code has no account signed in. Run {0} in a terminal to sign in and try again.</value>
+    <value>No account is signed in. Run {0} in a terminal and try again.</value>
   </data>
   <data name="Assistant_Error_RateLimited" xml:space="preserve">
-    <value>You have reached the usage limit of your Claude plan. Try again later.</value>
+    <value>You have reached the provider’s usage limit. Try again later.</value>
   </data>
   <data name="Assistant_Error_RateLimitedUntil" xml:space="preserve">
-    <value>You have reached the usage limit of your Claude plan. It resets at {0}.</value>
+    <value>You have reached the provider’s usage limit. It resets at {0}.</value>
   </data>
   <data name="Assistant_Error_ModelUnavailable" xml:space="preserve">
     <value>The model “{0}” is not available for your account. Choose another one at the top of the chat.</value>
   </data>
   <data name="Assistant_Error_Overloaded" xml:space="preserve">
-    <value>Claude is overloaded right now. Wait a moment and try again.</value>
+    <value>The provider is overloaded. Wait a moment and try again.</value>
   </data>
   <data name="Assistant_Error_Timeout" xml:space="preserve">
-    <value>Claude Code sent nothing for {0} seconds and the reply was stopped. You can raise this limit in Settings.</value>
+    <value>There was no activity for {0} seconds and the response stopped. You can increase this limit in Settings.</value>
   </data>
   <data name="Assistant_Error_EmptyResponse" xml:space="preserve">
-    <value>Claude Code finished without a reply.</value>
+    <value>The provider finished without a response.</value>
   </data>
   <data name="Assistant_Error_Failed" xml:space="preserve">
-    <value>Claude Code could not answer: {0}</value>
+    <value>The response could not be completed: {0}</value>
   </data>
   <data name="Assistant_Notify_TurnFailed_Title" xml:space="preserve">
     <value>Assistant</value>
@@ -6737,31 +6737,31 @@ Happy writing.</value>
     <value>Enable the assistant</value>
   </data>
   <data name="Settings_Ai_Enable_Description" xml:space="preserve">
-    <value>Adds the Assistant section to chat with Claude through your own Claude Code installation. While off, Enki runs nothing and sends nothing anywhere.</value>
+    <value>Enable the assistant with Claude, OpenAI or local models. While disabled nothing runs or is sent.</value>
   </data>
   <data name="Settings_Ai_Usage_Title" xml:space="preserve">
-    <value>How Claude is used</value>
+    <value>How the assistant works</value>
   </data>
   <data name="Settings_Ai_Usage_HowItWorks" xml:space="preserve">
-    <value>Enki does not connect to Claude on its own. It launches the official Claude Code app that you install on this computer, without modifying it, and passes it your messages. Usage counts against the limits of your Claude plan, or is billed to your API key if you set one up in Claude Code.</value>
+    <value>Claude and OpenAI use their official CLIs and the account signed in there. Ollama runs the model on this computer. Enki does not install providers or modify their credentials.</value>
   </data>
   <data name="Settings_Ai_Usage_SignIn" xml:space="preserve">
-    <value>You sign in inside Claude Code, on Anthropic's own page (claude auth login in a terminal). Enki offers no sign-in of its own and never sees, reads or stores your credentials or tokens.</value>
+    <value>Sign in from a terminal: claude auth login or codex login. Local Ollama models need no account. Enki never reads or stores access tokens.</value>
   </data>
   <data name="Settings_Ai_Usage_Data" xml:space="preserve">
-    <value>Only what you type and the notes you attach to a message are sent. Claude runs without tools: it cannot read your vault, open files or run commands, and nothing is written to your notes unless you ask.</value>
+    <value>The provider receives messages, attached context and tool results within the chat scope. Writes respect vault permissions; irreversible actions require confirmation.</value>
   </data>
   <data name="Settings_Ai_Usage_Terms" xml:space="preserve">
-    <value>Your use of Claude is governed by Anthropic's terms and its policy on authentication. Enki is an independent app, not affiliated with or endorsed by Anthropic; review those terms before enabling the assistant.</value>
+    <value>Usage is subject to the selected provider’s terms and limits. Enki is independent of Anthropic, OpenAI and Ollama. Review the terms before enabling the assistant.</value>
   </data>
   <data name="Settings_Ai_Usage_ClaudeCodeTerms" xml:space="preserve">
-    <value>Claude Code legal terms</value>
+    <value>Provider terms</value>
   </data>
   <data name="Settings_Ai_Usage_ConsumerTerms" xml:space="preserve">
     <value>Anthropic consumer terms</value>
   </data>
   <data name="Settings_Ai_Cli_Title" xml:space="preserve">
-    <value>Claude Code CLI</value>
+    <value>Connection status</value>
   </data>
   <data name="Settings_Ai_Cli_Check" xml:space="preserve">
     <value>Check</value>
@@ -6791,13 +6791,13 @@ Happy writing.</value>
     <value>Default model</value>
   </data>
   <data name="Settings_Ai_Model_Description" xml:space="preserve">
-    <value>Model for new chats. Each chat can change it from its own header.</value>
+    <value>Model for new chats with the selected provider.</value>
   </data>
   <data name="Settings_Ai_Timeout_Label" xml:space="preserve">
     <value>Inactivity limit (seconds)</value>
   </data>
   <data name="Settings_Ai_Timeout_Description" xml:space="preserve">
-    <value>Stops a reply if Claude Code sends nothing for this long. A long reply that keeps arriving is never cut.</value>
+    <value>Stops a response after this period without activity. Long responses that keep arriving are not interrupted.</value>
   </data>
   <data name="Settings_Ai_Context_Label" xml:space="preserve">
     <value>Context per message (characters)</value>
@@ -6815,7 +6815,7 @@ Happy writing.</value>
     <value>History</value>
   </data>
   <data name="Settings_Ai_History_Description" xml:space="preserve">
-    <value>Conversations are stored on this computer, outside the vault. Deleting them does not affect the copies that Claude Code keeps on its own.</value>
+    <value>Conversations are stored on this computer, outside the vault. Deleting them does not affect the CLIs’ own history.</value>
   </data>
   <data name="Settings_Ai_History_Count_one" xml:space="preserve">
     <value>{0} conversation saved</value>
@@ -6842,7 +6842,7 @@ Happy writing.</value>
     <value>Before enabling the assistant</value>
   </data>
   <data name="Settings_Ai_Consent_Intro" xml:space="preserve">
-    <value>Read how the assistant works. You can turn it off at any time from this same screen.</value>
+    <value>Enable the assistant with your chosen provider. Review how data is shared and vault permissions are applied.</value>
   </data>
   <data name="Settings_Ai_Consent_Accept" xml:space="preserve">
     <value>I understand, enable</value>
@@ -6905,7 +6905,7 @@ Happy writing.</value>
     <value>Read only</value>
   </data>
   <data name="Assistant_Scope_Summary_TextOnly" xml:space="preserve">
-    <value>Text assistant · vault tools unavailable with this CLI</value>
+    <value>Text assistant · vault tools unavailable with this provider or model</value>
   </data>
   <data name="Assistant_Scope_Warning_Missing" xml:space="preserve">
     <value>Session “{0}” no longer exists in this vault. Choose another workspace in a new chat.</value>
@@ -7211,7 +7211,7 @@ Happy writing.</value>
     <value>Higher effort spends more reasoning time and may use more quota. Applies to the next response.</value>
   </data>
   <data name="Assistant_Effort_Unavailable" xml:space="preserve">
-    <value>Update Claude Code to adjust effort. This CLI uses its default configuration.</value>
+    <value>This provider or model uses its default reasoning.</value>
   </data>
   <data name="Assistant_History_Hide_Tooltip" xml:space="preserve">
     <value>Hide conversations</value>
@@ -7225,4 +7225,67 @@ Happy writing.</value>
   <data name="Settings_SidePanels_Right" xml:space="preserve"><value>Right</value></data>
   <data name="Settings_SidePanels_ErrorTitle" xml:space="preserve"><value>Could not save setting</value></data>
   <data name="Settings_SidePanels_Error" xml:space="preserve"><value>The panel position could not be saved. Please try again.</value></data>
+  <data name="Ai_Provider" xml:space="preserve">
+    <value>AI provider</value>
+  </data>
+  <data name="Ai_ProviderHelp" xml:space="preserve">
+    <value>Choose Claude, your ChatGPT account or a local model. Switching provider starts a new chat; each conversation keeps its provider.</value>
+  </data>
+  <data name="Ai_OpenAiHelp" xml:space="preserve">
+    <value>Install Codex and sign in with codex login to use your eligible ChatGPT plan. Enki does not store credentials. If Codex uses an API key, usage is billed separately.</value>
+  </data>
+  <data name="Ai_CodexPath" xml:space="preserve">
+    <value>Codex path (empty: automatic detection)</value>
+  </data>
+  <data name="Ai_CustomModel" xml:space="preserve">
+    <value>OpenAI model (empty: Codex default)</value>
+  </data>
+  <data name="Ai_LocalEndpoint" xml:space="preserve">
+    <value>Local Ollama address</value>
+  </data>
+  <data name="Ai_LocalHelp" xml:space="preserve">
+    <value>Install Ollama, download a model (for example, ollama pull qwen3:8b) and start the server. Check the connection to load installed models. Only addresses on this computer are supported. Tools depend on model capabilities.</value>
+  </data>
+  <data name="Ai_Ready" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Ai_NotInstalled" xml:space="preserve">
+    <value>CLI not found. Check installation and path in Settings.</value>
+  </data>
+  <data name="Ai_SignedOut" xml:space="preserve">
+    <value>Signed out</value>
+  </data>
+  <data name="Ai_Unavailable" xml:space="preserve">
+    <value>Connection unavailable</value>
+  </data>
+  <data name="Ai_Checking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="Ai_UpdateCodex" xml:space="preserve">
+    <value>Update Codex: Enki requires ephemeral mode and configuration isolation.</value>
+  </data>
+  <data name="Ai_ConnectionFailed" xml:space="preserve">
+    <value>The response could not be completed. Check the connection, account and model, then try again.</value>
+  </data>
+  <data name="Ai_LocalEmpty" xml:space="preserve">
+    <value>Ollama is connected but has no installed models. Download one with ollama pull and check again.</value>
+  </data>
+  <data name="Ai_LocalModelMissing" xml:space="preserve">
+    <value>The selected model is no longer installed. Choose another model in Settings and check again.</value>
+  </data>
+  <data name="Ai_LocalEndpointInvalid" xml:space="preserve">
+    <value>Use a local HTTP or HTTPS address, such as http://localhost:11434, without paths or credentials.</value>
+  </data>
+  <data name="Ai_LocalUnavailable" xml:space="preserve">
+    <value>Could not connect to Ollama. Check the address and that ollama serve is running.</value>
+  </data>
+  <data name="Ai_LocalRequestFailed" xml:space="preserve">
+    <value>Ollama could not complete the response. Check the server and model capabilities.</value>
+  </data>
+  <data name="Ai_ToolLimit" xml:space="preserve">
+    <value>This response reached its action limit. Review completed actions before continuing.</value>
+  </data>
+  <data name="Ai_LocalOnly" xml:space="preserve">
+    <value>This Ollama model uses a remote server. Choose a downloaded model for local processing.</value>
+  </data>
 </root>

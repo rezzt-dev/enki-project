@@ -27,9 +27,58 @@ public sealed partial class SettingsViewModel
     public ClaudeCliStatusViewModel? AiCliStatus { get; private set; }
 
     public ObservableCollection<AiModelOption> AiModelOptions { get; } = [];
+    public System.Collections.Generic.IReadOnlyList<AiProviderOption> AiProviderOptions { get; } = AiProviderOption.Build();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAiClaude), nameof(IsAiOpenAi), nameof(IsAiLocal))]
+    private AiProviderOption? _aiProvider;
+
+    public bool IsAiClaude => AiProvider?.Provider == Models.AiProvider.Claude;
+    public bool IsAiOpenAi => AiProvider?.Provider == Models.AiProvider.OpenAi;
+    public bool IsAiLocal => AiProvider?.Provider == Models.AiProvider.Ollama;
+
+    [ObservableProperty]
+    private string _aiCodexPath = string.Empty;
+    [ObservableProperty]
+    private string _aiLocalEndpoint = string.Empty;
+    [ObservableProperty]
+    private string _aiCustomModel = string.Empty;
+
+    partial void OnAiProviderChanged(AiProviderOption? value)
+    {
+        if (_loadingAiSettings || value is null) return;
+        if (AiCliStatus?.IsBusy == true) { LoadAiSettings(); return; }
+        _settingsService.Settings.Ai.Provider = value.Provider;
+        AiCliStatus?.Backend?.SelectProvider(value.Provider);
+        LoadAiSettings();
+        _settingsService.Save();
+        if (AiEnabled && AiCliStatus is { IsChecking: false }) _ = AiCliStatus.RefreshAsync();
+    }
+
+    partial void OnAiCodexPathChanged(string value)
+    {
+        if (_loadingAiSettings) return;
+        _settingsService.Settings.Ai.CodexCliPath = value.Trim();
+        DebouncedSave();
+    }
+
+    partial void OnAiLocalEndpointChanged(string value)
+    {
+        if (_loadingAiSettings) return;
+        _settingsService.Settings.Ai.OllamaEndpoint = value.Trim().TrimEnd('/');
+        DebouncedSave();
+    }
+
+    partial void OnAiCustomModelChanged(string value)
+    {
+        if (_loadingAiSettings || AiProvider is null) return;
+        _settingsService.Settings.Ai.SetModel(AiProvider.Provider, value.Trim());
+        DebouncedSave();
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AiStatusVisible))]
+    [NotifyCanExecuteChangedFor(nameof(CheckClaudeCliCommand))]
     private bool _aiEnabled;
 
     [ObservableProperty]
@@ -72,6 +121,21 @@ public sealed partial class SettingsViewModel
     private void InitializeAi(ClaudeCliStatusViewModel? cliStatus, AiChatService? chatService)
     {
         AiCliStatus = cliStatus;
+        if (cliStatus is not null)
+            cliStatus.PropertyChanged += (_, _) => CheckClaudeCliCommand.NotifyCanExecuteChanged();
+        if (cliStatus?.Backend is { } backend)
+        {
+            backend.ProviderChanged += () =>
+            {
+                _settingsService.Settings.Ai.Provider = backend.Provider;
+                LoadAiSettings();
+            };
+            cliStatus.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(ClaudeCliStatusViewModel.Status)) return;
+                LoadAiModelOptions();
+            };
+        }
         _aiChatService = chatService;
         if (chatService is not null)
             chatService.ChatsChanged += () =>
@@ -88,12 +152,13 @@ public sealed partial class SettingsViewModel
         try
         {
             var ai = _settingsService.Settings.Ai;
-            AiModelOptions.Clear();
-            foreach (var option in AiModelOption.Build()) AiModelOptions.Add(option);
+            AiProvider = AiProviderOptions.First(p => p.Provider == ai.Provider);
+            AiCodexPath = ai.CodexCliPath;
+            AiLocalEndpoint = ai.OllamaEndpoint;
+            AiCustomModel = ai.ModelFor(ai.Provider);
+            LoadAiModelOptions();
             AiEnabled = ai.Enabled;
             AiCliPath = ai.ClaudeCliPath;
-            AiDefaultModel = AiModelOptions.FirstOrDefault(m => string.Equals(m.Alias, ai.DefaultModel, StringComparison.OrdinalIgnoreCase))
-                ?? AiModelOptions[0];
             AiIdleTimeoutSeconds = ai.IdleTimeoutSeconds;
             AiMaxContextChars = ai.MaxContextChars;
             AiConfirmBeforeSending = ai.ConfirmBeforeSendingContext;
@@ -103,6 +168,21 @@ public sealed partial class SettingsViewModel
         {
             _loadingAiSettings = false;
         }
+    }
+
+    private void LoadAiModelOptions()
+    {
+        var wasLoading = _loadingAiSettings;
+        _loadingAiSettings = true;
+        try
+        {
+            var ai = _settingsService.Settings.Ai;
+            AiModelOptions.Clear();
+            foreach (var option in AiModelOption.Build(ai.Provider, AiCliStatus?.Backend?.LocalModels, ai.ModelFor(ai.Provider)))
+                AiModelOptions.Add(option);
+            AiDefaultModel = AiModelOptions.FirstOrDefault(m => m.Alias == ai.ModelFor(ai.Provider)) ?? AiModelOptions[0];
+        }
+        finally { _loadingAiSettings = wasLoading; }
     }
 
     partial void OnAiEnabledChanged(bool value)
@@ -183,8 +263,10 @@ public sealed partial class SettingsViewModel
         await CheckClaudeCli();
     }
 
-    /// <summary>Guarda ya la ruta (sin esperar al debounce) y vuelve a comprobar el CLI con ella.</summary>
-    [RelayCommand]
+    private bool CanCheckAiConnection => AiEnabled && AiCliStatus is { IsChecking: false, IsBusy: false };
+
+    /// <summary>Guarda ya la configuración (sin esperar al debounce) y comprueba el proveedor seleccionado.</summary>
+    [RelayCommand(CanExecute = nameof(CanCheckAiConnection))]
     private async Task CheckClaudeCli()
     {
         FlushPendingSave();
@@ -194,7 +276,10 @@ public sealed partial class SettingsViewModel
     partial void OnAiDefaultModelChanged(AiModelOption? value)
     {
         if (_loadingAiSettings || value is null) return;
-        _settingsService.Settings.Ai.DefaultModel = value.Alias;
+        _settingsService.Settings.Ai.SetModel(_settingsService.Settings.Ai.Provider, value.Alias);
+        _loadingAiSettings = true;
+        AiCustomModel = value.Alias;
+        _loadingAiSettings = false;
         _settingsService.Save();
     }
 
@@ -229,13 +314,13 @@ public sealed partial class SettingsViewModel
     }
 
     [RelayCommand]
-    private static void OpenAiTerms() => UrlOpener.Open(ClaudeCliService.LegalAndComplianceUrl);
+    private void OpenAiTerms() => UrlOpener.Open(AiCliStatus?.TermsUrl ?? ClaudeCliService.LegalAndComplianceUrl);
 
     [RelayCommand]
     private static void OpenAnthropicConsumerTerms() => UrlOpener.Open(ClaudeCliService.ConsumerTermsUrl);
 
     [RelayCommand]
-    private static void OpenClaudeSetupDocumentation() => UrlOpener.Open(ClaudeCliService.SetupDocumentationUrl);
+    private void OpenClaudeSetupDocumentation() => UrlOpener.Open(AiCliStatus?.SetupDocumentationUrl ?? ClaudeCliService.SetupDocumentationUrl);
 
     [RelayCommand]
     private void RequestClearAiHistory()

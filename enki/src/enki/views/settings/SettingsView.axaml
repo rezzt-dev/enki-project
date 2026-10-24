@@ -2446,6 +2446,35 @@
               </Border>
             </controls:SettingsSearchOption>
 
+            <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Ai Ai_Provider Ai_ProviderHelp Ai_LocalEndpoint Ai_CustomModel">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="{loc:Tr Ai_Provider, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  <ComboBox ItemsSource="{Binding AiProviderOptions}" SelectedItem="{Binding AiProvider}"
+                            HorizontalAlignment="Stretch" IsEnabled="{Binding !AiCliStatus.IsBusy}"
+                            AutomationProperties.Name="{loc:Tr Ai_Provider}" />
+                  <TextBlock Text="{loc:Tr Ai_ProviderHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                  <StackPanel IsVisible="{Binding IsAiOpenAi}" Spacing="8">
+                    <TextBlock Text="{loc:Tr Ai_OpenAiHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    <TextBlock Text="{loc:Tr Ai_CodexPath}" FontSize="13" />
+                    <TextBox Classes="search" Text="{Binding AiCodexPath}" AutomationProperties.Name="{loc:Tr Ai_CodexPath}" />
+                    <TextBlock Text="{Binding AiCliStatus.LoginCommand}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" />
+                    <TextBlock Text="{loc:Tr Ai_CustomModel}" FontSize="13" />
+                    <TextBox Classes="search" Text="{Binding AiCustomModel}" AutomationProperties.Name="{loc:Tr Ai_CustomModel}" />
+                  </StackPanel>
+                  <StackPanel IsVisible="{Binding IsAiLocal}" Spacing="8">
+                    <TextBlock Text="{loc:Tr Ai_LocalHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    <TextBlock Text="{loc:Tr Ai_LocalEndpoint}" FontSize="13" />
+                    <TextBox Classes="search" Text="{Binding AiLocalEndpoint}" AutomationProperties.Name="{loc:Tr Ai_LocalEndpoint}" />
+                    <TextBlock Text="{Binding AiCliStatus.LoginCommand}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" />
+                  </StackPanel>
+                  <Button Classes="pill" Command="{Binding CheckClaudeCliCommand}" IsEnabled="{Binding AiEnabled}">
+                    <TextBlock Text="{loc:Tr Settings_Ai_Cli_Check, Converter={StaticResource UpperCaseConverter}}" />
+                  </Button>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <!-- Cómo se usa Claude. Siempre visible, también con la IA apagada: es lo que el usuario tiene
                  que poder leer antes de decidir encenderla. -->
             <controls:SettingsSearchOption
@@ -2474,7 +2503,7 @@
                         <TextBlock Text="{loc:Tr Settings_Ai_Usage_ClaudeCodeTerms, Converter={StaticResource UpperCaseConverter}}" />
                       </StackPanel>
                     </Button>
-                    <Button Classes="ghost" Command="{Binding OpenAnthropicConsumerTermsCommand}">
+                    <Button Classes="ghost" IsVisible="{Binding IsAiClaude}" Command="{Binding OpenAnthropicConsumerTermsCommand}">
                       <StackPanel Orientation="Horizontal" Spacing="7">
                         <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
                         <TextBlock Text="{loc:Tr Settings_Ai_Usage_ConsumerTerms, Converter={StaticResource UpperCaseConverter}}" />
@@ -2525,14 +2554,14 @@
                     </StackPanel>
                   </Grid>
 
-                  <TextBlock Text="{loc:Tr Assistant_Setup_SignedOut_Message}" Classes="muted" FontSize="11.5" TextWrapping="Wrap"
+                  <TextBlock Text="{Binding AiCliStatus.LoginCommand}" Classes="muted" FontSize="11.5" TextWrapping="Wrap"
                              IsVisible="{Binding AiCliStatus.IsSignedOut}" />
                   <TextBlock Text="{Binding AiCliStatus.UnsupportedMessage}" Classes="muted" FontSize="11.5" TextWrapping="Wrap"
                              IsVisible="{Binding AiCliStatus.IsUnsupported}" />
 
                   <Rectangle Classes="section-rule" />
 
-                  <StackPanel Spacing="8">
+                  <StackPanel Spacing="8" IsVisible="{Binding IsAiClaude}">
                     <TextBlock Text="{loc:Tr Settings_Ai_Cli_Path_Label}" FontSize="13" />
                     <TextBlock Text="{loc:Tr Settings_Ai_Cli_Path_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                     <Grid ColumnDefinitions="*,Auto,Auto">
@@ -2566,7 +2595,7 @@
                     <mi:MaterialIcon Kind="MessageTextOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
                     <TextBlock Text="{loc:Tr Settings_Ai_Chat_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
-                  <Grid ColumnDefinitions="*,Auto">
+                  <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !IsAiOpenAi}">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Model_Label}" FontSize="13" />
                       <TextBlock Text="{loc:Tr Settings_Ai_Model_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />

@@ -9,6 +9,28 @@ namespace enki.Models;
 /// <c>.docs/project-info/asistente-ia.md</c>.</summary>
 public sealed class AiSettings
 {
+    public AiProvider Provider { get; set; }
+    public string CodexCliPath { get; set; } = string.Empty;
+    public string OpenAiModel { get; set; } = string.Empty;
+    public string OllamaEndpoint { get; set; } = "http://localhost:11434";
+    public string LocalModel { get; set; } = string.Empty;
+
+    public string ModelFor(AiProvider provider) => provider switch
+    {
+        AiProvider.OpenAi => OpenAiModel,
+        AiProvider.Ollama => LocalModel,
+        _ => DefaultModel
+    };
+
+    public void SetModel(AiProvider provider, string model)
+    {
+        switch (provider)
+        {
+            case AiProvider.OpenAi: OpenAiModel = model; break;
+            case AiProvider.Ollama: LocalModel = model; break;
+            default: DefaultModel = model; break;
+        }
+    }
     public const int DefaultIdleTimeoutSeconds = 180;
     public const int MinIdleTimeoutSeconds = 30;
     public const int MaxIdleTimeoutSeconds = 1800;
@@ -58,6 +80,11 @@ public sealed class AiSettings
     /// los controles de Ajustes.</summary>
     public void Normalize()
     {
+        if (!Enum.IsDefined(Provider)) Provider = AiProvider.Claude;
+        CodexCliPath = (CodexCliPath ?? string.Empty).Trim();
+        OpenAiModel = (OpenAiModel ?? string.Empty).Trim();
+        LocalModel = (LocalModel ?? string.Empty).Trim();
+        OllamaEndpoint = (OllamaEndpoint ?? string.Empty).Trim().TrimEnd('/');
         ClaudeCliPath = (ClaudeCliPath ?? string.Empty).Trim();
         DefaultModel = (DefaultModel ?? string.Empty).Trim();
         IdleTimeoutSeconds = IdleTimeoutSeconds is < MinIdleTimeoutSeconds or > MaxIdleTimeoutSeconds
@@ -68,3 +95,6 @@ public sealed class AiSettings
         if (ConsentAcceptedUtc is null) Enabled = false;
     }
 }
+
+/// <summary>Proveedor del chat. Cero conserva la compatibilidad con los historiales de Claude.</summary>
+public enum AiProvider { Claude, OpenAi, Ollama }
