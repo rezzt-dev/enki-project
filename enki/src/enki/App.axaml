@@ -10,6 +10,7 @@
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <StyleInclude Source="avares://Material.Icons.Avalonia/MaterialIconStyles.axaml" />
         <StyleInclude Source="avares://enki/styles/Styles.axaml" />
+        <StyleInclude Source="avares://enki/styles/SidePanels.axaml" />
     </Application.Styles>
 
     <Application.Resources>

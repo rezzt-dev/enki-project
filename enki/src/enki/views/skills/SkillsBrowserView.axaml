@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -321,7 +322,7 @@
       <TextBlock Grid.Row="3" Text="{loc:Tr Skills_DropHint}" Classes="muted" Margin="36,0,36,16" TextWrapping="Wrap" />
 
       <!-- Grid principal: panel de carpetas + rejilla + panel de detalle. -->
-      <Grid Grid.Row="4" Margin="36,0,36,24">
+      <controls:SidePanelGrid Grid.Row="4" Margin="36,0,36,24" IsPanelOnRight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SidePanels.SkillsOnRight}">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="240" MinWidth="180" MaxWidth="480" />
           <ColumnDefinition Width="Auto" />
@@ -330,7 +331,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ===================== Panel de carpetas ===================== -->
-        <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,0,1"
+        <Border Grid.Column="0" Classes="panel-frame" BorderBrush="{DynamicResource Ink10}"
                 Background="{DynamicResource AppBackgroundAltBrush}" Padding="10,12">
           <Grid RowDefinitions="Auto,Auto,*">
             <Button Grid.Row="0" Classes="pill" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
@@ -465,7 +466,7 @@
                 IsVisible="{Binding SelectedSkill, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
           <views:SkillDetailView />
         </Border>
-      </Grid>
+      </controls:SidePanelGrid>
     </Grid>
 
     <!-- ===================== Modo editor ===================== -->

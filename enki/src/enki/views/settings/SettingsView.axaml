@@ -922,6 +922,75 @@
         <controls:SettingsSearchOption Section="Appearance" MatchDescendants="True" ResourceKeys="Settings_Nav_Appearance" AdditionalText="{Binding ThemeSearchText}">
           <StackPanel Spacing="20">
             <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Appearance, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="Settings_SidePanels_Title Settings_SidePanels_Description Settings_SidePanels_Left Settings_SidePanels_Right">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Text="{loc:Tr Settings_SidePanels_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  <TextBlock Text="{loc:Tr Settings_SidePanels_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                  <controls:SettingsSearchOption ResourceKeys="Nav_Documents Settings_SidePanels_Title Settings_SidePanels_Left Settings_SidePanels_Right">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{loc:Tr Nav_Documents}" FontSize="13" VerticalAlignment="Center" Margin="0,0,16,0" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <RadioButton Classes="segment" GroupName="NotesPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Left, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Left}" AutomationProperties.HelpText="{loc:Tr Nav_Documents}"
+                                     IsChecked="{Binding !SidePanels.NotesOnRight, Mode=TwoWay}" />
+                        <RadioButton Classes="segment" GroupName="NotesPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Right, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Right}" AutomationProperties.HelpText="{loc:Tr Nav_Documents}"
+                                     IsChecked="{Binding SidePanels.NotesOnRight, Mode=TwoWay}" />
+                      </StackPanel>
+                    </Grid>
+                  </controls:SettingsSearchOption>
+                  <controls:SettingsSearchOption ResourceKeys="Nav_Files Settings_SidePanels_Title Settings_SidePanels_Left Settings_SidePanels_Right">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{loc:Tr Nav_Files}" FontSize="13" VerticalAlignment="Center" Margin="0,0,16,0" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <RadioButton Classes="segment" GroupName="FilesPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Left, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Left}" AutomationProperties.HelpText="{loc:Tr Nav_Files}"
+                                     IsChecked="{Binding !SidePanels.FilesOnRight, Mode=TwoWay}" />
+                        <RadioButton Classes="segment" GroupName="FilesPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Right, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Right}" AutomationProperties.HelpText="{loc:Tr Nav_Files}"
+                                     IsChecked="{Binding SidePanels.FilesOnRight, Mode=TwoWay}" />
+                      </StackPanel>
+                    </Grid>
+                  </controls:SettingsSearchOption>
+                  <controls:SettingsSearchOption ResourceKeys="Nav_Skills Settings_SidePanels_Title Settings_SidePanels_Left Settings_SidePanels_Right">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{loc:Tr Nav_Skills}" FontSize="13" VerticalAlignment="Center" Margin="0,0,16,0" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <RadioButton Classes="segment" GroupName="SkillsPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Left, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Left}" AutomationProperties.HelpText="{loc:Tr Nav_Skills}"
+                                     IsChecked="{Binding !SidePanels.SkillsOnRight, Mode=TwoWay}" />
+                        <RadioButton Classes="segment" GroupName="SkillsPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Right, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Right}" AutomationProperties.HelpText="{loc:Tr Nav_Skills}"
+                                     IsChecked="{Binding SidePanels.SkillsOnRight, Mode=TwoWay}" />
+                      </StackPanel>
+                    </Grid>
+                  </controls:SettingsSearchOption>
+                  <controls:SettingsSearchOption ResourceKeys="Nav_Assistant Settings_SidePanels_Title Settings_SidePanels_Left Settings_SidePanels_Right">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{loc:Tr Nav_Assistant}" FontSize="13" VerticalAlignment="Center" Margin="0,0,16,0" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <RadioButton Classes="segment" GroupName="AssistantPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Left, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Left}" AutomationProperties.HelpText="{loc:Tr Nav_Assistant}"
+                                     IsChecked="{Binding !SidePanels.AssistantOnRight, Mode=TwoWay}" />
+                        <RadioButton Classes="segment" GroupName="AssistantPanelPosition"
+                                     Content="{loc:Tr Settings_SidePanels_Right, Converter={StaticResource UpperCaseConverter}}"
+                                     AutomationProperties.Name="{loc:Tr Settings_SidePanels_Right}" AutomationProperties.HelpText="{loc:Tr Nav_Assistant}"
+                                     IsChecked="{Binding SidePanels.AssistantOnRight, Mode=TwoWay}" />
+                      </StackPanel>
+                    </Grid>
+                  </controls:SettingsSearchOption>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Appearance Settings_Appearance_Motion_Title Settings_Appearance_Motion_Description Settings_Appearance_Motion_Subtle Settings_Appearance_Motion_Normal">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">

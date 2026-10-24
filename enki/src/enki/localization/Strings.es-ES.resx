@@ -7219,4 +7219,10 @@ A disfrutar escribiendo.</value>
   <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
     <value>Mostrar conversaciones</value>
   </data>
+  <data name="Settings_SidePanels_Title" xml:space="preserve"><value>Paneles laterales</value></data>
+  <data name="Settings_SidePanels_Description" xml:space="preserve"><value>Elige el lado del panel de cada sección. Los cambios se aplican al instante en ambas vistas.</value></data>
+  <data name="Settings_SidePanels_Left" xml:space="preserve"><value>Izquierda</value></data>
+  <data name="Settings_SidePanels_Right" xml:space="preserve"><value>Derecha</value></data>
+  <data name="Settings_SidePanels_ErrorTitle" xml:space="preserve"><value>No se pudo guardar el ajuste</value></data>
+  <data name="Settings_SidePanels_Error" xml:space="preserve"><value>No se ha podido guardar la posición del panel. Inténtalo de nuevo.</value></data>
 </root>

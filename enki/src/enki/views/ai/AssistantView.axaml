@@ -23,15 +23,15 @@
     <KeyBinding Gesture="Ctrl+N" Command="{Binding NewChatCommand}" />
   </UserControl.KeyBindings>
 
-  <Grid ColumnDefinitions="Auto,*">
+  <controls:SidePanelGrid ColumnDefinitions="Auto,*" IsPanelOnRight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SidePanels.AssistantOnRight}">
 
     <!-- ===================== Historial ===================== -->
     <Grid x:Name="HistoryPanel" Grid.Column="0" Width="280" IsVisible="{Binding !IsHistoryCollapsed}"
           RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundAltBrush}">
-      <Border Grid.Row="0" Grid.RowSpan="4" Width="1" HorizontalAlignment="Right"
+      <Border Classes="panel-seam" Grid.Row="0" Grid.RowSpan="4" Width="1"
               Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
 
-      <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,1"
+      <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
               Background="{DynamicResource AppBackgroundBrush}" Padding="16,0,8,0">
         <Grid ColumnDefinitions="*,Auto,Auto">
           <TextBlock Grid.Column="0" Text="{loc:Tr Assistant_History_Title, Converter={StaticResource UpperCaseConverter}}"
@@ -45,7 +45,7 @@
                   Command="{Binding ToggleHistoryCommand}"
                   ToolTip.Tip="{loc:Tr Assistant_History_Hide_Tooltip}"
                   AutomationProperties.Name="{loc:Tr Assistant_History_Hide_Tooltip}">
-            <mi:MaterialIcon Kind="ChevronDoubleLeft" Width="17" Height="17" />
+            <mi:MaterialIcon Classes="panel-chevron" Kind="ChevronDoubleLeft" Width="17" Height="17" />
           </Button>
         </Grid>
       </Border>
@@ -124,7 +124,7 @@
       </Grid>
 
       <!-- Pie del historial desplegado: CLI y cuenta con los que se está hablando. -->
-      <Border Grid.Row="3" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,1,0" Padding="14,10,8,10">
+      <Border Grid.Row="3" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="14,10,8,10">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,0,10,0" VerticalAlignment="Center"
                    Fill="{DynamicResource SuccessBrush}" IsVisible="{Binding Cli.IsReady}" />
@@ -146,7 +146,7 @@
     <!-- Historial plegado: conserva los accesos a nuevo chat, estado del CLI y ajustes. -->
     <Grid x:Name="HistoryRail" Grid.Column="0" Width="52" RowDefinitions="Auto,*,Auto"
           IsVisible="{Binding IsHistoryCollapsed}" Background="{DynamicResource AppBackgroundAltBrush}">
-      <Border Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
+      <Border Classes="panel-seam" Grid.RowSpan="3" Width="1"
               Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
       <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
               Background="{DynamicResource AppBackgroundBrush}">
@@ -154,7 +154,7 @@
                 Command="{Binding ToggleHistoryCommand}"
                 ToolTip.Tip="{loc:Tr Assistant_History_Show_Tooltip}"
                 AutomationProperties.Name="{loc:Tr Assistant_History_Show_Tooltip}">
-          <mi:MaterialIcon Kind="ChevronDoubleRight" Width="17" Height="17" />
+          <mi:MaterialIcon Classes="panel-chevron" Kind="ChevronDoubleRight" Width="17" Height="17" />
         </Button>
       </Border>
       <Button Grid.Row="1" Classes="icon-btn" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"
@@ -907,5 +907,5 @@
         </StackPanel>
       </Border>
     </controls:ModalOverlayHost>
-  </Grid>
+  </controls:SidePanelGrid>
 </UserControl>

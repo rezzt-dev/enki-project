@@ -10,6 +10,7 @@ public sealed partial class SettingsViewModel
     /// <summary>Recarga los controles al abrir otro vault sin ejecutar los comandos de guardado.</summary>
     public void ReloadForVault()
     {
+        SidePanels.Reload();
         _startupPage = ParseAppPage(_settingsService.Settings.StartupPage);
         _minimizeToTray = _settingsService.Settings.MinimizeToTray;
         _useSubtleAnimations = _settingsService.Settings.UseSubtleAnimations;

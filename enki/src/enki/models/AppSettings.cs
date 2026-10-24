@@ -111,6 +111,12 @@ public sealed class AppSettings
 
     public bool SidebarExpanded { get; set; } = true;
 
+    /// <summary>Posición de los paneles de sección; false conserva la disposición izquierda original.</summary>
+    public bool NotesPanelOnRight { get; set; }
+    public bool FilesPanelOnRight { get; set; }
+    public bool SkillsPanelOnRight { get; set; }
+    public bool AssistantPanelOnRight { get; set; }
+
     /// <summary>Muestra/oculta la fila "Cambiar de vault" entre la cabecera de marca y la navegación
     /// (T4, .docs/project-info/multi-vault-en-caliente.md). Quien trabaja siempre sobre el mismo vault no
     /// necesita el selector ocupando una fila permanente del raíl; apagarlo no descarta los recientes,

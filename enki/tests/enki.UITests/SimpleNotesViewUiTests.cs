@@ -9,6 +9,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Services;
+using enki.Controls;
 using enki.ViewModels;
 using enki.Views;
 using Xunit;
@@ -243,14 +244,17 @@ public class SimpleNotesViewUiTests : IDisposable
 
     /// <summary>El navegador del raíl se superpone sin quitar ancho al editor ni guardar el panel
     /// como desplegado. Abrir una nota desde una carpeta lo descarta y reutiliza su pestaña.</summary>
-    [Fact]
-    public void CollapsedRail_BrowsesNestedNotesWithoutResizingEditorOrPersistingExpansion()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CollapsedRail_BrowsesNestedNotesWithoutResizingEditorOrPersistingExpansion(bool onRight)
     {
         var folder = VaultService.CreateFolder(_vaultDir, "Proyecto");
         File.WriteAllText(Path.Combine(folder.FullPath, "nota.md"), "# Nota\n");
         var (view, vm, window) = CreateView(simplified: true);
         try
         {
+            view.GetVisualDescendants().OfType<SidePanelGrid>().Single().IsPanelOnRight = onRight;
             vm.ToggleSimpleSidebarCommand.Execute(null);
             window.GetLayoutManager()!.ExecuteLayoutPass();
             var simple = view.GetVisualDescendants().OfType<SimpleNotesView>().Single();
@@ -267,7 +271,15 @@ public class SimpleNotesViewUiTests : IDisposable
             Assert.Equal(editorPosition, tabs.TranslatePoint(default, window));
             Assert.Equal(editorWidth, tabs.Bounds.Width);
             Assert.Contains("active", trigger.Classes);
-            Assert.Equal(52, simple.FindControl<Grid>("CollapsedRail")!.Bounds.Width);
+            var rail = simple.FindControl<Grid>("CollapsedRail")!;
+            var navigator = simple.FindControl<Border>("SimpleNavigator")!;
+            Assert.Equal(52, rail.Bounds.Width);
+            var railLeft = rail.TranslatePoint(default, window)!.Value.X;
+            var navigatorLeft = navigator.TranslatePoint(default, window)!.Value.X;
+            if (onRight)
+                Assert.Equal(railLeft, navigatorLeft + navigator.Bounds.Width, 1);
+            else
+                Assert.Equal(railLeft + rail.Bounds.Width, navigatorLeft, 1);
 
             var folderNode = Assert.Single(vm.SimpleTreeRoots);
             PressRowLeftEdge(view, window, folderNode);

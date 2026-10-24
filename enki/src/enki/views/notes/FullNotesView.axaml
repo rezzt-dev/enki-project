@@ -287,7 +287,7 @@
         </Border>
       </StackPanel>
 
-      <Grid Grid.Row="4" Margin="24,0,24,24">
+      <controls:SidePanelGrid Grid.Row="4" Margin="24,0,24,24" IsPanelOnRight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SidePanels.NotesOnRight}">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="260" MinWidth="180" MaxWidth="480" />
           <ColumnDefinition Width="Auto" />
@@ -295,7 +295,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ===================== Panel de carpetas ===================== -->
-        <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,0,1"
+        <Border Grid.Column="0" Classes="panel-frame" BorderBrush="{DynamicResource Ink10}"
                 Background="{DynamicResource AppBackgroundAltBrush}" Padding="10,12">
           <Grid RowDefinitions="Auto,Auto,Auto,*">
 
@@ -499,7 +499,7 @@
             </Grid>
           </Grid>
         </Border>
-      </Grid>
+      </controls:SidePanelGrid>
     </Grid>
 
     <!-- ===================== Editor mode ===================== -->

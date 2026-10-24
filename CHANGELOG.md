@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- ajuste independiente de la posición del panel lateral para Notas, Archivos, Habilidades y Asistente desde `ajustes > apariencia`, con izquierda por defecto, aplicación inmediata, persistencia por vault y adaptación de las vistas completas, simplificadas, árboles, raíles y navegadores temporales.
 - historial del asistente agrupado por vault y sesiones, aislamiento estricto de los chats de sesión y selector de capacidad por conversación mediante slider; Sonnet 5.5 y capacidad media para nuevos chats sin preferencias previas.
 - panel lateral de conversaciones del asistente plegable y desplegable, con un raíl de `52px` que conserva los accesos a nuevo chat, ajustes y el estado del CLI mientras libera espacio para la conversación.
 - herramientas del asistente sobre notas, sesiones, carpetas, archivos, Kanban, Polar, recordatorios, agenda y papelera; ámbitos por chat, modo de solo lectura, actividad persistida y confirmación para acciones irreversibles, con escrituras comprobadas e integración MCP local autenticada.
@@ -162,6 +163,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- independent side-panel position settings for Notes, Files, Skills and Assistant under `settings > appearance`, defaulting to the left with immediate application, vault persistence and support for full, simplified, tree, rail and temporary navigator layouts.
 - assistant history grouped by vault and session, strict session chat isolation, and a per-chat effort slider; Sonnet 5.5 and medium effort for new chats without previous preferences.
 - collapsible assistant conversation sidebar with a `52px` rail that keeps new chat, settings and CLI status actions available while giving the conversation more room.
 - assistant tools for notes, sessions, folders, files, Kanban, Polar, reminders, agenda and trash; per-chat scopes, read-only mode, persisted activity and confirmation for irreversible actions, with checked writes and authenticated local MCP integration.

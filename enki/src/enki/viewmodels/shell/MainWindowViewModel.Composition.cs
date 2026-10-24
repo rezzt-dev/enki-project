@@ -18,6 +18,8 @@ namespace enki.ViewModels;
 /// file declares them — so no wiring, timing or field-initialization order changed by this split.</summary>
 public sealed partial class MainWindowViewModel
 {
+    public SidePanelLayoutViewModel SidePanels { get; }
+
     public MainWindowViewModel() : this(new SettingsService()) { }
 
     public MainWindowViewModel(SettingsService settingsService)
@@ -61,6 +63,8 @@ public sealed partial class MainWindowViewModel
         _sessionService = new SessionService(_vaultService);
         _kanbanService = new KanbanService(_vaultService, deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
         _notificationService = new NotificationService(_settingsService, _vaultService);
+        SidePanels = new SidePanelLayoutViewModel(_settingsService, _notificationService);
+        _settingsService.SettingsChanged += SidePanels.Reload;
         void NotifyCorruptVaultSettings(string backupPath) => _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Notification_VaultSettingsCorrupt_Title"),
             LocalizedTextFormatter.Format("Notification_VaultSettingsCorrupt_Message", backupPath),
@@ -571,7 +575,7 @@ public sealed partial class MainWindowViewModel
             OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
             () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; },
             _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService,
-            AiCliStatus, _aiChatService);
+            AiCliStatus, _aiChatService, SidePanels);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

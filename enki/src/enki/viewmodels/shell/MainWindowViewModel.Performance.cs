@@ -489,6 +489,7 @@ public sealed partial class MainWindowViewModel
         _habitService.HabitsChanged -= OnHabitDataChanged;
         _reminderService.RemindersChanged -= OnReminderDataChanged;
         _vaultSettingsService.SettingsChanged -= OnVaultSettingsChanged;
+        _settingsService.SettingsChanged -= SidePanels.Reload;
         _dirtyPages.Clear();
         // Un tramo de precarga que vuelva después de esto se descarta en vez de seguir trabajando.
         _warmUpGeneration++;

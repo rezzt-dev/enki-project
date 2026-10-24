@@ -26,6 +26,8 @@ namespace enki.ViewModels;
 /// file declares them — so no behavior change.</summary>
 public sealed partial class SettingsViewModel
 {
+    public SidePanelLayoutViewModel SidePanels { get; }
+
     /// <summary>Ajustes › Apariencia › Tema personalizado — un tema importado por fila, rebuilt (not just
     /// re-labeled, unlike <see cref="ShortcutCategories"/>) by <see cref="RefreshCustomThemes"/> after every
     /// import/activate/delete so <see cref="CustomThemeRowViewModel.IsActive"/> stays correct.</summary>

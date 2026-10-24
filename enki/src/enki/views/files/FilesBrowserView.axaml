@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -417,7 +418,7 @@
         </StackPanel>
       </Grid>
 
-      <Grid Grid.Row="2" Margin="24,0,24,24">
+      <controls:SidePanelGrid Grid.Row="2" Margin="24,0,24,24" IsPanelOnRight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SidePanels.FilesOnRight}">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="260" MinWidth="180" MaxWidth="480" />
           <ColumnDefinition Width="Auto" />
@@ -425,7 +426,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ===================== Panel de carpetas ===================== -->
-        <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,0,1"
+        <Border Grid.Column="0" Classes="panel-frame" BorderBrush="{DynamicResource Ink10}"
                 Background="{DynamicResource AppBackgroundAltBrush}" Padding="10,12">
           <Grid RowDefinitions="Auto,Auto,*">
 
@@ -617,7 +618,7 @@
             </Panel>
           </Grid>
         </Border>
-      </Grid>
+      </controls:SidePanelGrid>
     </Grid>
 
     <!-- Previsualización a pantalla completa: sustituye a la rejilla en vez de acompañarla, porque en esta

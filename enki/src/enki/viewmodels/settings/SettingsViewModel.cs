@@ -197,7 +197,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action? onExternalImportCompleted = null,
         ExternalCalendarService? externalCalendarService = null,
         ClaudeCliStatusViewModel? aiCliStatus = null,
-        AiChatService? aiChatService = null)
+        AiChatService? aiChatService = null,
+        SidePanelLayoutViewModel? sidePanels = null)
     {
         _reminderImportService = reminderService;
         _onExternalImportCompleted = onExternalImportCompleted;
@@ -206,6 +207,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _onManageKanbanBoards = onManageKanbanBoards;
         _updateCheckService = updateCheckService;
         _settingsService = settingsService;
+        SidePanels = sidePanels ?? new SidePanelLayoutViewModel(settingsService, notificationService);
         _customThemeService = customThemeService;
         _brandLogoService = brandLogoService;
         _vaultSettingsService = vaultSettingsService;

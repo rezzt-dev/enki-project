@@ -364,7 +364,8 @@ public partial class SimpleNotesView : UserControl
     {
         if (!_resizingSidebar || Vm is not { } vm) return;
 
-        var delta = e.GetPosition(this).X - _resizeStartX;
+        var delta = enki.Controls.SidePanelGrid.GetResizeDelta((Control)sender!,
+            e.GetPosition(this).X - _resizeStartX);
         vm.SimpleSidebarWidth = Math.Clamp(_resizeStartWidth + delta,
             NotesViewModel.SimpleSidebarMinWidth, NotesViewModel.SimpleSidebarMaxWidth);
     }

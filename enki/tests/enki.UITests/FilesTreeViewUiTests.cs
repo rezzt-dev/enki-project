@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using enki.Localization;
+using enki.Controls;
 using enki.Services;
 using enki.ViewModels;
 using enki.Views;
@@ -55,12 +56,15 @@ public class FilesTreeViewUiTests : IDisposable
         return (view, viewModel, vault, sessions, window);
     }
 
-    [Fact]
-    public void CollapsedRail_SearchOverlaysPreview_AndPinningReservesSpace()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CollapsedRail_SearchOverlaysPreview_AndPinningReservesSpace(bool onRight)
     {
         var (view, vm, _, _, window) = CreateView(treeMode: true);
         try
         {
+            view.GetVisualDescendants().OfType<SidePanelGrid>().Single().IsPanelOnRight = onRight;
             vm.IsTreeSidebarVisible = false;
             window.GetLayoutManager()!.ExecuteLayoutPass();
             var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
@@ -77,6 +81,17 @@ public class FilesTreeViewUiTests : IDisposable
             Assert.True(tree.FindControl<TextBox>("TreeSearchBox")!.IsEffectivelyVisible);
             Assert.Equal(originalBounds, previewColumn.Bounds);
             Assert.False(vm.IsTreeSidebarVisible);
+            var navigator = tree.FindControl<Border>("TreeNavigator")!;
+            var rail = tree.FindControl<Grid>("CollapsedRail")!;
+            var layout = view.GetVisualDescendants().OfType<SidePanelGrid>().Single();
+            Assert.Equal(onRight, layout.IsPanelOnRight);
+            Assert.Equal(Avalonia.Layout.HorizontalAlignment.Left, navigator.HorizontalAlignment);
+            var navigatorLeft = navigator.TranslatePoint(default, window)!.Value.X;
+            var railLeft = rail.TranslatePoint(default, window)!.Value.X;
+            if (onRight)
+                Assert.Equal(railLeft, navigatorLeft + navigator.Bounds.Width, 1);
+            else
+                Assert.Equal(railLeft + rail.Bounds.Width, navigatorLeft, 1);
 
             vm.ToggleTreeSidebarCommand.Execute(null);
             window.GetLayoutManager()!.ExecuteLayoutPass();

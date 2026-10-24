@@ -7219,4 +7219,10 @@ Bonne rédaction.</value>
   <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
     <value>Afficher les conversations</value>
   </data>
+  <data name="Settings_SidePanels_Title" xml:space="preserve"><value>Panneaux latéraux</value></data>
+  <data name="Settings_SidePanels_Description" xml:space="preserve"><value>Choisissez le côté du panneau de chaque section. Les modifications s’appliquent immédiatement aux deux vues.</value></data>
+  <data name="Settings_SidePanels_Left" xml:space="preserve"><value>Gauche</value></data>
+  <data name="Settings_SidePanels_Right" xml:space="preserve"><value>Droite</value></data>
+  <data name="Settings_SidePanels_ErrorTitle" xml:space="preserve"><value>Impossible d’enregistrer le réglage</value></data>
+  <data name="Settings_SidePanels_Error" xml:space="preserve"><value>La position du panneau n’a pas pu être enregistrée. Veuillez réessayer.</value></data>
 </root>

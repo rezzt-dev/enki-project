@@ -56,6 +56,39 @@ public sealed class SettingsSearchUiTests : IDisposable
         control.GetLogicalAncestors().OfType<Control>().All(c => c.IsVisible);
 
     [Fact]
+    public void SidePanels_AreSearchable_AndEachSelectorChangesItsOwnPreference()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            vm.SearchText = "paneles laterales";
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            foreach (var section in new[] { "Notes", "Files", "Skills", "Assistant" })
+            {
+                var segments = view.GetVisualDescendants().OfType<RadioButton>()
+                    .Where(b => b.GroupName == section + "PanelPosition").ToArray();
+                Assert.Equal(2, segments.Length);
+                Assert.All(segments, segment => Assert.True(Shown(segment)));
+                Assert.True(segments[0].IsChecked);
+                segments[1].IsChecked = true;
+                Assert.True(segments[1].IsChecked);
+                Assert.False(segments[0].IsChecked);
+            }
+            Assert.True(vm.SidePanels.NotesOnRight);
+            Assert.True(vm.SidePanels.FilesOnRight);
+            Assert.True(vm.SidePanels.SkillsOnRight);
+            Assert.True(vm.SidePanels.AssistantOnRight);
+            var notes = view.GetVisualDescendants().OfType<RadioButton>()
+                .First(b => b.GroupName == "NotesPanelPosition");
+            notes.IsChecked = true;
+            Assert.False(vm.SidePanels.NotesOnRight);
+            Assert.True(vm.SidePanels.FilesOnRight);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
     public void MotionMode_IsSearchableAndChangesFromBothSegments()
     {
         var (view, vm, window) = CreateView();

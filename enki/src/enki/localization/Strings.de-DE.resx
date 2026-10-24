@@ -7219,4 +7219,10 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
     <value>Unterhaltungen anzeigen</value>
   </data>
+  <data name="Settings_SidePanels_Title" xml:space="preserve"><value>Seitenleisten</value></data>
+  <data name="Settings_SidePanels_Description" xml:space="preserve"><value>Wähle die Seite der Leiste für jeden Bereich. Änderungen gelten sofort in beiden Ansichten.</value></data>
+  <data name="Settings_SidePanels_Left" xml:space="preserve"><value>Links</value></data>
+  <data name="Settings_SidePanels_Right" xml:space="preserve"><value>Rechts</value></data>
+  <data name="Settings_SidePanels_ErrorTitle" xml:space="preserve"><value>Einstellung konnte nicht gespeichert werden</value></data>
+  <data name="Settings_SidePanels_Error" xml:space="preserve"><value>Die Position der Leiste konnte nicht gespeichert werden. Bitte versuche es erneut.</value></data>
 </root>

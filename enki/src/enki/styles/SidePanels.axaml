@@ -1,0 +1,16 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:enki.Controls"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+  <Style Selector="Border.panel-frame"><Setter Property="BorderThickness" Value="1,1,0,1" /></Style>
+  <Style Selector="Border.panel-seam"><Setter Property="HorizontalAlignment" Value="Right" /></Style>
+  <Style Selector="controls|SidePanelGrid.panel-right mi|MaterialIcon.panel-chevron">
+    <Setter Property="RenderTransform" Value="rotate(180deg)" />
+  </Style>
+  <Style Selector="controls|SidePanelGrid.panel-right Border.panel-frame">
+    <Setter Property="BorderThickness" Value="0,1,1,1" />
+  </Style>
+  <Style Selector="controls|SidePanelGrid.panel-right Border.panel-seam">
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+</Styles>

@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -159,12 +160,12 @@
        hacía parecer que soltar archivos en esta disposición no funcionaba. Lo que se suelte fuera del árbol
        se importa en la raíz efectiva. Los destinos de dentro (filas de carpeta y fondo del árbol) marcan el
        evento como manejado, de modo que este de fuera solo ve lo que ninguno de ellos ha recogido. -->
-  <Grid x:Name="DragSurface" ColumnDefinitions="Auto,Auto,*"
+  <controls:SidePanelGrid x:Name="DragSurface" ColumnDefinitions="Auto,Auto,*"
         DragDrop.AllowDrop="True"
         DragDrop.DragEnter="TreeView_DragEnter"
         DragDrop.DragOver="TreeView_DragOver"
         DragDrop.DragLeave="TreeView_DragLeave"
-        DragDrop.Drop="TreeView_Drop">
+        DragDrop.Drop="TreeView_Drop" IsPanelOnRight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SidePanels.FilesOnRight}">
 
     <!-- ===================== Panel lateral ===================== -->
     <Panel Grid.Column="0" x:Name="SidebarHost">
@@ -178,7 +179,7 @@
            bloque que el panel desplegado y que la página; el alterno es más oscuro y marcaba una franja. -->
       <Grid x:Name="CollapsedRail" RowDefinitions="Auto,*,Auto" Width="52" IsVisible="{Binding !IsTreeSidebarVisible}"
             Background="{DynamicResource AppBackgroundBrush}">
-        <Border Grid.Row="0" Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
+        <Border Classes="panel-seam" Grid.Row="0" Grid.RowSpan="3" Width="1"
                 Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
         <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
                 Background="{DynamicResource AppBackgroundBrush}">
@@ -186,7 +187,7 @@
                   Command="{Binding ToggleTreeSidebarCommand}"
                   ToolTip.Tip="{loc:Tr Files_Tree_ShowSidebar_Tooltip}"
                   AutomationProperties.Name="{loc:Tr Files_Tree_ShowSidebar_Tooltip}">
-            <mi:MaterialIcon Kind="ChevronDoubleRight" Width="17" Height="17" />
+            <mi:MaterialIcon Classes="panel-chevron" Kind="ChevronDoubleRight" Width="17" Height="17" />
           </Button>
         </Border>
 
@@ -372,7 +373,7 @@
                     Command="{Binding ToggleTreeSidebarCommand}"
                     ToolTip.Tip="{loc:Tr Files_Tree_HideSidebar_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Files_Tree_HideSidebar_Tooltip}">
-              <mi:MaterialIcon Kind="ChevronDoubleLeft" Width="17" Height="17" />
+              <mi:MaterialIcon Classes="panel-chevron" Kind="ChevronDoubleLeft" Width="17" Height="17" />
             </Button>
             <Button Grid.Column="3" Classes="icon-btn" IsVisible="{Binding IsTreeNavigatorOpen}"
                     Command="{Binding ToggleTreeSidebarCommand}"
@@ -574,5 +575,5 @@
     <Border Grid.Column="0" Grid.ColumnSpan="3" IsHitTestVisible="False"
             IsVisible="{Binding IsGridDropTarget}"
             BorderBrush="{DynamicResource InkBrush}" BorderThickness="2" />
-  </Grid>
+  </controls:SidePanelGrid>
 </UserControl>
