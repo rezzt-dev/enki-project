@@ -474,6 +474,7 @@ public sealed partial class MainWindowViewModel
         AppPage.Statistics => Statistics,
         AppPage.Reminders => Reminders,
         AppPage.Notifications => Notifications,
+        AppPage.Assistant => Assistant,
         _ => Dashboard
     };
 

@@ -128,6 +128,13 @@
         <Grid ColumnDefinitions="*,Auto">
           <WrapPanel Orientation="Horizontal" Margin="0,0,16,0">
             <Button Classes="pill-primary" Command="{Binding EditSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Detail_EditButton, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="pill" Command="{Binding UseWithAssistantCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center"
+                    IsVisible="{Binding IsAssistantAvailable}" ToolTip.Tip="{loc:Tr Skills_Detail_UseWithAssistant_Tooltip}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Creation" Width="13" Height="13" />
+                <TextBlock Text="{loc:Tr Skills_Detail_UseWithAssistant, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
             <Button Classes="pill" Command="{Binding DuplicateSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Detail_DuplicateButton, Converter={StaticResource UpperCaseConverter}}" />
             <Button Classes="pill" Command="{Binding ExportSkillsCommand}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Export_Button, Converter={StaticResource UpperCaseConverter}}" />
             <Button Classes="icon-btn" Width="40" Height="40" Command="{Binding CopySkillContentCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center"

@@ -39,6 +39,8 @@ public sealed partial class MainWindowViewModel
         Settings?.RefreshLocalizedLabels();
         Habits?.RefreshLocalizedLabels();
         Statistics?.RefreshLocalizedLabels();
+        Assistant?.RefreshLocalizedLabels();
+        AiCliStatus.RefreshLocalizedLabels();
         NotificationCenter.RefreshLocalizedLabels();
         ReminderInbox.RefreshLocalizedLabels();
         VaultSwitcher.RefreshLocalizedLabels();
@@ -67,6 +69,7 @@ public sealed partial class MainWindowViewModel
         AppPage.Reminders => RemindersSidebarEnabled,
         AppPage.Notifications => NotificationsSidebarEnabled,
         AppPage.Statistics => StatisticsPanelEnabled,
+        AppPage.Assistant => AssistantPanelEnabled,
         _ => true
     };
 
@@ -186,6 +189,11 @@ public sealed partial class MainWindowViewModel
             case AppPage.Reminders: RemindersSidebarEnabled = value; break;
             case AppPage.Notifications: NotificationsSidebarEnabled = value; break;
             case AppPage.Statistics: StatisticsPanelEnabled = value; break;
+            case AppPage.Assistant:
+                AssistantPanelEnabled = value;
+                if (Skills is not null) Skills.IsAssistantAvailable = value;
+                if (!value) Assistant?.CancelAll();
+                break;
         }
 
         var wasActive = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == page)?.IsActive ?? false;
@@ -333,6 +341,7 @@ public sealed partial class MainWindowViewModel
 
         QuickCapture.CloseForVaultChange();
         Kanban?.CloseForVaultChange();
+        Assistant?.CloseForVaultChange();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
         // Settings' "change vault folder" can point at any folder, old-version vault included — same
@@ -406,6 +415,7 @@ public sealed partial class MainWindowViewModel
         TagManagerPanelEnabled = settings.TagManagerPanelEnabled;
         HabitsPanelEnabled = settings.HabitsPanelEnabled;
         StatisticsPanelEnabled = settings.StatisticsPanelEnabled;
+        AssistantPanelEnabled = settings.Ai.Enabled;
         Dashboard!.ShowScrollbar = settings.DashboardShowScrollbar;
         Dashboard.SetCalendarEnabled(settings.CalendarPanelEnabled);
         OnKanbanBoardOrientationChanged(settings.KanbanBoardOrientation);
@@ -537,6 +547,28 @@ public sealed partial class MainWindowViewModel
     /// <see cref="OnDashboardShowScrollbarModeChanged"/> etc.) — aplica en vivo el nuevo porcentaje al
     /// <c>ScaleTransform</c> que ya está en pantalla, sin esperar a la próxima navegación.</summary>
     private void OnUiZoomChanged(int percent) => UiZoomScale = percent / 100.0;
+
+    /// <summary>"Usar en el asistente" desde el detalle de una skill: abre un chat nuevo con ella.</summary>
+    private void StartAssistantChatWithSkill(SkillFile skill)
+    {
+        if (!AssistantPanelEnabled || Assistant is null) return;
+        Navigate(AppPage.Assistant);
+        Assistant.StartChatWithSkill(skill);
+    }
+
+    /// <summary>"Preguntar al asistente sobre esta nota" de la paleta de comandos.</summary>
+    private void StartAssistantChatAboutActiveNote()
+    {
+        if (!AssistantPanelEnabled || Assistant is null || Notes?.ActiveEditor?.Note is not { } note) return;
+        Navigate(AppPage.Assistant);
+        Assistant.StartChatAboutNote(note);
+    }
+
+    private void OpenAiSettings()
+    {
+        OpenSettings();
+        Settings?.SelectSectionCommand.Execute(SettingsSection.Ai);
+    }
 
     private void OpenNoteFromQuickSwitcher(NoteFile note)
     {

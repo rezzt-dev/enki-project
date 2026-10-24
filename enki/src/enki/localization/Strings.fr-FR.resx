@@ -6422,4 +6422,429 @@ Bonne rédaction.</value>
   <data name="Calendar_External_AppleGuide" xml:space="preserve"><value>Apple iCloud : activez Calendrier public et copiez le lien webcal. Toute personne ayant ce lien pourra voir les événements.</value></data>
   <data name="Calendar_External_Updating" xml:space="preserve"><value>Actualisation du calendrier…</value></data>
   <data name="Calendar_External_SaveFailed" xml:space="preserve"><value>Impossible d’enregistrer l’abonnement. Vérifiez l’accès au dossier de données d’Enki.</value></data>
+  <data name="Nav_Assistant" xml:space="preserve">
+    <value>Assistant IA</value>
+  </data>
+  <data name="Settings_Nav_Ai" xml:space="preserve">
+    <value>Intelligence artificielle</value>
+  </data>
+  <data name="Settings_Summary_Ai" xml:space="preserve">
+    <value>Assistant Claude, confidentialité et historique des conversations</value>
+  </data>
+  <data name="Settings_Navigation_ToAssistant" xml:space="preserve">
+    <value>Aller à l'assistant IA</value>
+  </data>
+  <data name="CommandPalette_Action_NewAssistantChat" xml:space="preserve">
+    <value>Nouvelle conversation avec l'assistant</value>
+  </data>
+  <data name="CommandPalette_Action_AskAssistantAboutNote" xml:space="preserve">
+    <value>Interroger l'assistant sur cette note</value>
+  </data>
+  <data name="Skills_Detail_UseWithAssistant" xml:space="preserve">
+    <value>Utiliser dans l'assistant</value>
+  </data>
+  <data name="Skills_Detail_UseWithAssistant_Tooltip" xml:space="preserve">
+    <value>Démarrer une conversation avec l'assistant qui suit cette compétence</value>
+  </data>
+  <data name="Assistant_State_Ready" xml:space="preserve">
+    <value>Claude Code prêt</value>
+  </data>
+  <data name="Assistant_State_NotInstalled" xml:space="preserve">
+    <value>Claude Code non installé</value>
+  </data>
+  <data name="Assistant_State_SignedOut" xml:space="preserve">
+    <value>Claude Code non connecté</value>
+  </data>
+  <data name="Assistant_State_Unsupported" xml:space="preserve">
+    <value>Claude Code doit être mis à jour</value>
+  </data>
+  <data name="Assistant_State_Checking" xml:space="preserve">
+    <value>Vérification de Claude Code…</value>
+  </data>
+  <data name="Assistant_Status_ApiKey" xml:space="preserve">
+    <value>Clé d'API</value>
+  </data>
+  <data name="Assistant_Status_Version" xml:space="preserve">
+    <value>Claude Code, version {0}</value>
+  </data>
+  <data name="Assistant_Setup_Eyebrow" xml:space="preserve">
+    <value>Configuration de l'assistant</value>
+  </data>
+  <data name="Assistant_Setup_NotInstalled_Title" xml:space="preserve">
+    <value>Installez Claude Code pour commencer</value>
+  </data>
+  <data name="Assistant_Setup_NotInstalled_Message" xml:space="preserve">
+    <value>L'assistant fonctionne via Claude Code, l'application officielle en ligne de commande d'Anthropic, installée sur cet ordinateur. Installez-la avec la commande ci-dessous dans un terminal, connectez-vous avec votre propre compte Claude, puis vérifiez à nouveau.</value>
+  </data>
+  <data name="Assistant_Setup_SignedOut_Title" xml:space="preserve">
+    <value>Connectez-vous à Claude Code</value>
+  </data>
+  <data name="Assistant_Setup_SignedOut_Message" xml:space="preserve">
+    <value>Claude Code est installé, mais aucun compte n'est connecté. Exécutez la commande ci-dessous dans un terminal : la connexion se termine dans votre navigateur, sur la page d'Anthropic. Enki ne voit ni ne conserve jamais vos identifiants.</value>
+  </data>
+  <data name="Assistant_Setup_Unsupported_Title" xml:space="preserve">
+    <value>Mettez à jour Claude Code</value>
+  </data>
+  <data name="Assistant_Setup_Unsupported_Message" xml:space="preserve">
+    <value>Le Claude Code trouvé sur cet ordinateur (version {0}) est antérieur à la version minimale prise en charge par Enki ({1}) ou n'a pas répondu comme prévu. Réinstallez la dernière version avec la commande ci-dessous, puis vérifiez à nouveau.</value>
+  </data>
+  <data name="Assistant_Setup_CopyCommand" xml:space="preserve">
+    <value>Copier la commande</value>
+  </data>
+  <data name="Assistant_Setup_CheckAgain" xml:space="preserve">
+    <value>Vérifier à nouveau</value>
+  </data>
+  <data name="Assistant_Setup_OpenGuide" xml:space="preserve">
+    <value>Guide d'installation</value>
+  </data>
+  <data name="Assistant_Setup_CustomPath" xml:space="preserve">
+    <value>Indiquer un autre chemin</value>
+  </data>
+  <data name="Assistant_Privacy_Title" xml:space="preserve">
+    <value>Comment Claude est utilisé</value>
+  </data>
+  <data name="Assistant_Privacy_Message" xml:space="preserve">
+    <value>Enki lance votre propre installation de Claude Code, sans la modifier, et n'envoie que ce que vous écrivez et les notes que vous joignez. L'utilisation est décomptée de votre forfait Claude. Enki est une application indépendante, ni affiliée à Anthropic ni approuvée par Anthropic.</value>
+  </data>
+  <data name="Assistant_Privacy_TermsLink" xml:space="preserve">
+    <value>Conditions de Claude Code</value>
+  </data>
+  <data name="Assistant_History_Title" xml:space="preserve">
+    <value>Conversations IA</value>
+  </data>
+  <data name="Assistant_History_SearchPlaceholder" xml:space="preserve">
+    <value>Rechercher des conversations</value>
+  </data>
+  <data name="Assistant_History_Empty" xml:space="preserve">
+    <value>Vos conversations apparaîtront ici.</value>
+  </data>
+  <data name="Assistant_History_NoMatches" xml:space="preserve">
+    <value>Aucune conversation ne correspond à la recherche.</value>
+  </data>
+  <data name="Assistant_History_Delete_Tooltip" xml:space="preserve">
+    <value>Supprimer la conversation</value>
+  </data>
+  <data name="Assistant_NewChat_Tooltip" xml:space="preserve">
+    <value>Nouvelle conversation (Ctrl+N)</value>
+  </data>
+  <data name="Assistant_OpenSettings_Tooltip" xml:space="preserve">
+    <value>Réglages de l'assistant</value>
+  </data>
+  <data name="Assistant_Chat_New" xml:space="preserve">
+    <value>Nouvelle conversation</value>
+  </data>
+  <data name="Assistant_Chat_Untitled" xml:space="preserve">
+    <value>Conversation sans titre</value>
+  </data>
+  <data name="Assistant_Rename_Tooltip" xml:space="preserve">
+    <value>Renommer la conversation</value>
+  </data>
+  <data name="Assistant_Skill_Tooltip" xml:space="preserve">
+    <value>Cette conversation suit cette compétence</value>
+  </data>
+  <data name="Assistant_DeleteModal_Title" xml:space="preserve">
+    <value>Supprimer la conversation</value>
+  </data>
+  <data name="Assistant_DeleteModal_Message" xml:space="preserve">
+    <value>La conversation sera supprimée de l'historique d'Enki. Cette action est irréversible.</value>
+  </data>
+  <data name="Assistant_Model_Label" xml:space="preserve">
+    <value>Modèle</value>
+  </data>
+  <data name="Assistant_Model_Default" xml:space="preserve">
+    <value>Par défaut de Claude Code</value>
+  </data>
+  <data name="Assistant_Model_Tooltip" xml:space="preserve">
+    <value>Modèle utilisé pour les prochains messages de cette conversation</value>
+  </data>
+  <data name="Assistant_Welcome_Eyebrow" xml:space="preserve">
+    <value>Assistant IA</value>
+  </data>
+  <data name="Assistant_Welcome_Title" xml:space="preserve">
+    <value>Comment puis-je vous aider ?</value>
+  </data>
+  <data name="Assistant_Welcome_Message" xml:space="preserve">
+    <value>Posez vos questions à Claude, joignez des notes de votre coffre comme contexte avec le trombone ou partez de l'une de vos compétences. Les réponses ne sont jamais écrites dans vos notes, sauf si vous choisissez de les enregistrer.</value>
+  </data>
+  <data name="Assistant_Welcome_Privacy" xml:space="preserve">
+    <value>Claude fonctionne sans outils : il ne peut ni lire votre coffre, ni ouvrir de fichiers, ni exécuter de commandes. Seuls votre message et les notes jointes sont envoyés.</value>
+  </data>
+  <data name="Assistant_Suggestion_SummarizeNote_Label" xml:space="preserve">
+    <value>Résumer la note ouverte</value>
+  </data>
+  <data name="Assistant_Suggestion_SummarizeNote" xml:space="preserve">
+    <value>Résume la note jointe en quelques points, en conservant les décisions et les chiffres clés.</value>
+  </data>
+  <data name="Assistant_Suggestion_TasksNote_Label" xml:space="preserve">
+    <value>Extraire les tâches de la note ouverte</value>
+  </data>
+  <data name="Assistant_Suggestion_TasksNote" xml:space="preserve">
+    <value>Liste les tâches en attente de la note jointe sous forme de liste de contrôle Markdown (- [ ] tâche).</value>
+  </data>
+  <data name="Assistant_Suggestion_Rewrite_Label" xml:space="preserve">
+    <value>Réécrire un texte plus clairement</value>
+  </data>
+  <data name="Assistant_Suggestion_Rewrite" xml:space="preserve">
+    <value>Réécris le texte suivant pour qu'il soit plus clair et plus concis, sans en changer le sens :
+
+</value>
+  </data>
+  <data name="Assistant_Suggestion_Ideas_Label" xml:space="preserve">
+    <value>Trouver des idées</value>
+  </data>
+  <data name="Assistant_Suggestion_Ideas" xml:space="preserve">
+    <value>Donne-moi dix idées variées sur </value>
+  </data>
+  <data name="Assistant_Message_Author" xml:space="preserve">
+    <value>Réponse de Claude</value>
+  </data>
+  <data name="Assistant_Message_Thinking" xml:space="preserve">
+    <value>Réflexion…</value>
+  </data>
+  <data name="Assistant_Message_Interrupted" xml:space="preserve">
+    <value>Réponse interrompue</value>
+  </data>
+  <data name="Assistant_Message_Copy" xml:space="preserve">
+    <value>Copier la réponse</value>
+  </data>
+  <data name="Assistant_Message_SaveAsNote" xml:space="preserve">
+    <value>Enregistrer comme nouvelle note</value>
+  </data>
+  <data name="Assistant_Code_Label" xml:space="preserve">
+    <value>Extrait</value>
+  </data>
+  <data name="Assistant_Code_Copy" xml:space="preserve">
+    <value>Copier le code</value>
+  </data>
+  <data name="Assistant_Attachment_Chars" xml:space="preserve">
+    <value>{0} car.</value>
+  </data>
+  <data name="Assistant_Attachment_Truncated" xml:space="preserve">
+    <value>tronquée</value>
+  </data>
+  <data name="Assistant_Note_DefaultTitle" xml:space="preserve">
+    <value>Réponse de l'assistant</value>
+  </data>
+  <data name="Assistant_Composer_Placeholder" xml:space="preserve">
+    <value>Écrivez un message…</value>
+  </data>
+  <data name="Assistant_Composer_Hint" xml:space="preserve">
+    <value>Entrée pour envoyer · Maj+Entrée pour une nouvelle ligne</value>
+  </data>
+  <data name="Assistant_Composer_Send" xml:space="preserve">
+    <value>Envoyer</value>
+  </data>
+  <data name="Assistant_Composer_Stop" xml:space="preserve">
+    <value>Arrêter</value>
+  </data>
+  <data name="Assistant_Composer_AttachNote" xml:space="preserve">
+    <value>Joindre une note comme contexte</value>
+  </data>
+  <data name="Assistant_Composer_AttachActiveNote" xml:space="preserve">
+    <value>Joindre « {0} »</value>
+  </data>
+  <data name="Assistant_Composer_RemoveAttachment" xml:space="preserve">
+    <value>Retirer la pièce jointe</value>
+  </data>
+  <data name="Assistant_Composer_PickSkill" xml:space="preserve">
+    <value>Partir d'une compétence</value>
+  </data>
+  <data name="Assistant_Composer_ClearSkill" xml:space="preserve">
+    <value>Retirer la compétence</value>
+  </data>
+  <data name="Assistant_Composer_NoSkills" xml:space="preserve">
+    <value>Ce coffre ne contient encore aucune compétence. Créez-en une dans la section Compétences.</value>
+  </data>
+  <data name="Assistant_Composer_Disclaimer" xml:space="preserve">
+    <value>Envoyé à Anthropic via votre Claude Code. Claude peut se tromper : vérifiez les réponses avant de vous y fier.</value>
+  </data>
+  <data name="Assistant_Confirm_Title" xml:space="preserve">
+    <value>Vérifiez ce qui sera envoyé</value>
+  </data>
+  <data name="Assistant_Confirm_Message" xml:space="preserve">
+    <value>Votre message sera envoyé à Anthropic avec le contenu de ces notes :</value>
+  </data>
+  <data name="Assistant_Confirm_Summary" xml:space="preserve">
+    <value>Environ {0} caractères au total.</value>
+  </data>
+  <data name="Assistant_Confirm_DontAskAgain" xml:space="preserve">
+    <value>Ne plus demander lors de l'ajout de notes</value>
+  </data>
+  <data name="Assistant_Error_Retry" xml:space="preserve">
+    <value>Réessayer</value>
+  </data>
+  <data name="Assistant_Error_NotInstalled" xml:space="preserve">
+    <value>Claude Code est introuvable sur cet ordinateur. Installez-le ou indiquez son chemin dans Réglages › Intelligence artificielle.</value>
+  </data>
+  <data name="Assistant_Error_SignedOut" xml:space="preserve">
+    <value>Aucun compte n'est connecté dans Claude Code. Exécutez {0} dans un terminal pour vous connecter, puis réessayez.</value>
+  </data>
+  <data name="Assistant_Error_RateLimited" xml:space="preserve">
+    <value>Vous avez atteint la limite d'utilisation de votre forfait Claude. Réessayez plus tard.</value>
+  </data>
+  <data name="Assistant_Error_RateLimitedUntil" xml:space="preserve">
+    <value>Vous avez atteint la limite d'utilisation de votre forfait Claude. Elle sera réinitialisée à {0}.</value>
+  </data>
+  <data name="Assistant_Error_ModelUnavailable" xml:space="preserve">
+    <value>Le modèle « {0} » n'est pas disponible pour votre compte. Choisissez-en un autre en haut de la conversation.</value>
+  </data>
+  <data name="Assistant_Error_Overloaded" xml:space="preserve">
+    <value>Claude est surchargé pour le moment. Patientez un instant, puis réessayez.</value>
+  </data>
+  <data name="Assistant_Error_Timeout" xml:space="preserve">
+    <value>Claude Code n'a rien envoyé pendant {0} secondes et la réponse a été arrêtée. Vous pouvez augmenter cette limite dans les réglages.</value>
+  </data>
+  <data name="Assistant_Error_EmptyResponse" xml:space="preserve">
+    <value>Claude Code s'est arrêté sans répondre.</value>
+  </data>
+  <data name="Assistant_Error_Failed" xml:space="preserve">
+    <value>Claude Code n'a pas pu répondre : {0}</value>
+  </data>
+  <data name="Assistant_Notify_TurnFailed_Title" xml:space="preserve">
+    <value>Assistant IA</value>
+  </data>
+  <data name="Assistant_Notify_SaveFailed_Title" xml:space="preserve">
+    <value>Impossible d'enregistrer la conversation</value>
+  </data>
+  <data name="Assistant_Notify_DeleteFailed_Title" xml:space="preserve">
+    <value>Impossible de supprimer l'historique de l'assistant</value>
+  </data>
+  <data name="Assistant_Notify_AttachmentFailed_Title" xml:space="preserve">
+    <value>Impossible de joindre une note</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaved_Title" xml:space="preserve">
+    <value>Réponse enregistrée comme note</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaved_Message" xml:space="preserve">
+    <value>« {0} » a été créée à la racine du coffre.</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaveFailed_Title" xml:space="preserve">
+    <value>Impossible d'enregistrer la réponse comme note</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Title" xml:space="preserve">
+    <value>Certaines conversations n'ont pas pu être lues</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Message_one" xml:space="preserve">
+    <value>{0} fichier d'historique est endommagé. Il a été laissé intact sur le disque.</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Message_other" xml:space="preserve">
+    <value>{0} fichiers d'historique sont endommagés. Ils ont été laissés intacts sur le disque.</value>
+  </data>
+  <data name="Settings_Ai_Section_Title" xml:space="preserve">
+    <value>Assistant d'IA</value>
+  </data>
+  <data name="Settings_Ai_Enable_Label" xml:space="preserve">
+    <value>Activer l'assistant</value>
+  </data>
+  <data name="Settings_Ai_Enable_Description" xml:space="preserve">
+    <value>Ajoute la section Assistant IA pour discuter avec Claude via votre propre installation de Claude Code. Tant qu'il est désactivé, Enki n'exécute rien et n'envoie rien.</value>
+  </data>
+  <data name="Settings_Ai_Usage_Title" xml:space="preserve">
+    <value>Comment Claude est utilisé</value>
+  </data>
+  <data name="Settings_Ai_Usage_HowItWorks" xml:space="preserve">
+    <value>Enki ne se connecte pas à Claude par lui-même. Il lance l'application officielle Claude Code que vous installez sur cet ordinateur, sans la modifier, et lui transmet vos messages. L'utilisation est décomptée des limites de votre forfait Claude, ou facturée sur votre clé d'API si vous en avez configuré une dans Claude Code.</value>
+  </data>
+  <data name="Settings_Ai_Usage_SignIn" xml:space="preserve">
+    <value>La connexion se fait dans Claude Code, sur la page d'Anthropic (claude auth login dans un terminal). Enki ne propose aucune connexion propre et ne voit, ne lit ni ne conserve jamais vos identifiants ou jetons.</value>
+  </data>
+  <data name="Settings_Ai_Usage_Data" xml:space="preserve">
+    <value>Seuls ce que vous écrivez et les notes jointes à un message sont envoyés. Claude fonctionne sans outils : il ne peut ni lire votre coffre, ni ouvrir de fichiers, ni exécuter de commandes, et rien n'est écrit dans vos notes sans votre demande.</value>
+  </data>
+  <data name="Settings_Ai_Usage_Terms" xml:space="preserve">
+    <value>Votre utilisation de Claude est régie par les conditions d'Anthropic et sa politique d'authentification. Enki est une application indépendante, ni affiliée à Anthropic ni approuvée par Anthropic ; consultez ces conditions avant d'activer l'assistant.</value>
+  </data>
+  <data name="Settings_Ai_Usage_ClaudeCodeTerms" xml:space="preserve">
+    <value>Conditions légales de Claude Code</value>
+  </data>
+  <data name="Settings_Ai_Usage_ConsumerTerms" xml:space="preserve">
+    <value>Conditions grand public d'Anthropic</value>
+  </data>
+  <data name="Settings_Ai_Cli_Title" xml:space="preserve">
+    <value>CLI Claude Code</value>
+  </data>
+  <data name="Settings_Ai_Cli_Check" xml:space="preserve">
+    <value>Vérifier</value>
+  </data>
+  <data name="Settings_Ai_Cli_Path_Label" xml:space="preserve">
+    <value>Chemin de l'exécutable</value>
+  </data>
+  <data name="Settings_Ai_Cli_Path_Description" xml:space="preserve">
+    <value>Laissez-le vide pour trouver claude automatiquement dans le PATH et les dossiers d'installation habituels. Renseignez-le seulement si Claude Code se trouve ailleurs.</value>
+  </data>
+  <data name="Settings_Ai_Cli_Path_Placeholder" xml:space="preserve">
+    <value>Détection automatique</value>
+  </data>
+  <data name="Settings_Ai_Cli_Browse" xml:space="preserve">
+    <value>Choisir l'exécutable</value>
+  </data>
+  <data name="Settings_Ai_Cli_ClearPath" xml:space="preserve">
+    <value>Utiliser la détection automatique</value>
+  </data>
+  <data name="Settings_Ai_Cli_PickerTitle" xml:space="preserve">
+    <value>Choisissez l'exécutable de Claude Code</value>
+  </data>
+  <data name="Settings_Ai_Chat_Title" xml:space="preserve">
+    <value>Conversations IA</value>
+  </data>
+  <data name="Settings_Ai_Model_Label" xml:space="preserve">
+    <value>Modèle par défaut</value>
+  </data>
+  <data name="Settings_Ai_Model_Description" xml:space="preserve">
+    <value>Modèle des nouvelles conversations. Chacune peut le changer depuis son propre en-tête.</value>
+  </data>
+  <data name="Settings_Ai_Timeout_Label" xml:space="preserve">
+    <value>Limite d'inactivité (secondes)</value>
+  </data>
+  <data name="Settings_Ai_Timeout_Description" xml:space="preserve">
+    <value>Arrête une réponse si Claude Code n'envoie rien pendant cette durée. Une longue réponse qui continue d'arriver n'est jamais coupée.</value>
+  </data>
+  <data name="Settings_Ai_Context_Label" xml:space="preserve">
+    <value>Contexte par message (caractères)</value>
+  </data>
+  <data name="Settings_Ai_Context_Description" xml:space="preserve">
+    <value>Quantité maximale de contenu des notes jointes envoyée avec un message. Les notes plus longues sont tronquées et signalées comme telles.</value>
+  </data>
+  <data name="Settings_Ai_Confirm_Label" xml:space="preserve">
+    <value>Confirmer avant d'envoyer des notes</value>
+  </data>
+  <data name="Settings_Ai_Confirm_Description" xml:space="preserve">
+    <value>Indique quelles notes, et quelle part de chacune, seront envoyées avant qu'un message avec pièces jointes ne quitte votre ordinateur.</value>
+  </data>
+  <data name="Settings_Ai_History_Title" xml:space="preserve">
+    <value>Historique</value>
+  </data>
+  <data name="Settings_Ai_History_Description" xml:space="preserve">
+    <value>Les conversations sont stockées sur cet ordinateur, hors du coffre. Les supprimer n'affecte pas les copies que Claude Code conserve de son côté.</value>
+  </data>
+  <data name="Settings_Ai_History_Count_one" xml:space="preserve">
+    <value>{0} conversation enregistrée</value>
+  </data>
+  <data name="Settings_Ai_History_Count_other" xml:space="preserve">
+    <value>{0} conversations enregistrées</value>
+  </data>
+  <data name="Settings_Ai_History_Clear" xml:space="preserve">
+    <value>Supprimer l'historique</value>
+  </data>
+  <data name="Settings_Ai_History_ClearDialog_Title" xml:space="preserve">
+    <value>Supprimer l'historique de l'assistant</value>
+  </data>
+  <data name="Settings_Ai_History_ClearDialog_Message" xml:space="preserve">
+    <value>Toutes les conversations de l'assistant seront supprimées d'Enki. Cette action est irréversible.</value>
+  </data>
+  <data name="Settings_Ai_History_Cleared_Title" xml:space="preserve">
+    <value>Historique supprimé</value>
+  </data>
+  <data name="Settings_Ai_History_Cleared_Message" xml:space="preserve">
+    <value>Les conversations de l'assistant ont été supprimées d'Enki.</value>
+  </data>
+  <data name="Settings_Ai_Consent_Title" xml:space="preserve">
+    <value>Avant d'activer l'assistant</value>
+  </data>
+  <data name="Settings_Ai_Consent_Intro" xml:space="preserve">
+    <value>Lisez comment fonctionne l'assistant. Vous pouvez le désactiver à tout moment depuis cet écran.</value>
+  </data>
+  <data name="Settings_Ai_Consent_Accept" xml:space="preserve">
+    <value>J'ai compris, activer</value>
+  </data>
 </root>

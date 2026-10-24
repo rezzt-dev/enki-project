@@ -26,7 +26,11 @@ public sealed class SettingsService
         // acabaría dentro de <vault>/.enki/settings.json, es decir, invisible desde cualquier otro vault —
         // justo desde donde hace falta para volver. Lo mismo para el ajuste de bandeja de T2, que decide
         // qué pasa al cerrar la ventana antes incluso de que haya un vault abierto.
-        nameof(AppSettings.RecentVaults), nameof(AppSettings.MinimizeToTray)
+        nameof(AppSettings.RecentVaults), nameof(AppSettings.MinimizeToTray),
+        // Asistente de IA: la ruta del CLI, el consentimiento y el historial son de este equipo. Dentro
+        // del vault viajarían por Syncthing/Dropbox a otra máquina donde ni el CLI ni la aceptación del
+        // aviso tienen por qué existir.
+        nameof(AppSettings.Ai)
     ];
     /// <summary>Notifica un guardado completado para actualizar las preferencias visibles.</summary>
     public event Action? SettingsChanged;

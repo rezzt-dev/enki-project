@@ -49,6 +49,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - documentar las suscripciones externas en `.docs/project-info/calendar-feature/14-suscripciones-externas-solo-lectura.md` y cubrir con pruebas de servicio la caché, las redirecciones, los enlaces `webcal://`, las recurrencias, los eventos de varios días y la proyección de solo lectura.
 - guia de implementacion de ia en `.docs/agent-docs/implement-ia/implementacion-ia-desde-cero.md`, con resumen inicial, arquitectura propuesta (`AiService` y backends para el cli de claude, el cli de codex y ollama), ajustes opt-in, integracion con las skills, seguridad, pruebas y fases de implementacion.
 - referencia visual del tema oscuro en `.docs/project-info/tema-dark-dev.md`, con paleta, tipografia, formas y estilos del tema dark dev sacados del codigo.
+- sección `asistente`, opcional y apagada por defecto, para conversar con claude a través de la instalación de claude code del propio usuario (`claude -p` como subproceso): respuestas en streaming con markdown, historial de conversaciones con búsqueda, renombrado y borrado, selector de modelo por chat, detener y reintentar, y continuación de cada conversación con `--resume`, reconstruyéndola desde el historial de enki si el cli ya no la conserva.
+- notas del vault como contexto de un mensaje (clip, nota activa o `preguntar al asistente sobre esta nota` en la paleta), con reparto del límite de caracteres entre notas, aviso de recorte y confirmación previa de lo que se envía; skills como instrucciones de partida desde su detalle (`usar en el asistente`) o desde el compositor; y respuestas que se copian o se guardan como nota nueva, sin escribir nunca sobre notas existentes.
+- `ajustes > inteligencia artificial`, con activación tras aceptar un aviso de privacidad y términos, explicación de cómo se usa claude (cli oficial sin modificar, inicio de sesión solo en el flujo de anthropic, enki no ve ni guarda credenciales, nada se envía salvo el mensaje y las notas adjuntas), estado del cli con cuenta y plan, ruta personalizada del ejecutable, modelo por defecto, límite de inactividad, contexto máximo, confirmación de envío y borrado del historial.
+- pantallas de puesta en marcha para claude code no instalado, sin sesión iniciada o con una versión no compatible, con la orden a ejecutar en una terminal, guía oficial y comprobación de nuevo sin reiniciar; atajo `ctrl+9` hacia el asistente y comandos de la paleta para abrir un chat.
+- documentación del módulo en `.docs/project-info/asistente-ia.md`, sección 8.9 del checklist de qa manual y pruebas de servicio, viewmodel e interfaz contra un cli de claude simulado.
 
 #### CAMBIOS
 - documentar en `README.md`, `README.en.md` y `cambios-externos-en-el-vault.md` el flujo recomendado para sincronizar el almacén completo, conservar una copia de seguridad y gestionar los conflictos externos sin duplicar datos.
@@ -113,6 +118,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - añadir `Ical.Net` para analizar y expandir fuentes iCalendar sin crear entidades editables ni un almacén paralelo de eventos.
 - reorganizar la biblioteca de skills de agentes de `.docs/agents-skills/` a `.docs/skills/`, conservando el contenido de los 438 ficheros.
 - eliminar el duplicado `.docs/kanban-multiples-tableros.md` y conservar `.docs/project-info/kanban-multiples-tableros.md` como unica referencia del modulo.
+- guardar las preferencias del asistente (`AiSettings`) como clave de instalación en `SettingsService`, fuera del vault, para que la ruta del cli, el consentimiento y el historial no viajen con la sincronización a otro equipo.
+- añadir `Assistant` al orden por defecto de la barra lateral, a las secciones de ajustes y a la navegación del shell, y referenciar `.docs/project-info/asistente-ia.md` en `AGENTS.md`.
 
 #### CORREGIDO
 - impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
@@ -181,6 +188,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - document external subscriptions in `.docs/project-info/calendar-feature/14-suscripciones-externas-solo-lectura.md` and cover caching, redirects, `webcal://` links, recurrence, multi-day events and read-only projection with service tests.
 - add an ai implementation guide in `.docs/agent-docs/implement-ia/implementacion-ia-desde-cero.md`, with an opening summary, proposed architecture (`AiService` and backends for the claude cli, the codex cli and ollama), opt-in settings, skills integration, security, tests and implementation phases.
 - add a visual reference for the dark theme in `.docs/project-info/tema-dark-dev.md`, covering the dark dev palette, typography, shapes and styles taken from the code.
+- an optional `assistant` section, off by default, to chat with claude through the user's own claude code installation (`claude -p` as a subprocess): streamed markdown replies, searchable conversation history with rename and delete, per-chat model picker, stop and retry, and each conversation continued with `--resume`, rebuilt from enki's own history when the cli no longer keeps it.
+- vault notes as message context (paperclip, active note, or `ask the assistant about this note` in the command palette), with the character budget shared across notes, truncation markers and a confirmation of what will be sent; skills as starting instructions from their detail view (`use in assistant`) or the composer; and replies that can be copied or saved as a new note, never written over existing notes.
+- `settings > artificial intelligence`, enabled only after accepting a privacy and terms notice, explaining how claude is used (official unmodified cli, sign-in only through anthropic's own flow, enki never sees or stores credentials, nothing is sent except the message and attached notes), cli status with account and plan, custom executable path, default model, inactivity limit, maximum context, send confirmation and history deletion.
+- setup screens for claude code not installed, signed out or on an unsupported version, with the terminal command to run, the official guide and a re-check without restarting; `ctrl+9` shortcut to the assistant and command palette entries to open a chat.
+- module documentation in `.docs/project-info/asistente-ia.md`, section 8.9 of the manual qa checklist, and service, viewmodel and ui tests against a simulated claude cli.
 
 #### CHANGED
 - document the recommended workflow in `README.md`, `README.en.md` and `cambios-externos-en-el-vault.md` for syncing the complete vault, keeping a backup and handling external conflicts without duplicating data.
@@ -244,6 +256,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add `Ical.Net` to parse and expand iCalendar feeds without creating editable entities or a parallel event store.
 - move the agent skills library from `.docs/agents-skills/` to `.docs/skills/`, keeping the content of all 438 files.
 - remove the duplicate `.docs/kanban-multiples-tableros.md` and keep `.docs/project-info/kanban-multiples-tableros.md` as the single reference for the module.
+- store the assistant preferences (`AiSettings`) as an install-level key in `SettingsService`, outside the vault, so the cli path, consent and history never travel to another machine through sync.
+- add `Assistant` to the default sidebar order, the settings sections and the shell navigation, and reference `.docs/project-info/asistente-ia.md` in `AGENTS.md`.
 
 #### FIXED
 - prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.

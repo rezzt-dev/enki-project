@@ -46,6 +46,8 @@ public sealed class AppSettings
         SnoozeTomorrowHour = Clamp(SnoozeTomorrowHour, 0, 23, 9);
         AutoBackupIntervalDays = Clamp(AutoBackupIntervalDays, 1, 30, 1);
         AutoBackupRetentionCount = Clamp(AutoBackupRetentionCount, 1, 30, 5);
+        Ai ??= new AiSettings();
+        Ai.Normalize();
 
         // La franja horaria laboral necesita además que el final sea posterior al principio: dos valores
         // individualmente válidos pero cruzados dejan el calendario sin ninguna hora que pintar.
@@ -416,6 +418,13 @@ public sealed class AppSettings
     /// <summary>Ancho en píxeles del panel lateral del modo árbol, arrastrable por su separador. Se acota
     /// al rango permitido al leerlo.</summary>
     public double SkillsTreeSidebarWidth { get; set; } = 272;
+
+    // ===================== Asistente de IA (.docs/project-info/asistente-ia.md) =====================
+
+    /// <summary>Preferencias del asistente de IA. Clave de instalación (ver
+    /// <see cref="Services.SettingsService"/>): describe este equipo —dónde está el CLI, qué aceptó el
+    /// usuario—, no el vault, así que no viaja con él.</summary>
+    public AiSettings Ai { get; set; } = new();
 
     // ===================== Secciones de la barra lateral (Ajustes › General) =====================
     // Same "hide the nav entry entirely" idea as CalendarPanelEnabled/SkillsPanelEnabled above, extended to

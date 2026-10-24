@@ -92,6 +92,9 @@ public sealed partial class MainWindowViewModel
         _polarTaskService = new PolarTaskService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
         _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService, _vaultSettingsService);
         _polarRealtimeService = new PolarRealtimeService(_polarAuthService, _polarSyncService);
+        _claudeCliService = new ClaudeCliService(_settingsService);
+        _aiChatService = new AiChatService();
+        AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService);
         InitializePageRefresh();
 
         // Fase 1 (docs/analisis-proyecto/roadmap.md): extiende el patrón de KanbanService.LoadedFromCorruptData
@@ -151,6 +154,7 @@ public sealed partial class MainWindowViewModel
         _tagManagerPanelEnabled = _settingsService.Settings.TagManagerPanelEnabled;
         _habitsPanelEnabled = _settingsService.Settings.HabitsPanelEnabled;
         _statisticsPanelEnabled = _settingsService.Settings.StatisticsPanelEnabled;
+        _assistantPanelEnabled = _settingsService.Settings.Ai.Enabled;
         _uiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
 
         // Always live (not gated behind vault readiness): the kanban board and the notification log are
@@ -484,7 +488,16 @@ public sealed partial class MainWindowViewModel
         // estén abiertas la primera vez que el usuario navega a Documentos.
         Notes.RestoreOpenTabs();
         Files = new FilesViewModel(_vaultService, _sessionService, _notificationService, _settingsService);
-        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService);
+        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService, StartAssistantChatWithSkill)
+        {
+            IsAssistantAvailable = AssistantPanelEnabled
+        };
+        Assistant = new AssistantViewModel(_claudeCliService, _aiChatService, _settingsService, _vaultService,
+            _notificationService, AiCliStatus, _sessionService,
+            activeNoteProvider: () => Notes?.ActiveEditor?.Note,
+            flushPendingEdits: () => { foreach (var editor in Notes.OpenEditors) editor.FlushPendingSave(); },
+            openNote: note => { Navigate(AppPage.Notes); Notes.OpenNote(note); },
+            openSettings: OpenAiSettings);
         var taskManagement = new PolarTaskManagementViewModel(_polarTaskService, _polarSyncService, _settingsService)
         {
             ShowTagFilter = _settingsService.Settings.PolarShowTaskTags
@@ -536,7 +549,8 @@ public sealed partial class MainWindowViewModel
             OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService,
             OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
             () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; },
-            _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService);
+            _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService,
+            AiCliStatus, _aiChatService);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

@@ -276,6 +276,7 @@ public partial class MainWindow : Window
         Add(ShortcutIds.NavigateSessions, vm.NavigateCommand, AppPage.Sessions);
         Add(ShortcutIds.NavigateTrash, vm.NavigateCommand, AppPage.Trash);
         Add(ShortcutIds.NavigateSkills, vm.NavigateCommand, AppPage.Skills);
+        Add(ShortcutIds.NavigateAssistant, vm.NavigateCommand, AppPage.Assistant);
         Add(ShortcutIds.NavigateStatistics, vm.NavigateCommand, AppPage.Statistics);
         Add(ShortcutIds.OpenSettings, vm.OpenSettingsCommand);
         Add(ShortcutIds.ZoomIn, vm.ZoomInCommand);

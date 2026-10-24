@@ -195,7 +195,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Action? onManageKanbanBoards = null,
         ReminderService? reminderService = null,
         Action? onExternalImportCompleted = null,
-        ExternalCalendarService? externalCalendarService = null)
+        ExternalCalendarService? externalCalendarService = null,
+        ClaudeCliStatusViewModel? aiCliStatus = null,
+        AiChatService? aiChatService = null)
     {
         _reminderImportService = reminderService;
         _onExternalImportCompleted = onExternalImportCompleted;
@@ -395,6 +397,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             new SettingsSectionViewModel { Section = SettingsSection.Kanban, Icon = MaterialIconKind.ViewDashboardOutline, GroupKey = "Settings_Group_Tools" },
             new SettingsSectionViewModel { Section = SettingsSection.Calendar, Icon = MaterialIconKind.CalendarBlankOutline, GroupKey = "Settings_Group_Tools" },
             new SettingsSectionViewModel { Section = SettingsSection.Skills, Icon = MaterialIconKind.Brain, GroupKey = "Settings_Group_Tools" },
+            new SettingsSectionViewModel { Section = SettingsSection.Ai, Icon = MaterialIconKind.Creation, GroupKey = "Settings_Group_Tools" },
             new SettingsSectionViewModel { Section = SettingsSection.Maintenance, Icon = MaterialIconKind.Update, GroupKey = "Settings_Group_Help", StartsGroup = true },
             new SettingsSectionViewModel { Section = SettingsSection.About, Icon = MaterialIconKind.InfoOutline, GroupKey = "Settings_Group_Help" }
         ];
@@ -433,6 +436,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ApplyInterfaceFont(settingsService.Settings.InterfaceFontFamily);
         ApplyCodeFont(settingsService.Settings.CodeFontFamily);
         InitializeExternalCalendars();
+        InitializeAi(aiCliStatus, aiChatService);
     }
 
     private void DebouncedSave()
@@ -653,6 +657,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         RebuildAvailableFonts();
         RebuildShortcutLabels();
         ThemeEditor?.RefreshLabels();
+        RefreshAiLocalizedLabels();
         RefreshSearchTexts();
     }
 

@@ -474,6 +474,38 @@ exportable existe y está maquetada, pero que la imagen se vea bien solo se ve m
 - [ ] Con "Buscar al iniciar" activo, dos arranques seguidos en menos de 24 h generan una sola petición.
 - [ ] El aviso de la campana lleva el botón "Abrir" y abre la misma página.
 
+## 8.9 Asistente de IA con Claude Code
+
+Requiere una máquina con Claude Code instalado y otra (o una cuenta de usuario) sin él. Ver
+`.docs/project-info/asistente-ia.md`.
+
+- [ ] Recién instalado, la sección Asistente no aparece en la barra lateral, `Ctrl+9` no hace nada y Enki
+      no lanza ningún proceso `claude` (comprobar con `ps`/el administrador de tareas).
+- [ ] Encender "Activar el asistente" en Ajustes › Inteligencia artificial —o la fila "Asistente" de
+      Ajustes › Navegación— abre el aviso de privacidad y términos; cancelar lo deja todo apagado; aceptar
+      añade la sección y no vuelve a preguntar al apagar y encender.
+- [ ] Sin Claude Code instalado, el asistente muestra la orden de instalación de la plataforma, el botón
+      copia la orden exacta y "Comprobar de nuevo" detecta el CLI tras instalarlo sin reiniciar Enki.
+- [ ] Lanzado desde el Dock (macOS) o el menú del escritorio (Linux), es decir, sin el `PATH` de la
+      terminal, el CLI instalado con el instalador nativo se detecta igualmente.
+- [ ] Con `claude auth logout`, el asistente muestra "Inicia sesión" con `claude auth login`; tras iniciar
+      sesión en una terminal, volver a la sección lo detecta solo. Enki no abre ningún inicio de sesión propio.
+- [ ] Una respuesta llega en streaming, "Detener" la corta al instante sin dejar procesos `claude` vivos, y
+      el chat se puede seguir después.
+- [ ] Cerrar y reabrir Enki restaura el último chat; un mensaje nuevo continúa la misma conversación (el
+      modelo recuerda lo anterior).
+- [ ] Borrar las conversaciones del CLI (`~/.claude/projects/...enki...`) y escribir en un chat antiguo: la
+      respuesta sigue teniendo el contexto anterior y no aparece ningún error.
+- [ ] Adjuntar una nota con cambios sin guardar envía lo que se ve en el editor; el diálogo de confirmación
+      enumera las notas y su tamaño, y "No volver a preguntar" se refleja en Ajustes.
+- [ ] Una nota de una sesión cifrada bloqueada no aparece en el selector de notas.
+- [ ] Agotar el límite del plan (o simularlo) muestra el mensaje de límite con la hora de reinicio y un solo
+      aviso en la campana, aunque se reintente varias veces.
+- [ ] Apagar la IA con una respuesta en curso la cancela y la sección desaparece.
+- [ ] "Guardar como nota" crea una nota nueva en la raíz del vault y la abre; ninguna nota existente cambia.
+- [ ] En tema claro, oscuro y uno personalizado, las respuestas (código, tablas, listas, citas) y el
+      compositor respetan los colores del tema.
+
 ---
 
 ## 9. Criterio de salida antes de `0.2.0`

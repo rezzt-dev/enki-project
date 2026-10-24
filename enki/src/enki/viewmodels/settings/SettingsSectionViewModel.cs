@@ -40,5 +40,6 @@ public enum SettingsSection
     Vault,
     Backups,
     Kanban,
-    Maintenance
+    Maintenance,
+    Ai
 }

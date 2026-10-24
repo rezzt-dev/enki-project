@@ -212,8 +212,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
     [RelayCommand]
     private static void OpenCommunitySkills() => UrlOpener.Open(CommunitySkillsUrl);
 
-    public SkillsViewModel(VaultService vaultService, NotificationService notificationService, SettingsService? settingsService = null)
+    public SkillsViewModel(VaultService vaultService, NotificationService notificationService, SettingsService? settingsService = null,
+        Action<SkillFile>? onUseWithAssistant = null)
     {
+        _onUseWithAssistant = onUseWithAssistant;
         _skillService = new SkillService(vaultService);
         _notificationService = notificationService;
         _settingsService = settingsService;
@@ -222,6 +224,21 @@ public sealed partial class SkillsViewModel : ViewModelBase
 
         InitializeNavigationPreferences();
         Reload();
+    }
+
+    private readonly Action<SkillFile>? _onUseWithAssistant;
+
+    /// <summary>Muestra "Usar en el asistente" en el detalle de una skill. Lo mantiene al día el shell con el
+    /// interruptor de la IA: apagada, la skill vuelve a ser solo una plantilla que copiar.</summary>
+    [ObservableProperty]
+    private bool _isAssistantAvailable;
+
+    /// <summary>Abre un chat del asistente con la skill como instrucciones de partida.</summary>
+    [RelayCommand]
+    private void UseWithAssistant(SkillViewModel? skill)
+    {
+        if (skill is null || !IsAssistantAvailable) return;
+        _onUseWithAssistant?.Invoke(skill.Model);
     }
 
     /// <summary>Refresca las etiquetas localizadas cuando <see cref="MainWindowViewModel"/> coordina

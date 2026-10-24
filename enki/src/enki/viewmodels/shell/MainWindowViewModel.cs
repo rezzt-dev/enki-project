@@ -62,6 +62,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly PolarTaskService _polarTaskService;
     private readonly PolarSyncService _polarSyncService;
     private readonly PolarRealtimeService _polarRealtimeService;
+
+    /// <summary>CLI de Claude y su historial de chats (asistente de IA). Se construyen siempre porque no
+    /// cuestan nada —ninguno toca el disco ni lanza procesos hasta que la IA está encendida y alguien abre
+    /// el asistente— y porque viven fuera del vault: sobreviven a un cambio de vault sin reconstruirse.
+    /// Ver <c>.docs/project-info/asistente-ia.md</c>.</summary>
+    private readonly ClaudeCliService _claudeCliService;
+    private readonly AiChatService _aiChatService;
+
+    /// <summary>Estado del CLI que comparten Ajustes y el Asistente.</summary>
+    public ClaudeCliStatusViewModel AiCliStatus { get; }
+
     private readonly DispatcherTimer _reminderTimer;
 
     /// <summary>Comprueba periódicamente si toca un backup automático (Ajustes › General, Fase 1 de
@@ -126,6 +137,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     public NotificationsViewModel? Notifications { get; private set; }
     public HabitsViewModel? Habits { get; private set; }
     public StatisticsViewModel? Statistics { get; private set; }
+    public AssistantViewModel? Assistant { get; private set; }
 
     [ObservableProperty]
     private VaultSetupViewModel? _vaultSetup;
@@ -344,6 +356,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _statisticsPanelEnabled;
 
+    /// <summary>La sección Asistente existe solo con la IA encendida (Ajustes › Inteligencia artificial):
+    /// es el mismo flag, <see cref="Models.AiSettings.Enabled"/>, no un interruptor de visibilidad aparte.</summary>
+    [ObservableProperty]
+    private bool _assistantPanelEnabled;
+
     /// <summary>Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md) — factor aplicado al
     /// <c>ScaleTransform</c> que envuelve el <c>Grid</c> raíz de <c>MainWindow.axaml</c>. Derivado de
     /// <c>VaultSettings.UiZoomPercent</c> (por-vault, no global), refrescado en <see cref="InitializeShell"/>
@@ -373,6 +390,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void Navigate(AppPage page)
     {
+        // Con la IA apagada no hay asistente al que llegar, tampoco por su atajo de teclado.
+        if (page == AppPage.Assistant && !AssistantPanelEnabled) return;
         foreach (var item in NavItems) item.IsActive = item.Page == page;
         foreach (var item in BottomNavItems) item.IsActive = item.Page == page;
         IsSettingsActive = false;
@@ -393,12 +412,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
             AppPage.Statistics => Statistics,
             AppPage.Reminders => Reminders,
             AppPage.Notifications => Notifications,
+            AppPage.Assistant => Assistant,
             _ => Dashboard
         };
         if (ReferenceEquals(CurrentPage, targetPage)) return;
 
         CurrentPage = targetPage;
         AnimatePageReveal();
+        if (targetPage is AssistantViewModel assistant) assistant.OnActivated();
         // Si no hay vigilancia nativa, releer los módulos de disco conserva los cambios externos.
         if (!_settingsService.Settings.VaultWatchExternalChanges || _vaultChangeWatcher.IsPolling)
             _dirtyPages.UnionWith([AppPage.Dashboard, AppPage.Files, AppPage.Skills, AppPage.Sessions,
@@ -554,6 +575,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         MarkdownImageCache.Clear();
         ShortcutRegistry.Changed -= _shortcutChangedHandler;
+        Assistant?.CancelAll();
         _globalHotkeyService.Dispose();
         _vaultChangeWatcher.Dispose();
         _webClipService.Dispose();

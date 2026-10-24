@@ -70,6 +70,15 @@ public sealed partial class MainWindowViewModel
                 items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ToggleZenMode"], MaterialIconKind.Fullscreen, () => Notes.ToggleZenModeCommand.Execute(null)));
         }
 
+        if (AssistantPanelEnabled && Assistant is not null)
+        {
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_NewAssistantChat"], MaterialIconKind.Creation,
+                () => { Navigate(AppPage.Assistant); Assistant.NewChatCommand.Execute(null); }));
+            if (Notes?.ActiveEditor is not null)
+                items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AskAssistantAboutNote"],
+                    MaterialIconKind.MessageTextOutline, StartAssistantChatAboutActiveNote));
+        }
+
         if (Kanban is not null)
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AddKanbanColumn"], MaterialIconKind.ViewColumnOutline, AddKanbanColumnFromPalette));
 
