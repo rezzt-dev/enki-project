@@ -985,6 +985,20 @@ public sealed partial class VaultService
         };
     }
 
+    /// <summary>Indica si la ruta pertenece a una sesión protegida, esté desbloqueada o no. Un manifiesto
+    /// ilegible se considera protegido, igual que en <see cref="ResolveEncryptedSessionRoot"/>.</summary>
+    public bool IsPathInEncryptedSession(string fullPath)
+    {
+        try
+        {
+            return ResolveEncryptedSessionRoot(fullPath) is not null;
+        }
+        catch (SessionLockedException)
+        {
+            return true;
+        }
+    }
+
     /// <summary>True when <paramref name="fullPath"/> falls under an encrypted session that isn't
     /// currently unlocked — the check-before-read counterpart to letting <see cref="SafeReadContent"/>/
     /// <see cref="WriteFileAtomic"/> throw <see cref="SessionLockedException"/> after the fact. Every
@@ -1351,6 +1365,21 @@ public sealed partial class VaultService
     {
         if (!ReadTrashOrigins().TryGetValue(trashPath, out var originalPath)) return false;
         return IsPathInLockedSession(originalPath);
+    }
+
+    /// <summary>Indica si un elemento de la papelera procede de una sesión protegida. El asistente no lo
+    /// lista ni modifica: el contenido protegido solo es accesible desde el chat propio de esa sesión.</summary>
+    public bool IsTrashedItemFromEncryptedSession(string trashPath)
+    {
+        if (!ReadTrashOrigins().TryGetValue(trashPath, out var originalPath)) return false;
+        try
+        {
+            return ResolveEncryptedSessionRoot(originalPath) is not null;
+        }
+        catch (SessionLockedException)
+        {
+            return true;
+        }
     }
 
     public void DeleteNote(NoteFile note)

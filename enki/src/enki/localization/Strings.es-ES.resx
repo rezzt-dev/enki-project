@@ -6847,4 +6847,352 @@ A disfrutar escribiendo.</value>
   <data name="Settings_Ai_Consent_Accept" xml:space="preserve">
     <value>Entendido, activar</value>
   </data>
+  <data name="Assistant_Scope_Vault" xml:space="preserve">
+    <value>Vault</value>
+  </data>
+  <data name="Assistant_Scope_Title" xml:space="preserve">
+    <value>Espacio del asistente</value>
+  </data>
+  <data name="Assistant_Scope_Tooltip" xml:space="preserve">
+    <value>Elegir espacio y acceso</value>
+  </data>
+  <data name="Assistant_Scope_Intro" xml:space="preserve">
+    <value>Elige dónde puede trabajar esta conversación.</value>
+  </data>
+  <data name="Assistant_Scope_Vault_Detail" xml:space="preserve">
+    <value>Notas, archivos, Kanban, Polar, recordatorios y papelera</value>
+  </data>
+  <data name="Assistant_Scope_FixedWorkspace" xml:space="preserve">
+    <value>El espacio se fija tras el primer mensaje. Abre otro chat para cambiarlo.</value>
+  </data>
+  <data name="Assistant_Scope_Locked" xml:space="preserve">
+    <value>Bloqueada · desbloquéala en Sesiones</value>
+  </data>
+  <data name="Assistant_Scope_ProtectedNote" xml:space="preserve">
+    <value>Las sesiones protegidas solo son accesibles desde su propio chat mientras están desbloqueadas.</value>
+  </data>
+  <data name="Assistant_Scope_AllowSessions" xml:space="preserve">
+    <value>Acceso a las sesiones</value>
+  </data>
+  <data name="Assistant_Scope_AllowSessions_Description" xml:space="preserve">
+    <value>Acceder también a las sesiones sin contraseña de este vault.</value>
+  </data>
+  <data name="Assistant_Scope_AutoBadge" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="Assistant_Scope_SessionsBadge" xml:space="preserve">
+    <value>Sesiones</value>
+  </data>
+  <data name="Assistant_Scope_AutoMode" xml:space="preserve">
+    <value>Modo auto</value>
+  </data>
+  <data name="Assistant_Scope_AutoMode_Description" xml:space="preserve">
+    <value>Acceder también al vault y sus sesiones sin contraseña.</value>
+  </data>
+  <data name="Assistant_Scope_Summary_Vault" xml:space="preserve">
+    <value>Trabaja en el vault · sesiones excluidas</value>
+  </data>
+  <data name="Assistant_Scope_Summary_VaultAndSessions" xml:space="preserve">
+    <value>Trabaja en el vault y sus sesiones sin contraseña</value>
+  </data>
+  <data name="Assistant_Scope_Summary_Session" xml:space="preserve">
+    <value>Trabaja solo en la sesión «{0}»</value>
+  </data>
+  <data name="Assistant_Scope_Summary_Auto" xml:space="preserve">
+    <value>Sesión «{0}» · acceso al vault y sus sesiones sin contraseña</value>
+  </data>
+  <data name="Assistant_Scope_Summary_ReadOnly" xml:space="preserve">
+    <value>Solo lectura</value>
+  </data>
+  <data name="Assistant_Scope_Summary_TextOnly" xml:space="preserve">
+    <value>Asistente de texto · herramientas del vault no disponibles con este CLI</value>
+  </data>
+  <data name="Assistant_Scope_Warning_Missing" xml:space="preserve">
+    <value>La sesión «{0}» ya no existe en este vault. Elige otro espacio en un chat nuevo.</value>
+  </data>
+  <data name="Assistant_Scope_Warning_Locked" xml:space="preserve">
+    <value>Desbloquea la sesión «{0}» en Sesiones para acceder a su contenido.</value>
+  </data>
+  <data name="Assistant_Activity_Open" xml:space="preserve">
+    <value>Abrir elemento</value>
+  </data>
+  <data name="Assistant_Approval_Allow" xml:space="preserve">
+    <value>Permitir</value>
+  </data>
+  <data name="Assistant_Approval_Deny" xml:space="preserve">
+    <value>Denegar</value>
+  </data>
+  <data name="Assistant_Approval_Eyebrow" xml:space="preserve">
+    <value>Confirmación necesaria</value>
+  </data>
+  <data name="Assistant_Approval_Hint" xml:space="preserve">
+    <value>Solo se verán afectados los elementos indicados. Puedes denegar la acción o detener la respuesta.</value>
+  </data>
+  <data name="Assistant_Approval_LeaveProtectedSession" xml:space="preserve">
+    <value>¿Permitir que el contenido salga de la sesión protegida «{0}»?</value>
+  </data>
+  <data name="Assistant_Notify_ApprovalPending_Title" xml:space="preserve">
+    <value>El asistente espera confirmación</value>
+  </data>
+  <data name="Assistant_Notify_ActivityTargetMissing_Title" xml:space="preserve">
+    <value>Elemento no disponible</value>
+  </data>
+  <data name="Assistant_Notify_ActivityTargetMissing_Message" xml:space="preserve">
+    <value>Puede que el elemento se haya movido o eliminado.</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaved_SessionMessage" xml:space="preserve">
+    <value>La respuesta se ha guardado en la sesión «{1}».</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Message" xml:space="preserve">
+    <value>No se han podido leer algunas conversaciones. Sus archivos se han conservado.</value>
+  </data>
+  <data name="Assistant_Suggestion_Agenda" xml:space="preserve">
+    <value>Muéstrame mis tareas y recordatorios de los próximos siete días.</value>
+  </data>
+  <data name="Assistant_Suggestion_Agenda_Label" xml:space="preserve">
+    <value>Planificar mi semana</value>
+  </data>
+  <data name="Assistant_Suggestion_Organize" xml:space="preserve">
+    <value>Revisa mi espacio y propón cómo organizar mis notas y tareas.</value>
+  </data>
+  <data name="Assistant_Suggestion_Organize_Label" xml:space="preserve">
+    <value>Organizar mi espacio</value>
+  </data>
+  <data name="Assistant_Welcome_MessageTools" xml:space="preserve">
+    <value>Pregunta sobre tus notas, organiza archivos, gestiona tareas y recordatorios o recupera elementos de la papelera.</value>
+  </data>
+  <data name="Assistant_Welcome_PrivacyTools" xml:space="preserve">
+    <value>El asistente usa las herramientas de Enki dentro del ámbito de este chat. El contenido solicitado se envía a tu proveedor de IA configurado.</value>
+  </data>
+  <data name="Assistant_Activity_Count_one" xml:space="preserve">
+    <value>{0} acción</value>
+  </data>
+  <data name="Assistant_Activity_Count_other" xml:space="preserve">
+    <value>{0} acciones</value>
+  </data>
+  <data name="Assistant_Approval_DeleteForever_one" xml:space="preserve">
+    <value>¿Eliminar {0} elemento para siempre?</value>
+  </data>
+  <data name="Assistant_Approval_DeleteForever_other" xml:space="preserve">
+    <value>¿Eliminar {0} elementos para siempre?</value>
+  </data>
+  <data name="Assistant_Approval_ItemCount_one" xml:space="preserve">
+    <value>{0} elemento</value>
+  </data>
+  <data name="Assistant_Approval_ItemCount_other" xml:space="preserve">
+    <value>{0} elementos</value>
+  </data>
+  <data name="Assistant_Scope_Session_Detail_one" xml:space="preserve">
+    <value>{0} nota</value>
+  </data>
+  <data name="Assistant_Scope_Session_Detail_other" xml:space="preserve">
+    <value>{0} notas</value>
+  </data>
+  <data name="Assistant_ToolError_InvalidArguments" xml:space="preserve">
+    <value>Revisa los parámetros de la acción.</value>
+  </data>
+  <data name="Assistant_ToolError_NotFound" xml:space="preserve">
+    <value>El elemento ya no existe.</value>
+  </data>
+  <data name="Assistant_ToolError_AccessDenied" xml:space="preserve">
+    <value>El elemento está fuera del ámbito de este chat.</value>
+  </data>
+  <data name="Assistant_ToolError_Locked" xml:space="preserve">
+    <value>Desbloquea primero la sesión en Enki.</value>
+  </data>
+  <data name="Assistant_ToolError_Conflict" xml:space="preserve">
+    <value>La nota ha cambiado o tiene un conflicto sin resolver.</value>
+  </data>
+  <data name="Assistant_ToolError_Denied" xml:space="preserve">
+    <value>Acción no aprobada. No se ha cambiado nada.</value>
+  </data>
+  <data name="Assistant_ToolError_Unavailable" xml:space="preserve">
+    <value>El vault o el servicio no está disponible.</value>
+  </data>
+  <data name="Assistant_ToolError_Failed" xml:space="preserve">
+    <value>No se ha podido completar la acción.</value>
+  </data>
+  <data name="Assistant_Tool_get_workspace_overview" xml:space="preserve">
+    <value>Resumen del espacio</value>
+  </data>
+  <data name="Assistant_Tool_list_notes" xml:space="preserve">
+    <value>Listar notas</value>
+  </data>
+  <data name="Assistant_Tool_read_note" xml:space="preserve">
+    <value>Leer nota</value>
+  </data>
+  <data name="Assistant_Tool_search_notes" xml:space="preserve">
+    <value>Buscar notas</value>
+  </data>
+  <data name="Assistant_Tool_create_note" xml:space="preserve">
+    <value>Crear nota</value>
+  </data>
+  <data name="Assistant_Tool_write_note" xml:space="preserve">
+    <value>Escribir nota</value>
+  </data>
+  <data name="Assistant_Tool_edit_note" xml:space="preserve">
+    <value>Editar nota</value>
+  </data>
+  <data name="Assistant_Tool_append_to_note" xml:space="preserve">
+    <value>Añadir a nota</value>
+  </data>
+  <data name="Assistant_Tool_update_note_metadata" xml:space="preserve">
+    <value>Actualizar propiedades de nota</value>
+  </data>
+  <data name="Assistant_Tool_rename_note" xml:space="preserve">
+    <value>Renombrar nota</value>
+  </data>
+  <data name="Assistant_Tool_move_note" xml:space="preserve">
+    <value>Mover o copiar nota</value>
+  </data>
+  <data name="Assistant_Tool_delete_note" xml:space="preserve">
+    <value>Enviar nota a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_get_note_links" xml:space="preserve">
+    <value>Consultar enlaces de nota</value>
+  </data>
+  <data name="Assistant_Tool_list_folders" xml:space="preserve">
+    <value>Listar carpetas</value>
+  </data>
+  <data name="Assistant_Tool_create_folder" xml:space="preserve">
+    <value>Crear carpeta</value>
+  </data>
+  <data name="Assistant_Tool_rename_folder" xml:space="preserve">
+    <value>Renombrar carpeta</value>
+  </data>
+  <data name="Assistant_Tool_move_folder" xml:space="preserve">
+    <value>Mover o copiar carpeta</value>
+  </data>
+  <data name="Assistant_Tool_delete_folder" xml:space="preserve">
+    <value>Enviar carpeta a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_list_files" xml:space="preserve">
+    <value>Listar archivos</value>
+  </data>
+  <data name="Assistant_Tool_read_text_file" xml:space="preserve">
+    <value>Leer archivo de texto</value>
+  </data>
+  <data name="Assistant_Tool_rename_file" xml:space="preserve">
+    <value>Renombrar archivo</value>
+  </data>
+  <data name="Assistant_Tool_move_file" xml:space="preserve">
+    <value>Mover o copiar archivo</value>
+  </data>
+  <data name="Assistant_Tool_delete_file" xml:space="preserve">
+    <value>Enviar archivo a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_create_session" xml:space="preserve">
+    <value>Crear sesión</value>
+  </data>
+  <data name="Assistant_Tool_update_session" xml:space="preserve">
+    <value>Actualizar sesión</value>
+  </data>
+  <data name="Assistant_Tool_delete_session" xml:space="preserve">
+    <value>Enviar sesión a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_list_kanban" xml:space="preserve">
+    <value>Consultar tableros Kanban</value>
+  </data>
+  <data name="Assistant_Tool_create_kanban_board" xml:space="preserve">
+    <value>Crear tablero Kanban</value>
+  </data>
+  <data name="Assistant_Tool_rename_kanban_board" xml:space="preserve">
+    <value>Renombrar tablero Kanban</value>
+  </data>
+  <data name="Assistant_Tool_create_kanban_card" xml:space="preserve">
+    <value>Crear tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_update_kanban_card" xml:space="preserve">
+    <value>Actualizar tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_move_kanban_card" xml:space="preserve">
+    <value>Mover tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_archive_kanban_card" xml:space="preserve">
+    <value>Archivar tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_delete_kanban_card" xml:space="preserve">
+    <value>Enviar tarjeta Kanban a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_list_polar" xml:space="preserve">
+    <value>Consultar tareas Polar</value>
+  </data>
+  <data name="Assistant_Tool_create_polar_list" xml:space="preserve">
+    <value>Crear lista Polar</value>
+  </data>
+  <data name="Assistant_Tool_update_polar_list" xml:space="preserve">
+    <value>Actualizar lista Polar</value>
+  </data>
+  <data name="Assistant_Tool_delete_polar_list" xml:space="preserve">
+    <value>Enviar lista Polar a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_create_polar_task" xml:space="preserve">
+    <value>Crear tarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_update_polar_task" xml:space="preserve">
+    <value>Actualizar tarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_delete_polar_task" xml:space="preserve">
+    <value>Enviar tarea Polar a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_add_polar_subtask" xml:space="preserve">
+    <value>Añadir subtarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_update_polar_subtask" xml:space="preserve">
+    <value>Actualizar subtarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_list_reminders" xml:space="preserve">
+    <value>Listar recordatorios</value>
+  </data>
+  <data name="Assistant_Tool_create_reminder" xml:space="preserve">
+    <value>Crear recordatorio</value>
+  </data>
+  <data name="Assistant_Tool_update_reminder" xml:space="preserve">
+    <value>Actualizar recordatorio</value>
+  </data>
+  <data name="Assistant_Tool_delete_reminder" xml:space="preserve">
+    <value>Enviar recordatorio a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_get_agenda" xml:space="preserve">
+    <value>Consultar agenda</value>
+  </data>
+  <data name="Assistant_Tool_list_trash" xml:space="preserve">
+    <value>Consultar papelera</value>
+  </data>
+  <data name="Assistant_Tool_restore_from_trash" xml:space="preserve">
+    <value>Restaurar desde la papelera</value>
+  </data>
+  <data name="Assistant_Tool_delete_from_trash" xml:space="preserve">
+    <value>Eliminar para siempre</value>
+  </data>
+  <data name="Assistant_Tool_empty_trash" xml:space="preserve">
+    <value>Vaciar papelera</value>
+  </data>
+  <data name="Settings_Ai_Vault_Title" xml:space="preserve">
+    <value>Herramientas del vault</value>
+  </data>
+  <data name="Settings_Ai_Vault_AllowChanges_Label" xml:space="preserve">
+    <value>Permitir cambios en el vault</value>
+  </data>
+  <data name="Settings_Ai_Vault_AllowChanges_Description" xml:space="preserve">
+    <value>Permitir que el asistente cree, edite, organice y envíe elementos a la papelera dentro del ámbito elegido. Desactívalo para acceder solo en lectura.</value>
+  </data>
+  <data name="Settings_Ai_Vault_Confirmations" xml:space="preserve">
+    <value>Eliminar para siempre y sacar contenido de una sesión protegida requieren confirmación en el chat.</value>
+  </data>
+  <data name="Settings_Ai_Vault_Protected" xml:space="preserve">
+    <value>Las sesiones protegidas quedan fuera del acceso ampliado. Abre un chat dentro de una sesión desbloqueada para trabajar con ella.</value>
+  </data>
+  <data name="Settings_Ai_Vault_Scopes" xml:space="preserve">
+    <value>Cada chat tiene su propio espacio. Puedes ampliar el acceso desde su cabecera.</value>
+  </data>
+  <data name="Editor_History_Trigger_Assistant" xml:space="preserve">
+    <value>Asistente</value>
+  </data>
+  <data name="Sessions_OpenInAssistant_Tooltip" xml:space="preserve">
+    <value>Abrir un chat en esta sesión</value>
+  </data>
+  <data name="Sessions_OpenInAssistantButton" xml:space="preserve">
+    <value>Preguntar al asistente</value>
+  </data>
 </root>

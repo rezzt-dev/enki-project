@@ -353,4 +353,60 @@ public sealed class AssistantViewModelTests : IDisposable
         Assert.Equal("recuérdame", vm.ChatTitle);
         Assert.Equal(2, vm.Messages.Count);
     }
+    [Fact]
+    public async Task SessionScope_PersistsWithChat_AndNewChatResetsAccess()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await CreateAsync();
+        var sessions = new SessionService(_vault);
+        var session = sessions.Create("Proyecto");
+        var vm = new AssistantViewModel(new ClaudeCliService(_settings, _storageDirectory), _chats, _settings, _vault,
+            _notifications, sessionService: sessions, dispatch: action => action());
+        await vm.Cli.RefreshAsync();
+        vm.StartChatInSession(session);
+        Assert.True(vm.IsSessionChat);
+        Assert.Equal(session.Name, vm.ScopeLabel);
+        vm.FullVaultAccess = true;
+        await SendAsync(vm, "Organiza el proyecto");
+        var saved = Assert.Single(new AiChatService(_storageDirectory).Sessions);
+        Assert.Equal(session.Id, saved.SessionId);
+        Assert.True(saved.FullVaultAccess);
+        Assert.False(vm.CanChangeWorkspace);
+        vm.NewChatCommand.Execute(null);
+        Assert.False(vm.IsSessionChat);
+        Assert.False(vm.FullVaultAccess);
+        Assert.True(vm.CanChangeWorkspace);
+    }
+
+    [Fact]
+    public async Task SaveReply_MissingSession_DoesNotFallBackToVault()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await CreateAsync();
+        var sessions = new SessionService(_vault);
+        var session = sessions.Create("Proyecto");
+        var vm = new AssistantViewModel(new ClaudeCliService(_settings, _storageDirectory), _chats, _settings, _vault,
+            _notifications, sessionService: sessions, dispatch: action => action());
+        await vm.Cli.RefreshAsync();
+        vm.StartChatInSession(session);
+        await SendAsync(vm, "Hola");
+        Assert.True(sessions.Delete(session));
+        vm.SaveMessageAsNoteCommand.Execute(vm.Messages.Last());
+        Assert.Empty(_vault.GetAllNotesRecursive(_vault.VaultPath));
+    }
+
+    [Fact]
+    public async Task CliStatus_UpdatesOnlyThroughUiDispatch()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await CreateAsync();
+        var updates = new System.Collections.Concurrent.ConcurrentQueue<Action>();
+        var status = new ClaudeCliStatusViewModel(new ClaudeCliService(_settings, _storageDirectory), updates.Enqueue);
+        await status.RefreshAsync();
+        Assert.False(status.IsKnown);
+        while (updates.TryDequeue(out var update)) update();
+        Assert.True(status.IsReady);
+        Assert.False(status.IsChecking);
+    }
+
 }

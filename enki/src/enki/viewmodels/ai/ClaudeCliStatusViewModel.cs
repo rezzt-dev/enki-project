@@ -15,13 +15,14 @@ namespace enki.ViewModels;
 public sealed partial class ClaudeCliStatusViewModel : ObservableObject
 {
     private readonly ClaudeCliService _cli;
+    private readonly Action<Action> _dispatch;
 
     public ClaudeCliStatusViewModel(ClaudeCliService cli, Action<Action>? dispatch = null)
     {
         _cli = cli;
         _status = cli.Status;
-        var post = dispatch ?? (action => Dispatcher.UIThread.Post(action));
-        cli.StatusChanged += status => post(() => Status = status);
+        _dispatch = dispatch ?? (action => Dispatcher.UIThread.Post(action));
+        cli.StatusChanged += status => _dispatch(() => Status = status);
     }
 
     /// <summary>Momento de la última comprobación terminada, para no repetirla en cada navegación.</summary>
@@ -30,8 +31,12 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsReady), nameof(IsNotInstalled), nameof(IsSignedOut), nameof(IsUnsupported),
         nameof(IsKnown), nameof(ShowChecking), nameof(StateLabel), nameof(AccountLabel), nameof(HasAccount),
-        nameof(VersionLabel), nameof(ExecutablePathLabel), nameof(UnsupportedMessage))]
+        nameof(VersionLabel), nameof(ExecutablePathLabel), nameof(UnsupportedMessage), nameof(SupportsVaultTools))]
     private ClaudeCliStatus _status;
+
+    /// <summary>El CLI deja trabajar al asistente dentro del vault (ver
+    /// <see cref="ClaudeCliStatus.SupportsVaultTools"/>); si no, el asistente solo responde con texto.</summary>
+    public bool SupportsVaultTools => Status.SupportsVaultTools;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowChecking))]
@@ -98,12 +103,17 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
         IsChecking = true;
         try
         {
-            Status = await _cli.DetectAsync();
+            // StatusChanged es la única vía de actualización: siempre en el hilo de interfaz. Asignar
+            // también aquí puede adelantarse al evento y perder sus avisos si no hay SynchronizationContext.
+            await _cli.DetectAsync();
         }
         finally
         {
-            IsChecking = false;
-            LastCheckedUtc = DateTime.UtcNow;
+            _dispatch(() =>
+            {
+                IsChecking = false;
+                LastCheckedUtc = DateTime.UtcNow;
+            });
         }
     }
 

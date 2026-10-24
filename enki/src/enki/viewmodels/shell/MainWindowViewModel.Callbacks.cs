@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
@@ -134,7 +135,25 @@ public sealed partial class MainWindowViewModel
     {
         Notes!.ReloadSessions();
         Files!.ReloadSessions();
+        Assistant?.RefreshScope();
         InvalidatePages(AppPage.Dashboard, AppPage.Sessions, AppPage.Statistics, AppPage.Trash);
+    }
+
+    /// <summary>El asistente acaba de cambiar algo del vault. Las acciones llegan en ráfagas (una por
+    /// herramienta), así que el refresco de Notas y de las secciones que dependen del contenido se agrupa en
+    /// uno solo, en segundo plano. Kanban, Polar y recordatorios ya se refrescan por sus propios eventos.</summary>
+    private void OnAssistantChangedVault()
+    {
+        if (_assistantRefreshQueued) return;
+        _assistantRefreshQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _assistantRefreshQueued = false;
+            if (_shutdownCompleted) return;
+            Notes?.Reload();
+            InvalidatePages(AppPage.Dashboard, AppPage.Files, AppPage.Sessions, AppPage.Trash,
+                AppPage.TagManager, AppPage.Statistics, AppPage.Skills);
+        }, DispatcherPriority.Background);
     }
 
     private void OnTitleBarModeChanged(bool value) => UseCustomTitleBar = value;
@@ -192,7 +211,13 @@ public sealed partial class MainWindowViewModel
             case AppPage.Assistant:
                 AssistantPanelEnabled = value;
                 if (Skills is not null) Skills.IsAssistantAvailable = value;
-                if (!value) Assistant?.CancelAll();
+                if (Sessions is not null) Sessions.IsAssistantAvailable = value;
+                if (!value)
+                {
+                    // Apagar la IA corta la respuesta en curso y deja de escuchar: ningún CLI puede tocar ya el vault.
+                    Assistant?.CancelAll();
+                    _aiVaultTools?.Stop();
+                }
                 break;
         }
 
@@ -342,6 +367,7 @@ public sealed partial class MainWindowViewModel
         QuickCapture.CloseForVaultChange();
         Kanban?.CloseForVaultChange();
         Assistant?.CloseForVaultChange();
+        _aiVaultTools?.Stop();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
         // Settings' "change vault folder" can point at any folder, old-version vault included — same
@@ -554,6 +580,14 @@ public sealed partial class MainWindowViewModel
         if (!AssistantPanelEnabled || Assistant is null) return;
         Navigate(AppPage.Assistant);
         Assistant.StartChatWithSkill(skill);
+    }
+
+    /// <summary>"Preguntar al asistente" en Sesiones: un chat nuevo con el ámbito de esa sesión.</summary>
+    private void StartAssistantChatInSession(Session session)
+    {
+        if (!AssistantPanelEnabled || Assistant is null) return;
+        Navigate(AppPage.Assistant);
+        Assistant.StartChatInSession(session);
     }
 
     /// <summary>"Preguntar al asistente sobre esta nota" de la paleta de comandos.</summary>

@@ -86,7 +86,8 @@ stdin  ← [<enki_context>notas</enki_context>] + mensaje
 stdout → líneas JSON (init, fragmentos de texto, límite de uso, resultado)
 ```
 
-- **Sin herramientas** (`--tools ""`), sin MCP, sin comandos ni personalizaciones del usuario
+- **Modo texto cuando no hay herramientas del vault disponibles:** sin herramientas integradas
+  (`--tools ""`), sin MCP, sin comandos ni personalizaciones del usuario
   (`--safe-mode`: hooks, plugins, `CLAUDE.md`…). Claude solo devuelve texto; no puede leer el vault ni
   ejecutar nada, y el contenido de las notas se marca como datos, no instrucciones (defensa ante inyección
   de prompt). Los flags opcionales se activan solo si `claude --help` los anuncia; en un CLI sin `--tools`
@@ -173,4 +174,63 @@ para el del CLI), `IdleTimeoutSeconds` (30–1800), `MaxContextChars` (2 000–2
 
 Backends de Codex y Ollama, modo con API key propia (almacén seguro del sistema), insertar una respuesta
 en la nota abierta con diff (`TextDiffService` + `WriteContentChecked`) y extraer tareas a Kanban o Polar
-con las entidades reales. Ver las fases 2 y 3 de la guía de implementación.
+con las entidades reales mediante propuestas revisables. La gestión directa del vault ya está conectada
+por las herramientas descritas a continuación. Ver las fases 2 y 3 de la guía de implementación.
+
+## Herramientas del vault y ámbitos de conversación
+
+El asistente dispone de un catálogo independiente del proveedor en `services/ai/vault/AiVaultToolbox.*`.
+Cada herramienta describe su entrada JSON, su efecto (lectura, cambio recuperable o irreversible) y su
+ámbito. Opera sobre `VaultService`, `SessionService`, `KanbanService`, `PolarTaskService`,
+`ReminderService` y `CalendarAggregationService`; no mantiene otro almacén de notas o tareas.
+
+- **Documentos:** listar, buscar, leer, crear, reemplazar, editar fragmentos, añadir texto, cambiar
+  etiquetas/propiedades, renombrar, mover/copiar con adjuntos, consultar enlaces y enviar a la papelera.
+- **Sesiones:** crear, renombrar, cambiar color y enviar a la papelera. Las herramientas de contenido
+  aceptan el identificador de sesión como `workspace`. Contraseñas y recuperación siguen en la interfaz.
+- **Carpetas y archivos:** listar, crear carpetas, renombrar, mover/copiar y enviar a la papelera;
+  lectura acotada de archivos de texto. No interpreta binarios ni ejecuta archivos.
+- **Kanban:** listar tableros y tarjetas, crear/renombrar tableros, crear/editar/mover tarjetas,
+  gestionar subtareas y notas vinculadas, archivar y enviar a la papelera.
+- **Polar:** listas, tareas y subtareas sobre las entidades sincronizadas existentes; solo con cuenta
+  vinculada, con fechas, prioridades, recurrencia, etiquetas y completado.
+- **Recordatorios y agenda:** crear, listar, reprogramar, completar y enviar a la papelera; consultar
+  el calendario agregado en intervalos de hasta 62 días.
+- **Papelera:** listar, restaurar y eliminar definitivamente elementos de los módulos anteriores.
+
+El chip de la cabecera muestra el espacio del chat. Antes del primer mensaje permite elegir el vault o
+una sesión desbloqueada; después el espacio queda fijado. El acceso ampliado puede cambiar entre turnos:
+«acceso a las sesiones» en un chat del vault y «modo auto» en un chat de sesión. Siempre excluye las
+sesiones protegidas ajenas, incluso desbloqueadas. Para trabajar con una sesión protegida hay que abrir
+un chat dentro de ella. Los adjuntos respetan el mismo ámbito y se vuelven a comprobar al enviarlos.
+
+`AiSettings.AllowVaultChanges` permite pasar a solo lectura en caliente. Las herramientas de escritura
+se ocultan y sus llamadas se rechazan. La actividad de cada respuesta muestra acción, destino y estado,
+con acceso a las notas y tarjetas resultantes; se conserva en el historial aunque se interrumpa el turno.
+Borrar definitivamente o sacar contenido de una sesión protegida exige una tarjeta de confirmación en
+el chat. Denegar, detener o agotar cinco minutos cancela esa acción. La espera no dispara el timeout
+de inactividad del CLI. Desactivar las escrituras durante la confirmación impide ejecutarla.
+
+### Transporte y aislamiento
+
+`EnkiMcpServer` expone el catálogo por MCP sobre HTTP en `127.0.0.1`, con puerto efímero y un token
+aleatorio de 256 bits por turno. Rechaza peticiones sin autenticación, con `Origin` o con un `Host` no
+local. Las operaciones se despachan al hilo de interfaz. El token se revoca al acabar el turno; apagar
+la IA, cambiar de vault o salir detiene también el servidor.
+
+Solo se activa con un CLI que anuncie `--tools`, `--mcp-config`, `--strict-mcp-config`,
+`--allowedTools` y `--setting-sources`. Las herramientas integradas siguen desactivadas (`--tools ""`),
+solo se permite `mcp__enki`, y no se cargan configuraciones del usuario. La configuración MCP con el
+token va en un temporal privado que se elimina al terminar. Sin esas capacidades se mantiene el modo
+texto anterior, indicado bajo el compositor. El catálogo y el servidor pueden reutilizarse con futuros
+proveedores MCP; este cambio conecta únicamente el backend de Claude ya existente.
+
+Las rutas son relativas a cada espacio; se rechazan rutas absolutas, segmentos `..`, carpetas internas
+y enlaces simbólicos. Una nota vinculada fuera del ámbito no revela título ni ruta. Los cambios de
+contenido pasan por `WriteContentChecked`, con instantánea previa marcada como «Asistente»; reemplazar
+una nota entera exige haberla leído completa en ese turno y conservar su huella. Las pestañas abiertas
+se guardan antes de actuar y se actualizan después, sin resolver conflictos por cuenta del modelo.
+
+Pruebas específicas: `Services/AiVaultToolboxTests` (servicios reales aislados, permisos, conflictos,
+papelera, cancelación y autenticación MCP), `ClaudeCliServiceTests` (restricción de herramientas y
+texto entre acciones) y `AssistantViewUiTests` (actividad y confirmación sobre el XAML real).

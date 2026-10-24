@@ -319,4 +319,47 @@ public sealed class ClaudeCliServiceTests : IDisposable
         Assert.Equal(ClaudeFailureKind.NotInstalled, result.Failure);
         Assert.Equal(0, _fake.TurnCount);
     }
+    [Fact]
+    public void VaultTools_OnlyEnkiMcpAllowed_AndTokenStaysOutOfArguments()
+    {
+        var capabilities = ClaudeCliService.ParseCapabilities(FakeClaudeCli.HelpText
+            + " --mcp-config --allowedTools --setting-sources --permission-mode");
+        var access = new ClaudeToolAccess("http://127.0.0.1:12345/mcp", "private-token");
+        var request = SimpleTurn with { Tools = access };
+        var arguments = ClaudeCliService.BuildTurnArguments(request, capabilities, "/tmp/system.md", false, "/tmp/mcp.json");
+        Assert.Equal("", arguments[arguments.IndexOf("--tools") + 1]);
+        Assert.Equal("mcp__enki", arguments[arguments.IndexOf("--allowedTools") + 1]);
+        Assert.Equal("", arguments[arguments.IndexOf("--setting-sources") + 1]);
+        Assert.Equal("dontAsk", arguments[arguments.IndexOf("--permission-mode") + 1]);
+        Assert.Contains("--strict-mcp-config", arguments);
+        Assert.DoesNotContain("--safe-mode", arguments);
+        Assert.DoesNotContain(arguments, a => a.Contains(access.BearerToken, StringComparison.Ordinal));
+        using var config = System.Text.Json.JsonDocument.Parse(ClaudeCliService.BuildMcpConfig(access));
+        var server = config.RootElement.GetProperty("mcpServers").GetProperty("enki");
+        Assert.Equal(access.Endpoint, server.GetProperty("url").GetString());
+        Assert.Equal("Bearer " + access.BearerToken, server.GetProperty("headers").GetProperty("Authorization").GetString());
+        Assert.True(new ClaudeCliStatus(ClaudeCliState.Ready) { Capabilities = capabilities }.SupportsVaultTools);
+        capabilities.Remove("--strict-mcp-config");
+        Assert.False(new ClaudeCliStatus(ClaudeCliState.Ready) { Capabilities = capabilities }.SupportsVaultTools);
+    }
+
+    [Fact]
+    public async Task ToolTurn_ConcatenatesTextBeforeAndAfterToolUse()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        _fake.Output(
+        [
+            """{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text","text":""}}}""",
+            """{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"Voy a revisar."}}}""",
+            """{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"tool_use","name":"mcp__enki__list_notes"}}}""",
+            """{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text","text":""}}}""",
+            """{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"Listo."}}}""",
+            """{"type":"result","subtype":"success","is_error":false,"result":"Listo.","session_id":"s"}"""
+        ]);
+        var service = CreateService();
+        var result = await service.RunTurnAsync(SimpleTurn, null, CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.Equal("Voy a revisar.\n\nListo.", result.Text);
+    }
+
 }

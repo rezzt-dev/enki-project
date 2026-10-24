@@ -34,6 +34,14 @@ public sealed partial class AssistantViewModel : ViewModelBase
     private readonly Action<NoteFile> _openNote;
     private readonly Action _openSettings;
 
+    /// <summary>Servidor MCP de las herramientas del vault, o <see langword="null"/> en los tests que no lo
+    /// componen (el asistente se queda en modo solo texto).</summary>
+    private readonly EnkiMcpServer? _vaultTools;
+
+    private readonly Action<string> _openKanbanCard;
+    private readonly Func<bool> _isVisible;
+    private readonly Func<bool> _isPolarLinked;
+
     /// <summary>Lleva al hilo de interfaz lo que llega desde el hilo de fondo del proceso del CLI. Inyectable
     /// para que los tests lo ejecuten en línea sin una aplicación Avalonia levantada.</summary>
     private readonly Action<Action> _dispatch;
@@ -56,8 +64,16 @@ public sealed partial class AssistantViewModel : ViewModelBase
         Action? flushPendingEdits = null,
         Action<NoteFile>? openNote = null,
         Action? openSettings = null,
-        Action<Action>? dispatch = null)
+        Action<Action>? dispatch = null,
+        EnkiMcpServer? vaultTools = null,
+        Action<string>? openKanbanCard = null,
+        Func<bool>? isVisible = null,
+        Func<bool>? isPolarLinked = null)
     {
+        _vaultTools = vaultTools;
+        _openKanbanCard = openKanbanCard ?? (_ => { });
+        _isVisible = isVisible ?? (() => true);
+        _isPolarLinked = isPolarLinked ?? (() => false);
         _cli = cli;
         _chats = chats;
         _settingsService = settingsService;
@@ -79,6 +95,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         Messages.CollectionChanged += (_, _) => RefreshConversationState();
         PendingAttachments.CollectionChanged += (_, _) => RefreshComposerState();
         RebuildSessionList();
+        RefreshScope();
     }
 
     /// <summary>Pide a la vista que baje hasta el último mensaje (al enviar y según llega la respuesta).</summary>
@@ -97,6 +114,10 @@ public sealed partial class AssistantViewModel : ViewModelBase
         if (e.PropertyName != nameof(ClaudeCliStatusViewModel.Status)) return;
         OnPropertyChanged(nameof(ShowSetupPanel));
         OnPropertyChanged(nameof(ShowWelcome));
+        OnPropertyChanged(nameof(VaultToolsAvailable));
+        OnPropertyChanged(nameof(ScopeSummary));
+        OnPropertyChanged(nameof(ScopeWarning));
+        OnPropertyChanged(nameof(HasScopeWarning));
         RefreshComposerState();
     }
 
@@ -113,7 +134,8 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
         var stale = DateTime.UtcNow - Cli.LastCheckedUtc > TimeSpan.FromSeconds(5);
         if (!IsSending && !Cli.IsChecking && (!Cli.IsReady || stale)) _ = Cli.RefreshAsync();
-        RefreshActiveNote();
+        // Una sesión puede haberse bloqueado, borrado o renombrado mientras se estaba en otra sección.
+        RefreshScope();
         if (_chats.UnreadableFileCount > 0) NotifyUnreadableChats();
     }
 
@@ -200,7 +222,10 @@ public sealed partial class AssistantViewModel : ViewModelBase
         IsRenamingTitle = false;
         _settingsService.Settings.Ai.LastChatId = null;
         SelectedModel = FindModel(_settingsService.Settings.Ai.DefaultModel);
+        // Un chat nuevo nace siempre en el vault y sin acceso a las sesiones.
+        ResetDraftScope();
         RefreshHeader();
+        RefreshScope();
         foreach (var item in Sessions) item.IsActive = false;
     }
 
@@ -223,6 +248,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         foreach (var item in Sessions) item.IsActive = item.Session == session;
         RememberActiveChat();
         RefreshHeader();
+        RefreshScope();
         ScrollToEndRequested?.Invoke();
     }
 
@@ -345,9 +371,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
         message.IsCopied = false;
     }
 
-    /// <summary>"Guardar como nota": crea una nota nueva en la raíz del vault con la respuesta y la abre. Es
-    /// siempre una nota nueva, nunca una escritura sobre otra existente, así que no compite con lo que el
-    /// usuario pueda tener abierto.</summary>
+    /// <summary>"Guardar como nota": crea una nota nueva con la respuesta en la raíz del espacio del chat —el
+    /// vault, o la sesión en la que se abrió— y la abre. Es siempre una nota nueva, nunca una escritura sobre
+    /// otra existente, así que no compite con lo que el usuario pueda tener abierto.</summary>
     [RelayCommand]
     private void SaveMessageAsNote(AiChatMessageViewModel? message)
     {
@@ -355,17 +381,47 @@ public sealed partial class AssistantViewModel : ViewModelBase
         var title = _activeSession is { Title.Length: > 0 } session
             ? session.Title
             : LocalizationService.Instance["Assistant_Note_DefaultTitle"];
+        RefreshScope();
+        var targetSession = IsSessionChat ? _scopeSession : null;
         try
         {
-            var note = _vaultService.CreateNote(title, folderPath: null, initialContent: $"# {title}\n\n{message.Text.Trim()}\n");
+            if (IsSessionChat && targetSession is null) throw new DirectoryNotFoundException();
+            if (targetSession is not null && !_sessionService!.IsUnlocked(targetSession))
+                throw new SessionLockedException(targetSession.RootPath);
+            var note = _vaultService.CreateNote(title, folderPath: targetSession?.RootPath,
+                initialContent: $"# {title}\n\n{message.Text.Trim()}\n");
             _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_NoteSaved_Title"),
-                LocalizedTextFormatter.Format("Assistant_Notify_NoteSaved_Message", note.Title), NotificationSeverity.Success);
+                targetSession is null
+                    ? LocalizedTextFormatter.Format("Assistant_Notify_NoteSaved_Message", note.Title)
+                    : LocalizedTextFormatter.Format("Assistant_Notify_NoteSaved_SessionMessage", note.Title, targetSession.Name),
+                NotificationSeverity.Success);
             _openNote(note);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or VaultUnavailableException or SessionLockedException)
         {
             _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_NoteSaveFailed_Title"),
                 VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
+        }
+    }
+
+    /// <summary>Abre lo que tocó una acción del asistente: la nota en Documentos o la tarjeta en Kanban.</summary>
+    [RelayCommand]
+    private void OpenActivity(AiToolActivityViewModel? activity)
+    {
+        if (activity is not { CanOpen: true } || activity.Model.TargetId is not { } id) return;
+        switch (activity.Model.TargetKind)
+        {
+            case AiToolTargetKind.Note when VaultService.IsWithinFolder(id, _vaultService.VaultPath)
+                && !_vaultService.IsPathInLockedSession(id) && _vaultService.GetNote(id) is { } note:
+                _openNote(note);
+                break;
+            case AiToolTargetKind.Note:
+                _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_ActivityTargetMissing_Title"),
+                    LocalizedTextFormatter.Format("Assistant_Notify_ActivityTargetMissing_Message", activity.Target), NotificationSeverity.Info);
+                break;
+            case AiToolTargetKind.KanbanCard:
+                _openKanbanCard(id);
+                break;
         }
     }
 
@@ -378,6 +434,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(ActiveSkillName));
         OnPropertyChanged(nameof(HasActiveSkill));
         OnPropertyChanged(nameof(CanPickSkill));
+        OnPropertyChanged(nameof(CanChangeWorkspace));
     }
 
     private void RefreshConversationState()
@@ -385,6 +442,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasMessages));
         OnPropertyChanged(nameof(ShowWelcome));
         OnPropertyChanged(nameof(CanPickSkill));
+        OnPropertyChanged(nameof(CanChangeWorkspace));
     }
 
     /// <summary>Guarda la conversación; un fallo de disco se avisa pero no interrumpe el chat, que sigue en
@@ -429,6 +487,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(ActiveNoteLabel));
         RefreshHeader();
+        RefreshScopeLocalizedLabels();
         foreach (var session in Sessions) session.RefreshLocalizedLabels();
         foreach (var message in Messages) message.RefreshLocalizedLabels();
         if (_lastFailure is { } failure) ShowFailure(failure);

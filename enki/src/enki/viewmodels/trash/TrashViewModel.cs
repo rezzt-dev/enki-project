@@ -336,14 +336,11 @@ public sealed partial class TrashViewModel : ViewModelBase
     {
         var trashed = task.TrashedCard;
 
-        // La columna destino se resuelve ANTES de sacar la tarjeta de la papelera (Fase 3 de
-        // docs/analisis-proyecto/roadmap.md): si el tablero no tiene ninguna columna válida, la tarjeta
-        // se queda en la papelera — recuperable — en vez de quedar fuera de ambas listas, perdida en
-        // silencio. La columna original pudo ser borrada desde entonces: se recurre a la primera.
+        // La columna destino se resuelve antes de sacar la tarjeta de la papelera (Fase 3 de
+        // docs/analisis-proyecto/roadmap.md, ver KanbanService.RestoreTrashedCard): si el tablero no tiene
+        // ninguna columna válida, la tarjeta se queda en la papelera, recuperable, en vez de perderse.
         var board = _kanbanService.FindTrashBoard(trashed);
-        var targetColumn = board?.Columns.FirstOrDefault(c => c.Id == trashed.ColumnId)
-            ?? board?.Columns.FirstOrDefault();
-        if (targetColumn is null)
+        if (board is null || board.Columns.Count == 0)
         {
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Title"),
@@ -352,28 +349,10 @@ public sealed partial class TrashViewModel : ViewModelBase
             return;
         }
 
-        var trashIndex = board!.TrashedCards.IndexOf(trashed);
-        var archivedAt = trashed.Card.ArchivedAtUtc;
-        board.TrashedCards.Remove(trashed);
-
-        var insertIndex = trashed.CardIndex is { } idx
-            ? Math.Min(idx, targetColumn.Cards.Count)
-            : targetColumn.Cards.Count;
-        targetColumn.Cards.Insert(insertIndex, trashed.Card);
-
-        // Restaurar significa "vuelve al tablero", así que una tarjeta que estaba archivada cuando se
-        // borró (docs/agent-docs/kanban-tareas-archivadas.md) pierde aquí esa marca: si no, la
-        // restauración la dejaría en una columna que no la dibuja y habría que ir a buscarla a la ventana
-        // de archivadas para verla. Se decide en este único sitio y no en cada camino de borrado, que son
-        // varios (el tablero y el propio Calendario).
-        trashed.Card.ArchivedAtUtc = null;
-
-        try { _kanbanService.Save(); }
+        KanbanColumn targetColumn;
+        try { targetColumn = _kanbanService.RestoreTrashedCard(trashed); }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
         {
-            targetColumn.Cards.Remove(trashed.Card);
-            board.TrashedCards.Insert(trashIndex, trashed);
-            trashed.Card.ArchivedAtUtc = archivedAt;
             _notificationService.PushLocalized(LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Title"),
                 LocalizedTextFormatter.Format("Kanban_Multi_SaveFailed"), NotificationSeverity.Error);
             return;

@@ -492,12 +492,30 @@ public sealed partial class MainWindowViewModel
         {
             IsAssistantAvailable = AssistantPanelEnabled
         };
+        // Herramientas del vault para el asistente: trabajan sobre los mismos servicios que las pantallas y
+        // avisan a Notas antes y después de tocar una nota, igual que sus propias acciones. El servidor MCP no
+        // escucha hasta el primer turno con la IA encendida.
+        _aiVaultTools?.Stop();
+        var aiVaultToolbox = new AiVaultToolbox(_vaultService, _sessionService, _kanbanService, _polarTaskService, _polarAuthService,
+            _reminderService, _settingsService, calendarAggregationService, new AiVaultHost
+            {
+                PrepareNoteChange = path => Notes.PrepareAssistantNoteChange(path),
+                NoteChanged = (oldPath, note) => Notes.ApplyAssistantNoteChange(oldPath, note),
+                PrepareSessionRemoval = session => Notes.CloseEditorsUnderSession(session, out _),
+                SessionsChanged = OnSessionsChanged,
+                VaultChanged = OnAssistantChangedVault
+            });
+        _aiVaultTools = new EnkiMcpServer(aiVaultToolbox, work => Dispatcher.UIThread.InvokeAsync(work));
         Assistant = new AssistantViewModel(_claudeCliService, _aiChatService, _settingsService, _vaultService,
             _notificationService, AiCliStatus, _sessionService,
             activeNoteProvider: () => Notes?.ActiveEditor?.Note,
             flushPendingEdits: () => { foreach (var editor in Notes.OpenEditors) editor.FlushPendingSave(); },
             openNote: note => { Navigate(AppPage.Notes); Notes.OpenNote(note); },
-            openSettings: OpenAiSettings);
+            openSettings: OpenAiSettings,
+            vaultTools: _aiVaultTools,
+            openKanbanCard: OpenKanbanCard,
+            isVisible: () => CurrentPage is AssistantViewModel,
+            isPolarLinked: () => _polarAuthService.IsLinked);
         var taskManagement = new PolarTaskManagementViewModel(_polarTaskService, _polarSyncService, _settingsService)
         {
             ShowTagFilter = _settingsService.Settings.PolarShowTaskTags
@@ -516,7 +534,10 @@ public sealed partial class MainWindowViewModel
             _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService,
             loadOnCreate: false, loadInBackground: true);
         Sessions = new SessionsViewModel(_vaultService, _sessionService, _notificationService, OpenSessionInNotes, OnSessionsChanged,
-            _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession);
+            _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession, StartAssistantChatInSession)
+        {
+            IsAssistantAvailable = AssistantPanelEnabled
+        };
         Trash = new TrashViewModel(_vaultService, _kanbanService, _polarTaskService, _reminderService, _notificationService, _sessionService, OnSessionsChanged);
         Trash.PropertyChanged += (_, e) =>
         {

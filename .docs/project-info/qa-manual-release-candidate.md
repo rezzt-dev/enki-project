@@ -516,3 +516,19 @@ Requiere una máquina con Claude Code instalado y otra (o una cuenta de usuario)
   entrada de `changelog.md` si ya se corrige en la misma sesión) antes de cerrar esta pasada.
 - Esta checklist se ejecuta al menos una vez completa contra un build de release (no contra `dotnet run`
   en modo debug) antes de la primera versión que se distribuya fuera del equipo de desarrollo.
+
+### Herramientas del asistente sobre el vault
+
+- [ ] Probar un chat del vault y otro abierto desde Sesiones: el chip y el resumen muestran su ámbito;
+  los adjuntos y las herramientas no acceden a otros espacios sin activar el acceso ampliado.
+- [ ] Una sesión protegida, bloqueada o desbloqueada, queda fuera del acceso ampliado de otro chat.
+  Su chat propio funciona al desbloquearla y deja de leerla al bloquearla.
+- [ ] Crear/editar/mover una nota abierta: la pestaña y los wikilinks se actualizan; un cambio externo
+  o conflicto pendiente no se sobrescribe; el historial permite recuperar el contenido anterior.
+- [ ] Crear y completar tarjetas Kanban y tareas Polar; reprogramar recordatorios; comprobar la agenda,
+  la actualización de sus pantallas y la sincronización de las entidades originales con Polar.
+- [ ] Restaurar elementos de la papelera; denegar y aceptar un borrado definitivo. Mientras se espera,
+  detener la respuesta o desactivar las escrituras impide ejecutar la acción pendiente.
+- [ ] Activar solo lectura, apagar la IA y cambiar de vault durante una respuesta: no se aplican llamadas
+  pendientes sobre el nuevo estado; la actividad realizada se conserva en el historial.
+- [ ] Revisar el selector, las acciones y las confirmaciones con teclado, lector de pantalla y ambos temas.

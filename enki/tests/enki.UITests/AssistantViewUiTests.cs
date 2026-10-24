@@ -27,6 +27,7 @@ namespace enki.UITests;
 public sealed class AssistantViewUiTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"enki-tests-{Guid.NewGuid():N}");
+    private readonly string _cliDirectory = Path.Combine(Path.GetTempPath(), $"enki-fake-claude-{Guid.NewGuid():N}");
 
     public AssistantViewUiTests()
     {
@@ -37,12 +38,15 @@ public sealed class AssistantViewUiTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_directory)) Directory.Delete(_directory, true);
+        if (Directory.Exists(_cliDirectory)) Directory.Delete(_cliDirectory, true);
     }
 
     /// <summary>CLI mínimo: solo responde a la comprobación de versión, ayuda y sesión.</summary>
     private string FakeCli(bool loggedIn)
     {
-        var path = Path.Combine(_directory, "claude");
+        // El CLI vive fuera del almacenamiento privado: SettingsService restringe sus archivos a 0600.
+        Directory.CreateDirectory(_cliDirectory);
+        var path = Path.Combine(_cliDirectory, "claude");
         File.WriteAllText(path, $$"""
             #!/bin/sh
             case "$1" in
@@ -74,7 +78,17 @@ public sealed class AssistantViewUiTests : IDisposable
         window.Show();
         vm.OnActivated();
         Pump(() => vm.Cli.IsKnown && !vm.Cli.IsChecking);
-        window.GetLayoutManager()!.ExecuteLayoutPass();
+        if (File.Exists(cliPath)) Assert.True(vm.Cli.IsReady || vm.Cli.IsSignedOut, vm.Cli.Status.ToString());
+        Pump(() =>
+        {
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            if (vm.Cli.IsReady)
+                return view.FindControl<TextBox>("ComposerBox")!.IsEffectivelyVisible
+                    && (!vm.Messages.Any(m => m.IsAssistant && m.HasText)
+                        || view.GetVisualDescendants().OfType<ChatMarkdownView>().Any());
+            return RenderedText(view).Contains(vm.Cli.IsSignedOut ? ClaudeCliService.LoginCommand : vm.Cli.InstallCommand,
+                StringComparison.Ordinal);
+        });
         return (view, vm, window, chats);
     }
 
@@ -100,7 +114,7 @@ public sealed class AssistantViewUiTests : IDisposable
         Directory.CreateDirectory(preview);
         using var bitmap = new RenderTargetBitmap(new PixelSize(width, height));
         bitmap.Render(view);
-        bitmap.Save(Path.Combine(preview, name + ".png"));
+        bitmap.Save(Path.Combine(preview, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     [Fact]
@@ -182,7 +196,7 @@ public sealed class AssistantViewUiTests : IDisposable
         {
             Assert.Equal("Plan de lanzamiento", vm.ChatTitle);
             Assert.Equal(2, vm.Messages.Count);
-            var markdown = view.GetVisualDescendants().OfType<ChatMarkdownView>().Single();
+            var markdown = view.GetVisualDescendants().OfType<ChatMarkdownView>().Single(markdown => markdown.IsEffectivelyVisible);
             Assert.True(markdown.Children.Count >= 6);
             var text = RenderedText(view);
             Assert.Contains("Resumen", text);
@@ -246,4 +260,39 @@ public sealed class AssistantViewUiTests : IDisposable
             window.Close();
         }
     }
+    [Fact]
+    public void ToolActivityAndApproval_RenderInsideTheResponse()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, settings) =>
+        {
+            var chat = new AiChatSession { Title = "Organizar" };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Organiza mis notas" });
+            chat.Messages.Add(new AiChatMessage
+            {
+                Role = AiChatRole.Assistant, Text = "Nota creada.", Activities =
+                [new AiToolActivity { Tool = "create_note", Target = "Plan semanal", State = AiToolActivityState.Succeeded }]
+            });
+            chats.Save(chat);
+            settings.Settings.Ai.LastChatId = chat.Id;
+        });
+        try
+        {
+            var reply = vm.Messages.Last();
+            reply.PendingApproval = new AiApprovalViewModel(new AiApprovalRequest("empty_trash",
+                enki.Localization.LocalizedTextFormatter.Format("Assistant_Approval_DeleteForever_one", 1), ["Nota antigua"]));
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var text = RenderedText(view);
+            Assert.Contains("Plan semanal", text);
+            Assert.Contains("Nota antigua", text);
+            Assert.DoesNotContain("[[", text);
+            Assert.True(reply.HasActivities);
+            Assert.True(reply.HasPendingApproval);
+            SavePreview(view, "assistant-tools-approval");
+            reply.PendingApproval.DenyCommand.Execute(null);
+            Assert.True(reply.PendingApproval.Decision.IsCompletedSuccessfully);
+        }
+        finally { window.Close(); }
+    }
+
 }

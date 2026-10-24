@@ -22,6 +22,14 @@ public sealed record ClaudeTextDelta(string Text) : ClaudeStreamEvent;
 /// para indicar que la petición sigue viva.</summary>
 public sealed record ClaudeThinkingStarted : ClaudeStreamEvent;
 
+/// <summary>Empieza un bloque de texto nuevo. Con herramientas, una misma respuesta trae varios (lo que el
+/// modelo escribe antes de una acción y lo que escribe después), y se separan como párrafos.</summary>
+public sealed record ClaudeTextBlockStarted : ClaudeStreamEvent;
+
+/// <summary>El modelo ha pedido usar una herramienta (<c>mcp__enki__create_note</c>…). Lo que hace de verdad
+/// lo cuenta el servidor del vault, que es quien la ejecuta; esto solo indica que la respuesta sigue viva.</summary>
+public sealed record ClaudeToolUseStarted(string Name) : ClaudeStreamEvent;
+
 /// <summary>Mensaje del asistente completo. Con mensajes parciales llega además de los fragmentos, así que
 /// solo se usa su texto si no llegó ningún <see cref="ClaudeTextDelta"/> (CLI sin mensajes parciales).</summary>
 public sealed record ClaudeAssistantMessage(string Text, string? Error) : ClaudeStreamEvent;
@@ -55,8 +63,8 @@ internal static class ClaudeStreamParser
         {
             using var document = JsonDocument.Parse(line);
             var root = document.RootElement;
-            // Los eventos de subagentes llevan el id de la herramienta que los lanzó; Enki no da
-            // herramientas, pero si alguna versión los emitiera no son la respuesta principal.
+            // Los eventos de subagentes llevan el id de la herramienta que los lanzó: no son la respuesta
+            // principal (Enki no ofrece herramientas que lancen subagentes, pero el protocolo los admite).
             if (root.TryGetProperty("parent_tool_use_id", out var parent) && parent.ValueKind == JsonValueKind.String)
                 return null;
 
@@ -88,10 +96,14 @@ internal static class ClaudeStreamParser
                     return new ClaudeTextDelta(text);
                 return null;
             case "content_block_start":
-                return streamEvent.TryGetProperty("content_block", out var block)
-                    && GetString(block, "type") is "thinking" or "redacted_thinking"
-                    ? new ClaudeThinkingStarted()
-                    : null;
+                if (!streamEvent.TryGetProperty("content_block", out var block)) return null;
+                return GetString(block, "type") switch
+                {
+                    "thinking" or "redacted_thinking" => new ClaudeThinkingStarted(),
+                    "text" => new ClaudeTextBlockStarted(),
+                    "tool_use" or "server_tool_use" => new ClaudeToolUseStarted(GetString(block, "name") ?? string.Empty),
+                    _ => null
+                };
             default:
                 return null;
         }

@@ -249,6 +249,13 @@ public sealed class ReminderService
         if (removed > 0) Save();
     }
 
+    /// <summary>Elimina definitivamente un único recordatorio de la papelera. El asistente solicita antes
+    /// confirmación en el chat; si el recordatorio ya no está en la papelera, no se modifica.</summary>
+    public void PurgeDeleted(string id)
+    {
+        if (Reminders.RemoveAll(r => r.Id == id && r.IsDeleted) > 0) Save();
+    }
+
     private void SoftDelete(Reminder reminder)
     {
         reminder.IsDeleted = true;

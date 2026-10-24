@@ -46,6 +46,11 @@ public sealed class AiSettings
     /// adjuntas. Los mensajes sin contexto se envían directamente.</summary>
     public bool ConfirmBeforeSendingContext { get; set; } = true;
 
+    /// <summary>Deja que el asistente cree, modifique, mueva y envíe a la papelera contenido del vault dentro
+    /// del ámbito de cada chat. Apagado, el asistente solo puede consultar: las herramientas que cambian algo
+    /// ni siquiera se le ofrecen. Borrar algo para siempre pide además confirmación en el chat, siempre.</summary>
+    public bool AllowVaultChanges { get; set; } = true;
+
     /// <summary>Último chat abierto, para volver a él al entrar de nuevo en la sección.</summary>
     public string? LastChatId { get; set; }
 

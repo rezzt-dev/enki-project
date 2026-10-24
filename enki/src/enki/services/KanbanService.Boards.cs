@@ -126,6 +126,84 @@ public sealed partial class KanbanService
         catch { column.Cards.Remove(card); throw; }
     }
 
+    /// <summary>Envía la tarjeta a la papelera de su tablero recordando columna y posición, para que
+    /// <see cref="RestoreTrashedCard"/> la devuelva al mismo sitio. La marca de archivado se conserva: es la
+    /// restauración la que decide quitarla. Ante un fallo de disco la tarjeta vuelve a su columna.</summary>
+    public KanbanTrashedCard TrashCard(string cardId)
+    {
+        var location = FindCardLocation(cardId) ?? throw new ArgumentException("Kanban_Multi_MissingDestination");
+        var index = location.Column.Cards.IndexOf(location.Card);
+        var trashed = new KanbanTrashedCard
+        {
+            Card = location.Card,
+            ColumnId = location.Column.Id,
+            ColumnTitle = location.Column.Title,
+            CardIndex = index
+        };
+        location.Column.Cards.RemoveAt(index);
+        location.Board.TrashedCards.Add(trashed);
+        try { Save(); }
+        catch
+        {
+            location.Board.TrashedCards.Remove(trashed);
+            location.Column.Cards.Insert(index, location.Card);
+            throw;
+        }
+        return trashed;
+    }
+
+    /// <summary>Devuelve una tarjeta de la papelera a su columna y posición originales, o a la primera columna
+    /// de su tablero si la original ya no existe. La columna se resuelve antes de sacarla de la papelera: sin
+    /// ninguna columna válida la tarjeta se queda allí, recuperable, y se lanza
+    /// <see cref="InvalidOperationException"/>. Restaurar significa "vuelve al tablero", así que pierde la
+    /// marca de archivado (docs/agent-docs/kanban-tareas-archivadas.md).</summary>
+    /// <returns>La columna en la que quedó la tarjeta.</returns>
+    public KanbanColumn RestoreTrashedCard(KanbanTrashedCard trashed)
+    {
+        var board = FindTrashBoard(trashed) ?? throw new ArgumentException("Kanban_Multi_MissingDestination");
+        var targetColumn = board.Columns.FirstOrDefault(c => c.Id == trashed.ColumnId) ?? board.Columns.FirstOrDefault()
+            ?? throw new InvalidOperationException("Trash_Notify_CardRestoreFailed_Title");
+
+        var trashIndex = board.TrashedCards.IndexOf(trashed);
+        var archivedAt = trashed.Card.ArchivedAtUtc;
+        board.TrashedCards.RemoveAt(trashIndex);
+        var insertIndex = trashed.CardIndex is { } index ? Math.Min(index, targetColumn.Cards.Count) : targetColumn.Cards.Count;
+        targetColumn.Cards.Insert(insertIndex, trashed.Card);
+        trashed.Card.ArchivedAtUtc = null;
+
+        try { Save(); }
+        catch
+        {
+            targetColumn.Cards.Remove(trashed.Card);
+            board.TrashedCards.Insert(trashIndex, trashed);
+            trashed.Card.ArchivedAtUtc = archivedAt;
+            throw;
+        }
+        return targetColumn;
+    }
+
+    /// <summary>Archiva o desarchiva una tarjeta de la columna "Hecho". Archivar no la mueve: sigue en su
+    /// columna y es el tablero el que deja de dibujarla; como archivar es afirmar que está terminada, sella
+    /// también su fecha de completado si no la tenía (ver <c>KanbanViewModel.ArchiveCardCore</c>).</summary>
+    public void SetCardArchived(string cardId, bool archived)
+    {
+        var location = FindCardLocation(cardId) ?? throw new ArgumentException("Kanban_Multi_MissingDestination");
+        var card = location.Card;
+        if (archived && location.Column.Role != CoreColumnRole.Done)
+            throw new InvalidOperationException("Kanban_Archive_OnlyDone");
+        if (card.IsArchived == archived) return;
+
+        var (archivedAt, completedAt) = (card.ArchivedAtUtc, card.CompletedAtUtc);
+        card.ArchivedAtUtc = archived ? DateTime.UtcNow : null;
+        if (archived) card.CompletedAtUtc ??= DateTime.UtcNow;
+        try { Save(); }
+        catch
+        {
+            (card.ArchivedAtUtc, card.CompletedAtUtc) = (archivedAt, completedAt);
+            throw;
+        }
+    }
+
     /// <summary>Mueve la misma tarjeta y aplica las transiciones de rol en una única escritura.
     /// Ante fallo restaura posición, archivo, completado y subtareas sobre las mismas referencias.</summary>
     public void MoveCardToBoard(string cardId, string boardId, string columnId, string? beforeCardId = null)

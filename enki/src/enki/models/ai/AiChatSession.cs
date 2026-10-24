@@ -35,6 +35,21 @@ public sealed class AiChatSession
     /// edite o se borre después.</summary>
     public string? SkillInstructions { get; set; }
 
+    /// <summary>Identificador (<see cref="Session.Id"/>) de la sesión del vault en la que se abrió el chat, o
+    /// <see langword="null"/> para un chat del vault —el caso por defecto—. Fija el ámbito por defecto de
+    /// las herramientas del asistente (ver <see cref="Services.AiAccessScope"/>) y no cambia durante la
+    /// conversación: se elige antes del primer mensaje.</summary>
+    public string? SessionId { get; set; }
+
+    /// <summary>Nombre de la sesión al abrir el chat. Solo para mostrarlo si la sesión ya no está en el vault
+    /// abierto (se borró, o el chat viene de otro vault); el nombre vigente se lee siempre de la sesión.</summary>
+    public string? SessionName { get; set; }
+
+    /// <summary>Acceso ampliado del asistente. En un chat del vault es "acceso a las sesiones"; en un chat de
+    /// sesión, el "modo auto" que abre el vault entero. Apagado por defecto y modificable en cualquier
+    /// momento: se aplica a partir del siguiente turno.</summary>
+    public bool FullVaultAccess { get; set; }
+
     public List<AiChatMessage> Messages { get; set; } = [];
 }
 
@@ -54,6 +69,10 @@ public sealed class AiChatMessage
     /// <summary>Notas que viajaron como contexto con este mensaje (solo mensajes del usuario). Se guardan
     /// título, ruta y tamaño, no el contenido: la nota sigue viviendo en el vault.</summary>
     public List<AiContextAttachment> Attachments { get; set; } = [];
+
+    /// <summary>Lo que el asistente hizo en el vault durante esta respuesta (solo mensajes del asistente),
+    /// en el orden en que lo hizo. Se guarda para que el historial siga explicando qué cambió.</summary>
+    public List<AiToolActivity> Activities { get; set; } = [];
 
     /// <summary>La respuesta se cortó antes de terminar (el usuario la detuvo, o falló a mitad).</summary>
     public bool IsInterrupted { get; set; }

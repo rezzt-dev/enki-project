@@ -2541,6 +2541,46 @@
               </Border>
             </controls:SettingsSearchOption>
 
+            <!-- Qué puede hacer el asistente dentro del vault y hasta dónde llega cada chat
+                 (.docs/project-info/asistente-ia.md, "Ámbitos"). -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Ai Settings_Ai_Vault_Title Settings_Ai_Vault_AllowChanges_Label Settings_Ai_Vault_AllowChanges_Description Settings_Ai_Vault_Scopes Settings_Ai_Vault_Protected Settings_Ai_Vault_Confirmations">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="FolderEditOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Ai_Vault_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Ai_Vault_AllowChanges_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Ai_Vault_AllowChanges_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AiAllowVaultChanges}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Ai_Vault_AllowChanges_Label}" />
+                  </Grid>
+                  <Rectangle Classes="section-rule" />
+                  <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="SitemapOutline" Width="13" Height="13" Margin="0,2,10,0"
+                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                      <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Vault_Scopes}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="LockOutline" Width="13" Height="13" Margin="0,2,10,0"
+                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                      <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Vault_Protected}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="ShieldCheckOutline" Width="13" Height="13" Margin="0,2,10,0"
+                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                      <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Vault_Confirmations}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    </Grid>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_History_Title Settings_Ai_History_Description Settings_Ai_History_Clear">
               <Border Classes="card" Padding="22">

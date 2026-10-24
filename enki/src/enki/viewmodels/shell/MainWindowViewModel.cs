@@ -70,6 +70,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ClaudeCliService _claudeCliService;
     private readonly AiChatService _aiChatService;
 
+    /// <summary>Servidor MCP con el que el asistente trabaja dentro del vault (<see cref="AiVaultToolbox"/>).
+    /// Se construye en <c>InitializeShell</c> porque sus herramientas necesitan a Notas, y solo escucha
+    /// mientras hay un turno en curso o reciente; se para al apagar la IA, al cambiar de vault y al salir.</summary>
+    private EnkiMcpServer? _aiVaultTools;
+
+    /// <summary>Hay ya un refresco pendiente por cambios del asistente (ver <c>OnAssistantChangedVault</c>).</summary>
+    private bool _assistantRefreshQueued;
+
     /// <summary>Estado del CLI que comparten Ajustes y el Asistente.</summary>
     public ClaudeCliStatusViewModel AiCliStatus { get; }
 
@@ -576,6 +584,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         MarkdownImageCache.Clear();
         ShortcutRegistry.Changed -= _shortcutChangedHandler;
         Assistant?.CancelAll();
+        _aiVaultTools?.Stop();
         _globalHotkeyService.Dispose();
         _vaultChangeWatcher.Dispose();
         _webClipService.Dispose();

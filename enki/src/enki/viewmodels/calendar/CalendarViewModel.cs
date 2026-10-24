@@ -1220,28 +1220,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Same soft-delete-to-trash path as <c>KanbanViewModel.ConfirmDeleteCard</c> (doc 05 §6) —
-    /// duplicated rather than called through <c>KanbanViewModel</c> because the calendar only ever holds a
-    /// reference to <see cref="KanbanService"/>, never to the Kanban page's own viewmodel.</summary>
+    /// <summary>Comparte con Kanban el envío a la papelera a través de <see cref="KanbanService.TrashCard"/>.
+    /// El calendario solo depende del servicio, sin referencias al viewmodel de esa pantalla.</summary>
     private void DeleteKanbanCard(string cardId)
     {
-        foreach (var column in _kanbanService.AllColumns)
-        {
-            var card = column.Cards.FirstOrDefault(c => c.Id == cardId);
-            if (card is null) continue;
-
-            var index = column.Cards.IndexOf(card);
-            column.Cards.Remove(card);
-            _kanbanService.Boards.First(b => b.Columns.Contains(column)).TrashedCards.Add(new KanbanTrashedCard
-            {
-                Card = card,
-                ColumnId = column.Id,
-                ColumnTitle = column.Title,
-                CardIndex = index
-            });
-            _kanbanService.Save();
-            return;
-        }
+        if (_kanbanService.FindCardLocation(cardId) is not null) _kanbanService.TrashCard(cardId);
     }
 
     // ===================== Fase 3: arrastrar y soltar para reprogramar (doc 05 §2) =====================

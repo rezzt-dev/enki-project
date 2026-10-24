@@ -38,6 +38,11 @@ public sealed record ClaudeCliStatus(
     public static ClaudeCliStatus Unknown { get; } = new(ClaudeCliState.Unknown);
 
     internal IReadOnlySet<string> Capabilities { get; init; } = new HashSet<string>();
+
+    /// <summary>El CLI entiende todo lo necesario para trabajar sobre el vault con las herramientas de Enki
+    /// sin ninguna otra: servidor MCP propio, solo esas herramientas permitidas y las integradas apagadas.
+    /// Si falta algo, el asistente sigue funcionando, pero solo con texto.</summary>
+    public bool SupportsVaultTools => ClaudeCliService.VaultToolFlags.All(Capabilities.Contains);
 }
 
 public enum ClaudeFailureKind
@@ -56,7 +61,15 @@ public enum ClaudeFailureKind
 }
 
 /// <summary>Un turno de conversación tal como se le pide al CLI.</summary>
-public sealed record ClaudeTurnRequest(string Prompt, string SystemPrompt, string? ResumeSessionId, string? Model);
+/// <param name="Tools">Servidor MCP del vault con el que el modelo puede actuar en este turno, o
+/// <see langword="null"/> para un turno solo de texto.</param>
+/// <param name="Activity">Señal con la que quien atiende las herramientas avisa de que el turno sigue vivo.</param>
+public sealed record ClaudeTurnRequest(string Prompt, string SystemPrompt, string? ResumeSessionId, string? Model,
+    ClaudeToolAccess? Tools = null, CliActivitySignal? Activity = null);
+
+/// <summary>Dónde está el servidor MCP del vault (<see cref="EnkiMcpServer"/>) y el token, válido solo
+/// durante un turno, con el que el CLI se identifica ante él.</summary>
+public sealed record ClaudeToolAccess(string Endpoint, string BearerToken);
 
 public sealed record ClaudeTurnResult(
     string Text,
@@ -74,12 +87,27 @@ public sealed record ClaudeTurnResult(
 /// <c>~/.claude/</c> ni extrae tokens, y el binario se ejecuta tal cual lo publicó Anthropic. El inicio de
 /// sesión ocurre siempre en el flujo del propio CLI (<c>claude auth login</c> en una terminal).
 ///
-/// <para>Cada turno se ejecuta sin herramientas (<c>--tools ""</c>), sin servidores MCP, sin comandos ni
-/// personalizaciones del usuario y en una carpeta de trabajo privada y vacía: la IA solo devuelve texto,
-/// que el usuario revisa, y nunca puede leer ni modificar el vault por su cuenta. Ver
-/// <c>.docs/project-info/asistente-ia.md</c>.</para></summary>
+/// <para>Cada turno se ejecuta sin las herramientas integradas del CLI (<c>--tools ""</c>: ni shell, ni
+/// archivos, ni web), sin comandos ni personalizaciones del usuario y en una carpeta de trabajo privada y
+/// vacía. Lo único con lo que el modelo puede actuar son las herramientas del vault que Enki le sirve por
+/// MCP (<see cref="EnkiMcpServer"/>), con un token que solo vale para ese turno y limitadas al ámbito del
+/// chat; sin ellas (CLI antiguo), el turno es solo texto. Ver <c>.docs/project-info/asistente-ia.md</c>.</para></summary>
 public sealed class ClaudeCliService
 {
+    /// <summary>Nombre del servidor MCP del vault en la configuración del turno: las herramientas llegan al
+    /// modelo como <c>mcp__enki__&lt;nombre&gt;</c>.</summary>
+    public const string McpServerName = "enki";
+
+    /// <summary>Flags sin los que no se le dan herramientas al modelo (ver
+    /// <see cref="ClaudeCliStatus.SupportsVaultTools"/>).</summary>
+    internal static readonly string[] VaultToolFlags =
+        ["--mcp-config", "--strict-mcp-config", "--allowedTools", "--tools", "--setting-sources"];
+
+    /// <summary>Tiempo máximo que el CLI espera a una herramienta del vault. Cubre de sobra la confirmación
+    /// de un borrado definitivo (ver <see cref="AiVaultToolbox.ApprovalTimeout"/>), que es lo único que
+    /// puede tardar.</summary>
+    private const string McpToolTimeoutMilliseconds = "600000";
+
     /// <summary>Versión mínima probada. Las anteriores no tienen todos los flags de los que depende el modo
     /// no interactivo con streaming.</summary>
     internal static readonly SemanticVersion MinimumVersion = new(2, 0, 0, null);
@@ -225,14 +253,20 @@ public sealed class ClaudeCliService
         // Sin archivo, el prompt de sistema iría como argumento; por un envoltorio .cmd eso pasa por cmd.exe,
         // que reinterpreta &, | o %, así que en ese caso viaja por stdin delante del mensaje.
         var systemPromptInStdin = !useSystemPromptFile && ClaudeCliLocator.IsBatchWrapper(executable);
+        var tools = status.SupportsVaultTools ? request.Tools : null;
         string? systemPromptFile = null;
+        string? mcpConfigFile = null;
         var stopwatch = Stopwatch.StartNew();
         try
         {
             if (useSystemPromptFile)
                 systemPromptFile = PrivateTempFile.Write("enki-ai-system-", ".md", Encoding.UTF8.GetBytes(request.SystemPrompt));
+            // El token del turno no va nunca en la línea de órdenes (la lista de procesos es legible por otros
+            // usuarios del equipo): viaja en un temporal privado que se borra al terminar.
+            if (tools is not null)
+                mcpConfigFile = PrivateTempFile.Write("enki-ai-mcp-", ".json", Encoding.UTF8.GetBytes(BuildMcpConfig(tools)));
 
-            var arguments = BuildTurnArguments(request, status.Capabilities, systemPromptFile, systemPromptInStdin);
+            var arguments = BuildTurnArguments(request, status.Capabilities, systemPromptFile, systemPromptInStdin, mcpConfigFile);
             var stdin = systemPromptInStdin
                 ? AiPromptBuilder.WrapSystemPromptForStdin(request.SystemPrompt, request.Prompt)
                 : request.Prompt;
@@ -245,13 +279,16 @@ public sealed class ClaudeCliService
                 StandardInput = stdin,
                 WorkingDirectory = _workingDirectory,
                 IdleTimeout = TimeSpan.FromSeconds(_settingsService.Settings.Ai.IdleTimeoutSeconds),
-                ExcludeEnvironmentVariable = IsExcludedEnvironmentVariable
+                ExcludeEnvironmentVariable = IsExcludedEnvironmentVariable,
+                EnvironmentOverrides = tools is null ? null : new Dictionary<string, string> { ["MCP_TOOL_TIMEOUT"] = McpToolTimeoutMilliseconds },
+                Activity = request.Activity
             }, accumulator.OnLine, cancellationToken).ConfigureAwait(false);
 
             var result = accumulator.Complete(processResult);
             // Solo metadatos: el contenido de los prompts y las respuestas nunca pasa por el log.
             LogService.Debug($"[ia] claude-cli: {stopwatch.ElapsedMilliseconds} ms, salida {processResult.ExitCode}, "
-                + $"{request.Prompt.Length} car. enviados, {result.Text.Length} recibidos, resultado {result.Failure}");
+                + $"{request.Prompt.Length} car. enviados, {result.Text.Length} recibidos, herramientas {(tools is null ? "no" : "sí")}, "
+                + $"resultado {result.Failure}");
             return result;
         }
         catch (Exception ex) when (ex is Win32Exception or FileNotFoundException or DirectoryNotFoundException)
@@ -268,11 +305,29 @@ public sealed class ClaudeCliService
         finally
         {
             if (systemPromptFile is not null) TryDelete(systemPromptFile);
+            if (mcpConfigFile is not null) TryDelete(mcpConfigFile);
         }
     }
 
+    /// <summary>Configuración MCP del turno: un único servidor, el del vault, por HTTP local y con el token del
+    /// turno. Es lo único que el CLI carga (<c>--strict-mcp-config</c>): los servidores MCP que el usuario
+    /// tenga configurados para su propio uso no llegan a las conversaciones de Enki.</summary>
+    internal static string BuildMcpConfig(ClaudeToolAccess tools) =>
+        new System.Text.Json.Nodes.JsonObject
+        {
+            ["mcpServers"] = new System.Text.Json.Nodes.JsonObject
+            {
+                [McpServerName] = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["type"] = "http",
+                    ["url"] = tools.Endpoint,
+                    ["headers"] = new System.Text.Json.Nodes.JsonObject { ["Authorization"] = "Bearer " + tools.BearerToken }
+                }
+            }
+        }.ToJsonString();
+
     internal static List<string> BuildTurnArguments(ClaudeTurnRequest request, IReadOnlySet<string> capabilities,
-        string? systemPromptFile, bool systemPromptInStdin)
+        string? systemPromptFile, bool systemPromptInStdin, string? mcpConfigFile = null)
     {
         var arguments = new List<string> { "-p", "--output-format", "stream-json", "--verbose" };
         if (capabilities.Contains("--include-partial-messages")) arguments.Add("--include-partial-messages");
@@ -281,9 +336,20 @@ public sealed class ClaudeCliService
         else arguments.AddRange(["--disallowedTools", FallbackDisallowedTools]);
         if (capabilities.Contains("--strict-mcp-config")) arguments.Add("--strict-mcp-config");
         if (capabilities.Contains("--disable-slash-commands")) arguments.Add("--disable-slash-commands");
+
+        if (mcpConfigFile is not null)
+        {
+            // Las herramientas del vault, y solo ellas, se aprueban de antemano: en modo -p nadie puede
+            // contestar a un aviso de permisos, y cualquier otra herramienta queda denegada.
+            arguments.AddRange(["--mcp-config", mcpConfigFile, "--allowedTools", "mcp__" + McpServerName]);
+            if (capabilities.Contains("--permission-mode")) arguments.AddRange(["--permission-mode", "dontAsk"]);
+            // --safe-mode apagaría también este servidor MCP. Sin ningún origen de ajustes no se cargan los
+            // hooks, plugins, permisos ni CLAUDE.md del usuario, que es lo que importaba de él.
+            if (capabilities.Contains("--setting-sources")) arguments.AddRange(["--setting-sources", ""]);
+        }
         // Sin hooks, plugins, CLAUDE.md ni ajustes personalizados del usuario: un hook de su configuración
         // que se ejecutara en cada mensaje de Enki sería una sorpresa, y la sesión no necesita nada de eso.
-        if (capabilities.Contains("--safe-mode")) arguments.Add("--safe-mode");
+        else if (capabilities.Contains("--safe-mode")) arguments.Add("--safe-mode");
 
         if (systemPromptFile is not null) arguments.AddRange(["--system-prompt-file", systemPromptFile]);
         else if (!systemPromptInStdin) arguments.AddRange(["--system-prompt", request.SystemPrompt]);
@@ -311,7 +377,8 @@ public sealed class ClaudeCliService
         var known = new[]
         {
             "--output-format", "--resume", "--include-partial-messages", "--tools", "--strict-mcp-config",
-            "--disable-slash-commands", "--safe-mode", "--model", "--system-prompt"
+            "--disable-slash-commands", "--safe-mode", "--model", "--system-prompt", "--mcp-config",
+            "--allowedTools", "--permission-mode", "--setting-sources"
         };
         var capabilities = known.Where(flag => ContainsFlag(helpOutput, flag)).ToHashSet();
         // La ayuda no lista --system-prompt-file por separado: aparece como "--system-prompt[-file]".
@@ -401,6 +468,8 @@ public sealed class ClaudeCliService
     /// <see cref="OnLine"/>.</summary>
     private sealed class TurnAccumulator(Action<ClaudeStreamEvent>? onEvent)
     {
+        private const string ParagraphBreak = "\n\n";
+
         private readonly StringBuilder _deltas = new();
         private readonly StringBuilder _messages = new();
         private string? _sessionId;
@@ -414,13 +483,23 @@ public sealed class ClaudeCliService
             switch (parsed)
             {
                 case ClaudeSessionStarted started: _sessionId = started.SessionId; break;
+                case ClaudeTextBlockStarted:
+                    // Un bloque de texto que sigue a otro (el modelo escribió, usó una herramienta y vuelve a
+                    // escribir) empieza párrafo nuevo, en lo acumulado y en lo que ve el usuario.
+                    if (_deltas.Length > 0 && !EndsWithBlankLine(_deltas))
+                    {
+                        _deltas.Append(ParagraphBreak);
+                        onEvent?.Invoke(new ClaudeTextDelta(ParagraphBreak));
+                    }
+                    return;
                 case ClaudeTextDelta delta: _deltas.Append(delta.Text); break;
                 case ClaudeAssistantMessage message:
-                    _messages.Append(message.Text);
+                    var separator = _messages.Length > 0 ? ParagraphBreak : string.Empty;
+                    _messages.Append(separator).Append(message.Text);
                     _assistantError ??= message.Error;
                     // Sin mensajes parciales, el mensaje completo es lo único que llega: se reenvía como
                     // si fuera un fragmento para que la vista lo pinte igual.
-                    if (_deltas.Length == 0 && message.Error is null) onEvent?.Invoke(new ClaudeTextDelta(message.Text));
+                    if (_deltas.Length == 0 && message.Error is null) onEvent?.Invoke(new ClaudeTextDelta(separator + message.Text));
                     return;
                 case ClaudeRateLimit rateLimit: _rateLimit = rateLimit; break;
                 case ClaudeResult result:
@@ -431,10 +510,17 @@ public sealed class ClaudeCliService
             onEvent?.Invoke(parsed);
         }
 
+        private static bool EndsWithBlankLine(StringBuilder text) =>
+            text.Length >= 2 && text[^1] == '\n' && text[^2] == '\n';
+
         public ClaudeTurnResult Complete(CliProcessResult process)
         {
             var failure = Classify(_result, _rateLimit, _assistantError, process.StandardError, process.ExitCode, process.TimedOut);
-            var text = _deltas.Length > 0 ? _deltas.ToString() : _result is { IsError: false, Text: { } final } ? final : _messages.ToString();
+            // Con herramientas, el "result" del CLI solo trae el último bloque de texto: se prefiere lo
+            // acumulado, que tiene la respuesta entera.
+            var text = _deltas.Length > 0 ? _deltas.ToString()
+                : _messages.Length > 0 ? _messages.ToString()
+                : _result is { IsError: false, Text: { } final } ? final : string.Empty;
             if (failure == ClaudeFailureKind.None) return new ClaudeTurnResult(text, _sessionId, failure);
 
             var detail = FirstLine(_result is { Errors.Count: > 0 } errored ? errored.Errors[0] : null) ?? FirstLine(_result?.Text)

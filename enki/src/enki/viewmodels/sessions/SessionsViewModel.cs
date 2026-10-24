@@ -291,8 +291,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
         Action onSessionsChanged,
         KanbanService? kanbanService = null,
         Action<string>? onOpenLinkedCard = null,
-        Func<Session, bool>? onSessionLocked = null)
+        Func<Session, bool>? onSessionLocked = null,
+        Action<Session>? onOpenInAssistant = null)
     {
+        _onOpenInAssistant = onOpenInAssistant;
         _vaultService = vaultService;
         _sessionService = sessionService;
         _notificationService = notificationService;
@@ -546,6 +548,29 @@ public sealed partial class SessionsViewModel : ViewModelBase
         }
 
         _onOpenInNotes(item.Session, null);
+    }
+
+    private readonly Action<Session>? _onOpenInAssistant;
+
+    /// <summary>El asistente está activado (Ajustes › Inteligencia artificial). Lo mantiene al día el shell,
+    /// igual que <c>SkillsViewModel.IsAssistantAvailable</c>.</summary>
+    [ObservableProperty]
+    private bool _isAssistantAvailable;
+
+    /// <summary>"Preguntar al asistente": un chat nuevo dentro de la sesión seleccionada, con acceso solo a su
+    /// contenido. Una sesión protegida y bloqueada se desbloquea primero, como para abrirla en Notas.</summary>
+    [RelayCommand]
+    private void OpenInAssistant()
+    {
+        if (SelectedSession is not { } item || _onOpenInAssistant is null) return;
+
+        if (item.IsEncrypted && !item.IsUnlocked)
+        {
+            RequestUnlockSession(item);
+            return;
+        }
+
+        _onOpenInAssistant(item.Session);
     }
 
     // ===================== Bloqueo/desbloqueo de sesiones protegidas =====================

@@ -768,6 +768,22 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// affected tab is lost by being closed out from under the user.</summary>
     public bool CloseEditorsForLockedSession(Session session)
     {
+        if (!CloseEditorsUnderSession(session, out var closed)) return false;
+        if (closed == 0) return true;
+
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Title"),
+            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Message", session.Name),
+            NotificationSeverity.Info);
+        return true;
+    }
+
+    /// <summary>Cierra, guardando antes, todas las pestañas de notas de <paramref name="session"/>. Devuelve
+    /// <see langword="false"/> —sin cerrar ninguna— si algún borrador no se pudo conservar. Lo comparten el
+    /// bloqueo de una sesión y su envío a la papelera por el asistente.</summary>
+    public bool CloseEditorsUnderSession(Session session, out int closed)
+    {
+        closed = 0;
         var affected = OpenEditors.Where(e => IsUnderSessionRoot(e.Note.FullPath, session.RootPath)).ToList();
         if (affected.Count == 0) return true;
 
@@ -779,6 +795,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         {
             if (!editor.Close()) return false;
             OpenEditors.Remove(editor);
+            closed++;
         }
 
         if (ActiveEditor is not null && affected.Contains(ActiveEditor))
@@ -786,12 +803,37 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         PersistOpenTabs();
         Reload();
-
-        _notificationService?.PushLocalized(
-            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Title"),
-            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Message", session.Name),
-            NotificationSeverity.Info);
         return true;
+    }
+
+    // ===================== Cambios del asistente =====================
+
+    /// <summary>Antes de que el asistente modifique, mueva o borre una nota: si está abierta, vuelca lo que su
+    /// pestaña tenga sin guardar y devuelve <see langword="false"/> si queda un conflicto sin resolver — el
+    /// mismo criterio que mover una nota desde la rejilla (<see cref="MoveNoteToFolder"/>).</summary>
+    public bool PrepareAssistantNoteChange(string path) =>
+        OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, path)) is not { } editor
+        || editor.PrepareFileTransfer();
+
+    /// <summary>Después: la pestaña de la nota sigue a su archivo si se renombró o movió, recarga el contenido
+    /// nuevo si solo cambió (recarga silenciosa de un cambio externo: la pestaña ya no tenía nada sin guardar)
+    /// y se cierra si la nota se envió a la papelera — lo mismo que cuando lo hace el usuario desde la app.</summary>
+    public void ApplyAssistantNoteChange(string oldPath, NoteFile? updated)
+    {
+        if (OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, oldPath)) is not { } editor) return;
+        if (updated is null)
+        {
+            CloseEditor(editor);
+        }
+        else if (!VaultService.PathsEqual(oldPath, updated.FullPath))
+        {
+            editor.SyncTransferredNote(updated);
+            PersistOpenTabs();
+        }
+        else
+        {
+            editor.HandleExternalChange(new VaultExternalChange(oldPath, VaultExternalChangeKind.Modified));
+        }
     }
 
     private static bool IsUnderSessionRoot(string fullPath, string sessionRootPath)

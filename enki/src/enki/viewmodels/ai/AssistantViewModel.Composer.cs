@@ -87,7 +87,13 @@ public sealed partial class AssistantViewModel
             LocalizationService.Instance["Assistant_Composer_AttachActiveNote"], _activeNote.Title);
 
     public bool CanAttachActiveNote => _activeNote is not null && CanAttachMore
-        && PendingAttachments.All(a => !SamePath(a.Note, _activeNote));
+        && PendingAttachments.All(a => !SamePath(a.Note, _activeNote)) && IsInScope(_activeNote);
+
+    partial void OnIsSendingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanChangeWorkspace));
+        OnPropertyChanged(nameof(CanChangeAccess));
+    }
 
     private void RefreshActiveNote()
     {
@@ -113,32 +119,43 @@ public sealed partial class AssistantViewModel
     }
 
     /// <summary>Abre un chat nuevo con <paramref name="note"/> ya adjunta — "Preguntar al asistente sobre esta
-    /// nota" de la paleta de comandos.</summary>
+    /// nota" de la paleta de comandos. El chat se abre en el espacio de la nota: si vive en una sesión, en esa
+    /// sesión, para que el asistente pueda trabajar con ella y con lo que la rodea.</summary>
     public void StartChatAboutNote(NoteFile note)
     {
         if (IsSending) return;
         StartNewChat();
+        if (_sessionService?.List().FirstOrDefault(s => VaultService.IsWithinFolder(note.FullPath, s.RootPath)) is { } session)
+        {
+            _draftSessionId = session.Id;
+            _draftSessionName = session.Name;
+            RefreshScope();
+        }
         Attach(note, WorkspaceLabelFor(note));
         ComposerFocusRequested?.Invoke();
     }
 
     private void Attach(NoteFile note, string workspaceLabel)
     {
-        if (!CanAttachMore || PendingAttachments.Any(a => SamePath(a.Note, note))) return;
+        if (!CanAttachMore || !IsInScope(note) || PendingAttachments.Any(a => SamePath(a.Note, note))) return;
         PendingAttachments.Add(new AiAttachmentChipViewModel(note, workspaceLabel));
     }
 
     /// <summary>Las notas pendientes de adjuntar son del vault que se acaba de cerrar: se descartan antes de
-    /// que nadie pueda enviarlas creyendo que son del nuevo. El historial no cambia, no depende del vault.</summary>
+    /// que nadie pueda enviarlas creyendo que son del nuevo. Una respuesta en curso se corta, porque sus
+    /// herramientas pasarían a actuar sobre el vault recién abierto. El historial no cambia, no depende del vault.</summary>
     public void CloseForVaultChange()
     {
+        _turnCancellation?.Cancel();
         PendingAttachments.Clear();
         IsNotePickerOpen = false;
         IsSkillPickerOpen = false;
         IsConfirmSendOpen = false;
+        IsScopePickerOpen = false;
         _confirmedNotes = null;
         _allNotesCache = [];
-        RefreshActiveNote();
+        if (_activeSession is null) ResetDraftScope();
+        RefreshScope();
     }
 
     [RelayCommand]
@@ -181,14 +198,21 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(HasNoNotePickerResults));
     }
 
+    /// <summary>Las notas que se pueden adjuntar: las de los espacios del ámbito del chat (ver
+    /// <see cref="IsInScope"/>), recorridas espacio a espacio.</summary>
     private List<(NoteFile, string)> CollectNotes()
     {
         try
         {
-            return _sessionService is not null
-                ? _sessionService.ListAllNotesByWorkspace().ToList()
-                : _vaultService.GetAllNotesRecursive(_vaultService.VaultPath)
-                    .Select(n => (n, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"])).ToList();
+            var scope = CurrentScope;
+            var notes = new List<(NoteFile, string)>();
+            if (scope.IncludesVault)
+                notes.AddRange(_vaultService.GetAllNotesRecursive(_vaultService.VaultPath)
+                    .Select(n => (n, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"])));
+            if (_sessionService is not null)
+                foreach (var session in _sessionService.List().Where(s => scope.Includes(s) && _sessionService.IsUnlocked(s)))
+                    notes.AddRange(_vaultService.GetAllNotesRecursive(session.RootPath).Select(n => (n, session.Name)));
+            return notes;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or VaultUnavailableException)
         {
@@ -369,9 +393,14 @@ public sealed partial class AssistantViewModel
                 Title = AiPromptBuilder.SuggestTitle(text),
                 Model = SelectedModel?.Alias ?? string.Empty,
                 SkillName = DraftSkillName,
-                SkillInstructions = DraftSkillInstructions
+                SkillInstructions = DraftSkillInstructions,
+                SessionId = _draftSessionId,
+                SessionName = _scopeSession?.Name ?? _draftSessionName,
+                FullVaultAccess = _draftFullAccess
             };
             _activeSession = session;
+            ResetDraftScope();
+            RefreshScope();
         }
 
         var userMessage = new AiChatMessage { Role = AiChatRole.User, Text = text, Attachments = attachments };
@@ -399,6 +428,7 @@ public sealed partial class AssistantViewModel
             foreach (var chip in PendingAttachments)
             {
                 var note = chip.Note!;
+                if (!IsInScope(note)) throw new SessionLockedException(note.FullPath);
                 var relative = Path.GetRelativePath(_vaultService.VaultPath, note.FullPath).Replace('\\', '/');
                 notes.Add(new AiContextNote(note.Title, relative, _vaultService.ReadContent(note)));
             }
@@ -437,6 +467,12 @@ public sealed partial class AssistantViewModel
         using var cancellation = new CancellationTokenSource();
         _turnCancellation = cancellation;
 
+        // Con herramientas el asistente lee y escribe el disco: primero se vuelca lo que el editor tenga sin
+        // guardar, para que trabaje sobre lo que el usuario ve y no pise un cambio pendiente.
+        var vaultTools = VaultToolsAvailable;
+        var activitySignal = new CliActivitySignal();
+        ClaudeToolAccess? toolAccess = null;
+
         // Los fragmentos llegan por el hilo de fondo del proceso, a veces decenas por segundo: se acumulan
         // aquí y se pinta como mucho una vez por vuelta del hilo de interfaz, no una por fragmento.
         var buffer = new StringBuilder();
@@ -456,13 +492,16 @@ public sealed partial class AssistantViewModel
         }
 
         var systemPrompt = AiPromptBuilder.BuildSystemPrompt(LocalizationService.Instance.CurrentCulture.EnglishName,
-            session.SkillName, session.SkillInstructions);
+            session.SkillName, session.SkillInstructions, vaultTools: vaultTools);
         var model = string.IsNullOrWhiteSpace(session.Model) ? null : session.Model;
         ClaudeTurnResult? result = null;
         try
         {
-            result = await _cli.RunTurnAsync(new ClaudeTurnRequest(prompt, systemPrompt, session.CliSessionId, model),
-                OnEvent, cancellation.Token);
+            if (vaultTools) _flushPendingEdits();
+            toolAccess = vaultTools ? RegisterTurnTools(session, bubble, activitySignal, cancellation.Token) : null;
+            var turnPrompt = toolAccess is null ? prompt : AiPromptBuilder.WithScope(BuildScopeNotice(), prompt);
+            result = await _cli.RunTurnAsync(new ClaudeTurnRequest(turnPrompt, systemPrompt, session.CliSessionId, model,
+                toolAccess, activitySignal), OnEvent, cancellation.Token);
             if (result.Failure == ClaudeFailureKind.SessionNotFound && session.CliSessionId is not null)
             {
                 // El CLI ya no tiene esta conversación (se borró su historial, o el chat viene de otra
@@ -472,8 +511,8 @@ public sealed partial class AssistantViewModel
                 lock (buffer) buffer.Clear();
                 var lastUser = session.Messages.FindLastIndex(m => m.Role == AiChatRole.User);
                 var history = session.Messages.Take(Math.Max(0, lastUser)).ToList();
-                var recovery = AiPromptBuilder.BuildRecoveryPrompt(history, prompt, RecoveryHistoryChars);
-                result = await _cli.RunTurnAsync(new ClaudeTurnRequest(recovery, systemPrompt, null, model),
+                var recovery = AiPromptBuilder.BuildRecoveryPrompt(history, turnPrompt, RecoveryHistoryChars);
+                result = await _cli.RunTurnAsync(new ClaudeTurnRequest(recovery, systemPrompt, null, model, toolAccess, activitySignal),
                     OnEvent, cancellation.Token);
             }
         }
@@ -481,8 +520,17 @@ public sealed partial class AssistantViewModel
         {
             result = null;
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Net.Sockets.SocketException)
+        {
+            LogService.Warning("No se pudo preparar el turno del asistente", ex);
+            result = new ClaudeTurnResult(string.Empty, null, ClaudeFailureKind.Failed);
+        }
         finally
         {
+            // El token del turno deja de valer aquí: un CLI que siguiera vivo ya no puede tocar nada.
+            if (toolAccess is not null) _vaultTools!.Unregister(toolAccess.BearerToken);
+            bubble.PendingApproval?.Cancel();
+            bubble.PendingApproval = null;
             _turnCancellation = null;
             bubble.IsStreaming = false;
             IsSending = false;
@@ -494,7 +542,8 @@ public sealed partial class AssistantViewModel
         if (result is { Succeeded: true })
         {
             bubble.Text = result.Text.Length > 0 ? result.Text : partial;
-            if (bubble.HasText)
+            // Una respuesta que solo actuó (sin texto) también es una respuesta: sus acciones son lo que cuenta.
+            if (bubble.HasText || bubble.HasActivities)
             {
                 session.CliSessionId = result.SessionId ?? session.CliSessionId;
                 session.Messages.Add(assistant);
@@ -508,9 +557,9 @@ public sealed partial class AssistantViewModel
                 LocalizationService.Instance["Assistant_Error_EmptyResponse"]);
         }
 
-        // Cancelado o fallido: lo que llegara se conserva marcado como interrumpido; si no llegó nada, la
-        // burbuja vacía se retira.
-        if (partial.Length > 0)
+        // Cancelado o fallido: lo que llegara —texto o acciones ya hechas en el vault— se conserva marcado como
+        // interrumpido; si no llegó nada, la burbuja vacía se retira.
+        if (partial.Length > 0 || bubble.HasActivities)
         {
             bubble.Text = partial;
             bubble.IsInterrupted = true;
@@ -531,6 +580,52 @@ public sealed partial class AssistantViewModel
             if (result.Failure is ClaudeFailureKind.SignedOut or ClaudeFailureKind.NotInstalled) _ = Cli.RefreshAsync();
         }
         FinishTurn();
+    }
+
+    /// <summary>Da de alta el turno en el servidor del vault con el ámbito del chat. Las acciones y las
+    /// confirmaciones llegan desde el hilo en que se ejecutan las herramientas y se pintan en la burbuja.</summary>
+    private ClaudeToolAccess RegisterTurnTools(AiChatSession session, AiChatMessageViewModel bubble, CliActivitySignal activity,
+        CancellationToken cancellation) =>
+        _vaultTools!.Register(new AiToolContext
+        {
+            Scope = new AiAccessScope(session.SessionId, session.FullVaultAccess),
+            ActivityReported = reported => _dispatch(() =>
+            {
+                bubble.ReportActivity(reported);
+                ScrollToEndRequested?.Invoke();
+            }),
+            ApprovalRequested = (request, token) => RequestApprovalAsync(bubble, request, token),
+            Activity = activity,
+            Cancellation = cancellation
+        });
+
+    /// <summary>Enseña la tarjeta de confirmación en la respuesta en curso y espera a que el usuario decida. Si
+    /// no está mirando el Asistente, se le avisa: el turno queda parado hasta entonces.</summary>
+    private async Task<bool> RequestApprovalAsync(AiChatMessageViewModel bubble, AiApprovalRequest request, CancellationToken cancellation)
+    {
+        var approval = new AiApprovalViewModel(request);
+        _dispatch(() =>
+        {
+            bubble.PendingApproval = approval;
+            ScrollToEndRequested?.Invoke();
+            if (!_isVisible())
+                _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_ApprovalPending_Title"),
+                    request.Title, NotificationSeverity.Warning);
+        });
+        using (cancellation.Register(approval.Cancel))
+        {
+            try
+            {
+                return await approval.Decision;
+            }
+            finally
+            {
+                _dispatch(() =>
+                {
+                    if (bubble.PendingApproval == approval) bubble.PendingApproval = null;
+                });
+            }
+        }
     }
 
     private void FinishTurn()

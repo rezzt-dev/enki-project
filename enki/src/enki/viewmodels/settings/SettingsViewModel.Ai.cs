@@ -51,6 +51,9 @@ public sealed partial class SettingsViewModel
     private bool _aiConfirmBeforeSending;
 
     [ObservableProperty]
+    private bool _aiAllowVaultChanges;
+
+    [ObservableProperty]
     private bool _isClearAiHistoryConfirmOpen;
 
     /// <summary>La tarjeta de estado del CLI solo se enseña con la IA encendida: apagada, Enki no ejecuta
@@ -94,6 +97,7 @@ public sealed partial class SettingsViewModel
             AiIdleTimeoutSeconds = ai.IdleTimeoutSeconds;
             AiMaxContextChars = ai.MaxContextChars;
             AiConfirmBeforeSending = ai.ConfirmBeforeSendingContext;
+            AiAllowVaultChanges = ai.AllowVaultChanges;
         }
         finally
         {
@@ -212,6 +216,15 @@ public sealed partial class SettingsViewModel
     {
         if (_loadingAiSettings) return;
         _settingsService.Settings.Ai.ConfirmBeforeSendingContext = value;
+        _settingsService.Save();
+    }
+
+    /// <summary>Se aplica en caliente: el servidor del vault lo lee en cada llamada, así que apagarlo a mitad
+    /// de una respuesta ya impide la siguiente acción que cambie algo.</summary>
+    partial void OnAiAllowVaultChangesChanged(bool value)
+    {
+        if (_loadingAiSettings) return;
+        _settingsService.Settings.Ai.AllowVaultChanges = value;
         _settingsService.Save();
     }
 

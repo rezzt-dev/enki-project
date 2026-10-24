@@ -26,6 +26,24 @@ internal sealed class CliProcessStartInfo
 
     /// <summary>Variables de entorno heredadas que no deben llegar al proceso hijo.</summary>
     public Func<string, bool>? ExcludeEnvironmentVariable { get; init; }
+
+    /// <summary>Variables que se fijan en el proceso hijo, por encima de las heredadas.</summary>
+    public IReadOnlyDictionary<string, string>? EnvironmentOverrides { get; init; }
+
+    /// <summary>Actividad que ocurre fuera de stdout/stderr y que también cuenta para
+    /// <see cref="IdleTimeout"/>: mientras Enki ejecuta una herramienta que el CLI le pidió, o espera a que
+    /// el usuario confirme una, el CLI no escribe nada, pero no está colgado.</summary>
+    public CliActivitySignal? Activity { get; init; }
+}
+
+/// <summary>Avisa a <see cref="CliProcessRunner"/> de que el proceso sigue vivo aunque no escriba nada. La
+/// crea quien lanza el turno y la comparte con quien atiende al CLI por otro canal (el servidor MCP del
+/// vault, ver <see cref="EnkiMcpServer"/>).</summary>
+public sealed class CliActivitySignal
+{
+    internal event Action? Touched;
+
+    public void Touch() => Touched?.Invoke();
 }
 
 /// <param name="ExitCode">Código de salida; <c>-1</c> si hubo que matar el proceso por inactividad.</param>
@@ -58,9 +76,17 @@ internal static class CliProcessRunner
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, idle.Token);
         void Touch()
         {
-            if (info.IdleTimeout is { } timeout && !idle.IsCancellationRequested) idle.CancelAfter(timeout);
+            try
+            {
+                if (info.IdleTimeout is { } timeout && !idle.IsCancellationRequested) idle.CancelAfter(timeout);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Una señal externa que llega justo cuando el proceso ya terminó: no queda nada que prolongar.
+            }
         }
         Touch();
+        if (info.Activity is { } activity) activity.Touched += Touch;
 
         var stderr = new StringBuilder();
         var stderrTask = Task.Run(async () =>
@@ -115,6 +141,11 @@ internal static class CliProcessRunner
             Kill(process);
             throw;
         }
+        finally
+        {
+            // Antes de que se libere el temporizador: una herramienta que termina tarde no debe tocarlo ya.
+            if (info.Activity is { } signal) signal.Touched -= Touch;
+        }
     }
 
     /// <summary>Atajo para órdenes cortas (<c>--version</c>, <c>--help</c>, estado de sesión): devuelve la
@@ -145,6 +176,8 @@ internal static class CliProcessRunner
         if (info.ExcludeEnvironmentVariable is { } exclude)
             foreach (var key in startInfo.Environment.Keys.Where(exclude).ToList())
                 startInfo.Environment.Remove(key);
+        if (info.EnvironmentOverrides is { } overrides)
+            foreach (var (key, value) in overrides) startInfo.Environment[key] = value;
         return startInfo;
     }
 

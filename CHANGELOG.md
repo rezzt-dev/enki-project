@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- herramientas del asistente sobre notas, sesiones, carpetas, archivos, Kanban, Polar, recordatorios, agenda y papelera; ámbitos por chat, modo de solo lectura, actividad persistida y confirmación para acciones irreversibles, con escrituras comprobadas e integración MCP local autenticada.
+- catálogo operativo de herramientas del vault en `AiVaultToolbox` y servidor MCP local en `EnkiMcpServer`, con 52 acciones sobre notas, archivos, sesiones, Kanban, Polar, recordatorios, agenda y papelera usando las entidades y servicios existentes.
+- selector de ámbito por conversación para trabajar en el vault o en una sesión, acceso ampliado opcional, apertura de chats desde Sesiones y resumen visible del alcance bajo el compositor.
+- actividad persistida en cada respuesta del asistente, destinos navegables para notas y tarjetas, tarjetas de aprobación para borrados permanentes y para sacar contenido de sesiones protegidas, y estados de denegación, error y cancelación.
 - guía de sincronización privada del almacén en `.docs/project-info/sincronizacion-privada-notas.md`, con instrucciones para Syncthing, iCloud Drive y Google Drive, trabajo sin conexión y resolución de conflictos.
 - consulta integrada de la guía en `ajustes > vault y archivos`, con despliegue dentro de la pantalla, búsqueda por proveedor y contenido, y traducciones en los siete recursos de idioma.
 - filtro de intervalos por una propiedad de fecha del frontmatter, como `due`, y opción de coincidencia exacta para valores de estado u otras propiedades.
@@ -56,6 +60,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - documentación del módulo en `.docs/project-info/asistente-ia.md`, sección 8.9 del checklist de qa manual y pruebas de servicio, viewmodel e interfaz contra un cli de claude simulado.
 
 #### CAMBIOS
+- conectar las escrituras de las herramientas del asistente con `VaultService.WriteContentChecked`, el historial `NoteVersionTrigger.Assistant`, la preparación de pestañas abiertas y la propagación de cambios a Notas, Archivos, Kanban, Sesiones, Papelera y Calendario.
+- restringir el transporte MCP a `127.0.0.1` con puerto efímero, token de turno, validación de `Host` y `Origin`, configuración estricta de herramientas del CLI y revocación automática al terminar, cancelar o cambiar de vault.
+- ampliar `AiSettings` con `AllowVaultChanges` para activar el modo de solo lectura en caliente y exigir que el ámbito, las sesiones protegidas, las rutas internas y los enlaces simbólicos se validen en cada llamada.
+- actualizar las traducciones de los siete recursos de idioma, la documentación viva del asistente, el checklist de QA y las acciones de Sesiones y Ajustes para reflejar las herramientas y sus límites.
+- ampliar las pruebas de `ClaudeCliService`, `AssistantViewModel` y `AssistantViewUiTests` y añadir `AiVaultToolboxTests` para cubrir ámbitos, conflictos, permisos, papelera, cancelación, MCP y estados visuales.
 - documentar en `README.md`, `README.en.md` y `cambios-externos-en-el-vault.md` el flujo recomendado para sincronizar el almacén completo, conservar una copia de seguridad y gestionar los conflictos externos sin duplicar datos.
 - ampliar `NoteQuery` y `NoteQueryService` para persistir y evaluar la propiedad de fecha y la coincidencia exacta sin cambiar el comportamiento de las consultas existentes por defecto.
 - conservar el formato de saltos de línea original al editar o eliminar propiedades mediante `NotePropertyHelper`, incluidas las notas importadas con `CRLF`.
@@ -122,6 +131,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - añadir `Assistant` al orden por defecto de la barra lateral, a las secciones de ajustes y a la navegación del shell, y referenciar `.docs/project-info/asistente-ia.md` en `AGENTS.md`.
 
 #### CORREGIDO
+- impedir que una nota truncada autorice un reemplazo completo, que una edición parcial cambie `CRLF`, que una pestaña con cambios pendientes sea sobrescrita o que una ruta fuera del ámbito revele contenido vinculado.
+- evitar que llamadas MCP pendientes actúen después de cancelar el turno, revocar el token o desactivar los cambios del vault, y excluir enlaces simbólicos de la enumeración de sesiones y rutas del asistente.
 - impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
 - mantener la comprobación de conflictos externos y de sesiones bloqueadas al guardar propiedades desde el editor, igual que en el contenido Markdown y las etiquetas.
 - validar el ámbito del gestor de carpetas y rechazar movimientos dentro de la propia carpeta o de sus descendientes para evitar salir de la raíz activa o crear ciclos.
@@ -149,6 +160,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- assistant tools for notes, sessions, folders, files, Kanban, Polar, reminders, agenda and trash; per-chat scopes, read-only mode, persisted activity and confirmation for irreversible actions, with checked writes and authenticated local MCP integration.
+- an operational vault tool catalogue in `AiVaultToolbox` and a local MCP server in `EnkiMcpServer`, with 52 actions for notes, files, sessions, Kanban, Polar, reminders, agenda and trash using the existing entities and services.
+- a per-conversation scope selector for the vault or a session, optional expanded access, chat opening from Sessions, and a visible scope summary below the composer.
+- persisted activity for every assistant response, navigable note and card targets, approval cards for permanent deletion and protected-session transfers, and denied, error and cancellation states.
 - a private vault sync guide in `.docs/project-info/sincronizacion-privada-notas.md` covering Syncthing, iCloud Drive, Google Drive, offline access and conflict handling.
 - an integrated guide under `settings > vault and files`, expandable inside the settings screen, searchable by provider and content, and translated across all seven language resources.
 - frontmatter date-property range filtering, such as `due`, and an exact-match option for status and other property values.
@@ -195,6 +210,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - module documentation in `.docs/project-info/asistente-ia.md`, section 8.9 of the manual qa checklist, and service, viewmodel and ui tests against a simulated claude cli.
 
 #### CHANGED
+- connect assistant tool writes to `VaultService.WriteContentChecked`, `NoteVersionTrigger.Assistant`, open-tab preparation and change propagation across Notes, Files, Kanban, Sessions, Trash and Calendar.
+- restrict MCP transport to `127.0.0.1` with an ephemeral port, per-turn token, `Host` and `Origin` validation, strict CLI tool configuration and automatic revocation when a turn ends, is cancelled or the vault changes.
+- extend `AiSettings` with `AllowVaultChanges` for hot read-only mode and validate scope, protected sessions, internal paths and symbolic links on every call.
+- update all seven language resources, the living assistant documentation, the QA checklist and Sessions and Settings actions to describe the tools and their limits.
+- extend `ClaudeCliService`, `AssistantViewModel` and `AssistantViewUiTests` coverage and add `AiVaultToolboxTests` for scopes, conflicts, permissions, trash, cancellation, MCP and visual states.
 - document the recommended workflow in `README.md`, `README.en.md` and `cambios-externos-en-el-vault.md` for syncing the complete vault, keeping a backup and handling external conflicts without duplicating data.
 - extend `NoteQuery` and `NoteQueryService` to persist and evaluate the date property and exact matching while keeping existing queries partial by default.
 - preserve the original line-ending format when `NotePropertyHelper` edits or removes properties, including imported notes using `CRLF`.
@@ -260,6 +280,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add `Assistant` to the default sidebar order, the settings sections and the shell navigation, and reference `.docs/project-info/asistente-ia.md` in `AGENTS.md`.
 
 #### FIXED
+- prevent truncated notes from authorising full replacement, partial edits from changing `CRLF`, pending editor changes from being overwritten, or out-of-scope linked paths from revealing content.
+- prevent pending MCP calls from acting after turn cancellation, token revocation or disabling vault changes, and exclude symbolic links from assistant session and path enumeration.
 - prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.
 - keep external-change and locked-session checks active when properties are saved from the editor, matching Markdown content and tag writes.
 - validate the folder manager's scope and reject moves into the source folder or its descendants to prevent leaving the active root or creating cycles.

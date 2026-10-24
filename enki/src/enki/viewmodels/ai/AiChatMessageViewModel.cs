@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using enki.Localization;
@@ -17,6 +18,13 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
         Model = model;
         _text = model.Text;
         Attachments = model.Attachments.Select(a => new AiAttachmentChipViewModel(a)).ToList();
+        foreach (var activity in model.Activities) Activities.Add(new AiToolActivityViewModel(activity));
+        Activities.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasActivities));
+            OnPropertyChanged(nameof(IsThinking));
+            OnPropertyChanged(nameof(ActivitiesLabel));
+        };
     }
 
     public AiChatMessage Model { get; }
@@ -36,8 +44,38 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanAct), nameof(IsThinking))]
     private bool _isStreaming;
 
-    /// <summary>Hay una respuesta en camino pero aún no ha llegado ni una palabra.</summary>
-    public bool IsThinking => IsStreaming && !HasText;
+    /// <summary>Hay una respuesta en camino pero aún no ha llegado ni una palabra ni ninguna acción.</summary>
+    public bool IsThinking => IsStreaming && !HasText && Activities.Count == 0;
+
+    // ===================== Acciones en el vault =====================
+
+    /// <summary>Lo que el asistente hizo en el vault durante esta respuesta, en orden.</summary>
+    public ObservableCollection<AiToolActivityViewModel> Activities { get; } = [];
+
+    public bool HasActivities => Activities.Count > 0;
+
+    public string ActivitiesLabel => Plural.Get("Assistant_Activity_Count", Activities.Count, Activities.Count);
+
+    /// <summary>Acción que espera la confirmación del usuario, si la hay.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingApproval))]
+    private AiApprovalViewModel? _pendingApproval;
+
+    public bool HasPendingApproval => PendingApproval is not null;
+
+    /// <summary>Añade o refresca la fila de una acción. El servidor del vault avisa con la misma instancia al
+    /// empezar y al terminar, así que una segunda llamada solo actualiza la fila existente.</summary>
+    public void ReportActivity(AiToolActivity activity)
+    {
+        var existing = Activities.FirstOrDefault(a => ReferenceEquals(a.Model, activity));
+        if (existing is not null)
+        {
+            existing.Refresh();
+            return;
+        }
+        if (!Model.Activities.Contains(activity)) Model.Activities.Add(activity);
+        Activities.Add(new AiToolActivityViewModel(activity));
+    }
 
     [ObservableProperty]
     private bool _isInterrupted;
@@ -64,6 +102,9 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
     public void RefreshLocalizedLabels()
     {
         OnPropertyChanged(nameof(TimeLabel));
+        OnPropertyChanged(nameof(ActivitiesLabel));
         foreach (var attachment in Attachments) attachment.RefreshLocalizedLabels();
+        foreach (var activity in Activities) activity.RefreshLocalizedLabels();
+        PendingApproval?.RefreshLocalizedLabels();
     }
 }
