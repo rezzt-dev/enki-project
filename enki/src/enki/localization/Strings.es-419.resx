@@ -7546,4 +7546,7 @@ Feliz escritura.</value>
   <data name="Assistant_Activity_Collapse" xml:space="preserve">
     <value>Plegar acciones</value>
   </data>
+  <data name="Assistant_Composer_Help" xml:space="preserve">
+    <value>Información del chat</value>
+  </data>
 </root>

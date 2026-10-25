@@ -53,6 +53,12 @@ public partial class AssistantComposerView : UserControl
             ComposerBox.CaretIndex = ComposerBox.Text?.Length ?? 0;
         }, DispatcherPriority.Input);
 
+    private void ComposerHelp_Click(object? sender, RoutedEventArgs e)
+    {
+        ComposerHelpPopup.IsOpen = !ComposerHelpPopup.IsOpen;
+        if (ComposerHelpPopup.IsOpen) ComposerHelpPopup.Child?.Focus();
+    }
+
     private void ComposerBox_KeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter || _subscribed is null) return;

@@ -23,6 +23,11 @@ lateral** que se abre junto a cualquier otra sección. El historial es **de cada
   se componen de los mismos controles: `AssistantTranscriptView` (puesta en marcha, hilo, bienvenida, error),
   `AssistantComposerView`, `AssistantScopeButton`, `AssistantModelControls` y `AssistantHistoryList`. El panel
   los marca con la clase `compact`. Los diálogos (`AssistantDialogs`) los monta una sola vez el shell.
+- El compositor reúne el texto, los adjuntos y la barra de acciones en un marco de borde recto, que
+  destaca al recibir el foco. Enviar o detener conserva su espacio a la derecha; las acciones auxiliares
+  pasan a otra línea cuando falta ancho. El botón de información abre al pulsarlo un popover con el
+  ámbito del chat, el aviso del proveedor y los atajos de teclado, sin ocupar altura bajo el compositor.
+  Se cierra pulsando fuera, de nuevo en el botón o con Escape.
 - El panel vive en la columna derecha de `ShellView`, con ancho ajustable (`AiSettings.PanelWidth`,
   340–720 px). Su vista y los diálogos se construyen la primera vez que hacen falta, para no encarecer el
   arranque con la IA apagada.

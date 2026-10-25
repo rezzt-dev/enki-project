@@ -7547,4 +7547,7 @@ Happy writing.</value>
   <data name="Assistant_Activity_Collapse" xml:space="preserve">
     <value>Hide actions</value>
   </data>
+  <data name="Assistant_Composer_Help" xml:space="preserve">
+    <value>Chat information</value>
+  </data>
 </root>

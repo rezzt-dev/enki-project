@@ -156,6 +156,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - eliminar el duplicado `.docs/kanban-multiples-tableros.md` y conservar `.docs/project-info/kanban-multiples-tableros.md` como unica referencia del modulo.
 - guardar las preferencias del asistente (`AiSettings`) como clave de instalación en `SettingsService`, fuera del vault, para que la ruta del cli, el consentimiento y el historial no viajen con la sincronización a otro equipo.
 - añadir `Assistant` al orden por defecto de la barra lateral, a las secciones de ajustes y a la navegación del shell, y referenciar `.docs/project-info/asistente-ia.md` en `AGENTS.md`.
+- reorganizar el compositor del asistente en una superficie única para agrupar borrador, adjuntos y acciones, mejorar el contraste y la adaptación del panel lateral, y trasladar el ámbito, el aviso del proveedor y los atajos a un popover de ayuda bajo demanda mediante el botón de información; traducirlo en los siete recursos de idioma.
 
 #### CORREGIDO
 - corregir la selección de texto en `SelectableTextBlock` para aplicar simultáneamente `SelectionBackgroundBrush` y `SelectionForegroundBrush` en mensajes Markdown, enlaces, listas, tablas y código, también al cambiar de tema.
@@ -334,6 +335,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - remove the duplicate `.docs/kanban-multiples-tableros.md` and keep `.docs/project-info/kanban-multiples-tableros.md` as the single reference for the module.
 - store the assistant preferences (`AiSettings`) as an install-level key in `SettingsService`, outside the vault, so the cli path, consent and history never travel to another machine through sync.
 - add `Assistant` to the default sidebar order, the settings sections and the shell navigation, and reference `.docs/project-info/asistente-ia.md` in `AGENTS.md`.
+- reorganise the assistant composer into one surface for the draft, attachments and actions, improve contrast and compact-panel adaptation, and move scope, provider notice and keyboard shortcuts into an on-demand help popover opened by the information button; translate it across all seven language resources.
 
 #### FIXED
 - fix `SelectableTextBlock` text selection by applying both `SelectionBackgroundBrush` and `SelectionForegroundBrush` to Markdown messages, links, lists, tables and code, including live theme changes.
