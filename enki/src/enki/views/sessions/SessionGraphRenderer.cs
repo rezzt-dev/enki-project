@@ -14,37 +14,31 @@ using enki.Services;
 namespace enki.Views.Sessions;
 
 /// <summary>
-/// Builds the self-contained HTML document that hosts the session graph — a 2D network of notes-as-nodes.
-/// Renders with the vendored <c>sigma.js v1</c> Canvas 2D renderer (MIT, see <c>assets/js/sigma.LICENSE.txt</c>)
-/// for drawing, plus a standalone <c>d3-force v3</c> build (ISC, see
-/// <c>assets/js/d3-force-standalone.LICENSE.txt</c>) for the physics layout — sigma v1 has no force layout of
-/// its own, unlike the <c>force-graph</c> bundle this replaced, which packaged d3-force internally. This is a
-/// deliberate architecture choice ("Option B" from the migration handoff, see
-/// <c>docs/agent-docs/sigma-js-graph-migration.md</c>): vendor d3-force on its own and keep sigma purely as the
-/// renderer, rather than porting <c>sessionClusterForce</c> against sigma's separate forceAtlas2 plugin — this
-/// is the lower-risk port since it keeps the exact same tuned physics model (charge, link, custom session
-/// clustering, alpha cooling) the app already had, just swapping the paint layer underneath it.
+/// Builds the self-contained HTML document that hosts the session graph: one shared 3D scene in which every
+/// session is a volumetric sphere of notes that rotates on its own axis.
 ///
-/// Both bundles are Canvas 2D only, never the WebGL renderer sigma also ships (optionally) — this app's Linux
-/// WebView backend (WPE) only implements software (Shm) compositing; GPU rendering modes throw
-/// <c>NotImplementedException</c>. That's why the app moved off the WebGL-based <c>3d-force-graph</c> in the
-/// first place, and it's exactly as true for sigma's WebGL renderer, so it's never loaded here.
+/// <para>The scene is rendered by a small dedicated 3D engine on Canvas 2D (real X/Y/Z coordinates, per-sphere
+/// rotation matrices, perspective projection, depth-sorted painting and shaded sphere impostors), not by
+/// WebGL/Three.js. That is a hard platform constraint, re-verified for this rewrite against the
+/// <c>Avalonia.Controls.WebView</c> 12.1.0 assembly the app ships: on Linux the WPE backend only implements
+/// software (Shm) compositing ("EGL rendering mode is not implemented"), so a WebGL context cannot present
+/// anything there — which is exactly why the app had already moved off <c>3d-force-graph</c>. One engine that
+/// works on WebView2, WKWebView and WPE alike keeps a single code path instead of a WebGL renderer plus a
+/// Canvas fallback (see <c>.docs/project-info/grafo-sesiones-3d.md</c>).</para>
 ///
-/// Both bundles are inlined directly into <c>&lt;script&gt;</c> tags rather than referenced via a
-/// <c>file://</c> <c>src</c>: this document is loaded with <c>NavigateToString</c> and no base URL, and every
-/// native WebView engine (WebView2, WKWebView, WPE) refuses to load local <c>file://</c> resources from a
-/// document with no base URL/local origin.
+/// <para>The layout is not computed here: <see cref="SessionSphereLayout"/> builds it once in C# and both this
+/// document and <see cref="NativeSessionGraph"/> consume the same <see cref="SessionSphereScene"/>, so the web
+/// and native renderers always show identical geometry. Rotation only changes each sphere's transform; it
+/// never re-runs the layout nor touches the data.</para>
+///
+/// <para>Everything is inlined (no <c>file://</c> or network resources): the document is loaded with
+/// <c>NavigateToString</c> and no base URL, and every native WebView engine refuses local resources there.</para>
 /// </summary>
 public static class SessionGraphRenderer
 {
-    // IncludeFields is required here: GraphTheme is a plain-field class (no { get; set; } properties), and
-    // System.Text.Json only serializes public *properties* by default — without this, Serialize(theme, ...)
-    // silently produces "{}", every THEME.xxx read in the JS below is undefined, and Canvas2D quietly
-    // ignores an invalid fillStyle/strokeStyle assignment and keeps its default black — so nodes and links
-    // rendered pure black on the dark background, indistinguishable from the graph not rendering at all.
-    // CamelCase is required too: the fields are PascalCase (Background, NodeActive, ...) but the JS reads
-    // camelCase (THEME.background, THEME.nodeActive, ...); BuildPayload's anonymous node/link objects
-    // already use lowercase property names, so this policy is a no-op for them.
+    // IncludeFields: GraphTheme is a plain-field class, and System.Text.Json only serializes public properties
+    // by default — without it the theme serializes as "{}" and every THEME.xxx read in the JS is undefined.
+    // CamelCase: the fields are PascalCase but the JS reads camelCase.
     private static readonly JsonSerializerOptions DataJsonOptions = new()
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -52,33 +46,31 @@ public static class SessionGraphRenderer
         IncludeFields = true
     };
 
-    public static string RenderDocument(SessionGraph graph, bool subtleAnimations = false)
+    /// <param name="rotationExplicit">Whether <paramref name="rotationEnabled"/> is a saved user choice. When it
+    /// is not, the document honours the operating system's reduced-motion preference and reports it back.</param>
+    internal static string RenderDocument(SessionGraph graph, SessionSphereScene scene, bool subtleAnimations = false,
+        bool rotationEnabled = true, bool rotationExplicit = true)
     {
-        var sigmaScript = VendoredScripts.Get("sigma.min.js");
-        var d3ForceScript = VendoredScripts.Get("d3-force-standalone.min.js");
         var theme = GraphTheme.FromApp();
-        // A note title, session name or path that happens to contain the literal substring "</script"
-        // (e.g. a note about HTML/JS) would otherwise close this document's <script> tag early the same
-        // way an un-escaped vendored bundle would (see VendoredScripts.Get's identical guard) — confirmed
-        // by rendering a payload with such a title in a real browser: the tag closes mid-JSON, the rest of
-        // the document prints as literal page text, and the following <script> block fails to parse at
-        // all ("Invalid or unexpected token"), so the graph never loads. Unlike the vendored bundles,
-        // nothing upstream already guards these two since they're built fresh from user data on every call.
-        var dataJson = JsonSerializer.Serialize(BuildPayload(graph), DataJsonOptions)
+        // A note title, session name or tag containing the literal "</script" would otherwise close this
+        // document's <script> tag early (the rest prints as page text and the graph never loads).
+        var dataJson = JsonSerializer.Serialize(BuildPayload(graph, scene), DataJsonOptions)
             .Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
         var themeJson = JsonSerializer.Serialize(theme, DataJsonOptions)
             .Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
-        // Embed the app's own display font as a base64 data URI so the WebView's canvas uses the same
-        // typeface the Avalonia UI does — without this @font-face declaration, the WebView falls back to
-        // whatever system font WPE/GTK provides, which has poor legibility for certain glyphs (e.g. the
-        // uppercase "I" and other thin-stemmed letters like A/L/T/H/N that the user reported as broken).
-        // Only Space Grotesk is embedded: it's the title font (69 KB — well under any data-URI limit an
-        // embedded WebKit build might impose), and the JetBrains Mono "Nerd Font" bundle the app carries
-        // is 2.5 MB, whose base64 form (~3.4 MB) would bloat every render and risks silently dropping the
-        // whole @font-face rule on constrained WebViews. The mono eyebrow/counter glyphs are basic Latin
-        // (SESIÓN / 34 NOTAS), which the system monospace fallback renders perfectly legibly. The URI is
-        // quoted and declared as font/ttf — the MIME WebKitGTK accepts most reliably.
+        var configJson = JsonSerializer.Serialize(new
+        {
+            rotationSpeed = SessionSphereParameters.RotationSpeed,
+            axisTilt = SessionSphereParameters.AxisTilt,
+            maxPitch = SessionSphereParameters.MaxPitch,
+            perspective = SessionSphereParameters.PerspectiveDepth,
+            manualRotation = SessionSphereParameters.ManualRotationPerPixel
+        }, DataJsonOptions);
+        // The app's own display font as a data URI, so canvas text matches the Avalonia UI instead of the
+        // WPE/GTK system fallback (poor legibility for thin-stemmed capitals). Only Space Grotesk (69 KB):
+        // the JetBrains Mono Nerd Font bundle is 2.5 MB and would bloat every render.
         var spaceGroteskUri = EmbeddedFonts.DataUri("SpaceGrotesk-Bold.ttf");
+        static string Js(bool value) => value ? "true" : "false";
 
         return $$"""
                 <!doctype html>
@@ -88,113 +80,67 @@ public static class SessionGraphRenderer
                 <style>
                   @font-face { font-family: 'Space Grotesk'; src: url("{{spaceGroteskUri}}") format('truetype'); font-weight: 700; font-style: normal; }
                   html, body { margin: 0; padding: 0; overflow: hidden; background: {{theme.Background}}; }
-                  #graph { position: relative; width: 100vw; height: 100vh; cursor: grab; }
+                  #graph { position: relative; width: 100vw; height: 100vh; cursor: grab; outline: none; touch-action: none; }
                   #graph.node-hover { cursor: pointer; }
-                  #graph.pointer-active,
-                  #graph.dragging-node { cursor: grabbing; }
-                  #graph canvas, #graph > div { position: absolute; inset: 0; width: 100%; height: 100%; }
-                  #graph-overlay { pointer-events: none; }
+                  #graph.sphere-hover { cursor: move; }
+                  #graph.pointer-active { cursor: grabbing; }
+                  #graph canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
                   .enki-graph-tooltip {
-                    position: fixed;
-                    z-index: 20;
-                    pointer-events: none;
-                    max-width: min(360px, calc(100vw - 32px));
-                    overflow-wrap: anywhere;
-                    font-family: 'JetBrains Mono', ui-monospace, monospace;
-                    font-size: 10.5px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.08em;
-                    background: {{theme.TooltipBackground}};
-                    color: {{theme.TooltipForeground}};
-                    border: 1px solid {{theme.TooltipBorder}};
-                    padding: 7px 11px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                    display: none;
-                    white-space: normal;
+                    position: fixed; z-index: 20; pointer-events: none; display: none; white-space: normal;
+                    max-width: min(360px, calc(100vw - 32px)); overflow-wrap: anywhere;
+                    font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px;
+                    text-transform: uppercase; letter-spacing: 0.08em;
+                    background: {{theme.TooltipBackground}}; color: {{theme.TooltipForeground}};
+                    border: 1px solid {{theme.TooltipBorder}}; padding: 7px 11px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
                   }
                 </style>
-                <script>{{sigmaScript}}</script>
-                <script>{{d3ForceScript}}</script>
                 </head>
                 <body>
-                <div id="graph"></div>
+                <div id="graph" tabindex="0"></div>
                 <script>
                 (function () {
-                  const DATA = {{dataJson}};
+                  'use strict';
+                  const CONFIG = {{configJson}};
                   const THEME = {{themeJson}};
-                  // Kick the embedded Space Grotesk @font-face into loading before the first frame is
-                  // drawn. WebKit canvas text only switches to a webfont once it has actually been fetched
-                  // and registered (via document.fonts), so without this the first however-many frames —
-                  // and on slow embedded WebViews potentially the whole session — would paint the card
-                  // titles with the system fallback that renders thin-stemmed glyphs (I, A, L, T, H, N)
-                  // poorly. The render loop redraws every frame anyway, so even a late load self-heals;
-                  // this just makes it immediate. document.fonts is missing only on ancient engines, in
-                  // which case the @font-face still applies once the stylesheet is processed.
-                  if (document.fonts && document.fonts.load) {
-                    document.fonts.load("700 16px 'Space Grotesk'");
-                  }
-                  // Which note (if any) is the first pick of a pending link pair — purely a visual cue
-                  // (the pulse ring drawn in drawOverlays below). The host decides whether a click opens a
-                  // note or picks/completes a link (see SessionsViewModel.HandleNodeClicked); this page just
-                  // reports every click as-is and, best-effort, mirrors the host's pending pick back here
-                  // for the pulse via __enkiSetPendingLink so the click logic never has to trust that a
-                  // fire-and-forget InvokeScript call actually landed.
-                  let pendingLinkNode = null;
-                  let hoverNode = null;
-                  let display = { mesh: true, labels: true, nodeSize: 1, linkThickness: 1 };
-                  const positionCache = new Map();
-                  let neighbors = new Map();
-                  function rebuildNeighbors() {
-                    neighbors = new Map(nodes.map(function (n) { return [n.id, new Set()]; }));
-                    sigmaEdges.forEach(function (e) {
-                      if (!neighbors.has(e.source) || !neighbors.has(e.target)) return;
-                      neighbors.get(e.source).add(e.target);
-                      neighbors.get(e.target).add(e.source);
-                    });
-                    applyNodeVisualState();
-                  }
-                  function emphasized(id) {
-                    return !hoverNode || hoverNode.id === id ||
-                      (neighbors.has(hoverNode.id) && neighbors.get(hoverNode.id).has(id));
-                  }
-                  let rejectFlash = null; // { from, to, until, duration } — brief error pulse when a link is refused
+                  const INITIAL = {{dataJson}};
 
-                  const NODE_REL_SIZE = 5;
-                  const PENDING_VAL = 2.6;
-                  // How much bigger a node's *clickable* area is than its drawn radius, and (see below) the
-                  // radius used for hover/tooltip lookups too. Both click and drag resolution here work by
-                  // finding the nearest node to the pointer in graph space (see nearestNodeWithin) rather
-                  // than trusting any hover-cache — see the big comment above the pointerdown listener for
-                  // why, and HIT_AREA_MULTIPLIER just keeps that generous instead of pixel-exact so a
-                  // slightly-off click still lands.
-                  const HIT_AREA_MULTIPLIER = 3.5;
-                  const MIN_HIT_RADIUS_PX = 11;
-                  // En una vista global el encuadre puede reducir mucho los radios de mundo. Este suelo
-                  // conserva la lectura de los nodos como puntos de color y no altera sus coordenadas ni el
-                  // entramado que da forma al grupo.
-                  const MIN_NODE_SCREEN_RADIUS = 3;
-
-                  // Los nombres de sesión son discretos y no escalan hasta tapar sus notas.
-                  const LABEL_MIN_NOTES = 2;
-                  let dirty = true;
-                  let isDraggingNode = false;
-                  let lastRotationTs = null;
-                  let nextFrameAt = 0;
-                  let subtleMotion = {{(subtleAnimations ? "true" : "false")}};
-                  window.setSubtleMotion = function (value) {
-                    subtleMotion = !!value;
-                    lastRotationTs = null;
-                    nextFrameAt = 0;
+                  // ===================== State =====================
+                  const state = {
+                    rotation: {{Js(rotationEnabled)}},
+                    rotationExplicit: {{Js(rotationExplicit)}},
+                    subtle: {{Js(subtleAnimations)}},
+                    display: { mesh: true, labels: true, nodeSize: 1, linkThickness: 1 },
+                    pendingLink: null,
+                    selectedSession: null,
+                    rejectFlash: null,      // { from, to, until, duration }
+                    hoverNode: -1,
+                    hoverSphere: null,
+                    sceneAppearStart: 0
                   };
-                  // Whether the next simulation 'end' should re-fit the camera to the whole scene (see the
-                  // simulation's 'end' handler) — true at load and after every graph-data update, cleared
-                  // after the first settle so a drag-release 'end' doesn't yank the view mid-interaction.
-                  let refitOnSettle = true;
+                  // Without a saved choice the operating system's reduced-motion preference decides: the
+                  // spheres start still and the host is told, so its toggle reflects the real state.
+                  if (!state.rotationExplicit && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    state.rotation = false;
+                    setTimeout(function () { post({ type: 'reducedMotion' }); }, 0);
+                  }
 
-                  // Avalonia.Controls.WebView injects window.invokeCSharpAction on every adapter (WebView2,
-                  // WKWebView, GTK/WPE) as the one cross-platform way to reach WebMessageReceived.Body on
-                  // the host side — the other paths below are only a defensive fallback in case a future
-                  // adapter changes that convention.
+                  const NODE_BASE_RADIUS = 4.2;   // world units, before degree/zoom/perspective
+                  const NODE_MAX_PX = 14;
+                  const NODE_MIN_PX = 2.2;
+                  const PENDING_SCALE = 1.5;
+                  const DEPTH_BUCKETS = 4;
+                  const MESH_ALPHA = 0.3;
+                  const APPEAR_MS = 420;
+                  const DRAG_THRESHOLD_PX = 6;
+                  const DOUBLE_CLICK_MS = 450;   // generous: event delivery can lag on the software WebView
+                  const HOVER_THROTTLE_MS = 32;
+                  const ZOOM_MIN = 0.03, ZOOM_MAX = 6, FIT_MAX = 2.5;
+                  // With the camera PERSPECTIVE radii away, the projected silhouette peaks at ~1.053 R; focus
+                  // rings and labels sit just outside it.
+                  const SILHOUETTE = 1.12;
+
+                  // Avalonia.Controls.WebView injects window.invokeCSharpAction on every adapter; the other
+                  // paths are a defensive fallback in case a future adapter changes that convention.
                   function post(message) {
                     const json = JSON.stringify(message);
                     try { if (typeof window.invokeCSharpAction === 'function') { window.invokeCSharpAction(json); return; } } catch (e) {}
@@ -203,1006 +149,675 @@ public static class SessionGraphRenderer
                     try { if (window.external && window.external.notify) { window.external.notify(json); return; } } catch (e) {}
                   }
 
-                  // ===================== DOM layers =====================
-                  // sigma only draws nodes/edges/labels into its own renderer container. Everything this page
-                  // draws *underneath* those (the session-affinity mesh, item 9 below) or *on top* of them
-                  // (particles, pulse rings, session-name labels) lives on two extra canvases stacked via
-                  // plain CSS z-order (see #graph canvas, #graph > div in the style block above) — cheaper
-                  // and far simpler than hooking into sigma's own per-node/edge draw calls, and it means
-                  // ordering is just DOM order, not something to get right inside a render callback.
+                  // ===================== Surface =====================
                   const el = document.getElementById('graph');
-
-                  const affinityCanvas = document.createElement('canvas');
-                  el.appendChild(affinityCanvas);
-                  const affinityCtx = affinityCanvas.getContext('2d');
-
-                  const sigmaHost = document.createElement('div');
-                  el.appendChild(sigmaHost);
-
-                  const overlayCanvas = document.createElement('canvas');
-                  overlayCanvas.id = 'graph-overlay';
-                  el.appendChild(overlayCanvas);
-                  const overlayCtx = overlayCanvas.getContext('2d');
-
+                  const canvas = document.createElement('canvas');
+                  el.appendChild(canvas);
+                  const ctx = canvas.getContext('2d');
                   const tooltipEl = document.createElement('div');
                   tooltipEl.className = 'enki-graph-tooltip';
                   document.body.appendChild(tooltipEl);
+                  const view = { width: 1, height: 1, dpr: 1 };
 
-                  function sizeOverlayCanvases() {
-                    dirty = true;
-                    const w = el.clientWidth || window.innerWidth;
-                    const h = el.clientHeight || window.innerHeight;
-                    const dpr = window.devicePixelRatio || 1;
-                    [affinityCanvas, overlayCanvas].forEach(function (c) {
-                      c.width = w * dpr;
-                      c.height = h * dpr;
-                      c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+                  function resize() {
+                    view.width = el.clientWidth || window.innerWidth || 1;
+                    view.height = el.clientHeight || window.innerHeight || 1;
+                    // Pixel ratio capped at 2: beyond that a software compositor pays 4x+ fill cost for
+                    // detail nobody can see on hairlines and small spheres.
+                    view.dpr = Math.min(2, window.devicePixelRatio || 1);
+                    canvas.width = Math.max(1, Math.round(view.width * view.dpr));
+                    canvas.height = Math.max(1, Math.round(view.height * view.dpr));
+                    invalidate();
+                  }
+                  if (typeof ResizeObserver === 'function') new ResizeObserver(resize).observe(el);
+                  else window.addEventListener('resize', resize);
+                  // A lost 2D context (GPU reset, memory pressure) only invalidates cached bitmaps.
+                  canvas.addEventListener('contextrestored', function () { sprites.clear(); invalidate(); });
+                  if (document.fonts && document.fonts.load) {
+                    document.fonts.load("700 16px 'Space Grotesk'").then(function () { invalidate(); }, function () {});
+                  }
+
+                  // ===================== Colour & sphere impostors =====================
+                  function parseColor(css) {
+                    if (typeof css !== 'string') return [255, 255, 255];
+                    const hex = /^#([0-9a-f]{6})$/i.exec(css.trim());
+                    if (hex) { const v = parseInt(hex[1], 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; }
+                    const m = /rgba?\(([^)]+)\)/i.exec(css);
+                    if (!m) return [255, 255, 255];
+                    const parts = m[1].split(',').map(function (p) { return parseFloat(p); });
+                    return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+                  }
+                  function mix(rgb, target, t) {
+                    return 'rgb(' + rgb.map(function (c) { return Math.round(c + (target - c) * t); }).join(',') + ')';
+                  }
+                  // Each note is drawn as a pre-shaded sphere impostor: one small bitmap per colour, lit by a
+                  // soft key light from the upper left with a discreet highlight and a darker rim. Lighting
+                  // lives in view space, so the bitmap stays correct at every rotation, and drawing a cached
+                  // bitmap is far cheaper on a software compositor than per-node gradients.
+                  const SPRITE_SIZE = 64;
+                  const sprites = new Map();
+                  function spriteFor(color) {
+                    let sprite = sprites.get(color);
+                    if (sprite) return sprite;
+                    sprite = document.createElement('canvas');
+                    sprite.width = sprite.height = SPRITE_SIZE;
+                    const g = sprite.getContext('2d');
+                    const c = SPRITE_SIZE / 2, r = c - 1;
+                    const rgb = parseColor(color);
+                    const gradient = g.createRadialGradient(c - r * 0.32, c - r * 0.36, r * 0.04, c, c, r);
+                    gradient.addColorStop(0, mix(rgb, 255, 0.62));
+                    gradient.addColorStop(0.18, mix(rgb, 255, 0.22));
+                    gradient.addColorStop(0.55, mix(rgb, 0, 0.04));
+                    gradient.addColorStop(0.9, mix(rgb, 0, 0.34));
+                    gradient.addColorStop(1, mix(rgb, 0, 0.5));
+                    g.fillStyle = gradient;
+                    g.beginPath();
+                    g.arc(c, c, r, 0, Math.PI * 2);
+                    g.fill();
+                    sprites.set(color, sprite);
+                    return sprite;
+                  }
+
+                  // ===================== Scene =====================
+                  // spheres: { id, name, color, cx, cy, r, yaw, pitch, phase, dragging }
+                  // nodes:   { id, label, sessionId, session, tags, color, lx, ly, lz, sphere, degree, appearAt }
+                  let spheres = [], sphereById = new Map();
+                  let nodes = [], nodeIndex = new Map();
+                  let links = [], mesh = [], neighbors = [];
+                  // Orientation survives data updates (filters, links, colours): no sphere ever snaps back.
+                  const orientations = new Map();
+                  let px = new Float32Array(0), py = new Float32Array(0), pr = new Float32Array(0), pd = new Float32Array(0);
+                  let drawOrder = new Int32Array(0);
+                  let sphereScreen = [];
+
+                  function loadScene(data, animateNew) {
+                    const now = performance.now();
+                    // New data mid-gesture (e.g. a note changed on disk) invalidates the indices a drag holds.
+                    if (drag && drag.sphere) drag.sphere.dragging = false;
+                    drag = null;
+                    const known = new Set(nodes.map(function (n) { return n.id; }));
+                    spheres = data.spheres.map(function (s) {
+                      let o = orientations.get(s.id);
+                      if (!o) { o = { yaw: s.phase, pitch: CONFIG.axisTilt }; orientations.set(s.id, o); }
+                      return { id: s.id, name: s.name, color: s.color, cx: s.x, cy: s.y, r: Math.max(1, s.r), orientation: o, dragging: false };
                     });
-                  }
-                  sizeOverlayCanvases();
-                  window.addEventListener('resize', sizeOverlayCanvases);
-
-                  // ===================== Renderizadores de nodos y aristas =====================
-                  // Las notas son discos planos: un solo relleno con el color asignado a su sesión, sin
-                  // degradado, volumen, brillo ni sombra. Además de responder a la petición visual, evita
-                  // crear sprites y ejecutar desenfoques en el WebView por software de Linux. La sensación
-                  // esférica del conjunto no depende del material del nodo: la conservan el layout de
-                  // fuerzas y la malla Delaunay dibujada detrás de las relaciones reales.
-                  function renderedNodeRadius(node, prefix) {
-                    return Math.min(14, Math.max(MIN_NODE_SCREEN_RADIUS * display.nodeSize, node[prefix + 'size'] || 0));
-                  }
-
-                  sigma.canvas.nodes.enkiCircle = function (node, context, settings) {
-                    const prefix = settings('prefix') || '';
-                    const x = node[prefix + 'x'], y = node[prefix + 'y'];
-                    const radius = renderedNodeRadius(node, prefix);
-
-                    context.save();
-                    context.globalAlpha = emphasized(node.id) ? 1 : 0.16;
-                    context.fillStyle = node.color || settings('defaultNodeColor');
-                    context.beginPath();
-                    context.arc(x, y, radius, 0, Math.PI * 2, true);
-                    context.fill();
-
-                    // El aro aparece solo al apuntar: hace inequívoco qué nota se va a abrir o arrastrar sin
-                    // convertir todos los nodos en botones ornamentados.
-                    if (hoverNode && hoverNode.id === node.id) {
-                      context.strokeStyle = THEME.ink;
-                      context.globalAlpha = 0.9;
-                      context.lineWidth = 1.25;
-                      context.beginPath();
-                      context.arc(x, y, radius + 2.25, 0, Math.PI * 2, true);
-                      context.stroke();
-                    }
-                    context.restore();
-                  };
-
-                  // Línea recta, deliberadamente sin curvatura ni sombra. Así el vínculo llega limpio al
-                  // borde del disco y la malla conserva su silueta esférica incluso con muchos nodos.
-                  //
-                  // Se recorta al radio visual real de ambos extremos en vez de unir centro con centro. Esto
-                  // evita que la línea atraviese el relleno, también cuando el suelo de tamaño mantiene un
-                  // nodo visible en un encuadre lejano.
-                  sigma.canvas.edges.enkiLine = function (edge, source, target, context, settings) {
-                    const prefix = settings('prefix') || '';
-                    const sx = source[prefix + 'x'], sy = source[prefix + 'y'];
-                    const tx = target[prefix + 'x'], ty = target[prefix + 'y'];
-                    const sr = renderedNodeRadius(source, prefix);
-                    const tr = renderedNodeRadius(target, prefix);
-                    const dx = tx - sx, dy = ty - sy;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    // Nodes close enough (or overlapping) that trimming both radii would flip the segment's
-                    // direction — nothing real to draw between two circles that already touch/overlap.
-                    if (dist <= sr + tr) return;
-                    const ux = dx / dist, uy = dy / dist;
-
-                    context.save();
-                    const isHoveredEdge = hoverNode && (edge.source === hoverNode.id || edge.target === hoverNode.id);
-                    context.strokeStyle = isHoveredEdge ? THEME.ink70 : (edge.color || settings('defaultEdgeColor'));
-                    // Suelo en píxeles: al encuadrar varias sesiones las uniones continúan visibles, sin
-                    // hacerse dominantes al acercar la cámara.
-                    context.globalAlpha = !hoverNode || isHoveredEdge ? 1 : 0.1;
-                    const minWidth = isHoveredEdge ? 2.4 : edge.manual ? 1.4 : 0.9;
-                    context.lineWidth = Math.min(3, Math.max(minWidth, edge[prefix + 'size'] || 0)) * display.linkThickness;
-                    context.beginPath();
-                    context.moveTo(sx + ux * sr, sy + uy * sr);
-                    context.lineTo(tx - ux * tr, ty - uy * tr);
-                    context.stroke();
-                    context.restore();
-                  };
-
-                  // ===================== sigma instance =====================
-                  const s = new sigma({
-                    renderers: [{ container: sigmaHost, type: 'canvas' }],
-                    settings: {
-                      // sigma defaults to continuously re-fitting the whole graph's bounding box into the
-                      // container on every refresh() (its own "rescale" middleware) — fine for a static
-                      // graph, but this page calls refresh() every animation frame forever (see the main
-                      // loop below), and refitting the bounding box every frame while nodes drift under the
-                      // ambient rotation would fight any manual pan/zoom and jitter the effective scale.
-                      // Turning it off makes sigma use a plain 1:1 copy of raw (x, y) instead — the same
-                      // simple camera model force-graph used, where zoom/pan is one transform over fixed
-                      // graph-space coordinates.
-                      autoRescale: false,
-                      // Graph/node objects are shared, live references between this page's own `nodes` array
-                      // and sigma's internal graph — required so the d3-force simulation (which mutates
-                      // node.x/node.y in place every tick) is immediately visible to sigma without any sync
-                      // step. sigma's default ('clone: true') would copy every node into a separate object on
-                      // read(), silently breaking that link.
-                      clone: false,
-                      immutable: false,
-                      // Both powRatio settings at 1 make node/edge screen size scale exactly linearly with
-                      // zoom (screenSize = worldSize / camera.ratio) — the same one-transform-for-everything
-                      // behavior force-graph had, instead of sigma's default sub-linear size scaling (0.5),
-                      // which is tuned for "stay legible at any zoom" graphs rather than a world-space scene.
-                      nodesPowRatio: 1,
-                      edgesPowRatio: 1,
-                      minNodeSize: 0,
-                      maxNodeSize: 0,
-                      minEdgeSize: 0,
-                      maxEdgeSize: 0,
-                      defaultNodeType: 'enkiCircle',
-                      defaultEdgeType: 'enkiLine',
-                      defaultNodeColor: THEME.link,
-                      defaultEdgeColor: THEME.link,
-                      // No permanent on-canvas node text — matches the original, which only ever showed a
-                      // note's title in the hover tooltip (see tooltipEl below) plus the coarser
-                      // session-cluster labels drawn separately in drawSessionLabels.
-                      drawLabels: false,
-                      drawEdgeLabels: false,
-                      // sigma's own built-in double-click zooms the camera toward the click point. Double
-                      // click on a node now has a real, different meaning (open the note — see
-                      // handleNodeDoubleClick below), so it's turned off here to avoid the camera also
-                      // zooming underneath the note that's about to open. Nothing else in this file relied
-                      // on it (touch/mouse-wheel zoom are untouched).
-                      // Built-in hovering drives sigma's own hover halo/label and is what
-                      // sigma.plugins.dragNodes (not used here — see the pointerdown listener below) keys
-                      // off to know which node a drag started on. Both depend on overNode/outNode, which
-                      // sigma fires from *idle mousemove* events read against a live hover cache — the exact
-                      // same shape of dependency that made force-graph's built-in click detection
-                      // unreliable under this app's WPE WebView backend (see the pointerdown listener
-                      // below). Click, drag and tooltip hover are all reimplemented manually instead, so
-                      // sigma's own hover machinery is just switched off rather than left to race it.
-                      enableHovering: false,
-                      mouseWheelEnabled: true,
-                      doubleClickEnabled: false,
-                      touchEnabled: true,
-                      zoomMin: 0.03,
-                      zoomMax: 6
-                    }
-                  });
-
-                  s.camera.bind('coordinatesUpdated', function () { dirty = true; });
-
-                  // ===================== Graph data =====================
-                  // `nodes` is the one array of live node objects shared by sigma (drawing) and d3-force
-                  // (physics) — see the `clone: false` comment above for why that sharing works. `sigmaEdges`
-                  // is what sigma's own graph holds (source/target stay as plain string ids, exactly as
-                  // supplied); `forceLinks` is a *separate* set of plain {source, target} objects handed to
-                  // d3.forceLink, because forceLink mutates link.source/link.target from a string id into
-                  // the resolved node object the first time it runs — sharing edge objects between the two
-                  // would silently corrupt sigma's own source/target ids.
-                  let nodes = [];
-                  let sigmaEdges = [];
-                  let forceLinks = [];
-
-                  function buildNodes(payload) {
-                    return payload.nodes.map(function (n) {
+                    sphereById = new Map(spheres.map(function (s) { return [s.id, s]; }));
+                    nodes = data.nodes.map(function (n) {
                       return {
-                        id: n.id,
-                        label: n.name,
-                        sessionId: n.sessionId,
-                        session: n.session,
-                        tags: n.tags || [],
-                        baseColor: n.color,
-                        color: n.color,
-                        x: n.x,
-                        y: n.y,
-                        size: NODE_REL_SIZE
+                        id: n.id, label: n.name, sessionId: n.sessionId, session: n.session, tags: n.tags || [],
+                        color: n.color, lx: n.x, ly: n.y, lz: n.z, sphere: sphereById.get(n.sessionId), degree: 0,
+                        appearAt: animateNew && !known.has(n.id) ? now : -Infinity
                       };
+                    }).filter(function (n) { return !!n.sphere; });
+                    nodeIndex = new Map(nodes.map(function (n, i) { return [n.id, i]; }));
+                    neighbors = nodes.map(function () { return []; });
+                    links = [];
+                    data.links.forEach(function (l) {
+                      const a = nodeIndex.get(l.source), b = nodeIndex.get(l.target);
+                      if (a === undefined || b === undefined || a === b) return;
+                      links.push({ a: a, b: b, manual: !!l.manual });
+                      neighbors[a].push(b); neighbors[b].push(a);
                     });
-                  }
-
-                  function buildSigmaEdges(links) {
-                    return links.map(function (l, i) {
-                      return {
-                        id: 'e' + i + ':' + l.source + '->' + l.target,
-                        source: l.source,
-                        target: l.target,
-                        manual: l.manual,
-                        // Manual links (the ones a person actually drew by clicking two notes) are rendered
-                        // clearly bolder than auto-derived wikilink edges — a thin, near-transparent line was
-                        // easy to miss entirely, which read as "linking doesn't do anything" even once a link
-                        // genuinely existed in the data.
-                        color: l.manual ? THEME.linkManual : THEME.link,
-                        size: l.manual ? 2.4 : 1.1
-                      };
-                    });
-                  }
-
-                  // The node pending a link is rendered noticeably larger, not just recolored — a subtle
-                  // color swap was easy to miss, which is what made "click a note, click another to link
-                  // them" read as broken even though the message-passing underneath worked fine. Recomputed
-                  // only when pendingLinkNode actually changes (not every frame — see __enkiSetPendingLink).
-                  function applyNodeVisualState() {
-                    dirty = true;
-                    nodes.forEach(function (n) {
-                      const isPending = n.id === pendingLinkNode;
-                      n.size = (NODE_REL_SIZE + Math.min(4, Math.sqrt(neighbors.has(n.id) ? neighbors.get(n.id).size : 0))) * display.nodeSize * Math.sqrt(isPending ? PENDING_VAL : 1);
-                      n.color = isPending ? THEME.nodeActive : n.baseColor;
-                    });
-                  }
-
-                  nodes = buildNodes(DATA);
-                  sigmaEdges = buildSigmaEdges(DATA.links);
-                  forceLinks = DATA.links.map(function (l) { return { source: l.source, target: l.target }; });
-                  rebuildNeighbors();
-                  s.graph.read({ nodes: nodes, edges: sigmaEdges });
-
-                  // Tells the host the graph has actual nodes/edges to paint, so it can dismiss the
-                  // "loading graph" skeleton it shows from the moment NavigateToString is called (see
-                  // SessionsView.OnGraphReady) — WebView engine startup plus parsing/executing this whole
-                  // inlined document (sigma, d3-force, this script) is the real source of latency on a
-                  // large vault, not anything after this point, so signalling here rather than after the
-                  // first animation frame brackets that cost without waiting on the (purely cosmetic,
-                  // never-ending) render loop below.
-                  post({ type: 'ready' });
-                  // Id -> node lookup, rebuilt whenever `nodes` itself is replaced (see __enkiSetGraphData) —
-                  // used by drawParticles/drawPulseRing below to resolve an id without an O(n) scan.
-                  let nodeById = new Map(nodes.map(function (n) { return [n.id, n]; }));
-
-                  // ===================== Force layout (d3-force, standalone) =====================
-                  // sigma v1 does no layout of its own — this simulation is the entire physics engine, same
-                  // as the d3-force instance force-graph used to run internally. Charge/link tuning carried
-                  // over as-is; forceCenter is new (force-graph's setup implicitly had one) and just keeps
-                  // the whole graph from drifting away from the origin over time, which matters more here
-                  // since nothing else recenters the camera except the explicit zoomToFit calls below.
-                  const simulation = d3.forceSimulation(nodes)
-                    .force('charge', d3.forceManyBody().strength(-95))
-                    .force('link', d3.forceLink(forceLinks).id(function (n) { return n.id; }).distance(70).strength(0.12))
-                    .force('collision', d3.forceCollide(14))
-                    .force('sessionCluster', sessionClusterForce)
-                    // Once the layout settles (alpha decayed to rest), re-wire the session mesh and anchor
-                    // ring from the final positions — the first build ran on whatever positions the very
-                    // first tick saw, which for never-laid-out notes can be a degenerate pile at the origin.
-                    // invalidateGroupings is cheap (a few nulls); the next frame's ensureGroupings rebuilds
-                    // from settled positions. The camera is re-fit to the settled scene too, but only the
-                    // first time (refitOnSettle, set again by __enkiSetGraphData) — a drag release also
-                    // fires 'end', and yanking the view to re-fit the whole scene every time would fight the
-                    // user mid-interaction.
-                    .on('tick', function () { dirty = true; })
-                    .on('end', function () {
-                      dirty = true;
-                      invalidateGroupings();
-                      if (refitOnSettle) {
-                        refitOnSettle = false;
-                        setTimeout(function () { zoomToFit(subtleMotion ? 100 : 180, 90); }, 0);
-                      }
-                      reportPositions();
-                    });
-
-                  // ===================== Click & drag (manual pointer resolution) =====================
-                  // Both are resolved here from raw pointer events instead of sigma's own click/drag paths
-                  // (sigma's built-in `clickNode` event and the sigma.plugins.dragNodes plugin, which this
-                  // page deliberately does not vendor). The reason is the same one documented at length in
-                  // the force-graph version of this file: on the WPE WebView backend this app runs under on
-                  // Linux, node interaction that depends on a *hover cache built from idle mousemove events*
-                  // was observed to be unreliable — dragging worked (d3-drag resolves its subject directly
-                  // from the mousedown position, no hover cache involved) but a plain click on a node did
-                  // not (force-graph's built-in click read a `hoverObj` computed from the last pointermove).
-                  // sigma.plugins.dragNodes turns out to have *exactly* that same shape of dependency: its
-                  // mousedown handler only gets attached once an `overNode` event has already fired for that
-                  // node (see the plugin's nodeMouseOver/_hoverStack), so it's exposed to the identical risk
-                  // that broke force-graph's click. Rather than ship it and hope, drag is folded into the
-                  // same pointerdown-position + pointerup-position resolution already proven reliable for
-                  // clicks — nearestNodeWithin runs directly against current node positions in graph space,
-                  // never against a cached hover state.
-                  let pointerDownAt = null; // { x, y, t } in canvas-local pixels
-                  let dragCandidate = null;
-                  let dragConfirmed = false;
-                  let lastHoverCheckTs = 0;
-                  const HOVER_THROTTLE_MS = 40;
-
-                  // Double-click-to-open detection, resolved from the same manual pointerdown/pointerup
-                  // click already used for single clicks (see the big comment above) rather than the
-                  // browser's native 'dblclick' event — sigma's built-in doubleClickEnabled zoom is turned
-                  // off above specifically so this page owns double-click meaning end to end, and staying
-                  // on the same pointer-event-derived click resolution keeps both gestures consistent under
-                  // whatever hover/click quirks this embedded WPE WebView has.
-                  let lastClickNodeId = null;
-                  let lastClickAt = 0;
-                  // Slightly generous vs. the platform default so a human double click still lands as one
-                  // even under this app's software-rendered WebView backend, where event delivery can lag.
-                  const DOUBLE_CLICK_MS = 450;
-
-                  function screenPoint(e) {
-                    const rect = el.getBoundingClientRect();
-                    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-                  }
-
-                  // Inverse of sigma's own camera.applyView() transform (graph space -> screen space), used
-                  // here to go the other way. sigma never rotates its camera in this app (angle stays 0), so
-                  // this deliberately only implements the angle=0 case rather than a full matrix inverse.
-                  function screenToWorld(p) {
-                    const cam = s.camera;
-                    const w = sigmaHost.clientWidth || 1;
-                    const h = sigmaHost.clientHeight || 1;
-                    return {
-                      x: (p.x - w / 2) * cam.ratio + cam.x,
-                      y: (p.y - h / 2) * cam.ratio + cam.y
-                    };
-                  }
-
-                  // Forward direction of the same transform, for drawing overlays (particles, pulse rings,
-                  // mesh lines, labels) in sync with wherever sigma is currently drawing the real nodes/edges.
-                  function worldToScreen(x, y) {
-                    const cam = s.camera;
-                    const w = sigmaHost.clientWidth || 1;
-                    const h = sigmaHost.clientHeight || 1;
-                    return {
-                      x: (x - cam.x) / cam.ratio + w / 2,
-                      y: (y - cam.y) / cam.ratio + h / 2
-                    };
-                  }
-
-                  // World-units-to-screen-pixels multiplier, matching nodesPowRatio/edgesPowRatio = 1 above —
-                  // used to scale anything drawn on the overlay/affinity canvases that should grow and shrink
-                  // with zoom exactly like sigma's own nodes/edges do.
-                  function screenScale() {
-                    return 1 / s.camera.ratio;
-                  }
-
-                  function nearestNodeWithin(worldPoint) {
-                    let closest = null, closestDistSq = Infinity;
-                    const minHitRadiusWorld = MIN_HIT_RADIUS_PX / screenScale();
-                    for (const n of nodes) {
-                      const dx = n.x - worldPoint.x, dy = n.y - worldPoint.y;
-                      const distSq = dx * dx + dy * dy;
-                      const hitRadius = Math.max(n.size * HIT_AREA_MULTIPLIER, minHitRadiusWorld);
-                      if (distSq <= hitRadius * hitRadius && distSq < closestDistSq) {
-                        closest = n;
-                        closestDistSq = distSq;
-                      }
-                    }
-                    return closest;
-                  }
-
-                  el.addEventListener('wheel', function () { refitOnSettle = false; }, { passive: true });
-                  el.addEventListener('pointerdown', function (e) {
-                    if (e.button !== 0) return;
-                    refitOnSettle = false;
-                    const p = screenPoint(e);
-                    pointerDownAt = { x: p.x, y: p.y, t: Date.now() };
-                    dragCandidate = nearestNodeWithin(screenToWorld(p));
-                    dragConfirmed = false;
-                    el.classList.add('pointer-active');
-                  }, { capture: true });
-
-                  el.addEventListener('pointermove', function (e) {
-                    const p = screenPoint(e);
-
-                    if (pointerDownAt && dragCandidate) {
-                      const movedPx = Math.hypot(p.x - pointerDownAt.x, p.y - pointerDownAt.y);
-                      if (!dragConfirmed && movedPx > 6) {
-                        dragConfirmed = true;
-                        isDraggingNode = true;
-                        el.classList.add('dragging-node');
-                        // Pausing sigma's own camera-drag captor while a node is actively being dragged
-                        // keeps the cursor "stuck" to the node the user is holding — without this, the
-                        // background pan captor (which listens on the same mousedown/mousemove) would also
-                        // fire, dragging the camera underneath the node at the same time.
-                        s.settings('mouseEnabled', false);
-                      }
-                      if (dragConfirmed) {
-                        const world = screenToWorld(p);
-                        dragCandidate.x = world.x;
-                        dragCandidate.y = world.y;
-                        dragCandidate.fx = world.x;
-                        dragCandidate.fy = world.y;
-                        simulation.alphaTarget(0.05).restart();
-                        tooltipEl.style.display = 'none';
-                        return;
-                      }
-                    }
-
-                    // Hover/tooltip — best-effort, same idle-mousemove caveat as everything else that
-                    // depends on pointer movement reaching this embedded WebView (see the big comment
-                    // above). Not load-bearing for any real interaction, unlike click/drag. Throttled: this
-                    // is an O(n) scan over every node, and pointermove fires far more often than the tooltip
-                    // needs to update — at native mousemove frequency this was a measurable source of input
-                    // lag on graphs with a few hundred notes.
-                    const now = Date.now();
-                    if (now - lastHoverCheckTs < HOVER_THROTTLE_MS) return;
-                    lastHoverCheckTs = now;
-
-                    const node = nearestNodeWithin(screenToWorld(p));
-                    if (hoverNode !== node) dirty = true;
-                    hoverNode = node;
-                    el.classList.toggle('node-hover', !!node);
-                    if (node) {
-                      tooltipEl.textContent = node.label + ' — ' + node.session +
-                        (node.tags.length ? ' · ' + node.tags.map(function (tag) { return '#' + tag; }).join(' ') : '');
-                      tooltipEl.style.left = (e.clientX + 14) + 'px';
-                      tooltipEl.style.top = (e.clientY + 14) + 'px';
-                      tooltipEl.style.display = 'block';
-                      const bounds = tooltipEl.getBoundingClientRect();
-                      tooltipEl.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - bounds.width - 8)) + 'px';
-                      tooltipEl.style.top = Math.max(8, Math.min(e.clientY + 14, innerHeight - bounds.height - 8)) + 'px';
-                    } else {
-                      tooltipEl.style.display = 'none';
-                    }
-                  }, { capture: true });
-
-                  el.addEventListener('pointerleave', function () {
-                    dirty = true;
-                    hoverNode = null;
-                    el.classList.remove('node-hover');
+                    neighbors.forEach(function (list, i) { nodes[i].degree = new Set(list).size; });
+                    mesh = (data.mesh || []).filter(function (p) { return p[0] < nodes.length && p[1] < nodes.length; });
+                    px = new Float32Array(nodes.length); py = new Float32Array(nodes.length);
+                    pr = new Float32Array(nodes.length); pd = new Float32Array(nodes.length);
+                    drawOrder = new Int32Array(nodes.length);
+                    state.hoverNode = -1;
+                    state.hoverSphere = null;
                     tooltipEl.style.display = 'none';
-                  });
-
-                  el.addEventListener('pointercancel', function () {
-                    pointerDownAt = null;
-                    if (dragCandidate) { dragCandidate.fx = null; dragCandidate.fy = null; }
-                    dragCandidate = null;
-                    dragConfirmed = false;
-                    isDraggingNode = false;
-                    simulation.alphaTarget(0);
-                    s.settings('mouseEnabled', true);
-                    el.classList.remove('pointer-active', 'dragging-node');
-                  });
-
-                  el.addEventListener('pointerup', function (e) {
-                    if (e.button !== 0 || !pointerDownAt) return;
-                    el.classList.remove('pointer-active');
-                    const down = pointerDownAt;
-                    const candidate = dragCandidate;
-                    pointerDownAt = null;
-                    dragCandidate = null;
-
-                    if (dragConfirmed) {
-                      dragConfirmed = false;
-                      isDraggingNode = false;
-                      el.classList.remove('dragging-node');
-                      candidate.fx = null;
-                      candidate.fy = null;
-                      simulation.alphaTarget(0);
-                      s.settings('mouseEnabled', true);
-                      return;
-                    }
-
-                    const p = screenPoint(e);
-                    const movedPx = Math.hypot(p.x - down.x, p.y - down.y);
-                    // A real drag (moving a node, or panning the camera) shouldn't also register as a click
-                    // on release, and a long press-and-hold isn't a click either.
-                    if (movedPx > 6 || Date.now() - down.t > 800) return;
-
-                    const node = nearestNodeWithin(screenToWorld(p));
-                    if (!node) return;
-
-                    const now = Date.now();
-                    if (lastClickNodeId === node.id && now - lastClickAt <= DOUBLE_CLICK_MS) {
-                      handleNodeDoubleClick(node);
-                      // El segundo clic pertenece exclusivamente al gesto de apertura. No se publica además
-                      // como nodeClick: en modo enlace podría completar o iniciar una pareja justo antes de
-                      // abandonar el grafo.
-                      lastClickNodeId = null;
-                      lastClickAt = 0;
-                    } else {
-                      handleNodeClick(node);
-                      lastClickNodeId = node.id;
-                      lastClickAt = now;
-                    }
-                  }, { capture: true });
-
-                  function reportPositions() {
-                    const reported = nodes.map(function (n) { return { path: n.id, x: n.x, y: n.y, z: 0 }; });
-                    post({ type: 'positions', nodes: reported });
+                    invalidate();
                   }
 
-                  // Every click, in every mode, is just reported — the host (SessionsViewModel.HandleNodeClicked)
-                  // is the one place that decides what it means, since it's the one place that always has an
-                  // up-to-date view of link mode and the pending pick (see the note on pendingLinkNode above).
-                  function handleNodeClick(node) {
-                    post({ type: 'nodeClick', path: node.id });
+                  // ===================== Camera =====================
+                  // One shared camera for the whole scene: world (x, y) of the viewport centre plus a zoom
+                  // scale. Sphere centres live on the z = 0 plane; each sphere adds its own perspective.
+                  const camera = { x: 0, y: 0, scale: 1, anim: null };
+                  let fitPending = true;
+
+                  function worldToScreenX(x) { return (x - camera.x) * camera.scale + view.width / 2; }
+                  function worldToScreenY(y) { return (y - camera.y) * camera.scale + view.height / 2; }
+
+                  function animateCamera(target, duration) {
+                    if (state.subtle) duration = Math.min(duration, 100);
+                    if (duration <= 0) { camera.x = target.x; camera.y = target.y; camera.scale = target.scale; camera.anim = null; invalidate(); return; }
+                    camera.anim = { from: { x: camera.x, y: camera.y, scale: camera.scale }, to: target, start: performance.now(), duration: duration };
+                    invalidate();
                   }
-
-                  // La segunda pulsación de un doble clic se publica solo como activación: el host abre la
-                  // nota en su sesión y el clic simple previo no se repite como una acción de enlace.
-                  function handleNodeDoubleClick(node) {
-                    post({ type: 'nodeDoubleClick', path: node.id });
+                  function stepCamera(now) {
+                    const a = camera.anim;
+                    if (!a) return;
+                    const t = Math.min(1, (now - a.start) / a.duration);
+                    const e = 1 - Math.pow(1 - t, 3);
+                    camera.x = a.from.x + (a.to.x - a.from.x) * e;
+                    camera.y = a.from.y + (a.to.y - a.from.y) * e;
+                    // Zoom interpolates geometrically so the motion feels uniform at any scale.
+                    camera.scale = a.from.scale * Math.pow(a.to.scale / a.from.scale, e);
+                    if (t >= 1) camera.anim = null;
                   }
-
-                  // Agrupa por identidad, incluso cuando dos sesiones comparten nombre.
-                  // La pertenencia y los anclajes se conservan mientras cambia el subconjunto visible.
-                  let allSessionGroups = null;
-                  let allSessionMembers = null;
-                  const anchorCache = new Map();
-                  let sessionAnchors = null;
-                  let sessionMeshPairs = null;
-                  function invalidateGroupings() {
-                    allSessionGroups = null; allSessionMembers = null; sessionAnchors = null; sessionMeshPairs = null;
-                  }
-                  function ensureGroupings() {
-                    if (allSessionGroups && allSessionMembers && sessionAnchors && sessionMeshPairs) return;
-
-                    const bySession = new Map();
-                    nodes.forEach(function (n) {
-                      if (!bySession.has(n.sessionId)) bySession.set(n.sessionId, []);
-                      bySession.get(n.sessionId).push(n);
-                    });
-
-                    allSessionGroups = new Map();
-                    allSessionMembers = new Map();
-                    bySession.forEach(function (members, session) {
-                      allSessionMembers.set(session, members);
-                      if (members.length >= LABEL_MIN_NOTES) allSessionGroups.set(session, members);
-                    });
-
-                    // Mantiene los centros de la distribución inicial, calculada con espacio
-                    // proporcional a cada sesión. Los filtros conservan esos mismos anclajes.
-                    sessionAnchors = new Map();
-                    allSessionMembers.forEach(function (members, session) {
-                      let anchor = anchorCache.get(session);
-                      if (!anchor) {
-                        anchor = { x: members.reduce(function (sum, n) { return sum + n.x; }, 0) / members.length,
-                          y: members.reduce(function (sum, n) { return sum + n.y; }, 0) / members.length,
-                          color: members[0].baseColor };
-                        anchorCache.set(session, anchor);
-                      }
-                      anchor.color = members[0].baseColor;
-                      sessionAnchors.set(session, anchor);
-                    });
-
-                    // Mesh wiring, computed from positions as they are right now (see the sessionMeshPairs
-                    // comment above for why it's cached rather than re-derived per frame).
-                    sessionMeshPairs = [];
-                    allSessionGroups.forEach(function (members) {
-                      if (display.mesh) triangulateSession(members).forEach(function (pair) { sessionMeshPairs.push(pair); });
-                    });
-                  }
-
-                  // Bowyer–Watson incremental Delaunay triangulation over a session's notes, returning the
-                  // undirected edge list (pairs of node objects). Delaunay is the canonical "mesh" wiring:
-                  // it connects every note to its natural spatial neighbors so the whole group forms one
-                  // planar web of triangles — and because the result is planar, no two edges ever cross,
-                  // which is the property that keeps a 64-note session looking like a wireframe mesh
-                  // instead of a hairball. Degenerate cases are handled defensively: fewer than 3 notes get
-                  // a trivial result (a single edge for 2, nothing for 1), and coincident points (e.g.
-                  // brand-new notes that were never laid out, all sitting at the origin) collapse to one
-                  // participant each so the circumcircle math never divides by ~zero.
-                  function triangulateSession(members) {
-                    if (members.length < 2) return [];
-                    if (members.length === 2) return [[members[0], members[1]]];
-
-                    // Collapse coincident points (within 0.01 world units); excluded nodes ride along with
-                    // their twin — they occupy the same spot, so the twin's edges already emanate from it.
-                    const pts = [];
-                    const used = new Set();
-                    members.forEach(function (n) {
-                      const key = n.x.toFixed(2) + ',' + n.y.toFixed(2);
-                      if (used.has(key)) return;
-                      used.add(key);
-                      pts.push(n);
-                    });
-                    if (pts.length < 2) return [];
-                    if (pts.length === 2) return [[pts[0], pts[1]]];
-
-                    // Super-triangle enclosing every point, so the incremental insertion always has a
-                    // starting triangulation to chew on; its vertices are removed from the result at the end.
+                  // Waits (fitPending) until the view has a real size and the scene has spheres, so a document
+                  // that starts empty or at 0x0 still frames its first real content.
+                  function fit(duration) {
+                    if (spheres.length === 0 || view.width < 2 || view.height < 2) return;
+                    fitPending = false;
                     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                    pts.forEach(function (p) {
-                      if (p.x < minX) minX = p.x;
-                      if (p.x > maxX) maxX = p.x;
-                      if (p.y < minY) minY = p.y;
-                      if (p.y > maxY) maxY = p.y;
+                    spheres.forEach(function (s) {
+                      const r = s.r * SILHOUETTE;
+                      minX = Math.min(minX, s.cx - r); maxX = Math.max(maxX, s.cx + r);
+                      minY = Math.min(minY, s.cy - r - 40); maxY = Math.max(maxY, s.cy + r + 12);
                     });
-                    const dmax = Math.max(maxX - minX, maxY - minY);
-                    const midx = (minX + maxX) / 2, midy = (minY + maxY) / 2;
-                    const sup = [
-                      { x: midx - 20 * dmax, y: midy - dmax },
-                      { x: midx, y: midy + 20 * dmax },
-                      { x: midx + 20 * dmax, y: midy - dmax }
-                    ];
-                    let tris = [[sup[0], sup[1], sup[2]]];
-
-                    function circumcircle(t) {
-                      const a = t[0], b = t[1], c = t[2];
-                      const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
-                      if (Math.abs(d) < 1e-12) return null; // degenerate/collinear — leave the triangle alone
-                      const a2 = a.x * a.x + a.y * a.y, b2 = b.x * b.x + b.y * b.y, c2 = c.x * c.x + c.y * c.y;
-                      const ux = (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / d;
-                      const uy = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d;
-                      return { x: ux, y: uy, r: Math.hypot(ux - a.x, uy - a.y) };
-                    }
-
-                    pts.forEach(function (p) {
-                      const bad = [];
-                      for (let i = tris.length - 1; i >= 0; i--) {
-                        const c = circumcircle(tris[i]);
-                        if (c && Math.hypot(p.x - c.x, p.y - c.y) <= c.r) bad.push(tris.splice(i, 1)[0]);
-                      }
-                      // The boundary of the removed region — edges shared by exactly one removed triangle —
-                      // becomes the new triangles' outer edges.
-                      const boundary = new Map();
-                      function addBoundary(u, v) {
-                        const key = u.x < v.x || (u.x === v.x && u.y < v.y)
-                          ? u.x + ',' + u.y + '|' + v.x + ',' + v.y
-                          : v.x + ',' + v.y + '|' + u.x + ',' + u.y;
-                        if (boundary.has(key)) boundary.delete(key); else boundary.set(key, [u, v]);
-                      }
-                      bad.forEach(function (t) { addBoundary(t[0], t[1]); addBoundary(t[1], t[2]); addBoundary(t[2], t[0]); });
-                      boundary.forEach(function (e) { tris.push([e[0], e[1], p]); });
-                    });
-
-                    const isSuper = function (p) { return p === sup[0] || p === sup[1] || p === sup[2]; };
-                    const seen = new Set();
-                    const edges = [];
-                    tris.forEach(function (t) {
-                      if (t.some(isSuper)) return;
-                      [[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]].forEach(function (pair) {
-                        const u = pair[0], v = pair[1];
-                        const key = u.x < v.x || (u.x === v.x && u.y < v.y)
-                          ? u.x + ',' + u.y + '|' + v.x + ',' + v.y
-                          : v.x + ',' + v.y + '|' + u.x + ',' + u.y;
-                        if (!seen.has(key)) { seen.add(key); edges.push(pair); }
-                      });
-                    });
-                    return edges;
+                    const pad = 48;
+                    const scale = Math.max(ZOOM_MIN, Math.min(FIT_MAX,
+                      (view.width - pad * 2) / Math.max(1, maxX - minX), (view.height - pad * 2) / Math.max(1, maxY - minY)));
+                    animateCamera({ x: (minX + maxX) / 2, y: (minY + maxY) / 2, scale: scale }, duration);
+                  }
+                  function zoomAt(sx, sy, factor) {
+                    const scale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, camera.scale * factor));
+                    const wx = (sx - view.width / 2) / camera.scale + camera.x;
+                    const wy = (sy - view.height / 2) / camera.scale + camera.y;
+                    camera.anim = null;
+                    camera.scale = scale;
+                    camera.x = wx - (sx - view.width / 2) / scale;
+                    camera.y = wy - (sy - view.height / 2) / scale;
+                    invalidate();
                   }
 
+                  // ===================== Projection =====================
+                  // Per sphere: rotate local points by Rx(pitch)·Ry(yaw) about the sphere's own centre, then
+                  // apply a perspective divide whose camera sits PERSPECTIVE radii in front of that centre.
+                  // Results go into flat typed arrays reused every frame (no per-frame allocation).
+                  function nodeWorldRadius(n) {
+                    const base = NODE_BASE_RADIUS + Math.min(3, Math.sqrt(n.degree)) * 0.9;
+                    return base * state.display.nodeSize * (n.id === state.pendingLink ? PENDING_SCALE : 1);
+                  }
+                  function project() {
+                    sphereScreen = spheres.map(function (s) {
+                      const o = s.orientation;
+                      return {
+                        sphere: s, x: worldToScreenX(s.cx), y: worldToScreenY(s.cy), r: s.r * camera.scale,
+                        sinYaw: Math.sin(o.yaw), cosYaw: Math.cos(o.yaw), sinPitch: Math.sin(o.pitch), cosPitch: Math.cos(o.pitch),
+                        distance: CONFIG.perspective * s.r
+                      };
+                    });
+                    const screenById = new Map(sphereScreen.map(function (p) { return [p.sphere.id, p]; }));
+                    for (let i = 0; i < nodes.length; i++) {
+                      const n = nodes[i], p = screenById.get(n.sessionId);
+                      const x1 = n.lx * p.cosYaw + n.lz * p.sinYaw;
+                      const z1 = -n.lx * p.sinYaw + n.lz * p.cosYaw;
+                      const y2 = n.ly * p.cosPitch + z1 * p.sinPitch;
+                      const z2 = -n.ly * p.sinPitch + z1 * p.cosPitch;
+                      const f = p.distance / Math.max(p.distance * 0.2, p.distance - z2);
+                      px[i] = p.x + x1 * f * camera.scale;
+                      py[i] = p.y + y2 * f * camera.scale;
+                      pd[i] = Math.max(-1, Math.min(1, z2 / n.sphere.r));
+                      pr[i] = Math.min(NODE_MAX_PX, Math.max(NODE_MIN_PX * state.display.nodeSize * f, nodeWorldRadius(n) * camera.scale * f));
+                      drawOrder[i] = i;
+                    }
+                    // Painter's algorithm: back-to-front so nearer notes occlude farther ones.
+                    drawOrder.sort(function (a, b) { return pd[a] - pd[b]; });
+                  }
+                  function rotatedDepth(n) {
+                    const o = n.sphere.orientation;
+                    const z1 = -n.lx * Math.sin(o.yaw) + n.lz * Math.cos(o.yaw);
+                    return -n.ly * Math.sin(o.pitch) + z1 * Math.cos(o.pitch);
+                  }
+
+                  // ===================== Painting =====================
+                  function bucketOf(depth) { return Math.min(DEPTH_BUCKETS - 1, Math.max(0, Math.floor((depth + 1) / 2 * DEPTH_BUCKETS))); }
+                  // Notes kept at full strength while one is hovered: itself and its real neighbours.
+                  let emphasis = null;
+                  function emphasized(i) { return emphasis === null || emphasis.has(i); }
+                  function appearOf(n, now) {
+                    return n.appearAt === -Infinity || state.subtle ? 1 : Math.min(1, (now - n.appearAt) / APPEAR_MS);
+                  }
+
+                  function draw(now) {
+                    project();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+                    const sceneAlpha = state.subtle ? 1 : Math.min(1, (now - state.sceneAppearStart) / APPEAR_MS);
+                    const hovering = state.hoverNode >= 0;
+                    emphasis = hovering ? new Set(neighbors[state.hoverNode].concat([state.hoverNode])) : null;
+
+                    // Edges are bucketed by mean depth and stroked as one path per bucket and style, so the
+                    // whole scene costs a handful of stroke() calls instead of one per line.
+                    const meshBuckets = [], linkBuckets = [], manualBuckets = [];
+                    for (let b = 0; b < DEPTH_BUCKETS; b++) { meshBuckets.push([]); linkBuckets.push([]); manualBuckets.push([]); }
+                    if (state.display.mesh) mesh.forEach(function (p) { meshBuckets[bucketOf((pd[p[0]] + pd[p[1]]) / 2)].push(p[0], p[1]); });
+                    const highlighted = [];
+                    links.forEach(function (l) {
+                      if (hovering && (l.a === state.hoverNode || l.b === state.hoverNode)) { highlighted.push(l.a, l.b); return; }
+                      (l.manual ? manualBuckets : linkBuckets)[bucketOf((pd[l.a] + pd[l.b]) / 2)].push(l.a, l.b);
+                    });
+                    const nodeBuckets = [];
+                    for (let b = 0; b < DEPTH_BUCKETS; b++) nodeBuckets.push([]);
+                    for (let k = 0; k < drawOrder.length; k++) nodeBuckets[bucketOf(pd[drawOrder[k]])].push(drawOrder[k]);
+
+                    ctx.lineCap = 'round';
+                    for (let b = 0; b < DEPTH_BUCKETS; b++) {
+                      // Depth cue: far layers fade towards the background, near layers stay crisp.
+                      const depthAlpha = 0.34 + 0.66 * (b + 0.5) / DEPTH_BUCKETS;
+                      strokePairs(meshBuckets[b], THEME.ink80, MESH_ALPHA * depthAlpha * (hovering ? 0.3 : 1) * sceneAlpha, 0.55);
+                      strokePairs(linkBuckets[b], THEME.link, depthAlpha * (hovering ? 0.12 : 1) * sceneAlpha, 0.9 * state.display.linkThickness);
+                      strokePairs(manualBuckets[b], THEME.linkManual, depthAlpha * (hovering ? 0.12 : 1) * sceneAlpha, 1.4 * state.display.linkThickness);
+                      const list = nodeBuckets[b];
+                      for (let k = 0; k < list.length; k++) {
+                        const i = list[k], n = nodes[i], r = pr[i];
+                        if (px[i] < -r || py[i] < -r || px[i] > view.width + r || py[i] > view.height + r) continue;
+                        const color = n.id === state.pendingLink ? THEME.nodeActive : n.color;
+                        ctx.globalAlpha = (0.5 + 0.5 * (pd[i] + 1) / 2) * (emphasized(i) ? 1 : 0.16) * appearOf(n, now) * sceneAlpha;
+                        ctx.drawImage(spriteFor(color), px[i] - r, py[i] - r, r * 2, r * 2);
+                      }
+                    }
+                    strokePairs(highlighted, THEME.ink70, sceneAlpha, 2.2 * state.display.linkThickness);
+                    ctx.globalAlpha = 1;
+
+                    drawSphereFocus();
+                    drawHoverRing();
+                    drawPulses(now);
+                    drawSessionLabels();
+                    drawNoteLabels();
+                  }
+
+                  function strokePairs(pairs, color, alpha, width) {
+                    if (pairs.length === 0 || alpha <= 0.002) return;
+                    ctx.globalAlpha = alpha;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = width;
+                    ctx.beginPath();
+                    for (let k = 0; k < pairs.length; k += 2) {
+                      ctx.moveTo(px[pairs[k]], py[pairs[k]]);
+                      ctx.lineTo(px[pairs[k + 1]], py[pairs[k + 1]]);
+                    }
+                    ctx.stroke();
+                  }
+
+                  // A faint circular outline marks the hovered sphere and, a little stronger, the session
+                  // selected in the list — circular indicators are the one exception to square corners.
+                  function drawSphereFocus() {
+                    sphereScreen.forEach(function (p) {
+                      const selected = p.sphere.id === state.selectedSession;
+                      const hovered = p.sphere === state.hoverSphere && state.hoverNode < 0;
+                      if (!selected && !hovered) return;
+                      ctx.globalAlpha = selected ? 0.28 : 0.14;
+                      ctx.strokeStyle = THEME.ink;
+                      ctx.lineWidth = 1;
+                      ctx.beginPath();
+                      ctx.arc(p.x, p.y, p.r * SILHOUETTE + 6, 0, Math.PI * 2);
+                      ctx.stroke();
+                    });
+                    ctx.globalAlpha = 1;
+                  }
+                  function drawHoverRing() {
+                    const i = state.hoverNode;
+                    if (i < 0) return;
+                    ctx.globalAlpha = 0.9;
+                    ctx.strokeStyle = THEME.ink;
+                    ctx.lineWidth = 1.25;
+                    ctx.beginPath();
+                    ctx.arc(px[i], py[i], pr[i] + 2.5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                  }
+                  function drawPulses(now) {
+                    if (state.pendingLink !== null) pulseRing(nodeIndex.get(state.pendingLink), THEME.nodeActive, 1, now);
+                    const flash = state.rejectFlash;
+                    if (flash) {
+                      const remaining = flash.until - now;
+                      if (remaining <= 0) state.rejectFlash = null;
+                      else {
+                        pulseRing(nodeIndex.get(flash.from), THEME.danger, remaining / flash.duration, now);
+                        pulseRing(nodeIndex.get(flash.to), THEME.danger, remaining / flash.duration, now);
+                      }
+                    }
+                  }
+                  function pulseRing(i, color, fade, now) {
+                    if (i === undefined) return;
+                    const pulse = state.subtle ? 1 : 1 + 0.25 * Math.sin((now % 1200) / 1200 * Math.PI * 2);
+                    ctx.globalAlpha = 0.75 * fade;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.6;
+                    ctx.beginPath();
+                    ctx.arc(px[i], py[i], Math.max(6, pr[i] * 1.55) * pulse, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                  }
+
+                  // Session names stay upright and still: they are placed from each sphere's centre and
+                  // radius only, never from its rotating notes, so they read as a fixed caption.
                   let labelRects = [];
                   function reserveLabel(x, y, w, h) {
-                    if (x < 8 || y < 55 || x + w > el.clientWidth - 8 || y + h > el.clientHeight - 95) return false;
-                    if (labelRects.some(function (r) { return x < r.x + r.w + 4 && x + w + 4 > r.x && y < r.y + r.h + 4 && y + h + 4 > r.y; })) return false;
-                    if (nodes.some(function (n) {
-                      const p = worldToScreen(n.x, n.y);
-                      return p.x + 7 > x && p.x - 7 < x + w && p.y + 7 > y && p.y - 7 < y + h;
-                    })) return false;
+                    if (x < 8 || y < 8 || x + w > view.width - 8 || y + h > view.height - 8) return false;
+                    for (const r of labelRects)
+                      if (x < r.x + r.w + 4 && x + w + 4 > r.x && y < r.y + r.h + 4 && y + h + 4 > r.y) return false;
                     labelRects.push({ x: x, y: y, w: w, h: h });
                     return true;
                   }
                   function drawSessionLabels() {
                     labelRects = [];
-                    if (!allSessionMembers) return;
-                    overlayCtx.save();
-                    overlayCtx.font = "700 11px 'Space Grotesk', sans-serif";
-                    overlayCtx.textBaseline = 'top';
-                    allSessionMembers.forEach(function (members) {
-                      const points = members.map(function (n) { return worldToScreen(n.x, n.y); });
-                      const cx = points.reduce(function (sum, p) { return sum + p.x; }, 0) / points.length;
-                      const text = members[0].session.toUpperCase();
-                      const width = Math.min(220, overlayCtx.measureText(text).width + 20);
-                      const x = cx - width / 2;
-                      const candidates = [Math.min.apply(null, points.map(function (p) { return p.y; })) - 34,
-                        Math.max.apply(null, points.map(function (p) { return p.y; })) + 14];
-                      for (const y of candidates) {
+                    ctx.font = "700 11px 'Space Grotesk', sans-serif";
+                    ctx.textBaseline = 'top';
+                    sphereScreen.forEach(function (p) {
+                      const s = p.sphere;
+                      const text = (s.name || '').toUpperCase();
+                      const width = Math.min(220, ctx.measureText(text).width + 20);
+                      const x = p.x - width / 2;
+                      const extent = p.r * SILHOUETTE;
+                      const strong = s.id === state.selectedSession || s === state.hoverSphere;
+                      for (const y of [p.y - extent - 30, p.y + extent + 10]) {
                         if (!reserveLabel(x, y, width, 22)) continue;
-                        overlayCtx.fillStyle = THEME.labelBackground;
-                        overlayCtx.fillRect(x, y, width, 22);
-                        overlayCtx.fillStyle = members[0].baseColor;
-                        overlayCtx.fillRect(x, y + 4, 2, 14);
-                        overlayCtx.fillStyle = THEME.labelMuted;
-                        overlayCtx.fillText(text, x + 9, y + 5, width - 16);
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = THEME.labelBackground;
+                        ctx.fillRect(x, y, width, 22);
+                        ctx.fillStyle = s.color;
+                        ctx.fillRect(x, y + 4, strong ? 3 : 2, 14);
+                        ctx.fillStyle = strong ? THEME.ink : THEME.labelMuted;
+                        ctx.fillText(text, x + 9, y + 5, width - 16);
                         break;
                       }
                     });
-                    overlayCtx.restore();
                   }
                   function drawNoteLabels() {
-                    if (!display.labels) return;
-                    overlayCtx.save();
-                    overlayCtx.font = "11px 'Space Grotesk', sans-serif";
-                    overlayCtx.textBaseline = 'top';
-                    const ordered = nodes.slice().sort(function (a, b) { return b.size - a.size; });
-                    ordered.forEach(function (n) {
-                      if (!emphasized(n.id) || (!hoverNode && screenScale() < 0.7)) return;
-                      const point = worldToScreen(n.x, n.y);
-                      const radius = Math.min(14, Math.max(MIN_NODE_SCREEN_RADIUS * display.nodeSize, n.size * screenScale()));
-                      const width = Math.min(160, overlayCtx.measureText(n.label).width);
-                      const x = point.x + radius + 6, y = point.y - 6;
-                      if (!reserveLabel(x, y, width, 14)) return;
-                      overlayCtx.fillStyle = THEME.tooltipForeground;
-                      overlayCtx.globalAlpha = hoverNode ? 0.95 : 0.65;
-                      overlayCtx.fillText(n.label, x, y, width);
-                    });
-                    overlayCtx.restore();
+                    if (!state.display.labels) return;
+                    const hovering = state.hoverNode >= 0;
+                    if (!hovering && camera.scale < 0.9) return;
+                    ctx.font = "11px 'Space Grotesk', sans-serif";
+                    ctx.textBaseline = 'top';
+                    ctx.fillStyle = THEME.tooltipForeground;
+                    const candidates = hovering
+                      ? neighbors[state.hoverNode].slice()
+                      : Array.prototype.filter.call(drawOrder, function (i) { return pd[i] > 0.2; });
+                    candidates.sort(function (a, b) { return nodes[b].degree - nodes[a].degree || pd[b] - pd[a]; });
+                    let drawn = 0;
+                    for (const i of candidates) {
+                      if (drawn >= 60) break;
+                      const n = nodes[i];
+                      const width = Math.min(160, ctx.measureText(n.label).width);
+                      const x = px[i] + pr[i] + 6, y = py[i] - 6;
+                      if (!reserveLabel(x, y, width, 14)) continue;
+                      ctx.globalAlpha = (hovering ? 0.95 : 0.65) * (0.55 + 0.45 * (pd[i] + 1) / 2);
+                      ctx.fillText(n.label, x, y, width);
+                      drawn++;
+                    }
+                    ctx.globalAlpha = 1;
                   }
 
-                  // A "these live in the same session" scaffold — every note in a session with 2+ notes is
-                  // wired into the session's Delaunay mesh (see triangulateSession), whether or not it has
-                  // any real (wikilink/manual) edge to anything. It used to draw a spoke from every note to
-                  // the session's own center of mass — a "star" where the whole session met at one hub —
-                  // but an interconnected web reads better than a hub-and-spoke diagram, and answers the
-                  // same grouping question ("which session is this note in," not "what does it reference").
-                  // Deliberately faint (AFFINITY_ALPHA sits well below the real auto-link alpha of ~0.3, so
-                  // the scaffold never outshines actual relationships): pure white, uncolored by session,
-                  // vs. THEME.link/THEME.linkManual's tinted rgba. Drawn on the affinity canvas, a separate
-                  // layer stacked *behind* sigma's own renderer (see the DOM layers section above) so the
-                  // real nodes/links always paint over these mesh lines without needing any pre-render hook
-                  // into sigma itself.
-                  const AFFINITY_ALPHA = 0.2;
-                  const AFFINITY_MIN_WIDTH_PX = 0.55;
-
-                  function drawSessionAffinity() {
-                    if (sessionMeshPairs.length === 0) return;
-
-                    const scale = screenScale();
-                    affinityCtx.save();
-                    affinityCtx.strokeStyle = THEME.ink80;
-                    affinityCtx.globalAlpha = hoverNode ? AFFINITY_ALPHA * 0.25 : AFFINITY_ALPHA;
-                    affinityCtx.lineWidth = Math.max(AFFINITY_MIN_WIDTH_PX, Math.min(1.1, 0.45 * scale));
-                    affinityCtx.beginPath();
-                    sessionMeshPairs.forEach(function (pair) {
-                      const a = worldToScreen(pair[0].x, pair[0].y);
-                      const b = worldToScreen(pair[1].x, pair[1].y);
-                      affinityCtx.moveTo(a.x, a.y);
-                      affinityCtx.lineTo(b.x, b.y);
-                    });
-                    affinityCtx.stroke();
-
-                    affinityCtx.restore();
+                  // ===================== Loop =====================
+                  // A single requestAnimationFrame loop for the whole scene, scheduled on demand: it stops
+                  // entirely when nothing moves (rotation off, no camera tween, no pulse, no fade) and is
+                  // re-armed by invalidate(). Ambient rotation runs at 30 Hz — at 0.1 rad/s that is visually
+                  // continuous — while direct interaction gets 60 Hz (30 Hz in the subtle motion profile).
+                  let framePending = false, needsDraw = true, lastDraw = null, failed = false;
+                  function invalidate() { needsDraw = true; schedule(); }
+                  function schedule() {
+                    if (framePending || failed || document.hidden) return;
+                    framePending = true;
+                    requestAnimationFrame(frame);
                   }
-
-                  // Gently pulls notes toward their own session's center of mass every simulation tick, on
-                  // top of whatever the real link force and node-repulsion (charge) forces already do —
-                  // otherwise two same-session notes with no real link between them have nothing pulling
-                  // them toward each other at all, and the affinity mesh above would be drawn crossing the
-                  // whole canvas at random rather than reading as a loose, local cluster. Deliberately weak
-                  // (a nudge, not a clamp) so real links — and the charge force keeping everything from
-                  // collapsing into a single point — still dominate the final layout. Registered directly as
-                  // a d3-force force function (not via d3's .initialize() protocol) since it closes over
-                  // `nodes` directly, same pattern the force-graph version of this file already used.
-                  const SESSION_CLUSTER_STRENGTH = 0.08;
-                  // Estabiliza cada centro sin mover la escena una vez enfriada la simulación.
-                  const SESSION_SNAP_RATE = 0.0016; // per ms
-
-                  function sessionClusterForce(alpha) {
-                    ensureGroupings();
-                    // Cohesion only, exactly as before: compact each session's notes around their own
-                    // center of mass (a nudge, not a clamp, so real links and the charge force still shape
-                    // the layout). Where each cluster sits on screen is decided by stabilizeSessionCenters in
-                    // the render loop, deliberately not here — see that function's comment for why.
-                    allSessionMembers.forEach(function (members) {
-                      let cx = 0, cy = 0;
-                      members.forEach(function (n) { cx += n.x; cy += n.y; });
-                      cx /= members.length; cy /= members.length;
-
-                      members.forEach(function (n) {
-                        n.vx = (n.vx || 0) + (cx - n.x) * SESSION_CLUSTER_STRENGTH * alpha;
-                        n.vy = (n.vy || 0) + (cy - n.y) * SESSION_CLUSTER_STRENGTH * alpha;
-                      });
-                    });
+                  function isAnimating(now) {
+                    return (state.rotation && spheres.length > 0) || !!camera.anim || (state.pendingLink !== null && !state.subtle)
+                      || !!state.rejectFlash || (!state.subtle && now - state.sceneAppearStart < APPEAR_MS)
+                      || nodes.some(function (n) { return n.appearAt !== -Infinity && now - n.appearAt < APPEAR_MS; });
                   }
-
-                  // Corrige la deriva del grupo durante la física; se pausa durante el arrastre.
-                  function stabilizeSessionCenters(dt) {
-                    if (dt <= 0) return;
-                    ensureGroupings();
-                    const k = SESSION_SNAP_RATE * dt;
-                    allSessionMembers.forEach(function (members, session) {
-                      let cx = 0, cy = 0;
-                      members.forEach(function (n) { cx += n.x; cy += n.y; });
-                      cx /= members.length; cy /= members.length;
-                      const anchor = sessionAnchors.get(session);
-                      if (!anchor) return;
-                      const tx = (anchor.x - cx) * k;
-                      const ty = (anchor.y - cy) * k;
-                      members.forEach(function (n) { n.x += tx; n.y += ty; });
-                    });
-                  }
-
-                  // ===================== Pending-link pulse & reject flash =====================
-                  // Drawn on the overlay canvas, on top of everything else — purely cosmetic, so it can't
-                  // interfere with click/drag hit-testing (which never reads these pixels, see
-                  // nearestNodeWithin above). Ring line width and blur are constant screen-space values,
-                  // deliberately *not* multiplied by screenScale() like the rest of this file's overlays —
-                  // this is drawn directly in screen pixels already (via worldToScreen), so no compensation
-                  // is needed to keep it a crisp, constant size on screen at any zoom level.
-                  function drawOverlays() {
-                    if (pendingLinkNode) drawPulseRing(pendingLinkNode, THEME.nodeActive);
-                    if (rejectFlash) {
-                      const remaining = rejectFlash.until - Date.now();
-                      if (remaining <= 0) { rejectFlash = null; }
-                      else {
-                        const fade = remaining / rejectFlash.duration;
-                        drawPulseRing(rejectFlash.from, THEME.danger, fade);
-                        drawPulseRing(rejectFlash.to, THEME.danger, fade);
+                  function frame(ts) {
+                    framePending = false;
+                    if (document.hidden) { lastDraw = null; return; }
+                    const now = performance.now();
+                    const animating = isAnimating(now);
+                    if (!needsDraw && !animating) { lastDraw = null; return; }
+                    const interval = needsDraw && !state.subtle ? 1000 / 60 : 1000 / 30;
+                    if (lastDraw !== null && ts - lastDraw < interval - 1) { schedule(); return; }
+                    // Delta time keeps the angular speed constant at any frame rate; the cap avoids a jump
+                    // after the page was throttled or a long frame.
+                    const dt = lastDraw === null ? 0 : Math.min(0.1, (ts - lastDraw) / 1000);
+                    lastDraw = ts;
+                    needsDraw = false;
+                    try {
+                      if (fitPending) fit(0);
+                      stepCamera(now);
+                      // A sphere holds still while it is pressed or one of its notes is under the pointer, so
+                      // aiming at a note never races its motion; it resumes from the same orientation.
+                      if (state.rotation) {
+                        const held = state.hoverNode >= 0 ? nodes[state.hoverNode].sphere : null;
+                        for (const s of spheres) if (!s.dragging && s !== held) s.orientation.yaw += CONFIG.rotationSpeed * dt;
                       }
+                      draw(now);
+                      // Notes keep moving under a still cursor while the spheres rotate: re-pick against
+                      // this frame's projection so hover and tooltip follow what is actually under it.
+                      if (state.rotation && lastPointer && !drag) updateHover(lastPointer);
+                    } catch (error) {
+                      failed = true;
+                      post({ type: 'error', message: String(error && error.message || error) });
+                      return;
+                    }
+                    if (isAnimating(now)) schedule();
+                  }
+                  document.addEventListener('visibilitychange', function () {
+                    lastDraw = null;
+                    if (!document.hidden) invalidate();
+                  });
+
+                  // ===================== Picking =====================
+                  // Screen-space ray picking against the projected sphere impostors of the last frame: of
+                  // every note whose disc contains the pointer, the nearest to the viewer wins, so a note in
+                  // front is never shadowed by one behind it. A small minimum radius keeps tiny far notes
+                  // clickable.
+                  function pickNode(x, y) {
+                    let best = -1, bestDepth = -Infinity, fallback = -1, fallbackDist = Infinity;
+                    for (let i = 0; i < nodes.length; i++) {
+                      const dx = px[i] - x, dy = py[i] - y, d2 = dx * dx + dy * dy;
+                      const r = pr[i] + 3;
+                      if (d2 <= r * r) { if (pd[i] > bestDepth) { best = i; bestDepth = pd[i]; } }
+                      else if (d2 <= 121 && d2 < fallbackDist) { fallback = i; fallbackDist = d2; }
+                    }
+                    return best >= 0 ? best : fallback;
+                  }
+                  function pickSphere(x, y) {
+                    let best = null, bestDist = Infinity;
+                    sphereScreen.forEach(function (p) {
+                      const d = Math.hypot(p.x - x, p.y - y);
+                      if (d <= p.r * SILHOUETTE + 6 && d < bestDist) { best = p.sphere; bestDist = d; }
+                    });
+                    return best;
+                  }
+
+                  // ===================== Interaction =====================
+                  // Clicks are resolved from pointerdown/pointerup positions directly, never from a hover
+                  // cache built by idle mousemove events — that dependency proved unreliable under WPE.
+                  let drag = null;   // { mode: 'node'|'sphere'|'pan', index, sphere, x, y, lastX, lastY, t, moved, depth }
+                  let lastClick = { index: -1, at: 0 };
+                  let lastHoverAt = 0;
+                  let lastPointer = null;   // last position over the canvas while no button is held
+
+                  function point(e) {
+                    const rect = el.getBoundingClientRect();
+                    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                  }
+                  el.addEventListener('pointerdown', function (e) {
+                    if (e.button !== 0) return;
+                    const p = point(e);
+                    fitPending = false;
+                    camera.anim = null;
+                    const index = pickNode(p.x, p.y);
+                    const sphere = index >= 0 ? nodes[index].sphere : pickSphere(p.x, p.y);
+                    drag = { mode: index >= 0 ? 'node' : sphere ? 'sphere' : 'pan', index: index, sphere: sphere,
+                      x: p.x, y: p.y, lastX: p.x, lastY: p.y, t: performance.now(), moved: false,
+                      depth: index >= 0 ? rotatedDepth(nodes[index]) : 0 };
+                    if (sphere && drag.mode !== 'pan') sphere.dragging = true;
+                    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+                    el.classList.add('pointer-active');
+                    tooltipEl.style.display = 'none';
+                    el.focus({ preventScroll: true });
+                  });
+                  el.addEventListener('pointermove', function (e) {
+                    const p = point(e);
+                    if (drag) {
+                      if (!drag.moved && Math.hypot(p.x - drag.x, p.y - drag.y) > DRAG_THRESHOLD_PX) drag.moved = true;
+                      if (drag.moved) {
+                        const dx = p.x - drag.lastX, dy = p.y - drag.lastY;
+                        if (drag.mode === 'node') moveNode(nodes[drag.index], p, drag.depth);
+                        else if (drag.mode === 'sphere') {
+                          const o = drag.sphere.orientation;
+                          o.yaw += dx * CONFIG.manualRotation;
+                          o.pitch = Math.max(-CONFIG.maxPitch, Math.min(CONFIG.maxPitch, o.pitch + dy * CONFIG.manualRotation));
+                        } else {
+                          camera.x -= dx / camera.scale;
+                          camera.y -= dy / camera.scale;
+                        }
+                        drag.lastX = p.x; drag.lastY = p.y;
+                        invalidate();
+                      }
+                      return;
+                    }
+                    lastPointer = { p: p, clientX: e.clientX, clientY: e.clientY };
+                    const now = performance.now();
+                    if (now - lastHoverAt < HOVER_THROTTLE_MS) return;
+                    lastHoverAt = now;
+                    updateHover(lastPointer);
+                  });
+                  function updateHover(pointer) {
+                    const p = pointer.p;
+                    const index = pickNode(p.x, p.y);
+                    const sphere = index >= 0 ? nodes[index].sphere : pickSphere(p.x, p.y);
+                    if (index !== state.hoverNode || sphere !== state.hoverSphere) invalidate();
+                    state.hoverNode = index;
+                    state.hoverSphere = sphere;
+                    el.classList.toggle('node-hover', index >= 0);
+                    el.classList.toggle('sphere-hover', index < 0 && !!sphere);
+                    if (index < 0) { tooltipEl.style.display = 'none'; return; }
+                    const n = nodes[index];
+                    tooltipEl.textContent = n.label + ' — ' + n.session +
+                      (n.tags.length ? ' · ' + n.tags.map(function (tag) { return '#' + tag; }).join(' ') : '');
+                    tooltipEl.style.display = 'block';
+                    const bounds = tooltipEl.getBoundingClientRect();
+                    tooltipEl.style.left = Math.max(8, Math.min(pointer.clientX + 14, innerWidth - bounds.width - 8)) + 'px';
+                    tooltipEl.style.top = Math.max(8, Math.min(pointer.clientY + 14, innerHeight - bounds.height - 8)) + 'px';
+                  }
+                  // Dragging a note moves it in the screen plane at its current depth, inverse-projected into
+                  // its sphere's local frame and kept inside the sphere's volume.
+                  function moveNode(n, p, depth) {
+                    const s = n.sphere, o = s.orientation;
+                    const distance = CONFIG.perspective * s.r;
+                    const f = distance / Math.max(distance * 0.2, distance - depth);
+                    const x2 = (p.x - worldToScreenX(s.cx)) / camera.scale / f;
+                    const y2 = (p.y - worldToScreenY(s.cy)) / camera.scale / f;
+                    const sinP = Math.sin(o.pitch), cosP = Math.cos(o.pitch), sinY = Math.sin(o.yaw), cosY = Math.cos(o.yaw);
+                    const y1 = y2 * cosP - depth * sinP;
+                    const z1 = y2 * sinP + depth * cosP;
+                    let x = x2 * cosY - z1 * sinY, z = x2 * sinY + z1 * cosY, y = y1;
+                    const length = Math.sqrt(x * x + y * y + z * z);
+                    if (length > s.r) { const k = s.r / length; x *= k; y *= k; z *= k; }
+                    n.lx = x; n.ly = y; n.lz = z;
+                  }
+                  function endDrag(e, cancelled) {
+                    if (!drag) return;
+                    const d = drag;
+                    drag = null;
+                    if (d.sphere) d.sphere.dragging = false;
+                    el.classList.remove('pointer-active');
+                    try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+                    if (cancelled) return;
+                    if (d.moved) {
+                      if (d.mode === 'node') reportPositions(d.sphere);
+                      return;
+                    }
+                    if (performance.now() - d.t > 800) return;
+                    if (d.mode === 'node') {
+                      const n = nodes[d.index];
+                      const now = performance.now();
+                      if (lastClick.index === d.index && now - lastClick.at <= DOUBLE_CLICK_MS) {
+                        // The second press belongs to the open gesture only; it is not also sent as
+                        // nodeClick, so link mode can't pick a pair right before leaving the graph.
+                        post({ type: 'nodeDoubleClick', path: n.id });
+                        lastClick = { index: -1, at: 0 };
+                      } else {
+                        post({ type: 'nodeClick', path: n.id });
+                        lastClick = { index: d.index, at: now };
+                      }
+                    } else if (d.mode === 'sphere') {
+                      post({ type: 'sessionClick', sessionId: d.sphere.id });
                     }
                   }
-
-                  function drawPulseRing(nodeId, color, fadeOverride) {
-                    const node = nodeById.get(nodeId);
-                    if (!node) return;
-                    const p = worldToScreen(node.x, node.y);
-                    const t = (Date.now() % 1200) / 1200;
-                    const pulse = subtleMotion ? 1 : 1 + 0.25 * Math.sin(t * Math.PI * 2);
-                    const fade = fadeOverride === undefined ? 1 : fadeOverride;
-                    const baseR = Math.max(
-                      MIN_NODE_SCREEN_RADIUS * Math.sqrt(PENDING_VAL),
-                      NODE_REL_SIZE * Math.sqrt(PENDING_VAL) * screenScale());
-                    overlayCtx.save();
-                    overlayCtx.beginPath();
-                    overlayCtx.arc(p.x, p.y, baseR * 1.55 * pulse, 0, 2 * Math.PI, false);
-                    overlayCtx.lineWidth = 1.6;
-                    overlayCtx.strokeStyle = color;
-                    overlayCtx.globalAlpha = 0.75 * fade;
-                    overlayCtx.stroke();
-                    overlayCtx.restore();
-                  }
-
-                  window.__enkiSetPendingLink = function (globalId) {
-                    pendingLinkNode = globalId || null;
-                    applyNodeVisualState();
-                  };
-
-                  // Recolorea un grupo sin reemplazar el grafo: las posiciones, la temperatura de la
-                  // simulación y la cámara permanecen exactamente donde el usuario las dejó.
-                  window.__enkiSetSessionColor = function (sessionId, color) {
-                    nodes.forEach(function (n) {
-                      if (n.sessionId !== sessionId) return;
-                      n.baseColor = color;
-                    });
-                    applyNodeVisualState();
-                    invalidateGroupings();
-                  };
-
-                  window.__enkiSetGraphData = function (json) {
-                    const data = JSON.parse(json);
-                    pendingLinkNode = null;
-
-                    // Preserve the current position of every note that already existed instead of snapping
-                    // the whole graph back to the server-supplied coordinates — those are only used as the
-                    // starting point the very first time a note is seen, same as before.
-                    nodes.forEach(function (n) { positionCache.set(n.id, { x: n.x, y: n.y }); });
-                    const existingById = positionCache;
-                    hoverNode = null;
+                  el.addEventListener('pointerup', function (e) { if (e.button === 0) endDrag(e, false); });
+                  el.addEventListener('pointercancel', function (e) { endDrag(e, true); invalidate(); });
+                  el.addEventListener('pointerleave', function () {
+                    if (drag) return;
+                    lastPointer = null;
+                    if (state.hoverNode >= 0 || state.hoverSphere) invalidate();
+                    state.hoverNode = -1;
+                    state.hoverSphere = null;
+                    el.classList.remove('node-hover', 'sphere-hover');
                     tooltipEl.style.display = 'none';
-                    nodes = data.nodes.map(function (n) {
-                      const prev = existingById.get(n.id);
-                      return {
-                        id: n.id,
-                        label: n.name,
-                        sessionId: n.sessionId,
-                        session: n.session,
-                        tags: n.tags || [],
-                        baseColor: n.color,
-                        color: n.color,
-                        x: prev ? prev.x : n.x,
-                        y: prev ? prev.y : n.y,
-                        size: NODE_REL_SIZE
-                      };
-                    });
-                    nodeById = new Map(nodes.map(function (n) { return [n.id, n]; }));
-
-                    sigmaEdges = buildSigmaEdges(data.links);
-                    forceLinks = data.links.map(function (l) { return { source: l.source, target: l.target }; });
-                    rebuildNeighbors();
-                    applyNodeVisualState();
-                    invalidateGroupings();
-
-                    s.graph.clear();
-                    s.graph.read({ nodes: nodes, edges: sigmaEdges });
-
-                    simulation.nodes(nodes);
-                    simulation.force('link', d3.forceLink(forceLinks).id(function (n) { return n.id; }).distance(70).strength(0.12))
-                    .force('collision', d3.forceCollide(14));
-                    simulation.alpha(0).stop();
-                    // Editar enlaces o filtros conserva las posiciones y la cámara.
-                    dirty = true;
-                    refitOnSettle = false;
-                  };
-
-                  // A manual link was refused host-side (e.g. the two notes live in different sessions) —
-                  // the click still has to *do* something visible, or it reads as the click not registering.
-                  window.__enkiLinkRejected = function (fromId, toId) {
-                    dirty = true;
-                    rejectFlash = { from: fromId, to: toId, until: Date.now() + 900, duration: 900 };
-                  };
-
-                  window.__enkiSetDisplay = function (value) {
-                    const meshChanged = display.mesh !== value.mesh;
-                    display = value;
-                    if (meshChanged) invalidateGroupings();
-                    applyNodeVisualState();
-                  };
-                  window.__enkiCamera = function (action) {
-                    refitOnSettle = false;
-                    if (action === 'fit') { zoomToFit(180, 90); return; }
-                    const ratio = Math.max(s.settings('zoomMin'), Math.min(s.settings('zoomMax'), s.camera.ratio * (action === 'in' ? 0.8 : 1.25)));
-                    sigma.misc.animation.camera(s.camera, { ratio: ratio }, { duration: 140 });
-                  };
-
-                  el.tabIndex = 0;
+                  });
+                  el.addEventListener('wheel', function (e) {
+                    e.preventDefault();
+                    fitPending = false;
+                    const p = point(e);
+                    const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+                    zoomAt(p.x, p.y, Math.pow(1.0015, -delta));
+                  }, { passive: false });
                   el.addEventListener('keydown', function (e) {
                     if (e.key === '+' || e.key === '=') window.__enkiCamera('in');
                     else if (e.key === '-') window.__enkiCamera('out');
                     else if (e.key === 'Home') window.__enkiCamera('fit');
+                    else if (e.key === 'ArrowLeft') { camera.x -= 40 / camera.scale; invalidate(); }
+                    else if (e.key === 'ArrowRight') { camera.x += 40 / camera.scale; invalidate(); }
+                    else if (e.key === 'ArrowUp') { camera.y -= 40 / camera.scale; invalidate(); }
+                    else if (e.key === 'ArrowDown') { camera.y += 40 / camera.scale; invalidate(); }
                     else return;
                     e.preventDefault();
                   });
 
-                  // ===================== Camera fit =====================
-                  function zoomToFit(duration, paddingPx) {
-                    if (nodes.length === 0) return;
-                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                    nodes.forEach(function (n) {
-                      if (n.x < minX) minX = n.x;
-                      if (n.x > maxX) maxX = n.x;
-                      if (n.y < minY) minY = n.y;
-                      if (n.y > maxY) maxY = n.y;
+                  // Positions are stored normalised to the sphere radius, in the sphere's unrotated local
+                  // frame, for every visible note of the session that changed (see SessionSphereLayout).
+                  function reportPositions(sphere) {
+                    const reported = nodes.filter(function (n) { return n.sphere === sphere; }).map(function (n) {
+                      return { path: n.id, x: n.lx / sphere.r, y: n.ly / sphere.r, z: n.lz / sphere.r };
                     });
-
-                    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-                    const bboxW = Math.max(1, maxX - minX), bboxH = Math.max(1, maxY - minY);
-                    const w = sigmaHost.clientWidth || 1, h = sigmaHost.clientHeight || 1;
-                    const availW = Math.max(1, w - paddingPx * 2), availH = Math.max(1, h - paddingPx * 2);
-                    let ratio = Math.max(bboxW / availW, bboxH / availH);
-                    ratio = Math.max(s.settings('zoomMin'), Math.min(s.settings('zoomMax'), ratio));
-
-                    sigma.misc.animation.camera(s.camera, { x: cx, y: cy, ratio: ratio }, { duration: duration });
+                    post({ type: 'positions', nodes: reported });
                   }
 
-                  // Un máximo de 60 Hz evita repintar el canvas por encima del presupuesto visual;
-                  // el modo sutil usa 30 Hz y omite la rotación y las partículas decorativas.
-                  function frame(ts) {
-                    // Skip the whole redraw (rotation math, sigma's full-graph repaint, both overlay
-                    // canvases) while the WebView isn't actually visible — e.g. the app minimized or this
-                    // page backgrounded some other way. requestAnimationFrame itself keeps firing here
-                    // regardless (still scheduled below) so the loop resumes the instant it's visible again;
-                    // resetting lastRotationTs avoids the ambient rotation jumping by however long it was
-                    // hidden, all in one frame, once it does.
-                    if (document.hidden) {
-                      lastRotationTs = null;
-                      nextFrameAt = 0;
-                      requestAnimationFrame(frame);
-                      return;
-                    }
+                  // ===================== Host API =====================
+                  window.__enkiSetGraphData = function (json) {
+                    state.pendingLink = null;
+                    loadScene(JSON.parse(json), true);
+                  };
+                  window.__enkiSetPendingLink = function (id) { state.pendingLink = id || null; invalidate(); };
+                  // Recolours one session in place: positions, orientation and camera stay where they are.
+                  window.__enkiSetSessionColor = function (sessionId, color) {
+                    nodes.forEach(function (n) { if (n.sessionId === sessionId) n.color = color; });
+                    const s = sphereById.get(sessionId);
+                    if (s) s.color = color;
+                    invalidate();
+                  };
+                  window.__enkiLinkRejected = function (from, to) {
+                    const now = performance.now();
+                    state.rejectFlash = { from: from, to: to, until: now + 900, duration: 900 };
+                    invalidate();
+                  };
+                  window.__enkiSetDisplay = function (value) { state.display = value; invalidate(); };
+                  window.__enkiCamera = function (action) {
+                    fitPending = false;
+                    if (action === 'fit') { fit(180); return; }
+                    const factor = action === 'in' ? 1.25 : 0.8;
+                    const scale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, camera.scale * factor));
+                    animateCamera({ x: camera.x, y: camera.y, scale: scale }, 140);
+                  };
+                  // Pausing keeps every sphere's current orientation; resuming continues from it.
+                  window.__enkiSetRotation = function (enabled) {
+                    state.rotation = !!enabled;
+                    lastDraw = null;
+                    invalidate();
+                  };
+                  window.__enkiSetSelectedSession = function (sessionId) { state.selectedSession = sessionId || null; invalidate(); };
+                  window.setSubtleMotion = function (value) { state.subtle = !!value; lastDraw = null; invalidate(); };
 
-                    // En reposo no repinta el grafo completo. Solo cámara, física, interacción
-                    // o un pulso activo requieren otro frame.
-                    if (!dirty && !pendingLinkNode && !rejectFlash) {
-                      lastRotationTs = ts;
-                      requestAnimationFrame(frame);
-                      return;
-                    }
-                    const interval = 1000 / (subtleMotion ? 30 : 60);
-                    if (ts + 0.5 < nextFrameAt) {
-                      requestAnimationFrame(frame);
-                      return;
-                    }
-                    const dt = lastRotationTs === null ? 0 : Math.min(50, ts - lastRotationTs);
-                    lastRotationTs = ts;
-                    nextFrameAt = Math.max(nextFrameAt + interval, ts);
-
-                    if (!isDraggingNode && simulation.alpha() > simulation.alphaMin()) stabilizeSessionCenters(dt);
-                    dirty = false;
-                    s.refresh();
-
-                    ensureGroupings();
-                    // Clear each overlay canvas in its own physical-pixel coordinate space
-                    // (reset transform → clear → restore) so the clearRect always covers the
-                    // full backing store regardless of any stale DPR or size mismatch. Using
-                    // the affinity canvas's dimensions for the overlay canvas (as this code
-                    // previously did) silently fails if the canvases ever diverge.
-                    overlayCtx.save();
-                    overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
-                    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-                    overlayCtx.restore();
-                    affinityCtx.save();
-                    affinityCtx.setTransform(1, 0, 0, 1, 0, 0);
-                    affinityCtx.clearRect(0, 0, affinityCanvas.width, affinityCanvas.height);
-                    affinityCtx.restore();
-                    if (display.mesh) drawSessionAffinity();
-                    drawSessionLabels();
-                    drawNoteLabels();
-                    drawOverlays();
-
-                    requestAnimationFrame(frame);
-                  }
-
-                  requestAnimationFrame(frame);
-                  setTimeout(function () { zoomToFit(subtleMotion ? 100 : 180, 90); }, 0);
+                  loadScene(INITIAL, false);
+                  state.sceneAppearStart = performance.now();
+                  resize();
+                  // Tells the host the scene is built so it can dismiss its loading skeleton.
+                  post({ type: 'ready' });
                 })();
                 </script>
                 </body>
@@ -1210,20 +825,19 @@ public static class SessionGraphRenderer
                 """;
     }
 
-    /// <summary>Actualiza el subconjunto visible sin recargar el documento. Conserva cámara y
-    /// posiciones de las notas ocultas; solo recalienta la física al editar vínculos del mismo conjunto.</summary>
-    public static string BuildSetGraphDataScript(SessionGraph graph)
+    /// <summary>Replaces the visible subset without reloading the document: orientation and camera stay put,
+    /// and notes that were already on screen keep their positions (they come from the same layout cache).</summary>
+    internal static string BuildSetGraphDataScript(SessionGraph graph, SessionSphereScene scene)
     {
-        var json = JsonSerializer.Serialize(BuildPayload(graph), DataJsonOptions);
-        // The payload becomes a JS string literal argument, not raw script — passed through
-        // JsonSerializer once more so any quote/backslash in a note title can't break out of it.
+        var json = JsonSerializer.Serialize(BuildPayload(graph, scene), DataJsonOptions);
+        // The payload becomes a JS string literal argument, not raw script — passed through JsonSerializer once
+        // more so any quote/backslash in a note title can't break out of it.
         var jsonLiteral = JsonSerializer.Serialize(json);
         return $"window.__enkiSetGraphData && window.__enkiSetGraphData({jsonLiteral});";
     }
 
     /// <summary>Pulses the given note as the pending first pick of a manual link, or clears the pulse when
-    /// <paramref name="globalId"/> is null. Purely cosmetic — see the doc comment on <c>pendingLinkNode</c>
-    /// in the rendered document for why the actual link mechanics never depend on this call landing.</summary>
+    /// <paramref name="globalId"/> is null. Purely cosmetic — the link mechanics live host-side.</summary>
     public static string BuildSetPendingLinkScript(string? globalId)
     {
         var literal = globalId is null ? "null" : JsonSerializer.Serialize(globalId);
@@ -1231,7 +845,7 @@ public static class SessionGraphRenderer
     }
 
     /// <summary>Actualiza solo el color de los nodos de una sesión en el documento ya cargado, sin tocar
-    /// layout ni cámara.</summary>
+    /// layout, orientación ni cámara.</summary>
     public static string BuildSetSessionColorScript(string sessionId, string color)
     {
         var sessionLiteral = JsonSerializer.Serialize(sessionId);
@@ -1239,10 +853,8 @@ public static class SessionGraphRenderer
         return $"window.__enkiSetSessionColor && window.__enkiSetSessionColor({sessionLiteral}, {colorLiteral});";
     }
 
-    /// <summary>Tells the already-loaded document a manual link attempt was refused host-side (e.g. the two
-    /// notes live in different sessions — <c>SessionsViewModel.HandleLinkToggled</c> never crosses that
-    /// boundary) so the click that triggered it still gets a visible reaction instead of silently doing
-    /// nothing, which is what made linking read as broken in the first place.</summary>
+    /// <summary>Tells the already-loaded document a manual link attempt was refused host-side, so the click that
+    /// triggered it still gets a visible reaction instead of silently doing nothing.</summary>
     public static string BuildLinkRejectedScript(string fromGlobalId, string toGlobalId)
     {
         var fromLiteral = JsonSerializer.Serialize(fromGlobalId);
@@ -1250,19 +862,53 @@ public static class SessionGraphRenderer
         return $"window.__enkiLinkRejected && window.__enkiLinkRejected({fromLiteral}, {toLiteral});";
     }
 
-    private static object BuildPayload(SessionGraph graph)
+    /// <summary>Activa o detiene la rotación automática de todas las esferas a la vez, conservando su
+    /// orientación actual; no reconstruye la escena.</summary>
+    public static string BuildSetRotationScript(bool enabled) =>
+        $"window.__enkiSetRotation && window.__enkiSetRotation({(enabled ? "true" : "false")});";
+
+    /// <summary>Marca la esfera de la sesión seleccionada en la lista, o ninguna con <c>null</c>.</summary>
+    public static string BuildSetSelectedSessionScript(string? sessionId)
     {
-        var positions = NativeSessionGraphLayout.Create(graph);
+        var literal = sessionId is null ? "null" : JsonSerializer.Serialize(sessionId);
+        return $"window.__enkiSetSelectedSession && window.__enkiSetSelectedSession({literal});";
+    }
+
+    /// <summary>Datos de la escena para el documento: esferas (centro, radio, fase), notas con su posición
+    /// local sin rotar, enlaces reales y la malla decorativa como pares de índices de nota.</summary>
+    private static object BuildPayload(SessionGraph graph, SessionSphereScene scene)
+    {
+        var nodes = graph.Nodes.Where(n => scene.Local.ContainsKey(n.GlobalId) && scene.Spheres.ContainsKey(n.SessionId))
+            .ToArray();
+        var index = nodes.Select((n, i) => (n.GlobalId, i)).ToDictionary(t => t.GlobalId, t => t.i, StringComparer.Ordinal);
+        var spheres = nodes.GroupBy(n => n.SessionId, StringComparer.Ordinal).Select(g =>
+        {
+            var sphere = scene.Spheres[g.Key];
+            var first = g.First();
+            return new
+            {
+                id = g.Key, name = first.SessionName, color = NodeBrightness.ColorFor(first.SessionId, first.SessionColor),
+                x = Round(sphere.Center.X), y = Round(sphere.Center.Y), r = Round(sphere.Radius), phase = Round(sphere.Phase)
+            };
+        });
         return new
         {
-        nodes = graph.Nodes.Select(n => new
-        {
-            id = n.GlobalId, name = n.Title, sessionId = n.SessionId, session = n.SessionName, tags = n.Tags,
-            color = NodeBrightness.ColorFor(n.SessionId, n.SessionColor), x = positions[n.GlobalId].X, y = positions[n.GlobalId].Y
-        }),
-        links = graph.Edges.Select(e => new { source = e.FromGlobalId, target = e.ToGlobalId, manual = e.IsManual })
-    };
+            spheres,
+            nodes = nodes.Select(n =>
+            {
+                var p = scene.Local[n.GlobalId];
+                return new
+                {
+                    id = n.GlobalId, name = n.Title, sessionId = n.SessionId, session = n.SessionName, tags = n.Tags,
+                    color = NodeBrightness.ColorFor(n.SessionId, n.SessionColor), x = Round(p.X), y = Round(p.Y), z = Round(p.Z)
+                };
+            }),
+            links = graph.Edges.Select(e => new { source = e.FromGlobalId, target = e.ToGlobalId, manual = e.IsManual }),
+            mesh = scene.Mesh.Where(m => index.ContainsKey(m.From) && index.ContainsKey(m.To))
+                .Select(m => new[] { index[m.From], index[m.To] })
+        };
 
+        static double Round(double value) => Math.Round(value, 3);
     }
 
     private sealed class GraphTheme
@@ -1271,7 +917,6 @@ public static class SessionGraphRenderer
         public required string NodeActive;
         public required string Link;
         public required string LinkManual;
-        public required string Particle;
         public required string Danger;
         public required string Ink;
         public required string Ink70;
@@ -1281,7 +926,6 @@ public static class SessionGraphRenderer
         public required string TooltipBorder;
         public required string LabelBackground;
         public required string LabelMuted;
-        public required string LabelRule;
 
         public static GraphTheme FromApp() => new()
         {
@@ -1289,16 +933,11 @@ public static class SessionGraphRenderer
                 FindColor("AppBackgroundAltBrush", "#0D0D0D"),
                 FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.05)),
             NodeActive = FindColor("InkBrush", "#FFFFFF"),
-            // Bumped up from a barely-there 0.12 for the same reason LinkManual was bumped below: an
-            // auto-derived [[wikilink]] edge is real, deliberate data (the user typed the link), and at
-            // 0.12 alpha / 0.6px width it was close enough to invisible against the dark background that a
-            // freshly-linked pair of notes looked exactly like two unrelated ones — "linking doesn't do
-            // anything" even when the edge existed and was correctly rendered underneath the noise floor.
+            // An auto-derived [[wikilink]] edge is real, deliberate data: at a barely-there alpha a freshly
+            // linked pair looked exactly like two unrelated notes. Depth fog multiplies on top of this.
             Link = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.6),
-            // Bumped up from a barely-there 0.4 — a manually-drawn link is the one thing in this graph a
-            // user deliberately created, and it needs to read as obviously present, not as a rumor of a line.
+            // A manually drawn link is the one thing a user created explicitly; it must read as present.
             LinkManual = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.9),
-            Particle = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.5),
             Danger = FindColor("DangerBrush", "#F87171"),
             Ink = FindColor("InkBrush", "#FFFFFF"),
             Ink70 = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.7),
@@ -1306,22 +945,14 @@ public static class SessionGraphRenderer
             TooltipBackground = FindColor("PanelBackgroundBrush", "#1B1B1B"),
             TooltipForeground = FindColor("TextPrimaryBrush", "#F5F5F5"),
             TooltipBorder = FindColor("Ink20", "rgba(255,255,255,0.2)"),
-            // The session-name cards (drawSessionLabels) use the app's own surface/ink tokens so they
-            // read as part of the UI rather than browser defaults: CardBackgroundHoverBrush is the
-            // elevated panel surface (lighter than PanelBackgroundBrush, which is nearly invisible
-            // against the graph's own background), Ink40 for the dim mono micro-labels and Ink10 for
-            // the hairline rule separating title from count.
+            // Session-name cards use the app's elevated surface and dim mono ink, so they read as UI.
             LabelBackground = FindColor("CardBackgroundHoverBrush", "#1F1F1F"),
             LabelMuted = FindColor("Ink40", "rgba(255,255,255,0.4)"),
-            LabelRule = FindColor("Ink10", "rgba(255,255,255,0.1)"),
         };
 
-        /// <summary>Layers a faint dot-grid texture and a soft top-of-frame bloom over the app's own
-        /// background color — this is what actually reads as "premium" instead of a flat fill, and because
-        /// it's set as the document's <c>html/body</c> background (see the surrounding <c>&lt;style&gt;</c>
-        /// block), it covers the graph panel's full rectangle with no seam, whether or not the canvases have
-        /// finished sizing themselves yet. Uses the tema activo's <c>InkBrush</c> para que la textura respete
-        /// tanto temas claros como oscuros.</summary>
+        /// <summary>Layers a faint dot-grid texture and a soft top-of-frame bloom over the app's own background
+        /// colour — the same backdrop the loading overlay and the native renderer paint, so there is no seam.
+        /// Uses the active theme's <c>InkBrush</c> so the texture respects light and dark themes.</summary>
         private static string BuildPremiumBackground(string baseColor, string inkRgba) =>
             $"radial-gradient(circle at 1px 1px, {inkRgba} 1px, transparent 1.6px) 0 0 / 26px 26px, "
             + $"radial-gradient(ellipse 70% 55% at 50% 28%, {inkRgba}, rgba(0,0,0,0) 72%), "
@@ -1339,34 +970,8 @@ public static class SessionGraphRenderer
         }
     }
 
-    /// <summary>Reads a vendored JS bundle out of app resources once per file and keeps it in memory, so it
-    /// can be inlined straight into a <c>&lt;script&gt;</c> tag on every render instead of relying on a
-    /// <c>file://</c> reference (see the file-scoped doc comment for why that reference approach silently
-    /// fails under this app's WebView engines). Shared by both vendored bundles (sigma, d3-force-standalone)
-    /// since they're read and cached the exact same way.</summary>
-    private static class VendoredScripts
-    {
-        private static readonly Dictionary<string, string> Cache = new();
-
-        public static string Get(string fileName)
-        {
-            if (Cache.TryGetValue(fileName, out var cached)) return cached;
-
-            using var source = AssetLoader.Open(new Uri($"avares://enki/assets/js/{fileName}"));
-            using var reader = new StreamReader(source);
-            // Defensive against a future bundle update introducing a literal "</script" in a string/comment,
-            // which would otherwise close the tag early and truncate the inlined script.
-            var script = reader.ReadToEnd().Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
-            Cache[fileName] = script;
-            return script;
-        }
-    }
-
-    /// <summary>Reads a font file from app resources and returns a base64 data URI, cached across
-    /// renders, so the same font the Avalonia UI uses is available to the WebView's canvas renderer via
-    /// an <c>@font-face</c> rule. Without this, the WebView falls back to whatever system font WPE/GTK
-    /// provides, which has poor legibility for certain glyphs (e.g. uppercase "I") — the whole point of
-    /// bundling Space Grotesk and JetBrains Mono in the first place.</summary>
+    /// <summary>Reads a font file from app resources and returns a base64 data URI, cached across renders, so
+    /// the same font the Avalonia UI uses is available to the WebView's canvas via <c>@font-face</c>.</summary>
     private static class EmbeddedFonts
     {
         private static readonly Dictionary<string, string> Cache = new();
@@ -1384,20 +989,17 @@ public static class SessionGraphRenderer
         }
     }
 
-    /// <summary>Deterministic per-group node color. Every session gets a stable, distinguishable hue
-    /// derived from a hash of its id — visually distinct enough to tell apart at a glance in the
-    /// global graph, while keeping the same "one material" feel (saturation and lightness are fixed,
-    /// only hue varies). When a session has an explicit <see cref="SessionManifest.Color"/> value, that
-    /// overrides the auto-derived hue. Color is baked into the rgba() string since sigma's default node
-    /// renderer has no separate node-color setter.</summary>
+    /// <summary>Deterministic per-group node color. Every session gets a stable, distinguishable hue derived from
+    /// a hash of its id (fixed saturation and lightness, only hue varies). An explicit
+    /// <see cref="SessionManifest.Color"/> overrides the auto-derived hue.</summary>
     public static class NodeBrightness
     {
         private const double Saturation = 0.55;
         private const double Lightness = 0.70;
 
-        /// <summary>Returns an rgba() string (opaque) for the given session id. If
-        /// <paramref name="explicitColor"/> is non-null and a valid hex string, it's used directly;
-        /// otherwise a stable hue is derived from <paramref name="sessionId"/>.</summary>
+        /// <summary>Returns an opaque rgba() string for the given session id. If <paramref name="explicitColor"/>
+        /// is a valid hex string, it's used directly; otherwise a stable hue is derived from
+        /// <paramref name="sessionId"/>.</summary>
         public static string ColorFor(string sessionId, string? explicitColor = null)
         {
             if (explicitColor is { Length: > 0 } hex && TryParseHex(hex, out var r, out var g, out var b))

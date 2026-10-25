@@ -535,6 +535,27 @@ Ver `.docs/project-info/asistente-ia.md`, secciones "Dos superficies" y siguient
 - [ ] Escape cierra los popovers de ámbito, capacidad, adjuntos y skills y devuelve el foco a su botón; con
       lector de pantalla, el botón del asistente anuncia su estado.
 
+## 8.11 Grafo de sesiones en esferas 3D
+
+Ver `.docs/project-info/grafo-sesiones-3d.md`. Hacerlo en Linux con WPE disponible (renderizador web por
+software), en Linux sin WPE (visor nativo) y en Windows o macOS.
+
+- [ ] Con un vault de varias sesiones (al menos una con más de 200 notas), Sesiones abre con esferas que
+      giran despacio y de forma continua, sin tirones visibles; las notas interiores se distinguen de la
+      corteza al girar y los nombres de sesión no se mueven.
+- [ ] El botón de rotación de la barra inferior detiene todas las esferas al instante en la orientación en
+      la que estaban y las reanuda sin salto; su tooltip cambia entre «Desactivar rotación» y «Activar
+      rotación». Tras reiniciar Enki se conserva la elección.
+- [ ] Con el perfil Sutiles y sin elección previa, las esferas empiezan quietas. En Windows/macOS con
+      «reducir movimiento» del sistema activo, también, y el botón lo refleja.
+- [ ] Clic, doble clic (abrir), modo enlace, arrastre de una nota, giro manual de una esfera, clic sobre
+      una esfera (selecciona su sesión en la lista), zoom, encuadre, filtros y color de sesión funcionan
+      igual mientras las esferas giran y con la rotación detenida.
+- [ ] Arrastrar una nota, cerrar y volver a Sesiones: la nota sigue donde se dejó.
+- [ ] Minimizar la ventana con la rotación activa no consume CPU de forma apreciable; al restaurarla la
+      rotación continúa sin saltar.
+- [ ] Con lector de pantalla, el botón de rotación anuncia su acción y se activa con teclado.
+
 ---
 
 ## 9. Criterio de salida antes de `0.2.0`

@@ -152,6 +152,10 @@ public class SessionsGraphFiltersUiTests
             var vm = new SessionsViewModel(vault, new SessionService(vault),
                 new NotificationService(settings, directory), (_, note) => openedPath = note?.FullPath, () => { });
             AwaitLoad(vm);
+            // Esta prueba trata de compatibilidad, filtros y doble clic, no de la rotación. Con el dibujo Skia
+            // de ENKI_GRAPH_PREVIEW cada fotograma de rotación repinta la ventana por software dentro de
+            // RunJobs y puede separar los dos clics más que el umbral de doble clic de Avalonia.
+            vm.ToggleGraphRotationCommand.Execute(null);
             var view = new SessionsView(() => unresponsive) { DataContext = vm };
             if (unresponsive)
             {

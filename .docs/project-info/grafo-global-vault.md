@@ -2,7 +2,7 @@
 
 El grafo de **Sesiones** reúne las notas del vault accesible: sesiones desbloqueadas y notas sin
 sesión, incluidas sus subcarpetas. También se muestra cuando hay notas pero todavía no hay sesiones.
-Reutiliza `SessionService.LoadGlobalGraph()` y `SessionGraphRenderer` (sigma.js y d3-force). No crea
+Reutiliza `SessionService.LoadGlobalGraph()` y `SessionGraphRenderer`, que lo dibuja como esferas 3D, una por sesión (`grafo-sesiones-3d.md`). No crea
 un segundo índice persistido, no modifica el frontmatter al filtrar y no cambia los manifiestos.
 
 ## Explorar y filtrar

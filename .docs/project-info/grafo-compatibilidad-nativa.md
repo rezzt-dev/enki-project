@@ -33,49 +33,46 @@ Edge Legacy no es una alternativa adecuada para el JavaScript del documento.
 - Dibuja nodos, colores de sesión y enlaces, incluidos los enlaces manuales.
 - Doble clic abre la nota. Los clics del modo enlace, la selección pendiente y los enlaces rechazados
   se comunican por los mismos métodos y eventos del viewmodel.
-- Arrastrar un nodo guarda las posiciones a través de `HandlePositionsReported`, usando `GlobalId`
-  para distinguir rutas iguales en sesiones diferentes. Arrastrar el fondo desplaza la cámara;
-  la rueda hace zoom alrededor del puntero.
+- Dibuja la misma escena de esferas 3D que el documento web (`grafo-sesiones-3d.md`): consume la
+  `SessionSphereScene` de la instancia de `SessionSphereLayout` que posee `SessionsView`, así que cambiar
+  del navegador al visor nativo conserva la forma, la posición y la orientación de cada sesión.
+- Proyección en perspectiva por esfera, orden del pintor por profundidad, niebla en cuatro capas y notas
+  como impostores esféricos (`ImmutableRadialGradientBrush` cacheado por color, capa y énfasis).
+- Rotación automática con un único bucle `TopLevel.RequestAnimationFrame` a 30 Hz y delta time. Solo pide
+  fotogramas mientras gira, y el botón global de la barra inferior la detiene conservando la orientación.
+- Arrastrar una nota la mueve en el plano de la pantalla a su profundidad, dentro de su esfera, y guarda
+  las posiciones normalizadas de su sesión con `HandlePositionsReported`, usando `GlobalId` para
+  distinguir rutas iguales en sesiones distintas. Arrastrar el volumen de una esfera la gira a mano y un
+  clic sobre él selecciona la sesión. Arrastrar el fondo desplaza la cámara y la rueda hace zoom
+  alrededor del puntero.
 - Utiliza los recursos de tema y las fuentes empaquetadas. El título aparece al pasar por un nodo.
-- La distribución inicial es estática y determinista. Conserva las coordenadas guardadas cuando las
-  notas están separadas y los límites de las sesiones no se cruzan. Si hay coordenadas inválidas,
-  notas apiladas o sesiones mezcladas, reconstruye grupos orgánicos de densidad uniforme y coloca las sesiones en un
-  anillo circular. Cada sesión reserva un sector según su tamaño, con margen para el nombre y las sesiones vecinas. La distribución por ángulo áureo
-  evita filas rígidas y mantiene una silueta equilibrada.
-  Esta recuperación solo afecta a la vista: los manifiestos se escriben mediante el flujo existente
-  al arrastrar una nota. No reproduce la física del navegador; ambos visores mantienen la escena estable después del layout.
-- La opción **Malla de sesión**, activada de inicio, dibuja una malla visual por sesión: triangulación de Delaunay de sus nodos vecinos.
-  No hay puentes decorativos entre sesiones; las sesiones de una sola nota quedan sin malla.
-  Los enlaces reales entre notas de distintas sesiones siguen visibles.
-  Usa las posiciones visibles, también al filtrar o recuperar coordenadas manuales. Su topología
-  se calcula al actualizar el grafo, con un número lineal de aristas; no se recalcula
-  durante el repintado. Estas líneas no son enlaces, no modifican notas, filtros ni contadores.
-- La malla usa `Ink20` y 0,65 px; los wikilinks usan `Ink60` y 0,9 px; los enlaces manuales,
-  `Ink80` y 1,4 px, modulados por el control de grosor. Al pasar sobre una nota, sus enlaces reales destacan con `Ink90` y 2,4 px.
-  Los grosores se mantienen en unidades de pantalla para conservar la jerarquía al hacer zoom.
-- El radio de los nodos acompaña al zoom. Los nombres de sesión evitan nodos, otras etiquetas y los
-  límites de la vista; cuando no caben se omiten hasta que haya espacio. Una única ficha al pasar el ratón muestra título y sesión,
-  recorta textos largos y permanece dentro de la vista.
-- Cambiar enlaces conserva la cámara y las posiciones; las notas ocultas conservan una caché de
-  coordenadas para volver a mostrarse sin recolocar el resto. Al reducir un filtro, las notas restantes
-  conservan sus coordenadas. Una distribución guardada legible sigue respetándose, incluido el
-  arrastre manual de notas; la forma circular se aplica a las distribuciones nuevas o recuperadas.
-- Al salir se cancelan temporizadores y captura del puntero. Volver a adjuntar la vista restaura sus
+- La opción **Malla de sesión**, activada de inicio, dibuja la trama de vecinos espaciales en 3D de cada
+  esfera (`SessionSphereMesh`). No hay puentes decorativos entre sesiones, y los enlaces reales entre
+  sesiones siguen visibles. Estas líneas no son enlaces y no modifican notas, filtros ni contadores.
+- La malla usa `Ink` al 24 %; los wikilinks, `Ink` al 60 % y 0,9 px; los enlaces manuales, al 90 % y
+  1,4 px. Todo ello se modula por la profundidad y por el control de grosor. Al pasar sobre una nota,
+  sus enlaces reales destacan al 70 % y 2,2 px. Los grosores se mantienen en unidades de pantalla.
+- Los nombres de sesión se colocan desde el centro y el radio de su esfera, así que no giran. Evitan
+  nodos, otras etiquetas y los límites de la vista, y si no caben se omiten. Una única ficha al pasar
+  el ratón muestra título y sesión.
+- Cambiar enlaces o filtros conserva cámara, posiciones y orientación. Al salir se cancelan la captura
+  del puntero y el temporizador del enlace rechazado. Volver a adjuntar la vista restaura sus
   suscripciones al viewmodel y reconstruye el grafo.
 
 ## Verificación
 
-`NativeSessionGraphUiTests` comprueba dibujo, temas, clic/doble clic, arrastre, posiciones, zoom,
-actualizaciones y 2.000 nodos con coordenadas inválidas. También verifica que las etiquetas de 150
-notas con sesiones mezcladas no se solapen en vistas de 616×508 y 360×300, incluso tras hacer zoom.
-`NativeSessionGraphLayoutTests` verifica separación, determinismo, conservación de coordenadas legibles
-y ausencia de cambios sobre el modelo original. También comprueba centros circulares, separación
-entre sesiones de tamaños desiguales, conectividad de la malla dentro de cada sesión y ausencia de puentes entre sesiones, ausencia de aristas duplicadas,
-vecindad espacial y estabilidad al cambiar enlaces. `NativeSessionGraphMeshTests` verifica que
-la malla no se cruce con posiciones irregulares y que los nodos colineales o coincidentes sigan
-conectados. Las pruebas UI cubren además que editar enlaces no reinicie el zoom.
-`SessionsGraphFiltersUiTests` fuerza la ausencia de navegador y verifica el grafo real ligado al viewmodel, apertura de una nota, filtros y reentrada.
-La CI ejecuta estos casos en Linux, Windows y macOS sin instalar motores web adicionales.
+`NativeSessionGraphUiTests` comprueba:
+
+- Dibujo en temas claro y oscuro, clic, doble clic, arrastre en profundidad con posiciones
+  normalizadas, filtrado, color, zoom y redimensionado.
+- Rotación a velocidad constante, pausa sin cambios y reanudación desde la misma orientación.
+- Etiquetas inmóviles, giro manual de una esfera, clic de selección de sesión y paneo.
+- 2.000 notas con coordenadas inválidas, y etiquetas sin solapes en vistas de 616×508 y 360×300.
+
+`SessionSphereLayoutTests` cubre el layout volumétrico y la malla (ver `grafo-sesiones-3d.md`).
+`SessionsGraphFiltersUiTests` fuerza la ausencia de navegador y verifica el grafo real ligado al
+viewmodel: apertura de una nota, filtros y reentrada. La CI ejecuta estos casos en Linux, Windows y
+macOS sin instalar motores web adicionales.
 
 Antes de publicar, comprobar también una ventana real en cada sistema: abrir Sesiones en un equipo
 sin motor web utilizable, aplicar filtros, enlazar notas, arrastrar, cerrar y volver a entrar. Las

@@ -319,6 +319,11 @@ public sealed class AppSettings
     /// Defaults to hidden — the row starts collapsed behind the setting until the user opts in.</summary>
     public bool PolarShowTaskTags { get; set; }
 
+    /// <summary>Rotación automática de las esferas del grafo de Sesiones. Null mientras el usuario no la haya
+    /// cambiado: entonces decide el perfil de movimiento (<see cref="UseSubtleAnimations"/>) y, en el visor web,
+    /// la preferencia de movimiento reducido del sistema.</summary>
+    public bool? SessionsGraphRotationEnabled { get; set; }
+
     /// <summary>Estado de despliegue de cada bloque lateral del calendario, conservado entre arranques.</summary>
     public bool CalendarMiniCalendarExpanded { get; set; } = true;
     public bool CalendarLayersExpanded { get; set; }

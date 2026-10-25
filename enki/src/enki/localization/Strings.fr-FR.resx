@@ -6225,7 +6225,13 @@ Bonne rédaction.</value>
     <value>Cadrer le graphe</value>
   </data>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
-    <value>Glisser pour explorer · Molette pour zoomer · Double-clic pour ouvrir</value>
+    <value>Glisser pour explorer ou faire tourner une sphère · Molette pour zoomer · Double-clic pour ouvrir</value>
+  </data>
+  <data name="Sessions_Graph_RotationPause" xml:space="preserve">
+    <value>Désactiver la rotation</value>
+  </data>
+  <data name="Sessions_Graph_RotationResume" xml:space="preserve">
+    <value>Activer la rotation</value>
   </data>
   <data name="Startup_Initializing" xml:space="preserve">
     <value>Démarrage</value>

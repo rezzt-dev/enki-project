@@ -6225,7 +6225,13 @@ Feliz escritura.</value>
     <value>Encuadrar grafo</value>
   </data>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
-    <value>Arrastra para explorar · Rueda para zoom · Doble clic para abrir</value>
+    <value>Arrastra para explorar o girar una esfera · Rueda para zoom · Doble clic para abrir</value>
+  </data>
+  <data name="Sessions_Graph_RotationPause" xml:space="preserve">
+    <value>Desactivar rotación</value>
+  </data>
+  <data name="Sessions_Graph_RotationResume" xml:space="preserve">
+    <value>Activar rotación</value>
   </data>
   <data name="Startup_Initializing" xml:space="preserve">
     <value>Iniciando</value>

@@ -1,5 +1,9 @@
 # Migrar el grafo de sesiones de force-graph a sigma.js v1
 
+> **Histórico.** sigma.js y d3-force se retiraron al pasar el grafo a esferas volumétricas 3D con un motor
+> propio sobre Canvas 2D (`grafo-sesiones-3d.md`). La sección «Por qué no WebGL / three.js» sigue vigente:
+> se volvió a comprobar con `Avalonia.Controls.WebView` 12.1.0.
+
 Handoff para otro agente. Escrito porque se agotaron los tokens de la sesión que hizo la
 investigación — este documento es la fuente de verdad completa, no hace falta releer el
 historial de chat.

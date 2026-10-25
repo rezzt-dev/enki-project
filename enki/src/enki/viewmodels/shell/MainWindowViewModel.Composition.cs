@@ -547,7 +547,7 @@ public sealed partial class MainWindowViewModel
             _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService,
             loadOnCreate: false, loadInBackground: true);
         Sessions = new SessionsViewModel(_vaultService, _sessionService, _notificationService, OpenSessionInNotes, OnSessionsChanged,
-            _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession, StartAssistantChatInSession)
+            _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession, StartAssistantChatInSession, _settingsService)
         {
             IsAssistantAvailable = AssistantPanelEnabled
         };

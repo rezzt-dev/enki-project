@@ -6226,7 +6226,13 @@ Happy writing.</value>
     <value>Fit graph</value>
   </data>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
-    <value>Drag to pan · Scroll to zoom · Double-click to open</value>
+    <value>Drag to pan or spin a sphere · Scroll to zoom · Double-click to open</value>
+  </data>
+  <data name="Sessions_Graph_RotationPause" xml:space="preserve">
+    <value>Turn rotation off</value>
+  </data>
+  <data name="Sessions_Graph_RotationResume" xml:space="preserve">
+    <value>Turn rotation on</value>
   </data>
   <data name="Startup_Initializing" xml:space="preserve">
     <value>Starting up</value>

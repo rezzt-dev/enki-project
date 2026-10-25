@@ -6225,7 +6225,13 @@ Viel Erfolg beim Schreiben.</value>
     <value>Graph einpassen</value>
   </data>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
-    <value>Ziehen zum Verschieben · Scrollen zum Zoomen · Doppelklick zum Öffnen</value>
+    <value>Ziehen zum Verschieben oder Drehen einer Kugel · Scrollen zum Zoomen · Doppelklick zum Öffnen</value>
+  </data>
+  <data name="Sessions_Graph_RotationPause" xml:space="preserve">
+    <value>Rotation deaktivieren</value>
+  </data>
+  <data name="Sessions_Graph_RotationResume" xml:space="preserve">
+    <value>Rotation aktivieren</value>
   </data>
   <data name="Startup_Initializing" xml:space="preserve">
     <value>Wird gestartet</value>

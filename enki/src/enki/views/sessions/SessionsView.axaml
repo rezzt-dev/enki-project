@@ -292,6 +292,14 @@
                 <TextBlock Text="{loc:Tr Sessions_Graph_NavigationHint}" Classes="muted" FontSize="10"
                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                <!-- Rotación de todas las esferas: icono en tinta plena mientras giran (estado activo del
+                     sistema de botones fantasma) y secundario en pausa; el texto describe la acción siguiente. -->
+                <Button x:Name="GraphRotationToggle" Classes="icon-btn" Classes.active="{Binding IsGraphRotationEnabled}"
+                        Command="{Binding ToggleGraphRotationCommand}" ToolTip.Tip="{Binding GraphRotationTooltip}"
+                        AutomationProperties.Name="{Binding GraphRotationTooltip}">
+                  <mi:MaterialIcon Kind="Rotate3dVariant" Width="16" Height="16" />
+                </Button>
+                <Rectangle Width="1" Height="16" Margin="6,0" Fill="{DynamicResource Ink10}" VerticalAlignment="Center" />
                 <Button Classes="icon-btn" Command="{Binding ZoomOutGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_Graph_ZoomOut}"
                         AutomationProperties.Name="{loc:Tr Sessions_Graph_ZoomOut}">
                   <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />

@@ -87,6 +87,7 @@ normalices a un solo idioma.
   `.docs/project-info/notificaciones-y-recordatorios.md`,
   `.docs/project-info/exportar-vistas-imagen-pdf.md`, `.docs/project-info/aviso-de-version-nueva.md`,
   `.docs/project-info/cambios-externos-en-el-vault.md`, `.docs/project-info/asistente-ia.md`,
+  `.docs/project-info/grafo-sesiones-3d.md`, `.docs/project-info/grafo-compatibilidad-nativa.md`,
   `.docs/project-info/sistema-diseno-web.md` —
   documentación específica por módulo/tema; complementa (no reemplaza) el análisis anterior.
 - `.docs/project-info/qa-manual-release-candidate.md` — checklist de QA manual (lector de pantalla,
