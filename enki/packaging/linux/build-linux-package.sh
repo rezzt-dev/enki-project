@@ -78,6 +78,21 @@ if [[ ! -x "$PUBLISH_DIR/enki" ]]; then
   exit 1
 fi
 
+# El ejecutable single-file carga estas bibliotecas desde su propia carpeta. Comprueba también
+# publicaciones reutilizadas para evitar distribuir un binario que falla al arrancar.
+for native_library in libSkiaSharp.so libHarfBuzzSharp.so libonigwrap.so libpdfium.so; do
+  if [[ ! -s "$PUBLISH_DIR/$native_library" ]]; then
+    echo "Falta $native_library en $PUBLISH_DIR. Vuelve a publicar Enki antes de empaquetarlo." >&2
+    exit 1
+  fi
+done
+
+# También impide empaquetar publicaciones antiguas incompletas con --skip-publish.
+if [[ ! -s "$PUBLISH_DIR/polar.properties" ]] || ! grep -q '^SUPABASE_URL=https://' "$PUBLISH_DIR/polar.properties" || ! grep -q '^SUPABASE_ANON_KEY=.' "$PUBLISH_DIR/polar.properties"; then
+  echo "Falta la configuración pública de Polar en $PUBLISH_DIR. Vuelve a ejecutar sin --skip-publish con Supabase configurado." >&2
+  exit 1
+fi
+
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -86,9 +101,8 @@ mkdir -p "$STAGE/usr/lib/enki" "$STAGE/usr/bin" "$STAGE/usr/share/applications"
 mkdir -p "$STAGE/usr/share/icons/hicolor/256x256/apps" "$STAGE/usr/share/icons/hicolor/512x512/apps"
 mkdir -p "$STAGE/usr/share/doc/enki"
 
-# Copia el publish tal cual, salvo local.properties: son las credenciales de Supabase del entorno de
-# desarrollo de quien compila (ver enki.csproj y docs/supabase-sync/08-configuracion-y-credenciales.md);
-# nunca deben viajar dentro de un paquete distribuido, con o sin build de Debug.
+# Conserva polar.properties (URL y clave pública generadas al compilar). El archivo local completo
+# se excluye también de publicaciones antiguas porque puede contener otras propiedades privadas.
 cp -a "$PUBLISH_DIR/." "$STAGE/usr/lib/enki/"
 rm -f "$STAGE/usr/lib/enki/local.properties"
 chmod 755 "$STAGE/usr/lib/enki/enki"
@@ -123,6 +137,7 @@ Priority: optional
 Architecture: $DEB_ARCH
 Maintainer: rezztdev <rezztdev@users.noreply.github.com>
 Installed-Size: $INSTALLED_SIZE_KB
+Depends: libvlc5, vlc-plugin-base, vlc-plugin-video-output
 Description: Tu segundo cerebro, en tu escritorio
  Enki es una aplicacion de escritorio de notas Markdown, Kanban, calendario y
  recordatorios pensada para un unico usuario. Funciona por completo sin
@@ -140,13 +155,17 @@ fi
 TARBALL_ROOT="$WORK_DIR/tarball"
 mkdir -p "$TARBALL_ROOT"
 cp -a "$STAGE/usr" "$TARBALL_ROOT/usr"
+cp "$SCRIPT_DIR/install-media-runtime.sh" "$TARBALL_ROOT/install-media-runtime.sh"
 
 cat > "$TARBALL_ROOT/install.sh" <<'INSTALL'
 #!/usr/bin/env bash
 # Instala Enki copiando el árbol usr/ de este paquete dentro de /usr del sistema (requiere sudo).
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-sudo cp -a "$here/usr/." /usr/
+bash "$here/install-media-runtime.sh"
+elevate=()
+if [[ "$EUID" -ne 0 ]]; then elevate=(sudo); fi
+"${elevate[@]}" cp -a "$here/usr/." /usr/
 command -v update-desktop-database >/dev/null 2>&1 && sudo update-desktop-database /usr/share/applications || true
 command -v gtk-update-icon-cache >/dev/null 2>&1 && sudo gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
 echo "Enki instalado. Búscalo en el menú de aplicaciones o ejecuta 'enki' en una terminal."

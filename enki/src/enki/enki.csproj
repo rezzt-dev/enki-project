@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RollForward>LatestMajor</RollForward>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
+    <SelfContained>true</SelfContained>
     <!-- Fase 10 (docs/analisis-proyecto/roadmap.md — "añadir un icono de aplicación real"): embebe
          assets/icon/enki.ico en el .exe publicado en Windows (icono en el Explorador/taskbar antes incluso
          de ejecutar la app). El icono de la ventana en tiempo de ejecución (las tres plataformas) se fija
@@ -19,6 +22,23 @@
          Method_Scenario_Expected...) que son un hallazgo distinto, no cubierto por este punto del roadmap. -->
     <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
+
+  <!-- Distribuye solo la arquitectura publicada y conserva plugins nativos fuera del single-file. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <VlcWindowsX64Enabled>false</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+    <VlcWindowsArm64Enabled>false</VlcWindowsArm64Enabled>
+    <VlcWindowsX64Enabled Condition="'$(RuntimeIdentifier)' == 'win-x64'">true</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled Condition="'$(RuntimeIdentifier)' == 'win-x86'">true</VlcWindowsX86Enabled>
+    <VlcWindowsArm64Enabled Condition="'$(RuntimeIdentifier)' == 'win-arm64'">true</VlcWindowsArm64Enabled>
+  </PropertyGroup>
+  <Target Name="KeepMediaRuntimeExternal" BeforeTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <Content Update="@(Content)" Condition="$([System.String]::Copy('%(Content.Link)').StartsWith('libvlc'))">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </Content>
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <AvaloniaResource Include="assets/**" />
@@ -35,13 +55,7 @@
     <InternalsVisibleTo Include="enki.UITests" />
   </ItemGroup>
 
-  <!-- Supabase credentials (SUPABASE_URL/SUPABASE_ANON_KEY) — never committed, see root .gitignore and
-       docs/supabase-sync/08-configuracion-y-credenciales.md. Copied next to the executable so
-       Services.SupabaseConfig can read it at runtime; absent on a fresh checkout, in which case every
-       Polar-linking feature just stays disabled (SupabaseConfig.IsConfigured is false). -->
-  <ItemGroup>
-    <None Include="../../local.properties" Link="local.properties" CopyToOutputDirectory="PreserveNewest" Condition="Exists('../../local.properties')" />
-  </ItemGroup>
+  <Import Project="../../build/PolarConfiguration.targets" />
 
   <!-- Skills de IA por defecto (docs/agent-docs/ia-skills/especificacion-desarrollo.md §2) — copiadas junto al
        ejecutable para que SkillService.EnsureDefaultSkills las encuentre en runtime vía
@@ -57,7 +71,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
     <PackageReference Include="Avalonia.Controls.ColorPicker" Version="12.1.0" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
-    <PackageReference Include="Avalonia.Controls.WebView" Version="12.0.1" />
+    <PackageReference Include="Avalonia.Controls.WebView" Version="12.1.0" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
@@ -65,6 +79,7 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="CSharpMath.SkiaSharp" Version="1.0.0-pre.2" />
+    <PackageReference Include="Ical.Net" Version="5.2.3" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <PackageReference Include="Material.Icons.Avalonia" Version="3.0.2" />
     <PackageReference Include="PDFtoImage" Version="5.2.1" />
@@ -73,6 +88,9 @@
     <PackageReference Include="Supabase.Realtime" Version="7.4.0" />
     <PackageReference Include="Svg.Skia" Version="2.0.0.4" />
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.4" />
+    <PackageReference Include="LibVLCSharp.Avalonia" Version="3.10.1" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" Condition="$(RuntimeIdentifier.StartsWith('win')) Or ('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows')))" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.17.2" />
     <PackageReference Include="YamlDotNet" Version="16.1.3" />
   </ItemGroup>
 </Project>

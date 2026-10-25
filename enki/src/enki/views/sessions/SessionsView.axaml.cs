@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -19,29 +19,53 @@ namespace enki.Views;
 
 public partial class SessionsView : UserControl
 {
-    /// <summary>Safety net for the loading skeleton (see <see cref="OnGraphReady"/>/<see cref="OnGraphWebViewReady"/>):
-    /// if the WebView never posts back its "ready" message — a JS error, an engine that silently fails to
-    /// navigate — the skeleton would otherwise spin forever instead of just falling back to showing
-    /// whatever did (or didn't) render.</summary>
+    /// <summary>Si el documento no confirma su carga, sustituye el navegador por el grafo nativo.</summary>
     private static readonly TimeSpan GraphLoadingSafetyTimeout = TimeSpan.FromSeconds(6);
 
-    /// <summary>Shortest time the loading screen stays up once shown — long enough to read as a deliberate
-    /// transition rather than a flicker when the graph comes back almost immediately.</summary>
-    private static readonly TimeSpan GraphLoadingMinimumVisible = TimeSpan.FromMilliseconds(520);
+    public static readonly StyledProperty<bool> UseSubtleAnimationsProperty =
+        AvaloniaProperty.Register<SessionsView, bool>(nameof(UseSubtleAnimations));
 
-    /// <summary>Must match the Opacity <c>DoubleTransition</c> on <c>GraphLoadingOverlay</c> in the XAML.</summary>
-    private static readonly TimeSpan GraphLoadingFadeDuration = TimeSpan.FromMilliseconds(360);
+    public bool UseSubtleAnimations
+    {
+        get => GetValue(UseSubtleAnimationsProperty);
+        set => SetValue(UseSubtleAnimationsProperty, value);
+    }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == UseSubtleAnimationsProperty && _graphWebView is not null)
+            _ = InvokeGraphScriptAsync(UseSubtleAnimations
+                ? "window.setSubtleMotion && window.setSubtleMotion(true);"
+                : "window.setSubtleMotion && window.setSubtleMotion(false);");
+    }
+
+    private readonly Func<bool> _isWebEngineAvailable;
     private NativeWebView? _graphWebView;
+    private NativeSessionGraph? _nativeGraph;
+    private SessionGraph? _currentGraph;
+    private bool _webGraphReady;
+    private bool _graphChangedWhileLoading;
+    private string? _pendingLink;
+
     private SessionsViewModel? _subscribedVm;
     private DispatcherTimer? _graphLoadingSafetyTimer;
     private IDisposable? _graphLoadingHideStep;
-    private readonly Stopwatch _graphLoadingVisibleFor = new();
 
-    public SessionsView()
+    public SessionsView() : this(WebViewHost.IsEngineAvailable) { }
+
+    internal SessionsView(Func<bool> isWebEngineAvailable)
     {
+        _isWebEngineAvailable = isWebEngineAvailable;
         InitializeComponent();
+        // El panel lateral nunca comprime el lienzo en ventanas pequeñas; Filtrar conserva
+        // todas las acciones de visibilidad cuando el panel no cabe.
+        GraphHostPanel.SizeChanged += (_, e) => GraphSessionPanel.IsVisible = e.NewSize.Width >= 900;
         DataContextChanged += OnDataContextChanged;
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (_subscribedVm is null) OnDataContextChanged(this, EventArgs.Empty);
+        };
         DetachedFromVisualTree += (_, _) =>
         {
             Unsubscribe();
@@ -51,6 +75,9 @@ public partial class SessionsView : UserControl
             _graphLoadingHideStep = null;
             GraphLoadingAnimation.IsActive = false;
             DisposeGraphWebView();
+            GraphContentHost.Content = null;
+            _nativeGraph = null;
+            _currentGraph = null;
         };
     }
 
@@ -67,6 +94,7 @@ public partial class SessionsView : UserControl
     {
         if (Vm is not { } vm) return;
         if (e.Key != Key.Escape) return;
+        if (vm.IsGraphFilterOpen) { vm.IsGraphFilterOpen = false; e.Handled = true; return; }
 
         if (vm.SessionPendingColor is not null)
         {
@@ -99,9 +127,20 @@ public partial class SessionsView : UserControl
     {
         Unsubscribe();
 
+        _pendingLink = null;
         _subscribedVm = Vm;
-        if (_subscribedVm is null) return;
+        if (_subscribedVm is null)
+        {
+            _graphLoadingSafetyTimer?.Stop();
+            DisposeGraphWebView();
+            GraphContentHost.Content = null;
+            _nativeGraph = null;
+            _currentGraph = null;
+            return;
+        }
 
+        _subscribedVm.GraphDisplayChanged += ApplyGraphDisplay;
+        _subscribedVm.GraphCameraRequested += OnGraphCameraRequested;
         _subscribedVm.GraphReady += OnGraphReady;
         _subscribedVm.GraphUpdated += OnGraphUpdated;
         _subscribedVm.SessionColorChanged += OnSessionColorChanged;
@@ -118,6 +157,8 @@ public partial class SessionsView : UserControl
     private void Unsubscribe()
     {
         if (_subscribedVm is null) return;
+        _subscribedVm.GraphDisplayChanged -= ApplyGraphDisplay;
+        _subscribedVm.GraphCameraRequested -= OnGraphCameraRequested;
         _subscribedVm.GraphReady -= OnGraphReady;
         _subscribedVm.GraphUpdated -= OnGraphUpdated;
         _subscribedVm.SessionColorChanged -= OnSessionColorChanged;
@@ -213,56 +254,106 @@ public partial class SessionsView : UserControl
     private NativeWebView? EnsureGraphView()
     {
         if (_graphWebView is not null) return _graphWebView;
-        if (!WebViewHost.IsEngineAvailable()) return null;
+        if (!_isWebEngineAvailable()) return null;
 
-        var webView = new NativeWebView
+        try
         {
-            Background = Application.Current?.TryFindResource("AppBackgroundAltBrush", out var bg) == true
-                ? bg as IBrush
-                : null
-        };
-        webView.WebMessageReceived += OnWebMessageReceived;
-        GraphContentHost.Content = webView;
-        _graphWebView = webView;
-        return webView;
+            var webView = new NativeWebView
+            {
+                Background = Application.Current?.TryFindResource("AppBackgroundAltBrush", out var bg) == true
+                    ? bg as IBrush
+                    : null
+            };
+            webView.WebMessageReceived += OnWebMessageReceived;
+            _graphWebView = webView;
+            GraphContentHost.Content = webView;
+            return webView;
+        }
+        catch (Exception ex)
+        {
+            LogService.Warning("No se pudo crear el WebView del grafo; se usará el renderizador nativo", ex);
+            DisposeGraphWebView();
+            return null;
+        }
     }
 
-    /// <summary>Fase 10 (docs/analisis-proyecto/roadmap.md — "evaluar si el WebView del grafo de sesiones
-    /// necesita disposición explícita al salir de la pestaña repetidamente"). La respuesta, sin necesitar
-    /// perfilar memoria en vivo: sí. <see cref="MainWindow"/> hospeda cada página vía
-    /// <c>ContentControl.Content</c> + <c>DataTemplate</c> (MainWindow.axaml), y ese mecanismo reconstruye
-    /// la vista desde cero cada vez que se vuelve a la pestaña — no la mantiene viva en segundo plano ni la
-    /// reutiliza por identidad del ViewModel. Cada entrada a Sesiones crea, por tanto, una
-    /// <see cref="NativeWebView"/> nueva (un motor de navegador nativo real: WebView2/WebKitGTK/WKWebView,
-    /// no un control ligero de Avalonia), y <c>Avalonia.Controls.WebView.dll</c> expone un
-    /// <c>System.IDisposable.Dispose()</c> real en su implementación (verificado contra el ensamblado del
-    /// paquete, versión 12.0.1) para liberar ese recurso nativo — que Avalonia no llama por sí sola al
-    /// desconectar el control del árbol visual. Sin esta llamada, cada ciclo de entra/sale a la pestaña
-    /// dejaba un motor de navegador nativo completo huérfano, a la espera de que algún finalizador (si lo
-    /// hay) lo recogiera en un momento indeterminado — el patrón de fuga clásico de controles nativos
-    /// embebidos. <c>as IDisposable</c> en vez de un cast directo: no ata este código a si
-    /// <see cref="NativeWebView"/> implementa la interfaz en sí misma o en un tipo base interno del
-    /// paquete.</summary>
+    /// <summary>Conserva el grafo operativo cuando el navegador falta o no termina de cargar.</summary>
+    private void ShowNativeGraph()
+    {
+        if (_currentGraph is null) return;
+        _graphLoadingSafetyTimer?.Stop();
+        _graphLoadingSafetyTimer = null;
+        _graphLoadingHideStep?.Dispose();
+        _graphLoadingHideStep = null;
+        GraphLoadingOverlay.IsVisible = false;
+        GraphLoadingOverlay.IsHitTestVisible = false;
+        GraphLoadingAnimation.IsActive = false;
+        DisposeGraphWebView();
+        if (_nativeGraph is null)
+        {
+            _nativeGraph = new NativeSessionGraph();
+            _nativeGraph.NodeClicked += id => Vm?.HandleNodeClicked(id);
+            _nativeGraph.NodeDoubleClicked += id => Vm?.HandleNodeDoubleClicked(id);
+            _nativeGraph.PositionsChanged += positions => Vm?.HandlePositionsReported(positions);
+            GraphContentHost.Content = _nativeGraph;
+        }
+        _nativeGraph.SetGraph(_currentGraph, reset: true);
+        _nativeGraph.SetPendingLink(_pendingLink);
+        ApplyGraphDisplay();
+    }
+
+    private async Task InvokeGraphScriptAsync(string script)
+    {
+        if (_graphWebView is not { } webView || !_webGraphReady) return;
+        try { await webView.InvokeScript(script); }
+        catch (Exception ex)
+        {
+            if (!ReferenceEquals(webView, _graphWebView)) return;
+            LogService.Warning("Falló el navegador del grafo; se usará el renderizador nativo", ex);
+            ShowNativeGraph();
+        }
+    }
+
+    /// <summary>Desconecta el navegador del árbol visual y libera los recursos que exponga el adaptador.</summary>
     private void DisposeGraphWebView()
     {
         if (_graphWebView is not { } webView) return;
 
         webView.WebMessageReceived -= OnWebMessageReceived;
-        (webView as IDisposable)?.Dispose();
         _graphWebView = null;
+        _webGraphReady = false;
+        GraphContentHost.Content = null;
+        try { (webView as IDisposable)?.Dispose(); }
+        catch (Exception ex) { LogService.Warning("No se pudo liberar el navegador del grafo", ex); }
     }
 
     private void OnGraphReady(SessionGraph graph)
     {
+        _currentGraph = graph;
+        if (_nativeGraph is not null)
+        {
+            _nativeGraph.SetGraph(graph, reset: true);
+            return;
+        }
         if (EnsureGraphView() is not { } webView)
         {
-            GraphContentHost.Content = WebViewHost.BuildUnavailablePanel(LocalizationService.Instance["Sessions_Graph_Unavailable"]);
+            ShowNativeGraph();
             return;
         }
 
+        _webGraphReady = false;
+        _graphChangedWhileLoading = false;
         ShowGraphLoadingOverlay();
-        var html = SessionGraphRenderer.RenderDocument(graph);
-        webView.NavigateToString(html, null);
+        try
+        {
+            var html = SessionGraphRenderer.RenderDocument(graph, UseSubtleAnimations);
+            webView.NavigateToString(html, null);
+        }
+        catch (Exception ex)
+        {
+            LogService.Warning("No se pudo cargar el grafo web; se usará el renderizador nativo", ex);
+            ShowNativeGraph();
+        }
     }
 
     private void ShowGraphLoadingOverlay()
@@ -274,52 +365,82 @@ public partial class SessionsView : UserControl
         {
             GraphLoadingOverlay.IsVisible = true;
             GraphLoadingAnimation.IsActive = true;
-            _graphLoadingVisibleFor.Restart();
         }
         // Fades in from 0 on a fresh show, or back up if a previous fade-out was still running.
+        GraphLoadingOverlay.IsHitTestVisible = true;
         GraphLoadingOverlay.Opacity = 1;
 
         _graphLoadingSafetyTimer?.Stop();
         _graphLoadingSafetyTimer = new DispatcherTimer { Interval = GraphLoadingSafetyTimeout };
-        _graphLoadingSafetyTimer.Tick += (_, _) => HideGraphLoadingOverlay();
+        _graphLoadingSafetyTimer.Tick += (_, _) =>
+        {
+            LogService.Warning("El grafo web no confirmó su carga; se usará el renderizador nativo");
+            ShowNativeGraph();
+        };
         _graphLoadingSafetyTimer.Start();
     }
 
-    /// <summary>Holds the loading screen for at least <see cref="GraphLoadingMinimumVisible"/> (a graph
-    /// that's ready almost instantly would otherwise flash the animation for a single frame), then fades
-    /// it out and only stops the animation once it's fully transparent.</summary>
+    /// <summary>Retira la capa en cuanto el grafo está listo, sin una espera artificial.</summary>
     private void HideGraphLoadingOverlay()
     {
         _graphLoadingSafetyTimer?.Stop();
         _graphLoadingSafetyTimer = null;
         if (!GraphLoadingOverlay.IsVisible || _graphLoadingHideStep is not null) return;
 
-        var remaining = GraphLoadingMinimumVisible - _graphLoadingVisibleFor.Elapsed;
-        _graphLoadingHideStep = DispatcherTimer.RunOnce(BeginGraphLoadingFadeOut,
-            remaining > TimeSpan.Zero ? remaining : TimeSpan.FromMilliseconds(1));
+        BeginGraphLoadingFadeOut();
     }
 
     private void BeginGraphLoadingFadeOut()
     {
+        GraphLoadingOverlay.IsHitTestVisible = false;
         GraphLoadingOverlay.Opacity = 0;
         _graphLoadingHideStep = DispatcherTimer.RunOnce(() =>
         {
             _graphLoadingHideStep = null;
             GraphLoadingOverlay.IsVisible = false;
             GraphLoadingAnimation.IsActive = false;
-        }, GraphLoadingFadeDuration);
+        }, MotionService.InteractionDuration);
     }
 
     /// <summary>The WebView's own document reported it finished reading its initial nodes/edges into sigma
     /// (the <c>{ type: 'ready' }</c> message posted right after <c>s.graph.read</c> in
     /// SessionGraphRenderer) — dismisses the loading skeleton a beat earlier than waiting for the
     /// never-ending animation loop to draw its first frame would.</summary>
-    private void OnGraphWebViewReady() => HideGraphLoadingOverlay();
+    private void OnGraphWebViewReady()
+    {
+        if (_graphWebView is null) return;
+        _webGraphReady = true;
+        ApplyGraphDisplay();
+        HideGraphLoadingOverlay();
+        // Un filtro puede cambiar mientras carga el documento: aplica el estado más reciente.
+        if (_graphChangedWhileLoading && _currentGraph is { } graph)
+            _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetGraphDataScript(graph));
+        _graphChangedWhileLoading = false;
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetPendingLinkScript(_pendingLink));
+    }
+
+    private void ApplyGraphDisplay()
+    {
+        if (Vm is not { } vm) return;
+        _nativeGraph?.SetDisplay(vm.ShowGraphMesh, vm.ShowGraphLabels, vm.GraphNodeSize, vm.GraphLinkThickness);
+        var json = JsonSerializer.Serialize(new { mesh = vm.ShowGraphMesh, labels = vm.ShowGraphLabels,
+            nodeSize = vm.GraphNodeSize, linkThickness = vm.GraphLinkThickness });
+        _ = InvokeGraphScriptAsync($"window.__enkiSetDisplay && window.__enkiSetDisplay({json});");
+    }
+
+    private void OnGraphCameraRequested(string action)
+    {
+        _nativeGraph?.MoveCamera(action);
+        _ = InvokeGraphScriptAsync($"window.__enkiCamera && window.__enkiCamera({JsonSerializer.Serialize(action)});");
+    }
 
     private void OnGraphUpdated(SessionGraph graph)
     {
+        _currentGraph = graph;
+        _nativeGraph?.SetGraph(graph, reset: false);
         if (_graphWebView is null) return;
-        _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildSetGraphDataScript(graph));
+        if (!_webGraphReady) _graphChangedWhileLoading = true;
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetGraphDataScript(graph));
     }
 
     // Link mode itself no longer needs to reach the WebView at all — SessionsViewModel.HandleNodeClicked
@@ -328,20 +449,22 @@ public partial class SessionsView : UserControl
     // any other pending-pick change.
     private void OnPendingLinkChanged(string? globalId)
     {
-        if (_graphWebView is null) return;
-        _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildSetPendingLinkScript(globalId));
+        _pendingLink = globalId;
+        _nativeGraph?.SetPendingLink(globalId);
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetPendingLinkScript(globalId));
     }
 
     private void OnLinkRejected(string fromGlobalId, string toGlobalId)
     {
-        if (_graphWebView is null) return;
-        _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildLinkRejectedScript(fromGlobalId, toGlobalId));
+        _nativeGraph?.ShowRejectedLink(fromGlobalId, toGlobalId);
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildLinkRejectedScript(fromGlobalId, toGlobalId));
     }
 
     private void OnSessionColorChanged(string sessionId, string color)
     {
-        if (_graphWebView is null) return;
-        _ = _graphWebView.InvokeScript(SessionGraphRenderer.BuildSetSessionColorScript(sessionId, color));
+        _nativeGraph?.SetSessionColor(sessionId, color);
+        if (!_webGraphReady) _graphChangedWhileLoading = true;
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetSessionColorScript(sessionId, color));
     }
 
     private void OnWebMessageReceived(object? sender, WebMessageReceivedEventArgs e)
@@ -351,7 +474,10 @@ public partial class SessionsView : UserControl
 
         // WebMessageReceived isn't guaranteed to land on the UI thread across every native adapter, and
         // the handler below both touches bound VM state and calls back into the WebView.
-        Dispatcher.UIThread.Post(() => HandleGraphMessage(body));
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ReferenceEquals(sender, _graphWebView)) HandleGraphMessage(body);
+        });
     }
 
     private void HandleGraphMessage(string json)

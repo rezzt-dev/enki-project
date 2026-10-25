@@ -61,7 +61,7 @@ public class TrashViewCardLayoutTests : IDisposable
         vault.ImportFile(sourceFile);
         vault.DeleteFile(vault.GetFiles().Single());
 
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "c1", Title = LongTitle },
             ColumnId = "col-1",

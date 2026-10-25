@@ -490,6 +490,11 @@ public static class NoteExportRenderer
     private static void AppendImage(StringBuilder sb, MdSpan span, string alt, string? noteDirectory, string? vaultRootPath)
     {
         var url = span.LinkTarget ?? string.Empty;
+        if (NoteAttachmentService.IsAttachmentTarget(url))
+        {
+            AppendLink(sb, span, string.IsNullOrWhiteSpace(alt) ? Path.GetFileName(url) : alt);
+            return;
+        }
         // A pre-existing data: image (pasted straight into the note, or from a previous export) doesn't
         // match SafeSchemes/LooksLikeLocalPath — it's neither an http(s)/mailto URL nor a filesystem path
         // — so without this check it was silently dropped to alt-text-only even though it's already a

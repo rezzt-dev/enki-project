@@ -166,7 +166,10 @@ public sealed partial class FilesViewModel : ViewModelBase
         _vaultService = vaultService;
         _sessionService = sessionService;
         _notificationService = notificationService;
+        InitializeFolderManager();
         _settingsService = settingsService;
+        if (_settingsService is not null)
+            _settingsService.WorkspaceSessionChanged += SelectSession;
         _searchDebounceTimer.Tick += (_, _) =>
         {
             _searchDebounceTimer.Stop();
@@ -185,6 +188,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// un cambio de idioma en tiempo real (i18n Fase 4).</summary>
     public void RefreshLocalizedLabels()
     {
+        FolderManager.RefreshLocalizedLabels();
         BuildSortOptions();
         OnPropertyChanged(nameof(CurrentFolderLabel));
         OnPropertyChanged(nameof(FilesCountLabel));
@@ -234,6 +238,8 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
+        FolderManager.CloseCommand.Execute(null);
+        OnPropertyChanged(nameof(EffectiveRootPath));
         OnPropertyChanged(nameof(IsSelectedSessionLocked));
         OnPropertyChanged(nameof(ShowTreeEmptyState));
         SetCurrentFolderQuietly(null);
@@ -242,17 +248,10 @@ public sealed partial class FilesViewModel : ViewModelBase
         Reload();
     }
 
-    /// <summary>Guarda qué sesión está elegida en <see cref="Models.AppSettings.FilesSessionId"/> para que la
-    /// app reabra Archivos en el mismo espacio de trabajo en vez de volver siempre al vault — mismo
-    /// mecanismo, y por el mismo motivo, que <c>NotesViewModel.PersistSelectedSession</c>, con la que esta
-    /// sección comparte selector. No-op en los tests que construyen este viewmodel sin
-    /// <see cref="SettingsService"/>. Se escribe en cada cambio de selección, así que el ajuste y la
-    /// selección viva nunca se separan.</summary>
+    /// <summary>Publica la sesión común a Notas y Archivos y la guarda entre arranques.</summary>
     private void PersistSelectedSession()
     {
-        if (_settingsService is null) return;
-        _settingsService.Settings.FilesSessionId = SelectedSessionOption?.Session?.Id;
-        _settingsService.Save();
+        _settingsService?.SelectWorkspaceSession(SelectedSessionOption?.Session?.Id);
     }
 
     partial void OnIsEmptyChanged(bool value) => NotifyBrowserStateChanged();
@@ -260,13 +259,14 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// <summary>Rehace el selector de espacio de trabajo (el vault más cada sesión) conservando la elección
     /// actual si sigue existiendo. Se llama en el arranque y cada vez que se crea/renombra/borra una sesión,
     /// haya pasado aquí o en la página de Sesiones.</summary>
-    public void ReloadSessions()
+    public void ReloadSessions(bool restoreStoredSelection = false)
     {
         // En el arranque todavía no hay selección viva, y ahí es donde entra la guardada: la sesión con la
-        // que se cerró la app. Pasado el arranque las dos coinciden siempre —cada cambio de selección
-        // reescribe el ajuste—, así que este mismo orden vale para las recargas posteriores sin resucitar
-        // nada que el usuario ya dejó atrás. Mismo criterio que NotesViewModel.ReloadSessions.
-        var targetId = SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.FilesSessionId;
+        // que se cerró la app. Las recargas normales conservan la selección viva; al cambiar de vault
+        // se restaura expresamente la elección guardada para el nuevo vault.
+        var targetId = restoreStoredSelection
+            ? _settingsService?.Settings.WorkspaceSessionId
+            : SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.WorkspaceSessionId;
 
         SessionOptions.Clear();
         SessionOptions.Add(new SessionOptionViewModel(null));
@@ -292,7 +292,17 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     public void Reload()
     {
+        if (IsSelectedSessionLocked) FolderManager.CloseCommand.Execute(null);
+        PasteEntryCommand.NotifyCanExecuteChanged();
+        CopyEntryCommand.NotifyCanExecuteChanged();
+        CutEntryCommand.NotifyCanExecuteChanged();
         _appliedSearch = SearchText.Trim();
+        if (ActivePreview is { } open && (_vaultService.IsPathInLockedSession(open.File.FullPath)
+            || !IsSameOrUnder(open.File.FullPath, EffectiveRootPath)))
+        {
+            open.PdfDocument?.Close();
+            ActivePreview = null;
+        }
 
         // Drop any decrypted PDF temp copies the outgoing cards were holding onto before discarding them —
         // Reload() runs on every folder switch/search keystroke, so this is the main point at which those
@@ -366,6 +376,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         RebuildBreadcrumbs();
         NotifyBrowserStateChanged();
         AfterReload();
+        UpdateCutAppearance();
     }
 
     /// <summary>Lo que va detrás de cada recarga en las dos disposiciones. El árbol se reconstruye aquí, pero
@@ -733,12 +744,14 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// llamada es no-op si ya está cargado, así que se puede pedir tantas veces como haga falta. Está
     /// aparte de <see cref="OpenCard"/> porque hay más momentos en que hace falta: renombrar o mover el
     /// archivo abierto, que dejan la tarjeta en blanco (ver <see cref="FileCardViewModel.UpdateFile"/>).</summary>
-    private static void LoadPreviewContent(FileCardViewModel card)
+    private void LoadPreviewContent(FileCardViewModel card)
     {
         card.EnsureThumbnailLoaded();
         card.EnsurePreviewImageLoaded();
         card.EnsurePdfDocumentLoaded();
         card.EnsureCodeContentLoaded();
+        card.EnsureMediaPreviewLoaded(message => _notificationService.Push(
+            LocalizationService.Instance["Files_MediaErrorTitle"], message, NotificationSeverity.Error));
     }
 
     [RelayCommand]
@@ -934,7 +947,8 @@ public sealed partial class FilesViewModel : ViewModelBase
     private NoteFolder? TryCreateFolder(string parentPath)
     {
         NoteFolder? created = null;
-        TryVaultOperation("Files_Notify_FolderCreateFailed_Title", () => created = VaultService.CreateFolder(parentPath));
+        TryVaultOperation("Files_Notify_FolderCreateFailed_Title", () => created =
+            _vaultService.CreateManagedFolder(parentPath, LocalizationService.Instance["Vault_DefaultFolderName"]));
         return created;
     }
 
@@ -961,35 +975,7 @@ public sealed partial class FilesViewModel : ViewModelBase
     /// renombrar la que contenía el archivo abierto dejaba la previsualización leyendo de una ruta muerta.</summary>
     private void RenameFolderAt(NoteFolder folder, string newName)
     {
-        var oldPath = folder.FullPath;
-        NoteFolder? renamed = null;
-        if (!TryVaultOperation("Files_Notify_FolderRenameFailed_Title", () => renamed = VaultService.RenameFolder(folder, newName))
-            || renamed is null)
-        {
-            Refresh();
-            return;
-        }
-
-        if (!PathsEqual(oldPath, renamed.FullPath))
-        {
-            _folderRemap = (oldPath, renamed.FullPath);
-            if (ActivePreview is { } preview && IsSameOrUnder(preview.File.FullPath, oldPath))
-            {
-                preview.File.FullPath = RemapPath(preview.File.FullPath);
-                preview.UpdateFile(preview.File);
-                LoadPreviewContent(preview);
-            }
-        }
-
-        try
-        {
-            RemapTreeSelection();
-            Refresh();
-        }
-        finally
-        {
-            _folderRemap = null;
-        }
+        TryVaultOperation("Files_Notify_FolderRenameFailed_Title", () => _vaultService.RenameManagedFolder(folder.FullPath, newName));
     }
 
     /// <summary>Pide confirmación antes de mandar una carpeta a la papelera, venga de donde venga: la fila del
@@ -1026,6 +1012,7 @@ public sealed partial class FilesViewModel : ViewModelBase
 
     private void DeleteFolderAt(string folderPath)
     {
+        if (ActivePreview is { } playing && IsSameOrUnder(playing.File.FullPath, folderPath)) playing.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_FolderDeleteFailed_Title",
                 () => _vaultService.DeleteFolder(new NoteFolder { FullPath = folderPath })))
             return;
@@ -1039,6 +1026,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         }
         if (CurrentFolder is not null && IsSameOrUnder(CurrentFolder.FullPath, folderPath)) SetCurrentFolderQuietly(null);
 
+        _notificationService.Push(LocalizationService.Instance["Folders_Done"], Path.GetFileName(folderPath), NotificationSeverity.Warning);
         Refresh();
     }
 
@@ -1051,6 +1039,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         card.IsRenaming = false;
         if (newName.Length == 0 || newName == card.FileName) return;
 
+        card.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_FileRenameFailed_Title",
                 () => card.UpdateFile(_vaultService.RenameFile(card.File, newName))))
             return;
@@ -1100,6 +1089,7 @@ public sealed partial class FilesViewModel : ViewModelBase
                 neighbourPath = sequence[index + 1 < sequence.Count ? index + 1 : index - 1].File.FullPath;
         }
 
+        card.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_DeleteFailed_Title", () => _vaultService.DeleteFile(card.File))) return;
 
         card.PdfDocument?.Close();
@@ -1115,6 +1105,7 @@ public sealed partial class FilesViewModel : ViewModelBase
         var currentFolderPath = Path.GetDirectoryName(card.File.FullPath);
         if (PathsEqual(currentFolderPath, destinationFolderPath)) return;
 
+        card.MediaPreview?.Close();
         if (!TryVaultOperation("Files_Notify_MoveFailed_Title", () => _vaultService.MoveFile(card.File, destinationFolderPath)))
             return;
 

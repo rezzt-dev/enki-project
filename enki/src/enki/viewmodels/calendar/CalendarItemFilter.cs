@@ -40,7 +40,7 @@ public static class CalendarItemFilter
         if (hideGhostOccurrences && isGhostOccurrence) return false;
         if (hideCompleted && isCompleted) return false;
 
-        if (priorityFilters.Count > 0 && sourceType != CalendarItemSourceType.Reminder
+        if (priorityFilters.Count > 0 && sourceType is not (CalendarItemSourceType.Reminder or CalendarItemSourceType.ExternalCalendar)
             && !priorityFilters.Contains(priority)) return false;
 
         if (tagFilters.Count > 0

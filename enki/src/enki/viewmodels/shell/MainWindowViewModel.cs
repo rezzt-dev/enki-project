@@ -62,6 +62,25 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly PolarTaskService _polarTaskService;
     private readonly PolarSyncService _polarSyncService;
     private readonly PolarRealtimeService _polarRealtimeService;
+
+    /// <summary>CLI de Claude y su historial de chats (asistente de IA). Se construyen siempre porque no
+    /// cuestan nada —ninguno toca el disco ni lanza procesos hasta que la IA está encendida y alguien abre
+    /// el asistente— y porque viven fuera del vault: sobreviven a un cambio de vault sin reconstruirse.
+    /// Ver <c>.docs/project-info/asistente-ia.md</c>.</summary>
+    private readonly ClaudeCliService _claudeCliService;
+    private readonly AiChatService _aiChatService;
+
+    /// <summary>Servidor MCP con el que el asistente trabaja dentro del vault (<see cref="AiVaultToolbox"/>).
+    /// Se construye en <c>InitializeShell</c> porque sus herramientas necesitan a Notas, y solo escucha
+    /// mientras hay un turno en curso o reciente; se para al apagar la IA, al cambiar de vault y al salir.</summary>
+    private EnkiMcpServer? _aiVaultTools;
+
+    /// <summary>Hay ya un refresco pendiente por cambios del asistente (ver <c>OnAssistantChangedVault</c>).</summary>
+    private bool _assistantRefreshQueued;
+
+    /// <summary>Estado del CLI que comparten Ajustes y el Asistente.</summary>
+    public ClaudeCliStatusViewModel AiCliStatus { get; }
+
     private readonly DispatcherTimer _reminderTimer;
 
     /// <summary>Comprueba periódicamente si toca un backup automático (Ajustes › General, Fase 1 de
@@ -126,6 +145,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     public NotificationsViewModel? Notifications { get; private set; }
     public HabitsViewModel? Habits { get; private set; }
     public StatisticsViewModel? Statistics { get; private set; }
+    public AssistantViewModel? Assistant { get; private set; }
 
     [ObservableProperty]
     private VaultSetupViewModel? _vaultSetup;
@@ -142,6 +162,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     /// <c>Notes.ActiveEditor.IsZenMode</c> path. Set via <see cref="OnNotesPropertyChanged"/>, wired once
     /// per <see cref="Notes"/> instance in <c>InitializeShell</c>.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAssistantPanelVisible))]
     private bool _isZenMode;
 
     private void OnNotesPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -193,7 +214,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _isVaultReady;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageRevealAllowsTranslation))]
     private ViewModelBase? _currentPage;
+
+    /// <summary>La rejilla del calendario conserva sus coordenadas desde el primer fotograma.</summary>
+    public bool PageRevealAllowsTranslation => CurrentPage is not CalendarViewModel;
 
     [ObservableProperty]
     private bool _isSidebarExpanded;
@@ -208,7 +233,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _isSettingsActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AreWindowControlsVisible))]
     private bool _useCustomTitleBar;
+
+    /// <summary>Los controles propios solo se muestran cuando ambas preferencias están activadas.</summary>
+    public bool AreWindowControlsVisible => UseCustomTitleBar && _settingsService.Settings.ShowWindowControls;
+
+    private void RefreshWindowControls() => OnPropertyChanged(nameof(AreWindowControlsVisible));
 
     // ===================== Logo del brand header (Ajustes › Apariencia) =====================
     // El cuadro de 32×32 de la esquina superior izquierda del sidebar lleva el icono de Enki adaptativo al
@@ -217,8 +248,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     // único sitio que lo hace. Ver docs/agent-docs/logo-personalizado.md.
 
     /// <summary>Lado del cuadro del logo en el sidebar, en px — el mismo valor que
-    /// <c>MainWindow.axaml</c>, aquí porque la mitad es el radio que lo vuelve un círculo exacto.</summary>
-    private const double BrandLogoSize = 32;
+    /// <c>ShellView.axaml</c>, aquí porque la mitad es el radio que lo vuelve un círculo exacto.
+    /// Se redujo de 32 a 24 para hacer el icono personalizado del panel lateral más pequeño y menos
+    /// dominante junto al texto del header.</summary>
+    private const double BrandLogoSize = 24;
 
     /// <summary>Bytes de la imagen personalizada, o <c>null</c> para usar el icono de Enki. Se pasan como
     /// bytes y no como ruta para que la vista no mantenga abierto el archivo que Ajustes puede estar a
@@ -332,6 +365,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _statisticsPanelEnabled;
 
+    /// <summary>La sección Asistente existe solo con la IA encendida (Ajustes › Inteligencia artificial):
+    /// es el mismo flag, <see cref="Models.AiSettings.Enabled"/>, no un interruptor de visibilidad aparte.</summary>
+    [ObservableProperty]
+    private bool _assistantPanelEnabled;
+
     /// <summary>Zoom de interfaz (docs/funcionalidad-zoom-interfaz.md) — factor aplicado al
     /// <c>ScaleTransform</c> que envuelve el <c>Grid</c> raíz de <c>MainWindow.axaml</c>. Derivado de
     /// <c>VaultSettings.UiZoomPercent</c> (por-vault, no global), refrescado en <see cref="InitializeShell"/>
@@ -352,38 +390,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     partial void OnIsSidebarExpandedChanged(bool value) => OnPropertyChanged(nameof(SidebarToggleIcon));
 
-    /// <summary>Page-entry reveal (Fase 2 §7, same Opacity 0→1 + TranslateY 8px/200-300ms CubicEaseOut
-    /// technique as <see cref="CalendarViewModel"/>'s own reveal) applied once at the shell level around
-    /// <see cref="CurrentPage"/> instead of duplicated per page, so every <see cref="Navigate"/>/
-    /// <see cref="OpenSettings"/>/<see cref="OpenReminders"/>/<see cref="OpenNotifications"/> switch gets it
-    /// for free.</summary>
+    /// <summary>Solicita una entrada visual; la vista gestiona los fotogramas y su cancelación.</summary>
     [ObservableProperty]
-    private double _pageRevealOpacity = 1;
+    private int _pageRevealRevision;
 
-    [ObservableProperty]
-    private double _pageRevealOffsetY;
-
-    private const double PageRevealTravelPixels = 8;
-
-    private void AnimatePageReveal()
-    {
-        PageRevealOpacity = 0;
-        PageRevealOffsetY = PageRevealTravelPixels;
-        Dispatcher.UIThread.Post(() =>
-        {
-            PageRevealOpacity = 1;
-            PageRevealOffsetY = 0;
-        }, DispatcherPriority.Loaded);
-    }
+    private void AnimatePageReveal() => PageRevealRevision++;
 
     [RelayCommand]
     private void Navigate(AppPage page)
     {
+        // Con la IA apagada no hay asistente al que llegar, tampoco por su atajo de teclado.
+        if (page == AppPage.Assistant && !AssistantPanelEnabled) return;
         foreach (var item in NavItems) item.IsActive = item.Page == page;
         foreach (var item in BottomNavItems) item.IsActive = item.Page == page;
         IsSettingsActive = false;
 
-        CurrentPage = page switch
+        ViewModelBase? targetPage = page switch
         {
             AppPage.Dashboard => Dashboard,
             AppPage.Calendar => Calendar,
@@ -399,25 +421,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
             AppPage.Statistics => Statistics,
             AppPage.Reminders => Reminders,
             AppPage.Notifications => Notifications,
+            AppPage.Assistant => Assistant,
             _ => Dashboard
         };
-        AnimatePageReveal();
+        if (ReferenceEquals(CurrentPage, targetPage)) return;
 
-        if (page == AppPage.Dashboard) Dashboard!.Reload();
-        if (page == AppPage.Files) Files!.Refresh();
-        if (page == AppPage.Skills) Skills!.Reload();
-        if (page == AppPage.Sessions) Sessions!.Reload();
-        if (page == AppPage.Kanban) Kanban!.Reload();
-        if (page == AppPage.Habits) Habits!.Reload();
-        if (page == AppPage.Statistics) Statistics!.Reload();
-        if (page == AppPage.Reminders) Reminders!.Reload();
-        if (page == AppPage.Notifications) Notifications!.Reload();
-        if (page == AppPage.Trash)
-        {
-            Trash!.Reload();
-            UpdateTrashBadge();
-        }
-        if (page == AppPage.TagManager) TagManager!.Reload();
+        CurrentPage = targetPage;
+        AnimatePageReveal();
+        if (targetPage is AssistantViewModel assistant) assistant.OnActivated();
+        // Si no hay vigilancia nativa, releer los módulos de disco conserva los cambios externos.
+        if (!_settingsService.Settings.VaultWatchExternalChanges || _vaultChangeWatcher.IsPolling)
+            _dirtyPages.UnionWith([AppPage.Dashboard, AppPage.Files, AppPage.Skills, AppPage.Sessions,
+                AppPage.Trash, AppPage.TagManager, AppPage.Statistics]);
+        QueueCurrentPageRefresh();
     }
 
     [RelayCommand]
@@ -462,6 +478,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void OpenSettings()
     {
+        if (ReferenceEquals(CurrentPage, Settings)) return;
         foreach (var item in NavItems) item.IsActive = false;
         foreach (var item in BottomNavItems) item.IsActive = false;
         IsSettingsActive = true;
@@ -560,8 +577,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (_shutdownCompleted) return;
         _shutdownCompleted = true;
 
+        StopPageRefresh();
+        _reminderTimer.Stop();
+        _autoBackupTimer.Stop();
+        _polarSyncTimer.Stop();
+
         MarkdownImageCache.Clear();
         ShortcutRegistry.Changed -= _shortcutChangedHandler;
+        Assistant?.CancelAll();
+        _aiVaultTools?.Stop();
         _globalHotkeyService.Dispose();
         _vaultChangeWatcher.Dispose();
         _webClipService.Dispose();

@@ -40,6 +40,23 @@ public sealed partial class CalendarQuickCreateViewModel : ObservableObject
 
     public bool IsPolarAvailable { get; }
 
+    public ObservableCollection<KanbanBoard> Boards { get; } = [];
+    [ObservableProperty] private KanbanBoard? _selectedBoard;
+    public bool HasMultipleBoards => Boards.Count > 1;
+    public void SetBoards(IEnumerable<KanbanBoard> boards, KanbanBoard defaultBoard)
+    {
+        Boards.Clear();
+        foreach (var board in boards) Boards.Add(board);
+        SelectedBoard = defaultBoard;
+        OnPropertyChanged(nameof(HasMultipleBoards));
+    }
+    partial void OnSelectedBoardChanged(KanbanBoard? value)
+    {
+        Columns.Clear();
+        if (value is not null) foreach (var column in value.Columns) Columns.Add(column);
+        SelectedColumn = Columns.FirstOrDefault(c => c.Role == CoreColumnRole.Backlog) ?? Columns.FirstOrDefault();
+    }
+
     public ObservableCollection<KanbanColumn> Columns { get; } = [];
     public ObservableCollection<PolarTaskList> PolarLists { get; } = [];
     public ObservableCollection<KanbanCalendarDayViewModel> CalendarDays { get; } = [];

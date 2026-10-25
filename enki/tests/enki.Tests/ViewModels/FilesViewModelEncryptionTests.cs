@@ -40,6 +40,23 @@ public class FilesViewModelEncryptionTests : IDisposable
     }
 
     [Fact]
+    public void LockingSession_ClosesAnOpenMediaPreviewOnRefresh()
+    {
+        var (vm, sessions, vault) = CreateViewModel();
+        var (session, _) = sessions.CreateEncrypted("Media", "una-contraseña-larga");
+        var source = Path.Combine(_storageDirectory, "sound.wav");
+        File.WriteAllBytes(source, [1, 2, 3]);
+        vault.ImportFile(source, session.RootPath);
+        vm.ReloadSessions();
+        vm.SelectSession(session.Id);
+        vm.OpenCardCommand.Execute(vm.Files.Single());
+        Assert.NotNull(vm.ActivePreview!.MediaPreview);
+        sessions.Lock(session);
+        vm.Refresh();
+        Assert.Null(vm.ActivePreview);
+    }
+
+    [Fact]
     public void SelectingLockedEncryptedSession_HidesItsFiles()
     {
         var (vm, sessions, vault) = CreateViewModel();

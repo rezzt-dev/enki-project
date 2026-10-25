@@ -21,6 +21,7 @@ namespace enki.Views;
 /// justo lo que no debe existir por duplicado: una instalación de TextMate y un PDFium por cada vista viva.</summary>
 public partial class FilePreviewView : UserControl
 {
+    private readonly AvaloniaEdit.Search.SearchPanel _codeSearch;
     private TextMate.Installation? _codeTextMateInstallation;
     private RegistryOptions? _codeRegistryOptions;
     private FileCardViewModel? _currentCodeCard;
@@ -33,6 +34,7 @@ public partial class FilePreviewView : UserControl
     {
         InitializeComponent();
 
+        _codeSearch = AvaloniaEdit.Search.SearchPanel.Install(CodeEditor);
         CodeEditor.Initialized += CodeEditor_Initialized;
         CodeEditor.DataContextChanged += CodeEditor_DataContextChanged;
 
@@ -52,6 +54,8 @@ public partial class FilePreviewView : UserControl
         AttachedToVisualTree += (_, _) =>
         {
             SubscribeToViewModel();
+            AttachCodeCard(CodeEditor.DataContext as FileCardViewModel);
+            ApplyCodeGrammar();
             if (Application.Current is { } app) app.ActualThemeVariantChanged += OnAppThemeChanged;
         };
         DetachedFromVisualTree += (_, _) =>
@@ -108,6 +112,13 @@ public partial class FilePreviewView : UserControl
         ApplyCodeGrammar();
     }
 
+    private void SearchCode_Click(object? sender, RoutedEventArgs e)
+    {
+        CodeEditor.Focus();
+        _codeSearch.Open();
+        _codeSearch.Reactivate();
+    }
+
     private static ThemeName CurrentCodeTheme() =>
         Application.Current?.ActualThemeVariant == ThemeVariant.Light ? ThemeName.LightPlus : ThemeName.DarkPlus;
 
@@ -129,6 +140,7 @@ public partial class FilePreviewView : UserControl
 
         if (_currentCodeCard is not null) _currentCodeCard.PropertyChanged -= OnCodeCardPropertyChanged;
         _currentCodeCard = card;
+        _appliedCodeLanguage = null;
         if (card is null) return;
 
         card.PropertyChanged += OnCodeCardPropertyChanged;
@@ -154,6 +166,7 @@ public partial class FilePreviewView : UserControl
         {
             try
             {
+                if (_appliedCodeLanguage != language) return;
                 var scopeName = _codeRegistryOptions.GetLanguageByExtension(language) is { } found
                     ? _codeRegistryOptions.GetScopeByLanguageId(found.Id)
                     : null;
@@ -181,13 +194,13 @@ public partial class FilePreviewView : UserControl
         ReportPdfViewport();
     }
 
-    /// <summary>El visor ajusta la página al ancho disponible y renderiza a la escala de la pantalla: los dos
+    /// <summary>El visor ajusta la página al tamaño disponible y renderiza a la escala de la pantalla: estos
     /// datos solo los tiene la vista. Con el visor todavía oculto (cargando) el ancho es 0 y no se informa; el
     /// cambio de tamaño al mostrarse lo vuelve a llamar.</summary>
     private void ReportPdfViewport()
     {
         if (_pdfDocument is null) return;
-        _pdfDocument.SetViewport(PdfPageHost.Bounds.Width, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
+        _pdfDocument.SetViewport(PdfPageHost.Bounds.Width, PdfPageHost.Bounds.Height, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
     }
 
     /// <summary>Cambiar de página vuelve arriba del todo —antes la página nueva aparecía con el desplazamiento

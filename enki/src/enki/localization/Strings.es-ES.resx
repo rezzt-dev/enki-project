@@ -274,6 +274,18 @@
   <data name="Calendar_Toolbar_TodayButton" xml:space="preserve">
     <value>Hoy</value>
   </data>
+  <data name="Calendar_TodayPopover_Pending" xml:space="preserve">
+    <value>Pendientes</value>
+  </data>
+  <data name="Calendar_TodayPopover_Completed" xml:space="preserve">
+    <value>Completadas</value>
+  </data>
+  <data name="Calendar_TodayPopover_Empty" xml:space="preserve">
+    <value>No hay nada programado para hoy.</value>
+  </data>
+  <data name="Calendar_TodayPopover_ShowInCalendar" xml:space="preserve">
+    <value>Ver en el calendario</value>
+  </data>
   <data name="Calendar_Toolbar_ToggleSidebarTooltip" xml:space="preserve">
     <value>Mostrar u ocultar barra lateral</value>
   </data>
@@ -1391,6 +1403,102 @@
   </data>
   <data name="Kanban_Lists_SelectPrompt" xml:space="preserve">
     <value>Crear una lista para empezar</value>
+  </data>
+  <data name="Kanban_Multi_Boards" xml:space="preserve">
+    <value>Tableros</value>
+  </data>
+  <data name="Kanban_Multi_CannotDelete" xml:space="preserve">
+    <value>Solo se pueden eliminar tableros vacíos, sin tarjetas archivadas ni en la papelera. El último tablero no se puede eliminar.</value>
+  </data>
+  <data name="Kanban_Multi_Column" xml:space="preserve">
+    <value>Columna</value>
+  </data>
+  <data name="Kanban_Multi_Create" xml:space="preserve">
+    <value>Nuevo tablero</value>
+  </data>
+  <data name="Kanban_Multi_Default" xml:space="preserve">
+    <value>Predeterminado</value>
+  </data>
+  <data name="Kanban_Multi_Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Kanban_Multi_DeleteConfirm" xml:space="preserve">
+    <value>¿Eliminar este tablero? Solo se pueden eliminar tableros vacíos.</value>
+  </data>
+  <data name="Kanban_Multi_Deleted" xml:space="preserve">
+    <value>Tablero eliminado.</value>
+  </data>
+  <data name="Kanban_Multi_Description" xml:space="preserve">
+    <value>Activa la gestión de varios tableros locales: cada uno con sus columnas y tarjetas, todos dentro de este vault.</value>
+  </data>
+  <data name="Kanban_Multi_DisableBlocked" xml:space="preserve">
+    <value>No se puede desactivar: este vault ya guarda más de un tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Discard" xml:space="preserve">
+    <value>Descartar y cambiar</value>
+  </data>
+  <data name="Kanban_Multi_DuplicateName" xml:space="preserve">
+    <value>Ya existe un tablero con ese nombre.</value>
+  </data>
+  <data name="Kanban_Multi_Empty" xml:space="preserve">
+    <value>Este tablero todavía no tiene tarjetas. Crea la primera para empezar.</value>
+  </data>
+  <data name="Kanban_Multi_Enabled" xml:space="preserve">
+    <value>Varios tableros</value>
+  </data>
+  <data name="Kanban_Multi_FirstTask" xml:space="preserve">
+    <value>Crear la primera tarjeta</value>
+  </data>
+  <data name="Kanban_Multi_InvalidName" xml:space="preserve">
+    <value>El nombre debe tener entre 1 y 80 caracteres.</value>
+  </data>
+  <data name="Kanban_Multi_LoadFailed" xml:space="preserve">
+    <value>No se pudo cargar el tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Manage" xml:space="preserve">
+    <value>Gestionar tableros</value>
+  </data>
+  <data name="Kanban_Multi_MissingDestination" xml:space="preserve">
+    <value>Elige un tablero y una columna de destino.</value>
+  </data>
+  <data name="Kanban_Multi_Move" xml:space="preserve">
+    <value>Mover a otro tablero</value>
+  </data>
+  <data name="Kanban_Multi_Moved" xml:space="preserve">
+    <value>Tarjeta movida al tablero de destino.</value>
+  </data>
+  <data name="Kanban_Multi_Name" xml:space="preserve">
+    <value>Nombre del tablero</value>
+  </data>
+  <data name="Kanban_Multi_OpenDestination" xml:space="preserve">
+    <value>Ver tablero destino</value>
+  </data>
+  <data name="Kanban_Multi_Recovered" xml:space="preserve">
+    <value>Se activó la gestión de varios tableros: este vault ya guarda más de uno.</value>
+  </data>
+  <data name="Kanban_Multi_Rename" xml:space="preserve">
+    <value>Renombrar</value>
+  </data>
+  <data name="Kanban_Multi_SaveFailed" xml:space="preserve">
+    <value>No se pudo guardar el cambio en el tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Search" xml:space="preserve">
+    <value>Buscar tableros…</value>
+  </data>
+  <data name="Kanban_Multi_Select" xml:space="preserve">
+    <value>Elegir tablero</value>
+  </data>
+  <data name="Kanban_Multi_SetDefault" xml:space="preserve">
+    <value>Usar como predeterminado</value>
+  </data>
+  <data name="Kanban_Multi_Unarchive" xml:space="preserve">
+    <value>Esta tarjeta está archivada: al moverla vuelve al tablero.</value>
+  </data>
+  <data name="Kanban_Multi_Unsaved" xml:space="preserve">
+    <value>Tienes cambios sin guardar en la tarjeta que estás editando.</value>
+  </data>
+  <data name="Kanban_Multi_VaultScope" xml:space="preserve">
+    <value>Los tableros viven en este vault: cambiar de vault cambia el juego entero.</value>
   </data>
   <data name="Kanban_NotePicker_NoResults" xml:space="preserve">
     <value>Sin resultados</value>
@@ -3451,10 +3559,10 @@
     <value>Atajos de Kanban</value>
   </data>
   <data name="Settings_Nav_About" xml:space="preserve">
-    <value>Acerca de</value>
+    <value>Acerca de Enki</value>
   </data>
   <data name="Settings_Nav_Account" xml:space="preserve">
-    <value>Cuenta</value>
+    <value>Cuenta Polar</value>
   </data>
   <data name="Settings_Nav_Appearance" xml:space="preserve">
     <value>Apariencia</value>
@@ -3463,7 +3571,7 @@
     <value>Calendario</value>
   </data>
   <data name="Settings_Nav_Editor" xml:space="preserve">
-    <value>Editor</value>
+    <value>Notas y editor</value>
   </data>
   <data name="Settings_Nav_Eyebrow" xml:space="preserve">
     <value>AJUSTES</value>
@@ -3475,10 +3583,10 @@
     <value>Notificaciones</value>
   </data>
   <data name="Settings_Nav_Shortcuts" xml:space="preserve">
-    <value>Atajos</value>
+    <value>Atajos de teclado</value>
   </data>
   <data name="Settings_Nav_Skills" xml:space="preserve">
-    <value>Habilidades</value>
+    <value>Skills de IA</value>
   </data>
   <data name="Settings_Nav_Title" xml:space="preserve">
     <value>Ajustes</value>
@@ -3569,6 +3677,12 @@
   </data>
   <data name="Settings_Notifications_Mute_Warning_Label" xml:space="preserve">
     <value>Advertencia</value>
+  </data>
+  <data name="Settings_Notifications_Global_Description" xml:space="preserve">
+    <value>Al desactivar, se detienen todos los avisos nuevos, ventanas emergentes y sonidos. El historial existente se conserva.</value>
+  </data>
+  <data name="Settings_Notifications_Global_Label" xml:space="preserve">
+    <value>Activar notificaciones</value>
   </data>
   <data name="Settings_Notifications_Panels_Title" xml:space="preserve">
     <value>Paneles</value>
@@ -4641,7 +4755,7 @@ A disfrutar escribiendo.</value>
     <value>Elementos que vencen hoy o están atrasados, entre Kanban, Polar y Recordatorios</value>
   </data>
   <data name="DashboardSection_Vault_Description" xml:space="preserve">
-    <value>Notas, sesiones y tamaño en disco del almacén actual</value>
+    <value>Notas, archivos, sesiones y tamaño en disco del almacén actual</value>
   </data>
   <data name="DashboardSection_Activity_Description" xml:space="preserve">
     <value>Notificaciones recientes y el resumen de mis tareas de Polar</value>
@@ -5399,6 +5513,24 @@ A disfrutar escribiendo.</value>
   <data name="Settings_Appearance_KanbanTags_Description" xml:space="preserve">
     <value>Oculta la fila de etiquetas del tablero para despejarlo. Cuando pase de una línea, se ven hasta cinco y podéis desplegar el resto.</value>
   </data>
+  <data name="Settings_Appearance_KanbanToolbar_Title" xml:space="preserve">
+    <value>Botones de la barra</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Description" xml:space="preserve">
+    <value>Elige qué botones aparecen en la barra de herramientas del tablero Kanban: los filtros rápidos, el acceso a las archivadas y el desplegable de ordenación.</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_HighPriority" xml:space="preserve">
+    <value>Alta prioridad</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Overdue" xml:space="preserve">
+    <value>Vencidas</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Archive" xml:space="preserve">
+    <value>Archivadas</value>
+  </data>
+  <data name="Settings_Appearance_KanbanToolbar_Sort" xml:space="preserve">
+    <value>Ordenación</value>
+  </data>
   <data name="Kanban_Tags_ShowAll" xml:space="preserve">
     <value>Mostrar todas</value>
   </data>
@@ -5566,6 +5698,9 @@ A disfrutar escribiendo.</value>
   </data>
   <data name="Files_FitWidthTooltip" xml:space="preserve">
     <value>Ajustar al ancho (Ctrl+0)</value>
+  </data>
+  <data name="Files_FitHeightTooltip" xml:space="preserve">
+    <value>Ajustar al alto</value>
   </data>
   <data name="Files_ActualSizeTooltip" xml:space="preserve">
     <value>Tamaño real (100 %)</value>
@@ -5924,5 +6059,1494 @@ A disfrutar escribiendo.</value>
   <data name="Settings_General_Sidebar_VaultSwitcher_Description" xml:space="preserve"><value>Mostrar la fila para cambiar de vault encima de las secciones de la barra lateral. Oculta, la paleta de comandos sigue cambiando de vault.</value></data>
   <data name="Notification_NoteOpenFailed_Title" xml:space="preserve">
     <value>No se pudo abrir la nota</value>
+  </data>
+  <data name="Settings_Summary_General" xml:space="preserve"><value>Idioma, inicio y bandeja del sistema</value></data>
+  <data name="Settings_Summary_Appearance" xml:space="preserve"><value>Temas, fuentes, zoom y logo</value></data>
+  <data name="Settings_Nav_Navigation" xml:space="preserve"><value>Navegación</value></data>
+  <data name="Settings_Summary_Navigation" xml:space="preserve"><value>Orden y secciones de la barra lateral</value></data>
+  <data name="Settings_Summary_Shortcuts" xml:space="preserve"><value>Combinaciones de teclas y referencia</value></data>
+  <data name="Settings_Summary_Notifications" xml:space="preserve"><value>Avisos, sonido y recordatorios</value></data>
+  <data name="Settings_Nav_Vault" xml:space="preserve"><value>Vault y archivos</value></data>
+  <data name="Settings_Summary_Vault" xml:space="preserve"><value>Ubicación, espacio y borrado</value></data>
+  <data name="Settings_Nav_Backups" xml:space="preserve"><value>Copias de seguridad</value></data>
+  <data name="Settings_Summary_Backups" xml:space="preserve"><value>Crear, restaurar y trasladar ajustes</value></data>
+  <data name="Settings_Summary_Account" xml:space="preserve"><value>Conexión, sincronización y etiquetas</value></data>
+  <data name="Settings_Summary_Editor" xml:space="preserve"><value>Escritura, lectura y plantillas diarias</value></data>
+  <data name="Settings_Summary_Dashboard" xml:space="preserve"><value>Distribución, widgets y desplazamiento</value></data>
+  <data name="Settings_Nav_Kanban" xml:space="preserve"><value>Kanban</value></data>
+  <data name="Settings_Summary_Kanban" xml:space="preserve"><value>Orientación del tablero y filtros</value></data>
+  <data name="Settings_Summary_Calendar" xml:space="preserve"><value>Vistas, semana y horario laboral</value></data>
+  <data name="Settings_Summary_Skills" xml:space="preserve"><value>Visibilidad y catálogo de la comunidad</value></data>
+  <data name="Settings_Nav_Maintenance" xml:space="preserve"><value>Actualizaciones y diagnóstico</value></data>
+  <data name="Settings_Summary_Maintenance" xml:space="preserve"><value>Versiones, registros y restablecimiento</value></data>
+  <data name="Settings_Summary_About" xml:space="preserve"><value>Aplicación, tecnología y privacidad</value></data>
+  <data name="Settings_Group_Application" xml:space="preserve"><value>Aplicación</value></data>
+  <data name="Settings_Group_Data" xml:space="preserve"><value>Notas y datos</value></data>
+  <data name="Settings_Group_Tools" xml:space="preserve"><value>Herramientas</value></data>
+  <data name="Settings_Group_Help" xml:space="preserve"><value>Ayuda y mantenimiento</value></data>
+  <data name="Settings_AutoSave_Hint" xml:space="preserve"><value>Los cambios se guardan automáticamente.</value></data>
+  <data name="Settings_Search_Title" xml:space="preserve"><value>Resultados de búsqueda</value></data>
+  <data name="Settings_Search_Description" xml:space="preserve"><value>Opciones coincidentes en todas las secciones de ajustes.</value></data>
+  <data name="Settings_DataTransfer_Title" xml:space="preserve"><value>Trasladar ajustes</value></data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsLabel" xml:space="preserve">
+    <value>Mostrar controles de ventana</value>
+  </data>
+  <data name="Settings_Appearance_TitleBar_ShowControlsDescription" xml:space="preserve">
+    <value>Muestra los botones de minimizar, maximizar y cerrar en la barra propia. Al ocultarlos, los iconos restantes se alinean a la derecha.</value>
+  </data>
+  <data name="Explorer_Copy" xml:space="preserve"><value>Copiar</value></data>
+  <data name="Explorer_Cut" xml:space="preserve"><value>Cortar</value></data>
+  <data name="Explorer_Paste" xml:space="preserve"><value>Pegar</value></data>
+  <data name="Explorer_CopyReady" xml:space="preserve"><value>Listo para copiar</value></data>
+  <data name="Explorer_CutReady" xml:space="preserve"><value>Listo para mover al pegar</value></data>
+  <data name="Explorer_Pasted" xml:space="preserve"><value>Elemento pegado</value></data>
+  <data name="Dashboard_Vault_FilesLabel" xml:space="preserve"><value>ARCHIVOS</value></data>
+  <data name="Dashboard_Vault_InventoryHint" xml:space="preserve"><value>Notas y archivos de todas las sesiones. Excluye los elementos eliminados y los archivos internos.</value></data>
+  <data name="Dashboard_Vault_SizeHint" xml:space="preserve"><value>Tamaño total de la carpeta del almacén, incluidos los datos internos y la papelera.</value></data>
+  <data name="Kanban_Field_StartDateLabel" xml:space="preserve"><value>Apertura</value></data>
+  <data name="Kanban_Field_EndDateLabel" xml:space="preserve"><value>Cierre</value></data>
+  <data name="Kanban_DateRange_Invalid" xml:space="preserve"><value>El cierre no puede ser anterior a la apertura.</value></data>
+  <data name="Files_MediaPlayPause" xml:space="preserve"><value>Reproducir / pausar</value></data>
+  <data name="Files_MediaStop" xml:space="preserve"><value>Detener</value></data>
+  <data name="Files_MediaMute" xml:space="preserve"><value>Silenciar / activar sonido</value></data>
+  <data name="Files_MediaVolume" xml:space="preserve"><value>Volumen</value></data>
+  <data name="Files_MediaSeek" xml:space="preserve"><value>Posición de reproducción</value></data>
+  <data name="Files_MediaReady" xml:space="preserve"><value>Pulsa reproducir para abrir este archivo aquí.</value></data>
+  <data name="Files_MediaError" xml:space="preserve"><value>No se puede reproducir este archivo. Su formato puede no ser compatible o el motor multimedia de Enki no está disponible. Puedes abrirlo con la aplicación del sistema.</value></data>
+  <data name="Files_MediaErrorTitle" xml:space="preserve"><value>No se pudo reproducir el archivo</value></data>
+  <data name="Files_ContainerPreviewNotice" xml:space="preserve"><value>Vista del texto o del contenido del archivo comprimido. No reproduce la maquetación ni ejecuta macros o fórmulas.</value></data>
+  <data name="Activity_All" xml:space="preserve">
+    <value>Todos</value>
+  </data>
+  <data name="Activity_Unread" xml:space="preserve">
+    <value>Sin leer</value>
+  </data>
+  <data name="Activity_Pending" xml:space="preserve">
+    <value>Pendientes</value>
+  </data>
+  <data name="Activity_Overdue" xml:space="preserve">
+    <value>Vencidos</value>
+  </data>
+  <data name="Activity_Completed" xml:space="preserve">
+    <value>Completados</value>
+  </data>
+  <data name="Activity_Search" xml:space="preserve">
+    <value>Buscar por título o descripción…</value>
+  </data>
+  <data name="Activity_Results" xml:space="preserve">
+    <value>{0} de {1}</value>
+  </data>
+  <data name="Activity_NoResults" xml:space="preserve">
+    <value>No hay coincidencias</value>
+  </data>
+  <data name="Activity_NoResultsHint" xml:space="preserve">
+    <value>Prueba otra búsqueda o restablece los filtros.</value>
+  </data>
+  <data name="Activity_Reset" xml:space="preserve">
+    <value>Restablecer filtros</value>
+  </data>
+  <data name="Activity_MarkPending" xml:space="preserve">
+    <value>Marcar como pendiente</value>
+  </data>
+  <data name="Settings_Appearance_Motion_Title" xml:space="preserve"><value>Animaciones</value></data>
+  <data name="Settings_Appearance_Motion_Description" xml:space="preserve"><value>Normales: transiciones completas y efectos decorativos. Sutiles: transiciones breves sin desplazamientos decorativos.</value></data>
+  <data name="Settings_Appearance_Motion_Subtle" xml:space="preserve"><value>Sutiles</value></data>
+  <data name="Settings_Appearance_Motion_Normal" xml:space="preserve"><value>Normales</value></data>
+  <data name="Skills_NewSkill" xml:space="preserve"><value>Nueva skill</value></data>
+  <data name="Skills_TemplateBody" xml:space="preserve"><value>Describe el objetivo, las instrucciones y el formato de respuesta de esta skill.</value></data>
+  <data name="Skills_WorkspaceTitle" xml:space="preserve"><value>TU BIBLIOTECA DE IA</value></data>
+  <data name="Skills_DropHint" xml:space="preserve"><value>Arrastra archivos Markdown aquí o sobre una carpeta para importarlos.</value></data>
+  <data name="Skills_EditorHelp" xml:space="preserve"><value>Edita el frontmatter y las instrucciones en Markdown. Los cambios se guardan automáticamente.</value></data>
+  <data name="Skills_Source" xml:space="preserve"><value>Código Markdown</value></data>
+  <data name="Skills_Save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="Skills_Preview" xml:space="preserve"><value>Lectura</value></data>
+  <data name="Skills_ExternalChange" xml:space="preserve"><value>El archivo ha cambiado fuera del editor. El borrador se conserva; copia tus cambios antes de volver a abrirlo.</value></data>
+  <data name="Skills_Metadata" xml:space="preserve"><value>Metadatos</value></data>
+  <data name="Skills_Reload" xml:space="preserve"><value>Recargar desde disco</value></data>
+  <data name="Skills_DiscardWarning" xml:space="preserve"><value>Se descartarán los cambios sin guardar de esta skill. Copia el borrador antes de continuar si quieres conservarlo.</value></data>
+  <data name="Folders_Manage" xml:space="preserve"><value>GESTIONAR CARPETA</value></data>
+  <data name="Folders_Create" xml:space="preserve"><value>NUEVA CARPETA</value></data>
+  <data name="Folders_Rename" xml:space="preserve"><value>RENOMBRAR</value></data>
+  <data name="Folders_Move" xml:space="preserve"><value>MOVER</value></data>
+  <data name="Folders_Copy" xml:space="preserve"><value>COPIAR</value></data>
+  <data name="Folders_Delete" xml:space="preserve"><value>ELIMINAR</value></data>
+  <data name="Folders_Name" xml:space="preserve"><value>NOMBRE DE LA CARPETA</value></data>
+  <data name="Folders_Destination" xml:space="preserve"><value>CARPETA DE DESTINO</value></data>
+  <data name="Folders_Root" xml:space="preserve"><value>Raíz</value></data>
+  <data name="Folders_CreateHint" xml:space="preserve"><value>La carpeta se creará aquí cuando confirmes el nombre.</value></data>
+  <data name="Folders_ContentsHint" xml:space="preserve"><value>Las operaciones incluyen todas las notas, archivos, subcarpetas y adjuntos.</value></data>
+  <data name="Folders_CollisionHint" xml:space="preserve"><value>Si el nombre ya existe, se añadirá un número. El contenido existente se conserva.</value></data>
+  <data name="Folders_DeleteHint" xml:space="preserve"><value>Se enviará la carpeta completa a la Papelera. Podrás restaurarla desde allí.</value></data>
+  <data name="Folders_Reveal" xml:space="preserve"><value>ABRIR UBICACIÓN</value></data>
+  <data name="Folders_Error" xml:space="preserve"><value>No se pudo completar la operación</value></data>
+  <data name="Folders_Done" xml:space="preserve"><value>Carpeta actualizada</value></data>
+  <data name="Folders_Trash" xml:space="preserve"><value>CARPETAS</value></data>
+  <data name="Folders_Restore" xml:space="preserve"><value>RESTAURAR</value></data>
+  <data name="Folders_Error_OutsideVault" xml:space="preserve"><value>La carpeta debe pertenecer al vault.</value></data>
+  <data name="Folders_Error_Internal" xml:space="preserve"><value>No se pueden gestionar carpetas internas del vault.</value></data>
+  <data name="Folders_Error_RootProtected" xml:space="preserve"><value>La raíz del vault y las sesiones se gestionan desde Ajustes y Sesiones.</value></data>
+  <data name="Folders_Error_SymbolicLink" xml:space="preserve"><value>No se pueden gestionar enlaces simbólicos.</value></data>
+  <data name="Folders_Error_InvalidName" xml:space="preserve"><value>Usa un nombre visible, sin caracteres reservados ni espacios al principio o al final.</value></data>
+  <data name="Folders_Error_Descendant" xml:space="preserve"><value>El destino no puede ser la propia carpeta ni una de sus subcarpetas.</value></data>
+  <data name="Folders_Error_PendingChanges" xml:space="preserve"><value>Resuelve los cambios pendientes en las notas abiertas antes de continuar.</value></data>
+  <data name="Folders_Error_InvalidTrash" xml:space="preserve"><value>Carpeta de papelera no válida.</value></data>
+  <data name="Folders_Error_Changed" xml:space="preserve"><value>La carpeta ha cambiado durante el traslado. Inténtalo de nuevo.</value></data>
+  <data name="Sessions_Graph_Search" xml:space="preserve">
+    <value>Buscar notas, rutas o etiquetas…</value>
+  </data>
+  <data name="Sessions_Graph_Display" xml:space="preserve">
+    <value>Visualización</value>
+  </data>
+  <data name="Sessions_Graph_Labels" xml:space="preserve">
+    <value>Nombres de notas</value>
+  </data>
+  <data name="Sessions_Graph_Mesh" xml:space="preserve">
+    <value>Malla de sesión</value>
+  </data>
+  <data name="Sessions_Graph_MeshHint" xml:space="preserve">
+    <value>Guía visual de proximidad. No representa enlaces entre notas.</value>
+  </data>
+  <data name="Sessions_Graph_NodeSize" xml:space="preserve">
+    <value>Tamaño de los nodos</value>
+  </data>
+  <data name="Sessions_Graph_LinkThickness" xml:space="preserve">
+    <value>Grosor de los enlaces</value>
+  </data>
+  <data name="Sessions_Graph_Isolate" xml:space="preserve">
+    <value>Mostrar solo esta sesión</value>
+  </data>
+  <data name="Sessions_Graph_ZoomOut" xml:space="preserve">
+    <value>Alejar</value>
+  </data>
+  <data name="Sessions_Graph_ZoomIn" xml:space="preserve">
+    <value>Acercar</value>
+  </data>
+  <data name="Sessions_Graph_Fit" xml:space="preserve">
+    <value>Encuadrar grafo</value>
+  </data>
+  <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
+    <value>Arrastra para explorar · Rueda para zoom · Doble clic para abrir</value>
+  </data>
+  <data name="Startup_Initializing" xml:space="preserve">
+    <value>Iniciando</value>
+  </data>
+  <data name="Startup_IndexingNotes" xml:space="preserve">
+    <value>Indexando notas</value>
+  </data>
+  <data name="Startup_PreparingSection" xml:space="preserve">
+    <value>Preparando {0}</value>
+  </data>
+  <data name="Startup_Finalizing" xml:space="preserve">
+    <value>Terminando</value>
+  </data>
+  <data name="Trash_OverviewEmptyTitle" xml:space="preserve">
+    <value>La papelera está vacía</value>
+  </data>
+  <data name="Trash_OverviewEmptyDescription" xml:space="preserve">
+    <value>Los elementos que elimines aparecerán aquí para que puedas restaurarlos o borrarlos definitivamente.</value>
+  </data>
+  <data name="Notes_Query_Toggle" xml:space="preserve"><value>Filtros avanzados</value></data>
+  <data name="Notes_Query_Saved" xml:space="preserve"><value>Vistas guardadas</value></data>
+  <data name="Notes_Query_Clear" xml:space="preserve"><value>Limpiar filtros</value></data>
+  <data name="Notes_Query_Title" xml:space="preserve"><value>CONSULTA DE NOTAS</value></data>
+  <data name="Notes_Query_Tag" xml:space="preserve"><value>Etiqueta</value></data>
+  <data name="Notes_Query_TagHint" xml:space="preserve"><value>p. ej., trabajo</value></data>
+  <data name="Notes_Query_Property" xml:space="preserve"><value>Propiedad</value></data>
+  <data name="Notes_Query_PropertyHint" xml:space="preserve"><value>p. ej., estado</value></data>
+  <data name="Notes_Query_Value" xml:space="preserve"><value>Valor contiene</value></data>
+  <data name="Notes_Query_ValueHint" xml:space="preserve"><value>p. ej., pendiente</value></data>
+  <data name="Notes_Query_ExactValue" xml:space="preserve"><value>Valor exacto de la propiedad</value></data>
+  <data name="Notes_Query_DateProperty" xml:space="preserve"><value>Propiedad de fecha (opcional)</value></data>
+  <data name="Notes_Query_DatePropertyHint" xml:space="preserve"><value>p. ej., vencimiento; vacío usa modificación</value></data>
+  <data name="Notes_Query_InvalidDateProperty" xml:space="preserve"><value>Usa letras, números, guiones o guiones bajos para la propiedad de fecha.</value></data>
+  <data name="Notes_Query_From" xml:space="preserve"><value>Fecha desde</value></data>
+  <data name="Notes_Query_To" xml:space="preserve"><value>Fecha hasta</value></data>
+  <data name="Notes_Query_Subfolders" xml:space="preserve"><value>Incluir subcarpetas</value></data>
+  <data name="Notes_Query_Name" xml:space="preserve"><value>Nombre de la vista</value></data>
+  <data name="Notes_Query_Save" xml:space="preserve"><value>Guardar vista</value></data>
+  <data name="Notes_Query_Delete" xml:space="preserve"><value>Eliminar vista</value></data>
+  <data name="Editor_Properties_Title" xml:space="preserve"><value>PROPIEDADES</value></data>
+  <data name="Editor_Properties_Key" xml:space="preserve"><value>Clave</value></data>
+  <data name="Editor_Properties_Value" xml:space="preserve"><value>Valor</value></data>
+  <data name="Editor_Properties_Save" xml:space="preserve"><value>Guardar propiedad</value></data>
+  <data name="Editor_Properties_Edit" xml:space="preserve"><value>Editar propiedad</value></data>
+  <data name="Editor_Properties_Delete" xml:space="preserve"><value>Eliminar propiedad</value></data>
+  <data name="Notes_Query_InvalidFrom" xml:space="preserve"><value>La fecha inicial debe tener formato AAAA-MM-DD.</value></data>
+  <data name="Notes_Query_InvalidTo" xml:space="preserve"><value>La fecha final debe tener formato AAAA-MM-DD.</value></data>
+  <data name="Notes_Query_InvalidRange" xml:space="preserve"><value>La fecha inicial debe ser anterior a la final.</value></data>
+  <data name="Notes_Query_NameRequired" xml:space="preserve"><value>Escribe un nombre para guardar la vista.</value></data>
+  <data name="Editor_Properties_InvalidKey" xml:space="preserve"><value>Usa letras, números, guiones o guiones bajos; la clave no puede ser tags.</value></data>
+  <data name="Notes_Query_SaveFailed" xml:space="preserve"><value>No se pudo guardar la vista. Comprueba el acceso al vault e inténtalo de nuevo.</value></data>
+  <data name="Notes_Query_PropertyRequired" xml:space="preserve"><value>Escribe una propiedad antes de filtrar por su valor.</value></data>
+  <data name="Editor_Properties_InvalidYaml" xml:space="preserve"><value>Repara el frontmatter YAML de la nota antes de editar propiedades.</value></data>
+  <data name="Templates_Seed_Project_Name" xml:space="preserve">
+    <value>Proyecto</value>
+  </data>
+  <data name="Templates_Seed_Project_Description" xml:space="preserve">
+    <value>Objetivo, hitos y próximas acciones de un proyecto.</value>
+  </data>
+  <data name="Templates_Seed_Project_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Inicio:** {{date}}
+- **Estado:** En planificación
+
+## Objetivo
+{{cursor}}
+
+## Hitos
+- [ ]
+
+## Próximas acciones
+- [ ]
+
+## Notas y decisiones
+</value>
+  </data>
+  <data name="Templates_Seed_Reading_Name" xml:space="preserve">
+    <value>Lectura</value>
+  </data>
+  <data name="Templates_Seed_Reading_Description" xml:space="preserve">
+    <value>Ideas clave, citas y conclusiones de un libro o artículo.</value>
+  </data>
+  <data name="Templates_Seed_Reading_Body" xml:space="preserve">
+    <value># {{title}}
+
+- **Autoría / fuente:**
+- **Inicio:** {{date}}
+- **Enlace:**
+
+## Ideas clave
+- {{cursor}}
+
+## Citas y referencias
+
+## Qué pondré en práctica
+- [ ]
+</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_1" xml:space="preserve">
+    <value>Las notas, archivos, tableros Kanban y sesiones permanecen en tu vault local. Al vincular Polar, solo se envían al proyecto Supabase compartido con Polar las listas, tareas, subtareas y recordatorios de Polar. Se incluyen los datos de ubicación de un recordatorio si los introduces.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_2" xml:space="preserve">
+    <value>El correo y la contraseña de Polar se envían a Supabase Auth por HTTPS para iniciar sesión. Enki no guarda la contraseña. Los tokens de sesión se guardan en el almacén de credenciales del sistema operativo. La sincronización usa HTTPS y WebSocket seguro; los datos de tareas no tienen cifrado de extremo a extremo y el servicio puede procesarlos.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_3" xml:space="preserve">
+    <value>Los registros en la nube se almacenan en el proyecto Supabase configurado para esta compilación. La región y el cifrado en reposo dependen de quien administre el proyecto; Enki no puede verificar ni mostrar aquí una ubicación física. Debajo se muestra el servidor del proyecto.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_4" xml:space="preserve">
+    <value>Desvincular detiene la sincronización y borra la caché local de tareas Polar y las credenciales de sesión. No elimina los datos de la nube; los recordatorios permanecen localmente. Para borrar los registros remotos o la cuenta, contacta con quien administre el proyecto Polar/Supabase.</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_Title" xml:space="preserve">
+    <value>Polar y datos en la nube</value>
+  </data>
+  <data name="Settings_About_PolarPrivacy_Endpoint" xml:space="preserve">
+    <value>Servidor del proyecto</value>
+  </data>
+  <data name="Notes_Templates_AddSuggestions" xml:space="preserve">
+    <value>Añadir plantillas de proyecto y lectura</value>
+  </data>
+  <data name="Notes_Templates_AddSuggestions_Tooltip" xml:space="preserve">
+    <value>Añade los ejemplos que faltan sin modificar las plantillas existentes.</value>
+  </data>
+  <data name="Settings_Account_PolarPrivacy_Hint" xml:space="preserve">
+    <value>Al vincular, las tareas y los recordatorios de Polar se sincronizan con Supabase. Consulta la política completa en Acerca de → Privacidad antes de vincular.</value>
+  </data>
+  <data name="Settings_PrivateSync_Title" xml:space="preserve"><value>Sincronización privada del almacén</value></data>
+  <data name="Settings_PrivateSync_Intro" xml:space="preserve"><value>Usa Syncthing, iCloud Drive o Google Drive para llevar este almacén entre equipos. Enki lee la carpeta local; el programa de sincronización traslada sus archivos.</value></data>
+  <data name="Settings_PrivateSync_Toggle" xml:space="preserve"><value>Mostrar u ocultar guía de configuración</value></data>
+  <data name="Settings_PrivateSync_Prepare_Title" xml:space="preserve"><value>Antes de empezar</value></data>
+  <data name="Settings_PrivateSync_Prepare_Body" xml:space="preserve"><value>1. Anota la ruta del almacén que aparece arriba y crea una copia de seguridad fuera de la carpeta sincronizada.
+2. Cierra Enki antes de mover un almacén existente. Sincroniza la carpeta raíz completa, incluidas .enki, .sessions, .tasks y .trash.
+3. Usa un solo proveedor por almacén. En el otro equipo, espera a que termine la descarga y elige «Abrir almacén existente» en Enki.</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Title" xml:space="preserve"><value>Syncthing</value></data>
+  <data name="Settings_PrivateSync_Syncthing_Body" xml:space="preserve"><value>Vincula ambos dispositivos. Comparte la ruta exacta del almacén desde el equipo que tiene la copia completa; en el otro, acéptala en una carpeta local vacía. Usa «Enviar y recibir» para editar en ambos. Espera a que los dos indiquen que están actualizados antes de abrir el almacén.</value></data>
+  <data name="Settings_PrivateSync_iCloud_Title" xml:space="preserve"><value>iCloud Drive (macOS / Windows)</value></data>
+  <data name="Settings_PrivateSync_iCloud_Body" xml:space="preserve"><value>Con Enki cerrado, copia el almacén completo a iCloud Drive. Espera a que terminen la subida y la descarga. Mantén la carpeta descargada en cada equipo: «Mantener descargado» en Finder de macOS o «Mantener siempre en este dispositivo» en el Explorador de Windows. Abre después esa carpeta local en Enki.</value></data>
+  <data name="Settings_PrivateSync_Drive_Title" xml:space="preserve"><value>Google Drive para ordenadores (Windows / macOS)</value></data>
+  <data name="Settings_PrivateSync_Drive_Body" xml:space="preserve"><value>Con Enki cerrado, coloca el almacén completo en Mi unidad. Prefiere «Duplicar archivos» para tener una copia local completa. Si usas «Transmitir archivos», marca la carpeta como «Disponible sin conexión» en ambos equipos. Espera a que terminen las transferencias y abre la carpeta local en Enki.</value></data>
+  <data name="Settings_PrivateSync_Daily_Title" xml:space="preserve"><value>Al cambiar de equipo</value></data>
+  <data name="Settings_PrivateSync_Daily_Body" xml:space="preserve"><value>Deja que Enki termine de guardar, ciérralo y espera a que se suban los cambios. En el siguiente equipo, espera a que se descarguen antes de abrir Enki. Comprueba una nota y un adjunto de prueba en ambos equipos. Conserva un respaldo separado: la sincronización también replica los borrados.</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Title" xml:space="preserve"><value>Si hay conflictos</value></data>
+  <data name="Settings_PrivateSync_Conflicts_Body" xml:space="preserve"><value>Enki avisa de cambios externos en notas abiertas y permite comparar versiones antes de elegir. Conserva cualquier archivo *.sync-conflict-* de Syncthing hasta compararlo y combinarlo manualmente. Las tareas y preferencias del almacén guardadas en JSON no se fusionan entre equipos: evita editarlas a la vez.</value></data>
+  <data name="Settings_PrivateSync_Privacy" xml:space="preserve"><value>Una carpeta en la nube no implica por sí sola cifrado de extremo a extremo. Las sesiones protegidas cifran el contenido de notas y adjuntos, pero los nombres y algunos metadatos siguen visibles. Revisa la privacidad del proveedor.</value></data>
+  <data name="Editor_Attachments_Title" xml:space="preserve"><value>Adjuntos y multimedia</value></data>
+  <data name="Editor_Attachments_Add" xml:space="preserve"><value>Adjuntar archivos</value></data>
+  <data name="Editor_Attachments_Close" xml:space="preserve"><value>Cerrar adjuntos</value></data>
+  <data name="Editor_Attachments_Remove" xml:space="preserve"><value>Quitar referencia (conservar archivo)</value></data>
+  <data name="Editor_Attachments_Empty" xml:space="preserve"><value>Esta nota todavía no tiene adjuntos. Añade archivos o arrástralos al editor.</value></data>
+  <data name="Editor_Attachments_Select" xml:space="preserve"><value>Selecciona un adjunto para verlo y añadir anotaciones.</value></data>
+  <data name="Editor_Attachments_Open" xml:space="preserve"><value>Abrir con la aplicación del sistema</value></data>
+  <data name="Editor_Attachments_Annotation" xml:space="preserve"><value>Escribe una anotación sobre este archivo…</value></data>
+  <data name="Editor_Attachments_Annotate" xml:space="preserve"><value>Añadir anotación a la nota</value></data>
+  <data name="Editor_Attachments_Hint" xml:space="preserve"><value>Las anotaciones se guardan en el Markdown. Quitar una referencia conserva el archivo para otras notas. Ctrl+Z deshace los cambios.</value></data>
+  <data name="Editor_Attachments_Page" xml:space="preserve"><value>Página {0}</value></data>
+  <data name="Editor_Attachments_Error" xml:space="preserve"><value>No se pudo procesar el adjunto</value></data>
+  <data name="Editor_Attachments_ErrorHint" xml:space="preserve"><value>Comprueba que el archivo existe, es accesible y no está vacío. El límite es de 128 MB (64 MB para imágenes). Los archivos ejecutables no se admiten.</value></data>
+  <data name="Editor_Attachments_Previous" xml:space="preserve"><value>Página anterior</value></data>
+  <data name="Editor_Attachments_Next" xml:space="preserve"><value>Página siguiente</value></data>
+  <data name="Editor_Attachments_ZoomIn" xml:space="preserve"><value>Ampliar</value></data>
+  <data name="Editor_Attachments_ZoomOut" xml:space="preserve"><value>Reducir</value></data>
+  <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Cargando documento…</value></data>
+  <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>No se pudo mostrar el PDF. Puedes abrirlo con la aplicación del sistema.</value></data>
+  <data name="ExternalImport_Title" xml:space="preserve"><value>Importar datos</value></data>
+  <data name="ExternalImport_Hint" xml:space="preserve"><value>Selecciona una exportación local. Obsidian: carpeta Markdown; Notion: ZIP con Markdown; Todoist: CSV; Google Calendar: ICS. Las notas se añaden a una carpeta nueva, las tareas al Kanban y los eventos al calendario como recordatorios sin aviso. Importar de nuevo creará copias. Las series recurrentes solo importan su primera fecha.</value></data>
+  <data name="ExternalImport_Obsidian" xml:space="preserve"><value>Obsidian (carpeta)…</value></data>
+  <data name="ExternalImport_Notion" xml:space="preserve"><value>Notion (ZIP)…</value></data>
+  <data name="ExternalImport_Todoist" xml:space="preserve"><value>Todoist (CSV)…</value></data>
+  <data name="ExternalImport_GoogleCalendar" xml:space="preserve"><value>Google Calendar (ICS)…</value></data>
+  <data name="ExternalImport_EmptyTitle" xml:space="preserve"><value>Nada que importar</value></data>
+  <data name="ExternalImport_EmptyMessage" xml:space="preserve"><value>La exportación no contiene elementos compatibles.</value></data>
+  <data name="ExternalImport_SuccessTitle" xml:space="preserve"><value>Importación completada</value></data>
+  <data name="ExternalImport_SuccessMessage" xml:space="preserve"><value>Notas: {0}; tareas: {1}; eventos: {2}; adjuntos: {3}.</value></data>
+  <data name="ExternalImport_ErrorTitle" xml:space="preserve"><value>Error de importación</value></data>
+  <data name="ExternalImport_ErrorMessage" xml:space="preserve"><value>No se pudieron importar los datos. Comprueba el formato y los permisos del archivo.</value></data>
+  <data name="ExternalImport_PartialMessage" xml:space="preserve"><value>La importación se interrumpió. Ya se añadieron {0} notas, {1} tareas, {2} eventos y {3} adjuntos.</value></data>
+  <data name="ExternalImport_RecurringTitle" xml:space="preserve"><value>Series recurrentes</value></data>
+  <data name="ExternalImport_RecurringMessage" xml:space="preserve"><value>Se importó solo la primera fecha de {0} series recurrentes. Revisa esas entradas en el calendario.</value></data>
+  <data name="Calendar_External_Title" xml:space="preserve"><value>Calendarios externos</value></data>
+  <data name="Calendar_External_Hint" xml:space="preserve"><value>Suscríbete a una agenda iCalendar. Los eventos se actualizan cada 15 minutos y son de solo lectura. Los enlaces y eventos almacenados permanecen en este dispositivo.</value></data>
+  <data name="Calendar_External_Name" xml:space="preserve"><value>Nombre del calendario</value></data>
+  <data name="Calendar_External_Url" xml:space="preserve"><value>Enlace HTTPS de iCalendar (.ics)</value></data>
+  <data name="Calendar_External_Add" xml:space="preserve"><value>Añadir calendario</value></data>
+  <data name="Calendar_External_Refresh" xml:space="preserve"><value>Actualizar</value></data>
+  <data name="Calendar_External_Remove" xml:space="preserve"><value>Quitar</value></data>
+  <data name="Calendar_External_Source" xml:space="preserve"><value>Calendario externo</value></data>
+  <data name="Calendar_External_Updated" xml:space="preserve"><value>Calendario actualizado.</value></data>
+  <data name="Calendar_External_Failed" xml:space="preserve"><value>No se pudo actualizar. Comprueba el enlace y la conexión; se conservan los eventos anteriores.</value></data>
+  <data name="Calendar_External_Removed" xml:space="preserve"><value>Suscripción eliminada.</value></data>
+  <data name="Calendar_External_Invalid" xml:space="preserve"><value>Introduce un nombre y una URL HTTPS válidos; cada calendario se puede añadir una sola vez.</value></data>
+  <data name="Calendar_External_RemoveTitle" xml:space="preserve"><value>Quitar calendario externo</value></data>
+  <data name="Calendar_External_RemoveHint" xml:space="preserve"><value>Se dejarán de mostrar sus eventos y se eliminarán el enlace privado y la caché local.</value></data>
+  <data name="Calendar_External_GoogleGuide" xml:space="preserve"><value>Google: Ajustes → tu calendario → Integrar calendario → Dirección secreta en formato iCal.</value></data>
+  <data name="Calendar_External_AppleGuide" xml:space="preserve"><value>Apple iCloud: activa Calendario público y copia el enlace webcal. Cualquiera con ese enlace podrá ver sus eventos.</value></data>
+  <data name="Calendar_External_Updating" xml:space="preserve"><value>Actualizando calendario…</value></data>
+  <data name="Calendar_External_SaveFailed" xml:space="preserve"><value>No se pudo guardar la suscripción. Comprueba el acceso a la carpeta de datos de Enki.</value></data>
+  <data name="Nav_Assistant" xml:space="preserve">
+    <value>Asistente</value>
+  </data>
+  <data name="Settings_Nav_Ai" xml:space="preserve">
+    <value>Inteligencia artificial</value>
+  </data>
+  <data name="Settings_Summary_Ai" xml:space="preserve">
+    <value>Proveedores de IA, privacidad e historial de conversaciones</value>
+  </data>
+  <data name="Settings_Navigation_ToAssistant" xml:space="preserve">
+    <value>Ir al Asistente</value>
+  </data>
+  <data name="CommandPalette_Action_NewAssistantChat" xml:space="preserve">
+    <value>Nuevo chat con el asistente</value>
+  </data>
+  <data name="CommandPalette_Action_AskAssistantAboutNote" xml:space="preserve">
+    <value>Preguntar al asistente sobre esta nota</value>
+  </data>
+  <data name="Skills_Detail_UseWithAssistant" xml:space="preserve">
+    <value>Usar en el asistente</value>
+  </data>
+  <data name="Skills_Detail_UseWithAssistant_Tooltip" xml:space="preserve">
+    <value>Empezar un chat con el asistente que siga esta habilidad</value>
+  </data>
+  <data name="Assistant_State_Ready" xml:space="preserve">
+    <value>Claude Code listo</value>
+  </data>
+  <data name="Assistant_State_NotInstalled" xml:space="preserve">
+    <value>Claude Code no instalado</value>
+  </data>
+  <data name="Assistant_State_SignedOut" xml:space="preserve">
+    <value>Claude Code sin sesión iniciada</value>
+  </data>
+  <data name="Assistant_State_Unsupported" xml:space="preserve">
+    <value>Claude Code necesita actualizarse</value>
+  </data>
+  <data name="Assistant_State_Checking" xml:space="preserve">
+    <value>Comprobando Claude Code…</value>
+  </data>
+  <data name="Assistant_Status_ApiKey" xml:space="preserve">
+    <value>Clave de API</value>
+  </data>
+  <data name="Assistant_Status_Version" xml:space="preserve">
+    <value>Versión {0}</value>
+  </data>
+  <data name="Assistant_Setup_Eyebrow" xml:space="preserve">
+    <value>Puesta en marcha del asistente</value>
+  </data>
+  <data name="Assistant_Setup_NotInstalled_Title" xml:space="preserve">
+    <value>Instala el CLI del proveedor</value>
+  </data>
+  <data name="Assistant_Setup_NotInstalled_Message" xml:space="preserve">
+    <value>Instala el CLI oficial, inicia sesión en una terminal y comprueba de nuevo. Puedes indicar su ruta en Ajustes.</value>
+  </data>
+  <data name="Assistant_Setup_SignedOut_Title" xml:space="preserve">
+    <value>Inicia sesión en tu cuenta</value>
+  </data>
+  <data name="Assistant_Setup_SignedOut_Message" xml:space="preserve">
+    <value>Ejecuta la orden de abajo en una terminal y completa el acceso en la página del proveedor. Después vuelve a comprobar. Enki no lee tus credenciales.</value>
+  </data>
+  <data name="Assistant_Setup_Unsupported_Title" xml:space="preserve">
+    <value>Revisa la conexión del proveedor</value>
+  </data>
+  <data name="Assistant_Setup_Unsupported_Message" xml:space="preserve">
+    <value>El Claude Code encontrado en este equipo (versión {0}) es anterior a la mínima que admite Enki ({1}) o no respondió como se esperaba. Reinstala la última versión con la orden de abajo y vuelve a comprobar.</value>
+  </data>
+  <data name="Assistant_Setup_CopyCommand" xml:space="preserve">
+    <value>Copiar orden</value>
+  </data>
+  <data name="Assistant_Setup_CheckAgain" xml:space="preserve">
+    <value>Comprobar de nuevo</value>
+  </data>
+  <data name="Assistant_Setup_OpenGuide" xml:space="preserve">
+    <value>Guía de instalación</value>
+  </data>
+  <data name="Assistant_Setup_CustomPath" xml:space="preserve">
+    <value>Indicar otra ruta</value>
+  </data>
+  <data name="Assistant_Privacy_Title" xml:space="preserve">
+    <value>Privacidad del asistente</value>
+  </data>
+  <data name="Assistant_Privacy_Message" xml:space="preserve">
+    <value>El contexto y los resultados de herramientas se comparten con el proveedor elegido dentro del ámbito del chat. Con Ollama local se procesan en este equipo.</value>
+  </data>
+  <data name="Assistant_Privacy_TermsLink" xml:space="preserve">
+    <value>Condiciones del proveedor</value>
+  </data>
+  <data name="Assistant_History_Title" xml:space="preserve">
+    <value>Conversaciones</value>
+  </data>
+  <data name="Assistant_History_SearchPlaceholder" xml:space="preserve">
+    <value>Buscar conversaciones</value>
+  </data>
+  <data name="Assistant_History_Empty" xml:space="preserve">
+    <value>Tus conversaciones aparecerán aquí.</value>
+  </data>
+  <data name="Assistant_History_NoMatches" xml:space="preserve">
+    <value>Ninguna conversación coincide con la búsqueda.</value>
+  </data>
+  <data name="Assistant_History_Delete_Tooltip" xml:space="preserve">
+    <value>Eliminar conversación</value>
+  </data>
+  <data name="Assistant_NewChat_Tooltip" xml:space="preserve">
+    <value>Chat nuevo (Ctrl+N)</value>
+  </data>
+  <data name="Assistant_OpenSettings_Tooltip" xml:space="preserve">
+    <value>Ajustes del asistente</value>
+  </data>
+  <data name="Assistant_Chat_New" xml:space="preserve">
+    <value>Chat nuevo</value>
+  </data>
+  <data name="Assistant_Chat_Untitled" xml:space="preserve">
+    <value>Conversación sin título</value>
+  </data>
+  <data name="Assistant_Rename_Tooltip" xml:space="preserve">
+    <value>Renombrar conversación</value>
+  </data>
+  <data name="Assistant_Skill_Tooltip" xml:space="preserve">
+    <value>Esta conversación sigue esta habilidad</value>
+  </data>
+  <data name="Assistant_DeleteModal_Title" xml:space="preserve">
+    <value>Eliminar conversación</value>
+  </data>
+  <data name="Assistant_DeleteModal_Message" xml:space="preserve">
+    <value>La conversación se eliminará del historial de Enki. No se puede deshacer.</value>
+  </data>
+  <data name="Assistant_Model_Label" xml:space="preserve">
+    <value>Modelo</value>
+  </data>
+  <data name="Assistant_Model_Default" xml:space="preserve">
+    <value>Predeterminado del proveedor</value>
+  </data>
+  <data name="Assistant_Model_Tooltip" xml:space="preserve">
+    <value>Modelo con el que se envían los próximos mensajes de esta conversación</value>
+  </data>
+  <data name="Assistant_Welcome_Eyebrow" xml:space="preserve">
+    <value>Asistente</value>
+  </data>
+  <data name="Assistant_Welcome_Title" xml:space="preserve">
+    <value>¿En qué te ayudo?</value>
+  </data>
+  <data name="Assistant_Welcome_Message" xml:space="preserve">
+    <value>Pregunta al asistente, adjunta notas como contexto o empieza desde una habilidad. Las acciones en el vault aparecen en la conversación.</value>
+  </data>
+  <data name="Assistant_Welcome_Privacy" xml:space="preserve">
+    <value>El acceso al vault está limitado al ámbito del chat. Puedes desactivar las escrituras en Ajustes.</value>
+  </data>
+  <data name="Assistant_Suggestion_SummarizeNote_Label" xml:space="preserve">
+    <value>Resumir la nota abierta</value>
+  </data>
+  <data name="Assistant_Suggestion_SummarizeNote" xml:space="preserve">
+    <value>Resume la nota adjunta en unos pocos puntos, conservando las decisiones y cifras clave.</value>
+  </data>
+  <data name="Assistant_Suggestion_TasksNote_Label" xml:space="preserve">
+    <value>Extraer tareas de la nota abierta</value>
+  </data>
+  <data name="Assistant_Suggestion_TasksNote" xml:space="preserve">
+    <value>Enumera las tareas pendientes de la nota adjunta como una lista de comprobación Markdown (- [ ] tarea).</value>
+  </data>
+  <data name="Assistant_Suggestion_Rewrite_Label" xml:space="preserve">
+    <value>Reescribir un texto con más claridad</value>
+  </data>
+  <data name="Assistant_Suggestion_Rewrite" xml:space="preserve">
+    <value>Reescribe el siguiente texto para que sea más claro y conciso, sin cambiar su sentido:
+
+</value>
+  </data>
+  <data name="Assistant_Suggestion_Ideas_Label" xml:space="preserve">
+    <value>Generar ideas</value>
+  </data>
+  <data name="Assistant_Suggestion_Ideas" xml:space="preserve">
+    <value>Dame diez ideas variadas sobre </value>
+  </data>
+  <data name="Assistant_Message_Author" xml:space="preserve">
+    <value>Asistente</value>
+  </data>
+  <data name="Assistant_Message_Thinking" xml:space="preserve">
+    <value>Pensando…</value>
+  </data>
+  <data name="Assistant_Message_Interrupted" xml:space="preserve">
+    <value>Respuesta interrumpida</value>
+  </data>
+  <data name="Assistant_Message_Copy" xml:space="preserve">
+    <value>Copiar respuesta</value>
+  </data>
+  <data name="Assistant_Message_SaveAsNote" xml:space="preserve">
+    <value>Guardar como nota nueva y abrirla</value>
+  </data>
+  <data name="Assistant_Code_Label" xml:space="preserve">
+    <value>Código</value>
+  </data>
+  <data name="Assistant_Code_Copy" xml:space="preserve">
+    <value>Copiar código</value>
+  </data>
+  <data name="Assistant_Attachment_Chars" xml:space="preserve">
+    <value>{0} car.</value>
+  </data>
+  <data name="Assistant_Attachment_Truncated" xml:space="preserve">
+    <value>recortada</value>
+  </data>
+  <data name="Assistant_Note_DefaultTitle" xml:space="preserve">
+    <value>Respuesta del asistente</value>
+  </data>
+  <data name="Assistant_Composer_Placeholder" xml:space="preserve">
+    <value>Escribe un mensaje…</value>
+  </data>
+  <data name="Assistant_Composer_Hint" xml:space="preserve">
+    <value>Enter para enviar · Mayús+Enter para nueva línea</value>
+  </data>
+  <data name="Assistant_Composer_Send" xml:space="preserve">
+    <value>Enviar</value>
+  </data>
+  <data name="Assistant_Composer_Stop" xml:space="preserve">
+    <value>Detener</value>
+  </data>
+  <data name="Assistant_Composer_AttachNote" xml:space="preserve">
+    <value>Adjuntar una nota como contexto</value>
+  </data>
+  <data name="Assistant_Composer_AttachActiveNote" xml:space="preserve">
+    <value>Adjuntar «{0}»</value>
+  </data>
+  <data name="Assistant_Composer_RemoveAttachment" xml:space="preserve">
+    <value>Quitar adjunto</value>
+  </data>
+  <data name="Assistant_Composer_PickSkill" xml:space="preserve">
+    <value>Empezar desde una habilidad</value>
+  </data>
+  <data name="Assistant_Composer_ClearSkill" xml:space="preserve">
+    <value>Quitar habilidad</value>
+  </data>
+  <data name="Assistant_Composer_NoSkills" xml:space="preserve">
+    <value>Todavía no hay habilidades en este vault. Crea una en la sección Habilidades.</value>
+  </data>
+  <data name="Assistant_Composer_Disclaimer" xml:space="preserve">
+    <value>Procesado por el proveedor elegido. La IA puede equivocarse: revisa las respuestas y las acciones.</value>
+  </data>
+  <data name="Assistant_Confirm_Title" xml:space="preserve">
+    <value>Revisa lo que se va a enviar</value>
+  </data>
+  <data name="Assistant_Confirm_Message" xml:space="preserve">
+    <value>Tu mensaje se enviará al proveedor elegido junto con el contenido de estas notas:</value>
+  </data>
+  <data name="Assistant_Confirm_Summary" xml:space="preserve">
+    <value>Unos {0} caracteres en total, que se enviarán a {1}.</value>
+  </data>
+  <data name="Assistant_Confirm_DontAskAgain" xml:space="preserve">
+    <value>No volver a preguntar al adjuntar notas</value>
+  </data>
+  <data name="Assistant_Error_Retry" xml:space="preserve">
+    <value>Reintentar</value>
+  </data>
+  <data name="Assistant_Error_NotInstalled" xml:space="preserve">
+    <value>No se encuentra Claude Code en este equipo. Instálalo o indica su ruta en Ajustes › Inteligencia artificial.</value>
+  </data>
+  <data name="Assistant_Error_SignedOut" xml:space="preserve">
+    <value>No hay ninguna cuenta con la sesión iniciada. Ejecuta {0} en una terminal y vuelve a intentarlo.</value>
+  </data>
+  <data name="Assistant_Error_RateLimited" xml:space="preserve">
+    <value>Has alcanzado el límite de uso del proveedor. Vuelve a intentarlo más tarde.</value>
+  </data>
+  <data name="Assistant_Error_RateLimitedUntil" xml:space="preserve">
+    <value>Has alcanzado el límite de uso del proveedor. Se restablece a las {0}.</value>
+  </data>
+  <data name="Assistant_Error_ModelUnavailable" xml:space="preserve">
+    <value>El modelo «{0}» no está disponible para tu cuenta. Elige otro arriba del chat.</value>
+  </data>
+  <data name="Assistant_Error_Overloaded" xml:space="preserve">
+    <value>El proveedor está saturado. Espera un poco y vuelve a intentarlo.</value>
+  </data>
+  <data name="Assistant_Error_Timeout" xml:space="preserve">
+    <value>No hubo actividad durante {0} segundos y se detuvo la respuesta. Puedes ampliar este límite en Ajustes.</value>
+  </data>
+  <data name="Assistant_Error_EmptyResponse" xml:space="preserve">
+    <value>El proveedor terminó sin dar respuesta.</value>
+  </data>
+  <data name="Assistant_Error_Failed" xml:space="preserve">
+    <value>No se pudo completar la respuesta: {0}</value>
+  </data>
+  <data name="Assistant_Notify_TurnFailed_Title" xml:space="preserve">
+    <value>Asistente</value>
+  </data>
+  <data name="Assistant_Notify_SaveFailed_Title" xml:space="preserve">
+    <value>No se pudo guardar la conversación</value>
+  </data>
+  <data name="Assistant_Notify_DeleteFailed_Title" xml:space="preserve">
+    <value>No se pudo borrar el historial del asistente</value>
+  </data>
+  <data name="Assistant_Notify_AttachmentFailed_Title" xml:space="preserve">
+    <value>No se pudo adjuntar una nota</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaved_Title" xml:space="preserve">
+    <value>Respuesta guardada como nota</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaved_Message" xml:space="preserve">
+    <value>Se ha creado «{0}» en la raíz del vault.</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaveFailed_Title" xml:space="preserve">
+    <value>No se pudo guardar la respuesta como nota</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Title" xml:space="preserve">
+    <value>Algunas conversaciones no se pudieron leer</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Message_one" xml:space="preserve">
+    <value>{0} archivo del historial está dañado. Se ha dejado intacto en el disco.</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Message_other" xml:space="preserve">
+    <value>{0} archivos del historial están dañados. Se han dejado intactos en el disco.</value>
+  </data>
+  <data name="Settings_Ai_Section_Title" xml:space="preserve">
+    <value>Asistente de IA</value>
+  </data>
+  <data name="Settings_Ai_Enable_Label" xml:space="preserve">
+    <value>Activar el asistente</value>
+  </data>
+  <data name="Settings_Ai_Enable_Description" xml:space="preserve">
+    <value>Activa el asistente con Claude, OpenAI o modelos locales. Mientras está apagado no se ejecuta ni se envía nada.</value>
+  </data>
+  <data name="Settings_Ai_Usage_Title" xml:space="preserve">
+    <value>Cómo funciona el asistente</value>
+  </data>
+  <data name="Settings_Ai_Usage_HowItWorks" xml:space="preserve">
+    <value>Claude y OpenAI usan sus CLI oficiales y la cuenta que tengas iniciada en ellos. Ollama ejecuta el modelo en este equipo. Enki no instala proveedores ni modifica sus credenciales.</value>
+  </data>
+  <data name="Settings_Ai_Usage_SignIn" xml:space="preserve">
+    <value>Inicia sesión desde una terminal: claude auth login o codex login. Ollama no necesita cuenta para los modelos locales. Enki nunca lee ni guarda tokens de acceso.</value>
+  </data>
+  <data name="Settings_Ai_Usage_Data" xml:space="preserve">
+    <value>El proveedor recibe los mensajes, el contexto adjunto y los resultados de las herramientas dentro del ámbito del chat. Las escrituras respetan los permisos del vault; las acciones irreversibles requieren confirmación.</value>
+  </data>
+  <data name="Settings_Ai_Usage_Terms" xml:space="preserve">
+    <value>El uso está sujeto a los términos y límites del proveedor elegido. Enki es independiente de Anthropic, OpenAI y Ollama. Revisa las condiciones antes de activar el asistente.</value>
+  </data>
+  <data name="Settings_Ai_Usage_ClaudeCodeTerms" xml:space="preserve">
+    <value>Condiciones del proveedor</value>
+  </data>
+  <data name="Settings_Ai_Usage_ConsumerTerms" xml:space="preserve">
+    <value>Términos de consumidor de Anthropic</value>
+  </data>
+  <data name="Settings_Ai_Cli_Title" xml:space="preserve">
+    <value>Estado de la conexión</value>
+  </data>
+  <data name="Settings_Ai_Cli_Check" xml:space="preserve">
+    <value>Comprobar</value>
+  </data>
+  <data name="Settings_Ai_Cli_Path_Label" xml:space="preserve">
+    <value>Ruta del ejecutable</value>
+  </data>
+  <data name="Settings_Ai_Cli_Path_Description" xml:space="preserve">
+    <value>Déjala vacía para buscar claude automáticamente en el PATH y en las carpetas de instalación habituales. Indícala solo si Claude Code está en otro sitio.</value>
+  </data>
+  <data name="Settings_Ai_Cli_Path_Placeholder" xml:space="preserve">
+    <value>Detección automática</value>
+  </data>
+  <data name="Settings_Ai_Cli_Browse" xml:space="preserve">
+    <value>Elegir ejecutable</value>
+  </data>
+  <data name="Settings_Ai_Cli_ClearPath" xml:space="preserve">
+    <value>Usar detección automática</value>
+  </data>
+  <data name="Settings_Ai_Cli_PickerTitle" xml:space="preserve">
+    <value>Elige el ejecutable de Claude Code</value>
+  </data>
+  <data name="Settings_Ai_Chat_Title" xml:space="preserve">
+    <value>Conversaciones</value>
+  </data>
+  <data name="Settings_Ai_Model_Label" xml:space="preserve">
+    <value>Modelo por defecto</value>
+  </data>
+  <data name="Settings_Ai_Model_Description" xml:space="preserve">
+    <value>Modelo para los chats nuevos del proveedor seleccionado.</value>
+  </data>
+  <data name="Settings_Ai_Timeout_Label" xml:space="preserve">
+    <value>Límite de inactividad (segundos)</value>
+  </data>
+  <data name="Settings_Ai_Timeout_Description" xml:space="preserve">
+    <value>Detiene una respuesta tras este tiempo sin actividad. Una respuesta larga que sigue llegando no se corta.</value>
+  </data>
+  <data name="Settings_Ai_Context_Label" xml:space="preserve">
+    <value>Contexto por mensaje (caracteres)</value>
+  </data>
+  <data name="Settings_Ai_Context_Description" xml:space="preserve">
+    <value>Cantidad máxima del contenido de las notas adjuntas que se envía con un mensaje. Las notas más largas se recortan y se marcan como recortadas.</value>
+  </data>
+  <data name="Settings_Ai_Confirm_Label" xml:space="preserve">
+    <value>Confirmar antes de enviar notas</value>
+  </data>
+  <data name="Settings_Ai_Confirm_Description" xml:space="preserve">
+    <value>Muestra qué notas y cuánto de ellas se va a enviar antes de que un mensaje con adjuntos salga de tu equipo.</value>
+  </data>
+  <data name="Settings_Ai_History_Title" xml:space="preserve">
+    <value>Historial</value>
+  </data>
+  <data name="Settings_Ai_History_Description" xml:space="preserve">
+    <value>Las conversaciones se guardan en este equipo, fuera del vault. Borrarlas no afecta al historial propio de los CLI.</value>
+  </data>
+  <data name="Settings_Ai_History_Count_one" xml:space="preserve">
+    <value>{0} conversación guardada</value>
+  </data>
+  <data name="Settings_Ai_History_Count_other" xml:space="preserve">
+    <value>{0} conversaciones guardadas</value>
+  </data>
+  <data name="Settings_Ai_History_Clear" xml:space="preserve">
+    <value>Borrar historial</value>
+  </data>
+  <data name="Settings_Ai_History_ClearDialog_Title" xml:space="preserve">
+    <value>Borrar el historial del asistente</value>
+  </data>
+  <data name="Settings_Ai_History_ClearDialog_Message" xml:space="preserve">
+    <value>Se eliminarán de Enki todas las conversaciones del asistente. No se puede deshacer.</value>
+  </data>
+  <data name="Settings_Ai_History_Cleared_Title" xml:space="preserve">
+    <value>Historial borrado</value>
+  </data>
+  <data name="Settings_Ai_History_Cleared_Message" xml:space="preserve">
+    <value>Se han eliminado de Enki las conversaciones del asistente.</value>
+  </data>
+  <data name="Settings_Ai_Consent_Title" xml:space="preserve">
+    <value>Antes de activar el asistente</value>
+  </data>
+  <data name="Settings_Ai_Consent_Intro" xml:space="preserve">
+    <value>Activa el asistente con el proveedor que elijas. Revisa cómo se comparten los datos y cómo se aplican los permisos del vault.</value>
+  </data>
+  <data name="Settings_Ai_Consent_Accept" xml:space="preserve">
+    <value>Entendido, activar</value>
+  </data>
+  <data name="Assistant_Scope_Vault" xml:space="preserve">
+    <value>Vault</value>
+  </data>
+  <data name="Assistant_Scope_Title" xml:space="preserve">
+    <value>Espacio del asistente</value>
+  </data>
+  <data name="Assistant_Scope_Tooltip" xml:space="preserve">
+    <value>Elegir espacio y acceso</value>
+  </data>
+  <data name="Assistant_Scope_Intro" xml:space="preserve">
+    <value>Elige dónde puede trabajar esta conversación.</value>
+  </data>
+  <data name="Assistant_Scope_Vault_Detail" xml:space="preserve">
+    <value>Notas, archivos, Kanban, Polar, recordatorios y papelera</value>
+  </data>
+  <data name="Assistant_Scope_FixedWorkspace" xml:space="preserve">
+    <value>El espacio se fija tras el primer mensaje. Abre otro chat para cambiarlo.</value>
+  </data>
+  <data name="Assistant_Scope_Locked" xml:space="preserve">
+    <value>Bloqueada · desbloquéala en Sesiones</value>
+  </data>
+  <data name="Assistant_Scope_ProtectedNote" xml:space="preserve">
+    <value>Las sesiones protegidas solo son accesibles desde su propio chat mientras están desbloqueadas.</value>
+  </data>
+  <data name="Assistant_Scope_AllowSessions" xml:space="preserve">
+    <value>Acceso a las sesiones</value>
+  </data>
+  <data name="Assistant_Scope_AllowSessions_Description" xml:space="preserve">
+    <value>Acceder también a las sesiones sin contraseña de este vault.</value>
+  </data>
+  <data name="Assistant_Scope_AutoBadge" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="Assistant_Scope_SessionsBadge" xml:space="preserve">
+    <value>Sesiones</value>
+  </data>
+  <data name="Assistant_Scope_AutoMode" xml:space="preserve">
+    <value>Modo auto</value>
+  </data>
+  <data name="Assistant_Scope_AutoMode_Description" xml:space="preserve">
+    <value>Acceder también al vault y sus sesiones sin contraseña.</value>
+  </data>
+  <data name="Assistant_Scope_Summary_Vault" xml:space="preserve">
+    <value>Trabaja en el vault · sesiones excluidas</value>
+  </data>
+  <data name="Assistant_Scope_Summary_VaultAndSessions" xml:space="preserve">
+    <value>Trabaja en el vault y sus sesiones sin contraseña</value>
+  </data>
+  <data name="Assistant_Scope_Summary_Session" xml:space="preserve">
+    <value>Trabaja solo en la sesión «{0}»</value>
+  </data>
+  <data name="Assistant_Scope_Summary_Auto" xml:space="preserve">
+    <value>Sesión «{0}» · acceso al vault y sus sesiones sin contraseña</value>
+  </data>
+  <data name="Assistant_Scope_Summary_ReadOnly" xml:space="preserve">
+    <value>Solo lectura</value>
+  </data>
+  <data name="Assistant_Scope_Summary_TextOnly" xml:space="preserve">
+    <value>Asistente de texto · herramientas del vault no disponibles con este proveedor o modelo</value>
+  </data>
+  <data name="Assistant_Scope_Warning_Missing" xml:space="preserve">
+    <value>La sesión «{0}» ya no existe en este vault. Elige otro espacio en un chat nuevo.</value>
+  </data>
+  <data name="Assistant_Scope_Warning_Locked" xml:space="preserve">
+    <value>Desbloquea la sesión «{0}» en Sesiones para acceder a su contenido.</value>
+  </data>
+  <data name="Assistant_Activity_Open" xml:space="preserve">
+    <value>Abrir elemento</value>
+  </data>
+  <data name="Assistant_Approval_Allow" xml:space="preserve">
+    <value>Permitir</value>
+  </data>
+  <data name="Assistant_Approval_Deny" xml:space="preserve">
+    <value>Denegar</value>
+  </data>
+  <data name="Assistant_Approval_Eyebrow" xml:space="preserve">
+    <value>Confirmación necesaria</value>
+  </data>
+  <data name="Assistant_Approval_Hint" xml:space="preserve">
+    <value>Solo se verán afectados los elementos indicados. Puedes denegar la acción o detener la respuesta.</value>
+  </data>
+  <data name="Assistant_Approval_LeaveProtectedSession" xml:space="preserve">
+    <value>¿Permitir que el contenido salga de la sesión protegida «{0}»?</value>
+  </data>
+  <data name="Assistant_Notify_ApprovalPending_Title" xml:space="preserve">
+    <value>El asistente espera confirmación</value>
+  </data>
+  <data name="Assistant_Notify_ActivityTargetMissing_Title" xml:space="preserve">
+    <value>Elemento no disponible</value>
+  </data>
+  <data name="Assistant_Notify_ActivityTargetMissing_Message" xml:space="preserve">
+    <value>Puede que el elemento se haya movido o eliminado.</value>
+  </data>
+  <data name="Assistant_Notify_NoteSaved_SessionMessage" xml:space="preserve">
+    <value>La respuesta se ha guardado en la sesión «{1}».</value>
+  </data>
+  <data name="Assistant_Notify_UnreadableChats_Message" xml:space="preserve">
+    <value>No se han podido leer algunas conversaciones. Sus archivos se han conservado.</value>
+  </data>
+  <data name="Assistant_Suggestion_Agenda" xml:space="preserve">
+    <value>Muéstrame mis tareas y recordatorios de los próximos siete días.</value>
+  </data>
+  <data name="Assistant_Suggestion_Agenda_Label" xml:space="preserve">
+    <value>Planificar mi semana</value>
+  </data>
+  <data name="Assistant_Suggestion_Organize" xml:space="preserve">
+    <value>Revisa mi espacio y propón cómo organizar mis notas y tareas.</value>
+  </data>
+  <data name="Assistant_Suggestion_Organize_Label" xml:space="preserve">
+    <value>Organizar mi espacio</value>
+  </data>
+  <data name="Assistant_Welcome_MessageTools" xml:space="preserve">
+    <value>Pregunta sobre tus notas, organiza archivos, gestiona tareas y recordatorios o recupera elementos de la papelera.</value>
+  </data>
+  <data name="Assistant_Welcome_PrivacyTools" xml:space="preserve">
+    <value>El asistente usa las herramientas de Enki dentro del ámbito de este chat. El contenido solicitado se envía a tu proveedor de IA configurado.</value>
+  </data>
+  <data name="Assistant_Activity_Count_one" xml:space="preserve">
+    <value>{0} acción</value>
+  </data>
+  <data name="Assistant_Activity_Count_other" xml:space="preserve">
+    <value>{0} acciones</value>
+  </data>
+  <data name="Assistant_Approval_DeleteForever_one" xml:space="preserve">
+    <value>¿Eliminar {0} elemento para siempre?</value>
+  </data>
+  <data name="Assistant_Approval_DeleteForever_other" xml:space="preserve">
+    <value>¿Eliminar {0} elementos para siempre?</value>
+  </data>
+  <data name="Assistant_Approval_ItemCount_one" xml:space="preserve">
+    <value>{0} elemento</value>
+  </data>
+  <data name="Assistant_Approval_ItemCount_other" xml:space="preserve">
+    <value>{0} elementos</value>
+  </data>
+  <data name="Assistant_Scope_Session_Detail_one" xml:space="preserve">
+    <value>{0} nota</value>
+  </data>
+  <data name="Assistant_Scope_Session_Detail_other" xml:space="preserve">
+    <value>{0} notas</value>
+  </data>
+  <data name="Assistant_ToolError_InvalidArguments" xml:space="preserve">
+    <value>Revisa los parámetros de la acción.</value>
+  </data>
+  <data name="Assistant_ToolError_NotFound" xml:space="preserve">
+    <value>El elemento ya no existe.</value>
+  </data>
+  <data name="Assistant_ToolError_AccessDenied" xml:space="preserve">
+    <value>El elemento está fuera del ámbito de este chat.</value>
+  </data>
+  <data name="Assistant_ToolError_Locked" xml:space="preserve">
+    <value>Desbloquea primero la sesión en Enki.</value>
+  </data>
+  <data name="Assistant_ToolError_Conflict" xml:space="preserve">
+    <value>La nota ha cambiado o tiene un conflicto sin resolver.</value>
+  </data>
+  <data name="Assistant_ToolError_Denied" xml:space="preserve">
+    <value>Acción no aprobada. No se ha cambiado nada.</value>
+  </data>
+  <data name="Assistant_ToolError_Unavailable" xml:space="preserve">
+    <value>El vault o el servicio no está disponible.</value>
+  </data>
+  <data name="Assistant_ToolError_Failed" xml:space="preserve">
+    <value>No se ha podido completar la acción.</value>
+  </data>
+  <data name="Assistant_Tool_get_workspace_overview" xml:space="preserve">
+    <value>Resumen del espacio</value>
+  </data>
+  <data name="Assistant_Tool_list_notes" xml:space="preserve">
+    <value>Listar notas</value>
+  </data>
+  <data name="Assistant_Tool_read_note" xml:space="preserve">
+    <value>Leer nota</value>
+  </data>
+  <data name="Assistant_Tool_search_notes" xml:space="preserve">
+    <value>Buscar notas</value>
+  </data>
+  <data name="Assistant_Tool_create_note" xml:space="preserve">
+    <value>Crear nota</value>
+  </data>
+  <data name="Assistant_Tool_write_note" xml:space="preserve">
+    <value>Escribir nota</value>
+  </data>
+  <data name="Assistant_Tool_edit_note" xml:space="preserve">
+    <value>Editar nota</value>
+  </data>
+  <data name="Assistant_Tool_append_to_note" xml:space="preserve">
+    <value>Añadir a nota</value>
+  </data>
+  <data name="Assistant_Tool_update_note_metadata" xml:space="preserve">
+    <value>Actualizar propiedades de nota</value>
+  </data>
+  <data name="Assistant_Tool_rename_note" xml:space="preserve">
+    <value>Renombrar nota</value>
+  </data>
+  <data name="Assistant_Tool_move_note" xml:space="preserve">
+    <value>Mover o copiar nota</value>
+  </data>
+  <data name="Assistant_Tool_delete_note" xml:space="preserve">
+    <value>Enviar nota a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_get_note_links" xml:space="preserve">
+    <value>Consultar enlaces de nota</value>
+  </data>
+  <data name="Assistant_Tool_list_folders" xml:space="preserve">
+    <value>Listar carpetas</value>
+  </data>
+  <data name="Assistant_Tool_create_folder" xml:space="preserve">
+    <value>Crear carpeta</value>
+  </data>
+  <data name="Assistant_Tool_rename_folder" xml:space="preserve">
+    <value>Renombrar carpeta</value>
+  </data>
+  <data name="Assistant_Tool_move_folder" xml:space="preserve">
+    <value>Mover o copiar carpeta</value>
+  </data>
+  <data name="Assistant_Tool_delete_folder" xml:space="preserve">
+    <value>Enviar carpeta a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_list_files" xml:space="preserve">
+    <value>Listar archivos</value>
+  </data>
+  <data name="Assistant_Tool_read_text_file" xml:space="preserve">
+    <value>Leer archivo de texto</value>
+  </data>
+  <data name="Assistant_Tool_rename_file" xml:space="preserve">
+    <value>Renombrar archivo</value>
+  </data>
+  <data name="Assistant_Tool_move_file" xml:space="preserve">
+    <value>Mover o copiar archivo</value>
+  </data>
+  <data name="Assistant_Tool_delete_file" xml:space="preserve">
+    <value>Enviar archivo a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_create_session" xml:space="preserve">
+    <value>Crear sesión</value>
+  </data>
+  <data name="Assistant_Tool_update_session" xml:space="preserve">
+    <value>Actualizar sesión</value>
+  </data>
+  <data name="Assistant_Tool_delete_session" xml:space="preserve">
+    <value>Enviar sesión a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_list_kanban" xml:space="preserve">
+    <value>Consultar tableros Kanban</value>
+  </data>
+  <data name="Assistant_Tool_create_kanban_board" xml:space="preserve">
+    <value>Crear tablero Kanban</value>
+  </data>
+  <data name="Assistant_Tool_rename_kanban_board" xml:space="preserve">
+    <value>Renombrar tablero Kanban</value>
+  </data>
+  <data name="Assistant_Tool_create_kanban_card" xml:space="preserve">
+    <value>Crear tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_update_kanban_card" xml:space="preserve">
+    <value>Actualizar tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_move_kanban_card" xml:space="preserve">
+    <value>Mover tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_archive_kanban_card" xml:space="preserve">
+    <value>Archivar tarjeta Kanban</value>
+  </data>
+  <data name="Assistant_Tool_delete_kanban_card" xml:space="preserve">
+    <value>Enviar tarjeta Kanban a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_list_polar" xml:space="preserve">
+    <value>Consultar tareas Polar</value>
+  </data>
+  <data name="Assistant_Tool_create_polar_list" xml:space="preserve">
+    <value>Crear lista Polar</value>
+  </data>
+  <data name="Assistant_Tool_update_polar_list" xml:space="preserve">
+    <value>Actualizar lista Polar</value>
+  </data>
+  <data name="Assistant_Tool_delete_polar_list" xml:space="preserve">
+    <value>Enviar lista Polar a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_create_polar_task" xml:space="preserve">
+    <value>Crear tarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_update_polar_task" xml:space="preserve">
+    <value>Actualizar tarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_delete_polar_task" xml:space="preserve">
+    <value>Enviar tarea Polar a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_add_polar_subtask" xml:space="preserve">
+    <value>Añadir subtarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_update_polar_subtask" xml:space="preserve">
+    <value>Actualizar subtarea Polar</value>
+  </data>
+  <data name="Assistant_Tool_list_reminders" xml:space="preserve">
+    <value>Listar recordatorios</value>
+  </data>
+  <data name="Assistant_Tool_create_reminder" xml:space="preserve">
+    <value>Crear recordatorio</value>
+  </data>
+  <data name="Assistant_Tool_update_reminder" xml:space="preserve">
+    <value>Actualizar recordatorio</value>
+  </data>
+  <data name="Assistant_Tool_delete_reminder" xml:space="preserve">
+    <value>Enviar recordatorio a la papelera</value>
+  </data>
+  <data name="Assistant_Tool_get_agenda" xml:space="preserve">
+    <value>Consultar agenda</value>
+  </data>
+  <data name="Assistant_Tool_list_trash" xml:space="preserve">
+    <value>Consultar papelera</value>
+  </data>
+  <data name="Assistant_Tool_restore_from_trash" xml:space="preserve">
+    <value>Restaurar desde la papelera</value>
+  </data>
+  <data name="Assistant_Tool_delete_from_trash" xml:space="preserve">
+    <value>Eliminar para siempre</value>
+  </data>
+  <data name="Assistant_Tool_empty_trash" xml:space="preserve">
+    <value>Vaciar papelera</value>
+  </data>
+  <data name="Settings_Ai_Vault_Title" xml:space="preserve">
+    <value>Herramientas del vault</value>
+  </data>
+  <data name="Settings_Ai_Vault_AllowChanges_Label" xml:space="preserve">
+    <value>Permitir cambios en el vault</value>
+  </data>
+  <data name="Settings_Ai_Vault_AllowChanges_Description" xml:space="preserve">
+    <value>Permite al asistente crear, editar, organizar y eliminar notas, archivos, skills, tarjetas Kanban, tareas Polar y recordatorios en el ámbito seleccionado. Desactívalo para permitir solo consultas. El borrado definitivo sigue pidiendo confirmación.</value>
+  </data>
+  <data name="Settings_Ai_Vault_Confirmations" xml:space="preserve">
+    <value>Eliminar para siempre y sacar contenido de una sesión protegida requieren confirmación en el chat.</value>
+  </data>
+  <data name="Settings_Ai_Vault_Protected" xml:space="preserve">
+    <value>Las sesiones protegidas quedan fuera del acceso ampliado. Abre un chat dentro de una sesión desbloqueada para trabajar con ella.</value>
+  </data>
+  <data name="Settings_Ai_Vault_Scopes" xml:space="preserve">
+    <value>Cada chat tiene su propio espacio. Puedes ampliar el acceso desde su cabecera.</value>
+  </data>
+  <data name="Editor_History_Trigger_Assistant" xml:space="preserve">
+    <value>Asistente</value>
+  </data>
+  <data name="Sessions_OpenInAssistant_Tooltip" xml:space="preserve">
+    <value>Abrir un chat en esta sesión</value>
+  </data>
+  <data name="Sessions_OpenInAssistantButton" xml:space="preserve">
+    <value>Preguntar al asistente</value>
+  </data>
+  <data name="Assistant_Effort_Title" xml:space="preserve">
+    <value>CAPACIDAD</value>
+  </data>
+  <data name="Assistant_Effort_low" xml:space="preserve">
+    <value>Ligera</value>
+  </data>
+  <data name="Assistant_Effort_medium" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="Assistant_Effort_high" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="Assistant_Effort_Help" xml:space="preserve">
+    <value>Más capacidad dedica más razonamiento y puede tardar y consumir más cuota. Se aplica a la siguiente respuesta.</value>
+  </data>
+  <data name="Assistant_Effort_Unavailable" xml:space="preserve">
+    <value>Este proveedor o modelo utiliza su razonamiento predeterminado.</value>
+  </data>
+  <data name="Assistant_History_Hide_Tooltip" xml:space="preserve">
+    <value>Ocultar conversaciones</value>
+  </data>
+  <data name="Assistant_History_Show_Tooltip" xml:space="preserve">
+    <value>Mostrar conversaciones</value>
+  </data>
+  <data name="Settings_SidePanels_Title" xml:space="preserve"><value>Paneles laterales</value></data>
+  <data name="Settings_SidePanels_Description" xml:space="preserve"><value>Elige el lado del panel de cada sección. Los cambios se aplican al instante en ambas vistas.</value></data>
+  <data name="Settings_SidePanels_Left" xml:space="preserve"><value>Izquierda</value></data>
+  <data name="Settings_SidePanels_Right" xml:space="preserve"><value>Derecha</value></data>
+  <data name="Settings_SidePanels_ErrorTitle" xml:space="preserve"><value>No se pudo guardar el ajuste</value></data>
+  <data name="Settings_SidePanels_Error" xml:space="preserve"><value>No se ha podido guardar la posición del panel. Inténtalo de nuevo.</value></data>
+  <data name="Ai_Provider" xml:space="preserve">
+    <value>Proveedor de IA</value>
+  </data>
+  <data name="Ai_ProviderHelp" xml:space="preserve">
+    <value>Elige Claude, tu cuenta de ChatGPT o un modelo local. Cambiar de proveedor abre un chat nuevo; cada conversación conserva el suyo.</value>
+  </data>
+  <data name="Ai_OpenAiHelp" xml:space="preserve">
+    <value>Instala Codex e inicia sesión con codex login para usar tu plan de ChatGPT compatible. Enki no almacena credenciales. Si Codex usa una clave API, el consumo se factura por separado.</value>
+  </data>
+  <data name="Ai_CodexPath" xml:space="preserve">
+    <value>Ruta de Codex (vacía: detección automática)</value>
+  </data>
+  <data name="Ai_CustomModel" xml:space="preserve">
+    <value>Modelo de OpenAI (vacío: predeterminado de Codex)</value>
+  </data>
+  <data name="Ai_LocalEndpoint" xml:space="preserve">
+    <value>Dirección local de Ollama</value>
+  </data>
+  <data name="Ai_LocalHelp" xml:space="preserve">
+    <value>Instala Ollama, descarga un modelo (por ejemplo, ollama pull qwen3:8b) e inicia el servidor. Comprueba la conexión para cargar los modelos instalados. Solo se admiten direcciones de este equipo. Las herramientas dependen de las capacidades del modelo.</value>
+  </data>
+  <data name="Ai_Ready" xml:space="preserve">
+    <value>Conectado</value>
+  </data>
+  <data name="Ai_NotInstalled" xml:space="preserve">
+    <value>CLI no encontrado. Revisa la instalación y la ruta en Ajustes.</value>
+  </data>
+  <data name="Ai_SignedOut" xml:space="preserve">
+    <value>Sesión no iniciada</value>
+  </data>
+  <data name="Ai_Unavailable" xml:space="preserve">
+    <value>Conexión no disponible</value>
+  </data>
+  <data name="Ai_Checking" xml:space="preserve">
+    <value>Comprobando…</value>
+  </data>
+  <data name="Ai_UpdateCodex" xml:space="preserve">
+    <value>Actualiza Codex: Enki necesita los modos efímero y aislado de configuración.</value>
+  </data>
+  <data name="Ai_ConnectionFailed" xml:space="preserve">
+    <value>No se pudo completar la respuesta. Comprueba la conexión, la cuenta y el modelo y vuelve a intentarlo.</value>
+  </data>
+  <data name="Ai_LocalEmpty" xml:space="preserve">
+    <value>Ollama está conectado, pero no tiene modelos instalados. Descarga uno con ollama pull y comprueba de nuevo.</value>
+  </data>
+  <data name="Ai_LocalModelMissing" xml:space="preserve">
+    <value>El modelo elegido ya no está instalado. Elige otro modelo en Ajustes y comprueba de nuevo.</value>
+  </data>
+  <data name="Ai_LocalEndpointInvalid" xml:space="preserve">
+    <value>Usa una dirección HTTP o HTTPS local, como http://localhost:11434, sin rutas ni credenciales.</value>
+  </data>
+  <data name="Ai_LocalUnavailable" xml:space="preserve">
+    <value>No se pudo conectar con Ollama. Comprueba la dirección y que ollama serve esté activo.</value>
+  </data>
+  <data name="Ai_LocalRequestFailed" xml:space="preserve">
+    <value>Ollama no pudo completar la respuesta. Revisa el servidor y las capacidades del modelo.</value>
+  </data>
+  <data name="Ai_ToolLimit" xml:space="preserve">
+    <value>Se ha alcanzado el límite de acciones de esta respuesta. Revisa las acciones realizadas antes de continuar.</value>
+  </data>
+  <data name="Ai_LocalOnly" xml:space="preserve">
+    <value>Este modelo de Ollama utiliza un servidor remoto. Elige un modelo descargado para trabajar en local.</value>
+  </data>
+  <data name="Ai_ApiKey_Invalid" xml:space="preserve">
+    <value>Eso no parece una clave de API de Anthropic. Las claves empiezan por sk-ant-.</value>
+  </data>
+  <data name="Assistant_Activity_Idle" xml:space="preserve">
+    <value>En reposo</value>
+  </data>
+  <data name="Assistant_Activity_Working" xml:space="preserve">
+    <value>Trabajando</value>
+  </data>
+  <data name="Assistant_Activity_NeedsDecision" xml:space="preserve">
+    <value>Necesita tu decisión</value>
+  </data>
+  <data name="Assistant_Activity_ResponseReady" xml:space="preserve">
+    <value>Respuesta lista</value>
+  </data>
+  <data name="Assistant_Append_Title" xml:space="preserve">
+    <value>Añadir a la nota abierta</value>
+  </data>
+  <data name="Assistant_Append_Message" xml:space="preserve">
+    <value>Esta respuesta se añadirá al final de:</value>
+  </data>
+  <data name="Assistant_Append_Hint" xml:space="preserve">
+    <value>El contenido anterior queda en el historial de versiones de la nota. Si la nota cambia antes de confirmar, no se escribe nada.</value>
+  </data>
+  <data name="Assistant_Append_Confirm" xml:space="preserve">
+    <value>Añadir</value>
+  </data>
+  <data name="Assistant_Attachment_NotText" xml:space="preserve">
+    <value>No es un archivo de texto</value>
+  </data>
+  <data name="Assistant_Attachment_TooLarge" xml:space="preserve">
+    <value>Demasiado grande (más de 1 MB)</value>
+  </data>
+  <data name="Assistant_Composer_SkillFixedHint" xml:space="preserve">
+    <value>La skill guía toda la conversación, por eso se elige antes del primer mensaje.</value>
+  </data>
+  <data name="Assistant_Draft_MissingAttachments_one" xml:space="preserve">
+    <value>{0} adjunto de este borrador ya no está disponible y se ha retirado.</value>
+  </data>
+  <data name="Assistant_Draft_MissingAttachments_other" xml:space="preserve">
+    <value>{0} adjuntos de este borrador ya no están disponibles y se han retirado.</value>
+  </data>
+  <data name="Assistant_Error_ApiKeyRejected" xml:space="preserve">
+    <value>Anthropic ha rechazado tu clave de API, o no hay ninguna guardada. Revísala en Ajustes › Inteligencia artificial.</value>
+  </data>
+  <data name="Assistant_Error_Continue" xml:space="preserve">
+    <value>Continuar</value>
+  </data>
+  <data name="Assistant_Error_Continue_Tooltip" xml:space="preserve">
+    <value>Los cambios ya hechos en el vault no se repiten: el asistente sigue desde ahí.</value>
+  </data>
+  <data name="Assistant_History_ClearSearch" xml:space="preserve">
+    <value>Limpiar búsqueda</value>
+  </data>
+  <data name="Assistant_History_Unassigned" xml:space="preserve">
+    <value>Sin vault asignado</value>
+  </data>
+  <data name="Assistant_History_Unassigned_Hint" xml:space="preserve">
+    <value>Guardadas antes de separar el historial por vault. Asócialas a este vault para continuarlas aquí.</value>
+  </data>
+  <data name="Assistant_Message_AppendToNote" xml:space="preserve">
+    <value>Añadir a la nota abierta</value>
+  </data>
+  <data name="Assistant_Message_AppendToNamedNote" xml:space="preserve">
+    <value>Añadir a «{0}»</value>
+  </data>
+  <data name="Assistant_Notify_AppendFailed_Title" xml:space="preserve">
+    <value>No se pudo añadir a la nota</value>
+  </data>
+  <data name="Assistant_Notify_AppendConflict_Message" xml:space="preserve">
+    <value>«{0}» cambió después de la vista previa, así que no se ha escrito nada. Vuelve a añadir la respuesta sobre el contenido actual.</value>
+  </data>
+  <data name="Assistant_Notify_Appended_Title" xml:space="preserve">
+    <value>Añadido a la nota</value>
+  </data>
+  <data name="Assistant_Notify_Appended_Message" xml:space="preserve">
+    <value>La respuesta se ha añadido al final de «{0}».</value>
+  </data>
+  <data name="Assistant_Notify_AttachmentFailed_Message" xml:space="preserve">
+    <value>Algunos adjuntos no se pueden enviar. Cada uno indica el motivo: retíralo o elige otro.</value>
+  </data>
+  <data name="Assistant_Notify_ChatAssigned_Title" xml:space="preserve">
+    <value>Conversación asociada</value>
+  </data>
+  <data name="Assistant_Notify_ChatAssigned_Message" xml:space="preserve">
+    <value>«{0}» ahora pertenece al vault {1}.</value>
+  </data>
+  <data name="Assistant_Panel_Toggle" xml:space="preserve">
+    <value>Panel del asistente</value>
+  </data>
+  <data name="Assistant_Panel_History" xml:space="preserve">
+    <value>Conversaciones</value>
+  </data>
+  <data name="Assistant_Panel_Expand" xml:space="preserve">
+    <value>Abrir en la sección Asistente</value>
+  </data>
+  <data name="Assistant_Panel_Close" xml:space="preserve">
+    <value>Cerrar panel (la respuesta continúa)</value>
+  </data>
+  <data name="Assistant_Panel_ShowAsPanel" xml:space="preserve">
+    <value>Ver como panel lateral</value>
+  </data>
+  <data name="Assistant_Picker_Notes" xml:space="preserve">
+    <value>Notas</value>
+  </data>
+  <data name="Assistant_Picker_Files" xml:space="preserve">
+    <value>Archivos</value>
+  </data>
+  <data name="Assistant_Picker_FilesHint" xml:space="preserve">
+    <value>Solo se pueden adjuntar archivos de texto de hasta 1 MB. Imágenes, PDF y multimedia aparecen, pero no se pueden enviar como texto.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Eyebrow" xml:space="preserve">
+    <value>Permiso de consulta</value>
+  </data>
+  <data name="Assistant_ReadAccess_Question" xml:space="preserve">
+    <value>¿Permitir que este chat busque y consulte documentos de {0}?</value>
+  </data>
+  <data name="Assistant_ReadAccess_Detail" xml:space="preserve">
+    <value>Lo que lea se enviará a {0}. El permiso se conserva para este chat. No permite acceder a otras sesiones ni amplía los permisos de edición.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Allow" xml:space="preserve">
+    <value>Permitir en este chat</value>
+  </data>
+  <data name="Assistant_ReadAccess_Deny" xml:space="preserve">
+    <value>Ahora no</value>
+  </data>
+  <data name="Assistant_ReadAccess_Notify" xml:space="preserve">
+    <value>Quiere buscar y consultar documentos de {0}</value>
+  </data>
+  <data name="Assistant_ReadAccess_Title" xml:space="preserve">
+    <value>Búsqueda y consulta de documentos</value>
+  </data>
+  <data name="Assistant_ReadAccess_Status_Granted" xml:space="preserve">
+    <value>Permitido: puede buscar y consultar documentos de {0} por su cuenta.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Status_Ask" xml:space="preserve">
+    <value>Aún no permitido: solo ve lo que adjuntas y pedirá permiso antes de buscar en {0}.</value>
+  </data>
+  <data name="Assistant_ReadAccess_RevokeHint" xml:space="preserve">
+    <value>Revocar impide lecturas posteriores. No borra lo que ya se envió al proveedor.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Revoke" xml:space="preserve">
+    <value>Revocar permiso</value>
+  </data>
+  <data name="Assistant_ReadAccess_VaultAndSessions" xml:space="preserve">
+    <value>el vault y sus sesiones sin protección</value>
+  </data>
+  <data name="Assistant_Scope_Summary_SearchAllowed" xml:space="preserve">
+    <value>consulta permitida</value>
+  </data>
+  <data name="Assistant_Scope_Summary_SearchAsk" xml:space="preserve">
+    <value>pide permiso para consultar</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Title" xml:space="preserve">
+    <value>Añade tu clave de API de Anthropic</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Message" xml:space="preserve">
+    <value>Claude está configurado para usar tu propia clave de API y todavía no hay ninguna guardada. Guárdala en Ajustes: Enki la conserva en el almacén seguro del sistema y solo se la pasa a Claude Code al enviar un mensaje. El uso de la API lo factura Anthropic.</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Open" xml:space="preserve">
+    <value>Abrir ajustes</value>
+  </data>
+  <data name="Assistant_ToolError_ReadDenied" xml:space="preserve">
+    <value>Sin permiso para consultar en este chat.</value>
+  </data>
+  <data name="Assistant_Transcript_JumpToEnd" xml:space="preserve">
+    <value>Ir al final</value>
+  </data>
+  <data name="Assistant_Unassigned_Banner" xml:space="preserve">
+    <value>Esta conversación es de antes de separar el historial por vault. Asóciala a este vault para continuarla aquí; en cualquier caso se conserva en tu historial.</value>
+  </data>
+  <data name="Assistant_Unassigned_Assign" xml:space="preserve">
+    <value>Asociar a este vault</value>
+  </data>
+  <data name="CommandPalette_Action_OpenAssistantPanel" xml:space="preserve">
+    <value>Abrir el asistente en el panel lateral</value>
+  </data>
+  <data name="CommandPalette_Action_CloseAssistantPanel" xml:space="preserve">
+    <value>Cerrar el panel lateral del asistente</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_Label" xml:space="preserve">
+    <value>Cómo se usa Claude</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_Subscription" xml:space="preserve">
+    <value>Suscripción</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_ApiKey" xml:space="preserve">
+    <value>Clave de API propia</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_SubscriptionHelp" xml:space="preserve">
+    <value>Usa la cuenta con la que iniciaste sesión en Claude Code; las respuestas cuentan contra tu plan. Enki nunca ve tus credenciales.</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_ApiKeyHelp" xml:space="preserve">
+    <value>Claude Code se ejecuta con tu clave de API de Anthropic en vez de con tu suscripción, y Anthropic factura el uso por tokens. La clave se guarda en el almacén seguro del sistema, nunca en los ajustes de Enki ni en tu vault.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Saved" xml:space="preserve">
+    <value>Clave guardada: {0}</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_None" xml:space="preserve">
+    <value>Todavía no hay ninguna clave guardada.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Placeholder" xml:space="preserve">
+    <value>Pega tu clave de API (sk-ant-…)</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Save" xml:space="preserve">
+    <value>Guardar clave</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Delete" xml:space="preserve">
+    <value>Borrar la clave guardada</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Console" xml:space="preserve">
+    <value>Gestionar claves en la consola de Anthropic</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_StoreFailed" xml:space="preserve">
+    <value>El almacén seguro del sistema no respondió, así que la clave no se guardó ni se borró. En Linux, comprueba que hay un llavero (Secret Service) en marcha.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_SavedTitle" xml:space="preserve">
+    <value>Clave de API guardada</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_SavedMessage" xml:space="preserve">
+    <value>Claude la usará desde el próximo mensaje. Está guardada en el almacén seguro del sistema.</value>
+  </data>
+  <data name="Settings_Navigation_ToggleAssistantPanel" xml:space="preserve">
+    <value>Abrir o cerrar el panel del asistente</value>
+  </data>
+  <data name="Assistant_State_ApiKeyMissing" xml:space="preserve">
+    <value>Claude · sin clave de API guardada</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Label" xml:space="preserve">
+    <value>Permitir consultas por defecto</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Description" xml:space="preserve">
+    <value>Permite al asistente leer notas, archivos, skills, tarjetas Kanban, tareas Polar y recordatorios dentro del ámbito de cada chat sin preguntar antes. Puedes revocar el acceso en un chat concreto. Activa los cambios de abajo para permitir también crear, editar, organizar y eliminar elementos.</value>
+  </data>
+  <data name="Assistant_Tool_list_skills" xml:space="preserve">
+    <value>Listar skills</value>
+  </data>
+  <data name="Assistant_Tool_read_skill" xml:space="preserve">
+    <value>Leer skill</value>
+  </data>
+  <data name="Assistant_Tool_create_skill" xml:space="preserve">
+    <value>Crear skill</value>
+  </data>
+  <data name="Assistant_Tool_write_skill" xml:space="preserve">
+    <value>Editar skill</value>
+  </data>
+  <data name="Assistant_Tool_delete_skill" xml:space="preserve">
+    <value>Eliminar skill</value>
+  </data>
+  <data name="Assistant_Skill_DeleteConfirm" xml:space="preserve">
+    <value>¿Eliminar esta skill definitivamente?</value>
+  </data>
+  <data name="Assistant_Activity_Expand" xml:space="preserve">
+    <value>Desplegar acciones</value>
+  </data>
+  <data name="Assistant_Activity_Collapse" xml:space="preserve">
+    <value>Plegar acciones</value>
+  </data>
+  <data name="Assistant_Composer_Help" xml:space="preserve">
+    <value>Información del chat</value>
   </data>
 </root>

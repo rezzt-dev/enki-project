@@ -45,15 +45,13 @@ public sealed partial class StatisticsAggregationService(
         var rangeEndLocal = DateOnly.FromDateTime(rangeEndUtc.ToLocalTime());
         var today = DateOnly.FromDateTime(DateTime.Today);
 
-        var weekStarts = BuildWeekStarts(rangeStartLocal, rangeEndLocal);
-
         var notes = vaultService.VaultPath is { Length: > 0 } vaultPath
             ? vaultService.GetAllNotesRecursive(vaultPath)
             : [];
         var noteCreatedDates = notes.Select(n => DateOnly.FromDateTime(SafeCreationTimeUtc(n).ToLocalTime())).ToList();
         var noteEditedDates = notes.Select(n => DateOnly.FromDateTime(n.ModifiedUtc.ToLocalTime())).ToList();
 
-        var kanbanCompletedDates = kanbanService.Board.Columns.SelectMany(c => c.Cards)
+        var kanbanCompletedDates = kanbanService.AllColumns.SelectMany(c => c.Cards)
             .Where(c => c.CompletedAtUtc is not null)
             .Select(c => DateOnly.FromDateTime(c.CompletedAtUtc!.Value.ToLocalTime()))
             .ToList();
@@ -67,35 +65,42 @@ public sealed partial class StatisticsAggregationService(
 
         var activeHabits = habitService.Store.Habits.Where(h => !h.Archived).ToList();
 
-        var points = new List<WeeklyStatsPoint>();
+        return BuildWeeklySeriesFromDates(rangeStartLocal, rangeEndLocal, noteCreatedDates, noteEditedDates,
+            kanbanCompletedDates.Concat(polarCompletedDates), activeHabits, today);
+    }
+
+    /// <summary>Agrupa cada fecha una sola vez, en vez de recorrer todas las notas y tareas de nuevo
+    /// por cada semana. El informe reutiliza también su lectura de notas para esta serie.</summary>
+    private static List<WeeklyStatsPoint> BuildWeeklySeriesFromDates(DateOnly rangeStartLocal, DateOnly rangeEndLocal,
+        IEnumerable<DateOnly> createdDates, IEnumerable<DateOnly> editedDates, IEnumerable<DateOnly> completedDates,
+        List<Habit> activeHabits, DateOnly today)
+    {
+        var weekStarts = BuildWeekStarts(rangeStartLocal, rangeEndLocal);
+        var created = CountByDay(createdDates.Select(MondayOnOrBefore));
+        var edited = CountByDay(editedDates.Select(MondayOnOrBefore));
+        var completed = CountByDay(completedDates.Select(MondayOnOrBefore));
+        var points = new List<WeeklyStatsPoint>(weekStarts.Count);
         foreach (var weekStart in weekStarts)
         {
             var weekEndExclusive = weekStart.AddDays(7);
-
-            var notesCreated = noteCreatedDates.Count(d => d >= weekStart && d < weekEndExclusive);
-            var notesEdited = noteEditedDates.Count(d => d >= weekStart && d < weekEndExclusive);
-            var tasksCompleted = kanbanCompletedDates.Count(d => d >= weekStart && d < weekEndExclusive)
-                + polarCompletedDates.Count(d => d >= weekStart && d < weekEndExclusive);
-
             points.Add(new WeeklyStatsPoint(
-                weekStart, notesCreated, notesEdited, tasksCompleted,
+                weekStart, created.GetValueOrDefault(weekStart), edited.GetValueOrDefault(weekStart),
+                completed.GetValueOrDefault(weekStart),
                 BuildHabitCompletionPercent(activeHabits, weekStart, weekEndExclusive, today)));
         }
 
         return points;
     }
 
-    /// <summary>Returns pending / in-progress / done counts from the kanban board columns — the
-    /// first column is always "pending," the last is always "done," and everything in between is
-    /// "in progress" (same convention the rest of the app already uses).</summary>
+    /// <summary>Agrega el histórico de todos los tableros por rol; las columnas personalizadas cuentan
+    /// como trabajo en curso. No depende del orden ni de la selección de la interfaz.</summary>
     public KanbanFlowSnapshot BuildKanbanFlow()
     {
-        var columns = kanbanService.Board.Columns;
-        if (columns.Count == 0) return new KanbanFlowSnapshot(0, 0, 0);
-        var pending = columns[0].Cards.Count;
-        var done = columns[^1].Cards.Count;
-        var inProgress = columns.Skip(1).Take(columns.Count - 2).Sum(c => c.Cards.Count);
-        return new KanbanFlowSnapshot(pending, inProgress, done);
+        var columns = kanbanService.AllColumns.ToList();
+        return new KanbanFlowSnapshot(
+            columns.Where(c => c.Role == CoreColumnRole.Backlog).Sum(c => c.Cards.Count),
+            columns.Where(c => c.Role is CoreColumnRole.InProgress or CoreColumnRole.None).Sum(c => c.Cards.Count),
+            columns.Where(c => c.Role == CoreColumnRole.Done).Sum(c => c.Cards.Count));
     }
 
     /// <summary>% of (hábito, día aplicable) pairs marked done within the week, capped at

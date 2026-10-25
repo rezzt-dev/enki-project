@@ -44,6 +44,27 @@ public class NotificationCenterViewModelTests : IDisposable
     }
 
     [Fact]
+    public void NotificationsDisabled_StopsLogToastAndSound()
+    {
+        var settings = new SettingsService(_storageDirectory);
+        var notifications = new NotificationService(settings, _storageDirectory);
+        var toastCalls = 0;
+        var soundCalls = 0;
+        var viewModel = new NotificationCenterViewModel(notifications, settings,
+            showToast: _ => toastCalls++, playSound: _ => soundCalls++);
+        settings.Settings.ShowDesktopToasts = true;
+        settings.Settings.NotificationSoundEnabled = true;
+        settings.Settings.NotificationsEnabled = false;
+
+        notifications.Push("Evento");
+
+        Assert.Empty(notifications.Notifications);
+        Assert.False(viewModel.HasItems);
+        Assert.Equal(0, toastCalls);
+        Assert.Equal(0, soundCalls);
+    }
+
+    [Fact]
     public void DuringQuietHours_SilencesToastAndSoundButKeepsTheLogEntry()
     {
         var settings = new SettingsService(_storageDirectory);

@@ -131,7 +131,43 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
     private string _newSubtaskTitle = string.Empty;
 
     public string DescriptionCounterLabel => $"{Description.Length}/{DescriptionMaxLength}";
-    public bool CanSave => !string.IsNullOrWhiteSpace(Title);
+    public bool HasInvalidDateRange => StartDate is { } start && DueDate is { } due && start.Date > due.Date;
+    public bool CanSave => !string.IsNullOrWhiteSpace(Title) && !HasInvalidDateRange;
+
+    [ObservableProperty]
+    private DateTime? _startDate;
+
+    [ObservableProperty]
+    private bool _isStartCalendarOpen;
+
+    public bool HasStartDate => StartDate is not null;
+    public string StartDateDisplayLabel => StartDate?.ToString("d", CultureInfo.CurrentCulture)
+        ?? LocalizationService.Instance["Kanban_CardEditor_SelectDatePlaceholder"];
+
+    partial void OnStartDateChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(HasStartDate));
+        OnPropertyChanged(nameof(StartDateDisplayLabel));
+        OnPropertyChanged(nameof(HasInvalidDateRange));
+        OnPropertyChanged(nameof(CanSave));
+        RebuildCalendarDays();
+    }
+
+    [RelayCommand]
+    private void ToggleStartCalendar()
+    {
+        IsCalendarOpen = false;
+        IsStartCalendarOpen = !IsStartCalendarOpen;
+        var anchor = StartDate ?? DateTime.Today;
+        CalendarMonth = new DateTime(anchor.Year, anchor.Month, 1);
+        RebuildCalendarDays();
+    }
+
+    [RelayCommand]
+    private void ClearStartDate() => StartDate = null;
+
+    [RelayCommand]
+    private void SetStartDateToday() => StartDate = DateTime.Today;
 
     public bool HasDueDate => DueDate is not null;
 
@@ -180,6 +216,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
     /// editor abierto porque haría perder lo que el usuario llevara escrito.</summary>
     public void RefreshLocalizedLabels()
     {
+        OnPropertyChanged(nameof(StartDateDisplayLabel));
         OnPropertyChanged(nameof(HeadingEyebrow));
         OnPropertyChanged(nameof(HeadingTitle));
         OnPropertyChanged(nameof(ConfirmLabel));
@@ -222,6 +259,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
             Description = card.Description,
             SelectedPriority = card.Priority,
             TagsInput = string.Join(", ", card.Card.Tags),
+            StartDate = card.Card.StartDateUtc?.ToLocalTime().Date,
             DueDate = dueDate,
             HasDueTime = hasDueTime,
             DueHour = hasDueTime ? dueLocal!.Value.Hour : 9,
@@ -248,6 +286,8 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
 
     partial void OnDueDateChanged(DateTime? value)
     {
+        OnPropertyChanged(nameof(HasInvalidDateRange));
+        OnPropertyChanged(nameof(CanSave));
         OnPropertyChanged(nameof(HasDueDate));
         OnPropertyChanged(nameof(DueDateDisplayLabel));
         RebuildCalendarDays();
@@ -320,6 +360,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
     [RelayCommand]
     private void ToggleCalendar()
     {
+        IsStartCalendarOpen = false;
         if (!IsCalendarOpen)
         {
             var anchor = DueDate ?? DateTime.Today;
@@ -339,6 +380,12 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
     [RelayCommand]
     private void SelectCalendarDay(KanbanCalendarDayViewModel day)
     {
+        if (IsStartCalendarOpen)
+        {
+            StartDate = day.Date;
+            IsStartCalendarOpen = false;
+            return;
+        }
         DueDate = day.Date;
         IsCalendarOpen = false;
     }
@@ -369,7 +416,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
                 date,
                 isCurrentMonth: date.Month == CalendarMonth.Month,
                 isToday: date == today,
-                isSelected: DueDate is { } due && due.Date == date));
+                isSelected: (IsStartCalendarOpen ? StartDate : DueDate) is { } due && due.Date == date));
         }
     }
 
@@ -505,6 +552,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         Title = Title.Trim(),
         Description = Description.Trim(),
         Priority = SelectedPriority,
+        StartDateUtc = ToUtc(StartDate?.Date),
         DueDateUtc = ToUtc(CombinedDueDate),
         DurationMinutes = EffectiveDurationMinutes,
         Subtasks = Subtasks.Select(ToModel).ToList(),
@@ -517,6 +565,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         card.Title = Title.Trim();
         card.Description = Description.Trim();
         card.Priority = SelectedPriority;
+        card.StartDateUtc = ToUtc(StartDate?.Date);
         card.DueDateUtc = ToUtc(CombinedDueDate);
         card.DurationMinutes = EffectiveDurationMinutes;
         card.Subtasks = Subtasks.Select(ToModel).ToList();

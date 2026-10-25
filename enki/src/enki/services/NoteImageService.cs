@@ -45,6 +45,7 @@ public sealed class NoteImageService
     /// nota no dependa de una ruta de fuera del vault que mañana puede no existir.</summary>
     public string? SaveFromFile(NoteFile note, string sourcePath)
     {
+        if (_vaultService.IsPathInLockedSession(note.FullPath)) throw new enki.Models.SessionLockedException(note.FullPath);
         if (!File.Exists(sourcePath)) return null;
 
         var fullSource = Path.GetFullPath(sourcePath);
@@ -65,11 +66,13 @@ public sealed class NoteImageService
         return NoteImageAttachments.MarkdownReference(note.FullPath, destination);
     }
 
-    private static void ValidateImage(string path, string extension)
+    private void ValidateImage(string path, string extension)
     {
         try
         {
-            using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using Stream source = IsInsideVault(path)
+                ? new MemoryStream(_vaultService.ReadFileBytes(path), writable: false)
+                : new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             if (string.Equals(extension, ".svg", StringComparison.OrdinalIgnoreCase))
             {
                 using var svg = new SKSvg();

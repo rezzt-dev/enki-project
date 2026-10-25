@@ -15,6 +15,7 @@ public partial class NotesView : UserControl
     public NotesView()
     {
         InitializeComponent();
+        ExplorerClipboardKeys.Attach(this);
 
         // Atajos de gestión de pestañas (propuesta 29, docs/propuesta-nuevas-funcionalidades.md): se
         // reconstruyen cada vez que cambia el DataContext (una nueva instancia de NotesView por cada

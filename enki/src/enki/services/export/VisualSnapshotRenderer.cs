@@ -46,9 +46,11 @@ public readonly record struct ExportAppearance(
 /// <item>Se rasteriza el <em>contenido</em> del <c>ScrollViewer</c>, no el <c>ScrollViewer</c>: el
 /// contenido está dispuesto a su tamaño completo y es el visor quien lo recorta, así que renderizarlo
 /// directamente da el tablero entero.</item>
-/// <item>Antes de rasterizar se lleva el <c>ScrollViewer</c> al origen y se fuerza una pasada de
-/// maquetado, porque el desplazamiento vive en la posición de arrange del contenido y saldría en la
-/// imagen como un recorte. El desplazamiento se restaura después, siempre.</item>
+/// <item>Los <c>ScrollViewer</c> de <em>dentro</em> de la región (las tarjetas de cada columna del
+/// Kanban, la rejilla de horas y la cuadrícula del mes del calendario) también recortan. Mientras dura
+/// el render, <see cref="FullSizeLayout"/> maqueta la región con alto ilimitado —y ancho ilimitado si
+/// alguno sigue desbordando en horizontal— para que cada visor mida lo mismo que su contenido; después
+/// se restauran la maqueta y los desplazamientos, siempre.</item>
 /// </list></summary>
 public static class VisualSnapshotRenderer
 {
@@ -71,28 +73,51 @@ public static class VisualSnapshotRenderer
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var contentSize = LogicalSize(target);
-        if (contentSize.Width < 1 || contentSize.Height < 1)
+        if (LogicalSize(target) is not { Width: >= 1, Height: >= 1 })
             throw new ExportRenderException(
                 $"La vista '{target.Name ?? target.GetType().Name}' todavía no tiene tamaño maquetado.",
                 LocalizedTextFormatter.Format("Export_Error_NothingToExport"));
 
+        RenderTargetBitmap content;
+        Size contentSize;
         var hasHeader = !string.IsNullOrWhiteSpace(title);
         var headerHeight = hasHeader ? TitleFontSize * 1.35 + SubtitleFontSize * 1.6 + Padding * 0.5 : 0;
-        var sheetSize = new Size(contentSize.Width + Padding * 2, contentSize.Height + Padding * 2 + headerHeight);
+        Size sheetSize;
 
-        scale = FitScale(sheetSize, scale);
-
-        using var content = RenderContent(target, contentSize, scale);
-        using var sheet = new RenderTargetBitmap(ToPixelSize(sheetSize, scale), new Vector(96 * scale, 96 * scale));
-        using (var context = sheet.CreateDrawingContext())
+        using (FullSizeLayout.Apply(target))
         {
-            context.FillRectangle(new SolidColorBrush(appearance.Background), new Rect(sheetSize));
-            if (hasHeader) DrawHeader(context, title, subtitle, appearance, sheetSize.Width - Padding * 2);
-            context.DrawImage(content, new Rect(Padding, Padding + headerHeight, contentSize.Width, contentSize.Height));
+            contentSize = LogicalSize(target);
+            sheetSize = new Size(contentSize.Width + Padding * 2, contentSize.Height + Padding * 2 + headerHeight);
+            scale = FitScale(sheetSize, scale);
+            content = new RenderTargetBitmap(ToPixelSize(contentSize, scale), new Vector(96 * scale, 96 * scale));
+            try
+            {
+                content.Render(target);
+            }
+            catch
+            {
+                content.Dispose();
+                throw;
+            }
         }
 
-        return new ExportSnapshot(sheet.PixelSize.Width, sheet.PixelSize.Height, scale, EncodePng(sheet), ExtractRgb(sheet));
+        using (content)
+        using (var sheet = new RenderTargetBitmap(ToPixelSize(sheetSize, scale), new Vector(96 * scale, 96 * scale)))
+        {
+            using (var context = sheet.CreateDrawingContext())
+            {
+                context.FillRectangle(new SolidColorBrush(appearance.Background), new Rect(sheetSize));
+                if (hasHeader) DrawHeader(context, title, subtitle, appearance, sheetSize.Width - Padding * 2);
+                // El rectángulo de origen va en píxeles del bitmap, no en su tamaño lógico: con la sobrecarga
+                // corta, Skia toma Bitmap.Size (lógico) como si fueran píxeles, así que a 2× solo copiaba el
+                // cuadrante superior izquierdo y lo estiraba al doble — la lámina salía ampliada y recortada.
+                context.DrawImage(content,
+                    new Rect(0, 0, content.PixelSize.Width, content.PixelSize.Height),
+                    new Rect(Padding, Padding + headerHeight, contentSize.Width, contentSize.Height));
+            }
+
+            return new ExportSnapshot(sheet.PixelSize.Width, sheet.PixelSize.Height, scale, EncodePng(sheet), ExtractRgb(sheet));
+        }
     }
 
     /// <summary>Tamaño maquetado del control. <see cref="Layoutable.DesiredSize"/> es el respaldo para el
@@ -102,35 +127,6 @@ public static class VisualSnapshotRenderer
     {
         var bounds = target.Bounds.Size;
         return bounds is { Width: >= 1, Height: >= 1 } ? bounds : target.DesiredSize;
-    }
-
-    private static RenderTargetBitmap RenderContent(Control target, Size contentSize, double scale)
-    {
-        var bitmap = new RenderTargetBitmap(ToPixelSize(contentSize, scale), new Vector(96 * scale, 96 * scale));
-        var scroller = target.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault();
-        var offset = scroller?.Offset ?? default;
-        try
-        {
-            if (scroller is not null && offset != default)
-            {
-                scroller.Offset = default;
-                // Sin esta pasada el arrange del contenido sigue desplazado y la imagen saldría recortada.
-                target.GetLayoutManager()?.ExecuteLayoutPass();
-            }
-
-            bitmap.Render(target);
-        }
-        catch
-        {
-            bitmap.Dispose();
-            throw;
-        }
-        finally
-        {
-            if (scroller is not null && offset != default) scroller.Offset = offset;
-        }
-
-        return bitmap;
     }
 
     private static void DrawHeader(DrawingContext context, string title, string subtitle, ExportAppearance appearance, double maxWidth)

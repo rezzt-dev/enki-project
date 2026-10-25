@@ -103,6 +103,8 @@ public sealed partial class MainWindowViewModel
         Settings?.FlushPendingSave();
         Skills?.ActiveEditor?.FlushPendingSave();
         Notes?.FlushAllEditors();
+        // El borrador del asistente referencia rutas del vault que se deja: se guarda mientras aún es el abierto.
+        Assistant?.SaveDraft();
 
         var unsaved = Notes?.OpenEditors.Where(editor => editor.IsDirty).Select(editor => editor.Title).ToList() ?? [];
         if (Skills?.ActiveEditor is { IsDirty: true } skillEditor) unsaved.Add(skillEditor.Title);

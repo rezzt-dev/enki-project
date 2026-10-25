@@ -111,10 +111,18 @@ public sealed partial class SkillsViewModel
     private void ShowTreeView() => IsTreeView = true;
 
     [RelayCommand]
-    private void ShowTreeBrowse() => IsTreeSearchMode = false;
+    private void ShowTreeBrowse()
+    {
+        IsTreeSearchMode = false;
+        IsTreeSidebarVisible = true;
+    }
 
     [RelayCommand]
-    private void ShowTreeSearch() => IsTreeSearchMode = true;
+    private void ShowTreeSearch()
+    {
+        IsTreeSearchMode = true;
+        IsTreeSidebarVisible = true;
+    }
 
     [RelayCommand]
     private void ToggleTreeSidebar() => IsTreeSidebarVisible = !IsTreeSidebarVisible;
@@ -281,10 +289,11 @@ public sealed partial class SkillsViewModel
 
         if (node.IsSkill)
         {
-            SelectedSkill = node.Skill;
+            SelectSkill(node.Skill);
             return;
         }
 
+        CurrentFolder = FindFolder(RootFolders, node.FullPath);
         node.ToggleExpandCommand.Execute(null);
     }
 
@@ -336,6 +345,9 @@ public sealed partial class SkillsViewModel
             return;
         }
 
+        if (!node.IsRenaming) return;
+        node.IsRenaming = false;
+        if (!PrepareLibraryMutation()) return;
         var newName = node.EditingName.Trim();
         if (newName.Length > 0 && newName != node.Name)
         {

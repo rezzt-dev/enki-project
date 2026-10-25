@@ -10,6 +10,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.ViewModels;
+using enki.Services;
 
 namespace enki.Views;
 
@@ -29,10 +30,12 @@ public partial class FilesBrowserView : UserControl
     private PointerPressedEventArgs? _dragPressArgs;
     private Point _dragStartPoint;
     private bool _dragging;
+    private readonly ExplorerDragGhost _dragGhost;
 
     public FilesBrowserView()
     {
         InitializeComponent();
+        _dragGhost = new ExplorerDragGhost(this, DragSurface, FileDragFormat);
         AddHandler(KeyDownEvent, OnViewKeyDown, RoutingStrategies.Bubble);
     }
 
@@ -62,6 +65,13 @@ public partial class FilesBrowserView : UserControl
         if (folder.IsRenaming || (e.Source as Visual)?.FindAncestorOfType<Button>(includeSelf: true) is not null) return;
 
         vm.SelectFolderCommand.Execute(folder);
+        ArmDrag(e);
+    }
+
+    private void FolderRow_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (sender is Border { DataContext: FileFolderViewModel { IsRenaming: false } folder })
+            StartDrag(e, folder.FullPath);
     }
 
     private void RootFolderRow_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -233,18 +243,44 @@ public partial class FilesBrowserView : UserControl
             RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
+    private void FolderDrag_Initialized(object? sender, EventArgs e)
+    {
+        if (sender is not Control control) return;
+        control.AddHandler(InputElement.PointerPressedEvent, FileCard_PointerPressed,
+            RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+        control.AddHandler(InputElement.PointerMovedEvent, FileCard_PointerMoved,
+            RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
     private void FileCard_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
+        if (sender is Control { DataContext: FileFolderCardViewModel { IsParent: true } }) return;
+        ArmDrag(e);
+    }
+
+    private void ArmDrag(PointerPressedEventArgs e)
     {
         _dragPressArgs = e;
         _dragStartPoint = e.GetPosition(null);
         _dragging = false;
     }
 
-    private async void FileCard_PointerMoved(object? sender, PointerEventArgs e)
+    private void FileCard_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        var path = sender switch
+        {
+            Control { DataContext: FileCardViewModel { IsRenaming: false } card } => card.File.FullPath,
+            Control { DataContext: FileFolderCardViewModel { IsParent: false, IsRenaming: false } folder } => folder.FullPath,
+            _ => null
+        };
+        if (path is not null) StartDrag(e, path);
+    }
+
+    private async void StartDrag(PointerEventArgs e, string path)
     {
         if (_dragging || _dragPressArgs is null) return;
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-        if (sender is not Control { DataContext: FileCardViewModel { IsRenaming: false } card }) return;
 
         var current = e.GetPosition(null);
         var dx = current.X - _dragStartPoint.X;
@@ -258,12 +294,13 @@ public partial class FilesBrowserView : UserControl
         try
         {
             using var transfer = new DataTransfer();
-            transfer.Add(DataTransferItem.Create(FileDragFormat, card.File.FullPath));
+            transfer.Add(DataTransferItem.Create(FileDragFormat, path));
             await DragDrop.DoDragDropAsync(pressArgs, transfer, DragDropEffects.Move);
         }
         finally
         {
             _dragging = false;
+            _dragGhost.Hide();
         }
     }
 
@@ -280,7 +317,7 @@ public partial class FilesBrowserView : UserControl
     {
         if (sender is not Border { DataContext: FileFolderViewModel folder }) return;
 
-        var effects = EffectsFor(e);
+        var effects = EffectsFor(e, folder.FullPath);
         e.DragEffects = effects;
         folder.IsDropTarget = isOver && effects != DragDropEffects.None;
     }
@@ -305,7 +342,7 @@ public partial class FilesBrowserView : UserControl
     {
         if (sender is not Control { DataContext: FileFolderCardViewModel card }) return;
 
-        var effects = EffectsFor(e);
+        var effects = EffectsFor(e, card.FullPath);
         card.IsDropTarget = isOver && effects != DragDropEffects.None;
         if (effects == DragDropEffects.None) return;
 
@@ -318,7 +355,7 @@ public partial class FilesBrowserView : UserControl
     {
         if (sender is not Control { DataContext: FileFolderCardViewModel card }) return;
         card.IsDropTarget = false;
-        if (EffectsFor(e) == DragDropEffects.None) return;
+        if (EffectsFor(e, card.FullPath) == DragDropEffects.None) return;
 
         DropInto(e, card.FullPath);
         e.Handled = true;
@@ -332,7 +369,7 @@ public partial class FilesBrowserView : UserControl
 
     private void UpdateRootDragOver(DragEventArgs e, bool isOver)
     {
-        var effects = EffectsFor(e);
+        var effects = EffectsFor(e, Vm?.EffectiveRootPath);
         e.DragEffects = effects;
         if (Vm is { } vm) vm.IsRootDropTarget = isOver && effects != DragDropEffects.None;
     }
@@ -349,10 +386,12 @@ public partial class FilesBrowserView : UserControl
     private void DropInto(DragEventArgs e, string folderPath)
     {
         if (Vm is not { IsSelectedSessionLocked: false } vm) return;
+        if (EffectsFor(e, folderPath) == DragDropEffects.None) return;
 
         if (e.DataTransfer.TryGetValue(FileDragFormat) is { } sourcePath)
         {
-            if (vm.FindTreeCardByPath(sourcePath) is { } card) vm.MoveFileToFolder(card, folderPath);
+            if (Directory.Exists(sourcePath)) vm.MoveFolderTo(sourcePath, folderPath);
+            else if (vm.FindTreeCardByPath(sourcePath) is { } card) vm.MoveFileToFolder(card, folderPath);
             return;
         }
 
@@ -365,10 +404,15 @@ public partial class FilesBrowserView : UserControl
     /// una sesión protegida y bloqueada elegida: escribir ahí dentro necesita una clave que no está en
     /// memoria (ver <see cref="FilesViewModel.ImportPaths"/>), así que es mejor no ofrecer el gesto que
     /// aceptarlo y contestar con un aviso de error.</summary>
-    private DragDropEffects EffectsFor(DragEventArgs e)
+    private DragDropEffects EffectsFor(DragEventArgs e, string? destination = null)
     {
         if (Vm is not { IsSelectedSessionLocked: false }) return DragDropEffects.None;
-        if (e.DataTransfer.Contains(FileDragFormat)) return DragDropEffects.Move;
+        if (e.DataTransfer.TryGetValue(FileDragFormat) is { } source)
+        {
+            if (destination is not null && Directory.Exists(source) && VaultService.IsWithinFolder(destination, source))
+                return DragDropEffects.None;
+            return DragDropEffects.Move;
+        }
         if (e.DataTransfer.Contains(DataFormat.File)) return DragDropEffects.Copy;
         return DragDropEffects.None;
     }

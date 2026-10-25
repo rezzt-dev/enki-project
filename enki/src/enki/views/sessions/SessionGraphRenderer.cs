@@ -52,7 +52,7 @@ public static class SessionGraphRenderer
         IncludeFields = true
     };
 
-    public static string RenderDocument(SessionGraph graph)
+    public static string RenderDocument(SessionGraph graph, bool subtleAnimations = false)
     {
         var sigmaScript = VendoredScripts.Get("sigma.min.js");
         var d3ForceScript = VendoredScripts.Get("d3-force-standalone.min.js");
@@ -110,7 +110,7 @@ public static class SessionGraphRenderer
                     padding: 7px 11px;
                     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
                     display: none;
-                    white-space: nowrap;
+                    white-space: normal;
                   }
                 </style>
                 <script>{{sigmaScript}}</script>
@@ -141,6 +141,22 @@ public static class SessionGraphRenderer
                   // fire-and-forget InvokeScript call actually landed.
                   let pendingLinkNode = null;
                   let hoverNode = null;
+                  let display = { mesh: true, labels: true, nodeSize: 1, linkThickness: 1 };
+                  const positionCache = new Map();
+                  let neighbors = new Map();
+                  function rebuildNeighbors() {
+                    neighbors = new Map(nodes.map(function (n) { return [n.id, new Set()]; }));
+                    sigmaEdges.forEach(function (e) {
+                      if (!neighbors.has(e.source) || !neighbors.has(e.target)) return;
+                      neighbors.get(e.source).add(e.target);
+                      neighbors.get(e.target).add(e.source);
+                    });
+                    applyNodeVisualState();
+                  }
+                  function emphasized(id) {
+                    return !hoverNode || hoverNode.id === id ||
+                      (neighbors.has(hoverNode.id) && neighbors.get(hoverNode.id).has(id));
+                  }
                   let rejectFlash = null; // { from, to, until, duration } — brief error pulse when a link is refused
 
                   const NODE_REL_SIZE = 5;
@@ -156,43 +172,20 @@ public static class SessionGraphRenderer
                   // En una vista global el encuadre puede reducir mucho los radios de mundo. Este suelo
                   // conserva la lectura de los nodos como puntos de color y no altera sus coordenadas ni el
                   // entramado que da forma al grupo.
-                  const MIN_NODE_SCREEN_RADIUS = 2.4;
+                  const MIN_NODE_SCREEN_RADIUS = 3;
 
-                  // Session-name cards: every session graph (LABEL_MIN_NOTES+ notes, linked or not) gets a
-                  // proper card above its cluster, styled after the app's own UI language
-                  // (docs/agent-docs/sistema-diseno-web.md): elevated panel surface, a 3px white accent bar
-                  // (the app's active/selected signal — sidebar, stat cards, admin rows), a 1px white/20
-                  // border, and the design system's signature typographic hierarchy — a tiny mono tracked
-                  // "SESIÓN" eyebrow above the big bold uppercase name, a 1px white/10 hairline rule, and a
-                  // mono "N NOTAS" counter below (see drawSessionLabels). Font size (and every other
-                  // overlay measurement below) is expressed in world units and multiplied by SCREEN_SCALE()
-                  // at draw time — deliberately, so it grows and shrinks with the canvas zoom exactly like
-                  // the nodes do — but floored at LABEL_MIN_PX so the name stays legible when the camera
-                  // zooms out to frame the whole session ring.
+                  // Los nombres de sesión son discretos y no escalan hasta tapar sus notas.
                   const LABEL_MIN_NOTES = 2;
-                  const LABEL_BASE_SIZE = 18;
-                  const LABEL_MAX_SIZE = 30;
-                  // Floor on the name's *screen* size (px) — the ring layout parks sessions far apart, so
-                  // fitting the whole scene zooms out well past where world-scaled text would stay readable.
-                  const LABEL_MIN_PX = 16;
-                  // Card colors come from the app's own theme (THEME.labelBackground/Muted/Rule, plus
-                  // THEME.tooltipForeground for the title and THEME.ink for the accent bar), so the cards
-                  // adapt to the active theme instead of hard-coding dark-theme values.
-                  const LABEL_PAD_X = 0.62; // card horizontal padding, × title size
-                  const LABEL_PAD_Y = 0.34; // card vertical padding, × title size
-                  const LABEL_GAP = 1.1;    // empty space between the cluster's topmost note and the card, × title size
-                  const LABEL_ACCENT_W = 3; // left accent bar width, screen px (like the app's selection bars)
-
-                  // Slow, constant orbit of the whole graph around its own center of mass — a full turn
-                  // every 10 minutes is intentionally well past "notice it moving," more of an ambient sense
-                  // that the scene is alive. Applied as a plain rotation of each node's (x, y) once per
-                  // animation frame (see rotateGraph/the main loop below), independent of the d3-force
-                  // simulation itself, so it keeps going forever, including after the layout has settled and
-                  // the simulation has stopped ticking.
-                  const ROTATION_PERIOD_MS = 10 * 60 * 1000;
-                  const ROTATION_SPEED = (Math.PI * 2) / ROTATION_PERIOD_MS; // radians / ms
+                  let dirty = true;
                   let isDraggingNode = false;
                   let lastRotationTs = null;
+                  let nextFrameAt = 0;
+                  let subtleMotion = {{(subtleAnimations ? "true" : "false")}};
+                  window.setSubtleMotion = function (value) {
+                    subtleMotion = !!value;
+                    lastRotationTs = null;
+                    nextFrameAt = 0;
+                  };
                   // Whether the next simulation 'end' should re-fit the camera to the whole scene (see the
                   // simulation's 'end' handler) — true at load and after every graph-data update, cleared
                   // after the first settle so a drag-release 'end' doesn't yank the view mid-interaction.
@@ -236,6 +229,7 @@ public static class SessionGraphRenderer
                   document.body.appendChild(tooltipEl);
 
                   function sizeOverlayCanvases() {
+                    dirty = true;
                     const w = el.clientWidth || window.innerWidth;
                     const h = el.clientHeight || window.innerHeight;
                     const dpr = window.devicePixelRatio || 1;
@@ -255,7 +249,7 @@ public static class SessionGraphRenderer
                   // esférica del conjunto no depende del material del nodo: la conservan el layout de
                   // fuerzas y la malla Delaunay dibujada detrás de las relaciones reales.
                   function renderedNodeRadius(node, prefix) {
-                    return Math.max(MIN_NODE_SCREEN_RADIUS, node[prefix + 'size'] || 0);
+                    return Math.min(14, Math.max(MIN_NODE_SCREEN_RADIUS * display.nodeSize, node[prefix + 'size'] || 0));
                   }
 
                   sigma.canvas.nodes.enkiCircle = function (node, context, settings) {
@@ -264,6 +258,7 @@ public static class SessionGraphRenderer
                     const radius = renderedNodeRadius(node, prefix);
 
                     context.save();
+                    context.globalAlpha = emphasized(node.id) ? 1 : 0.16;
                     context.fillStyle = node.color || settings('defaultNodeColor');
                     context.beginPath();
                     context.arc(x, y, radius, 0, Math.PI * 2, true);
@@ -306,8 +301,9 @@ public static class SessionGraphRenderer
                     context.strokeStyle = isHoveredEdge ? THEME.ink70 : (edge.color || settings('defaultEdgeColor'));
                     // Suelo en píxeles: al encuadrar varias sesiones las uniones continúan visibles, sin
                     // hacerse dominantes al acercar la cámara.
-                    const minWidth = edge.manual ? 1.15 : 0.6;
-                    context.lineWidth = Math.max(minWidth, edge[prefix + 'size'] || 0);
+                    context.globalAlpha = !hoverNode || isHoveredEdge ? 1 : 0.1;
+                    const minWidth = isHoveredEdge ? 2.4 : edge.manual ? 1.4 : 0.9;
+                    context.lineWidth = Math.min(3, Math.max(minWidth, edge[prefix + 'size'] || 0)) * display.linkThickness;
                     context.beginPath();
                     context.moveTo(sx + ux * sr, sy + uy * sr);
                     context.lineTo(tx - ux * tr, ty - uy * tr);
@@ -376,6 +372,8 @@ public static class SessionGraphRenderer
                     }
                   });
 
+                  s.camera.bind('coordinatesUpdated', function () { dirty = true; });
+
                   // ===================== Graph data =====================
                   // `nodes` is the one array of live node objects shared by sigma (drawing) and d3-force
                   // (physics) — see the `clone: false` comment above for why that sharing works. `sigmaEdges`
@@ -427,9 +425,10 @@ public static class SessionGraphRenderer
                   // them" read as broken even though the message-passing underneath worked fine. Recomputed
                   // only when pendingLinkNode actually changes (not every frame — see __enkiSetPendingLink).
                   function applyNodeVisualState() {
+                    dirty = true;
                     nodes.forEach(function (n) {
                       const isPending = n.id === pendingLinkNode;
-                      n.size = NODE_REL_SIZE * Math.sqrt(isPending ? PENDING_VAL : 1);
+                      n.size = (NODE_REL_SIZE + Math.min(4, Math.sqrt(neighbors.has(n.id) ? neighbors.get(n.id).size : 0))) * display.nodeSize * Math.sqrt(isPending ? PENDING_VAL : 1);
                       n.color = isPending ? THEME.nodeActive : n.baseColor;
                     });
                   }
@@ -437,7 +436,7 @@ public static class SessionGraphRenderer
                   nodes = buildNodes(DATA);
                   sigmaEdges = buildSigmaEdges(DATA.links);
                   forceLinks = DATA.links.map(function (l) { return { source: l.source, target: l.target }; });
-                  applyNodeVisualState();
+                  rebuildNeighbors();
                   s.graph.read({ nodes: nodes, edges: sigmaEdges });
 
                   // Tells the host the graph has actual nodes/edges to paint, so it can dismiss the
@@ -460,8 +459,8 @@ public static class SessionGraphRenderer
                   // since nothing else recenters the camera except the explicit zoomToFit calls below.
                   const simulation = d3.forceSimulation(nodes)
                     .force('charge', d3.forceManyBody().strength(-95))
-                    .force('link', d3.forceLink(forceLinks).id(function (n) { return n.id; }))
-                    .force('center', d3.forceCenter(0, 0))
+                    .force('link', d3.forceLink(forceLinks).id(function (n) { return n.id; }).distance(70).strength(0.12))
+                    .force('collision', d3.forceCollide(14))
                     .force('sessionCluster', sessionClusterForce)
                     // Once the layout settles (alpha decayed to rest), re-wire the session mesh and anchor
                     // ring from the final positions — the first build ran on whatever positions the very
@@ -471,11 +470,13 @@ public static class SessionGraphRenderer
                     // first time (refitOnSettle, set again by __enkiSetGraphData) — a drag release also
                     // fires 'end', and yanking the view to re-fit the whole scene every time would fight the
                     // user mid-interaction.
+                    .on('tick', function () { dirty = true; })
                     .on('end', function () {
+                      dirty = true;
                       invalidateGroupings();
                       if (refitOnSettle) {
                         refitOnSettle = false;
-                        setTimeout(function () { zoomToFit(600, 90); }, 250);
+                        setTimeout(function () { zoomToFit(subtleMotion ? 100 : 180, 90); }, 0);
                       }
                       reportPositions();
                     });
@@ -566,8 +567,10 @@ public static class SessionGraphRenderer
                     return closest;
                   }
 
+                  el.addEventListener('wheel', function () { refitOnSettle = false; }, { passive: true });
                   el.addEventListener('pointerdown', function (e) {
                     if (e.button !== 0) return;
+                    refitOnSettle = false;
                     const p = screenPoint(e);
                     pointerDownAt = { x: p.x, y: p.y, t: Date.now() };
                     dragCandidate = nearestNodeWithin(screenToWorld(p));
@@ -613,6 +616,7 @@ public static class SessionGraphRenderer
                     lastHoverCheckTs = now;
 
                     const node = nearestNodeWithin(screenToWorld(p));
+                    if (hoverNode !== node) dirty = true;
                     hoverNode = node;
                     el.classList.toggle('node-hover', !!node);
                     if (node) {
@@ -621,12 +625,16 @@ public static class SessionGraphRenderer
                       tooltipEl.style.left = (e.clientX + 14) + 'px';
                       tooltipEl.style.top = (e.clientY + 14) + 'px';
                       tooltipEl.style.display = 'block';
+                      const bounds = tooltipEl.getBoundingClientRect();
+                      tooltipEl.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - bounds.width - 8)) + 'px';
+                      tooltipEl.style.top = Math.max(8, Math.min(e.clientY + 14, innerHeight - bounds.height - 8)) + 'px';
                     } else {
                       tooltipEl.style.display = 'none';
                     }
                   }, { capture: true });
 
                   el.addEventListener('pointerleave', function () {
+                    dirty = true;
                     hoverNode = null;
                     el.classList.remove('node-hover');
                     tooltipEl.style.display = 'none';
@@ -704,68 +712,11 @@ public static class SessionGraphRenderer
                     post({ type: 'nodeDoubleClick', path: node.id });
                   }
 
-                  // ===================== Ambient rotation =====================
-                  // Rotates every node's (x, y) a hair further around the graph's current center of mass —
-                  // called once per animation frame (see the main loop below), before that frame's redraw.
-                  // Runs forever, independent of whether the d3-force simulation itself is still ticking
-                  // (d3-force stops calling its own listeners once alpha decays below alphaMin — this loop
-                  // does not), which is what makes the orbit continue after the layout settles instead of
-                  // freezing the moment the physics stops.
-                  function rotateGraph(dt) {
-                    if (dt <= 0 || isDraggingNode) return;
-
-                    let cx = 0, cy = 0, count = 0;
-                    for (const n of nodes) { cx += n.x; cy += n.y; count++; }
-                    if (count === 0) return;
-                    cx /= count; cy /= count;
-
-                    const angle = ROTATION_SPEED * dt;
-                    const cos = Math.cos(angle), sin = Math.sin(angle);
-                    for (const n of nodes) {
-                      const dx = n.x - cx, dy = n.y - cy;
-                      n.x = cx + dx * cos - dy * sin;
-                      n.y = cy + dx * sin + dy * cos;
-                    }
-                  }
-
-                  // ===================== Session groupings (cached) =====================
-                  // The groupings of "notes in the same session" are built together in one pass since they
-                  // share the same source loop, and cached — recomputing any of them from scratch every
-                  // frame (a fresh Set + Map churn, 60 times a second forever thanks to the animation loop
-                  // never stopping) was pure waste. Rebuilt on demand only when the graph's node/link *set*
-                  // changes (see invalidateGroupings, called from __enkiSetGraphData below). Member
-                  // *positions* still move every frame (force layout, rotation), so those are re-aggregated
-                  // on every draw call — only membership itself is cached:
-                  //  - allSessionGroups: every note in a session with LABEL_MIN_NOTES+ notes, linked or not
-                  //    — this is the weaker "these just happen to live in the same session" affinity, used
-                  //    for the faint mesh scaffold in drawSessionAffinity, the session-name chips in
-                  //    drawSessionLabels and the gentle clustering force below. Keeping it separate from
-                  //    real links means it never touches the actual link data the "X ENLACES" chip and
-                  //    manual-link toggling depend on — it's purely a rendering/layout aid.
-                  //  - allSessionMembers: like allSessionGroups but including single-note sessions, so the
-                  //    ring snap below also parks isolated notes on their own slot instead of letting them
-                  //    drift into a neighboring cluster.
-                  //  - sessionAnchors: a fixed ring of slots (one per session, evenly spaced around the
-                  //    origin — see SESSION_CENTER_SPACING) that snapSessionsToRing eases each session's
-                  //    center of mass toward in the render loop (see snapSessionsToRing for why it lives
-                  //    there rather than in the d3 simulation). That pull is the mechanism that guarantees
-                  //    the different session graphs stay well apart instead of stacking on top of one
-                  //    another. The slots are derived from the session *count* alone, never from live
-                  //    positions, so they stay put while the layout settles instead of chasing the clusters
-                  //    around.
-                  //  - sessionMeshPairs: the edges of the mesh scaffold, wired as a planar mesh — each
-                  //    session's notes are Delaunay-triangulated (see triangulateSession), so the "these
-                  //    live together" cue reads as a clean wireframe web of triangles instead of a star of
-                  //    spokes to one central point. Delaunay is what keeps it clean: the result is planar,
-                  //    so no two scaffold lines ever cross, which a naive nearest-neighbor web does
-                  //    constantly and turns a dense session into a tangled hairball. Topology is cached,
-                  //    not recomputed every frame, so the lines don't flicker while the force layout is
-                  //    settling; the ambient rotation is rigid (it preserves every distance), so the cached
-                  //    wiring stays visually valid long after it was computed — and the simulation's 'end'
-                  //    event invalidates it once the layout settles, so the mesh is re-wired from the final
-                  //    positions instead of being frozen at whatever the first tick saw.
+                  // Agrupa por identidad, incluso cuando dos sesiones comparten nombre.
+                  // La pertenencia y los anclajes se conservan mientras cambia el subconjunto visible.
                   let allSessionGroups = null;
                   let allSessionMembers = null;
+                  const anchorCache = new Map();
                   let sessionAnchors = null;
                   let sessionMeshPairs = null;
                   function invalidateGroupings() {
@@ -776,8 +727,8 @@ public static class SessionGraphRenderer
 
                     const bySession = new Map();
                     nodes.forEach(function (n) {
-                      if (!bySession.has(n.session)) bySession.set(n.session, []);
-                      bySession.get(n.session).push(n);
+                      if (!bySession.has(n.sessionId)) bySession.set(n.sessionId, []);
+                      bySession.get(n.sessionId).push(n);
                     });
 
                     allSessionGroups = new Map();
@@ -787,49 +738,26 @@ public static class SessionGraphRenderer
                       if (members.length >= LABEL_MIN_NOTES) allSessionGroups.set(session, members);
                     });
 
-                    // Fixed ring of session slots — see the sessionAnchors comment above. The ring's center
-                    // is the *weighted* center of mass of the parked clusters, not the raw origin: d3's
-                    // forceCenter pulls the scene's live weighted COM toward (0,0), and since each session's
-                    // cluster ends up parked at its slot, that COM is Σ(wᵢ·slotᵢ)/Σwᵢ — which is not zero
-                    // when sessions have different note counts (64 notes on one side of the ring outweigh
-                    // 3 on the other). Centering the ring there makes the forceCenter correction vanish at
-                    // equilibrium, so the ring snap and the physics pull in the same direction instead of
-                    // fighting forever (verified empirically: without it, forceCenter shifted the whole
-                    // ring off its slots by exactly the weighted-COM offset).
+                    // Mantiene los centros de la distribución inicial, calculada con espacio
+                    // proporcional a cada sesión. Los filtros conservan esos mismos anclajes.
                     sessionAnchors = new Map();
-                    const sessions = Array.from(allSessionMembers.keys());
-                    const count = sessions.length;
-                    const ringRadius = count <= 1 ? 0 : (count * SESSION_CENTER_SPACING) / (2 * Math.PI);
-                    const ringCenter = { x: 0, y: 0 };
-                    {
-                      let wx = 0, wy = 0, w = 0;
-                      sessions.forEach(function (session, i) {
-                        const members = allSessionMembers.get(session);
-                        const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
-                        const sx = Math.cos(angle) * ringRadius, sy = Math.sin(angle) * ringRadius;
-                        wx += members.length * sx; wy += members.length * sy; w += members.length;
-                      });
-                      ringCenter.x = -wx / w; ringCenter.y = -wy / w;
-                    }
-                    sessions.forEach(function (session, i) {
-                      const angle = (i / count) * Math.PI * 2 - Math.PI / 2; // first slot at the top, then clockwise
-                      // The session's color — all nodes in a session share the same one (derived from
-                      // the session id by NodeBrightness, or an explicit hex override), so reading it from
-                      // the first node is cheap and deterministic.
-                      const members = allSessionMembers.get(session);
-                      const sessionColor = members && members.length > 0 ? members[0].baseColor : THEME.ink;
-                      sessionAnchors.set(session, {
-                        x: Math.cos(angle) * ringRadius + ringCenter.x,
-                        y: Math.sin(angle) * ringRadius + ringCenter.y,
-                        color: sessionColor
-                      });
+                    allSessionMembers.forEach(function (members, session) {
+                      let anchor = anchorCache.get(session);
+                      if (!anchor) {
+                        anchor = { x: members.reduce(function (sum, n) { return sum + n.x; }, 0) / members.length,
+                          y: members.reduce(function (sum, n) { return sum + n.y; }, 0) / members.length,
+                          color: members[0].baseColor };
+                        anchorCache.set(session, anchor);
+                      }
+                      anchor.color = members[0].baseColor;
+                      sessionAnchors.set(session, anchor);
                     });
 
                     // Mesh wiring, computed from positions as they are right now (see the sessionMeshPairs
                     // comment above for why it's cached rather than re-derived per frame).
                     sessionMeshPairs = [];
                     allSessionGroups.forEach(function (members) {
-                      triangulateSession(members).forEach(function (pair) { sessionMeshPairs.push(pair); });
+                      if (display.mesh) triangulateSession(members).forEach(function (pair) { sessionMeshPairs.push(pair); });
                     });
                   }
 
@@ -922,116 +850,60 @@ public static class SessionGraphRenderer
                     return edges;
                   }
 
-                  // The session-name card: every session graph (LABEL_MIN_NOTES+ notes, linked or not) gets
-                  // a card floating above the cluster's topmost note, built from the app's own design tokens
-                  // (see the LABEL_* constants and docs/agent-docs/sistema-diseno-web.md §2.2/§3.3/§7.6): an
-                  // elevated panel surface, a 3px white left accent bar, a 1px white/20 border, sharp corners,
-                  // and the design system's signature typographic hierarchy: a tiny mono "SESIÓN" eyebrow,
-                  // the big bold uppercase name, a 1px white/10 hairline, then the mono "N NOTAS" counter.
-                  // Centered on the cluster's center of mass, so it drifts along with the force simulation.
-                  // Drawn on the overlay canvas, on top of sigma's own nodes/edges.
-                  //
-                  // Title text is drawn word-by-word with an explicit gap between words. The WPE
-                  // software renderer mis-handles the Space Grotesk font's kerning tables at large sizes,
-                  // causing a single fillText("SIN SESIÓN") to produce overlapping/stacked glyphs (the
-                  // user sees "S N SES ÓN" with letters piled on top of each other). Splitting into
-                  // words and placing each one with a measured advance avoids the renderer bug entirely
-                  // — each word is short enough that its internal kerning fits within the renderer's
-                  // precision, and the explicit gap between words prevents the space character from
-                  // collapsing to zero width.
+                  let labelRects = [];
+                  function reserveLabel(x, y, w, h) {
+                    if (x < 8 || y < 55 || x + w > el.clientWidth - 8 || y + h > el.clientHeight - 95) return false;
+                    if (labelRects.some(function (r) { return x < r.x + r.w + 4 && x + w + 4 > r.x && y < r.y + r.h + 4 && y + h + 4 > r.y; })) return false;
+                    if (nodes.some(function (n) {
+                      const p = worldToScreen(n.x, n.y);
+                      return p.x + 7 > x && p.x - 7 < x + w && p.y + 7 > y && p.y - 7 < y + h;
+                    })) return false;
+                    labelRects.push({ x: x, y: y, w: w, h: h });
+                    return true;
+                  }
                   function drawSessionLabels() {
-                    const groups = allSessionGroups;
-                    if (!groups || groups.size === 0) return;
-
+                    labelRects = [];
+                    if (!allSessionMembers) return;
                     overlayCtx.save();
-                    overlayCtx.textAlign = 'center';
+                    overlayCtx.font = "700 11px 'Space Grotesk', sans-serif";
                     overlayCtx.textBaseline = 'top';
-                    groups.forEach(function (members, session) {
-                      let sx = 0, minY = Infinity;
-                      members.forEach(function (n) { sx += n.x; if (n.y < minY) minY = n.y; });
-                      const cx = sx / members.length;
-                      const worldSize = Math.min(LABEL_MAX_SIZE, LABEL_BASE_SIZE + Math.sqrt(members.length - LABEL_MIN_NOTES) * 2.5);
-                      const scale = screenScale();
-                      const size = Math.max(worldSize * scale, LABEL_MIN_PX);
-
-                      const top = worldToScreen(cx, minY);
-                      const name = session.toUpperCase();
-                      const count = members.length + (members.length === 1 ? ' NOTA' : ' NOTAS');
-
-                      // Font sizes and vertical metrics — all in screen px.
-                      const eyebrowSize = Math.max(7, size * 0.38);
-                      const countSize = Math.max(8, size * 0.42);
-                      const padX = size * LABEL_PAD_X, padY = size * LABEL_PAD_Y;
-                      const gap = size * 0.22;
-
-                      // Measure full strings in one shot.
-                      const eyebrowFont = "700 " + eyebrowSize + "px 'JetBrains Mono', ui-monospace, monospace";
-                      overlayCtx.font = eyebrowFont;
-                      const ew = overlayCtx.measureText('SESIÓN').width;
-
-                      const titleFont = "700 " + size + "px 'Space Grotesk', 'DejaVu Sans', system-ui, -apple-system, sans-serif";
-                      overlayCtx.font = titleFont;
-                      // Split name into words for word-by-word drawing — the WPE renderer
-                      // mangles a single fillText of the full multi-word string at large sizes.
-                      const titleWords = name.split(' ');
-                      const titleWordGap = size * 0.18; // explicit space ≈ 18% of font size
-                      const titleWordWidths = titleWords.map(function (w) { return overlayCtx.measureText(w).width; });
-                      const tw = titleWordWidths.reduce(function (a, b) { return a + b; }, 0) + titleWordGap * (titleWords.length - 1);
-
-                      const countFont = "700 " + countSize + "px 'JetBrains Mono', ui-monospace, monospace";
-                      overlayCtx.font = countFont;
-                      const cw = overlayCtx.measureText(count).width;
-
-                      const maxW = Math.max(ew, tw, cw);
-                      const accentW = LABEL_ACCENT_W;
-                      const bw = maxW + padX * 2 + accentW;
-                      const bh = padY * 2 + eyebrowSize + gap + size + gap + 1 + gap + countSize;
-                      const bx = top.x - bw / 2;
-                      const by = top.y - size * LABEL_GAP - bh;
-
-                      // Card body: elevated surface, 3px accent bar in the session's color (or ink white
-                      // for sessions that have no nodes loaded yet fallback), 1px white/20 border.
-                      const accentColor = (sessionAnchors && sessionAnchors.get(session) && sessionAnchors.get(session).color) || THEME.ink;
-                      overlayCtx.fillStyle = THEME.labelBackground;
-                      overlayCtx.fillRect(bx, by, bw, bh);
-                      overlayCtx.fillStyle = accentColor;
-                      overlayCtx.fillRect(bx, by, accentW, bh);
-                      overlayCtx.strokeStyle = THEME.tooltipBorder;
-                      overlayCtx.lineWidth = 1;
-                      overlayCtx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
-
-                      // Text positioned right of the accent bar.
-                      const textCx = bx + accentW + (bw - accentW) / 2;
-                      const ey = by + padY;
-                      const ty = by + padY + eyebrowSize + gap;
-                      const ruleY = by + padY + eyebrowSize + gap + size + gap + 0.5;
-                      const cy = by + padY + eyebrowSize + gap + size + gap + 1 + gap;
-
-                      overlayCtx.font = eyebrowFont;
-                      overlayCtx.fillStyle = THEME.labelMuted;
-                      overlayCtx.fillText('SESIÓN', textCx, ey);
-
-                      // Draw each word separately with an explicit gap to avoid the WPE
-                      // glyph-overlap bug. Left-align within the card; each word is drawn
-                      // on its own to keep internal kerning manageable for the renderer.
-                      overlayCtx.font = titleFont;
-                      overlayCtx.fillStyle = THEME.tooltipForeground;
-                      overlayCtx.textAlign = 'left';
-                      let wordCx = textCx - tw / 2;
-                      for (var wi = 0; wi < titleWords.length; wi++) {
-                        var ww = titleWordWidths[wi];
-                        overlayCtx.fillText(titleWords[wi], wordCx, ty);
-                        wordCx += ww + titleWordGap;
+                    allSessionMembers.forEach(function (members) {
+                      const points = members.map(function (n) { return worldToScreen(n.x, n.y); });
+                      const cx = points.reduce(function (sum, p) { return sum + p.x; }, 0) / points.length;
+                      const text = members[0].session.toUpperCase();
+                      const width = Math.min(220, overlayCtx.measureText(text).width + 20);
+                      const x = cx - width / 2;
+                      const candidates = [Math.min.apply(null, points.map(function (p) { return p.y; })) - 34,
+                        Math.max.apply(null, points.map(function (p) { return p.y; })) + 14];
+                      for (const y of candidates) {
+                        if (!reserveLabel(x, y, width, 22)) continue;
+                        overlayCtx.fillStyle = THEME.labelBackground;
+                        overlayCtx.fillRect(x, y, width, 22);
+                        overlayCtx.fillStyle = members[0].baseColor;
+                        overlayCtx.fillRect(x, y + 4, 2, 14);
+                        overlayCtx.fillStyle = THEME.labelMuted;
+                        overlayCtx.fillText(text, x + 9, y + 5, width - 16);
+                        break;
                       }
-                      overlayCtx.textAlign = 'center'; // restore for eyebrow + count
-
-                      // Hairline rule.
-                      overlayCtx.fillStyle = THEME.labelRule;
-                      overlayCtx.fillRect(textCx - maxW / 2 + padX * 0.5, ruleY, maxW - padX, 1);
-
-                      overlayCtx.font = countFont;
-                      overlayCtx.fillStyle = THEME.labelMuted;
-                      overlayCtx.fillText(count, textCx, cy);
+                    });
+                    overlayCtx.restore();
+                  }
+                  function drawNoteLabels() {
+                    if (!display.labels) return;
+                    overlayCtx.save();
+                    overlayCtx.font = "11px 'Space Grotesk', sans-serif";
+                    overlayCtx.textBaseline = 'top';
+                    const ordered = nodes.slice().sort(function (a, b) { return b.size - a.size; });
+                    ordered.forEach(function (n) {
+                      if (!emphasized(n.id) || (!hoverNode && screenScale() < 0.7)) return;
+                      const point = worldToScreen(n.x, n.y);
+                      const radius = Math.min(14, Math.max(MIN_NODE_SCREEN_RADIUS * display.nodeSize, n.size * screenScale()));
+                      const width = Math.min(160, overlayCtx.measureText(n.label).width);
+                      const x = point.x + radius + 6, y = point.y - 6;
+                      if (!reserveLabel(x, y, width, 14)) return;
+                      overlayCtx.fillStyle = THEME.tooltipForeground;
+                      overlayCtx.globalAlpha = hoverNode ? 0.95 : 0.65;
+                      overlayCtx.fillText(n.label, x, y, width);
                     });
                     overlayCtx.restore();
                   }
@@ -1057,7 +929,7 @@ public static class SessionGraphRenderer
                     const scale = screenScale();
                     affinityCtx.save();
                     affinityCtx.strokeStyle = THEME.ink80;
-                    affinityCtx.globalAlpha = AFFINITY_ALPHA;
+                    affinityCtx.globalAlpha = hoverNode ? AFFINITY_ALPHA * 0.25 : AFFINITY_ALPHA;
                     affinityCtx.lineWidth = Math.max(AFFINITY_MIN_WIDTH_PX, Math.min(1.1, 0.45 * scale));
                     affinityCtx.beginPath();
                     sessionMeshPairs.forEach(function (pair) {
@@ -1068,22 +940,6 @@ public static class SessionGraphRenderer
                     });
                     affinityCtx.stroke();
 
-                    // Al apuntar una nota se refuerzan únicamente sus vecinos espaciales. Es una ayuda de
-                    // lectura transitoria: no cambia ni confunde la malla de afinidad con enlaces reales.
-                    if (hoverNode) {
-                      affinityCtx.strokeStyle = THEME.ink70;
-                      affinityCtx.globalAlpha = 0.72;
-                      affinityCtx.lineWidth = 1;
-                      affinityCtx.beginPath();
-                      sessionMeshPairs.forEach(function (pair) {
-                        if (pair[0] !== hoverNode && pair[1] !== hoverNode) return;
-                        const a = worldToScreen(pair[0].x, pair[0].y);
-                        const b = worldToScreen(pair[1].x, pair[1].y);
-                        affinityCtx.moveTo(a.x, a.y);
-                        affinityCtx.lineTo(b.x, b.y);
-                      });
-                      affinityCtx.stroke();
-                    }
                     affinityCtx.restore();
                   }
 
@@ -1097,24 +953,14 @@ public static class SessionGraphRenderer
                   // a d3-force force function (not via d3's .initialize() protocol) since it closes over
                   // `nodes` directly, same pattern the force-graph version of this file already used.
                   const SESSION_CLUSTER_STRENGTH = 0.08;
-                  // Center-to-center arc spacing between adjacent session slots on the ring — deliberately
-                  // very generous (several× the radius a dense session reaches under the charge force, see
-                  // sessionClusterForce) so neighboring session graphs keep a wide band of empty space
-                  // between them instead of drifting together — the whole point of the ring (see the
-                  // sessionAnchors comment above). The ring radius grows with the session count
-                  // (radius = count × spacing / 2π), so this stays the gap between neighbors no matter how
-                  // many sessions exist.
-                  const SESSION_CENTER_SPACING = 800;
-                  // How much of the remaining gap between a session's center of mass and its ring slot is
-                  // closed per millisecond (see snapSessionsToRing) — ≈0.027/frame at 60fps, so a cluster
-                  // far from its slot glides home over a couple of seconds.
+                  // Estabiliza cada centro sin mover la escena una vez enfriada la simulación.
                   const SESSION_SNAP_RATE = 0.0016; // per ms
 
                   function sessionClusterForce(alpha) {
                     ensureGroupings();
                     // Cohesion only, exactly as before: compact each session's notes around their own
                     // center of mass (a nudge, not a clamp, so real links and the charge force still shape
-                    // the layout). Where each cluster sits on screen is decided by snapSessionsToRing in
+                    // the layout). Where each cluster sits on screen is decided by stabilizeSessionCenters in
                     // the render loop, deliberately not here — see that function's comment for why.
                     allSessionMembers.forEach(function (members) {
                       let cx = 0, cy = 0;
@@ -1128,19 +974,8 @@ public static class SessionGraphRenderer
                     });
                   }
 
-                  // Parks every session graph on its own ring slot — see the sessionAnchors comment above.
-                  // Applied here in the render loop (like the ambient rotation), deliberately NOT as a d3
-                  // force: a physics pull has to fight d3's forceCenter and its alpha-decay timeline, and
-                  // the simulation freezes with clusters stranded mid-flight (verified empirically with the
-                  // exact app configuration — velocity-based pulls overshoot the ring, alpha-scaled ones
-                  // fade before arrival, and forceCenter shifts the whole graph so the offset never
-                  // corrects). A per-frame position snap has no momentum, so it can't overshoot, and it
-                  // runs for as long as frames render, so it always converges. Each frame closes
-                  // SESSION_SNAP_RATE × dt of the gap between the session's center of mass and its slot —
-                  // the same delta for every member, so the cluster moves as a unit without distorting its
-                  // internal layout. Paused while a node is being dragged (same as the rotation) so it
-                  // never fights the user's hand.
-                  function snapSessionsToRing(dt) {
+                  // Corrige la deriva del grupo durante la física; se pausa durante el arrastre.
+                  function stabilizeSessionCenters(dt) {
                     if (dt <= 0) return;
                     ensureGroupings();
                     const k = SESSION_SNAP_RATE * dt;
@@ -1154,49 +989,6 @@ public static class SessionGraphRenderer
                       const ty = (anchor.y - cy) * k;
                       members.forEach(function (n) { n.x += tx; n.y += ty; });
                     });
-                  }
-
-                  // ===================== Directional flow particles =====================
-                  // sigma v1 has no built-in equivalent of force-graph's linkDirectionalParticles, so this
-                  // hand-rolls the same idea: a handful of dots per edge, each a [0, 1) progress value along
-                  // the (straight — see the edge renderer above) line from source to target, advanced every
-                  // frame and wrapped back to 0. Manual links get more/wider/brighter particles than
-                  // auto-derived ones, same ratio as before (2 vs 1 particles, 2.2 vs 1.1 width).
-                  const PARTICLE_SPEED = 0.003; // fraction of the link's length crossed per ms
-                  let particleState = [];
-
-                  function buildParticleState() {
-                    particleState = sigmaEdges.map(function (edge) {
-                      const count = edge.manual ? 2 : 1;
-                      const progress = [];
-                      for (let i = 0; i < count; i++) progress.push(i / count);
-                      return { edge: edge, progress: progress, width: edge.manual ? 2.2 : 1.1 };
-                    });
-                  }
-
-                  function drawParticles(dt) {
-                    const scale = screenScale();
-                    overlayCtx.save();
-                    overlayCtx.fillStyle = THEME.particle;
-                    particleState.forEach(function (state) {
-                      const source = nodeById.get(state.edge.source);
-                      const target = nodeById.get(state.edge.target);
-                      if (!source || !target) return;
-
-                      state.progress = state.progress.map(function (t) {
-                        const next = t + PARTICLE_SPEED * dt;
-                        return next - Math.floor(next);
-                      });
-                      state.progress.forEach(function (t) {
-                        const wx = source.x + (target.x - source.x) * t;
-                        const wy = source.y + (target.y - source.y) * t;
-                        const p = worldToScreen(wx, wy);
-                        overlayCtx.beginPath();
-                        overlayCtx.arc(p.x, p.y, Math.max(0.7, (state.width / 2) * scale), 0, Math.PI * 2, false);
-                        overlayCtx.fill();
-                      });
-                    });
-                    overlayCtx.restore();
                   }
 
                   // ===================== Pending-link pulse & reject flash =====================
@@ -1224,7 +1016,7 @@ public static class SessionGraphRenderer
                     if (!node) return;
                     const p = worldToScreen(node.x, node.y);
                     const t = (Date.now() % 1200) / 1200;
-                    const pulse = 1 + 0.25 * Math.sin(t * Math.PI * 2);
+                    const pulse = subtleMotion ? 1 : 1 + 0.25 * Math.sin(t * Math.PI * 2);
                     const fade = fadeOverride === undefined ? 1 : fadeOverride;
                     const baseR = Math.max(
                       MIN_NODE_SCREEN_RADIUS * Math.sqrt(PENDING_VAL),
@@ -1235,8 +1027,6 @@ public static class SessionGraphRenderer
                     overlayCtx.lineWidth = 1.6;
                     overlayCtx.strokeStyle = color;
                     overlayCtx.globalAlpha = 0.75 * fade;
-                    overlayCtx.shadowColor = color;
-                    overlayCtx.shadowBlur = 16;
                     overlayCtx.stroke();
                     overlayCtx.restore();
                   }
@@ -1264,7 +1054,10 @@ public static class SessionGraphRenderer
                     // Preserve the current position of every note that already existed instead of snapping
                     // the whole graph back to the server-supplied coordinates — those are only used as the
                     // starting point the very first time a note is seen, same as before.
-                    const existingById = nodeById;
+                    nodes.forEach(function (n) { positionCache.set(n.id, { x: n.x, y: n.y }); });
+                    const existingById = positionCache;
+                    hoverNode = null;
+                    tooltipEl.style.display = 'none';
                     nodes = data.nodes.map(function (n) {
                       const prev = existingById.get(n.id);
                       return {
@@ -1280,38 +1073,54 @@ public static class SessionGraphRenderer
                         size: NODE_REL_SIZE
                       };
                     });
-                    applyNodeVisualState();
                     nodeById = new Map(nodes.map(function (n) { return [n.id, n]; }));
 
                     sigmaEdges = buildSigmaEdges(data.links);
                     forceLinks = data.links.map(function (l) { return { source: l.source, target: l.target }; });
-                    buildParticleState();
+                    rebuildNeighbors();
+                    applyNodeVisualState();
                     invalidateGroupings();
 
                     s.graph.clear();
                     s.graph.read({ nodes: nodes, edges: sigmaEdges });
 
                     simulation.nodes(nodes);
-                    simulation.force('link', d3.forceLink(forceLinks).id(function (n) { return n.id; }));
-                    // Re-heat the simulation so newly-added or newly-linked notes actually move toward their
-                    // settled position instead of sitting wherever they were dropped.
-                    simulation.alpha(0.6).restart();
-                    // The new node set may change the session ring and the settled extent — re-fit the camera
-                    // at the next simulation 'end' (see the 'end' handler and refitOnSettle).
-                    refitOnSettle = true;
-
-                    // A new link can turn several loose notes into one bigger cluster (a "brain") — pull
-                    // the camera back to fit it instead of leaving the view cropped at the old extent. The
-                    // short delay gives the simulation a beat to settle the newly-connected nodes toward
-                    // each other before measuring the bounding box to fit.
-                    setTimeout(function () { zoomToFit(600, 90); }, 260);
+                    simulation.force('link', d3.forceLink(forceLinks).id(function (n) { return n.id; }).distance(70).strength(0.12))
+                    .force('collision', d3.forceCollide(14));
+                    simulation.alpha(0).stop();
+                    // Editar enlaces o filtros conserva las posiciones y la cámara.
+                    dirty = true;
+                    refitOnSettle = false;
                   };
 
                   // A manual link was refused host-side (e.g. the two notes live in different sessions) —
                   // the click still has to *do* something visible, or it reads as the click not registering.
                   window.__enkiLinkRejected = function (fromId, toId) {
+                    dirty = true;
                     rejectFlash = { from: fromId, to: toId, until: Date.now() + 900, duration: 900 };
                   };
+
+                  window.__enkiSetDisplay = function (value) {
+                    const meshChanged = display.mesh !== value.mesh;
+                    display = value;
+                    if (meshChanged) invalidateGroupings();
+                    applyNodeVisualState();
+                  };
+                  window.__enkiCamera = function (action) {
+                    refitOnSettle = false;
+                    if (action === 'fit') { zoomToFit(180, 90); return; }
+                    const ratio = Math.max(s.settings('zoomMin'), Math.min(s.settings('zoomMax'), s.camera.ratio * (action === 'in' ? 0.8 : 1.25)));
+                    sigma.misc.animation.camera(s.camera, { ratio: ratio }, { duration: 140 });
+                  };
+
+                  el.tabIndex = 0;
+                  el.addEventListener('keydown', function (e) {
+                    if (e.key === '+' || e.key === '=') window.__enkiCamera('in');
+                    else if (e.key === '-') window.__enkiCamera('out');
+                    else if (e.key === 'Home') window.__enkiCamera('fit');
+                    else return;
+                    e.preventDefault();
+                  });
 
                   // ===================== Camera fit =====================
                   function zoomToFit(duration, paddingPx) {
@@ -1334,23 +1143,8 @@ public static class SessionGraphRenderer
                     sigma.misc.animation.camera(s.camera, { x: cx, y: cy, ratio: ratio }, { duration: duration });
                   }
 
-                  // ===================== Main animation loop =====================
-                  // Runs forever (there is no autoPauseRedraw-style opt-out here, deliberately — same as the
-                  // force-graph version): the ambient rotation, the pending-node pulse and the flow particles
-                  // all need to keep animating long after the force simulation itself has settled and
-                  // stopped calling its own 'tick' listeners. Every frame: rotate, ask sigma to repaint
-                  // itself from the current node positions, then redraw both overlay canvases in sync via
-                  // the same camera transform sigma just used.
-                  //
-                  // refresh() is called *without* skipIndexation, even though click/drag/hover resolution
-                  // here never uses sigma's own quadtree (see nearestNodeWithin above) — the canvas renderer
-                  // itself also reads that same quadtree every render() to decide which nodes/edges count as
-                  // "on screen" at all (camera.getRectangle + quadtree.area, see sigma.renderers.canvas.js).
-                  // Skipping indexation left that query permanently empty, so nothing ever got painted —
-                  // found by comparing a real render against the theory in a throwaway Playwright harness
-                  // before wiring this into the actual WebView (see the migration handoff doc for why: no
-                  // .NET SDK/display was available when the original investigation happened, so getting this
-                  // kind of thing wrong silently was the expected failure mode to guard against).
+                  // Un máximo de 60 Hz evita repintar el canvas por encima del presupuesto visual;
+                  // el modo sutil usa 30 Hz y omite la rotación y las partículas decorativas.
                   function frame(ts) {
                     // Skip the whole redraw (rotation math, sigma's full-graph repaint, both overlay
                     // canvases) while the WebView isn't actually visible — e.g. the app minimized or this
@@ -1360,15 +1154,29 @@ public static class SessionGraphRenderer
                     // hidden, all in one frame, once it does.
                     if (document.hidden) {
                       lastRotationTs = null;
+                      nextFrameAt = 0;
                       requestAnimationFrame(frame);
                       return;
                     }
 
-                    const dt = lastRotationTs === null ? 0 : ts - lastRotationTs;
+                    // En reposo no repinta el grafo completo. Solo cámara, física, interacción
+                    // o un pulso activo requieren otro frame.
+                    if (!dirty && !pendingLinkNode && !rejectFlash) {
+                      lastRotationTs = ts;
+                      requestAnimationFrame(frame);
+                      return;
+                    }
+                    const interval = 1000 / (subtleMotion ? 30 : 60);
+                    if (ts + 0.5 < nextFrameAt) {
+                      requestAnimationFrame(frame);
+                      return;
+                    }
+                    const dt = lastRotationTs === null ? 0 : Math.min(50, ts - lastRotationTs);
                     lastRotationTs = ts;
+                    nextFrameAt = Math.max(nextFrameAt + interval, ts);
 
-                    rotateGraph(dt);
-                    if (!isDraggingNode) snapSessionsToRing(dt);
+                    if (!isDraggingNode && simulation.alpha() > simulation.alphaMin()) stabilizeSessionCenters(dt);
+                    dirty = false;
                     s.refresh();
 
                     ensureGroupings();
@@ -1385,17 +1193,16 @@ public static class SessionGraphRenderer
                     affinityCtx.setTransform(1, 0, 0, 1, 0, 0);
                     affinityCtx.clearRect(0, 0, affinityCanvas.width, affinityCanvas.height);
                     affinityCtx.restore();
-                    drawSessionAffinity();
+                    if (display.mesh) drawSessionAffinity();
                     drawSessionLabels();
-                    drawParticles(dt);
+                    drawNoteLabels();
                     drawOverlays();
 
                     requestAnimationFrame(frame);
                   }
 
-                  buildParticleState();
                   requestAnimationFrame(frame);
-                  setTimeout(function () { zoomToFit(500, 90); }, 400);
+                  setTimeout(function () { zoomToFit(subtleMotion ? 100 : 180, 90); }, 0);
                 })();
                 </script>
                 </body>
@@ -1403,11 +1210,8 @@ public static class SessionGraphRenderer
                 """;
     }
 
-    /// <summary>Pushes a freshly-computed graph into an already-loaded document without a full page reload,
-    /// so the running simulation isn't reset by a server-side edit (e.g. toggling a manual link) — the host
-    /// calls this via <c>NativeWebView.InvokeScript</c>. The camera itself is deliberately re-fit to the new
-    /// data afterwards (see <c>__enkiSetGraphData</c>): a link can turn loose notes into a bigger cluster,
-    /// and the view should pull back to keep it in frame rather than staying cropped at the old extent.</summary>
+    /// <summary>Actualiza el subconjunto visible sin recargar el documento. Conserva cámara y
+    /// posiciones de las notas ocultas; solo recalienta la física al editar vínculos del mismo conjunto.</summary>
     public static string BuildSetGraphDataScript(SessionGraph graph)
     {
         var json = JsonSerializer.Serialize(BuildPayload(graph), DataJsonOptions);
@@ -1446,15 +1250,20 @@ public static class SessionGraphRenderer
         return $"window.__enkiLinkRejected && window.__enkiLinkRejected({fromLiteral}, {toLiteral});";
     }
 
-    private static object BuildPayload(SessionGraph graph) => new
+    private static object BuildPayload(SessionGraph graph)
     {
+        var positions = NativeSessionGraphLayout.Create(graph);
+        return new
+        {
         nodes = graph.Nodes.Select(n => new
         {
             id = n.GlobalId, name = n.Title, sessionId = n.SessionId, session = n.SessionName, tags = n.Tags,
-            color = NodeBrightness.ColorFor(n.SessionId, n.SessionColor), x = n.X, y = n.Y
+            color = NodeBrightness.ColorFor(n.SessionId, n.SessionColor), x = positions[n.GlobalId].X, y = positions[n.GlobalId].Y
         }),
         links = graph.Edges.Select(e => new { source = e.FromGlobalId, target = e.ToGlobalId, manual = e.IsManual })
     };
+
+    }
 
     private sealed class GraphTheme
     {
@@ -1485,7 +1294,7 @@ public static class SessionGraphRenderer
             // 0.12 alpha / 0.6px width it was close enough to invisible against the dark background that a
             // freshly-linked pair of notes looked exactly like two unrelated ones — "linking doesn't do
             // anything" even when the edge existed and was correctly rendered underneath the noise floor.
-            Link = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.3),
+            Link = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.6),
             // Bumped up from a barely-there 0.4 — a manually-drawn link is the one thing in this graph a
             // user deliberately created, and it needs to read as obviously present, not as a rumor of a line.
             LinkManual = FindColor("InkBrush", "#FFFFFF", overrideAlpha: 0.9),

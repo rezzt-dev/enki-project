@@ -4,9 +4,9 @@ using Xunit;
 namespace enki.Tests.Services;
 
 /// <summary>Covers <see cref="SupabaseConfig.NormalizeAndValidateHttpsUrl"/> — the pure validation the
-/// static constructor applies to <c>SUPABASE_URL</c> from <c>local.properties</c>. The static constructor
+/// static constructor applies to <c>SUPABASE_URL</c> from <c>polar.properties</c>. The static constructor
 /// itself can't be re-run per test case (it only runs once per process, from whatever
-/// <c>local.properties</c> happens to exist on this machine), so this exercises the extracted pure function
+/// <c>polar.properties</c> happens to exist on this machine), so this exercises the extracted pure function
 /// directly instead (docs/analisis-proyecto/roadmap.md, Fase 4): a non-<c>https://</c> URL must be treated
 /// as unconfigured rather than silently degrading Polar's REST/Realtime traffic to plain text.</summary>
 public class SupabaseConfigTests

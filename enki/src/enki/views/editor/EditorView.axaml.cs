@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -102,6 +103,7 @@ public partial class EditorView : UserControl, IDisposable
         _transclusionRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _transclusionRefreshTimer.Tick += (_, _) =>
         {
+            if (!IsEffectivelyVisible) return;
             if (!_livePreviewState.HasTransclusions)
             {
                 _transclusionRefreshTimer.Stop();
@@ -184,7 +186,7 @@ public partial class EditorView : UserControl, IDisposable
 
         Editor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
-        InitializeImageDropTarget();
+        InitializeAttachmentDropTarget();
 
         AttachedToVisualTree += (_, _) =>
         {
@@ -203,6 +205,7 @@ public partial class EditorView : UserControl, IDisposable
     public void Dispose()
     {
         EditorPreferences.Changed -= OnEditorPreferencesChanged;
+        if (_boundVm is { } vm) vm.AttachmentPickerRequested -= OnAttachmentPickerRequested;
         _transclusionRefreshTimer.Stop();
         _formulaCache.Dispose();
         _mermaidCache.Dispose();
@@ -298,10 +301,8 @@ public partial class EditorView : UserControl, IDisposable
         Editor.TextArea.TextView.Redraw();
     }
 
-    /// <summary>Pushes the shared preference into the bound tab's own IsSidePanelVisible — which drives
-    /// SidePanelHost's animated Width in EditorView.axaml — instead of toggling a control's IsVisible
-    /// directly, so a change made from the Settings page (or another tab) still slides this tab's panel
-    /// in/out rather than snapping it.</summary>
+    /// <summary>Sincroniza el panel de la pestaña con la preferencia compartida. El host aplica
+    /// su ancho una sola vez, sin recalcular el Markdown durante una animación de tamaño.</summary>
     private void ApplySidePanelVisibility()
     {
         if (_boundVm is not { } vm) return;
@@ -403,6 +404,7 @@ public partial class EditorView : UserControl, IDisposable
             _boundVm.CaretNavigationRequested -= OnOutlineNavigationRequested;
             _boundVm.SlashCommands.CommandSelected -= OnSlashCommandSelected;
             _boundVm.NoteLinkPicker.NoteSelected -= OnNoteLinkSelected;
+            _boundVm.AttachmentPickerRequested -= OnAttachmentPickerRequested;
             _boundVm.FindReplace.OperationRequested -= OnFindReplaceOperationRequested;
         }
         CaptureEditorState(_boundVm);
@@ -432,6 +434,7 @@ public partial class EditorView : UserControl, IDisposable
         vm.CaretNavigationRequested += OnOutlineNavigationRequested;
         vm.SlashCommands.CommandSelected += OnSlashCommandSelected;
         vm.NoteLinkPicker.NoteSelected += OnNoteLinkSelected;
+        vm.AttachmentPickerRequested += OnAttachmentPickerRequested;
         vm.FindReplace.OperationRequested += OnFindReplaceOperationRequested;
 
         // Deferred: the caret's on-screen position depends on visual lines that don't exist yet for a
@@ -630,6 +633,13 @@ public partial class EditorView : UserControl, IDisposable
             return;
         }
 
+        if (command.Key == "adjunto")
+        {
+            Editor.Document.Remove(context.Value.StartOffset, context.Value.Length);
+            _ = PickAndInsertAttachmentsAsync(context.Value.StartOffset);
+            return;
+        }
+
         // Invariante a propósito: "/fecha" inserta una marca de fecha técnica en el contenido de la nota,
         // no una etiqueta de UI — debe quedar estable con independencia del idioma activo.
         var insertText = command.Key == "fecha"
@@ -658,8 +668,9 @@ public partial class EditorView : UserControl, IDisposable
         }
 
         _boundVm.SlashCommands.Filter = context.Value.Filter;
-        if (!_boundVm.SlashCommands.IsOpen) _boundVm.SlashCommands.IsOpen = true;
+        // Posicionar antes de abrir: si no, el popup se muestra un instante en su offset anterior.
         PositionSlashCommandsPopup();
+        if (!_boundVm.SlashCommands.IsOpen) _boundVm.SlashCommands.IsOpen = true;
     }
 
     private void PositionSlashCommandsPopup() => PositionPopup(SlashCommandsPopup);
@@ -732,8 +743,11 @@ public partial class EditorView : UserControl, IDisposable
         if (popup is null) return;
         try
         {
+            // CalculateCaretRectangle devuelve coordenadas del documento completo, no de la zona visible:
+            // hay que restar el scroll del TextView o, en una nota desplazada, el popup acaba abajo del todo.
+            var textView = Editor.TextArea.TextView;
             var rect = Editor.TextArea.Caret.CalculateCaretRectangle();
-            var point = Editor.TextArea.TextView.TranslatePoint(rect.BottomLeft, EditorBorder);
+            var point = textView.TranslatePoint(rect.BottomLeft - textView.ScrollOffset, EditorBorder);
             if (point is null) return;
             popup.HorizontalOffset = Math.Max(8, point.Value.X);
             popup.VerticalOffset = Math.Max(8, point.Value.Y + 4);
@@ -1226,6 +1240,11 @@ public partial class EditorView : UserControl, IDisposable
             return;
         }
 
+        if (File.Exists(safeTarget) && viewModel is not null)
+        {
+            viewModel.OpenAttachmentTarget(target);
+            return;
+        }
         try
         {
             Process.Start(new ProcessStartInfo(safeTarget) { UseShellExecute = true });

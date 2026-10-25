@@ -30,6 +30,35 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
     public event Action? CloseRequested;
 
     public ObservableCollection<QuickCaptureDestinationOption> Destinations { get; } = [];
+    public ObservableCollection<KanbanBoard> KanbanBoards { get; } = [];
+    [ObservableProperty] private KanbanBoard? _selectedKanbanBoard;
+    public bool ShowKanbanBoards => IsKanbanDestination && KanbanBoards.Count > 1;
+    private bool _reloadingDestinations;
+    partial void OnSelectedKanbanBoardChanged(KanbanBoard? value)
+    {
+        if (_reloadingDestinations) return;
+        LoadKanbanColumns(null);
+    }
+    private void LoadKanbanColumns(string? preferredId)
+    {
+        KanbanColumns.Clear();
+        if (SelectedKanbanBoard is not { } board) { SelectedKanbanColumn = null; return; }
+        foreach (var column in board.Columns) KanbanColumns.Add(new(column.Id, column.Title));
+        SelectedKanbanColumn = KanbanColumns.FirstOrDefault(c => c.Id == preferredId)
+            ?? KanbanColumns.FirstOrDefault(c => board.Columns.Any(column => column.Id == c.Id && column.Role == CoreColumnRole.Backlog))
+            ?? KanbanColumns.FirstOrDefault();
+    }
+    public void CloseForVaultChange()
+    {
+        Draft = string.Empty;
+        IsOpen = false;
+        SelectedDestination = null;
+        SelectedKanbanColumn = null;
+        _reloadingDestinations = true;
+        SelectedKanbanBoard = null;
+        _reloadingDestinations = false;
+    }
+
     public ObservableCollection<QuickCaptureColumnOption> KanbanColumns { get; } = [];
 
     [ObservableProperty]
@@ -86,19 +115,24 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
     }
 
     /// <summary>Reconstruye columnas después de abrir/cambiar de vault y conserva la elegida cuando siga
-    /// existiendo. Una preferencia obsoleta cae en la primera columna, igual que el servicio al escribir.</summary>
+    /// existiendo. Una preferencia obsoleta presenta el predeterminado antes del siguiente envío.</summary>
     public void ReloadDestinations()
     {
         var preferredId = SelectedKanbanColumn?.Id ?? _vaultSettingsService.Settings.QuickCaptureKanbanColumnId;
-        KanbanColumns.Clear();
-        foreach (var column in _kanbanService.Board.Columns)
-            KanbanColumns.Add(new QuickCaptureColumnOption(column.Id, column.Title));
-        SelectedKanbanColumn = KanbanColumns.FirstOrDefault(column => column.Id == preferredId)
-                               ?? KanbanColumns.FirstOrDefault();
+        var boardId = SelectedKanbanBoard?.Id ?? _vaultSettingsService.Settings.QuickCaptureKanbanBoardId;
+        _reloadingDestinations = true;
+        KanbanBoards.Clear();
+        foreach (var board in _kanbanService.Boards) KanbanBoards.Add(board);
+        SelectedKanbanBoard = KanbanBoards.FirstOrDefault(b => b.Id == boardId)
+            ?? KanbanBoards.FirstOrDefault(b => b.Columns.Any(c => c.Id == preferredId)) ?? _kanbanService.DefaultBoard;
+        _reloadingDestinations = false;
+        LoadKanbanColumns(preferredId);
+        OnPropertyChanged(nameof(ShowKanbanBoards));
     }
 
     partial void OnSelectedDestinationChanged(QuickCaptureDestinationOption? value)
     {
+        OnPropertyChanged(nameof(ShowKanbanBoards));
         if (value is null || !_vaultService.IsVaultConfigured) return;
         _vaultSettingsService.Settings.QuickCaptureDestination = value.Value;
         _vaultSettingsService.Save();
@@ -108,6 +142,7 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
     {
         if (value is null || !_vaultService.IsVaultConfigured) return;
         _vaultSettingsService.Settings.QuickCaptureKanbanColumnId = value.Id;
+        _vaultSettingsService.Settings.QuickCaptureKanbanBoardId = _kanbanService.Boards.First(b => b.Columns.Any(c => c.Id == value.Id)).Id;
         _vaultSettingsService.Save();
     }
 
@@ -135,9 +170,13 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
 
         try
         {
+            if (IsKanbanDestination && (SelectedKanbanColumn is null || SelectedKanbanBoard is null ||
+                !_kanbanService.Boards.Any(b => b.Id == SelectedKanbanBoard.Id && b.Columns.Any(c => c.Id == SelectedKanbanColumn.Id))))
+                throw new InvalidOperationException("El destino ha cambiado.");
             var result = _captureService.Capture(Draft,
                 SelectedDestination?.Value ?? QuickCaptureDestination.InboxNote,
-                SelectedKanbanColumn?.Id);
+                SelectedKanbanColumn?.Id,
+                SelectedKanbanBoard?.Id);
             Draft = string.Empty;
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Notification_QuickCaptureSaved_Title"),

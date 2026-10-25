@@ -10,8 +10,12 @@ public sealed partial class SettingsViewModel
     /// <summary>Recarga los controles al abrir otro vault sin ejecutar los comandos de guardado.</summary>
     public void ReloadForVault()
     {
+        SidePanels.Reload();
         _startupPage = ParseAppPage(_settingsService.Settings.StartupPage);
         _minimizeToTray = _settingsService.Settings.MinimizeToTray;
+        _useSubtleAnimations = _settingsService.Settings.UseSubtleAnimations;
+        MotionService.Apply(_useSubtleAnimations);
+        OnPropertyChanged(nameof(UseSubtleAnimations));
         _isDarkTheme = _settingsService.Settings.Theme != "Light";
         _isCustomThemeActive = _customThemeService.ActiveThemeId is not null;
         _editorFontSize = _settingsService.Settings.EditorFontSize;
@@ -29,8 +33,13 @@ public sealed partial class SettingsViewModel
         _editorSidePanelVisible = _settingsService.Settings.EditorSidePanelVisible;
         _isSimplifiedNotesView = _settingsService.Settings.NotesViewMode == "Simple";
         _useCustomTitleBar = _settingsService.Settings.UseCustomTitleBar;
+        _showWindowControls = _settingsService.Settings.ShowWindowControls;
         _dashboardShowScrollbar = _settingsService.Settings.DashboardShowScrollbar;
         _kanbanShowTagFilter = _settingsService.Settings.KanbanShowTagFilter;
+        _kanbanShowHighPriorityButton = _settingsService.Settings.KanbanShowHighPriorityButton;
+        _kanbanShowOverdueButton = _settingsService.Settings.KanbanShowOverdueButton;
+        _kanbanShowArchiveButton = _settingsService.Settings.KanbanShowArchiveButton;
+        _kanbanShowSortButton = _settingsService.Settings.KanbanShowSortButton;
         _kanbanBoardVertical = _settingsService.Settings.KanbanBoardOrientation != "Horizontal";
         _useCustomBrandLogo = _settingsService.Settings.UseCustomBrandLogo && _brandLogoService.HasLogo;
         _isBrandLogoCircular = _settingsService.Settings.BrandLogoShape == "Circle";
@@ -63,6 +72,7 @@ public sealed partial class SettingsViewModel
         _remindersSidebarEnabled = _settingsService.Settings.RemindersSidebarEnabled;
         _notificationsSidebarEnabled = _settingsService.Settings.NotificationsSidebarEnabled;
         _polarShowTaskTags = _settingsService.Settings.PolarShowTaskTags;
+        _notificationsEnabled = _settingsService.Settings.NotificationsEnabled;
         _notificationsPanelEnabled = _settingsService.Settings.NotificationsPanelEnabled;
         _remindersPanelEnabled = _settingsService.Settings.RemindersPanelEnabled;
         _inboxPanelEnabled = _settingsService.Settings.InboxPanelEnabled;
@@ -127,8 +137,13 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(EditorSidePanelVisible));
         OnPropertyChanged(nameof(IsSimplifiedNotesView));
         OnPropertyChanged(nameof(UseCustomTitleBar));
+        OnPropertyChanged(nameof(ShowWindowControls));
         OnPropertyChanged(nameof(DashboardShowScrollbar));
         OnPropertyChanged(nameof(KanbanShowTagFilter));
+        OnPropertyChanged(nameof(KanbanShowHighPriorityButton));
+        OnPropertyChanged(nameof(KanbanShowOverdueButton));
+        OnPropertyChanged(nameof(KanbanShowArchiveButton));
+        OnPropertyChanged(nameof(KanbanShowSortButton));
         OnPropertyChanged(nameof(KanbanBoardVertical));
         OnPropertyChanged(nameof(UseCustomBrandLogo));
         OnPropertyChanged(nameof(IsBrandLogoCircular));
@@ -161,6 +176,7 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(RemindersSidebarEnabled));
         OnPropertyChanged(nameof(NotificationsSidebarEnabled));
         OnPropertyChanged(nameof(PolarShowTaskTags));
+        OnPropertyChanged(nameof(NotificationsEnabled));
         OnPropertyChanged(nameof(NotificationsPanelEnabled));
         OnPropertyChanged(nameof(RemindersPanelEnabled));
         OnPropertyChanged(nameof(InboxPanelEnabled));

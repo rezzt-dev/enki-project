@@ -142,6 +142,19 @@ public class NoteImageServiceTests : IDisposable
     }
 
     [Fact]
+    public void SaveFromFile_EncryptedImage_ValidatesDecryptedBytesAndReusesFile()
+    {
+        var vault = CreateVault();
+        var sessions = new SessionService(vault);
+        var (session, _) = sessions.CreateEncrypted("Privado", "clave-segura");
+        var note = vault.CreateNote("Nota", session.RootPath);
+        var path = Path.Combine(session.RootPath, "imagen.png");
+        vault.WriteBinaryFile(path, SampleImage);
+        Assert.Equal("imagen.png", new NoteImageService(vault).SaveFromFile(note, path));
+        Assert.False(Directory.Exists(NoteImageAttachments.FolderFor(note.FullPath)));
+    }
+
+    [Fact]
     public void RenameNote_TakesTheAttachmentsFolderWithIt()
     {
         // Sin esto, cada ![](Proyecto.attachments/…) de la nota apuntaría tras el renombrado a una carpeta
@@ -151,11 +164,16 @@ public class NoteImageServiceTests : IDisposable
         var service = new NoteImageService(vault);
         var reference = service.SaveBytes(note, SampleImage, ".png");
         var fileName = reference!.Split('/').Last();
+        vault.WriteContent(note, $"![]({reference})\n\n> [!note] [Captura]({reference})\n> Revisar");
 
         vault.RenameNote(note, "Proyecto renombrado");
 
         Assert.False(Directory.Exists(Path.Combine(_vaultPath, "Proyecto.attachments")));
         Assert.True(File.Exists(Path.Combine(_vaultPath, "Proyecto renombrado.attachments", fileName)));
+        var content = vault.ReadContent(note);
+        Assert.DoesNotContain("Proyecto.attachments/", content);
+        Assert.Contains("Proyecto%20renombrado.attachments/", content);
+        Assert.Contains("> Revisar", content);
     }
 
     [Fact]

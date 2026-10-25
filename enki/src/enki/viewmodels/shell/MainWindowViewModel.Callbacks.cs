@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
@@ -39,6 +40,8 @@ public sealed partial class MainWindowViewModel
         Settings?.RefreshLocalizedLabels();
         Habits?.RefreshLocalizedLabels();
         Statistics?.RefreshLocalizedLabels();
+        Assistant?.RefreshLocalizedLabels();
+        AiCliStatus.RefreshLocalizedLabels();
         NotificationCenter.RefreshLocalizedLabels();
         ReminderInbox.RefreshLocalizedLabels();
         VaultSwitcher.RefreshLocalizedLabels();
@@ -67,6 +70,7 @@ public sealed partial class MainWindowViewModel
         AppPage.Reminders => RemindersSidebarEnabled,
         AppPage.Notifications => NotificationsSidebarEnabled,
         AppPage.Statistics => StatisticsPanelEnabled,
+        AppPage.Assistant => AssistantPanelEnabled,
         _ => true
     };
 
@@ -131,6 +135,25 @@ public sealed partial class MainWindowViewModel
     {
         Notes!.ReloadSessions();
         Files!.ReloadSessions();
+        Assistant?.RefreshScope();
+        InvalidatePages(AppPage.Dashboard, AppPage.Sessions, AppPage.Statistics, AppPage.Trash);
+    }
+
+    /// <summary>El asistente acaba de cambiar algo del vault. Las acciones llegan en ráfagas (una por
+    /// herramienta), así que el refresco de Notas y de las secciones que dependen del contenido se agrupa en
+    /// uno solo, en segundo plano. Kanban, Polar y recordatorios ya se refrescan por sus propios eventos.</summary>
+    private void OnAssistantChangedVault()
+    {
+        if (_assistantRefreshQueued) return;
+        _assistantRefreshQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _assistantRefreshQueued = false;
+            if (_shutdownCompleted) return;
+            Notes?.Reload();
+            InvalidatePages(AppPage.Dashboard, AppPage.Files, AppPage.Sessions, AppPage.Trash,
+                AppPage.TagManager, AppPage.Statistics, AppPage.Skills);
+        }, DispatcherPriority.Background);
     }
 
     private void OnTitleBarModeChanged(bool value) => UseCustomTitleBar = value;
@@ -185,6 +208,17 @@ public sealed partial class MainWindowViewModel
             case AppPage.Reminders: RemindersSidebarEnabled = value; break;
             case AppPage.Notifications: NotificationsSidebarEnabled = value; break;
             case AppPage.Statistics: StatisticsPanelEnabled = value; break;
+            case AppPage.Assistant:
+                AssistantPanelEnabled = value;
+                if (Skills is not null) Skills.IsAssistantAvailable = value;
+                if (Sessions is not null) Sessions.IsAssistantAvailable = value;
+                if (!value)
+                {
+                    // Apagar la IA corta la respuesta en curso y deja de escuchar: ningún CLI puede tocar ya el vault.
+                    Assistant?.CancelAll();
+                    _aiVaultTools?.Stop();
+                }
+                break;
         }
 
         var wasActive = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == page)?.IsActive ?? false;
@@ -330,7 +364,10 @@ public sealed partial class MainWindowViewModel
         _vaultService.EncryptionService.LockAll();
         VaultService.CleanupStaleDecryptedTempFiles();
 
+        QuickCapture.CloseForVaultChange();
         Kanban?.CloseForVaultChange();
+        Assistant?.CloseForVaultChange();
+        _aiVaultTools?.Stop();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
         // Settings' "change vault folder" can point at any folder, old-version vault included — same
@@ -338,6 +375,7 @@ public sealed partial class MainWindowViewModel
         _sessionService.EnsureDefaultSession();
 
         _vaultSettingsService.Reload();
+        Assistant?.ReloadForVault();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
         QuickCapture.RefreshLocalizedLabels();
         QuickCapture.ReloadDestinations();
@@ -353,13 +391,13 @@ public sealed partial class MainWindowViewModel
 
         Dashboard!.Reload();
         Notes!.Reload();
-        Notes!.ReloadSessions();
+        Notes!.ReloadSessions(restoreStoredSelection: true);
         Kanban!.Reload();
         Kanban.TaskManagement.Reload();
         Reminders?.Reload();
         Notifications?.Reload();
         Files!.Reload();
-        Files!.ReloadSessions();
+        Files!.ReloadSessions(restoreStoredSelection: true);
         Skills!.Reload();
         Sessions!.Reload();
         Trash!.Reload();
@@ -386,6 +424,7 @@ public sealed partial class MainWindowViewModel
         IsSidebarExpanded = settings.SidebarExpanded;
         SidebarWidth = IsSidebarExpanded ? 248 : 76;
         UseCustomTitleBar = settings.UseCustomTitleBar;
+        RefreshWindowControls();
         NotificationsPanelEnabled = settings.NotificationsPanelEnabled;
         RemindersPanelEnabled = settings.RemindersPanelEnabled;
         InboxPanelEnabled = settings.InboxPanelEnabled;
@@ -403,6 +442,7 @@ public sealed partial class MainWindowViewModel
         TagManagerPanelEnabled = settings.TagManagerPanelEnabled;
         HabitsPanelEnabled = settings.HabitsPanelEnabled;
         StatisticsPanelEnabled = settings.StatisticsPanelEnabled;
+        AssistantPanelEnabled = settings.Ai.Enabled;
         Dashboard!.ShowScrollbar = settings.DashboardShowScrollbar;
         Dashboard.SetCalendarEnabled(settings.CalendarPanelEnabled);
         OnKanbanBoardOrientationChanged(settings.KanbanBoardOrientation);
@@ -426,6 +466,9 @@ public sealed partial class MainWindowViewModel
         _dismissedReminderService.Reload();
         _snoozedReminderService.Reload();
         _notificationService.Reload();
+        if (_kanbanService.LoadedFromCorruptData)
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Title"),
+                LocalizedTextFormatter.Format("Kanban_Multi_LoadFailed"), NotificationSeverity.Warning);
     }
 
     /// <summary>Pops every reminder whose scheduled time has arrived and turns each into a real
@@ -494,7 +537,7 @@ public sealed partial class MainWindowViewModel
                 : null;
         }
 
-        var card = _kanbanService.Board.Columns
+        var card = _kanbanService.AllColumns
             .SelectMany(column => column.Cards)
             .FirstOrDefault(c => c.Id == snooze.SourceId);
         return card is { CompletedAtUtc: null } && card.DueDateUtc == snooze.DueUtcSnapshot
@@ -531,6 +574,36 @@ public sealed partial class MainWindowViewModel
     /// <see cref="OnDashboardShowScrollbarModeChanged"/> etc.) — aplica en vivo el nuevo porcentaje al
     /// <c>ScaleTransform</c> que ya está en pantalla, sin esperar a la próxima navegación.</summary>
     private void OnUiZoomChanged(int percent) => UiZoomScale = percent / 100.0;
+
+    /// <summary>"Usar en el asistente" desde el detalle de una skill: abre un chat nuevo con ella.</summary>
+    private void StartAssistantChatWithSkill(SkillFile skill)
+    {
+        if (!AssistantPanelEnabled || Assistant is null) return;
+        Assistant.StartChatWithSkill(skill);
+        ShowAssistant();
+    }
+
+    /// <summary>"Preguntar al asistente" en Sesiones: un chat nuevo con el ámbito de esa sesión.</summary>
+    private void StartAssistantChatInSession(Session session)
+    {
+        if (!AssistantPanelEnabled || Assistant is null) return;
+        Assistant.StartChatInSession(session);
+        ShowAssistant();
+    }
+
+    /// <summary>"Preguntar al asistente sobre esta nota" de la paleta de comandos.</summary>
+    private void StartAssistantChatAboutActiveNote()
+    {
+        if (!AssistantPanelEnabled || Assistant is null || Notes?.ActiveEditor?.Note is not { } note) return;
+        Assistant.StartChatAboutNote(note);
+        ShowAssistant();
+    }
+
+    private void OpenAiSettings()
+    {
+        OpenSettings();
+        Settings?.SelectSectionCommand.Execute(SettingsSection.Ai);
+    }
 
     private void OpenNoteFromQuickSwitcher(NoteFile note)
     {

@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:enki.ViewModels" xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="enki.Views.FolderManagerView" x:DataType="vm:FolderManagerViewModel">
+  <controls:ModalOverlayHost IsOpen="{Binding IsOpen}">
+    <Border Classes="modal-card" MaxWidth="620" MinWidth="340" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="18">
+          <StackPanel.KeyBindings><KeyBinding Gesture="Escape" Command="{Binding CloseCommand}" /></StackPanel.KeyBindings>
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <mi:MaterialIcon Kind="FolderOutline" Width="24" Height="24" Margin="0,0,12,0" />
+            <TextBlock Grid.Column="1" Text="{Binding Title}" Classes="eyebrow" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Classes="icon-btn modal-cancel" Command="{Binding CloseCommand}"
+                    AutomationProperties.Name="{loc:Tr Common_Cancel}" ToolTip.Tip="{loc:Tr Common_Cancel}">
+              <mi:MaterialIcon Kind="Close" Width="18" Height="18" />
+            </Button>
+          </Grid>
+          <Border Classes="dropdown-popover" Padding="14">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{Binding RelativePath}" TextWrapping="Wrap" FontWeight="Bold" />
+              <TextBlock Text="{Binding Summary}" Classes="muted" TextWrapping="Wrap" FontSize="12" />
+            </StackPanel>
+          </Border>
+          <WrapPanel IsVisible="{Binding !IsCreate}" Orientation="Horizontal">
+            <Button Classes="pill" Classes.pill-primary="{Binding IsRename}" Command="{Binding SelectOperationCommand}" CommandParameter="Rename" Content="{loc:Tr Folders_Rename, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,6,6" />
+            <Button Classes="pill" Classes.pill-primary="{Binding IsMove}" Command="{Binding SelectOperationCommand}" CommandParameter="Move" Content="{loc:Tr Folders_Move, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,6,6" />
+            <Button Classes="pill" Classes.pill-primary="{Binding IsCopy}" Command="{Binding SelectOperationCommand}" CommandParameter="Copy" Content="{loc:Tr Folders_Copy, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,6,6" />
+            <Button Classes="pill" Classes.pill-primary="{Binding IsDelete}" Command="{Binding SelectOperationCommand}" CommandParameter="Delete" Content="{loc:Tr Folders_Delete, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,6,6" />
+          </WrapPanel>
+          <StackPanel Spacing="8" IsVisible="{Binding NeedsName}">
+            <TextBlock Text="{loc:Tr Folders_Name}" Classes="eyebrow" />
+            <TextBox Text="{Binding Name}" PlaceholderText="{loc:Tr Folders_Name}" MaxLength="200"
+                     AutomationProperties.Name="{loc:Tr Folders_Name}">
+              <TextBox.KeyBindings><KeyBinding Gesture="Enter" Command="{Binding ApplyCommand}" /></TextBox.KeyBindings>
+            </TextBox>
+          </StackPanel>
+          <StackPanel Spacing="8" IsVisible="{Binding NeedsDestination}">
+            <TextBlock Text="{loc:Tr Folders_Destination}" Classes="eyebrow" />
+            <ComboBox ItemsSource="{Binding Destinations}" SelectedItem="{Binding Destination}" HorizontalAlignment="Stretch"
+                      PlaceholderText="{loc:Tr Folders_Destination}" AutomationProperties.Name="{loc:Tr Folders_Destination}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:FolderDestination"><TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="{loc:Tr Folders_CollisionHint}" Classes="muted" TextWrapping="Wrap" FontSize="12" />
+          </StackPanel>
+          <TextBlock IsVisible="{Binding IsDelete}" Text="{loc:Tr Folders_DeleteHint}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}" />
+          <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}" />
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Classes="ghost" Command="{Binding RevealCommand}" IsVisible="{Binding !IsCreate}" Content="{loc:Tr Folders_Reveal, Converter={StaticResource UpperCaseConverter}}" HorizontalAlignment="Left" />
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CloseCommand}" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" Margin="0,0,12,0" />
+            <Button Grid.Column="2" Classes="pill-primary" Classes.pill-primary-danger="{Binding IsDelete}" Command="{Binding ApplyCommand}" Content="{Binding ConfirmLabel}" />
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </controls:ModalOverlayHost>
+</UserControl>

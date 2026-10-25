@@ -9,6 +9,7 @@
              xmlns:loc="clr-namespace:enki.Localization"
              xmlns:controls="clr-namespace:enki.Controls"
              xmlns:services="clr-namespace:enki.Services"
+             xmlns:views="clr-namespace:enki.Views"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.EditorView"
              x:DataType="vm:EditorViewModel">
@@ -159,7 +160,7 @@
                IsOpen="{Binding IsLinkedCardsExpanded, Mode=TwoWay}">
           <Border Classes="dropdown-popover" MinWidth="200" MaxWidth="320">
             <StackPanel Spacing="10">
-              <TextBlock Text="{loc:Tr Editor_LinkedCards_Label}" Classes="eyebrow" FontSize="9" />
+              <TextBlock Text="{loc:Tr Editor_LinkedCards_Label, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
               <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding LinkedCards}">
                   <ItemsControl.ItemsPanel>
@@ -188,7 +189,8 @@
            siendo una caja en la que se puede escribir por estrecho que vaya el editor, y el MaxWidth que
            no se estire a lo largo de media cabecera en una ventana ancha. Fuera de la vista simplificada
            (ver ShowFullViewChrome): allí la cabecera se queda en el nombre de la nota y las acciones. -->
-      <Border x:Name="TagsBox" Grid.Column="3" Margin="12,0"
+      <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" IsVisible="{Binding ShowFullViewChrome}">
+      <Border x:Name="TagsBox" Margin="12,0,4,0"
               IsVisible="{Binding ShowFullViewChrome}"
               Classes="card" Padding="8,5" VerticalAlignment="Center" HorizontalAlignment="Left"
               MinWidth="150" MaxWidth="240">
@@ -203,6 +205,42 @@
                    KeyDown="OnTagsKeyDown" LostFocus="OnTagsLostFocus" />
         </Grid>
       </Border>
+        <Panel>
+          <Button x:Name="PropertiesTrigger" Classes="icon-btn" Width="32" Height="32"
+                  Command="{Binding TogglePropertiesCommand}" ToolTip.Tip="{loc:Tr Editor_Properties_Title}"
+                  AutomationProperties.Name="{loc:Tr Editor_Properties_Title}">
+            <mi:MaterialIcon Kind="FormatListBulleted" Width="16" Height="16" />
+          </Button>
+          <Popup PlacementTarget="{Binding #PropertiesTrigger}" Placement="BottomEdgeAlignedRight"
+                 VerticalOffset="4" IsLightDismissEnabled="True" IsOpen="{Binding IsPropertiesOpen, Mode=TwoWay}">
+            <Border Classes="dropdown-popover" Width="330" Padding="14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="{loc:Tr Editor_Properties_Title}" Classes="eyebrow" />
+                <ItemsControl ItemsSource="{Binding Properties}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:NotePropertyItemViewModel">
+                      <Grid ColumnDefinitions="100,*,Auto,Auto" Margin="0,0,0,5">
+                        <TextBlock Grid.Column="0" Text="{Binding Key}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Classes="icon-btn" Width="24" Height="24" Content="✎"
+                                Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).EditPropertyCommand}" CommandParameter="{Binding}"
+                                ToolTip.Tip="{loc:Tr Editor_Properties_Edit}" AutomationProperties.Name="{loc:Tr Editor_Properties_Edit}" />
+                        <Button Grid.Column="3" Classes="icon-btn" Width="24" Height="24" Content="×"
+                                Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).DeletePropertyCommand}" CommandParameter="{Binding}"
+                                ToolTip.Tip="{loc:Tr Editor_Properties_Delete}" AutomationProperties.Name="{loc:Tr Editor_Properties_Delete}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBox Text="{Binding PropertyKeyInput}" AutomationProperties.Name="{loc:Tr Editor_Properties_Key}" PlaceholderText="{loc:Tr Editor_Properties_Key}" />
+                <TextBox Text="{Binding PropertyValueInput}" AutomationProperties.Name="{loc:Tr Editor_Properties_Value}" PlaceholderText="{loc:Tr Editor_Properties_Value}" />
+                <Button Classes="pill" Command="{Binding SavePropertyCommand}" Content="{loc:Tr Editor_Properties_Save, Converter={StaticResource UpperCaseConverter}}" />
+                <TextBlock Text="{Binding PropertyError}" IsVisible="{Binding HasPropertyError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </Popup>
+        </Panel>
+      </StackPanel>
 
       <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <!-- Cambio externo sin resolver (.docs/project-info/cambios-externos-en-el-vault.md): mientras
@@ -391,6 +429,12 @@
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_NoteLink_Tooltip}">
             <mi:MaterialIcon Kind="FileLinkOutline" Width="16" Height="16" />
           </Button>
+          <Button Classes="icon-btn" Click="OnAttachmentClick" ToolTip.Tip="{loc:Tr Editor_Attachments_Add}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Add}">
+            <mi:MaterialIcon Kind="Paperclip" Width="16" Height="16" />
+          </Button>
+          <Button Classes="icon-btn" Command="{Binding ShowAttachmentsCommand}" ToolTip.Tip="{loc:Tr Editor_Attachments_Title}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Title}">
+            <mi:MaterialIcon Kind="FolderImage" Width="16" Height="16" />
+          </Button>
           <Button Classes="icon-btn" Click="OnImageClick" ToolTip.Tip="{loc:Tr Editor_Toolbar_Image_Tooltip}"
                   AutomationProperties.Name="{loc:Tr Editor_Toolbar_Image_Tooltip}">
             <mi:MaterialIcon Kind="ImageOutline" Width="16" Height="16" />
@@ -523,20 +567,10 @@
         </Grid>
       </Border>
 
-      <!-- Panel lateral derecho, host: outline, backlinks y estadísticas. Its own Width is bound to
-           EditorViewModel.SidePanelWidth (0 when collapsed) rather than the panel just toggling
-           IsVisible inside a fixed grid column, so hiding it actually gives the editor's "*" column the
-           freed space back instead of leaving it as dead space — and animating that Width (instead of
-           snapping) is what gives the show/hide its slide. ClipToBounds crops the separator+panel's own
-           fixed-width content as the host shrinks past it, instead of letting it overflow past the host's
-           shrinking bounds mid-animation. -->
+      <!-- El panel reserva su ancho una sola vez: animarlo recompone todo el Markdown por fotograma. -->
       <Grid Grid.Column="1" x:Name="SidePanelHost" ColumnDefinitions="Auto,Auto"
             Width="{Binding SidePanelWidth}" ClipToBounds="True">
-        <Grid.Transitions>
-          <Transitions>
-            <DoubleTransition Property="Width" Duration="0:0:0.2" Easing="CubicEaseOut" />
-          </Transitions>
-        </Grid.Transitions>
+
 
         <!-- Separador fino entre editor y panel lateral -->
         <Border Grid.Column="0" Width="1" HorizontalAlignment="Center"
@@ -1060,5 +1094,10 @@
       </Border>
     </controls:ModalOverlayHost>
 
+    <controls:ModalOverlayHost IsOpen="{Binding IsAttachmentsOpen}" ZIndex="20">
+      <Border Classes="modal-card" MaxWidth="1040" Margin="20" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <views:NoteAttachmentsView />
+      </Border>
+    </controls:ModalOverlayHost>
   </Grid>
 </UserControl>

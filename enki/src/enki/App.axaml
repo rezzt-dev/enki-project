@@ -10,6 +10,7 @@
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <StyleInclude Source="avares://Material.Icons.Avalonia/MaterialIconStyles.axaml" />
         <StyleInclude Source="avares://enki/styles/Styles.axaml" />
+        <StyleInclude Source="avares://enki/styles/SidePanels.axaml" />
     </Application.Styles>
 
     <Application.Resources>
@@ -42,10 +43,10 @@
             <TrayIcon Icon="/assets/icon/enki.ico" ToolTipText="Enki" Clicked="TrayQuickCapture_Click">
                 <TrayIcon.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="{loc:Tr QuickCapture_Title}" Click="TrayQuickCapture_Click" />
-                        <NativeMenuItem Header="{loc:Tr Tray_OpenEnki}" Click="TrayOpenEnki_Click" />
+                        <NativeMenuItem Header="{loc:Tr QuickCapture_Title, Converter={StaticResource UpperCaseConverter}}" Click="TrayQuickCapture_Click" />
+                        <NativeMenuItem Header="{loc:Tr Tray_OpenEnki, Converter={StaticResource UpperCaseConverter}}" Click="TrayOpenEnki_Click" />
                         <NativeMenuItemSeparator />
-                        <NativeMenuItem Header="{loc:Tr Tray_Exit}" Click="TrayExit_Click" />
+                        <NativeMenuItem Header="{loc:Tr Tray_Exit, Converter={StaticResource UpperCaseConverter}}" Click="TrayExit_Click" />
                     </NativeMenu>
                 </TrayIcon.Menu>
             </TrayIcon>

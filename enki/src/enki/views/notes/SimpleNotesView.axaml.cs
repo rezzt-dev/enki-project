@@ -10,7 +10,7 @@ using enki.ViewModels;
 namespace enki.Views;
 
 /// <summary>Code-behind de la vista simplificada de Notas: selección y renombrado en línea de las filas
-/// del árbol, arrastrar una nota a otra carpeta, y el separador que ajusta el ancho del panel lateral.
+/// del árbol, arrastrar notas y carpetas, y el separador que ajusta el ancho del panel lateral.
 /// Solo mecánica de vista — cualquier cosa que toque el vault vive en <see cref="NotesViewModel"/>.</summary>
 public partial class SimpleNotesView : UserControl
 {
@@ -38,6 +38,13 @@ public partial class SimpleNotesView : UserControl
     public SimpleNotesView()
     {
         InitializeComponent();
+        _dragGhost = new ExplorerDragGhost(this, DragSurface, NoteDragFormat);
+        KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Escape || Vm is not { IsSimpleNavigatorOpen: true } vm) return;
+            vm.CloseSimpleNavigatorCommand.Execute(null);
+            e.Handled = true;
+        };
 
         // En túnel (antes que cualquier burbuja y antes de que Avalonia mueva el foco por el clic): si
         // el clic cae dentro de la fila que se está renombrando, se arma la bandera que impide que el
@@ -53,6 +60,8 @@ public partial class SimpleNotesView : UserControl
         };
     }
 
+    private readonly ExplorerDragGhost _dragGhost;
+
     private NotesViewModel? Vm => DataContext as NotesViewModel;
 
     private void SubscribeToViewModel()
@@ -67,14 +76,58 @@ public partial class SimpleNotesView : UserControl
     /// de fricción que esta vista existe para quitar.</summary>
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(NotesViewModel.IsSimpleSearchMode)) return;
-        if (Vm is not { IsSimpleSearchMode: true }) return;
+        if (Vm is not { } vm) return;
+        if (e.PropertyName == nameof(NotesViewModel.IsSimpleNavigatorOpen) && !vm.IsSimpleNavigatorOpen)
+        {
+            if (SimpleNavigator.IsKeyboardFocusWithin)
+                (vm.IsSimpleSearchMode ? RailSearchButton : RailTreeButton).Focus();
+            return;
+        }
+        if (e.PropertyName is not (nameof(NotesViewModel.IsSimpleSearchMode)
+            or nameof(NotesViewModel.IsSimpleNavigatorOpen)
+            or nameof(NotesViewModel.IsSimpleSidebarVisible))) return;
 
         Dispatcher.UIThread.Post(() =>
         {
-            SimpleSearchBox.Focus();
-            SimpleSearchBox.SelectAll();
+            if (Vm is not { IsSimpleNavigatorVisible: true } current) return;
+            if (current.IsSimpleSearchMode)
+            {
+                SimpleSearchBox.Focus();
+                SimpleSearchBox.SelectAll();
+            }
+            else if (current.IsSimpleNavigatorOpen)
+            {
+                foreach (var control in SimpleNavigator.GetVisualDescendants())
+                    if (control is Border { IsEffectivelyVisible: true, DataContext: NoteTreeItemViewModel } row
+                        && row.Classes.Contains("folder-row"))
+                    {
+                        row.Focus();
+                        break;
+                    }
+            }
         }, DispatcherPriority.Input);
+    }
+
+    private void NavigatorDismiss_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        Vm?.CloseSimpleNavigatorCommand.Execute(null);
+        e.Handled = true;
+    }
+
+    private void TreeRow_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space)
+            || sender is not Border { DataContext: NoteTreeItemViewModel { IsRenaming: false } node }) return;
+        Vm?.ActivateTreeItemCommand.Execute(node);
+        e.Handled = true;
+    }
+
+    private void SearchResult_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space)
+            || sender is not Border { DataContext: NoteCardViewModel card }) return;
+        Vm?.OpenCardCommand.Execute(card);
+        e.Handled = true;
     }
 
     // ===================== Filas del árbol =====================
@@ -124,11 +177,10 @@ public partial class SimpleNotesView : UserControl
             return;
         }
 
+        ((Control)sender).Focus();
         vm.ActivateTreeItemCommand.Execute(node);
 
-        // Solo las notas se arrastran: mover carpetas enteras es una operación bastante más destructiva
-        // y aquí no hay ninguna confirmación de por medio.
-        if (!node.IsNote) return;
+        // La validación del servicio impide soltar una carpeta dentro de sí misma.
         _dragPressArgs = e;
         _dragStartPoint = e.GetPosition(null);
         _dragging = false;
@@ -138,7 +190,7 @@ public partial class SimpleNotesView : UserControl
     {
         if (_dragging || _dragPressArgs is null) return;
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
-        if (sender is not Border { DataContext: NoteTreeItemViewModel node } || !node.IsNote || node.IsRenaming) return;
+        if (sender is not Border { DataContext: NoteTreeItemViewModel node } || node.IsRenaming) return;
 
         var current = e.GetPosition(null);
         var dx = current.X - _dragStartPoint.X;
@@ -158,22 +210,24 @@ public partial class SimpleNotesView : UserControl
         finally
         {
             _dragging = false;
+            _dragGhost.Hide();
         }
     }
 
-    private static void TreeRow_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
-    private static void TreeRow_DragOver(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
-    private static void TreeRow_DragLeave(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, false);
+    private void TreeRow_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
+    private void TreeRow_DragOver(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, true);
+    private void TreeRow_DragLeave(object? sender, DragEventArgs e) => UpdateTreeRowDragOver(sender, e, false);
 
     /// <summary>Solo las carpetas aceptan una nota soltada encima — una nota sobre otra nota no significa
     /// nada, así que ni se resalta ni se marca el gesto como válido.</summary>
-    private static void UpdateTreeRowDragOver(object? sender, DragEventArgs e, bool isOver)
+    private void UpdateTreeRowDragOver(object? sender, DragEventArgs e, bool isOver)
     {
         if (sender is not Border { DataContext: NoteTreeItemViewModel node }) return;
 
-        var valid = node.IsFolder && e.DataTransfer.Contains(NoteDragFormat);
+        var valid = node.IsFolder && CanDropInto(e, node.FullPath);
         e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
         node.IsDropTarget = isOver && valid;
+        if (node.IsFolder && e.DataTransfer.Contains(NoteDragFormat) && !valid) e.Handled = true;
     }
 
     private void TreeRow_Drop(object? sender, DragEventArgs e)
@@ -181,32 +235,57 @@ public partial class SimpleNotesView : UserControl
         if (sender is not Border { DataContext: NoteTreeItemViewModel node }) return;
         node.IsDropTarget = false;
         if (!node.IsFolder || Vm is not { } vm) return;
+        if (!CanDropInto(e, node.FullPath))
+        {
+            if (e.DataTransfer.Contains(NoteDragFormat)) e.Handled = true;
+            return;
+        }
 
         var sourcePath = e.DataTransfer.TryGetValue(NoteDragFormat);
-        if (sourcePath is not null) vm.MoveTreeNoteToFolder(sourcePath, node.FullPath);
+        if (sourcePath is not null)
+        {
+            if (System.IO.Directory.Exists(sourcePath)) vm.MoveFolderTo(sourcePath, node.FullPath);
+            else vm.MoveTreeNoteToFolder(sourcePath, node.FullPath);
+            e.Handled = true;
+        }
     }
 
     // ===================== Fondo del árbol: soltar en la raíz de la sesión =====================
 
-    private static void TreeRoot_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
-    private static void TreeRoot_DragOver(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
+    private void TreeRoot_DragEnter(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
+    private void TreeRoot_DragOver(object? sender, DragEventArgs e) => UpdateTreeRootDragOver(e);
     private static void TreeRoot_DragLeave(object? sender, DragEventArgs e) => e.DragEffects = DragDropEffects.None;
 
-    private static void UpdateTreeRootDragOver(DragEventArgs e) =>
-        e.DragEffects = e.DataTransfer.Contains(NoteDragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+    private void UpdateTreeRootDragOver(DragEventArgs e) =>
+        e.DragEffects = Vm is { } vm && CanDropInto(e, vm.EffectiveRootPath)
+            ? DragDropEffects.Move : DragDropEffects.None;
+
+    private bool CanDropInto(DragEventArgs e, string destination)
+    {
+        if (Vm is not { IsSelectedSessionLocked: false }) return false;
+        var source = e.DataTransfer.TryGetValue(NoteDragFormat);
+        return source is not null && (!System.IO.Directory.Exists(source) ||
+            !enki.Services.VaultService.IsWithinFolder(destination, source));
+    }
 
     private void TreeRoot_Drop(object? sender, DragEventArgs e)
     {
         if (Vm is not { } vm) return;
 
         var sourcePath = e.DataTransfer.TryGetValue(NoteDragFormat);
-        if (sourcePath is not null) vm.MoveTreeNoteToFolder(sourcePath, vm.EffectiveRootPath);
+        if (sourcePath is not null)
+        {
+            if (System.IO.Directory.Exists(sourcePath)) vm.MoveFolderTo(sourcePath, vm.EffectiveRootPath);
+            else vm.MoveTreeNoteToFolder(sourcePath, vm.EffectiveRootPath);
+        }
     }
 
     // ===================== Resultados de búsqueda =====================
 
     private void SearchResult_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (sender is not Control row || !e.GetCurrentPoint(row).Properties.IsLeftButtonPressed) return;
+        row.Focus();
         if (sender is Border { DataContext: NoteCardViewModel card }) Vm?.OpenCardCommand.Execute(card);
     }
 
@@ -285,7 +364,8 @@ public partial class SimpleNotesView : UserControl
     {
         if (!_resizingSidebar || Vm is not { } vm) return;
 
-        var delta = e.GetPosition(this).X - _resizeStartX;
+        var delta = enki.Controls.SidePanelGrid.GetResizeDelta((Control)sender!,
+            e.GetPosition(this).X - _resizeStartX);
         vm.SimpleSidebarWidth = Math.Clamp(_resizeStartWidth + delta,
             NotesViewModel.SimpleSidebarMinWidth, NotesViewModel.SimpleSidebarMaxWidth);
     }

@@ -118,6 +118,24 @@ public sealed class ReminderService
         return reminder;
     }
 
+    /// <summary>Crea un evento importado visible en el calendario sin programar una notificación.
+    /// Se guarda una sola vez, ya marcado como atendido y sin sincronizar a Polar,
+    /// para evitar avisos en cualquiera de los dos dispositivos.</summary>
+    public Reminder CreateImportedEvent(string title, string description, DateTime startUtc, int? durationMinutes)
+    {
+        var reminder = new Reminder
+        {
+            Id = Guid.NewGuid().ToString(), Title = title, Description = description,
+            NotifyAtUtc = startUtc, DurationMinutes = durationMinutes,
+            Icon = "CalendarBlankOutline", IsTriggered = true, Dirty = false,
+            IsImportedCalendarEvent = true
+        };
+        Reminders.Insert(0, reminder);
+        try { Save(); }
+        catch { Reminders.Remove(reminder); throw; }
+        return reminder;
+    }
+
     public void MarkAsRead(string id)
     {
         var reminder = Reminders.Find(r => r.Id == id);
@@ -203,7 +221,7 @@ public sealed class ReminderService
         if (reminder is null) return;
 
         reminder.NotifyAtUtc = notifyAtUtc;
-        reminder.IsTriggered = false;
+        reminder.IsTriggered = reminder.IsImportedCalendarEvent;
         Touch(reminder);
         Save();
     }
@@ -229,6 +247,13 @@ public sealed class ReminderService
     {
         var removed = Reminders.RemoveAll(r => r.IsDeleted);
         if (removed > 0) Save();
+    }
+
+    /// <summary>Elimina definitivamente un único recordatorio de la papelera. El asistente solicita antes
+    /// confirmación en el chat; si el recordatorio ya no está en la papelera, no se modifica.</summary>
+    public void PurgeDeleted(string id)
+    {
+        if (Reminders.RemoveAll(r => r.Id == id && r.IsDeleted) > 0) Save();
     }
 
     private void SoftDelete(Reminder reminder)
@@ -295,7 +320,7 @@ public sealed class ReminderService
             LogService.Warning(
                 $"ReminderService: salto de reloj detectado ({nowUtc - lastCheck:g} desde la última comprobación); " +
                 "no se disparan en bloque los recordatorios vencidos durante el hueco.");
-            var missed = ActiveReminders.Where(r => !r.IsTriggered && r.NotifyAtUtc <= lastCheck).ToList();
+            var missed = ActiveReminders.Where(r => !r.IsImportedCalendarEvent && !r.IsTriggered && r.NotifyAtUtc <= lastCheck).ToList();
             _lastPopCheckUtc = nowUtc;
             if (missed.Count == 0) return missed;
 
@@ -305,7 +330,7 @@ public sealed class ReminderService
         }
 
         _lastPopCheckUtc = nowUtc;
-        var due = ActiveReminders.Where(r => !r.IsTriggered && r.NotifyAtUtc <= nowUtc).ToList();
+        var due = ActiveReminders.Where(r => !r.IsImportedCalendarEvent && !r.IsTriggered && r.NotifyAtUtc <= nowUtc).ToList();
         if (due.Count == 0) return due;
 
         foreach (var reminder in due) Fire(reminder, nowUtc);

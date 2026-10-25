@@ -33,6 +33,7 @@ public class LocalizedPropertyRefreshTests
     /// exactamente lo que el test existe para impedir: verificar primero que el padre la recrea.</summary>
     private static readonly Dictionary<string, string> RecreatedByParent = new()
     {
+        ["AiAttachmentPickerItemViewModel"] = "AssistantViewModel.CollectPickerItems, cada vez que se abre el selector de adjuntos",
         ["CalendarMonthDayViewModel"] = "CalendarViewModel.Rebuild → RebuildMonth",
         ["DailyConsistencyDayViewModel"] = "NotesViewModel.ReloadConsistency (también al cambiar de idioma, ver RefreshLocalizedLabels)",
         ["FileFolderCardViewModel"] = "FilesViewModel.Reload",

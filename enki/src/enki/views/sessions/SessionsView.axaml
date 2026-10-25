@@ -10,7 +10,14 @@
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.SessionsView"
              x:DataType="vm:SessionsViewModel"
+             UseSubtleAnimations="{DynamicResource MotionSubtle}"
              Focusable="True" Loaded="SessionsView_Loaded" KeyDown="SessionsView_KeyDown">
+
+  <UserControl.Styles>
+    <Style Selector="Button.session-select:pointerover /template/ ContentPresenter, Button.session-select:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
 
   <Grid>
 
@@ -45,89 +52,112 @@
           </StackPanel>
         </Button>
 
-        <Button Grid.Column="1" Classes="pill" Command="{Binding OpenInNotesCommand}" Margin="0,0,14,0"
-                IsEnabled="{Binding SelectedSession, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
-            <TextBlock Text="{loc:Tr Sessions_OpenInNotesButton, Converter={StaticResource UpperCaseConverter}}" />
-          </StackPanel>
-        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="0,0,14,0">
+          <Button Classes="pill" Command="{Binding OpenInNotesCommand}"
+                  IsEnabled="{Binding SelectedSession, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
+              <TextBlock Text="{loc:Tr Sessions_OpenInNotesButton, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="pill" Command="{Binding OpenInAssistantCommand}" IsVisible="{Binding IsAssistantAvailable}"
+                  IsEnabled="{Binding SelectedSession, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                  ToolTip.Tip="{loc:Tr Sessions_OpenInAssistant_Tooltip}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Creation" Width="14" Height="14" />
+              <TextBlock Text="{loc:Tr Sessions_OpenInAssistantButton, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
 
         <Border Grid.Column="3" Classes="card" Padding="14,9" VerticalAlignment="Center">
           <TextBlock Text="{Binding SessionsCountLabel}" Classes="faint" FontSize="10.5" />
    </Border>
       </Grid>
 
-      <Grid Grid.Row="2" ColumnDefinitions="220,*" Margin="24,0,24,24">
+      <Grid Grid.Row="2" ColumnDefinitions="260,*" Margin="24,0,24,24">
 
         <!-- ===================== Panel de sesiones ===================== -->
         <Border Grid.Column="0" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,1,0,1"
                 Background="{DynamicResource AppBackgroundAltBrush}" Padding="10,12">
           <Grid RowDefinitions="*,Auto">
-            <ScrollViewer>
-              <ItemsControl ItemsSource="{Binding Sessions}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl x:Name="SessionList" ItemsSource="{Binding Sessions}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
-                    <StackPanel Spacing="2" />
+                    <StackPanel Spacing="4" />
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate DataType="vm:SessionListItemViewModel">
-                    <Border Classes="folder-row" Classes.active="{Binding IsSelected}"
-                            Padding="14,9" PointerPressed="SessionRow_PointerPressed">
-                      <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                        <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !IsRenaming}">
-                            <Button Classes="icon-btn" Width="20" Height="20" Padding="0"
-                                    Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginChangeSessionColorCommand}"
-                                    CommandParameter="{Binding}"
-                                    ToolTip.Tip="{loc:Tr Sessions_Color_Tooltip}"
-                                    AutomationProperties.Name="{loc:Tr Sessions_Color_Tooltip}">
-                              <Ellipse Width="9" Height="9" Fill="{Binding SessionColorBrush}" />
+                    <Border Classes="folder-row session-row" Classes.active="{Binding IsSelected}"
+                            Padding="10,8" PointerPressed="SessionRow_PointerPressed">
+                      <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
+                        <!-- Nombre acotado por la rejilla; las acciones nunca invaden esta línea. -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                          <Button Classes="icon-btn" Width="24" Height="28" Padding="0"
+                                  VerticalAlignment="Center" IsVisible="{Binding !IsRenaming}"
+                                  Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginChangeSessionColorCommand}"
+                                  CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Color_Tooltip}"
+                                  AutomationProperties.Name="{loc:Tr Sessions_Color_Tooltip}">
+                            <Ellipse Width="9" Height="9" Fill="{Binding SessionColorBrush}" />
+                          </Button>
+                          <Button Grid.Column="1" Classes="dropdown-item session-select" Margin="0" Padding="0" MinHeight="28"
+                                  VerticalContentAlignment="Center" IsVisible="{Binding !IsRenaming}"
+                                  Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).SelectSessionCommand}"
+                                  CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Name}">
+                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" />
+                          </Button>
+                          <TextBox Grid.ColumnSpan="2" Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
+                                   FontSize="13" Padding="6,4" MinHeight="28"
+                                   AutomationProperties.Name="{loc:Tr Sessions_RenameTooltip}"
+                                   KeyDown="SessionNameEdit_KeyDown" LostFocus="SessionNameEdit_LostFocus"
+                                   Initialized="SessionNameEdit_Initialized"
+                                   PropertyChanged="SessionNameEdit_PropertyChanged" />
+                        </Grid>
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="32,0,0,0">
+                          <TextBlock Text="{Binding NoteCountLabel}" Classes="faint" FontWeight="Normal"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
+                                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding NoteCountLabel}" Margin="0,0,6,0" />
+                          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                            <Button Classes="icon-btn" Width="28" Height="28"
+                                    IsVisible="{Binding ShowLockedIndicator}"
+                                    Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestUnlockSessionCommand}"
+                                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Locked_Tooltip}"
+                                    AutomationProperties.Name="{loc:Tr Sessions_Locked_Tooltip}">
+                              <mi:MaterialIcon Kind="LockOutline" Width="14" Height="14" />
                             </Button>
-                            <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                            <Button Classes="icon-btn" Width="28" Height="28"
+                                    IsVisible="{Binding ShowUnlockedIndicator}"
+                                    Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).LockSessionCommand}"
+                                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_LockAction_Label}"
+                                    AutomationProperties.Name="{loc:Tr Sessions_LockAction_Label}">
+                              <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="14" Height="14" />
+                            </Button>
+                            <Button Classes="icon-btn" Width="28" Height="28"
+                                    Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginRenameSessionCommand}"
+                                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_RenameTooltip}"
+                                    AutomationProperties.Name="{loc:Tr Sessions_RenameTooltip}">
+                              <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
+                            </Button>
+                            <Button Classes="icon-btn icon-btn-danger" Width="28" Height="28"
+                                    IsVisible="{Binding !IsDefault}"
+                                    Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestDeleteSessionCommand}"
+                                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_DeleteTooltip}"
+                                    AutomationProperties.Name="{loc:Tr Sessions_DeleteTooltip}">
+                              <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                            </Button>
+                            <Border Width="28" Height="28" IsVisible="{Binding IsDefault}"
+                                    ToolTip.Tip="{loc:Tr Sessions_DefaultBadgeTooltip}"
+                                    AutomationProperties.Name="{loc:Tr Sessions_DefaultBadgeTooltip}">
+                              <mi:MaterialIcon Kind="ShieldCheckOutline" Width="14" Height="14"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </Border>
                           </StackPanel>
-                          <TextBox Text="{Binding EditingName}" IsVisible="{Binding IsRenaming}"
-                                    FontSize="12" Padding="4,2"
-                                    KeyDown="SessionNameEdit_KeyDown" LostFocus="SessionNameEdit_LostFocus"
-                                    Initialized="SessionNameEdit_Initialized"
-                                    PropertyChanged="SessionNameEdit_PropertyChanged" />
-                          <TextBlock Text="{Binding NoteCountLabel}" Classes="faint"
-                                     IsVisible="{Binding !IsRenaming}" />
-                        </StackPanel>
-                        <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20"
-                                IsVisible="{Binding ShowLockedIndicator}"
-                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestUnlockSessionCommand}"
-                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Locked_Tooltip}"
-                                AutomationProperties.Name="{loc:Tr Sessions_Locked_Tooltip}">
-                          <mi:MaterialIcon Kind="LockOutline" Width="12" Height="12" />
-                        </Button>
-                        <Button Grid.Column="1" Classes="icon-btn" Width="20" Height="20"
-                                IsVisible="{Binding ShowUnlockedIndicator}"
-                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).LockSessionCommand}"
-                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_LockAction_Label}"
-                                AutomationProperties.Name="{loc:Tr Sessions_LockAction_Label}">
-                          <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="12" Height="12" />
-                        </Button>
-                        <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20"
-                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).BeginRenameSessionCommand}"
-                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_RenameTooltip}"
-                                AutomationProperties.Name="{loc:Tr Sessions_RenameTooltip}">
-                          <mi:MaterialIcon Kind="PencilOutline" Width="12" Height="12" />
-                        </Button>
-                        <Button Grid.Column="3" Classes="icon-btn icon-btn-danger" Width="20" Height="20"
-                                IsVisible="{Binding !IsDefault}"
-                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).RequestDeleteSessionCommand}"
-                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_DeleteTooltip}"
-                                AutomationProperties.Name="{loc:Tr Sessions_DeleteTooltip}">
-                          <mi:MaterialIcon Kind="TrashCanOutline" Width="12" Height="12" />
-                        </Button>
-                        <mi:MaterialIcon Grid.Column="3" Kind="ShieldCheckOutline" Width="14" Height="14"
-                                          Foreground="{DynamicResource Ink30}"
-                                          IsVisible="{Binding IsDefault}"
-                                          ToolTip.Tip="{loc:Tr Sessions_DefaultBadgeTooltip}" />
+                        </Grid>
                       </Grid>
-                </Border>
+                    </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -167,10 +197,9 @@
                 BorderBrush="{DynamicResource Ink10}" BorderThickness="1"
                 Background="{DynamicResource AppBackgroundAltBrush}">
 
-          <Grid>
-            <!-- The NativeWebView (or the "unavailable" fallback) is attached here in code-behind, lazily
-                 and only after confirming the platform's WebView runtime is actually installed. -->
-            <ContentControl x:Name="GraphContentHost" />
+          <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto">
+            <!-- Renderizador web cuando es compatible; grafo Avalonia en ausencia de motor utilizable. -->
+            <ContentControl x:Name="GraphContentHost" Grid.Row="1" />
 
             <!-- Loading screen shown from the moment the graph document is handed to the WebView until it
                  reports its nodes/edges are actually painted (Fase 4 §"Sesiones y grafo", gap 23) — a
@@ -178,24 +207,24 @@
                  indication anything is happening. It covers the whole panel with the graph's own backdrop
                  (GraphBackdrop* brushes, aligned with the WebView's) so a half-laid-out graph never shows
                  through, and fades in/out via the Opacity transition driven from SessionsView.axaml.cs. -->
-            <Grid x:Name="GraphLoadingOverlay" IsVisible="False" Opacity="0" IsHitTestVisible="False">
+            <Grid Grid.Row="1" x:Name="GraphLoadingOverlay" IsVisible="False" Opacity="0" IsHitTestVisible="False">
               <Grid.Transitions>
                 <Transitions>
-                  <DoubleTransition Property="Opacity" Duration="0:0:0.36" Easing="CubicEaseOut" />
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
                 </Transitions>
               </Grid.Transitions>
               <Border Background="{DynamicResource AppBackgroundAltBrush}" />
               <Border Background="{DynamicResource GraphBackdropDotsBrush}" />
               <Border Background="{DynamicResource GraphBackdropBloomBrush}" />
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="22">
-                <controls:GraphLoadingIndicator x:Name="GraphLoadingAnimation" Width="200" Height="176"
+                <controls:GraphLoadingIndicator x:Name="GraphLoadingAnimation" UseSubtleAnimations="{DynamicResource MotionSubtle}" Width="200" Height="176"
                                                 Ink="{DynamicResource InkBrush}" HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Tr Sessions_Graph_LoadingLabel, Converter={StaticResource UpperCaseConverter}}"
                            Classes="eyebrow" HorizontalAlignment="Center" />
               </StackPanel>
             </Grid>
 
-            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Top" Margin="16">
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Top" Margin="16,12">
               <Border Grid.Column="0" Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,12,0"
                       ToolTip.Tip="{Binding GraphSummaryLabel}">
                 <TextBlock Text="{Binding GraphSummaryLabel}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" />
@@ -216,90 +245,180 @@
               </StackPanel>
             </Grid>
 
-            <Popup PlacementTarget="{Binding #GraphFilterTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="4"
-                   IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #GraphFilterTrigger}"
-                   IsOpen="{Binding IsGraphFilterOpen}">
-              <Border Classes="dropdown-popover" Width="340" CornerRadius="0">
-                <Grid RowDefinitions="Auto,*,Auto" Margin="4" MaxHeight="520">
-                  <TextBlock Grid.Row="0" Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontWeight="Bold" FontSize="15" Margin="0,0,0,14" />
-                  <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Spacing="10">
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Explore}" FontSize="12" FontWeight="Bold" />
-                      <ComboBox ItemsSource="{Binding GraphExplorationOptions}" SelectedIndex="{Binding GraphExplorationIndex}"
-                                HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Sessions_Graph_Explore}" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Clusters}" FontSize="12" FontWeight="Bold" />
-                      <ComboBox ItemsSource="{Binding GraphClusters}" SelectedItem="{Binding SelectedGraphCluster}"
-                                IsEnabled="{Binding HasGraphClusters}" HorizontalAlignment="Stretch"
-                                AutomationProperties.Name="{loc:Tr Sessions_Graph_Clusters}">
-                        <ComboBox.ItemTemplate>
-                          <DataTemplate DataType="vm:GraphClusterFilterItemViewModel">
-                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
-                          </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                      </ComboBox>
-                      <TextBlock Text="{loc:Tr Sessions_Graph_ClustersHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
-                                 FontSize="12" FontWeight="Bold" />
-                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
-                              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
-                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
-                                           VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
-                                              AutomationProperties.Name="{Binding Label}" />
-                              </Grid>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </ScrollViewer>
-                      <TextBlock Text="{loc:Tr Sessions_Graph_Tags}" FontSize="12" FontWeight="Bold" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_TagsHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-                      <TextBlock Text="{loc:Tr Sessions_Graph_NoTags}" Classes="muted" FontSize="12" IsVisible="{Binding !HasGraphTags}" />
-                      <ScrollViewer MaxHeight="130" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGraphTags}">
-                        <ItemsControl ItemsSource="{Binding GraphTagFilters}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
-                              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
-                                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
-                                           VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
-                                              AutomationProperties.Name="{Binding Label}" />
-                              </Grid>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </ScrollViewer>
-                    </StackPanel>
-                  </ScrollViewer>
-                  <Button Grid.Row="2" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
-                          Margin="0,14,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                          Content="{loc:Tr Sessions_Graph_ResetFilters}" />
-                </Grid>
-              </Border>
-            </Popup>
 
-            <Border Classes="graph-chip" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16"
-                    IsHitTestVisible="False" MaxWidth="460">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{loc:Tr Sessions_Graph_GlobalTitle}" FontSize="12" FontWeight="Bold" />
-                <TextBlock Text="{Binding GraphDiscoverySummary}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
-                <TextBlock Text="{loc:Tr Sessions_Graph_AccessibleScope}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
-              </StackPanel>
+
+            <!-- Panel de sesiones fuera del lienzo; en ventanas estrechas siguen en Filtrar. -->
+            <Border x:Name="GraphSessionPanel" Grid.Column="1" Grid.RowSpan="3" Width="260"
+                    BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,0,0"
+                    Background="{DynamicResource AppBackgroundAltBrush}" Padding="16">
+              <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="14">
+                <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
+                           Classes="eyebrow" TextWrapping="Wrap" />
+                <TextBox Grid.Row="1" Classes="search" Text="{Binding GraphSearchText, UpdateSourceTrigger=PropertyChanged}"
+                         PlaceholderText="{loc:Tr Sessions_Graph_Search}" AutomationProperties.Name="{loc:Tr Sessions_Graph_Search}" />
+                <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="0,8">
+                          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <CheckBox Theme="{StaticResource RectangularCheckBox}" IsChecked="{Binding IsActive}"
+                                      HorizontalAlignment="Stretch" ToolTip.Tip="{Binding Label}" AutomationProperties.Name="{Binding Label}">
+                              <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                            </CheckBox>
+                            <TextBlock Grid.Column="1" Text="{Binding NoteCount}" Classes="muted" FontSize="10"
+                                       VerticalAlignment="Center" FontFamily="{DynamicResource MonoFontFamily}" />
+                            <Button Grid.Column="2" Classes="icon-btn" Width="28" Height="28"
+                                    Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).IsolateGraphSessionCommand}"
+                                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Graph_Isolate}"
+                                    AutomationProperties.Name="{loc:Tr Sessions_Graph_Isolate}">
+                              <mi:MaterialIcon Kind="Target" Width="14" Height="14" />
+                            </Button>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <Button Grid.Row="3" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                  <TextBlock Text="{loc:Tr Sessions_Graph_ResetFilters, Converter={StaticResource UpperCaseConverter}}"
+                             TextWrapping="Wrap" TextAlignment="Center" />
+                </Button>
+              </Grid>
             </Border>
-            <Border Classes="dropdown-popover" IsVisible="{Binding IsGraphEmpty}"
+            <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="12,6">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Tr Sessions_Graph_NavigationHint}" Classes="muted" FontSize="10"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                <Button Classes="icon-btn" Command="{Binding ZoomOutGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_Graph_ZoomOut}"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_ZoomOut}">
+                  <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />
+                </Button>
+                <Button Classes="icon-btn" Command="{Binding FitGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_Graph_Fit}"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_Fit}">
+                  <mi:MaterialIcon Kind="FitToScreenOutline" Width="16" Height="16" />
+                </Button>
+                <Button Classes="icon-btn" Command="{Binding ZoomInGraphCommand}" ToolTip.Tip="{loc:Tr Sessions_Graph_ZoomIn}"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_ZoomIn}">
+                  <mi:MaterialIcon Kind="Plus" Width="16" Height="16" />
+                </Button>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Grid.Row="1" Classes="dropdown-popover" IsVisible="{Binding IsGraphEmpty}"
                     HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="300" Margin="20" Padding="20">
               <StackPanel Spacing="12">
                 <TextBlock Text="{Binding GraphEmptyMessage}" TextWrapping="Wrap" TextAlignment="Center" />
                 <Button Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsVisible="{Binding IsGraphFiltered}"
-                        HorizontalAlignment="Center" Content="{loc:Tr Sessions_Graph_ResetFilters}" />
+                        HorizontalAlignment="Center" Content="{loc:Tr Sessions_Graph_ResetFilters, Converter={StaticResource UpperCaseConverter}}" />
               </StackPanel>
             </Border>
           </Grid>
         </Border>
       </Grid>
     </Grid>
+
+    <!-- Filtros del grafo: diálogo centrado en toda la ventana, con secciones navegables. -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsGraphFilterOpen}">
+      <Border Classes="modal-card" Width="740" MaxWidth="740" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18" Height="510">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <TextBlock Text="{loc:Tr Sessions_Graph_GlobalTitle, Converter={StaticResource UpperCaseConverter}}"
+                       FontWeight="Bold" FontSize="19" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="icon-btn" Width="32" Height="32"
+                    Command="{Binding CloseGraphFilterCommand}"
+                    ToolTip.Tip="{loc:Tr Common_Close}" AutomationProperties.Name="{loc:Tr Common_Close}">
+              <mi:MaterialIcon Kind="Close" Width="17" Height="17" />
+            </Button>
+          </Grid>
+          <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="24">
+            <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="12">
+                <TextBox Text="{Binding GraphSearchText, UpdateSourceTrigger=PropertyChanged}"
+                         PlaceholderText="{loc:Tr Sessions_Graph_Search}" AutomationProperties.Name="{loc:Tr Sessions_Graph_Search}" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_Explore, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <ComboBox ItemsSource="{Binding GraphExplorationOptions}" SelectedIndex="{Binding GraphExplorationIndex}"
+                          HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Sessions_Graph_Explore}" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_Clusters, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <ComboBox ItemsSource="{Binding GraphClusters}" SelectedItem="{Binding SelectedGraphCluster}"
+                          IsEnabled="{Binding HasGraphClusters}" HorizontalAlignment="Stretch"
+                          AutomationProperties.Name="{loc:Tr Sessions_Graph_Clusters}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="vm:GraphClusterFilterItemViewModel">
+                      <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{loc:Tr Sessions_Graph_ClustersHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_FilterHeading, Converter={StaticResource UpperCaseConverter}}"
+                           FontSize="12" FontWeight="Bold" />
+                <ItemsControl ItemsSource="{Binding GraphGroupFilters}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                      <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,3">
+                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                      AutomationProperties.Name="{Binding Label}" />
+                        <Button Grid.Column="2" Classes="icon-btn" Width="28" Height="28" Margin="8,0,0,0"
+                                Command="{Binding $parent[UserControl].((vm:SessionsViewModel)DataContext).IsolateGraphSessionCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Sessions_Graph_Isolate}"
+                                AutomationProperties.Name="{loc:Tr Sessions_Graph_Isolate}">
+                          <mi:MaterialIcon Kind="Target" Width="14" Height="14" />
+                        </Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="12">
+                <TextBlock Text="{loc:Tr Sessions_Graph_Display, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <CheckBox Theme="{StaticResource RectangularCheckBox}" Content="{loc:Tr Sessions_Graph_Labels}" IsChecked="{Binding ShowGraphLabels}" />
+                <CheckBox Theme="{StaticResource RectangularCheckBox}" Content="{loc:Tr Sessions_Graph_Mesh}" IsChecked="{Binding ShowGraphMesh}" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_MeshHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{loc:Tr Sessions_Graph_NodeSize}" FontSize="12" />
+                  <TextBlock Grid.Column="1" Text="{Binding GraphNodeSize, StringFormat='{}{0:0.0}×'}"
+                             FontFamily="{DynamicResource MonoFontFamily}" Foreground="{DynamicResource Ink60}" FontSize="11" />
+                </Grid>
+                <Slider Theme="{StaticResource RectangularSlider}" Minimum="0.5" Maximum="2" Value="{Binding GraphNodeSize}" SmallChange="0.1" LargeChange="0.2" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_NodeSize}" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{loc:Tr Sessions_Graph_LinkThickness}" FontSize="12" />
+                  <TextBlock Grid.Column="1" Text="{Binding GraphLinkThickness, StringFormat='{}{0:0.0}×'}"
+                             FontFamily="{DynamicResource MonoFontFamily}" Foreground="{DynamicResource Ink60}" FontSize="11" />
+                </Grid>
+                <Slider Theme="{StaticResource RectangularSlider}" Minimum="0.5" Maximum="2" Value="{Binding GraphLinkThickness}" SmallChange="0.1" LargeChange="0.2" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                        AutomationProperties.Name="{loc:Tr Sessions_Graph_LinkThickness}" />
+                <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,6" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_Tags, Converter={StaticResource UpperCaseConverter}}" FontSize="12" FontWeight="Bold" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_TagsHint}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Text="{loc:Tr Sessions_Graph_NoTags}" Classes="muted" FontSize="12" IsVisible="{Binding !HasGraphTags}" />
+                <ItemsControl ItemsSource="{Binding GraphTagFilters}" IsVisible="{Binding HasGraphTags}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:GraphGroupFilterItemViewModel">
+                      <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" OnContent="" OffContent=""
+                                      AutomationProperties.Name="{Binding Label}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+          <Button Grid.Row="2" Classes="pill" Command="{Binding ResetGraphFiltersCommand}" IsEnabled="{Binding IsGraphFiltered}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  Content="{loc:Tr Sessions_Graph_ResetFilters, Converter={StaticResource UpperCaseConverter}}" />
+        </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: nueva sesión (§7.10) ===================== -->
     <controls:ModalOverlayHost IsOpen="{Binding IsCreateDialogOpen}">

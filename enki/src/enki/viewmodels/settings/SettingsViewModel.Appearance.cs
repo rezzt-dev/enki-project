@@ -26,6 +26,8 @@ namespace enki.ViewModels;
 /// file declares them — so no behavior change.</summary>
 public sealed partial class SettingsViewModel
 {
+    public SidePanelLayoutViewModel SidePanels { get; }
+
     /// <summary>Ajustes › Apariencia › Tema personalizado — un tema importado por fila, rebuilt (not just
     /// re-labeled, unlike <see cref="ShortcutCategories"/>) by <see cref="RefreshCustomThemes"/> after every
     /// import/activate/delete so <see cref="CustomThemeRowViewModel.IsActive"/> stays correct.</summary>
@@ -68,6 +70,16 @@ public sealed partial class SettingsViewModel
     }
 
     [ObservableProperty]
+    private bool _useSubtleAnimations;
+
+    partial void OnUseSubtleAnimationsChanged(bool value)
+    {
+        _settingsService.Settings.UseSubtleAnimations = value;
+        _settingsService.Save();
+        MotionService.Apply(value);
+    }
+
+    [ObservableProperty]
     private bool _isDarkTheme;
 
     /// <summary>Whether an imported custom theme (Ajustes › Apariencia › Tema personalizado) is currently
@@ -89,6 +101,15 @@ public sealed partial class SettingsViewModel
 
     [ObservableProperty]
     private bool _useCustomTitleBar;
+
+    [ObservableProperty]
+    private bool _showWindowControls;
+
+    partial void OnShowWindowControlsChanged(bool value)
+    {
+        _settingsService.Settings.ShowWindowControls = value;
+        _settingsService.Save();
+    }
 
     /// <summary>Ajustes › Apariencia › Tablero Kanban — <c>true</c> apila las tarjetas en columnas lado a
     /// lado (disposición por defecto), <c>false</c> gira cada columna 90° en una franja horizontal. Bool en
@@ -167,6 +188,42 @@ public sealed partial class SettingsViewModel
     partial void OnKanbanShowTagFilterChanged(bool value)
     {
         _settingsService.Settings.KanbanShowTagFilter = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty]
+    private bool _kanbanShowHighPriorityButton;
+
+    partial void OnKanbanShowHighPriorityButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowHighPriorityButton = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty]
+    private bool _kanbanShowOverdueButton;
+
+    partial void OnKanbanShowOverdueButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowOverdueButton = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty]
+    private bool _kanbanShowArchiveButton;
+
+    partial void OnKanbanShowArchiveButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowArchiveButton = value;
+        _settingsService.Save();
+    }
+
+    [ObservableProperty]
+    private bool _kanbanShowSortButton;
+
+    partial void OnKanbanShowSortButtonChanged(bool value)
+    {
+        _settingsService.Settings.KanbanShowSortButton = value;
         _settingsService.Save();
     }
 

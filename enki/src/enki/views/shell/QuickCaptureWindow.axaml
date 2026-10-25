@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:enki.Models"
         xmlns:vm="clr-namespace:enki.ViewModels"
         xmlns:loc="clr-namespace:enki.Localization"
         xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -46,7 +47,7 @@
                  IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
       <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
-        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+        <WrapPanel Grid.Column="0" Orientation="Horizontal">
           <ComboBox Width="170" ItemsSource="{Binding Destinations}" SelectedItem="{Binding SelectedDestination}"
                     AutomationProperties.Name="{loc:Tr QuickCapture_Destination_Label}">
             <ComboBox.ItemTemplate>
@@ -55,7 +56,11 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <ComboBox Width="170" ItemsSource="{Binding KanbanColumns}" SelectedItem="{Binding SelectedKanbanColumn}"
+          <ComboBox HorizontalAlignment="Stretch" MinWidth="140" MaxWidth="300" ItemsSource="{Binding KanbanBoards}" SelectedItem="{Binding SelectedKanbanBoard}"
+                        IsVisible="{Binding ShowKanbanBoards}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Boards}">
+                <ComboBox.ItemTemplate><DataTemplate x:DataType="models:KanbanBoard"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <ComboBox Width="170" ItemsSource="{Binding KanbanColumns}" SelectedItem="{Binding SelectedKanbanColumn}"
                     IsVisible="{Binding IsKanbanDestination}"
                     AutomationProperties.Name="{loc:Tr QuickCapture_KanbanColumn_Label}">
             <ComboBox.ItemTemplate>
@@ -64,9 +69,9 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-        </StackPanel>
+        </WrapPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-          <Button Classes="ghost" Command="{Binding CancelCommand}" Content="{loc:Tr Common_Cancel}" />
+          <Button Classes="ghost" Command="{Binding CancelCommand}" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
           <Button Classes="pill-primary" Command="{Binding SubmitCommand}">
             <StackPanel Orientation="Horizontal" Spacing="7">
               <TextBlock Text="{loc:Tr QuickCapture_Submit}" />

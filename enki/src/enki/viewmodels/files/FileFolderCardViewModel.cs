@@ -14,6 +14,8 @@ namespace enki.ViewModels;
 /// que solo necesita nombre y ruta venga de la fila, de la tarjeta o del árbol.</summary>
 public sealed partial class FileFolderCardViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     public string Name { get; }
     public string FullPath { get; }
 

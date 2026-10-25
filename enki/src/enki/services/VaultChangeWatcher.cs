@@ -91,6 +91,11 @@ public sealed class VaultChangeWatcher : IDisposable
     /// de la clase.</summary>
     public event Action<VaultExternalChange>? ExternalChangeDetected;
 
+    /// <summary>Invalida los listados de secciones también para notas no abiertas, adjuntos y carpetas.
+    /// Se emite desde el pool; el consumidor agrupa las ráfagas y las entrega al hilo de interfaz.
+    /// La detección de conflictos de una nota abierta sigue usando exclusivamente sus huellas.</summary>
+    public event Action? ContentsChanged;
+
     /// <summary>Si la vigilancia está encendida (Ajustes › Editor › "Vigilar cambios externos en el
     /// vault"). Apagada, este servicio no mira nada; la red de seguridad que sigue en pie es la
     /// comprobación previa a guardar de <c>VaultService.WriteContentChecked</c>, que no depende de él.</summary>
@@ -235,10 +240,10 @@ public sealed class VaultChangeWatcher : IDisposable
         {
             var watcher = new FileSystemWatcher(_root)
             {
-                Filter = "*.md",
+                Filter = "*",
                 IncludeSubdirectories = true,
                 InternalBufferSize = InternalBufferBytes,
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Size
             };
             watcher.Changed += OnFileChanged;
             watcher.Created += OnFileChanged;
@@ -328,10 +333,15 @@ public sealed class VaultChangeWatcher : IDisposable
 
     // ===================== Eventos del sistema de archivos =====================
 
-    private void OnFileChanged(object sender, FileSystemEventArgs e) => Schedule(e.FullPath);
+    private void OnFileChanged(object sender, FileSystemEventArgs e)
+    {
+        NotifyContentsChanged(e.FullPath);
+        Schedule(e.FullPath);
+    }
 
     private void OnFileRenamed(object sender, RenamedEventArgs e)
     {
+        NotifyContentsChanged(e.FullPath);
         // Un renombrado *hacia* una ruta vigilada es, casi siempre, la escritura atómica de la propia
         // Enki (DurableFile escribe un temporal y lo mueve encima) o la de un sincronizador que hace lo
         // mismo: se trata como cualquier otro cambio del destino y la comparación de huellas decidirá.
@@ -339,6 +349,19 @@ public sealed class VaultChangeWatcher : IDisposable
 
         if (!IsTracked(e.OldFullPath)) return;
         RaiseRenamed(e.OldFullPath, e.FullPath);
+    }
+
+    private void NotifyContentsChanged(string fullPath)
+    {
+        var name = Path.GetFileName(fullPath);
+        if (name.Contains(".tmp-", StringComparison.Ordinal) || name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)
+            || name == ".session.json") return;
+        var relative = Path.GetRelativePath(_root, fullPath);
+        var segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        // Guardar historial, ajustes y posiciones del grafo no debe causar una recarga de ese grafo.
+        // Skills sí es contenido navegable aunque viva dentro de .enki.
+        if (segments.Contains(".history") || (segments.Contains(".enki") && !segments.Contains("skills"))) return;
+        ContentsChanged?.Invoke();
     }
 
     private void RaiseRenamed(string oldFullPath, string newFullPath)

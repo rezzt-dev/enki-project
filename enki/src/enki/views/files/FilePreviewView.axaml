@@ -6,6 +6,7 @@
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:views="clr-namespace:enki.Views"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="enki.Views.FilePreviewView"
@@ -133,6 +134,12 @@
                   ToolTip.Tip="{loc:Tr Files_FitWidthTooltip}" AutomationProperties.Name="{loc:Tr Files_FitWidthTooltip}">
             <mi:MaterialIcon Kind="ArrowExpandHorizontal" Width="15" Height="15" />
           </Button>
+          <Button Classes="icon-btn" Width="28" Height="28"
+                  Classes.active="{Binding ActivePreview.PdfDocument.IsFitHeight}"
+                  Command="{Binding ActivePreview.PdfDocument.FitHeightCommand}"
+                  ToolTip.Tip="{loc:Tr Files_FitHeightTooltip}" AutomationProperties.Name="{loc:Tr Files_FitHeightTooltip}">
+            <mi:MaterialIcon Kind="ArrowExpandVertical" Width="15" Height="15" />
+          </Button>
         </StackPanel>
 
         <!-- Herramientas de la imagen: ajustada a la ventana o a tamaño real. -->
@@ -152,6 +159,10 @@
           <Border Classes="file-ext-badge" VerticalAlignment="Center" Margin="0,0,8,0">
             <TextBlock Text="{Binding ActivePreview.CodeLanguageLabel}" />
           </Border>
+          <Button Classes="icon-btn" Width="28" Height="28" Click="SearchCode_Click"
+                  ToolTip.Tip="{loc:Tr Common_Search}" AutomationProperties.Name="{loc:Tr Common_Search}">
+            <mi:MaterialIcon Kind="Magnify" Width="15" Height="15" />
+          </Button>
           <Button Classes="icon-btn" Width="28" Height="28"
                   Classes.active="{Binding ActivePreview.IsCodeWordWrap}"
                   Command="{Binding ActivePreview.ToggleCodeWordWrapCommand}"
@@ -181,19 +192,19 @@
           <mi:MaterialIcon Kind="DotsVertical" Width="16" Height="16" />
           <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedRight">
-              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" Command="{Binding ActivePreview.RevealInSystemCommand}">
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ActivePreview.RevealInSystemCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}" Command="{Binding CopyPathCommand}"
+              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CopyPathCommand}"
                         CommandParameter="{Binding ActivePreview.File.FullPath}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
               <Separator />
-              <MenuItem Header="{loc:Tr Common_Delete}" Command="{Binding RequestDeleteFileCommand}"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" Command="{Binding RequestDeleteFileCommand}"
                         CommandParameter="{Binding ActivePreview}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
@@ -252,6 +263,10 @@
                          Foreground="{DynamicResource TextMutedBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center"
                          IsVisible="{Binding ActivePreview.IsImageLoading}" />
+      </Panel>
+
+      <Panel IsVisible="{Binding ActivePreview.IsPlayable}">
+        <views:MediaPreviewView DataContext="{Binding ActivePreview.MediaPreview}" />
       </Panel>
 
       <!-- ===================== PDF ===================== -->
@@ -341,8 +356,11 @@
            alrededor: el editor trae el suyo y virtualiza las líneas; envuelto en otro, se medía con alto
            infinito y pintaba el archivo entero de golpe. -->
       <Panel IsVisible="{Binding ActivePreview.IsCodeViewer}">
-      <Grid DataContext="{Binding ActivePreview}" Background="{DynamicResource AppBackgroundBrush}">
-        <ae:TextEditor x:Name="CodeEditor"
+      <Grid DataContext="{Binding ActivePreview}" Background="{DynamicResource AppBackgroundBrush}" RowDefinitions="Auto,*">
+        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="16,8" IsVisible="{Binding IsContainerPreview}">
+          <TextBlock Text="{loc:Tr Files_ContainerPreviewNotice}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+        </Border>
+        <ae:TextEditor Grid.Row="1" x:Name="CodeEditor"
                        IsReadOnly="True"
                        ShowLineNumbers="True"
                        WordWrap="{Binding IsCodeWordWrap}"

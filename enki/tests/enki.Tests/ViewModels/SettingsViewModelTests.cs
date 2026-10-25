@@ -45,7 +45,7 @@ public class SettingsViewModelTests : IDisposable
         return (backupService, syncService, notificationService, customThemeService, brandLogoService);
     }
 
-    private (SettingsViewModel Settings, SettingsService SettingsService, VaultService Vault, VaultSettingsService VaultSettingsService) CreateViewModel()
+    private (SettingsViewModel Settings, SettingsService SettingsService, VaultService Vault, VaultSettingsService VaultSettingsService) CreateViewModel(KanbanService? kanbanService = null)
     {
         var settingsService = new SettingsService(_storageDirectory);
         var vault = new VaultService(settingsService);
@@ -62,9 +62,71 @@ public class SettingsViewModelTests : IDisposable
             onSidebarSectionChanged: (_, _) => { }, onSidebarSectionOrderChanged: () => { }, onCalendarSettingsChanged: () => { }, onDashboardShowScrollbarChanged: _ => { },
             onKanbanBoardOrientationChanged: _ => { },
             onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { },
-            onLanguageChanged: () => vm!.RefreshLocalizedLabels());
+            onLanguageChanged: () => vm!.RefreshLocalizedLabels(), kanbanService: kanbanService);
 
         return (vm, settingsService, vault, vaultSettingsService);
+    }
+
+    [Fact]
+    public void MotionMode_PersistsAndReloadsWithoutOverwritingStoredChoice()
+    {
+        var (vm, settings, _, _) = CreateViewModel();
+        try
+        {
+            Assert.False(vm.UseSubtleAnimations);
+            vm.UseSubtleAnimations = true;
+            Assert.True(settings.Settings.UseSubtleAnimations);
+            Assert.True(MotionService.UseSubtleAnimations);
+            settings.Settings.UseSubtleAnimations = false;
+            vm.ReloadForVault();
+            Assert.False(vm.UseSubtleAnimations);
+            Assert.False(MotionService.UseSubtleAnimations);
+        }
+        finally { MotionService.Apply(false); }
+    }
+
+    [Fact]
+    public void MultipleBoards_CanOnlyBeDisabledAfterConsolidatingToOneBoard()
+    {
+        var kanban = new KanbanService(Path.Combine(_storageDirectory, "boards"));
+        var (vm, settings, _, _) = CreateViewModel(kanban);
+        Assert.False(vm.KanbanMultipleBoardsEnabled);
+        vm.KanbanMultipleBoardsEnabled = true;
+        Assert.True(settings.Settings.KanbanMultipleBoardsEnabled);
+        var board = kanban.CreateBoard("Estudios");
+        vm.KanbanMultipleBoardsEnabled = false;
+        Assert.True(vm.KanbanMultipleBoardsEnabled);
+        Assert.Equal(2, kanban.Boards.Count);
+        kanban.DeleteEmptyBoard(board.Id);
+        vm.KanbanMultipleBoardsEnabled = false;
+        Assert.False(settings.Settings.KanbanMultipleBoardsEnabled);
+        Assert.Single(kanban.Boards);
+    }
+
+    [Fact]
+    public void Navigation_LocalizesAllDestinationsAndSelectedHeading()
+    {
+        var original = LocalizationService.Instance.CurrentCulture.Name;
+        try
+        {
+            var (vm, _, _, _) = CreateViewModel();
+            Assert.Equal(Enum.GetValues<SettingsSection>().Length, vm.Sections.Count);
+            Assert.Equal(4, vm.Sections.Count(section => section.StartsGroup));
+            vm.SelectSectionCommand.Execute(SettingsSection.Backups);
+            foreach (var language in SupportedLanguages.All)
+            {
+                LocalizationService.Instance.SetLanguage(language.CultureCode);
+                vm.RefreshLocalizedLabels();
+                Assert.All(vm.Sections, section =>
+                {
+                    Assert.DoesNotContain("Settings_", section.Label);
+                    Assert.DoesNotContain("Settings_", section.Description);
+                    Assert.DoesNotContain("Settings_", section.GroupLabel);
+                });
+                Assert.Equal(LocalizationService.Instance["Settings_Nav_Backups"], vm.CurrentSectionTitle);
+            }
+        }
+        finally { LocalizationService.Instance.SetLanguage(original); }
     }
 
     [Fact]
@@ -568,6 +630,40 @@ public class SettingsViewModelTests : IDisposable
 
         Assert.NotEqual(initialSummary, vm.DashboardVisibilitySummary);
         Assert.Contains("7", vm.DashboardVisibilitySummary);
+    }
+
+    [Fact]
+    public void DashboardChanges_NotifyAfterSaving_ForLiveRefresh()
+    {
+        var (vm, _, _, vaultSettings) = CreateViewModel();
+        var notifications = 0;
+        vaultSettings.SettingsChanged += () =>
+        {
+            notifications++;
+            // La vista que recibe el evento debe poder leer ya el cambio persistido.
+            var saved = System.Text.Json.JsonSerializer.Deserialize<enki.Models.VaultSettings>(
+                File.ReadAllText(Path.Combine(_vaultPath, ".enki", "settings.json")));
+            Assert.NotNull(saved);
+            if (notifications == 1)
+                Assert.Contains("Vault", saved.DashboardHiddenSections);
+        };
+
+        vm.ToggleDashboardSectionVisibilityCommand.Execute("Vault");
+        Assert.True(notifications > 0);
+        var afterVisibility = notifications;
+
+        vm.SelectDashboardLayoutStyleCommand.Execute(DashboardLayoutEngine.Custom);
+        Assert.True(notifications > afterVisibility);
+        var afterStyle = notifications;
+
+        vm.DashboardGridColumns = 4;
+        Assert.True(notifications > afterStyle);
+        var afterColumns = notifications;
+
+        vm.ResetDashboardLayoutCommand.Execute(null);
+        Assert.True(notifications > afterColumns);
+        Assert.Equal(DashboardLayoutEngine.Classic, vaultSettings.Settings.DashboardLayoutStyle);
+        Assert.Empty(vaultSettings.Settings.DashboardHiddenSections!);
     }
 
     [Fact]

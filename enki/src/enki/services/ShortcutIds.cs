@@ -19,6 +19,8 @@ public static class ShortcutIds
     public const string NavigateSessions = "shell.navigateSessions";
     public const string NavigateTrash = "shell.navigateTrash";
     public const string NavigateSkills = "shell.navigateSkills";
+    public const string NavigateAssistant = "shell.navigateAssistant";
+    public const string ToggleAssistantPanel = "shell.toggleAssistantPanel";
     public const string NavigateStatistics = "shell.navigateStatistics";
     public const string OpenSettings = "shell.openSettings";
     public const string ZoomIn = "shell.zoomIn";

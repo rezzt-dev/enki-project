@@ -9,6 +9,8 @@ un segundo índice persistido, no modifica el frontmatter al filtrar y no cambia
 
 El botón **Filtrar** abre el popover existente, ampliado con estas opciones combinables:
 
+- **Buscar**: combina palabras de título, ruta, sesión y etiquetas (también con `#`). Todas las
+  palabras deben coincidir; se combina con los demás filtros y no vuelve a leer el vault.
 - **Explorar**: todas las notas, notas huérfanas o conexiones entre sesiones.
 - **Grupos conectados**: aislar una componente conexa. La etiqueta utiliza el título de una de sus
   notas con más conexiones, su sesión y el número de notas. Se ordenan por tamaño descendente.
@@ -23,8 +25,9 @@ original en su sesión. El zoom, el movimiento de nodos y los enlaces manuales c
 y los comandos existentes. Cambiar filtros cancela el primer extremo pendiente de un enlace manual,
 para evitar enlazar accidentalmente una nota que acaba de ocultarse.
 
-El recuento superior indica notas y enlaces **visibles**. El resumen inferior indica huérfanas, enlaces
-entre sesiones y grupos del **vault accesible completo**. Las sesiones cifradas bloqueadas no aportan
+El recuento superior indica notas y enlaces **visibles**. La leyenda inferior, plegable, permite
+ocultar o mostrar cada sesión y aislarla con el botón de objetivo. Su contador indica las notas de
+cada sesión en el **vault accesible completo**, antes de los demás filtros. Las sesiones cifradas bloqueadas no aportan
 notas, títulos, etiquetas ni grupos. Por ello, desbloquear una sesión puede cambiar esos totales.
 
 ## Qué significa cada descubrimiento
@@ -75,3 +78,46 @@ Pruebas en `SessionGraphAnalysisServiceTests`, `SessionsViewModelGraphFilterTest
 QA manual recomendado: abrir un vault con notas conectadas entre dos sesiones y notas sin sesión;
 combinar sesión/etiqueta/modo/grupo; comprobar el estado sin resultados y restablecer; navegar mediante
 doble clic; recorrer el popover con teclado y comprobar scroll con muchas sesiones/etiquetas.
+
+## Compatibilidad del renderizado
+
+Si el navegador del sistema no es utilizable, el grafo dispone de un renderizador Avalonia con las
+mismas acciones y filtros. Ver [grafo-compatibilidad-nativa.md](grafo-compatibilidad-nativa.md).
+
+## Presentación e interacción
+
+- El grafo utiliza vínculos reales como estructura principal. La **malla de sesión**, activada de
+  inicio, conecta todas las notas de cada sesión mediante vecinos espaciales; su explicación aclara que no representa enlaces. Puede ocultarse en Visualización.
+- La distribución inicial comparte la recuperación determinista del visor nativo: reserva espacio
+  proporcional a cada sesión y evita comenzar con todas las notas superpuestas. El visor web aplica
+  repulsión, colisión y atracción por vínculos para estabilizar la red dentro de esos grupos.
+- Las sesiones se agrupan por su identificador, incluso si sus nombres coinciden.
+- El tamaño de cada nodo refleja sus vecinos visibles. Al señalar una nota, destacan ella, sus
+  vecinos y sus enlaces; el resto pierde intensidad. Las etiquetas evitan notas y otras etiquetas,
+  y aparecen con mayor detalle al acercarse. Los nombres de sesión son discretos y no crecen
+  indefinidamente con el zoom.
+- Los checkbox del panel y de **Visualización** usan una plantilla rectangular monocroma,
+  con texto pulsable y foco de teclado. Los sliders muestran el multiplicador actual, avanzan en
+  pasos de 0,1 y distinguen el tramo activo con un tirador rectangular. Ambas plantillas reutilizables
+  (`RectangularCheckBox` y `RectangularSlider`) viven en `styles/ControlThemes.axaml`.
+- **Visualización** permite ajustar nombres de notas, tamaño de nodos y grosor de enlaces. Estos
+  controles y los botones de acercar, alejar y encuadrar funcionan también sin navegador.
+- Ocultar y volver a mostrar una sesión conserva sus posiciones durante la vida del visor.
+  Filtrar conserva la cámara; **aislar** encuadra explícitamente el resultado. Restablecer filtros
+  elimina también la búsqueda, pero conserva los ajustes visuales.
+- La escena deja de girar y no incorpora partículas decorativas sobre los enlaces. En el documento
+  web, una vez estabilizada la física, se repinta al cambiar cámara, interacción, datos u opciones;
+  los pulsos de enlace pendiente y rechazo mantienen su actualización mientras están activos.
+- Las opciones visuales pertenecen al viewmodel de la pantalla; no crean archivos, almacenes ni
+  propiedades nuevas en los manifiestos. Los enlaces y posiciones utilizan la persistencia existente.
+
+## Comprobaciones del visor
+
+`SessionsViewModelGraphFilterTests` cubre búsqueda combinada, aislamiento con una sola publicación,
+contadores y preservación del Markdown. `GraphPresentationUiTests` comprueba recuperación de sesiones
+ocultas, cámara y controles del documento real. Las pruebas de filtros y del visor nativo mantienen la
+cobertura de temas, etiquetas, arrastre y grafos grandes.
+
+Para QA manual: probar sesiones con nombres iguales, títulos largos, búsqueda sin resultados, ocultar
+varias sesiones y recuperarlas después de arrastrar una nota, y los extremos de los sliders en ambos
+temas. Confirmar apertura con doble clic y creación de enlaces en los dos renderizadores.

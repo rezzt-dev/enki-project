@@ -33,8 +33,8 @@ public sealed class EditorLinkedCardsUiTests
             vault.InitializeVault(Path.Combine(directory, "vault"), seedWelcomeNote: false);
             var note = vault.CreateNote("Nota vinculada");
             var kanban = new KanbanService(directory);
-            kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "one", Title = "Primera tarea", LinkedNotePath = note.FullPath });
-            kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "two", Title = "Segunda tarea", LinkedNotePath = note.FullPath });
+            kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "one", Title = "Primera tarea", LinkedNotePath = note.FullPath });
+            kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "two", Title = "Segunda tarea", LinkedNotePath = note.FullPath });
             string? opened = null;
             var vm = new EditorViewModel(vault, note, () => { }, () => { }, kanbanService: kanban, onOpenLinkedCard: id => opened = id);
             var view = new EditorView { DataContext = vm };

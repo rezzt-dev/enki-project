@@ -253,6 +253,33 @@ public class CalendarViewModelTests
         return (vm, kanbanService, taskService, reminderService);
     }
 
+    [Fact]
+    public void MoveKanbanMilestones_UpdatesCorrectDate_AndRejectsReversedRange()
+    {
+        var (vm, kanban, _, _) = CreateViewModel(out var directory);
+        try
+        {
+            var start = new DateTime(2026, 10, 22, 0, 0, 0, DateTimeKind.Local);
+            var end = start.AddDays(7);
+            var card = new KanbanCard
+            {
+                Id = "range", Title = "Entrega", StartDateUtc = start.ToUniversalTime(), DueDateUtc = end.ToUniversalTime()
+            };
+            kanban.DefaultBoard.Columns[0].Cards.Add(card);
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, start.AddDays(1), null, isOpeningMilestone: true);
+            Assert.Equal(start.AddDays(1), card.StartDateUtc?.ToLocalTime());
+            Assert.Equal(end, card.DueDateUtc?.ToLocalTime());
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, end.AddDays(1), null, isOpeningMilestone: true);
+            Assert.Equal(start.AddDays(1), card.StartDateUtc?.ToLocalTime());
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, start, null);
+            Assert.Equal(end, card.DueDateUtc?.ToLocalTime());
+            vm.MoveItem(CalendarItemSourceType.Kanban, card.Id, end.AddDays(1), null);
+            Assert.Equal(end.AddDays(1), card.DueDateUtc?.ToLocalTime());
+            Assert.Equal(start.AddDays(1), card.StartDateUtc?.ToLocalTime());
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     // ===================== Capas: colores por origen (doc 07 §1b) =====================
 
     [Fact]
@@ -270,7 +297,7 @@ public class CalendarViewModelTests
             Assert.True(kanbanRow.ShowToggle);
             // La fila madre solo marca el grupo: el color real vive en cada columna.
             Assert.False(kanbanRow.CanEditColor);
-            Assert.Equal(kanbanService.Board.Columns.Select(c => c.Title), childRows.Select(l => l.Label));
+            Assert.Equal(kanbanService.DefaultBoard.Columns.Select(c => c.Title), childRows.Select(l => l.Label));
             Assert.All(childRows, row =>
             {
                 Assert.True(row.CanEditColor);
@@ -285,13 +312,54 @@ public class CalendarViewModelTests
     }
 
     [Fact]
+    public void MultipleBoards_ShareThreeStateRowsAndRefreshCardsAndCustomColumns()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanban, _, _) = CreateViewModel(out dir);
+            foreach (var column in kanban.AllColumns) column.Cards.Clear();
+            var rows = vm.Layers.Where(l => l.IsChildRow).ToArray();
+            var second = kanban.CreateBoard("Personal");
+            Assert.Equal(rows, vm.Layers.Where(l => l.IsChildRow));
+            var due = DateTime.Today.AddHours(10).ToUniversalTime();
+            kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "first", Title = "Primera", DueDateUtc = due });
+            second.Columns[0].Cards.Add(new KanbanCard { Id = "second", Title = "Segunda", DueDateUtc = due });
+            second.Columns[1].Cards.Add(new KanbanCard { Id = "unscheduled", Title = "Sin fecha" });
+            var custom = new KanbanColumn { Id = "custom", Title = "Revisión" };
+            second.Columns.Add(custom);
+            kanban.Save();
+            vm.ReferenceDate = DateTime.Today;
+            vm.SetViewCommand.Execute(CalendarViewMode.Day);
+
+            Assert.Equal(4, vm.Layers.Count(l => l.IsChildRow));
+            Assert.Contains(vm.Layers, l => l.Label == "Personal · Revisión");
+            Assert.Equal(new[] { "first", "second" }, vm.WeekColumns[0].TimedItems.Select(i => i.Item.SourceId).OrderBy(id => id));
+            var row = vm.Layers.Single(l => l.ColorKey == CalendarLayerColorService.KanbanRoleColorKey(CoreColumnRole.Backlog));
+            row.SelectSwatchCommand.Execute("#123ABC");
+            Assert.All(vm.WeekColumns[0].TimedItems, i => Assert.Equal("#123ABC", i.Item.EffectiveCalendarColorHex));
+            Assert.Contains(vm.UnscheduledItems, i => i.SourceId == "unscheduled");
+
+            kanban.MoveCardToBoard("second", second.Id, second.Columns[1].Id);
+            Assert.Equal(CalendarLayerPalette.InProgressColorHex,
+                vm.WeekColumns[0].TimedItems.Single(i => i.Item.SourceId == "second").Item.EffectiveCalendarColorHex);
+            vm.Layers[0].IsActive = false;
+            Assert.Empty(vm.WeekColumns[0].TimedItems);
+            Assert.Empty(vm.UnscheduledItems);
+            vm.Layers[0].IsActive = true;
+            Assert.Equal(2, vm.WeekColumns[0].TimedItems.Count);
+        }
+        finally { DeleteDirectory(dir); }
+    }
+
+    [Fact]
     public void Layers_KanbanChildRowsAreNotFiltersOfTheirOwn()
     {
         var dir = string.Empty;
         try
         {
             var (vm, kanbanService, _, _) = CreateViewModel(out dir);
-            var column = kanbanService.Board.Columns[0];
+            var column = kanbanService.DefaultBoard.Columns[0];
             column.Cards.Clear();
             var localMoment = new DateTime(2026, 3, 10, 10, 0, 0, DateTimeKind.Local);
             column.Cards.Add(new KanbanCard { Id = "card-1", Title = "Tarjeta", DueDateUtc = localMoment.ToUniversalTime() });
@@ -320,7 +388,7 @@ public class CalendarViewModelTests
         try
         {
             var (vm, kanbanService, _, _) = CreateViewModel(out dir);
-            var column = kanbanService.Board.Columns[0];
+            var column = kanbanService.DefaultBoard.Columns[0];
             column.Cards.Clear();
             var localMoment = new DateTime(2026, 3, 10, 10, 0, 0, DateTimeKind.Local);
             column.Cards.Add(new KanbanCard { Id = "card-1", Title = "Tarjeta", DueDateUtc = localMoment.ToUniversalTime() });
@@ -349,14 +417,74 @@ public class CalendarViewModelTests
         }
     }
 
+    // ===================== Popup del botón "Hoy" =====================
+
     [Fact]
-    public void Layers_RenamingAKanbanColumnUpdatesItsRowLabelInPlace()
+    public void OpenTodayPopover_ListsPendingFirstThenCompleted_EachAlphabetically()
+    {
+        var dir = string.Empty;
+        try
+        {
+            var (vm, kanbanService, _, reminderService) = CreateViewModel(out dir);
+            var todayAtNoonUtc = DateTime.Today.AddHours(12).ToUniversalTime();
+            var column = kanbanService.DefaultBoard.Columns[0];
+            column.Cards.Clear();
+            column.Cards.Add(new KanbanCard { Id = "card-1", Title = "zeta", DueDateUtc = todayAtNoonUtc });
+            kanbanService.Save();
+            reminderService.Create("Beta", string.Empty, todayAtNoonUtc, "Bell");
+            var alfa = reminderService.Create("Alfa", string.Empty, todayAtNoonUtc, "Bell");
+            var gamma = reminderService.Create("Gamma", string.Empty, todayAtNoonUtc, "Bell");
+            reminderService.Create("Mañana", string.Empty, todayAtNoonUtc.AddDays(1), "Bell");
+            reminderService.ToggleCompleted(alfa.Id);
+            reminderService.ToggleCompleted(gamma.Id);
+            // El resumen del día ignora "ocultar completadas": lo hecho también se lista, abajo.
+            vm.HideCompletedItems = true;
+
+            // Abrir el resumen no navega: la vista de detrás se queda donde estaba.
+            var reference = DateTime.Today.AddMonths(-3);
+            vm.ReferenceDate = reference;
+            vm.OpenTodayPopoverCommand.Execute(null);
+
+            Assert.True(vm.IsTodayPopoverOpen);
+            Assert.Equal(reference, vm.ReferenceDate);
+            Assert.Equal(["Beta", "zeta"], vm.TodayPendingItems.Select(i => i.Title));
+            Assert.Equal(["Alfa", "Gamma"], vm.TodayCompletedItems.Select(i => i.Title));
+            Assert.False(vm.HasNoTodayItems);
+
+            // Completar desde el propio resumen mueve el item de grupo sin cerrar el diálogo.
+            vm.ToggleCompleteItemCommand.Execute(vm.TodayPendingItems.Single(i => i.Title == "Beta"));
+            Assert.Equal(["zeta"], vm.TodayPendingItems.Select(i => i.Title));
+            Assert.Equal(["Alfa", "Beta", "Gamma"], vm.TodayCompletedItems.Select(i => i.Title));
+            Assert.True(vm.IsTodayPopoverOpen);
+
+            vm.ShowTodayInCalendarCommand.Execute(null);
+            Assert.False(vm.IsTodayPopoverOpen);
+            Assert.Equal(DateTime.Today, vm.ReferenceDate);
+        }
+        finally
+        {
+            DeleteDirectory(dir);
+        }
+    }
+
+    [Fact]
+    public void Layers_RenamingCustomColumnUpdatesItsRowButCoreStateKeepsItsLabel()
     {
         var dir = string.Empty;
         try
         {
             var (vm, kanbanService, _, _) = CreateViewModel(out dir);
-            var column = kanbanService.Board.Columns[0];
+            var core = kanbanService.DefaultBoard.Columns[0];
+            var coreRow = vm.Layers.First(l => l.IsChildRow);
+            var coreLabel = coreRow.Label;
+            core.Title = "Pendientes personales";
+            kanbanService.Save();
+            Assert.Same(coreRow, vm.Layers.First(l => l.IsChildRow));
+            Assert.Equal(coreLabel, coreRow.Label);
+
+            var column = new KanbanColumn { Id = "custom", Title = "Revisión" };
+            kanbanService.DefaultBoard.Columns.Add(column);
+            kanbanService.Save();
             var row = vm.Layers.First(l => l.IsChildRow && l.Label == column.Title);
 
             column.Title = "Rebautizada";
@@ -424,7 +552,7 @@ public class CalendarViewModelTests
         try
         {
             var (vm, kanbanService, _, _) = CreateViewModel(out dir);
-            var column = kanbanService.Board.Columns[0];
+            var column = kanbanService.DefaultBoard.Columns[0];
             column.Cards.Clear();
             var originalLocal = new DateTime(2026, 3, 1, 10, 30, 0, DateTimeKind.Local);
             var card = new KanbanCard { Id = "move-me", Title = "Mover", DueDateUtc = originalLocal.ToUniversalTime() };
@@ -450,7 +578,7 @@ public class CalendarViewModelTests
         try
         {
             var (vm, kanbanService, _, _) = CreateViewModel(out dir);
-            var column = kanbanService.Board.Columns[0];
+            var column = kanbanService.DefaultBoard.Columns[0];
             column.Cards.Clear();
             var card1 = new KanbanCard { Id = "c1", Title = "Primera" };
             var card2 = new KanbanCard { Id = "c2", Title = "Segunda" };
@@ -473,7 +601,7 @@ public class CalendarViewModelTests
             vm.RequestDeleteItemCommand.Execute(item);
             vm.ConfirmDeleteItemCommand.Execute(null);
 
-            var trashed = kanbanService.Board.TrashedCards.Single(t => t.Card.Id == "c2");
+            var trashed = kanbanService.DefaultBoard.TrashedCards.Single(t => t.Card.Id == "c2");
             Assert.Equal(1, trashed.CardIndex);
         }
         finally

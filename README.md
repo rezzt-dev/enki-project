@@ -26,6 +26,7 @@ nacio de una frustracion sencilla: tener que abrir varias aplicaciones para ente
 ## QUE HACE DIFERENTE A ENKI
 
 - **tus datos son tuyos.** las notas son archivos markdown normales dentro de una carpeta que eliges. puedes abrirlos con otro editor, copiarlos, sincronizarlos o respaldarlos con la herramienta que prefieras.
+- **sincronizacion privada.** consulta la guia dentro de **ajustes → vault y archivos** o lee la [guia completa para syncthing, icloud drive y google drive](.docs/project-info/sincronizacion-privada-notas.md), con pasos para trasladar el almacen, trabajar sin conexion y resolver conflictos.
 - **funciona primero en local.** notas, archivos, kanban, calendario, recordatorios, habitos, estadisticas y sesiones funcionan sin internet. polar es una ampliacion opcional para quien quiera sincronizar tareas.
 - **conecta sin amontonar.** cada modulo se puede usar por separado, pero todos leen las mismas notas, tareas, fechas y etiquetas cuando necesitan cruzarse.
 - **protege el trabajo silenciosamente.** el autoguardado, el historial de versiones, la papelera y la deteccion de cambios externos reducen el riesgo de perder contenido sin interrumpir la escritura.
@@ -246,7 +247,7 @@ SUPABASE_ANON_KEY=<clave-publicable>
 
 si tu entorno usa `SUPABASE_PUBLISHABLE_KEY`, copia ese valor en `SUPABASE_ANON_KEY`. no uses `SUPABASE_SECRET_KEY`: enki no necesita ni debe recibir una clave secreta de servidor.
 
-sin este archivo, enki sigue funcionando con normalidad y conserva todas sus funciones locales.
+sin este archivo, los builds de desarrollo conservan todas sus funciones locales. al compilar se genera `polar.properties` con solo la URL y la clave publica; los instaladores incluyen ese archivo. `dotnet publish` exige una configuracion valida para evitar instalaciones con Polar deshabilitado. tambien puedes aportar esos valores mediante variables de entorno de compilacion. consulta [empaquetado y distribucion](.docs/project-info/empaquetado-y-distribucion.md) para configurar las releases.
 
 ---
 

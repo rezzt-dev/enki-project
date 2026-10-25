@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="280" d:DesignHeight="600"
+             x:Class="enki.Views.AssistantHistoryList"
+             x:Name="Root"
+             x:DataType="vm:AssistantViewModel">
+
+  <!-- Historial del vault abierto, con la anatomía de los paneles de Habilidades y Notas: buscador y filas
+       folder-row agrupadas en «Vault», una entrada por sesión y, al final, las conversaciones antiguas sin
+       vault asignado. Cada fila dice además si su respuesta está en curso o esperando una decisión. Lo usan la
+       columna de la sección y el desplegable del panel. -->
+  <Grid RowDefinitions="Auto,*">
+    <TextBox Grid.Row="0" Classes="search" Margin="10,10,11,6" Height="34"
+             Text="{Binding SessionSearchText}" IsVisible="{Binding HasAnySessions}"
+             PlaceholderText="{loc:Tr Assistant_History_SearchPlaceholder}"
+             AutomationProperties.Name="{loc:Tr Assistant_History_SearchPlaceholder}">
+      <TextBox.InnerLeftContent>
+        <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}" Margin="10,0,0,0" />
+      </TextBox.InnerLeftContent>
+      <TextBox.InnerRightContent>
+        <Button Classes="icon-btn" Width="24" Height="24" Margin="0,0,4,0" Command="{Binding ClearSessionSearchCommand}"
+                IsVisible="{Binding HasSessionSearch}"
+                ToolTip.Tip="{loc:Tr Assistant_History_ClearSearch}" AutomationProperties.Name="{loc:Tr Assistant_History_ClearSearch}">
+          <mi:MaterialIcon Kind="Close" Width="12" Height="12" />
+        </Button>
+      </TextBox.InnerRightContent>
+    </TextBox>
+
+    <Grid Grid.Row="1">
+      <ScrollViewer Padding="0,0,1,10">
+        <!-- Durante una respuesta no se cambia de chat (la respuesta pertenece al abierto); la lista se sigue
+             pudiendo desplazar y leer. -->
+        <ItemsControl ItemsSource="{Binding ChatGroups}" Margin="8,0,9,0" IsEnabled="{Binding !IsSending}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:AiChatGroupViewModel">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Title}" Classes="eyebrow" FontSize="10" Margin="10,14,8,4"
+                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                <TextBlock Text="{loc:Tr Assistant_History_Unassigned_Hint}" Classes="faint" FontSize="10.5" TextWrapping="Wrap"
+                           Margin="10,0,8,4" IsVisible="{Binding IsUnassigned}" />
+                <ItemsControl ItemsSource="{Binding Chats}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:AiChatSessionItemViewModel">
+                      <Border Classes="folder-row" Classes.active="{Binding IsActive}" Padding="10,0,4,0"
+                              PointerPressed="SessionRow_PointerPressed">
+                        <Border.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{loc:Tr Assistant_Unassigned_Assign, Converter={StaticResource UpperCaseConverter}}"
+                                      IsVisible="{Binding IsUnassigned}"
+                                      Command="{Binding #Root.((vm:AssistantViewModel)DataContext).AssignSessionToVaultCommand}"
+                                      CommandParameter="{Binding}">
+                              <MenuItem.Icon>
+                                <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" />
+                              </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}"
+                                      Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestDeleteSessionCommand}"
+                                      CommandParameter="{Binding}">
+                              <MenuItem.Icon>
+                                <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                              </MenuItem.Icon>
+                            </MenuItem>
+                          </ContextMenu>
+                        </Border.ContextMenu>
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" Height="48">
+                          <Panel Grid.Column="0" Width="15" Margin="0,0,10,0" VerticalAlignment="Center">
+                            <mi:MaterialIcon Kind="MessageTextOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}"
+                                             IsVisible="{Binding !HasStatus}" />
+                            <controls:LoadingSpinner Width="14" Height="14" Foreground="{DynamicResource Ink50}"
+                                             IsVisible="{Binding IsRunning}" ToolTip.Tip="{Binding StatusLabel}" />
+                          </Panel>
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding StatusLabel}" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding HasStatus}" />
+                            <TextBlock Text="{Binding Subtitle}" Classes="faint" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                       IsVisible="{Binding !HasStatus}" />
+                          </StackPanel>
+                          <Button Grid.Column="2" Classes="icon-btn row-action" Width="28" Height="28"
+                                  IsVisible="{Binding IsUnassigned}"
+                                  Command="{Binding #Root.((vm:AssistantViewModel)DataContext).AssignSessionToVaultCommand}"
+                                  CommandParameter="{Binding}"
+                                  ToolTip.Tip="{loc:Tr Assistant_Unassigned_Assign}"
+                                  AutomationProperties.Name="{loc:Tr Assistant_Unassigned_Assign}">
+                            <mi:MaterialIcon Kind="LinkVariant" Width="14" Height="14" />
+                          </Button>
+                          <Button Grid.Column="3" Classes="icon-btn row-action icon-btn-danger" Width="28" Height="28"
+                                  Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestDeleteSessionCommand}"
+                                  CommandParameter="{Binding}" IsVisible="{Binding !IsRunning}"
+                                  ToolTip.Tip="{loc:Tr Assistant_History_Delete_Tooltip}"
+                                  AutomationProperties.Name="{loc:Tr Assistant_History_Delete_Tooltip}">
+                            <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
+                          </Button>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <StackPanel Spacing="8" Margin="28,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  IsVisible="{Binding !HasAnySessions}">
+        <mi:MaterialIcon Kind="MessageTextOutline" Width="22" Height="22" Foreground="{DynamicResource Ink30}" />
+        <TextBlock Text="{loc:Tr Assistant_History_Empty}" Classes="muted" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" />
+      </StackPanel>
+      <StackPanel Spacing="10" Margin="24,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  IsVisible="{Binding HasNoSearchMatches}">
+        <TextBlock Text="{loc:Tr Assistant_History_NoMatches}" Classes="muted" FontSize="12"
+                   TextWrapping="Wrap" TextAlignment="Center" />
+        <Button Classes="ghost" HorizontalAlignment="Center" Command="{Binding ClearSessionSearchCommand}">
+          <TextBlock Text="{loc:Tr Assistant_History_ClearSearch, Converter={StaticResource UpperCaseConverter}}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

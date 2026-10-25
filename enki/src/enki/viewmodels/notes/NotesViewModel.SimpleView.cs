@@ -43,7 +43,21 @@ public sealed partial class NotesViewModel
     private bool _isSimplifiedView;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSimpleNavigatorVisible))]
+    [NotifyPropertyChangedFor(nameof(SimpleNavigatorColumn))]
     private bool _isSimpleSidebarVisible = true;
+
+    /// <summary>Navegación temporal desde el raíl: no altera la preferencia persistida del panel.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSimpleNavigatorVisible))]
+    [NotifyPropertyChangedFor(nameof(IsSimpleTreePeekActive))]
+    [NotifyPropertyChangedFor(nameof(IsSimpleSearchPeekActive))]
+    private bool _isSimpleNavigatorOpen;
+
+    public bool IsSimpleNavigatorVisible => IsSimpleSidebarVisible || IsSimpleNavigatorOpen;
+    public int SimpleNavigatorColumn => IsSimpleSidebarVisible ? 0 : 2;
+    public bool IsSimpleTreePeekActive => IsSimpleNavigatorOpen && !IsSimpleSearchMode;
+    public bool IsSimpleSearchPeekActive => IsSimpleNavigatorOpen && IsSimpleSearchMode;
 
     [ObservableProperty]
     private double _simpleSidebarWidth = 272;
@@ -52,6 +66,8 @@ public sealed partial class NotesViewModel
     /// resultados (true). Son los dos únicos iconos de la barra superior del panel — el tercero de
     /// Obsidian ("favoritos") se deja fuera a propósito.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSimpleTreePeekActive))]
+    [NotifyPropertyChangedFor(nameof(IsSimpleSearchPeekActive))]
     private bool _isSimpleSearchMode;
 
     [ObservableProperty]
@@ -96,6 +112,7 @@ public sealed partial class NotesViewModel
 
     partial void OnIsSimplifiedViewChanged(bool value)
     {
+        CloseSimpleNavigator();
         OnPropertyChanged(nameof(NewTabTooltip));
         if (value) ReloadSimpleTree();
         else SimpleTreeRoots.Clear();
@@ -118,7 +135,9 @@ public sealed partial class NotesViewModel
     /// carpetas expandidas): al vuelo, en cuanto el usuario lo cambia.</summary>
     partial void OnIsSimpleSidebarVisibleChanged(bool value)
     {
-        if (value) IsSessionMenuOpen = false;
+        CloseSimpleNavigator();
+        IsSessionMenuOpen = false;
+        IsConsistencyOpen = false;
         if (_settingsService is null) return;
         _settingsService.Settings.NotesSimpleSidebarVisible = value;
         _settingsService.Save();
@@ -155,6 +174,7 @@ public sealed partial class NotesViewModel
         foreach (var item in BuildTreeLevel(EffectiveRootPath, 0, expandedPaths)) SimpleTreeRoots.Add(item);
 
         SyncSimpleTreeSelection();
+        UpdateCutAppearance();
     }
 
     /// <summary>Un nivel del árbol: primero las subcarpetas (recursivamente), después las notas markdown
@@ -258,7 +278,37 @@ public sealed partial class NotesViewModel
     private void ShowSimpleSearch() => IsSimpleSearchMode = true;
 
     [RelayCommand]
-    private void ToggleSessionMenu() => IsSessionMenuOpen = !IsSessionMenuOpen;
+    private void ToggleSimpleTreePeek() => ToggleSimpleNavigator(search: false);
+
+    [RelayCommand]
+    private void ToggleSimpleSearchPeek() => ToggleSimpleNavigator(search: true);
+
+    private void ToggleSimpleNavigator(bool search)
+    {
+        if (IsSimpleNavigatorOpen && IsSimpleSearchMode == search)
+        {
+            CloseSimpleNavigator();
+            return;
+        }
+        IsSessionMenuOpen = false;
+        IsSimpleSearchMode = search;
+        IsSimpleNavigatorOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseSimpleNavigator()
+    {
+        if (!IsSimpleNavigatorOpen) return;
+        IsSimpleNavigatorOpen = false;
+        IsConsistencyOpen = false;
+    }
+
+    [RelayCommand]
+    private void ToggleSessionMenu()
+    {
+        CloseSimpleNavigator();
+        IsSessionMenuOpen = !IsSessionMenuOpen;
+    }
 
     [RelayCommand]
     private void SelectSessionOption(SessionOptionViewModel option)
@@ -305,7 +355,7 @@ public sealed partial class NotesViewModel
         NoteFolder created;
         try
         {
-            created = VaultService.CreateFolder(EffectiveRootPath);
+            created = _vaultService.CreateManagedFolder(EffectiveRootPath, LocalizationService.Instance["Vault_DefaultFolderName"]);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -327,7 +377,7 @@ public sealed partial class NotesViewModel
         NoteFolder created;
         try
         {
-            created = VaultService.CreateFolder(node.FullPath);
+            created = _vaultService.CreateManagedFolder(node.FullPath, LocalizationService.Instance["Vault_DefaultFolderName"]);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -401,7 +451,7 @@ public sealed partial class NotesViewModel
         {
             try
             {
-                node.UpdateFolder(VaultService.RenameFolder(node.Folder!, newName));
+                node.UpdateFolder(_vaultService.RenameManagedFolder(node.FullPath, newName));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
             {
@@ -441,7 +491,8 @@ public sealed partial class NotesViewModel
             return;
         }
 
-        _vaultService.DeleteFolder(node.Folder!);
+        FolderManager.Open(node.FullPath, EffectiveRootPath);
+        FolderManager.SelectOperationCommand.Execute("Delete");
         ReloadFolders();
         Reload(); // recarga también el árbol del panel lateral
     }
@@ -474,6 +525,7 @@ public sealed partial class NotesViewModel
         var matches = _noteSearchService.SearchTree(EffectiveRootPath, SimpleSearchText, maxResults: 200);
 
         foreach (var hit in matches) SimpleSearchResults.Add(new NoteCardViewModel(hit.Note));
+        UpdateCutAppearance();
         OnPropertyChanged(nameof(ShowSimpleSearchEmptyState));
     }
 }

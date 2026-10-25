@@ -11,12 +11,14 @@ public sealed partial class GraphGroupFilterItemViewModel : ObservableObject
 
     public string GroupId { get; }
     public string Label { get; }
+    public int NoteCount { get; }
 
     [ObservableProperty]
     private bool _isActive;
 
-    public GraphGroupFilterItemViewModel(string groupId, string label, bool isActive, Action onToggled)
+    public GraphGroupFilterItemViewModel(string groupId, string label, bool isActive, Action onToggled, int noteCount = 0)
     {
+        NoteCount = noteCount;
         GroupId = groupId;
         Label = label;
         _isActive = isActive;

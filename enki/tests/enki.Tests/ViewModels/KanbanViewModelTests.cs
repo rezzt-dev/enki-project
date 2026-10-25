@@ -59,8 +59,8 @@ public class KanbanViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out var kanbanService);
 
-        Assert.Equal(kanbanService.Board.Columns.Count, vm.Columns.Count);
-        Assert.Equal(kanbanService.Board.Name, vm.BoardName);
+        Assert.Equal(kanbanService.DefaultBoard.Columns.Count, vm.Columns.Count);
+        Assert.Equal(kanbanService.DefaultBoard.Name, vm.BoardName);
         Assert.Equal(vm.Columns.Sum(c => c.Cards.Count), vm.TotalCards);
     }
 
@@ -74,7 +74,7 @@ public class KanbanViewModelTests : IDisposable
 
         Assert.Equal(before + 1, vm.Columns.Count);
         Assert.False(vm.Columns[^1].IsCore);
-        Assert.Equal(before + 1, kanbanService.Board.Columns.Count);
+        Assert.Equal(before + 1, kanbanService.DefaultBoard.Columns.Count);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class KanbanViewModelTests : IDisposable
         vm.RequestDeleteColumnCommand.Execute(core);
 
         Assert.Equal(before, vm.Columns.Count);
-        Assert.Equal(before, kanbanService.Board.Columns.Count);
+        Assert.Equal(before, kanbanService.DefaultBoard.Columns.Count);
         Assert.Null(vm.ColumnPendingDelete);
     }
 
@@ -105,8 +105,8 @@ public class KanbanViewModelTests : IDisposable
 
         Assert.Same(added, vm.ColumnPendingDelete);
         Assert.Equal(before, vm.Columns.Count);
-        Assert.Contains(kanbanService.Board.Columns, c => c.Id == added.Id);
-        Assert.Empty(kanbanService.Board.TrashedCards);
+        Assert.Contains(kanbanService.DefaultBoard.Columns, c => c.Id == added.Id);
+        Assert.Empty(kanbanService.DefaultBoard.TrashedCards);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class KanbanViewModelTests : IDisposable
         vm.CancelDeleteColumnCommand.Execute(null);
 
         Assert.Null(vm.ColumnPendingDelete);
-        Assert.Contains(kanbanService.Board.Columns, c => c.Id == added.Id);
+        Assert.Contains(kanbanService.DefaultBoard.Columns, c => c.Id == added.Id);
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class KanbanViewModelTests : IDisposable
 
         Assert.Null(vm.ColumnPendingDelete);
         Assert.Equal(before - 1, vm.Columns.Count);
-        Assert.DoesNotContain(kanbanService.Board.Columns, c => c.Id == added.Id);
+        Assert.DoesNotContain(kanbanService.DefaultBoard.Columns, c => c.Id == added.Id);
     }
 
     /// <summary>Top 10 #4 del análisis (docs/analisis-proyecto/analisis-deficiencias-proyecto.md §4): antes
@@ -158,9 +158,9 @@ public class KanbanViewModelTests : IDisposable
         vm.RequestDeleteColumnCommand.Execute(added);
         vm.ConfirmDeleteColumnCommand.Execute(null);
 
-        Assert.DoesNotContain(kanbanService.Board.Columns, c => c.Id == added.Id);
-        var trashedFirst = kanbanService.Board.TrashedCards.Single(t => t.Card.Id == "c1");
-        var trashedSecond = kanbanService.Board.TrashedCards.Single(t => t.Card.Id == "c2");
+        Assert.DoesNotContain(kanbanService.DefaultBoard.Columns, c => c.Id == added.Id);
+        var trashedFirst = kanbanService.DefaultBoard.TrashedCards.Single(t => t.Card.Id == "c1");
+        var trashedSecond = kanbanService.DefaultBoard.TrashedCards.Single(t => t.Card.Id == "c2");
         Assert.Equal(added.Id, trashedFirst.ColumnId);
         Assert.Equal(added.Title, trashedFirst.ColumnTitle);
         Assert.Equal(0, trashedFirst.CardIndex);
@@ -207,8 +207,8 @@ public class KanbanViewModelTests : IDisposable
 
         Assert.Null(vm.ColumnPendingDelete);
         Assert.Equal(before - 1, vm.Columns.Count);
-        Assert.DoesNotContain(kanbanService.Board.Columns, c => c.Id == added.Id);
-        Assert.Contains(kanbanService.Board.TrashedCards, t => t.Card.Id == "c1");
+        Assert.DoesNotContain(kanbanService.DefaultBoard.Columns, c => c.Id == added.Id);
+        Assert.Contains(kanbanService.DefaultBoard.TrashedCards, t => t.Card.Id == "c1");
     }
 
     [Fact]
@@ -334,7 +334,7 @@ public class KanbanViewModelTests : IDisposable
         vm.ConfirmDeleteCardCommand.Execute(null);
 
         Assert.DoesNotContain(column.Cards, c => c.Id == "to-trash");
-        Assert.Contains(kanbanService.Board.TrashedCards, t => t.Card.Id == "to-trash");
+        Assert.Contains(kanbanService.DefaultBoard.TrashedCards, t => t.Card.Id == "to-trash");
         Assert.Null(vm.CardPendingDelete);
     }
 
@@ -355,7 +355,7 @@ public class KanbanViewModelTests : IDisposable
         vm.RequestDeleteCardCommand.Execute(second);
         vm.ConfirmDeleteCardCommand.Execute(null);
 
-        var trashed = kanbanService.Board.TrashedCards.Single(t => t.Card.Id == "second");
+        var trashed = kanbanService.DefaultBoard.TrashedCards.Single(t => t.Card.Id == "second");
         Assert.Equal(1, trashed.CardIndex);
     }
 
@@ -373,7 +373,7 @@ public class KanbanViewModelTests : IDisposable
 
         Assert.Null(vm.CardPendingDelete);
         Assert.Contains(column.Cards, c => c.Id == "keep");
-        Assert.DoesNotContain(kanbanService.Board.TrashedCards, t => t.Card.Id == "keep");
+        Assert.DoesNotContain(kanbanService.DefaultBoard.TrashedCards, t => t.Card.Id == "keep");
     }
 
     /// <summary>docs/ajustes-docs/01-continuidad-y-proteccion-de-datos.md §3 — con "preguntar antes de
@@ -401,7 +401,7 @@ public class KanbanViewModelTests : IDisposable
 
         Assert.Null(vm.CardPendingDelete);
         Assert.DoesNotContain(column.Cards, c => c.Id == "instant");
-        Assert.Contains(kanbanService.Board.TrashedCards, t => t.Card.Id == "instant");
+        Assert.Contains(kanbanService.DefaultBoard.TrashedCards, t => t.Card.Id == "instant");
     }
 
     [Fact]
@@ -488,7 +488,7 @@ public class KanbanViewModelTests : IDisposable
 
         Assert.Equal(KanbanQuickFilter.None, vm.QuickFilter);
         Assert.True(column.Cards.All(c => c.IsVisible));
-        Assert.NotNull(kanbanService.Board);
+        Assert.NotNull(kanbanService.DefaultBoard);
     }
 
     [Fact]
@@ -534,7 +534,7 @@ public class KanbanViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out var kanbanService);
 
-        foreach (var column in kanbanService.Board.Columns) column.Cards.Clear();
+        foreach (var column in kanbanService.DefaultBoard.Columns) column.Cards.Clear();
         vm.Reload();
 
         Assert.True(vm.IsBoardEmpty);
@@ -559,7 +559,7 @@ public class KanbanViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out var kanbanService);
 
-        foreach (var column in kanbanService.Board.Columns) column.Cards.Clear();
+        foreach (var column in kanbanService.DefaultBoard.Columns) column.Cards.Clear();
         vm.Reload();
         Assert.False(vm.HasHighPriorityCards);
         Assert.False(vm.HasOverdueCards);
@@ -599,7 +599,7 @@ public class KanbanViewModelTests : IDisposable
         Assert.False(double.IsNaN(vm.BoardColumnWidth));
         Assert.True(vm.BoardColumnWidth > 0);
         Assert.Equal(ScrollBarVisibility.Auto, vm.BoardHorizontalScrollBarVisibility);
-        Assert.NotNull(kanbanService.Board);
+        Assert.NotNull(kanbanService.DefaultBoard);
     }
 
     // ===================== Tareas archivadas =====================
@@ -623,7 +623,7 @@ public class KanbanViewModelTests : IDisposable
         Assert.Equal(1, vm.ArchivedCount);
         Assert.True(card.IsArchived);
         Assert.NotNull(card.Card.CompletedAtUtc);
-        Assert.Contains(kanbanService.Board.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
+        Assert.Contains(kanbanService.DefaultBoard.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
     }
 
     [Fact]
@@ -655,7 +655,7 @@ public class KanbanViewModelTests : IDisposable
         Assert.Equal(boardCards, vm.TotalCards);
         Assert.Equal(1, vm.ArchivedCount);
         Assert.DoesNotContain(vm.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
-        Assert.Contains(kanbanService.Board.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
+        Assert.Contains(kanbanService.DefaultBoard.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
     }
 
     [Fact]
@@ -802,10 +802,10 @@ public class KanbanViewModelTests : IDisposable
         vm.RequestDeleteArchivedCardCommand.Execute(card);
         vm.ConfirmDeleteCardCommand.Execute(null);
 
-        Assert.Single(kanbanService.Board.TrashedCards, t => t.Card.Id == "archive-me");
+        Assert.Single(kanbanService.DefaultBoard.TrashedCards, t => t.Card.Id == "archive-me");
         Assert.Empty(vm.ArchivedCards);
         Assert.Equal(0, vm.ArchivedCount);
-        Assert.DoesNotContain(kanbanService.Board.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
+        Assert.DoesNotContain(kanbanService.DefaultBoard.Columns.SelectMany(c => c.Cards), c => c.Id == "archive-me");
     }
 
     [Fact]

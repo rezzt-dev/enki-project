@@ -41,6 +41,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private const int AgendaWindowDays = 30;
 
     private readonly CalendarAggregationService _aggregationService;
+    private readonly ExternalCalendarService? _externalCalendarService;
     private readonly CalendarLayerColorService _layerColorService;
     private readonly KanbanService _kanbanService;
     private readonly PolarTaskService _polarTaskService;
@@ -104,6 +105,28 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// of its own.</summary>
     public bool HasUnscheduledItems => UnscheduledItems.Count > 0;
 
+    /// <summary>Popup del botón "Hoy": todo lo que cae hoy, pendiente arriba y completado abajo, cada
+    /// grupo en orden alfabético. Ignora a propósito capas, filtros secundarios y "ocultar completadas"
+    /// — es un resumen del día completo, no otra vista de la rejilla filtrada. Se reconstruye en
+    /// <see cref="Rebuild"/>, así que marcar un item como hecho desde el propio popup lo mueve de grupo.</summary>
+    public ObservableCollection<CalendarItemViewModel> TodayPendingItems { get; } = [];
+
+    /// <summary>Ver <see cref="TodayPendingItems"/>.</summary>
+    public ObservableCollection<CalendarItemViewModel> TodayCompletedItems { get; } = [];
+
+    public bool HasTodayPendingItems => TodayPendingItems.Count > 0;
+    public bool HasTodayCompletedItems => TodayCompletedItems.Count > 0;
+    public bool HasNoTodayItems => !HasTodayPendingItems && !HasTodayCompletedItems;
+    public int TodayPendingCount => TodayPendingItems.Count;
+    public int TodayCompletedCount => TodayCompletedItems.Count;
+
+    /// <summary>Cabecera del popup de "Hoy" — fecha larga en la cultura activa.</summary>
+    [ObservableProperty]
+    private string _todayPopoverHeaderLabel = string.Empty;
+
+    [ObservableProperty]
+    private bool _isTodayPopoverOpen;
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -148,37 +171,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSidebarCollapsed;
 
-    /// <summary>Drives the "reveal" transition when navigating between periods or switching views
-    /// (docs/calendar-feature/10-diseno-visual-y-componentes.md §8: Opacity 0→1 + a small
-    /// <c>TranslateTransform.Y</c>, 200–300ms <c>CubicEaseOut</c>) — set to the "just appeared" state by
-    /// <see cref="AnimateReveal"/> right before the relevant Rebuild, then eased back to steady state on
-    /// the next dispatcher pass so the view actually renders one frame at the offset state first. Shared
-    /// by all three grid containers in CalendarView.axaml (only one is ever visible at a time), and
-    /// deliberately *not* touched by a plain data-refresh <see cref="Rebuild"/> — doc §8 is about
-    /// navigation, not about re-flashing the grid every time a card is edited elsewhere.</summary>
+    /// <summary>Solicita una entrada visual; la vista gestiona los fotogramas y su cancelación.</summary>
     [ObservableProperty]
-    private double _revealOpacity = 1;
+    private int _revealRevision;
 
-    [ObservableProperty]
-    private double _revealOffsetY;
-
-    /// <summary>~8px per doc §8 ("no los 24px de la web... una distancia menor evita que la animación se
-    /// sienta lenta en uso repetido").</summary>
-    private const double RevealTravelPixels = 8;
-
-    private void AnimateReveal()
-    {
-        RevealOpacity = 0;
-        RevealOffsetY = RevealTravelPixels;
-        // One dispatcher pass later (after this frame has actually rendered the "just appeared" state)
-        // ease back to steady state — setting both values back-to-back in the same call stack would never
-        // give Avalonia's Transitions a "from" frame to animate away from.
-        Dispatcher.UIThread.Post(() =>
-        {
-            RevealOpacity = 1;
-            RevealOffsetY = 0;
-        }, DispatcherPriority.Loaded);
-    }
+    private void AnimateReveal() => RevealRevision++;
 
     /// <summary>Ajustes › Calendario "Mostrar barra de desplazamiento del sidebar" —
     /// drives <see cref="SidebarScrollBarVisibility"/> below, bound only on the sidebar's ScrollViewer in
@@ -380,9 +377,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
         PolarAuthService polarAuthService,
         SettingsService settingsService,
         NotificationService notificationService,
-        Action<CalendarItemViewModel> openItemEditor)
+        Action<CalendarItemViewModel> openItemEditor,
+        ExternalCalendarService? externalCalendarService = null)
     {
         _aggregationService = aggregationService;
+        _externalCalendarService = externalCalendarService;
         _layerColorService = layerColorService;
         _kanbanService = kanbanService;
         _polarTaskService = polarTaskService;
@@ -422,12 +421,17 @@ public sealed partial class CalendarViewModel : ViewModelBase
         _polarTaskService.DataChanged += Rebuild;
         _reminderService.RemindersChanged += Rebuild;
         _polarAuthService.LinkStateChanged += HandlePolarLinkChanged;
+        if (_externalCalendarService is not null) _externalCalendarService.DataChanged += Rebuild;
 
         // The "now" line (docs/calendar-feature/10-diseno-visual-y-componentes.md §3) needs to creep
         // forward even when nothing else changes — refreshed on its own light timer instead of piggy-
         // backing on a full Rebuild, so it never re-flows the rest of the hour grid just to move a line.
         _nowTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
-        _nowTimer.Tick += (_, _) => RefreshNowIndicator();
+        _nowTimer.Tick += async (_, _) =>
+        {
+            RefreshNowIndicator();
+            if (_externalCalendarService is not null) await _externalCalendarService.RefreshAllAsync();
+        };
         _nowTimer.Start();
 
         _searchDebounceTimer = new DispatcherTimer { Interval = EditorDebounce.Delay };
@@ -438,6 +442,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         };
 
         Rebuild();
+        if (_externalCalendarService is not null) _ = _externalCalendarService.RefreshAllAsync();
     }
 
     /// <summary>Refresca las etiquetas localizadas cuando <see cref="MainWindowViewModel"/> coordina
@@ -521,6 +526,36 @@ public sealed partial class CalendarViewModel : ViewModelBase
         Rebuild();
     }
 
+    /// <summary>Botón "Hoy" de la barra: abre el resumen del día (<see cref="TodayPendingItems"/>/
+    /// <see cref="TodayCompletedItems"/>) como diálogo modal. No navega ni reconstruye la rejilla — solo
+    /// refresca las dos listas del día, así abrirlo es instantáneo y la vista de detrás no parpadea.</summary>
+    [RelayCommand]
+    private void OpenTodayPopover()
+    {
+        RebuildToday();
+        IsTodayPopoverOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseTodayPopover() => IsTodayPopoverOpen = false;
+
+    /// <summary>"Ver en el calendario" del pie del resumen: cierra el diálogo y lleva la vista activa a hoy.</summary>
+    [RelayCommand]
+    private void ShowTodayInCalendar()
+    {
+        IsTodayPopoverOpen = false;
+        GoToToday();
+    }
+
+    /// <summary>Pulsar un item del resumen abre su editor real — el diálogo se cierra antes, porque el
+    /// editor vive en otra pantalla y el overlay modal taparía la ventana entera.</summary>
+    [RelayCommand]
+    private void OpenTodayItem(CalendarItemViewModel item)
+    {
+        IsTodayPopoverOpen = false;
+        if (item.CanEdit) _openItemEditor(item);
+    }
+
     [RelayCommand]
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
 
@@ -558,6 +593,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         RebuildLayers();
         RebuildTagFilters();
         RebuildUnscheduled();
+        RebuildToday();
 
         switch (ActiveView)
         {
@@ -591,6 +627,30 @@ public sealed partial class CalendarViewModel : ViewModelBase
             .Where(i => CalendarItemFilter.MatchesSecondaryFilters(i, priorityFilters, tagFilters, HideCompletedItems, HideGhostOccurrences))
             .Select(i => i with { IsSearchMatch = CalendarItemFilter.MatchesSearch(i, SearchText) && !string.IsNullOrWhiteSpace(SearchText) })
             .ToList();
+    }
+
+    private void RebuildToday()
+    {
+        var today = DateTime.Today;
+        var items = _aggregationService.BuildItems(today.ToUniversalTime(), today.AddDays(1).ToUniversalTime(),
+                includeGhostOccurrences: !HideGhostOccurrences)
+            .OrderBy(i => i.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        TodayPendingItems.Clear();
+        TodayCompletedItems.Clear();
+        foreach (var item in items)
+            (item.IsCompleted ? TodayCompletedItems : TodayPendingItems).Add(item);
+
+        OnPropertyChanged(nameof(HasTodayPendingItems));
+        OnPropertyChanged(nameof(HasTodayCompletedItems));
+        OnPropertyChanged(nameof(HasNoTodayItems));
+        var longDate = today.ToString("D", CultureInfo.CurrentCulture);
+        TodayPopoverHeaderLabel = longDate.Length > 0
+            ? char.ToUpper(longDate[0], CultureInfo.CurrentCulture) + longDate[1..]
+            : longDate;
+        OnPropertyChanged(nameof(TodayPendingCount));
+        OnPropertyChanged(nameof(TodayCompletedCount));
     }
 
     private void RebuildMonth()
@@ -738,7 +798,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// color (renombrar una columna, elegir un color), las filas se actualizan en sitio: así el emergente
     /// del color no se cierra solo en cuanto se pulsa un color.
     ///
-    /// Bajo la fila KANBAN cuelga una sub-fila por columna del tablero (doc §1b). Son solo color: la
+    /// Bajo KANBAN aparecen tres estados compartidos y las columnas personalizadas (doc §1b). Son solo color: la
     /// visibilidad sigue siendo de todo Kanban a la vez, que es lo que esta sección hacía hasta ahora.</summary>
     private void RebuildLayers()
     {
@@ -751,15 +811,26 @@ public sealed partial class CalendarViewModel : ViewModelBase
                 CalendarItemViewModel.KanbanLayerColorHex, false, false, false)
         };
 
-        // Las columnas van en el orden del tablero, el mismo que ve el usuario en Kanban.
-        desired.AddRange(_kanbanService.Board.Columns.Select(column =>
+        // Los tres estados base aparecen una sola vez; las columnas personalizadas conservan
+        // su identidad y el nombre del tablero para distinguir títulos repetidos.
+        foreach (var (role, labelKey) in new[]
+                 {
+                     (CoreColumnRole.Backlog, "Kanban_Seed_ColumnTodo"),
+                     (CoreColumnRole.InProgress, "Kanban_Seed_ColumnInProgress"),
+                     (CoreColumnRole.Done, "Kanban_Seed_ColumnDone")
+                 })
         {
-            var colorKey = CalendarLayerColorService.KanbanColumnColorKey(column.Id);
-            return new LayerRow(
-                CalendarAggregationService.KanbanLayerKey, colorKey, column.Title,
-                CalendarLayerColorService.Resolve(colors, colorKey),
-                CanEditColor: true, _layerColorService.HasCustomColor(colorKey), IsChildRow: true);
-        }));
+            AddKanbanColorRow(CalendarLayerColorService.KanbanRoleColorKey(role),
+                LocalizationService.Instance[labelKey]);
+        }
+        foreach (var column in _kanbanService.AllColumns.Where(c => c.Role == CoreColumnRole.None))
+            AddKanbanColorRow(CalendarLayerColorService.KanbanColumnColorKey(column.Id),
+                _kanbanService.ColumnLabel(column));
+
+        void AddKanbanColorRow(string colorKey, string label) => desired.Add(new LayerRow(
+            CalendarAggregationService.KanbanLayerKey, colorKey, label,
+            CalendarLayerColorService.Resolve(colors, colorKey),
+            CanEditColor: true, _layerColorService.HasCustomColor(colorKey), IsChildRow: true));
 
         desired.Add(new LayerRow(
             CalendarAggregationService.ReminderLayerKey, CalendarAggregationService.ReminderLayerKey,
@@ -773,6 +844,17 @@ public sealed partial class CalendarViewModel : ViewModelBase
                 .Select(l => new LayerRow(
                     l.Id, l.Id, l.Title, CalendarLayerColorService.Resolve(colors, l.Id),
                     CanEditColor: true, _layerColorService.HasCustomColor(l.Id), IsChildRow: false)));
+        }
+
+        if (_externalCalendarService is not null)
+        {
+            var index = 0;
+            foreach (var feed in _externalCalendarService.Subscriptions)
+            {
+                desired.Add(new LayerRow(CalendarAggregationService.ExternalLayerPrefix + feed.Id,
+                    string.Empty, feed.Name, CalendarLayerPalette.PickerSwatches[index++ % CalendarLayerPalette.PickerSwatches.Count],
+                    CanEditColor: false, HasCustomColor: false, IsChildRow: false));
+            }
         }
 
         // La identidad de una fila es su clave de color (única por fila, a diferencia de Key, que las
@@ -889,9 +971,11 @@ public sealed partial class CalendarViewModel : ViewModelBase
     {
         QuickCreate = new CalendarQuickCreateViewModel(
             localDate, localTime,
-            _kanbanService.Board.Columns,
+            _kanbanService.AllColumns.ToList(),
             _polarTaskService.Store.Lists.Where(l => !l.IsDeleted).ToList(),
             _polarAuthService.IsLinked);
+
+        QuickCreate.SetBoards(_kanbanService.Boards, _kanbanService.DefaultBoard);
 
         if (preferredType is { } type && (type != CalendarQuickCreateType.PolarTask || _polarAuthService.IsLinked))
             QuickCreate.SelectedType = type;
@@ -927,8 +1011,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private void SaveQuickCreate()
     {
         if (QuickCreate is not { CanSave: true } draft) return;
-        CreateFromQuickCreate(draft);
-        QuickCreate = null;
+        if (CreateFromQuickCreate(draft) is not null) QuickCreate = null;
     }
 
     /// <summary>"Más opciones" (doc 06 §1, point 6) — saves with whatever minimal data is already filled
@@ -938,8 +1021,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     {
         if (QuickCreate is not { CanSave: true } draft) return;
         var created = CreateFromQuickCreate(draft);
-        QuickCreate = null;
-        if (created is not null) _openItemEditor(created);
+        if (created is not null) { QuickCreate = null; _openItemEditor(created); }
     }
 
     /// <summary>Color de calendario de una sola capa — solo lo usa
@@ -964,8 +1046,21 @@ public sealed partial class CalendarViewModel : ViewModelBase
                     Id = Guid.NewGuid().ToString("N"), Title = title, DueDateUtc = dueUtc,
                     DurationMinutes = durationMinutes
                 };
+                if (!_kanbanService.Boards.Any(b => b.Columns.Contains(column)))
+                {
+                    _notificationService.Push(LocalizationService.Instance["Kanban_Multi_Boards"],
+                        LocalizationService.Instance["Kanban_Multi_MissingDestination"], NotificationSeverity.Warning);
+                    return null;
+                }
                 column.Cards.Add(card);
-                _kanbanService.Save();
+                try { _kanbanService.Save(); }
+                catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+                {
+                    column.Cards.Remove(card);
+                    _notificationService.Push(LocalizationService.Instance["Kanban_Multi_Boards"],
+                        LocalizationService.Instance["Kanban_Multi_SaveFailed"], NotificationSeverity.Error);
+                    return null;
+                }
                 _notificationService.PushLocalized(
                     LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Title"),
                     LocalizedTextFormatter.Format("Calendar_Notify_ItemCreated_Message", title, LocalizedTextFormatter.Format("Calendar_Label_Kanban")),
@@ -1027,7 +1122,10 @@ public sealed partial class CalendarViewModel : ViewModelBase
     /// read-only detail, since from the calendar there's no reason to make "ver" and "editar" two separate
     /// hops when the destination screen already gates further changes behind its own save button.</summary>
     [RelayCommand]
-    private void RequestEditItem(CalendarItemViewModel item) => _openItemEditor(item);
+    private void RequestEditItem(CalendarItemViewModel item)
+    {
+        if (item.CanEdit) _openItemEditor(item);
+    }
 
     [RelayCommand]
     private void ToggleCompleteItem(CalendarItemViewModel item)
@@ -1064,7 +1162,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
     {
         if (subtask.ParentSourceType == CalendarItemSourceType.Kanban)
         {
-            var model = _kanbanService.Board.Columns.SelectMany(c => c.Cards)
+            var model = _kanbanService.AllColumns.SelectMany(c => c.Cards)
                 .SelectMany(c => c.Subtasks).FirstOrDefault(s => s.Id == subtask.Id);
             if (model is null) return;
             model.IsDone = !model.IsDone;
@@ -1122,48 +1220,40 @@ public sealed partial class CalendarViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Same soft-delete-to-trash path as <c>KanbanViewModel.ConfirmDeleteCard</c> (doc 05 §6) —
-    /// duplicated rather than called through <c>KanbanViewModel</c> because the calendar only ever holds a
-    /// reference to <see cref="KanbanService"/>, never to the Kanban page's own viewmodel.</summary>
+    /// <summary>Comparte con Kanban el envío a la papelera a través de <see cref="KanbanService.TrashCard"/>.
+    /// El calendario solo depende del servicio, sin referencias al viewmodel de esa pantalla.</summary>
     private void DeleteKanbanCard(string cardId)
     {
-        foreach (var column in _kanbanService.Board.Columns)
-        {
-            var card = column.Cards.FirstOrDefault(c => c.Id == cardId);
-            if (card is null) continue;
-
-            var index = column.Cards.IndexOf(card);
-            column.Cards.Remove(card);
-            _kanbanService.Board.TrashedCards.Add(new KanbanTrashedCard
-            {
-                Card = card,
-                ColumnId = column.Id,
-                ColumnTitle = column.Title,
-                CardIndex = index
-            });
-            _kanbanService.Save();
-            return;
-        }
+        if (_kanbanService.FindCardLocation(cardId) is not null) _kanbanService.TrashCard(cardId);
     }
 
     // ===================== Fase 3: arrastrar y soltar para reprogramar (doc 05 §2) =====================
 
-    /// <summary>Rewrites the positioning date (and, when <paramref name="newLocalTime"/> is given, the
-    /// time) of the real source model behind a dragged <see cref="CalendarItemViewModel"/> — resolved by
-    /// <paramref name="sourceType"/>/<paramref name="sourceId"/> rather than by passing the dragged
-    /// viewmodel itself, since Avalonia's <c>DataTransfer</c> can only carry primitive data across a drag
-    /// operation (see CalendarView.axaml.cs's drag-source handlers). Dropping on a whole-day target (a Mes
-    /// cell or a Semana/Día "todo el día" strip) passes <c>null</c> for <paramref name="newLocalTime"/>,
-    /// which keeps whatever time of day the item already had — dropping on an hour slot always sets both.</summary>
-    public void MoveItem(CalendarItemSourceType sourceType, string sourceId, DateTime newLocalDate, TimeSpan? newLocalTime)
+    /// <summary>Reprograma la entidad real identificada por <paramref name="sourceType"/> y
+    /// <paramref name="sourceId"/>. El controlador de arrastre comparte este camino entre chips y filas
+    /// sin programar. Con <paramref name="newLocalTime"/> nulo (Mes, todo el día o Agenda) conserva la
+    /// hora original; al soltar en una franja horaria actualiza tanto la fecha como la hora.</summary>
+    public void MoveItem(CalendarItemSourceType sourceType, string sourceId, DateTime newLocalDate, TimeSpan? newLocalTime, bool isOpeningMilestone = false)
     {
         switch (sourceType)
         {
             case CalendarItemSourceType.Kanban:
             {
-                var card = _kanbanService.Board.Columns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
+                var card = _kanbanService.AllColumns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
                 if (card is null) return;
-                card.DueDateUtc = CombineUtc(newLocalDate, newLocalTime, card.DueDateUtc);
+                var newDate = isOpeningMilestone
+                    ? CombineUtc(newLocalDate, TimeSpan.Zero, card.StartDateUtc)
+                    : CombineUtc(newLocalDate, newLocalTime, card.DueDateUtc);
+                var start = isOpeningMilestone ? newDate : card.StartDateUtc;
+                var end = isOpeningMilestone ? card.DueDateUtc : newDate;
+                if (start is { } opening && end is { } closing && opening > closing)
+                {
+                    _notificationService.Push(LocalizationService.Instance["Calendar_Label_Kanban"],
+                        LocalizationService.Instance["Kanban_DateRange_Invalid"], NotificationSeverity.Warning);
+                    return;
+                }
+                if (isOpeningMilestone) card.StartDateUtc = newDate;
+                else card.DueDateUtc = newDate;
                 _kanbanService.Save();
                 break;
             }
@@ -1212,7 +1302,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         {
             case CalendarItemSourceType.Kanban:
             {
-                var card = _kanbanService.Board.Columns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
+                var card = _kanbanService.AllColumns.SelectMany(c => c.Cards).FirstOrDefault(c => c.Id == sourceId);
                 if (card is null) return;
                 card.DurationMinutes = clamped;
                 _kanbanService.Save();

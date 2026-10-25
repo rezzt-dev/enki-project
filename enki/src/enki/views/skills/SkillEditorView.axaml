@@ -3,23 +3,54 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="enki.Views.SkillEditorView"
+             x:Name="EditorRoot"
              x:DataType="vm:SkillEditorViewModel">
 
-  <!-- Sin toolbar propia: el encabezado (volver, título, estado de guardado) vive en SkillsView, que
-       embebe este control (Opción A, docs/ia-skills/especificacion-desarrollo.md §10). Mismo estilo
-       visual que EditorView.axaml — misma fuente, mismo padding — pero enlazado a un string plano
-       (SkillEditorViewModel.Text) en vez de un TextDocument por pestaña, ya que aquí no hay varias
-       skills abiertas a la vez que necesiten conservar su propio historial de deshacer. -->
-  <ae:TextEditor x:Name="Editor"
-                 Background="Transparent"
-                 Foreground="{DynamicResource TextPrimaryBrush}"
-                 FontSize="14.5"
-                 ShowLineNumbers="False"
-                 WordWrap="True"
-                 Padding="20"
-                 LineNumbersForeground="{DynamicResource TextMutedBrush}" />
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border IsVisible="{Binding !IsReadOnly, ElementName=EditorRoot}" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="16,10">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <StackPanel x:Name="FormattingTools" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Classes="icon-btn" Tag="bold" Click="Format_Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_Bold_Tooltip}" AutomationProperties.Name="{loc:Tr Editor_Toolbar_Bold_Tooltip}"><mi:MaterialIcon Kind="FormatBold" Width="16" Height="16" /></Button>
+          <Button Classes="icon-btn" Tag="italic" Click="Format_Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_Italic_Tooltip}" AutomationProperties.Name="{loc:Tr Editor_Toolbar_Italic_Tooltip}"><mi:MaterialIcon Kind="FormatItalic" Width="16" Height="16" /></Button>
+          <Button Classes="icon-btn" Tag="heading" Click="Format_Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_H2_Tooltip}" AutomationProperties.Name="{loc:Tr Editor_Toolbar_H2_Tooltip}"><mi:MaterialIcon Kind="FormatHeader2" Width="16" Height="16" /></Button>
+          <Button Classes="icon-btn" Tag="list" Click="Format_Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_BulletList_Tooltip}" AutomationProperties.Name="{loc:Tr Editor_Toolbar_BulletList_Tooltip}"><mi:MaterialIcon Kind="FormatListBulleted" Width="16" Height="16" /></Button>
+          <Button Classes="icon-btn" Tag="code" Click="Format_Click" ToolTip.Tip="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}" AutomationProperties.Name="{loc:Tr Editor_Toolbar_CodeBlock_Tooltip}"><mi:MaterialIcon Kind="CodeBraces" Width="16" Height="16" /></Button>
+        </StackPanel>
+        <ToggleButton Grid.Column="1" x:Name="SourceToggle" Classes="tag-chip toolbar-chip" Content="{loc:Tr Skills_Source, Converter={StaticResource UpperCaseConverter}}"
+                      IsChecked="{Binding IsSourceMode, ElementName=EditorRoot, Mode=TwoWay}"
+                      IsCheckedChanged="SourceToggle_Changed" Margin="8,0"
+                      VerticalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" />
+        <Button Grid.Column="2" x:Name="SaveButton" Classes="pill" Command="{Binding SaveCommand}" Content="{loc:Tr Skills_Save, Converter={StaticResource UpperCaseConverter}}" />
+      </Grid>
+    </Border>
+    <ae:TextEditor Grid.Row="1" x:Name="Editor" Background="Transparent"
+                   Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14.5"
+                   ShowLineNumbers="True" WordWrap="True" Padding="24"
+                   LineNumbersForeground="{DynamicResource TextMutedBrush}" />
+    <Border Grid.Row="2" x:Name="EditorStatus" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="16,10">
+      <StackPanel Spacing="6">
+      <TextBlock Text="{Binding SaveError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding SaveError, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+      <Button Classes="pill" HorizontalAlignment="Left" Content="{loc:Tr Skills_Reload, Converter={StaticResource UpperCaseConverter}}" Command="{Binding RequestReloadCommand}" IsVisible="{Binding SaveError, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+      <TextBlock x:Name="EditorHint" Text="{loc:Tr Skills_EditorHelp}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+    <controls:ModalOverlayHost Grid.RowSpan="3" IsOpen="{Binding IsReloadConfirmationOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Tr Skills_DiscardWarning}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+            <Button Classes="pill" Content="{loc:Tr Skills_Cancel_Button, Converter={StaticResource UpperCaseConverter}}" Command="{Binding CancelReloadCommand}" />
+            <Button Classes="pill-primary" Content="{loc:Tr Skills_Reload, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ConfirmReloadCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+  </Grid>
 </UserControl>

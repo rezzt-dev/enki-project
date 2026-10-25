@@ -1,4 +1,5 @@
 using enki.Localization;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace enki.ViewModels;
 
@@ -6,8 +7,11 @@ namespace enki.ViewModels;
 /// entrada ".." que sube a la carpeta padre — misma pieza que <see cref="FileFolderCardViewModel"/> en
 /// Archivos. Es un tipo aparte de <see cref="SkillFolderViewModel"/> (la fila del panel lateral) porque
 /// no tiene estado de árbol: una tarjeta no se expande, no se renombra en línea y no recuerda hijos.</summary>
-public sealed class SkillFolderCardViewModel
+public sealed partial class SkillFolderCardViewModel : ObservableObject
 {
+    [ObservableProperty]
+    private bool _isDropTarget;
+
     public string Name { get; }
     public string FullPath { get; }
 

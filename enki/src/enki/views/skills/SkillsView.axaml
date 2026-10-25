@@ -10,7 +10,7 @@
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.SkillsView"
-             x:Name="Root"
+             x:Name="Root" Background="{DynamicResource AppBackgroundBrush}"
              x:DataType="vm:SkillsViewModel">
 
   <!-- Contenedor de la sección IA Skills. No dibuja la sección: elige entre sus dos disposiciones
@@ -22,6 +22,11 @@
        Se monta una sola disposición, no las dos con IsVisible, por el mismo motivo que en NotesView: cada
        una contiene su propio SkillEditorView, y dos editores vivos sobre el mismo SkillEditorViewModel
        escribirían los dos sobre su propiedad Text. -->
+
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+N" Command="{Binding NewSkillCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding NewFolderCommand}" />
+  </UserControl.KeyBindings>
 
   <Grid>
     <ContentControl x:Name="LayoutHost" />

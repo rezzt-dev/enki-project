@@ -64,6 +64,10 @@ public static class LogService
     /// interruptor "Registro de depuración" de Ajustes › General (<c>AppSettings.DebugLoggingEnabled</c>).</summary>
     public static void SetDebugEnabled(bool enabled) => _minimumLevel = enabled ? LogLevel.Debug : LogLevel.Warning;
 
+    /// <summary>Si una línea <see cref="Debug(string)"/> llegaría a escribirse ahora mismo. Lo consulta
+    /// <see cref="StartupTrace"/>, que tiene que saber cuándo puede dejar de acumular sus marcas.</summary>
+    public static bool DebugEnabled => _minimumLevel <= LogLevel.Debug;
+
     public static void Debug(string message) => Write(LogLevel.Debug, message, null);
 
     public static void Warning(string message, Exception? exception = null) => Write(LogLevel.Warning, message, exception);

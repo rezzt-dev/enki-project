@@ -17,6 +17,7 @@ public partial class FilesView : UserControl
     public FilesView()
     {
         InitializeComponent();
+        ExplorerClipboardKeys.Attach(this);
 
         DataContextChanged += (_, _) => ApplyLayout();
         Loaded += (_, _) => ApplyLayout();

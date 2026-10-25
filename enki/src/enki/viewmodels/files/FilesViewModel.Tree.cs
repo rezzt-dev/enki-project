@@ -63,13 +63,32 @@ public sealed partial class FilesViewModel
     private bool _isTreeView;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTreePeekActive))]
+    [NotifyPropertyChangedFor(nameof(IsSearchPeekActive))]
     private bool _isTreeSearchMode;
 
     [ObservableProperty]
     private string _treeSearchText = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTreeNavigatorVisible))]
+    [NotifyPropertyChangedFor(nameof(TreeNavigatorColumn))]
     private bool _isTreeSidebarVisible = true;
+
+    /// <summary>Navegación temporal sobre la previsualización, sin alterar el panel guardado.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTreeNavigatorVisible))]
+    [NotifyPropertyChangedFor(nameof(IsTreePeekActive))]
+    [NotifyPropertyChangedFor(nameof(IsSearchPeekActive))]
+    private bool _isTreeNavigatorOpen;
+
+    [ObservableProperty]
+    private bool _isTreeSessionMenuOpen;
+
+    public bool IsTreeNavigatorVisible => IsTreeSidebarVisible || IsTreeNavigatorOpen;
+    public int TreeNavigatorColumn => IsTreeSidebarVisible ? 0 : 2;
+    public bool IsTreePeekActive => IsTreeNavigatorOpen && !IsTreeSearchMode;
+    public bool IsSearchPeekActive => IsTreeNavigatorOpen && IsTreeSearchMode;
 
     [ObservableProperty]
     private double _treeSidebarWidth = 272;
@@ -114,6 +133,8 @@ public sealed partial class FilesViewModel
 
     partial void OnIsTreeViewChanged(bool value)
     {
+        CloseTreeNavigator();
+        IsTreeSessionMenuOpen = false;
         if (_loadingNavigationPreferences) return;
 
         // Entrar en el modo árbol lo reconstruye: mientras está fuera de pantalla no se mantiene al día
@@ -122,6 +143,7 @@ public sealed partial class FilesViewModel
         // estaban abiertas y reutiliza la tarjeta de la previsualización que hubiera abierta.
         if (value) RebuildTree();
         RefreshPreviewNavigation();
+        UpdateCutAppearance();
 
         if (_settingsService is null) return;
         _settingsService.Settings.FilesViewMode = value ? "Tree" : "Browser";
@@ -130,6 +152,8 @@ public sealed partial class FilesViewModel
 
     partial void OnIsTreeSidebarVisibleChanged(bool value)
     {
+        CloseTreeNavigator();
+        IsTreeSessionMenuOpen = false;
         if (_settingsService is null || _loadingNavigationPreferences) return;
         _settingsService.Settings.FilesTreeSidebarVisible = value;
         _settingsService.Save();
@@ -141,6 +165,7 @@ public sealed partial class FilesViewModel
     {
         if (!value) TreeSearchText = string.Empty;
         OnPropertyChanged(nameof(ShowTreeSearchEmptyState));
+        UpdateCutAppearance();
     }
 
     partial void OnHasTreeItemsChanged(bool value) => OnPropertyChanged(nameof(ShowTreeEmptyState));
@@ -148,6 +173,11 @@ public sealed partial class FilesViewModel
     /// <summary>Mantiene marcado en el árbol el archivo que se está previsualizando, venga de donde venga
     /// la orden de abrirlo (el propio árbol, la rejilla del otro modo, un resultado de búsqueda o los botones
     /// de anterior/siguiente), y al día esos mismos botones.</summary>
+    partial void OnActivePreviewChanging(FileCardViewModel? value)
+    {
+        if (!ReferenceEquals(ActivePreview, value)) ActivePreview?.MediaPreview?.Close();
+    }
+
     partial void OnActivePreviewChanged(FileCardViewModel? value)
     {
         _treeSelectionPath = value?.File.FullPath;
@@ -169,6 +199,41 @@ public sealed partial class FilesViewModel
 
     [RelayCommand]
     private void ToggleTreeSidebar() => IsTreeSidebarVisible = !IsTreeSidebarVisible;
+
+    [RelayCommand]
+    private void ToggleTreePeek() => ToggleTreeNavigator(search: false);
+
+    [RelayCommand]
+    private void ToggleTreeSearchPeek() => ToggleTreeNavigator(search: true);
+
+    private void ToggleTreeNavigator(bool search)
+    {
+        if (IsTreeNavigatorOpen && IsTreeSearchMode == search)
+        {
+            CloseTreeNavigator();
+            return;
+        }
+        IsTreeSessionMenuOpen = false;
+        IsTreeSearchMode = search;
+        IsTreeNavigatorOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseTreeNavigator() => IsTreeNavigatorOpen = false;
+
+    [RelayCommand]
+    private void ToggleTreeSessionMenu()
+    {
+        CloseTreeNavigator();
+        IsTreeSessionMenuOpen = !IsTreeSessionMenuOpen;
+    }
+
+    [RelayCommand]
+    private void SelectTreeSessionOption(SessionOptionViewModel option)
+    {
+        IsTreeSessionMenuOpen = false;
+        SelectedSessionOption = option;
+    }
 
     /// <summary>Persiste el ancho del panel al soltar el separador, no en cada píxel del arrastre — mismo
     /// criterio que el panel de la vista simplificada de Notas y el del árbol de Skills.</summary>
@@ -435,6 +500,7 @@ public sealed partial class FilesViewModel
         if (node.Card is { } card)
         {
             OpenCard(card);
+            CloseTreeNavigator();
             return;
         }
 
@@ -545,6 +611,9 @@ public sealed partial class FilesViewModel
     private void CreateFolderInTree(string parentPath)
     {
         if (TryCreateFolder(parentPath) is not { } created) return;
+        IsTreeSearchMode = false;
+        IsTreeSessionMenuOpen = false;
+        if (!IsTreeSidebarVisible) IsTreeNavigatorOpen = true;
         Refresh();
         ExpandTreeAncestorsOf(created.FullPath);
 
@@ -592,13 +661,20 @@ public sealed partial class FilesViewModel
 
     /// <summary>Soltar un archivo sobre un nodo del árbol lo mueve a esa carpeta (o a la carpeta que
     /// contiene el archivo sobre el que se soltó, que es lo que el usuario ve como "aquí").</summary>
-    public void DropOnTreeNode(FileTreeItemViewModel target, string sourceFilePath) =>
-        MoveTreeFileTo(sourceFilePath, target.ContainerPath);
+    public void DropOnTreeNode(FileTreeItemViewModel target, string sourceFilePath)
+    {
+        if (Directory.Exists(sourceFilePath)) MoveFolderTo(sourceFilePath, target.ContainerPath);
+        else MoveTreeFileTo(sourceFilePath, target.ContainerPath);
+    }
 
     /// <summary>Soltar sobre el fondo vacío del árbol saca el archivo de su carpeta y lo devuelve a la
     /// raíz efectiva —la del vault, o la de la sesión elegida—, que es el equivalente de la fila "TODOS"
     /// del panel del modo explorador.</summary>
-    public void DropOnTreeRoot(string sourceFilePath) => MoveTreeFileTo(sourceFilePath, EffectiveRootPath);
+    public void DropOnTreeRoot(string sourceFilePath)
+    {
+        if (Directory.Exists(sourceFilePath)) MoveFolderTo(sourceFilePath, EffectiveRootPath);
+        else MoveTreeFileTo(sourceFilePath, EffectiveRootPath);
+    }
 
     private void MoveTreeFileTo(string sourceFilePath, string destinationFolderPath)
     {

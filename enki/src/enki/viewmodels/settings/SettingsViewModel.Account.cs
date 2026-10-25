@@ -16,6 +16,9 @@ namespace enki.ViewModels;
 /// regardless of which file declares them — so no behavior change.</summary>
 public sealed partial class SettingsViewModel
 {
+    /// <summary>Destino concreto de los datos sincronizados, mostrado en la política de privacidad.</summary>
+    public string PolarProjectEndpoint => _polarAuthService.IsConfigured ? SupabaseConfig.Url ?? "—" : "—";
+
     // ===================== Privacidad › vínculo con Polar =====================
 
     public bool IsSupabaseConfigured => _polarAuthService.IsConfigured;

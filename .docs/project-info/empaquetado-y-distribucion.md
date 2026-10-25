@@ -103,6 +103,23 @@ autocontenido de arriba y lo envuelve en el paquete final. Los tres siguen el mi
 `local.properties` — las credenciales locales de Supabase de quien compila (ver
 `enki.csproj`) — para que nunca viajen dentro de un paquete distribuido.
 
+La configuración pública sí viaja en `polar.properties`, junto al ejecutable (también en publicaciones
+single-file). `enki/build/PolarConfiguration.targets` lo genera con **solo** `SUPABASE_URL` y
+`SUPABASE_ANON_KEY`, a partir de `enki/local.properties` o del entorno de compilación. El entorno tiene
+prioridad como pareja completa; se acepta también `SUPABASE_PUBLISHABLE_KEY`. Se exige HTTPS y una
+clave publicable `sb_publishable_...` o JWT con rol `anon`; nunca una clave secreta/service_role.
+
+`dotnet build` permite desarrollar sin configuración. `dotnet publish` falla si falta o es inválida,
+para no generar instaladores con «Polar no configurado». Los scripts comprueban también la presencia
+del archivo al reutilizar una publicación con `--skip-publish`/`-SkipPublish`. No reutilices un publish
+antiguo: vuelve a compilar para generar el archivo nuevo.
+
+Para releases de GitHub Actions, define las variables de repositorio `SUPABASE_URL` y
+`SUPABASE_ANON_KEY` (o `SUPABASE_PUBLISHABLE_KEY`) en Settings → Secrets and variables → Actions.
+También se admiten secrets con esos nombres. Deben corresponder al mismo proyecto que usa Polar.
+El instalador incluye esos valores públicos; el usuario instalado solo tiene que vincular su cuenta.
+
+
 ### Linux — `enki/packaging/linux/build-linux-package.sh`
 
 ```bash
@@ -157,6 +174,7 @@ verificación pendiente.
 enki/packaging/macos/build-macos-package.sh --rid osx-arm64 --version 0.2.0
 ```
 
+El empaquetado con motor multimedia requiere macOS, herramientas de Xcode y Python 3.
 Arma `Enki.app` (`Contents/MacOS` con el publish completo, `Contents/Resources/enki.icns`,
 `Contents/Info.plist` generado desde `Info.plist.template`) siguiendo la
 [documentación oficial de Avalonia sobre despliegue en macOS](https://docs.avaloniaui.net/docs/deployment/macOS),
@@ -176,7 +194,7 @@ Ajustes → Privacidad y seguridad, o clic derecho → Abrir). Firmar de verdad 
 cuenta de pago de Apple Developer — fuera de alcance mientras Enki no tenga distribución pública (ver
 `README.md`, "Estado del proyecto").
 
-Verificado en esta sesión: el ensamblado completo del bundle y el `.zip`, cross-compilando `osx-arm64`
+Verificación histórica anterior al motor multimedia incluido: el ensamblado del bundle y el `.zip`, cross-compilando `osx-arm64`
 desde este entorno Linux (sin SDK de macOS) y confirmando con `plistlib` de Python que el `Info.plist`
 generado es válido y tiene los valores esperados (`CFBundleVersion`, `CFBundleIdentifier`,
 `NSHumanReadableCopyright`...). El `.dmg` y la firma ad-hoc no se han podido verificar porque `hdiutil` y
@@ -278,3 +296,37 @@ los dos contrastes:
 - Los PNGs de 256/512/1024 son salidas independientes del maestro 1024×1024; `build-linux-package.sh` usa
   hoy los de 256 y 512 para el tema de iconos `hicolor` (ver arriba). El de 1024 queda disponible para
   cualquier otra integración con el SO que pida un PNG más grande.
+
+
+## Motor multimedia incluido o preparado por el instalador
+
+El usuario no tiene que instalar VLC por separado:
+
+- **Windows:** el paquete NuGet oficial VideoLAN.LibVLC.Windows 3.0.24 aporta `libvlc/<RID>/`, con
+  bibliotecas y plugins. Solo se publica la arquitectura elegida y esos archivos quedan fuera del
+  single-file. El script de Inno Setup comprueba ambas bibliotecas y el códec FFmpeg antes de empaquetar;
+  su copia recursiva los lleva al directorio de Enki.
+- **macOS:** `bundle-media-runtime.sh` descarga la distribución oficial 3.0.24 durante el empaquetado,
+  valida un SHA-256 fijado por arquitectura y extrae bibliotecas/plugins en `Contents/MacOS/libvlc/`.
+  Ajusta `@rpath`, firma las bibliotecas y prueba su carga en un host de la misma arquitectura. El bundle
+  se firma después con el flujo existente. Se incluyen licencias y referencia al código fuente. No usa
+  la antigua dependencia NuGet de macOS (solo Intel) ni requiere `/Applications/VLC.app` o Homebrew.
+- **Linux `.deb`:** el gestor de paquetes instala automáticamente las dependencias multimedia al instalar
+  Enki desde su instalador gráfico o con `apt install ./enki_…deb`. `dpkg -i` por sí solo no resuelve
+  dependencias y no es el flujo recomendado.
+- **Linux `.tar.gz`:** su `install.sh` ejecuta primero `install-media-runtime.sh`. Detecta `ID`/`ID_LIKE`
+  de `/etc/os-release` y usa APT (Debian/Ubuntu), Pacman (Arch/derivados), DNF (Fedora) o Zypper (openSUSE).
+  En Arch instala `libvlc` **y** `vlc-plugins-all`: el motor base no garantiza FFmpeg ni salida gráfica.
+  No modifica repositorios, no fuerza una actualización completa del sistema y aborta si faltan permisos,
+  red o paquetes. La desinstalación de Enki conserva estas dependencias compartidas.
+
+La instalación Linux puede requerir conexión y la contraseña de administrador del sistema. La aplicación
+no descarga ejecutables ni solicita privilegios al reproducir un archivo. El `.tar.gz` necesita ejecutar
+su instalador; copiar solo el binario no prepara dependencias. Los códecs disponibles en Fedora/openSUSE
+dependen de los repositorios que ya tenga configurados el sistema.
+
+Verificación: `MediaInstallerTests` ejecuta los scripts con gestores simulados (sin tocar el sistema),
+comprueba distribución/derivados, orden de APT, rechazo de sistemas desconocidos y propagación de errores.
+El empaquetado macOS valida arquitectura y carga nativa en su runner; Windows rechaza publicaciones sin
+motor o plugins. Fuentes del empaquetado: [VideoLAN macOS 3.0.24](https://download.videolan.org/pub/videolan/vlc/3.0.24/macosx/)
+y [plugins oficiales de Arch](https://archlinux.org/packages/extra/x86_64/vlc-plugins-all/).

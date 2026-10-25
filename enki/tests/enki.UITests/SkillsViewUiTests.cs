@@ -1,6 +1,10 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using enki.Services;
@@ -115,6 +119,44 @@ public class SkillsViewUiTests : IDisposable
         window.Close();
     }
 
+    [Fact]
+    public void CollapsedTreeRail_ExposesActions_AndOpensBrowseOrSearch()
+    {
+        var (view, vm, window) = CreateView(treeMode: true);
+        try
+        {
+            vm.IsTreeSidebarVisible = false;
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var tree = view.GetVisualDescendants().OfType<SkillsTreeView>().Single();
+            var rail = tree.FindControl<Grid>("CollapsedRail")!;
+            Assert.True(rail.IsEffectivelyVisible);
+            Assert.Equal(52, rail.Bounds.Width);
+
+            foreach (var name in new[] { "RailTreeButton", "RailSearchButton", "RailNewSkillButton",
+                         "RailNewFolderButton", "RailImportButton", "RailExportButton",
+                         "RailCollapseButton", "RailCommunityButton", "RailBrowserButton" })
+            {
+                var button = tree.FindControl<Button>(name)!;
+                Assert.True(button.IsEffectivelyVisible, name);
+                Assert.NotNull(button.Command);
+            }
+
+            var search = tree.FindControl<Button>("RailSearchButton")!;
+            search.Command!.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(vm.IsTreeSidebarVisible);
+            Assert.True(vm.IsTreeSearchMode);
+            Assert.True(tree.FindControl<TextBox>("TreeSearchBox")!.IsEffectivelyVisible);
+
+            vm.IsTreeSidebarVisible = false;
+            var browse = tree.FindControl<Button>("RailTreeButton")!;
+            browse.Command!.Execute(null);
+            Assert.True(vm.IsTreeSidebarVisible);
+            Assert.False(vm.IsTreeSearchMode);
+        }
+        finally { window.Close(); }
+    }
+
     /// <summary>Cambiar de disposición intercambia la vista montada en vez de dejar las dos vivas — cada
     /// una lleva su propio editor de skills, y dos editores sobre el mismo viewmodel escribirían los dos
     /// sobre su texto (mismo motivo que en <c>NotesView</c>).</summary>
@@ -171,4 +213,137 @@ public class SkillsViewUiTests : IDisposable
 
         window.Close();
     }
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CreatingAndRenamingFolder_WithMountedView_DoesNotReenter(bool treeMode)
+    {
+        var (_, vm, window) = CreateView(treeMode);
+        if (treeMode)
+        {
+            vm.NewTreeFolderAtRootCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var node = vm.SkillTreeRoots.Single();
+            node.EditingName = "Organizada";
+            vm.CommitRenameTreeItemCommand.Execute(node);
+        }
+        else
+        {
+            vm.NewFolderCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var folder = vm.RootFolders.Single();
+            folder.EditingName = "Organizada";
+            vm.CommitRenameFolderCommand.Execute(folder);
+        }
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        Assert.True(Directory.Exists(Path.Combine(_skillsDir, "Organizada")));
+        Assert.Contains("Organizada", RenderedText(window), StringComparison.Ordinal);
+        window.Close();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Detail_SourceToggleShowsFrontmatterWithoutChangingTheFile(bool treeMode)
+    {
+        SeedLibrary();
+        var (view, vm, window) = CreateView(treeMode);
+        vm.SelectSkillCommand.Execute(vm.Skills.Single());
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        var preview = view.GetVisualDescendants().OfType<SkillEditorView>().Single(v => v.IsReadOnly);
+        var editor = preview.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        Assert.True(editor.IsReadOnly);
+        Assert.False(preview.FindControl<Border>("EditorStatus")!.IsVisible);
+        Assert.DoesNotContain("name:", editor.Text);
+        var detail = preview.FindAncestorOfType<SkillDetailView>()!;
+        var sourceToggle = detail.FindControl<Avalonia.Controls.Primitives.ToggleButton>("DetailSourceToggle")!;
+        Assert.True(sourceToggle.IsEffectivelyVisible);
+        Assert.False(preview.FindControl<Avalonia.Controls.Primitives.ToggleButton>("SourceToggle")!.IsEffectivelyVisible);
+        sourceToggle.IsChecked = true;
+        Assert.Contains("name: Suelta", editor.Text);
+        sourceToggle.IsChecked = false;
+        Assert.DoesNotContain("name:", editor.Text);
+        Assert.False(editor.ShowLineNumbers);
+        Assert.Equal(vm.SelectedSkill!.Model.Content, File.ReadAllText(vm.SelectedSkill.FilePath));
+        window.Close();
+    }
+
+    [Fact]
+    public void SwitchingEditedSkill_ClearsUndoHistory()
+    {
+        SeedLibrary();
+        var (view, vm, window) = CreateView(true);
+        vm.EditSkillCommand.Execute(vm.Skills.Single());
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        var editorView = view.GetVisualDescendants().OfType<SkillEditorView>().Single(v => !v.IsReadOnly);
+        var editor = editorView.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        editor.AppendText("\nCambio");
+        vm.EditSkillCommand.Execute(vm.SkillTreeRoots.Single(n => n.IsFolder).Children.Single().Skill!);
+        Assert.Contains("name: Redactor", editor.Text);
+        Assert.False(editor.Document.UndoStack.CanUndo);
+        vm.CloseEditorCommand.Execute(null);
+        window.Close();
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    public async Task MarkdownDrop_ImportsOnlyIntoTargetFolder(bool treeMode, bool cardTarget)
+    {
+        SeedLibrary();
+        var external = Path.Combine(_tempDir, "external.md");
+        File.WriteAllText(external, "# Externa");
+        var (view, _, window) = CreateView(treeMode);
+        using var transfer = new DataTransfer();
+        transfer.Add(DataTransferItem.CreateFile((await window.StorageProvider.TryGetFileFromPathAsync(external))!));
+        Interactive target = cardTarget
+            ? view.GetVisualDescendants().OfType<Button>().First(b => b.DataContext is SkillFolderCardViewModel { Name: "escritura" })
+            : view.GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("folder-row") &&
+                (b.DataContext is SkillFolderViewModel { Name: "escritura" } || b.DataContext is SkillTreeItemViewModel { Name: "escritura" }));
+        var over = new DragEventArgs(DragDrop.DragOverEvent, transfer, target, default, KeyModifiers.None);
+        target.RaiseEvent(over);
+        Assert.Equal(DragDropEffects.Copy, over.DragEffects);
+        target.RaiseEvent(new DragEventArgs(DragDrop.DropEvent, transfer, target, default, KeyModifiers.None));
+        Assert.True(File.Exists(Path.Combine(_skillsDir, "escritura", "external.md")));
+        Assert.False(File.Exists(Path.Combine(_skillsDir, "external.md")));
+        Assert.True(File.Exists(external));
+        window.Close();
+    }
+
+    [Fact]
+    public void InternalDropOnTreeFolder_DoesNotBubbleBackToRoot()
+    {
+        SeedLibrary();
+        var (view, _, window) = CreateView(true);
+        var path = Path.Combine(_skillsDir, "suelta.md");
+        var target = view.GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("folder-row") && b.DataContext is SkillTreeItemViewModel { Name: "escritura" });
+        using var transfer = new DataTransfer();
+        transfer.Add(DataTransferItem.Create(DataFormat.CreateStringApplicationFormat("com.enki.skill-path"), path));
+        target.RaiseEvent(new DragEventArgs(DragDrop.DropEvent, transfer, target, default, KeyModifiers.None));
+        Assert.False(File.Exists(path));
+        Assert.True(File.Exists(Path.Combine(_skillsDir, "escritura", "suelta.md")));
+        window.Close();
+    }
+
+    [Fact]
+    public void EditorFormatting_UsesSelectionAndPersistsMarkdown()
+    {
+        SeedLibrary();
+        var (view, vm, window) = CreateView(true);
+        vm.EditSkillCommand.Execute(vm.Skills.Single());
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        var editorView = view.GetVisualDescendants().OfType<SkillEditorView>().Single(v => !v.IsReadOnly);
+        var editor = editorView.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        editor.Select(editor.Text.IndexOf("Cuerpo", StringComparison.Ordinal), 6);
+        var bold = editorView.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Tag, "bold"));
+        bold.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Contains("**Cuerpo**", vm.ActiveEditor!.Text);
+        vm.CloseEditorCommand.Execute(null);
+        Assert.Contains("**Cuerpo**", File.ReadAllText(Path.Combine(_skillsDir, "suelta.md")));
+        window.Close();
+    }
+
 }

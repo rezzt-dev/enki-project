@@ -112,4 +112,26 @@ public class VaultSettingsServiceTests : IDisposable
 
         Assert.False(Directory.Exists(_vaultPath));
     }
+
+    [Fact]
+    public void EnsureVaultId_CreatesItOnce_AndKeepsItAcrossReloads()
+    {
+        var vault = CreateVault();
+        var service = new VaultSettingsService(vault);
+        Assert.Null(service.Settings.VaultId);
+
+        var id = service.EnsureVaultId();
+
+        Assert.Equal(id, service.EnsureVaultId());
+        Assert.Equal(id, new VaultSettingsService(vault).Settings.VaultId);
+        Assert.DoesNotContain(id, VaultSettingsService.PathIdentity(_vaultPath), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PathIdentity_IsStableForTheSameFolder_AndDistinctForAnother()
+    {
+        Assert.Equal(VaultSettingsService.PathIdentity(_vaultPath), VaultSettingsService.PathIdentity(_vaultPath + Path.DirectorySeparatorChar + "."));
+        Assert.NotEqual(VaultSettingsService.PathIdentity(_vaultPath), VaultSettingsService.PathIdentity(_vaultPath + "2"));
+        Assert.Equal("pathnone", VaultSettingsService.PathIdentity(""));
+    }
 }

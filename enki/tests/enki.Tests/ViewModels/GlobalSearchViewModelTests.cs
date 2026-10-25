@@ -86,7 +86,7 @@ public class GlobalSearchViewModelTests : IDisposable
             notePath,
             "# Nota global\n\nTexto de prueba.\n\n---\ntags: [global]\n---");
 
-        _kanban.Board.Columns[0].Cards.Add(new KanbanCard
+        _kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
         {
             Id = Guid.NewGuid().ToString("N"),
             Title = "Tarjeta global",
@@ -120,7 +120,7 @@ public class GlobalSearchViewModelTests : IDisposable
             Path.Combine(_vaultDirectory, "a-nota.md"),
             "# A nota\n\nCoincide.");
 
-        _kanban.Board.Columns[0].Cards.Add(new KanbanCard
+        _kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
         {
             Id = Guid.NewGuid().ToString("N"),
             Title = "B tarjeta",
@@ -188,7 +188,7 @@ public class GlobalSearchViewModelTests : IDisposable
             Path.Combine(_vaultDirectory, "nota-con-tag.md"),
             "---\ntags: [etiqueta-global]\n---\n\n# Nota con tag\n\nCuerpo.");
 
-        _kanban.Board.Columns[0].Cards.Add(new KanbanCard
+        _kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
         {
             Id = Guid.NewGuid().ToString("N"),
             Title = "Tarjeta con tag",

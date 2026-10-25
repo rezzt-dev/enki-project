@@ -3,10 +3,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:controls="clr-namespace:enki.Controls"
+        xmlns:models="clr-namespace:enki.Models"
         xmlns:vm="clr-namespace:enki.ViewModels"
         xmlns:views="clr-namespace:enki.Views"
         xmlns:conv="clr-namespace:enki.Converters"
         xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+        xmlns:motion="clr-namespace:enki.Views"
         xmlns:loc="clr-namespace:enki.Localization"
         mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="820"
         x:Class="enki.MainWindow"
@@ -35,6 +38,9 @@
     </DataTemplate>
     <DataTemplate DataType="{x:Type vm:SkillsViewModel}">
       <views:SkillsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:AssistantViewModel}">
+      <views:AssistantView />
     </DataTemplate>
     <DataTemplate DataType="{x:Type vm:SessionsViewModel}">
       <views:SessionsView />
@@ -86,6 +92,7 @@
        RenderTransform suelto porque mide a su hijo y reporta el tamaño YA escalado como su propio
        DesiredSize — así el layout entero (sidebar + contenido + botones flotantes de la barra de
        título) reflowea correctamente al hacer zoom en vez de recortarse o dejar hueco muerto. -->
+  <Grid>
   <LayoutTransformControl>
     <LayoutTransformControl.LayoutTransform>
       <ScaleTransform ScaleX="{Binding UiZoomScale}" ScaleY="{Binding UiZoomScale}" />
@@ -93,339 +100,27 @@
 
   <Grid>
 
-  <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsVaultReady}">
+  <!-- La shell no se declara aquí: se construye cuando la pantalla de arranque ya está delante, para que
+       el primer fotograma de la ventana no tenga que esperar a inflar sus ~300 líneas de XAML (ver
+       MainWindow.BuildShell y views/shell/ShellView.axaml). Ocupa el primer puesto del árbol porque lo que
+       venga después —las pantallas de configuración y los botones de la barra de título— se
+       dibuja por encima. La cortina usa ZIndex para cubrirlos también durante la carga. -->
+  <ContentControl x:Name="ShellHost" />
 
-    <!-- ===================== Sidebar =====================
-         Oculto por completo en modo enfoque/zen (propuesta 7, docs/propuesta-nuevas-funcionalidades.md) —
-         IsZenMode mirrors whichever note is currently focused (ver MainWindowViewModel.OnNotesPropertyChanged),
-         y solo se activa desde dentro de una nota, así que fuera del editor de Notas siempre queda en
-         false y el sidebar se comporta exactamente igual que hoy.
 
-         Sin margen: el sidebar va pegado a los bordes de la ventana. El "flotante" de 10px que llevaba
-         (Margin="10,10,0,10") nunca se llegó a rematar como panel flotante real —ni sombra, ni radio, ni
-         borde en los lados libres, solo un hueco— así que con un tema de alto contraste (p. ej. dark-dev,
-         app-background #000 contra sidebar #050505) ese hueco se leía como una costura de píxeles a la
-         izquierda en vez de como un panel despegado. -->
-    <Border Grid.Column="0" IsVisible="{Binding !IsZenMode}">
-      <Border Width="{Binding SidebarWidth}" CornerRadius="0"
-              Background="{DynamicResource SidebarBackgroundBrush}">
-        <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,1,0">
-          <Border.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Width" Duration="0:0:0.16" Easing="CubicEaseOut" />
-            </Transitions>
-          </Border.Transitions>
+  <!-- Pantalla de arranque: mientras se construyen y cargan las secciones (ver
+       MainWindowViewModel.StartSectionWarmUp) la ventana no es interactiva y esto la tapa entera, incluida
+       la barra lateral, para que nadie navegue a medio cargar. La vista lleva su propia entrada/salida
+       animada y su propio logo (SetLogo, desde UpdateBrandIcon de este mismo code-behind), así que aquí
+       solo se le pasa el estado. -->
 
-          <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="14,18,14,16">
+  <!-- Sin ViewModel los enlaces todavía no pueden resolverse: el valor por defecto de IsVisible es
+       true. El fallback impide que la bienvenida se dibuje antes de saber si realmente hace falta. -->
+  <views:LanguageSetupView x:Name="LanguageSetupScreen" DataContext="{Binding LanguageSetup}"
+                           IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LanguageSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}, FallbackValue=False}" />
 
-            <!-- Brand header — logo, text, and (only while expanded) the toggle button all share this
-                 one row so they line up on the same vertical center. Collapsed: the toggle moves to its
-                 own row below (see the second Button further down) instead of squeezing into this row,
-                 because the collapsed rail (76px) never has to fit the logo and a 34px button side by
-                 side — the middle "*" column's contribution drops to 0 once the title StackPanel hides,
-                 so centering the Grid makes the logo sit with equal margins on both sides instead of
-                 flush left. The logo is sized to 32x32 so its solid fill reads at the same visual weight
-                 as the borderless 20px icons in the rail below it, instead of looking undersized next to
-                 them.
-
-                 El Border es también el recorte del logo: con una imagen personalizada circular
-                 (Ajustes › Apariencia › Logo) BrandLogoCornerRadius pasa a 16 y ClipToBounds la redondea.
-                 Es la única forma circular del sistema de diseño; con el icono por defecto, o con una
-                 imagen cuadrada, el radio vuelve a 0 como todo lo demás. -->
-            <Grid Grid.Row="0" Classes="brand-header" Classes.collapsed="{Binding !IsSidebarExpanded}"
-                  ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,14"
-                  Background="Transparent" PointerPressed="TitleBar_PointerPressed">
-              <Border Grid.Column="0" Width="32" Height="32"
-                      CornerRadius="{Binding BrandLogoCornerRadius}" ClipToBounds="True">
-                <Image Name="BrandIcon" Width="32" Height="32" Stretch="{Binding BrandLogoStretch}"
-                       RenderOptions.BitmapInterpolationMode="HighQuality" />
-              </Border>
-
-              <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center"
-                          IsVisible="{Binding IsSidebarExpanded}">
-                <TextBlock Text="ENKI" FontSize="15" FontWeight="Bold" LetterSpacing="1" />
-                <TextBlock Text="{loc:Tr Shell_BrandTagline}" Classes="faint" FontSize="9.5" LetterSpacing="1.5" />
-              </StackPanel>
-
-              <!-- Expanded-only toggle: same row as the logo/title, vertically centered alongside them.
-                   The collapsed-rail toggle below is a separate Button (own row) rather than this one
-                   just moving, since collapsing this row's "*" column to 0 would otherwise pull the
-                   toggle flush against the logo instead of leaving it centered in a 76px rail. -->
-              <Button Grid.Column="2" Classes="icon-btn sidebar-toggle" VerticalAlignment="Center"
-                      Command="{Binding ToggleSidebarCommand}" ToolTip.Tip="{loc:Tr Shell_ToggleSidebarTooltip}"
-                      AutomationProperties.Name="{loc:Tr Shell_ToggleSidebarTooltip}"
-                      IsVisible="{Binding IsSidebarExpanded}">
-                <Border Classes="sidebar-toggle-box" Width="32" Height="32" CornerRadius="0"
-                        Background="Transparent">
-                  <mi:MaterialIcon Kind="{Binding SidebarToggleIcon}" Width="20" Height="20"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-              </Button>
-            </Grid>
-
-            <!-- Collapsed-rail toggle: own row, centered like every other rail square. Hidden while
-                 expanded (see the Button above, inside the header row, for that state) instead of both
-                 being visible and just repositioned via alignment, since IsVisible="False" collapses
-                 this row to 0 height and removes it from layout entirely. -->
-            <Button Grid.Row="1" Classes="icon-btn sidebar-toggle collapsed"
-                    Command="{Binding ToggleSidebarCommand}"
-                    Margin="4,0,4,14" ToolTip.Tip="{loc:Tr Shell_ToggleSidebarTooltip}"
-                    AutomationProperties.Name="{loc:Tr Shell_ToggleSidebarTooltip}"
-                    IsVisible="{Binding !IsSidebarExpanded}">
-              <!-- Hover fill lives on this Border instead of the Button's own ContentPresenter so it's
-                   pixel-exact 32x32 with sharp corners — same box as the logo Border above — instead of
-                   trusting FluentTheme's default Button padding/border-thickness to net out to the same
-                   size. -->
-              <Border Classes="sidebar-toggle-box" Width="32" Height="32" CornerRadius="0"
-                      Background="Transparent">
-                <mi:MaterialIcon Kind="{Binding SidebarToggleIcon}" Width="20" Height="20"
-                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-            </Button>
-
-            <!-- Selector de vault (T4, .docs/project-info/multi-vault-en-caliente.md): el rótulo
-                 dice qué carpeta está abierta —la pregunta que se hace quien separa trabajo y vida
-                 personal en dos vaults— y al pulsarlo se despliega la lista de recientes. Fila propia
-                 entre el brand header y la navegación en vez de dentro del header: el header ya carga con
-                 el logo, el nombre de la app y el botón de plegar, y ahí el nombre del vault se leería
-                 como parte de la marca. Plegado queda solo el icono, con el nombre en el tooltip, igual
-                 que cualquier otra fila del raíl. -->
-            <Grid Grid.Row="2" Name="VaultSwitcherRow">
-              <Button Name="VaultSwitcherTrigger" Classes="nav-item" Margin="0,4,0,0"
-                      Classes.collapsed="{Binding !IsSidebarExpanded}"
-                      Classes.active="{Binding VaultSwitcher.IsOpen}"
-                      IsVisible="{Binding VaultSwitcherEnabled}"
-                      Command="{Binding VaultSwitcher.ToggleCommand}"
-                      ToolTip.Tip="{Binding VaultSwitcher.ActiveVaultName}"
-                      ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}"
-                      AutomationProperties.Name="{loc:Tr VaultSwitcher_Tooltip}">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                  <mi:MaterialIcon Grid.Column="0" Kind="SafeSquareOutline" Width="20" Height="20"
-                                   VerticalAlignment="Center" />
-                  <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" MinWidth="0"
-                              IsVisible="{Binding IsSidebarExpanded}">
-                    <TextBlock Text="{loc:Tr VaultSwitcher_Eyebrow, Converter={StaticResource UpperCaseConverter}}"
-                               Classes="faint" FontSize="9" LetterSpacing="1.5" />
-                    <TextBlock Text="{Binding VaultSwitcher.ActiveVaultName}" FontSize="12"
-                               TextTrimming="CharacterEllipsis" MaxLines="1" />
-                  </StackPanel>
-                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Width="16" Height="16"
-                                   VerticalAlignment="Center" IsVisible="{Binding IsSidebarExpanded}" />
-                </Grid>
-              </Button>
-
-              <!-- Anclado a la fila y no al botón: con el selector oculto (Ajustes › General › Barra
-                   lateral) el botón deja de tener caja, pero "Cambiar de vault" de la paleta de comandos
-                   sigue abriendo este mismo popup, que necesita un ancla con posición real. La fila vacía
-                   mide 0 de alto, así que ocultar el botón no deja hueco. -->
-              <Popup PlacementTarget="{Binding #VaultSwitcherRow}" Placement="BottomEdgeAlignedLeft"
-                     VerticalOffset="6" IsLightDismissEnabled="True"
-                     OverlayInputPassThroughElement="{Binding #VaultSwitcherTrigger}"
-                     IsOpen="{Binding VaultSwitcher.IsOpen, Mode=TwoWay}">
-                <Border Classes="dropdown-popover" Width="320">
-                  <StackPanel Spacing="12">
-                    <TextBlock Text="{loc:Tr VaultSwitcher_RecentsTitle, Converter={StaticResource UpperCaseConverter}}"
-                               Classes="eyebrow" FontSize="10.5" />
-
-                    <ItemsControl ItemsSource="{Binding VaultSwitcher.Recents}"
-                                  IsVisible="{Binding VaultSwitcher.HasOtherVaults}">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <StackPanel Spacing="2" />
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:RecentVaultItemViewModel">
-                          <Grid ColumnDefinitions="*,Auto">
-                            <Button Grid.Column="0" Classes="dropdown-item"
-                                    Classes.active="{Binding IsActive}"
-                                    IsEnabled="{Binding IsAvailable}"
-                                    Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).VaultSwitcher.OpenRecentCommand}"
-                                    CommandParameter="{Binding .}"
-                                    AutomationProperties.Name="{Binding DisplayName}">
-                              <Grid ColumnDefinitions="Auto,*">
-                                <mi:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="16" Height="16"
-                                                 Margin="0,2,10,0" VerticalAlignment="Top" />
-                                <StackPanel Grid.Column="1" Spacing="2" MinWidth="0">
-                                  <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontWeight="Bold"
-                                               TextTrimming="CharacterEllipsis" MaxLines="1" MinWidth="0" />
-                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" Classes="faint"
-                                               Text="{loc:Tr VaultSwitcher_ActiveBadge, Converter={StaticResource UpperCaseConverter}}"
-                                               IsVisible="{Binding IsActive}" />
-                                  </Grid>
-                                  <TextBlock Text="{Binding Path}" Classes="faint" FontSize="10"
-                                             TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                  <TextBlock Text="{Binding LastOpenedLabel}" Classes="faint" FontSize="10"
-                                             IsVisible="{Binding IsAvailable}" />
-                                  <!-- Ruta no disponible: la entrada se queda, atenuada y con el motivo
-                                       concreto (unidad desconectada, permisos), porque es justo la que el
-                                       usuario querrá recuperar cuando vuelva a conectar el disco. -->
-                                  <TextBlock Text="{Binding UnavailableReason}" Classes="faint" FontSize="10"
-                                             TextWrapping="Wrap" IsVisible="{Binding !IsAvailable}" />
-                                </StackPanel>
-                              </Grid>
-                            </Button>
-                            <Button Grid.Column="1" Classes="icon-btn icon-btn-danger" Width="28" Height="28"
-                                    VerticalAlignment="Top"
-                                    Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).VaultSwitcher.RemoveRecentCommand}"
-                                    CommandParameter="{Binding .}"
-                                    ToolTip.Tip="{loc:Tr VaultSwitcher_RemoveFromRecents}"
-                                    AutomationProperties.Name="{loc:Tr VaultSwitcher_RemoveFromRecents}">
-                              <mi:MaterialIcon Kind="Close" Width="14" Height="14" />
-                            </Button>
-                          </Grid>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <TextBlock Text="{loc:Tr VaultSwitcher_RemoveHint}" Classes="faint" TextWrapping="Wrap"
-                               IsVisible="{Binding VaultSwitcher.HasOtherVaults}" />
-
-                    <Button Classes="pill" HorizontalAlignment="Stretch"
-                            Command="{Binding VaultSwitcher.BrowseForVaultCommand}">
-                      <StackPanel Orientation="Horizontal" Spacing="8">
-                        <mi:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" />
-                        <TextBlock Text="{loc:Tr VaultSwitcher_Browse, Converter={StaticResource UpperCaseConverter}}" />
-                      </StackPanel>
-                    </Button>
-                  </StackPanel>
-                </Border>
-              </Popup>
-            </Grid>
-
-            <!-- Nav items -->
-            <ItemsControl Grid.Row="3" ItemsSource="{Binding NavItems}" Margin="0,24,0,0">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel Spacing="4" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="vm:NavItemViewModel">
-                  <Button Classes="nav-item"
-                          Classes.active="{Binding IsActive}"
-                          Classes.collapsed="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}"
-                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NavigateCommand}"
-                          CommandParameter="{Binding Page}"
-                          ToolTip.Tip="{Binding Label}"
-                          ToolTip.ServiceEnabled="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}">
-                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                      <!-- Badge de conteo (Fase 2 §9) — solo "Papelera" y "Calendario" lo fijan (ver
-                           MainWindowViewModel.UpdateTrashBadge/UpdateCalendarBadge); el resto siempre
-                           queda en 0 y el Border no se muestra. -->
-                      <Panel Width="20" Height="20">
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Center"
-                                         Classes.danger="{Binding IsDanger}" />
-                        <Border Classes="titlebar-badge" IsVisible="{Binding HasCount}">
-                          <TextBlock Classes="titlebar-badge-text" Text="{Binding Count}" />
-                        </Border>
-                      </Panel>
-                      <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}"
-                                 Classes.danger="{Binding IsDanger}"
-                                 VerticalAlignment="Center"
-                                 IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}" />
-                    </StackPanel>
-                  </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- Grupo fijo del sidebar: hasta 3 secciones "extra" (Ajustes › General › Secciones de la
-                 barra lateral), en el orden/visibilidad que el usuario decida arrastrando, más Ajustes
-                 siempre al final — mismo ItemTemplate que el ItemsControl de NavItems de arriba, solo que
-                 en una lista aparte para que este grupo quede fijo en vez de desplazarse con la principal. -->
-            <StackPanel Grid.Row="5" Spacing="4">
-              <ItemsControl ItemsSource="{Binding BottomNavItems}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <StackPanel Spacing="4" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="vm:NavItemViewModel">
-                    <Button Classes="nav-item"
-                            Classes.active="{Binding IsActive}"
-                            Classes.collapsed="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}"
-                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NavigateCommand}"
-                            CommandParameter="{Binding Page}"
-                            ToolTip.Tip="{Binding Label}"
-                            ToolTip.ServiceEnabled="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}">
-                      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Panel Width="20" Height="20">
-                          <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Center"
-                                           Classes.danger="{Binding IsDanger}" />
-                          <Border Classes="titlebar-badge" IsVisible="{Binding HasCount}">
-                            <TextBlock Classes="titlebar-badge-text" Text="{Binding Count}" />
-                          </Border>
-                        </Panel>
-                        <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}"
-                                   Classes.danger="{Binding IsDanger}"
-                                   VerticalAlignment="Center"
-                                   IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarExpanded}" />
-                      </StackPanel>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-
-              <!-- Ajustes -->
-              <Button Classes="nav-item"
-                      Classes.active="{Binding IsSettingsActive}"
-                      Classes.collapsed="{Binding !IsSidebarExpanded}"
-                      Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{loc:Tr Nav_SettingsTooltip}"
-                      ToolTip.ServiceEnabled="{Binding !IsSidebarExpanded}">
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <mi:MaterialIcon Kind="CogOutline" Width="20" Height="20" HorizontalAlignment="Center" />
-                  <TextBlock Text="{loc:Tr Nav_SettingsLabel, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center"
-                             IsVisible="{Binding IsSidebarExpanded}" />
-                </StackPanel>
-              </Button>
-            </StackPanel>
-
-          </Grid>
-        </Border>
-      </Border>
-    </Border>
-
-    <!-- ===================== Content ===================== -->
-    <Grid Grid.Column="1" RowDefinitions="Auto,*">
-      <!-- Reserves clearance for the floating window controls (bottom of this file) so pages whose
-           own top-right corner holds a button — the notes tab bar's "cerrar todas las pestañas", for
-           one — don't render underneath them. Just empty space, not a visible bar. Always on (not
-           gated by UseCustomTitleBar like it used to be) because the notifications/reminders buttons
-           float here regardless of title-bar mode, unlike minimize/maximize/close which the OS draws
-           itself once UseCustomTitleBar is off. -->
-      <Border Grid.Row="0" Height="44" />
-
-      <Grid Grid.Row="1">
-        <!-- Animación de entrada de página — mismo Opacity 0→1 + TranslateY 8px/250ms CubicEaseOut que
-             el "reveal" del Calendario
-             (CalendarViewModel.AnimateReveal), aplicado una sola vez a nivel de shell alrededor de
-             CurrentPage en vez de duplicarlo en cada página. -->
-        <ContentControl Content="{Binding CurrentPage}"
-                         Opacity="{Binding PageRevealOpacity}"
-                         RenderTransform="{Binding PageRevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-          <ContentControl.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-            </Transitions>
-          </ContentControl.Transitions>
-        </ContentControl>
-
-        <!-- Grano de película sutil sobre todo el shell (§5.1) -->
-        <Border Background="{DynamicResource GrainBrush}" IsHitTestVisible="False" />
-      </Grid>
-    </Grid>
-
-  </Grid>
-
-  <views:LanguageSetupView DataContext="{Binding LanguageSetup}"
-                           IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LanguageSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
-
-  <views:VaultSetupView DataContext="{Binding VaultSetup}"
-                        IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).VaultSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}" />
+  <views:VaultSetupView x:Name="VaultSetupScreen" DataContext="{Binding VaultSetup}"
+                        IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).VaultSetup, Converter={x:Static baseconv:ObjectConverters.IsNotNull}, FallbackValue=False}" />
 
     <!-- ===================== Resize grips (§ ajuste "Usar barra de título propia") =====================
          WindowDecorations.None (see MainWindow.axaml.cs) drops the OS/Avalonia-drawn resize border
@@ -450,7 +145,8 @@
             Cursor="BottomRightCorner" IsVisible="{Binding UseCustomTitleBar}" Tag="SouthEast" PointerPressed="ResizeGrip_PointerPressed" />
 
     <!-- ===================== Botones de contenido de la barra de título =====================
-         Orden fijo, de izquierda a derecha: buscar · notificaciones · recordatorios · bandeja de entrada.
+         Orden fijo, de izquierda a derecha: buscar · notificaciones · recordatorios · bandeja de entrada ·
+         asistente (este último solo con la IA encendida).
          Deliberately NOT gated by UseCustomTitleBar like the window controls below, since they carry app
          content (not window chrome) and stay meaningful whether Enki or the OS is drawing the title bar.
          Each is independently hideable from Ajustes › Notificaciones (MainWindowViewModel
@@ -623,7 +319,7 @@
                         <Grid ColumnDefinitions="Auto,*">
                           <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="16" Height="16"
                                             Margin="0,2,10,0" VerticalAlignment="Top" />
-                          <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
+                          <TextBlock Grid.Column="1" Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" TextWrapping="Wrap" />
                         </Grid>
                       </Button>
                     </DataTemplate>
@@ -772,16 +468,16 @@
                         <StackPanel Spacing="2">
                           <TextBlock Text="{loc:Tr Reminder_Snooze_MenuTitle, Converter={StaticResource UpperCaseConverter}}"
                                      Classes="eyebrow" FontSize="9.5" Margin="8,0,0,4" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeEveningCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeTomorrowCommand}"
                                   CommandParameter="{Binding}" />
                         </StackPanel>
@@ -902,16 +598,16 @@
                         <StackPanel Spacing="2">
                           <TextBlock Text="{loc:Tr Reminder_Snooze_MenuTitle, Converter={StaticResource UpperCaseConverter}}"
                                      Classes="eyebrow" FontSize="9.5" Margin="8,0,0,4" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozePrimaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel}"
+                          <Button Classes="snooze-option" Content="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryLabel, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeSecondaryCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Evening, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeEveningCommand}"
                                   CommandParameter="{Binding}" />
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Tomorrow, Converter={StaticResource UpperCaseConverter}}"
                                   Command="{Binding $parent[ItemsControl].DataContext.SnoozeTomorrowCommand}"
                                   CommandParameter="{Binding}" />
 
@@ -930,7 +626,7 @@
                             </Button>
                           </Grid>
 
-                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Cancel}"
+                          <Button Classes="snooze-option" Content="{loc:Tr Reminder_Snooze_Cancel, Converter={StaticResource UpperCaseConverter}}"
                                   IsVisible="{Binding IsSnoozed}"
                                   Command="{Binding $parent[ItemsControl].DataContext.CancelSnoozeCommand}"
                                   CommandParameter="{Binding}" />
@@ -987,11 +683,15 @@
                         AutomationProperties.Name="{loc:Tr QuickCapture_Destination_Label}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:QuickCaptureDestinationOption">
-                    <TextBlock Text="{Binding Label}" />
+                    <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" />
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
 
+              <ComboBox HorizontalAlignment="Stretch" MinWidth="140" MaxWidth="300" ItemsSource="{Binding KanbanBoards}" SelectedItem="{Binding SelectedKanbanBoard}"
+                        IsVisible="{Binding ShowKanbanBoards}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Boards}">
+                <ComboBox.ItemTemplate><DataTemplate x:DataType="models:KanbanBoard"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
               <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding KanbanColumns}"
                         SelectedItem="{Binding SelectedKanbanColumn}"
                         IsVisible="{Binding IsKanbanDestination}"
@@ -1019,18 +719,41 @@
         </Popup>
       </Grid>
 
-      <!-- ===================== Window controls (§ ajuste "Usar barra de título propia") =====================
-           Floats over whatever page is showing instead of reserving a bar of its own — dragging the
-           window happens from the sidebar's brand header (see TitleBar_PointerPressed above), not from
-           here. Individually gated by UseCustomTitleBar (not the whole StackPanel, unlike before) so
-           the content buttons above stay visible when the OS draws its own min/max/close instead. -->
+      <!-- ===================== Asistente =====================
+           Quinto botón de contenido, solo con la IA encendida: abre y cierra el panel lateral del asistente
+           (desde la sección Asistente, pasa la conversación al panel). Es también el indicador global de la
+           respuesta mientras se navega por Enki: girando mientras trabaja, con "!" cuando espera una decisión
+           del usuario y con una marca cuando hay una respuesta lista sin ver. Pulsarlo lleva a la conversación. -->
+      <Grid IsVisible="{Binding AssistantPanelEnabled}">
+        <Button Name="AssistantTrigger" Classes="titlebar-btn titlebar-btn-plain" Command="{Binding ToggleAssistantPanelCommand}"
+                ToolTip.Tip="{Binding Assistant.ActivityTooltip, FallbackValue={x:Null}}"
+                AutomationProperties.Name="{Binding Assistant.ActivityTooltip, FallbackValue={x:Null}}">
+          <Panel Width="20" Height="20">
+            <mi:MaterialIcon Kind="Creation" Width="19" Height="19"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <controls:LoadingSpinner Width="10" Height="10" Margin="0,-4,-4,0"
+                             HorizontalAlignment="Right" VerticalAlignment="Top"
+                             IsVisible="{Binding Assistant.IsActivityWorking, FallbackValue=False}" />
+            <Border Classes="titlebar-badge" IsVisible="{Binding Assistant.IsActivityNeedsDecision, FallbackValue=False}">
+              <TextBlock Classes="titlebar-badge-text" Text="!" />
+            </Border>
+            <Border Width="7" Height="7" Margin="0,-2,-2,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Background="{DynamicResource SuccessBrush}"
+                    IsVisible="{Binding Assistant.IsActivityResponseReady, FallbackValue=False}" />
+          </Panel>
+        </Button>
+      </Grid>
+
+      <!-- Controles de ventana: al ocultarlos también desaparece el margen del botón de minimizar.
+           El StackPanel conserva su alineación derecha y su margen exterior para los iconos restantes.
+           Con la barra nativa, el sistema operativo gestiona sus propios controles. -->
       <Button Classes="titlebar-btn" Click="Minimize_Click" ToolTip.Tip="{loc:Tr Shell_MinimizeTooltip}"
               Margin="85,5,5,5"
-              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AreWindowControlsVisible}">
         <mi:MaterialIcon Kind="WindowMinimize" Width="13" Height="13" />
       </Button>
       <Button Classes="titlebar-btn" Click="MaximizeRestore_Click" ToolTip.Tip="{loc:Tr Shell_MaximizeRestoreTooltip}"
-              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AreWindowControlsVisible}">
         <!-- Plain drawn square instead of a MaterialIcon glyph. MaximizeGlyph is the resting
              "maximize" square; RestoreGlyph (two overlapping squares, classic restore mark) swaps
              in once the window is maximized — toggled in MainWindow.axaml.cs. -->
@@ -1046,11 +769,14 @@
         </Grid>
       </Button>
       <Button Classes="titlebar-btn titlebar-btn-close" Click="Close_Click" ToolTip.Tip="{loc:Tr Common_Close}"
-              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseCustomTitleBar}">
+              IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AreWindowControlsVisible}">
         <mi:MaterialIcon Kind="WindowClose" Width="14" Height="14" />
       </Button>
     </StackPanel>
 
   </Grid>
   </LayoutTransformControl>
+  <!-- Fuera del zoom del vault: restaurar su escala no mueve ni redimensiona el launcher. -->
+  <views:StartupScreen x:Name="StartupOverlay" ZIndex="1" IsWarmUpActive="{Binding IsSectionWarmUpActive}" />
+  </Grid>
 </Window>

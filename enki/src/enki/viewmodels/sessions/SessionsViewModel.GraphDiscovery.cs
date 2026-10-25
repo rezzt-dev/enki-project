@@ -41,6 +41,53 @@ public sealed partial class SessionsViewModel
     [ObservableProperty]
     private GraphClusterFilterItemViewModel? _selectedGraphCluster;
 
+    [ObservableProperty]
+    private string _graphSearchText = string.Empty;
+
+    [ObservableProperty]
+    private bool _showGraphMesh = true;
+
+    [ObservableProperty]
+    private bool _showGraphLabels = true;
+
+    [ObservableProperty]
+    private double _graphNodeSize = 1;
+
+    [ObservableProperty]
+    private double _graphLinkThickness = 1;
+
+    public event Action? GraphDisplayChanged;
+    public event Action<string>? GraphCameraRequested;
+
+    partial void OnGraphSearchTextChanged(string value) => OnGraphFilterToggled();
+    partial void OnShowGraphMeshChanged(bool value) => GraphDisplayChanged?.Invoke();
+    partial void OnShowGraphLabelsChanged(bool value) => GraphDisplayChanged?.Invoke();
+    partial void OnGraphNodeSizeChanged(double value) => GraphDisplayChanged?.Invoke();
+    partial void OnGraphLinkThicknessChanged(double value) => GraphDisplayChanged?.Invoke();
+
+    [RelayCommand]
+    private void FitGraph() => GraphCameraRequested?.Invoke("fit");
+
+    [RelayCommand]
+    private void ZoomInGraph() => GraphCameraRequested?.Invoke("in");
+
+    [RelayCommand]
+    private void ZoomOutGraph() => GraphCameraRequested?.Invoke("out");
+
+    [RelayCommand]
+    private void IsolateGraphSession(GraphGroupFilterItemViewModel item)
+    {
+        if (!GraphGroupFilters.Contains(item)) return;
+        _updatingGraphFilters = true;
+        try
+        {
+            foreach (var group in GraphGroupFilters) group.IsActive = group == item;
+        }
+        finally { _updatingGraphFilters = false; }
+        OnGraphFilterToggled();
+        FitGraph();
+    }
+
     private bool _updatingGraphFilters;
 
     partial void OnGraphExplorationIndexChanged(int value) => OnGraphFilterToggled();
@@ -91,7 +138,12 @@ public sealed partial class SessionsViewModel
         var tags = GraphTagFilters.Where(f => f.IsActive).Select(f => f.GroupId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var clusterId = SelectedGraphCluster?.Id;
+        var terms = GraphSearchText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         var nodes = graph.Nodes.Where(n => groups.Contains(n.SessionId)
+            && terms.All(term => n.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || n.RelativePath.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || n.SessionName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || n.Tags.Any(tag => tag.Contains(term.TrimStart('#'), StringComparison.OrdinalIgnoreCase)))
             && (tags.Count == 0 || n.Tags.Any(tags.Contains))
             && (string.IsNullOrEmpty(clusterId) || n.ClusterId == clusterId)
             && (GraphExplorationIndex != 1 || n.ConnectionCount == 0)
@@ -116,6 +168,7 @@ public sealed partial class SessionsViewModel
         {
             foreach (var group in GraphGroupFilters) group.IsActive = true;
             foreach (var tag in GraphTagFilters) tag.IsActive = false;
+            GraphSearchText = string.Empty;
             GraphExplorationIndex = 0;
             SelectedGraphCluster = GraphClusters.FirstOrDefault();
         }

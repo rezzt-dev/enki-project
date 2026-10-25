@@ -13,50 +13,79 @@
 
   <Grid>
 
-   <Grid RowDefinitions="Auto,*" Margin="36,30,36,26" MaxWidth="1180" HorizontalAlignment="Stretch">
+   <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="36,30,36,26" MaxWidth="1180" HorizontalAlignment="Stretch">
 
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,22">
+    <Grid Grid.Row="0" Margin="0,0,0,24">
       <StackPanel Grid.Column="0" Spacing="6">
         <TextBlock Text="{loc:Tr Notifications_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
         <TextBlock Text="{loc:Tr Notifications_Title, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
         <TextBlock Text="{loc:Tr Notifications_Subtitle}"
-                   Classes="page-subtitle" />
+                   Classes="page-subtitle" TextWrapping="Wrap" />
       </StackPanel>
 
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-        <Button Classes="pill" Padding="18,10" IsEnabled="{Binding !IsEmpty}" Command="{Binding RequestClearAllCommand}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="DeleteSweepOutline" Width="14" Height="14" />
-            <TextBlock Text="{loc:Tr Notifications_ClearAllButton, Converter={StaticResource UpperCaseConverter}}" />
-          </StackPanel>
-        </Button>
-        <Button Classes="pill" Padding="18,10" IsEnabled="{Binding UnreadCount, Converter={StaticResource CountToBoolConverter}}" Command="{Binding MarkAllReadCommand}">
+    </Grid>
+
+    <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+        <Button Classes="pill" Margin="0,0,8,8" Padding="14,10" IsEnabled="{Binding UnreadCount, Converter={StaticResource CountToBoolConverter}}" Command="{Binding MarkAllReadCommand}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="CheckAll" Width="14" Height="14" />
             <TextBlock Text="{loc:Tr Notifications_MarkAllReadButton, Converter={StaticResource UpperCaseConverter}}" />
           </StackPanel>
         </Button>
-      </StackPanel>
-    </Grid>
+        <Button Classes="pill" Margin="0,0,8,8" Padding="14,10" IsEnabled="{Binding !IsEmpty}" Command="{Binding RequestClearAllCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="DeleteSweepOutline" Width="14" Height="14" />
+            <TextBlock Text="{loc:Tr Notifications_ClearAllButton, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+    </WrapPanel>
+    <StackPanel Grid.Row="2" Spacing="14" Margin="0,0,0,16">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox Grid.Column="0" Classes="search" Text="{Binding SearchText}"
+                 PlaceholderText="{loc:Tr Activity_Search}" MinHeight="40"
+                 AutomationProperties.Name="{loc:Tr Activity_Search}" />
+        <TextBlock Grid.Column="1" Text="{Binding ResultsLabel}" Classes="faint"
+                   Margin="16,0,0,0" VerticalAlignment="Center" />
+      </Grid>
+      <WrapPanel Orientation="Horizontal">
+        <RadioButton Classes="segment" GroupName="NotificationsFilter" Margin="0,0,8,6"
+                     Content="{loc:Tr Activity_All, Converter={StaticResource UpperCaseConverter}}"
+                     IsChecked="{Binding Filter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=All, Mode=OneWay}"
+                     Command="{Binding SelectFilterCommand}" CommandParameter="{x:Static vm:ActivityFilter.All}" />
+        <RadioButton Classes="segment" GroupName="NotificationsFilter" Margin="0,0,8,6"
+                     Content="{loc:Tr Activity_Unread, Converter={StaticResource UpperCaseConverter}}"
+                     IsChecked="{Binding Filter, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Unread, Mode=OneWay}"
+                     Command="{Binding SelectFilterCommand}" CommandParameter="{x:Static vm:ActivityFilter.Unread}" />
+      </WrapPanel>
+    </StackPanel>
 
-    <ScrollViewer Grid.Row="1">
+    <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="10">
 
         <StackPanel IsVisible="{Binding IsEmpty}" Spacing="10" Margin="0,60,0,0" HorizontalAlignment="Center">
-          <mi:MaterialIcon Kind="BellRingOutline" Width="28" Height="28" Foreground="{DynamicResource TextMutedBrush}"
+          <mi:MaterialIcon Kind="BellRingOutline" Width="40" Height="40" Foreground="{DynamicResource TextMutedBrush}"
                             HorizontalAlignment="Center" />
-          <TextBlock Text="{loc:Tr Notifications_EmptyState}" Classes="muted" FontSize="12.5" HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Tr Notifications_EmptyState}" Classes="muted" FontSize="15" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
         </StackPanel>
 
-        <ItemsControl ItemsSource="{Binding Items}">
+        <StackPanel IsVisible="{Binding HasNoResults}" Spacing="12" Margin="24,48" HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="Magnify" Width="32" Height="32" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Tr Activity_NoResults}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Tr Activity_NoResultsHint}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+          <Button Classes="pill" Command="{Binding ResetFiltersCommand}" HorizontalAlignment="Center">
+            <TextBlock Text="{loc:Tr Activity_Reset, Converter={StaticResource UpperCaseConverter}}" />
+          </Button>
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding VisibleItems}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <StackPanel Spacing="10" />
+              <StackPanel Spacing="0" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate DataType="vm:NotificationItemViewModel">
-              <Button Classes="note-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              <Button Classes="note-card activity-row" Classes.unread="{Binding !IsRead}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Command="{Binding $parent[ItemsControl].((vm:NotificationsViewModel)DataContext).OpenDetailCommand}"
                       CommandParameter="{Binding}"
                       AutomationProperties.Name="{Binding Title}">
@@ -67,18 +96,18 @@
                                     Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
                                     Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
 
-                  <StackPanel Grid.Column="1" Spacing="4">
-                    <StackPanel Orientation="Horizontal" Spacing="7">
-                      <Ellipse Width="6" Height="6" Fill="{DynamicResource Ink90}" IsVisible="{Binding !IsRead}" />
-                      <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14" LetterSpacing="0.2"
+                  <StackPanel Grid.Column="1" Spacing="6" Margin="0,0,20,0">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Ellipse Grid.Column="0" Margin="0,0,8,0" Width="6" Height="6" Fill="{DynamicResource Ink90}" IsVisible="{Binding !IsRead}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" FontSize="14" LetterSpacing="0.2"
                                  TextTrimming="CharacterEllipsis" MaxLines="1" />
-                    </StackPanel>
+                    </Grid>
                     <TextBlock Text="{Binding Message}" Classes="muted" FontSize="12"
                                TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
                                IsVisible="{Binding HasMessage}" />
                   </StackPanel>
 
-                  <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" Classes="faint"
+                  <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" ToolTip.Tip="{Binding CreatedAtLabel}" Classes="faint"
                              HorizontalAlignment="Right" VerticalAlignment="Top" />
                 </Grid>
               </Button>
@@ -95,36 +124,40 @@
     <controls:ModalOverlayHost
         IsOpen="{Binding Detail, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
-              MaxWidth="440" DataContext="{Binding Detail}" x:DataType="vm:NotificationItemViewModel">
-        <StackPanel Spacing="18" MinWidth="380">
+              Width="520" MaxWidth="560" MaxHeight="640" DataContext="{Binding Detail}" x:DataType="vm:NotificationItemViewModel">
+        <Grid RowDefinitions="*,Auto" RowSpacing="20">
+          <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="18">
 
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <mi:MaterialIcon Kind="{Binding SeverityIcon}" Width="18" Height="18" Classes="severity-icon"
-                              Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
-                              Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
-                              Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
-            <TextBlock Text="{Binding SeverityLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-          </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="{Binding SeverityIcon}" Width="18" Height="18" Classes="severity-icon"
+                                  Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
+                                  Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
+                                  Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
+                <TextBlock Text="{Binding SeverityLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+              </StackPanel>
 
-          <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" TextWrapping="Wrap" />
 
-          <StackPanel Spacing="6" IsVisible="{Binding HasMessage}">
-            <TextBlock Text="{loc:Tr Notifications_Detail_DetailLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-            <TextBlock Text="{Binding Message}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
-          </StackPanel>
+              <StackPanel Spacing="6" IsVisible="{Binding HasMessage}">
+                <TextBlock Text="{loc:Tr Notifications_Detail_DetailLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <TextBlock Text="{Binding Message}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
+              </StackPanel>
 
-          <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Notifications_Detail_ReceivedLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-            <TextBlock Text="{Binding CreatedAtLabel}" Classes="muted" FontSize="12" />
-          </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Tr Notifications_Detail_ReceivedLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <TextBlock Text="{Binding CreatedAtLabel}" Classes="muted" FontSize="12" />
+              </StackPanel>
 
-          <Grid ColumnDefinitions="*,Auto">
+            </StackPanel>
+          </ScrollViewer>
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
             <Button Grid.Column="1" Classes="pill"
                     Command="{Binding $parent[UserControl].((vm:NotificationsViewModel)DataContext).CloseDetailCommand}">
               <TextBlock Text="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
-        </StackPanel>
+        </Grid>
       </Border>
     </controls:ModalOverlayHost>
 

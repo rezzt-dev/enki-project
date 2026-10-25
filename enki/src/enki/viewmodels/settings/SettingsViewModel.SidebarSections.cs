@@ -267,6 +267,7 @@ public sealed partial class SettingsViewModel
         "TagManager" => TagManagerPanelEnabled,
         "Habits" => HabitsPanelEnabled,
         "Skills" => SkillsPanelEnabled,
+        "Assistant" => AiEnabled,
         "Reminders" => RemindersSidebarEnabled,
         "Notifications" => NotificationsSidebarEnabled,
         "Statistics" => StatisticsPanelEnabled,
@@ -291,6 +292,7 @@ public sealed partial class SettingsViewModel
             case "TagManager": TagManagerPanelEnabled = value; break;
             case "Habits": HabitsPanelEnabled = value; break;
             case "Skills": SkillsPanelEnabled = value; break;
+            case "Assistant": AiEnabled = value; break;
             case "Reminders": RemindersSidebarEnabled = value; break;
             case "Notifications": NotificationsSidebarEnabled = value; break;
             case "Statistics": StatisticsPanelEnabled = value; break;

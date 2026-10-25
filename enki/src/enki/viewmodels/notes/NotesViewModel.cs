@@ -167,7 +167,10 @@ public sealed partial class NotesViewModel : ViewModelBase
         _kanbanService = kanbanService;
         _onOpenLinkedCard = onOpenLinkedCard;
         _settingsService = settingsService;
+        if (_settingsService is not null)
+            _settingsService.WorkspaceSessionChanged += SelectSession;
         _notificationService = notificationService;
+        InitializeFolderManager();
         _templateService = templateService ?? new NoteTemplateService(vaultService);
         _vaultSettingsService = vaultSettingsService;
         _dailyNoteService = new DailyNoteService(vaultService, _templateService, vaultSettingsService);
@@ -199,6 +202,7 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// un cambio de idioma en tiempo real (i18n Fase 4).</summary>
     public void RefreshLocalizedLabels()
     {
+        FolderManager.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(NotesCountLabel));
         OnPropertyChanged(nameof(CurrentFolderLabel));
         // Solo se anunciaba desde OnIsSimplifiedViewChanged, y el modo de vista no cambia al cambiar de
@@ -225,6 +229,12 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     partial void OnSelectedSessionOptionChanged(SessionOptionViewModel? value)
     {
+        FolderManager.CloseCommand.Execute(null);
+        OnPropertyChanged(nameof(EffectiveRootPath));
+        // Al elegir otra sesión en el selector, el editor anterior ya no representa el espacio visible.
+        if (!_syncingEditorSession && ActiveEditor is { } editor &&
+            !VaultService.IsWithinFolder(editor.Note.FullPath, EffectiveRootPath))
+            ActiveEditor = null;
         OnPropertyChanged(nameof(IsSelectedSessionLocked));
         OnPropertyChanged(nameof(ShowEmptyState));
         CurrentFolder = null;
@@ -233,16 +243,10 @@ public sealed partial class NotesViewModel : ViewModelBase
         Reload();
     }
 
-    /// <summary>Guarda qué sesión está elegida en <see cref="Models.AppSettings.NotesSessionId"/> para que
-    /// la app reabra en el mismo espacio de trabajo en vez de volver siempre al vault — misma mecánica que
-    /// <see cref="PersistOpenTabs"/>, y no-op en los tests que construyen este viewmodel sin
-    /// <see cref="SettingsService"/>. Se escribe en cada cambio de selección, así que el ajuste y la
-    /// selección viva nunca se separan.</summary>
+    /// <summary>Publica la sesión común a Notas y Archivos y la guarda entre arranques.</summary>
     private void PersistSelectedSession()
     {
-        if (_settingsService is null) return;
-        _settingsService.Settings.NotesSessionId = SelectedSessionOption?.Session?.Id;
-        _settingsService.Save();
+        _settingsService?.SelectWorkspaceSession(SelectedSessionOption?.Session?.Id);
     }
 
     partial void OnIsEmptyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
@@ -251,6 +255,13 @@ public sealed partial class NotesViewModel : ViewModelBase
     // purely so the tab strip can highlight it — nothing about editing/saving depends on this.
     partial void OnActiveEditorChanged(EditorViewModel? oldValue, EditorViewModel? newValue)
     {
+        if (newValue is not null)
+        {
+            SelectSessionForEditor(newValue);
+            var parent = Path.GetDirectoryName(newValue.Note.FullPath);
+            CurrentFolder = parent is null || VaultService.PathsEqual(parent, EffectiveRootPath)
+                ? null : FindFolder(RootFolders, parent);
+        }
         if (oldValue is not null)
         {
             oldValue.IsActive = false;
@@ -264,6 +275,19 @@ public sealed partial class NotesViewModel : ViewModelBase
         IsZenMode = newValue?.IsZenMode ?? false;
         SyncSimpleTreeSelection();
         PersistOpenTabs();
+    }
+
+    private bool _syncingEditorSession;
+
+    private void SelectSessionForEditor(EditorViewModel editor)
+    {
+        var session = SessionOptions.FirstOrDefault(option => option.Session is { } candidate &&
+            VaultService.IsWithinFolder(editor.Note.FullPath, candidate.RootPath));
+        var option = session ?? SessionOptions.FirstOrDefault(candidate => candidate.IsVault);
+        if (option is null || ReferenceEquals(option, SelectedSessionOption)) return;
+        _syncingEditorSession = true;
+        try { SelectedSessionOption = option; }
+        finally { _syncingEditorSession = false; }
     }
 
     /// <summary>Keeps <see cref="IsZenMode"/> in lockstep with whichever tab is currently active — zen
@@ -324,13 +348,14 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// <summary>Refreshes the session picker (vault + every session, alphabetically), keeping the current
     /// selection if it still exists. Called on startup and whenever a session is created/renamed/deleted,
     /// whether that happened here or on the Sessions page.</summary>
-    public void ReloadSessions()
+    public void ReloadSessions(bool restoreStoredSelection = false)
     {
         // En el arranque todavía no hay selección viva, y ahí es donde entra la guardada: la sesión con la
-        // que se cerró la app. Pasado el arranque las dos coinciden siempre —cada cambio de selección
-        // reescribe el ajuste—, así que este mismo orden vale para las recargas posteriores (crear,
-        // renombrar o borrar una sesión, o cambiar de vault) sin resucitar nada que el usuario ya dejó.
-        var targetId = SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.NotesSessionId;
+        // que se cerró la app. Las recargas normales conservan la selección viva; al cambiar de vault
+        // se restaura expresamente la elección guardada para el nuevo vault.
+        var targetId = restoreStoredSelection
+            ? _settingsService?.Settings.WorkspaceSessionId
+            : SelectedSessionOption?.Session?.Id ?? _settingsService?.Settings.WorkspaceSessionId;
 
         SessionOptions.Clear();
         SessionOptions.Add(new SessionOptionViewModel(null));
@@ -356,6 +381,11 @@ public sealed partial class NotesViewModel : ViewModelBase
 
     public void Reload()
     {
+        EnsureQueryVault();
+        if (IsSelectedSessionLocked) FolderManager.CloseCommand.Execute(null);
+        PasteEntryCommand.NotifyCanExecuteChanged();
+        CopyEntryCommand.NotifyCanExecuteChanged();
+        CutEntryCommand.NotifyCanExecuteChanged();
         if (IsSelectedSessionLocked)
         {
             Notes.Clear();
@@ -368,7 +398,10 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         // `all` sigue siendo la carpeta entera sin filtrar: es lo que alimenta la lista de etiquetas de
         // TagFilter más abajo, que no debe encogerse según lo que haya escrito el usuario en el buscador.
-        var all = _vaultService.GetNotes(CurrentFolderPath);
+        var query = CurrentQuery();
+        var all = QueryIncludeSubfolders
+            ? _vaultService.GetAllNotesRecursive(CurrentFolderPath)
+            : _vaultService.GetNotes(CurrentFolderPath);
 
         // Con búsqueda activa el filtrado se delega en NoteSearchService, que mira el cuerpo completo de
         // cada nota; antes se comparaba contra NoteFile.Preview y una nota solo aparecía si la palabra
@@ -376,7 +409,11 @@ public sealed partial class NotesViewModel : ViewModelBase
         // de VaultService, así que esto no duplica lecturas de disco.
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? all
-            : _noteSearchService.SearchFolder(CurrentFolderPath, SearchText).Select(h => h.Note);
+            : (QueryIncludeSubfolders
+                ? _noteSearchService.SearchTree(CurrentFolderPath, SearchText)
+                : _noteSearchService.SearchFolder(CurrentFolderPath, SearchText)).Select(h => h.Note);
+
+        filtered = NoteQueryService.Filter(filtered, query);
 
         var selectedTags = TagFilter.SelectedTags.ToList();
         if (selectedTags.Count > 0)
@@ -389,7 +426,11 @@ public sealed partial class NotesViewModel : ViewModelBase
         foreach (var note in filtered) Notes.Add(new NoteCardViewModel(note));
 
         BrowserItems.Clear();
-        var hasSearch = !string.IsNullOrWhiteSpace(SearchText);
+        var hasSearch = !string.IsNullOrWhiteSpace(SearchText) ||
+            query.Tag.Length > 0 || query.PropertyKey.Length > 0 ||
+            query.ModifiedFrom.Length > 0 || query.ModifiedTo.Length > 0 ||
+            query.DatePropertyKey.Length > 0 ||
+            QueryIncludeSubfolders;
         if (!hasSearch)
         {
             if (CurrentFolder is not null)
@@ -413,6 +454,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         // que invalide una invalida el otro — un único punto de recarga en vez de que cada comando tenga
         // que acordarse de refrescar los dos. No-op mientras la vista simplificada está desactivada.
         ReloadSimpleTree();
+        UpdateCutAppearance();
     }
 
     public void ReloadFolders()
@@ -435,6 +477,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         }
 
         CurrentFolder = selectedPath is null ? null : FindFolder(RootFolders, selectedPath);
+        UpdateCutAppearance();
     }
 
     private static IEnumerable<string> CollectExpandedPaths(IEnumerable<NoteFolderViewModel> folders)
@@ -635,6 +678,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         if (existing is not null)
         {
             ActiveEditor = existing;
+            CloseSimpleNavigator();
             if (caretOffset is { } offset) existing.RequestCaretAt(offset);
             return;
         }
@@ -664,6 +708,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         if (caretOffset is { } newTabOffset) editor.RequestCaretAt(newTabOffset);
         OpenEditors.Add(editor);
         ActiveEditor = editor;
+        CloseSimpleNavigator();
     }
 
     [RelayCommand]
@@ -723,6 +768,22 @@ public sealed partial class NotesViewModel : ViewModelBase
     /// affected tab is lost by being closed out from under the user.</summary>
     public bool CloseEditorsForLockedSession(Session session)
     {
+        if (!CloseEditorsUnderSession(session, out var closed)) return false;
+        if (closed == 0) return true;
+
+        _notificationService?.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Title"),
+            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Message", session.Name),
+            NotificationSeverity.Info);
+        return true;
+    }
+
+    /// <summary>Cierra, guardando antes, todas las pestañas de notas de <paramref name="session"/>. Devuelve
+    /// <see langword="false"/> —sin cerrar ninguna— si algún borrador no se pudo conservar. Lo comparten el
+    /// bloqueo de una sesión y su envío a la papelera por el asistente.</summary>
+    public bool CloseEditorsUnderSession(Session session, out int closed)
+    {
+        closed = 0;
         var affected = OpenEditors.Where(e => IsUnderSessionRoot(e.Note.FullPath, session.RootPath)).ToList();
         if (affected.Count == 0) return true;
 
@@ -734,6 +795,7 @@ public sealed partial class NotesViewModel : ViewModelBase
         {
             if (!editor.Close()) return false;
             OpenEditors.Remove(editor);
+            closed++;
         }
 
         if (ActiveEditor is not null && affected.Contains(ActiveEditor))
@@ -741,12 +803,37 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         PersistOpenTabs();
         Reload();
-
-        _notificationService?.PushLocalized(
-            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Title"),
-            LocalizedTextFormatter.Format("Notification_SessionLockedTabsClosed_Message", session.Name),
-            NotificationSeverity.Info);
         return true;
+    }
+
+    // ===================== Cambios del asistente =====================
+
+    /// <summary>Antes de que el asistente modifique, mueva o borre una nota: si está abierta, vuelca lo que su
+    /// pestaña tenga sin guardar y devuelve <see langword="false"/> si queda un conflicto sin resolver — el
+    /// mismo criterio que mover una nota desde la rejilla (<see cref="MoveNoteToFolder"/>).</summary>
+    public bool PrepareAssistantNoteChange(string path) =>
+        OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, path)) is not { } editor
+        || editor.PrepareFileTransfer();
+
+    /// <summary>Después: la pestaña de la nota sigue a su archivo si se renombró o movió, recarga el contenido
+    /// nuevo si solo cambió (recarga silenciosa de un cambio externo: la pestaña ya no tenía nada sin guardar)
+    /// y se cierra si la nota se envió a la papelera — lo mismo que cuando lo hace el usuario desde la app.</summary>
+    public void ApplyAssistantNoteChange(string oldPath, NoteFile? updated)
+    {
+        if (OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, oldPath)) is not { } editor) return;
+        if (updated is null)
+        {
+            CloseEditor(editor);
+        }
+        else if (!VaultService.PathsEqual(oldPath, updated.FullPath))
+        {
+            editor.SyncTransferredNote(updated);
+            PersistOpenTabs();
+        }
+        else
+        {
+            editor.HandleExternalChange(new VaultExternalChange(oldPath, VaultExternalChangeKind.Modified));
+        }
     }
 
     private static bool IsUnderSessionRoot(string fullPath, string sessionRootPath)
@@ -826,7 +913,13 @@ public sealed partial class NotesViewModel : ViewModelBase
     [RelayCommand]
     private void CreateSubfolder(NoteFolderViewModel folder)
     {
-        var created = VaultService.CreateFolder(folder.FullPath);
+        NoteFolder created;
+        try { created = _vaultService.CreateManagedFolder(folder.FullPath, LocalizationService.Instance["Vault_DefaultFolderName"]); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            NotifyVaultWriteFailed(ex);
+            return;
+        }
         ReloadFolders();
 
         var vm = FindFolder(RootFolders, created.FullPath);
@@ -838,7 +931,13 @@ public sealed partial class NotesViewModel : ViewModelBase
     [RelayCommand]
     private void NewFolder()
     {
-        var created = VaultService.CreateFolder(CurrentFolderPath);
+        NoteFolder created;
+        try { created = _vaultService.CreateManagedFolder(CurrentFolderPath, LocalizationService.Instance["Vault_DefaultFolderName"]); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            NotifyVaultWriteFailed(ex);
+            return;
+        }
         ReloadFolders();
 
         var vm = FindFolder(RootFolders, created.FullPath);
@@ -850,10 +949,15 @@ public sealed partial class NotesViewModel : ViewModelBase
     [RelayCommand]
     private void CommitRenameFolder(NoteFolderViewModel folder)
     {
-        if (!string.IsNullOrWhiteSpace(folder.EditingName) && folder.EditingName != folder.Name)
+        try
         {
-            var updated = VaultService.RenameFolder(folder.Folder, folder.EditingName);
-            folder.UpdateFolder(updated);
+            if (!string.IsNullOrWhiteSpace(folder.EditingName) && folder.EditingName != folder.Name)
+                folder.UpdateFolder(_vaultService.RenameManagedFolder(folder.FullPath, folder.EditingName));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            NotifyVaultWriteFailed(ex);
+            return;
         }
         folder.IsRenaming = false;
         ReloadFolders();
@@ -863,14 +967,8 @@ public sealed partial class NotesViewModel : ViewModelBase
     [RelayCommand]
     private void DeleteFolder(NoteFolderViewModel folder)
     {
-        var affectsCurrent = CurrentFolder is not null &&
-                              (CurrentFolder == folder || IsDescendant(folder, CurrentFolder));
-
-        _vaultService.DeleteFolder(folder.Folder);
-        if (affectsCurrent) CurrentFolder = null;
-
-        ReloadFolders();
-        Reload();
+        FolderManager.Open(folder.FullPath, EffectiveRootPath);
+        FolderManager.SelectOperationCommand.Execute("Delete");
     }
 
     private static bool IsDescendant(NoteFolderViewModel ancestor, NoteFolderViewModel node)
@@ -903,6 +1001,8 @@ public sealed partial class NotesViewModel : ViewModelBase
     private NoteFile? RenameNoteFile(NoteFile note, string newName)
     {
         var oldPath = note.FullPath;
+        var editorBeforeRename = OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, oldPath));
+        if (editorBeforeRename is not null && !editorBeforeRename.PrepareFileTransfer()) return null;
         NoteFile updated;
         try
         {
@@ -919,9 +1019,7 @@ public sealed partial class NotesViewModel : ViewModelBase
 
         // Keep an already-open tab for this note in sync — otherwise it'd keep pointing at the
         // file's old path/name after the rename happens from the grid instead of the tab itself.
-        var openEditor = OpenEditors.FirstOrDefault(e =>
-            VaultService.PathsEqual(e.Note.FullPath, oldPath));
-        openEditor?.SyncRenamedNote(updated);
+        editorBeforeRename?.SyncRenamedNote(updated);
 
         return updated;
     }
@@ -981,7 +1079,13 @@ public sealed partial class NotesViewModel : ViewModelBase
         var oldPath = card.Note.FullPath;
         try
         {
-            _vaultService.MoveNote(card.Note, destinationFolderPath);
+            var editor = OpenEditors.FirstOrDefault(e => VaultService.PathsEqual(e.Note.FullPath, oldPath));
+            if (editor is not null && !editor.PrepareFileTransfer()) return;
+            var moved = _vaultService.TransferNote(card.Note, destinationFolderPath, cut: true);
+            editor?.SyncTransferredNote(moved);
+            card.UpdateNote(moved);
+            _kanbanService?.RelinkNotePath(oldPath, moved.FullPath);
+            PersistOpenTabs();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {
@@ -989,7 +1093,6 @@ public sealed partial class NotesViewModel : ViewModelBase
             return;
         }
 
-        _kanbanService?.RelinkNotePath(oldPath, card.Note.FullPath);
         Reload();
     }
 }

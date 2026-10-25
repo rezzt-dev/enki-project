@@ -8,6 +8,8 @@ namespace enki.ViewModels;
 
 public sealed partial class NoteCardViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     public NoteFile Note { get; private set; }
 
     public string Title => Note.Title;

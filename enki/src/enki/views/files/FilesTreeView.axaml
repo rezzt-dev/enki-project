@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,7 +12,6 @@
              x:Class="enki.Views.FilesTreeView"
              x:Name="TreeRoot"
              x:DataType="vm:FilesViewModel">
-
   <!-- Modo "árbol" de la sección Archivos: el panel lateral de la vista simplificada de Notas adaptado a
        los adjuntos del vault. Carpetas y archivos se entremezclan en una misma lista jerárquica a la
        izquierda, y a la derecha va la previsualización del archivo abierto.
@@ -33,7 +33,7 @@
          como dos listas apiladas. -->
     <DataTemplate DataType="vm:FileTreeItemViewModel">
       <StackPanel>
-        <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.drag-over="{Binding IsDropTarget}"
+        <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.cut="{Binding IsCut}" Classes.drag-over="{Binding IsDropTarget}"
                 Padding="{Binding Depth, Converter={StaticResource TreeIndentConverter}}"
                 ToolTip.Tip="{Binding Name}" ToolTip.ShowDelay="700"
                 DragDrop.AllowDrop="True"
@@ -47,47 +47,53 @@
             <!-- Un menú para los dos tipos de nodo, con lo que tiene sentido en cada uno: "crear subcarpeta"
                  sobre un archivo creaba una carpeta hermana sin decirlo. -->
             <ContextMenu>
-              <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem}" IsVisible="{Binding IsFile}"
+              <MenuItem Header="{loc:Tr Folders_Manage, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}" />
+              <Separator />
+              <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}" CommandParameter="{Binding}" />
+              <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}" CommandParameter="{Binding}" />
+              <Separator />
+              <MenuItem Header="{loc:Tr Files_OpenWithSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFile}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).OpenWithSystemCommand}"
                         CommandParameter="{Binding Card}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem}" IsVisible="{Binding IsFolder}"
-                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateTreeSubfolderCommand}"
+              <MenuItem Header="{loc:Tr Files_CreateSubfolderMenuItem, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}"
+                        Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CreateFolderDialogCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_ImportHereMenuItem}" IsVisible="{Binding IsFolder}"
+              <MenuItem Header="{loc:Tr Files_ImportHereMenuItem, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ImportCommand}"
                         CommandParameter="{Binding FullPath}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_RenameAction}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
+              <MenuItem Header="{loc:Tr Files_RenameAction, Converter={StaticResource UpperCaseConverter}}" Command="{Binding BeginRenameCommand}" InputGesture="F2">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="PencilOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
               <Separator />
-              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" IsVisible="{Binding IsFile}"
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFile}"
                         Command="{Binding Card.RevealInSystemCommand}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem}" IsVisible="{Binding IsFolder}"
+              <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).RevealFolderCommand}"
                         CommandParameter="{Binding FullPath}">
                 <MenuItem.Icon>
                   <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
                 </MenuItem.Icon>
               </MenuItem>
-              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem}"
+              <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyPathCommand}"
                         CommandParameter="{Binding FullPath}">
                 <MenuItem.Icon>
@@ -95,7 +101,7 @@
                 </MenuItem.Icon>
               </MenuItem>
               <Separator />
-              <MenuItem Header="{loc:Tr Common_Delete}" InputGesture="Delete"
+              <MenuItem Header="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" InputGesture="Delete"
                         Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).DeleteTreeItemCommand}"
                         CommandParameter="{Binding}">
                 <MenuItem.Icon>
@@ -154,185 +160,26 @@
        hacía parecer que soltar archivos en esta disposición no funcionaba. Lo que se suelte fuera del árbol
        se importa en la raíz efectiva. Los destinos de dentro (filas de carpeta y fondo del árbol) marcan el
        evento como manejado, de modo que este de fuera solo ve lo que ninguno de ellos ha recogido. -->
-  <Grid ColumnDefinitions="Auto,Auto,*"
+  <controls:SidePanelGrid x:Name="DragSurface" ColumnDefinitions="Auto,Auto,*"
         DragDrop.AllowDrop="True"
         DragDrop.DragEnter="TreeView_DragEnter"
         DragDrop.DragOver="TreeView_DragOver"
         DragDrop.DragLeave="TreeView_DragLeave"
-        DragDrop.Drop="TreeView_Drop">
+        DragDrop.Drop="TreeView_Drop" IsPanelOnRight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SidePanels.FilesOnRight}">
 
     <!-- ===================== Panel lateral ===================== -->
     <Panel Grid.Column="0" x:Name="SidebarHost">
 
-      <!-- · Desplegado · -->
-      <Grid RowDefinitions="Auto,*,Auto" Width="{Binding TreeSidebarWidth}"
-            IsVisible="{Binding IsTreeSidebarVisible}"
-            Background="{DynamicResource AppBackgroundAltBrush}">
-
-        <!-- Barra superior: modo árbol / modo búsqueda a la izquierda, ocultar el panel a la derecha.
-             Alto fijo de 58 para casar al píxel con la barra de la previsualización. -->
-        <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
-                Background="{DynamicResource AppBackgroundBrush}" Padding="8,0">
-          <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-            <Button Grid.Column="0" Classes="icon-btn" Classes.active="{Binding !IsTreeSearchMode}"
-                    Command="{Binding ShowTreeBrowseCommand}"
-                    ToolTip.Tip="{loc:Tr Files_Tree_Browse_Tooltip}"
-                    AutomationProperties.Name="{loc:Tr Files_Tree_Browse_Tooltip}">
-              <mi:MaterialIcon Kind="FileTreeOutline" Width="17" Height="17" />
-            </Button>
-            <Button Grid.Column="1" Classes="icon-btn" Classes.active="{Binding IsTreeSearchMode}"
-                    Command="{Binding ShowTreeSearchCommand}"
-                    ToolTip.Tip="{loc:Tr Files_Tree_SearchPlaceholder}"
-                    AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
-              <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" />
-            </Button>
-            <Button Grid.Column="3" Classes="icon-btn"
-                    Command="{Binding ToggleTreeSidebarCommand}"
-                    ToolTip.Tip="{loc:Tr Files_Tree_HideSidebar_Tooltip}"
-                    AutomationProperties.Name="{loc:Tr Files_Tree_HideSidebar_Tooltip}">
-              <mi:MaterialIcon Kind="ChevronDoubleLeft" Width="17" Height="17" />
-            </Button>
-          </Grid>
-        </Border>
-
-        <!-- · Cuerpo: árbol · -->
-        <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding !IsTreeSearchMode}">
-          <!-- Fila de acciones. "Nueva carpeta" e "importar" trabajan sobre la raíz efectiva (el vault, o la
-               carpeta de la sesión elegida); para crear o importar dentro de una carpeta concreta está su menú
-               contextual en el árbol. -->
-          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" Margin="8,8,8,4"
-                      HorizontalAlignment="Center">
-            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding NewTreeFolderAtRootCommand}"
-                    ToolTip.Tip="{loc:Tr Files_NewFolderButton}"
-                    AutomationProperties.Name="{loc:Tr Files_NewFolderButton}">
-              <mi:MaterialIcon Kind="FolderPlusOutline" Width="16" Height="16" />
-            </Button>
-            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding ImportCommand}"
-                    CommandParameter="{Binding EffectiveRootPath}"
-                    ToolTip.Tip="{loc:Tr Files_ImportButton}"
-                    AutomationProperties.Name="{loc:Tr Files_ImportButton}">
-              <mi:MaterialIcon Kind="TrayArrowDown" Width="16" Height="16" />
-            </Button>
-            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CollapseTreeCommand}"
-                    ToolTip.Tip="{loc:Tr Files_Tree_Collapse_Tooltip}"
-                    AutomationProperties.Name="{loc:Tr Files_Tree_Collapse_Tooltip}">
-              <mi:MaterialIcon Kind="UnfoldLessHorizontal" Width="16" Height="16" />
-            </Button>
-          </StackPanel>
-
-          <!-- Cuerpo del árbol: recibe el foco del teclado (TreeBody_KeyDown) y es destino de arrastre. Soltar
-               un archivo sobre el fondo vacío lo saca de su carpeta —el equivalente de la fila "TODOS" del
-               explorador—, y un arrastre entrante del sistema importa aquí, igual que sobre la rejilla. -->
-          <Grid Grid.Row="1" x:Name="TreeBody" Background="Transparent" Focusable="True"
-                FocusAdorner="{x:Null}"
-                KeyDown="TreeBody_KeyDown"
-                DragDrop.AllowDrop="True"
-                DragDrop.DragEnter="TreeBackground_DragOver"
-                DragDrop.DragOver="TreeBackground_DragOver"
-                DragDrop.Drop="TreeBackground_Drop">
-            <ScrollViewer Padding="0,0,0,10">
-              <ItemsControl ItemsSource="{Binding FileTreeRoots}" Margin="8,0,0,0">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <StackPanel />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-              </ItemsControl>
-            </ScrollViewer>
-
-            <TextBlock Text="{loc:Tr Files_Tree_EmptyTree}" Classes="muted" FontSize="12"
-                       TextWrapping="Wrap" TextAlignment="Center" Margin="24,0"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       IsVisible="{Binding ShowTreeEmptyState}" />
-
-            <!-- Sesión protegida y bloqueada: ni siquiera los nombres de los adjuntos se listan — hay que
-                 desbloquearla desde Sesiones primero. -->
-            <StackPanel IsVisible="{Binding IsSelectedSessionLocked}" HorizontalAlignment="Center"
-                        VerticalAlignment="Center" Spacing="12" Margin="18,0" MaxWidth="240">
-              <mi:MaterialIcon Kind="LockOutline" Width="32" Height="32" Foreground="{DynamicResource TextMutedBrush}"
-                               HorizontalAlignment="Center" />
-              <TextBlock Text="{loc:Tr Files_LockedSession_Message}" Classes="muted" FontSize="12"
-                         HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-            </StackPanel>
-          </Grid>
-        </Grid>
-
-        <!-- · Cuerpo: búsqueda · -->
-        <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding IsTreeSearchMode}">
-          <TextBox Grid.Row="0" x:Name="TreeSearchBox" Classes="search" Margin="10,10,10,6" Height="34"
-                   Text="{Binding TreeSearchText}"
-                   KeyDown="TreeSearchBox_KeyDown"
-                   PlaceholderText="{loc:Tr Files_Tree_SearchPlaceholder}"
-                   AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
-            <TextBox.InnerLeftContent>
-              <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="10,0,0,0" />
-            </TextBox.InnerLeftContent>
-          </TextBox>
-
-          <ScrollViewer Grid.Row="1" Padding="0,0,0,10">
-            <ItemsControl ItemsSource="{Binding TreeSearchResults}" Margin="8,0,0,0">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <!-- Plantilla propia y no la recursiva del árbol: un resultado no se navega, se abre, así que
-                   no lleva flechita ni hijos, y en cambio sí dice en qué carpeta vive — que es justo lo que
-                   la sangría del árbol contaba y aquí se pierde. -->
-              <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="vm:FileTreeItemViewModel">
-                  <Border Classes="folder-row" Classes.active="{Binding IsSelected}" Padding="6,0,10,0"
-                          PointerPressed="SearchResult_PointerPressed">
-                    <Grid ColumnDefinitions="Auto,*" Height="38">
-                      <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="15" Height="15"
-                                       Margin="6,0,8,0" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
-                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Text="{Binding LocationLabel}" Classes="faint" FontSize="10"
-                                   TextTrimming="CharacterEllipsis" MaxLines="1" IsVisible="{Binding HasLocation}" />
-                      </StackPanel>
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-
-          <TextBlock Grid.Row="1" Text="{loc:Tr Files_Tree_SearchEmpty}" Classes="muted" FontSize="12"
-                     HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"
-                     TextAlignment="Center" Margin="24,0"
-                     IsVisible="{Binding ShowTreeSearchEmptyState}" />
-        </Grid>
-
-        <!-- · Pie: selector de sesión y contador de todo el árbol. El selector vive aquí, y no en la
-             cabecera, porque acota todo lo que se ve encima: mismo sitio que en la vista simplificada de Notas. -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10,8">
-          <StackPanel Spacing="6">
-            <ComboBox Height="32" HorizontalAlignment="Stretch"
-                      ItemsSource="{Binding SessionOptions}" SelectedItem="{Binding SelectedSessionOption}"
-                      AutomationProperties.Name="{loc:Tr A11y_Files_SessionSelector}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate DataType="vm:SessionOptionViewModel">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="{Binding IsVault, Converter={StaticResource SessionIconConverter}}"
-                                     Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{Binding DisplayName}" FontSize="12" />
-                  </StackPanel>
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-            <TextBlock Text="{Binding TreeFilesCountLabel}" Classes="faint" FontSize="10.5" Margin="4,0,0,0" />
-          </StackPanel>
-        </Border>
-      </Grid>
+      <!-- El panel fijado reserva espacio; el navegador temporal se superpone al contenido. -->
+      <Border Width="{Binding TreeSidebarWidth}" IsVisible="{Binding IsTreeSidebarVisible}" />
 
       <!-- · Contraído: raíl · -->
-      <!-- Con el panel oculto solo quedan las dos cosas que no se pueden dejar sin salida: volver a
-           mostrarlo y volver al modo explorador. -->
-      <Grid RowDefinitions="Auto,*,Auto" Width="46" IsVisible="{Binding !IsTreeSidebarVisible}"
-            Background="{DynamicResource AppBackgroundAltBrush}">
-        <Border Grid.Row="0" Grid.RowSpan="3" Width="1" HorizontalAlignment="Right"
+      <!-- Accesos persistentes, con las mismas medidas que el raíl de Notas. -->
+      <!-- El raíl usa el fondo de la app (`AppBackgroundBrush`, no el alterno) para leerse como el mismo
+           bloque que el panel desplegado y que la página; el alterno es más oscuro y marcaba una franja. -->
+      <Grid x:Name="CollapsedRail" RowDefinitions="Auto,*,Auto" Width="52" IsVisible="{Binding !IsTreeSidebarVisible}"
+            Background="{DynamicResource AppBackgroundBrush}">
+        <Border Classes="panel-seam" Grid.Row="0" Grid.RowSpan="3" Width="1"
                 Background="{DynamicResource Ink10}" IsHitTestVisible="False" />
         <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
                 Background="{DynamicResource AppBackgroundBrush}">
@@ -340,19 +187,87 @@
                   Command="{Binding ToggleTreeSidebarCommand}"
                   ToolTip.Tip="{loc:Tr Files_Tree_ShowSidebar_Tooltip}"
                   AutomationProperties.Name="{loc:Tr Files_Tree_ShowSidebar_Tooltip}">
-            <mi:MaterialIcon Kind="ChevronDoubleRight" Width="17" Height="17" />
+            <mi:MaterialIcon Classes="panel-chevron" Kind="ChevronDoubleRight" Width="17" Height="17" />
           </Button>
         </Border>
 
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="4" Margin="7,10" HorizontalAlignment="Center">
+            <Button x:Name="RailTreeButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ToggleTreePeekCommand}" Classes.active="{Binding IsTreePeekActive}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_Browse_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_Browse_Tooltip}">
+              <mi:MaterialIcon Kind="FileTreeOutline" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailSearchButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ToggleTreeSearchPeekCommand}" Classes.active="{Binding IsSearchPeekActive}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_SearchPlaceholder}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
+              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" />
+            </Button>
+            <Border Height="1" Margin="6,8" Background="{DynamicResource Ink10}" />
+            <Button x:Name="RailNewFolderButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}"
+                    ToolTip.Tip="{loc:Tr Files_NewFolderButton}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_NewFolderButton}">
+              <mi:MaterialIcon Kind="FolderPlusOutline" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailImportButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ImportCommand}" CommandParameter="{Binding EffectiveRootPath}"
+                    ToolTip.Tip="{loc:Tr Files_ImportButton}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_ImportButton}">
+              <mi:MaterialIcon Kind="TrayArrowDown" Width="18" Height="18" />
+            </Button>
+            <Border Height="1" Margin="6,8" Background="{DynamicResource Ink10}" />
+            <Button x:Name="RailBrowserButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding ShowBrowserViewCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Nav_Browser}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr Files_Nav_Browser}">
+              <mi:MaterialIcon Kind="ViewGridOutline" Width="18" Height="18" />
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
         <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="0,8">
-          <Button Classes="icon-btn" HorizontalAlignment="Center"
-                  Command="{Binding ShowBrowserViewCommand}"
-                  ToolTip.Tip="{loc:Tr Files_Nav_Browser}"
-                  AutomationProperties.Name="{loc:Tr Files_Nav_Browser}">
-            <mi:MaterialIcon Kind="ViewGridOutline" Width="17" Height="17" />
+          <Button x:Name="RailSessionButton" Classes="icon-btn" HorizontalAlignment="Center"
+                  Command="{Binding ToggleTreeSessionMenuCommand}" Classes.active="{Binding IsTreeSessionMenuOpen}"
+                  ToolTip.Tip="{Binding SelectedSessionOption.DisplayName}" ToolTip.Placement="Right"
+                  AutomationProperties.Name="{loc:Tr A11y_Files_SessionSelector}">
+            <mi:MaterialIcon Width="17" Height="17"
+                             Kind="{Binding SelectedSessionOption.IsVault, Converter={StaticResource SessionIconConverter}}" />
           </Button>
         </Border>
       </Grid>
+      <Popup IsOpen="{Binding IsTreeSessionMenuOpen, Mode=TwoWay}" PlacementTarget="{Binding #SidebarHost}"
+             Placement="AnchorAndGravity" PlacementAnchor="BottomLeft" PlacementGravity="TopRight"
+             HorizontalOffset="10" VerticalOffset="-8" IsLightDismissEnabled="True">
+        <Border Classes="dropdown-popover" MinWidth="240" Padding="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{loc:Tr A11y_Files_SessionSelector, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="eyebrow" FontSize="9.5" Margin="6,2,6,8" />
+            <ItemsControl ItemsSource="{Binding SessionOptions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:SessionOptionViewModel">
+                  <Button Classes="dropdown-item"
+                          Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).SelectTreeSessionOptionCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="9">
+                      <mi:MaterialIcon Width="14" Height="14" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Ink40}"
+                                       Kind="{Binding IsVault, Converter={StaticResource SessionIconConverter}}" />
+                      <TextBlock Text="{Binding DisplayName}" FontSize="12.5" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Popup>
     </Panel>
 
     <!-- Separador arrastrable. Igual que en la vista simplificada de Notas, la costura visible es una
@@ -424,6 +339,235 @@
       </StackPanel>
     </Grid>
 
+    <!-- Clic fuera cierra el navegador temporal sin activar la previsualización. -->
+    <Border Grid.Column="2" x:Name="NavigatorDismissArea" Background="Transparent"
+            IsVisible="{Binding IsTreeNavigatorOpen}" PointerPressed="NavigatorDismiss_PointerPressed" />
+    <Border Grid.Column="{Binding TreeNavigatorColumn}" x:Name="TreeNavigator"
+            Classes.dropdown-popover="{Binding IsTreeNavigatorOpen}"
+            Width="{Binding TreeSidebarWidth}" HorizontalAlignment="Left"
+            Padding="0" MaxHeight="Infinity" IsVisible="{Binding IsTreeNavigatorVisible}">
+      <!-- · Desplegado · -->
+      <!-- Mismo fondo de app que el raíl (`AppBackgroundBrush`) y que la barra superior de este panel,
+           para que plegado y desplegado se lean como un único bloque con el resto de la página. -->
+      <Grid RowDefinitions="Auto,*,Auto"
+            Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- Barra superior: modo árbol / modo búsqueda a la izquierda, ocultar el panel a la derecha.
+             Alto fijo de 58 para casar al píxel con la barra de la previsualización. -->
+        <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1"
+                Background="{DynamicResource AppBackgroundBrush}" Padding="8,0">
+          <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+            <Button Grid.Column="0" Classes="icon-btn" Classes.active="{Binding !IsTreeSearchMode}"
+                    Command="{Binding ShowTreeBrowseCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_Browse_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_Browse_Tooltip}">
+              <mi:MaterialIcon Kind="FileTreeOutline" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="1" Classes="icon-btn" Classes.active="{Binding IsTreeSearchMode}"
+                    Command="{Binding ShowTreeSearchCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_SearchPlaceholder}"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
+              <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="3" Classes="icon-btn" IsVisible="{Binding IsTreeSidebarVisible}"
+                    Command="{Binding ToggleTreeSidebarCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_HideSidebar_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_HideSidebar_Tooltip}">
+              <mi:MaterialIcon Classes="panel-chevron" Kind="ChevronDoubleLeft" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="3" Classes="icon-btn" IsVisible="{Binding IsTreeNavigatorOpen}"
+                    Command="{Binding ToggleTreeSidebarCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_ShowSidebar_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_ShowSidebar_Tooltip}">
+              <mi:MaterialIcon Kind="PinOutline" Width="17" Height="17" />
+            </Button>
+            <Button Grid.Column="4" Classes="icon-btn" IsVisible="{Binding IsTreeNavigatorOpen}"
+                    Command="{Binding CloseTreeNavigatorCommand}"
+                    ToolTip.Tip="{loc:Tr Common_Close}" AutomationProperties.Name="{loc:Tr Common_Close}">
+              <mi:MaterialIcon Kind="Close" Width="17" Height="17" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- · Cuerpo: árbol · -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding !IsTreeSearchMode}">
+          <!-- Fila de acciones. "Nueva carpeta" e "importar" trabajan sobre la raíz efectiva (el vault, o la
+               carpeta de la sesión elegida); para crear o importar dentro de una carpeta concreta está su menú
+               contextual en el árbol. -->
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" Margin="8,8,8,4"
+                      HorizontalAlignment="Center">
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}"
+                    ToolTip.Tip="{loc:Tr Files_NewFolderButton}"
+                    AutomationProperties.Name="{loc:Tr Files_NewFolderButton}">
+              <mi:MaterialIcon Kind="FolderPlusOutline" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding ImportCommand}"
+                    CommandParameter="{Binding EffectiveRootPath}"
+                    ToolTip.Tip="{loc:Tr Files_ImportButton}"
+                    AutomationProperties.Name="{loc:Tr Files_ImportButton}">
+              <mi:MaterialIcon Kind="TrayArrowDown" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CollapseTreeCommand}"
+                    ToolTip.Tip="{loc:Tr Files_Tree_Collapse_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr Files_Tree_Collapse_Tooltip}">
+              <mi:MaterialIcon Kind="UnfoldLessHorizontal" Width="16" Height="16" />
+            </Button>
+          </StackPanel>
+
+          <!-- Cuerpo del árbol: recibe el foco del teclado (TreeBody_KeyDown) y es destino de arrastre. Soltar
+               un archivo sobre el fondo vacío lo saca de su carpeta —el equivalente de la fila "TODOS" del
+               explorador—, y un arrastre entrante del sistema importa aquí, igual que sobre la rejilla. -->
+          <Grid Grid.Row="1" x:Name="TreeBody" Background="Transparent" Focusable="True"
+                FocusAdorner="{x:Null}"
+                KeyDown="TreeBody_KeyDown"
+                DragDrop.AllowDrop="True"
+                DragDrop.DragEnter="TreeBackground_DragOver"
+                DragDrop.DragOver="TreeBackground_DragOver"
+                DragDrop.Drop="TreeBackground_Drop">
+            <Grid.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="{loc:Tr Files_NewFolderButton, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CreateFolderDialogCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Files_ImportButton, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding ImportCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="TrayArrowDown" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V"
+                          Command="{Binding PasteEntryCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="ContentPaste" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="{loc:Tr Files_RevealInSystemMenuItem, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding RevealFolderCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Files_CopyPathMenuItem, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CopyPathCommand}" CommandParameter="{Binding EffectiveRootPath}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{loc:Tr Files_Tree_Collapse_Tooltip, Converter={StaticResource UpperCaseConverter}}"
+                          Command="{Binding CollapseTreeCommand}">
+                  <MenuItem.Icon><mi:MaterialIcon Kind="UnfoldLessHorizontal" Width="14" Height="14" /></MenuItem.Icon>
+                </MenuItem>
+              </ContextMenu>
+            </Grid.ContextMenu>
+            <ScrollViewer Padding="0,0,0,10">
+              <ItemsControl ItemsSource="{Binding FileTreeRoots}" Margin="8,0,0,0">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <TextBlock Text="{loc:Tr Files_Tree_EmptyTree}" Classes="muted" FontSize="12"
+                       TextWrapping="Wrap" TextAlignment="Center" Margin="24,0"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsVisible="{Binding ShowTreeEmptyState}" />
+
+            <!-- Sesión protegida y bloqueada: ni siquiera los nombres de los adjuntos se listan — hay que
+                 desbloquearla desde Sesiones primero. -->
+            <StackPanel IsVisible="{Binding IsSelectedSessionLocked}" HorizontalAlignment="Center"
+                        VerticalAlignment="Center" Spacing="12" Margin="18,0" MaxWidth="240">
+              <mi:MaterialIcon Kind="LockOutline" Width="32" Height="32" Foreground="{DynamicResource TextMutedBrush}"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{loc:Tr Files_LockedSession_Message}" Classes="muted" FontSize="12"
+                         HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </Grid>
+
+        <!-- · Cuerpo: búsqueda · -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding IsTreeSearchMode}">
+          <TextBox Grid.Row="0" x:Name="TreeSearchBox" Classes="search" Margin="10,10,10,6" Height="34"
+                   Text="{Binding TreeSearchText}"
+                   KeyDown="TreeSearchBox_KeyDown"
+                   PlaceholderText="{loc:Tr Files_Tree_SearchPlaceholder}"
+                   AutomationProperties.Name="{loc:Tr Files_Tree_SearchPlaceholder}">
+            <TextBox.InnerLeftContent>
+              <mi:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                               Margin="10,0,0,0" />
+            </TextBox.InnerLeftContent>
+          </TextBox>
+
+          <ScrollViewer Grid.Row="1" Padding="0,0,0,10">
+            <ItemsControl ItemsSource="{Binding TreeSearchResults}" Margin="8,0,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <!-- Plantilla propia y no la recursiva del árbol: un resultado no se navega, se abre, así que
+                   no lleva flechita ni hijos, y en cambio sí dice en qué carpeta vive — que es justo lo que
+                   la sangría del árbol contaba y aquí se pierde. -->
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:FileTreeItemViewModel">
+                  <Border Focusable="True" Classes="folder-row" Classes.active="{Binding IsSelected}" Classes.cut="{Binding IsCut}" Padding="6,0,10,0"
+                          PointerPressed="SearchResult_PointerPressed">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+              <MenuItem Header="{loc:Tr Folders_Manage, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding IsFolder}" Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).ManageFolderCommand}" CommandParameter="{Binding}" />
+              <Separator />
+                        <MenuItem Header="{loc:Tr Explorer_Copy, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+C"
+                                  Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CopyEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="{loc:Tr Explorer_Cut, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+X"
+                                  Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).CutEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="{loc:Tr Explorer_Paste, Converter={StaticResource UpperCaseConverter}}" InputGesture="Ctrl+V"
+                                  Command="{Binding $parent[UserControl].((vm:FilesViewModel)DataContext).PasteEntryCommand}"
+                                  CommandParameter="{Binding}" />
+                      </ContextMenu>
+                    </Border.ContextMenu>
+                    <Grid ColumnDefinitions="Auto,*" Height="38">
+                      <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="15" Height="15"
+                                       Margin="6,0,8,0" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding LocationLabel}" Classes="faint" FontSize="10"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" IsVisible="{Binding HasLocation}" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <TextBlock Grid.Row="1" Text="{loc:Tr Files_Tree_SearchEmpty}" Classes="muted" FontSize="12"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"
+                     TextAlignment="Center" Margin="24,0"
+                     IsVisible="{Binding ShowTreeSearchEmptyState}" />
+        </Grid>
+
+        <!-- · Pie: selector de sesión y contador de todo el árbol. El selector vive aquí, y no en la
+             cabecera, porque acota todo lo que se ve encima: mismo sitio que en la vista simplificada de Notas. -->
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="10">
+          <StackPanel Spacing="6">
+            <ComboBox Height="32" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding SessionOptions}" SelectedItem="{Binding SelectedSessionOption}"
+                      AutomationProperties.Name="{loc:Tr A11y_Files_SessionSelector}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate DataType="vm:SessionOptionViewModel">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="{Binding IsVault, Converter={StaticResource SessionIconConverter}}"
+                                     Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="{Binding TreeFilesCountLabel}" Classes="faint" FontSize="10.5" Margin="4,0,0,0" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+    </Border>
+
     <!-- Realce mientras un arrastre válido del explorador del sistema sobrevuela la vista: un recuadro por
          encima de todo —IsHitTestVisible="False" para no interponerse en el propio arrastre—, con el mismo
          lenguaje "borde InkBrush" que Border.files-grid-panel.drag-over en el modo explorador. Se apaga
@@ -431,5 +575,5 @@
     <Border Grid.Column="0" Grid.ColumnSpan="3" IsHitTestVisible="False"
             IsVisible="{Binding IsGridDropTarget}"
             BorderBrush="{DynamicResource InkBrush}" BorderThickness="2" />
-  </Grid>
+  </controls:SidePanelGrid>
 </UserControl>

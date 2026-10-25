@@ -22,6 +22,8 @@ namespace enki.ViewModels;
 /// destino de arrastre.</summary>
 public sealed partial class FileTreeItemViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     /// <summary>La carpeta que representa este nodo, o null si es un archivo.</summary>
     public NoteFolder? Folder { get; private set; }
 

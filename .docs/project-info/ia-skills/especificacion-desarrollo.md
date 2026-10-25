@@ -8,6 +8,9 @@
 >
 > **Fuente de verdad**: si algo aquí deja de coincidir con el código, el código manda.
 
+> Actualización de la interfaz y estabilidad: [Editor y biblioteca de habilidades](editor-y-biblioteca.md).
+> Esa guía detalla la creación directa, el nuevo lector/editor y los destinos de arrastre.
+
 ## Qué es una "skill" en Enki
 
 Una skill es, literalmente, **un archivo Markdown con frontmatter YAML** — una plantilla de prompt

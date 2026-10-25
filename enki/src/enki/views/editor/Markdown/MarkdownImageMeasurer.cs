@@ -35,6 +35,10 @@ internal static class MarkdownImageMeasurer
         if (double.IsNaN(available) || available <= 0) available = EditorPreferences.ColumnWidth;
         available = Math.Min(available, maxWidth);
 
+        if (NoteAttachmentService.IsAttachmentTarget(span.LinkTarget ?? string.Empty))
+            return new MarkdownImageLayout(new MarkdownImageEntry { State = MarkdownImageState.Ready },
+                Math.Max(1, Math.Min(available, 420)), Math.Max(48, textView.DefaultLineHeight * 2));
+
         // Se decodifica a los píxeles físicos que la imagen va a ocupar: en una pantalla HiDPI, decodificar
         // al ancho lógico dejaría toda imagen grande visiblemente borrosa.
         var scaling = TopLevel.GetTopLevel(textView)?.RenderScaling ?? 1.0;

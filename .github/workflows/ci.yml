@@ -57,6 +57,24 @@ jobs:
       - name: Run UI tests (enki.UITests)
         run: dotnet test enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
 
+  graph-compatibility:
+    name: Grafo sin navegador (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+      # Linux ejecuta estos mismos casos en build-and-test. No se instala ningún runtime web.
+      - name: Verificar renderizado e interacción sin WebView
+        run: dotnet test enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --filter "FullyQualifiedName~NativeSessionGraphUiTests|FullyQualifiedName~SessionsGraphFiltersUiTests"
+
   lint-packaging:
     name: Lint de scripts de empaquetado
     runs-on: ubuntu-latest

@@ -101,6 +101,23 @@ public class FileCardViewModelTests : IDisposable
     }
 
     [Fact]
+    public void LegacyWindowsText_IsDecodedWithoutReplacementCharacters()
+    {
+        var card = CardFor("legacy.txt", [0x63, 0x61, 0x66, 0xe9, 0x20, 0x80]);
+        card.EnsureCodeContentLoaded();
+        Assert.Equal("café €", card.CodeContent);
+    }
+
+    [Fact]
+    public void Utf32BigEndian_IsNotMistakenForBinary()
+    {
+        var encoding = new UTF32Encoding(true, true);
+        var card = CardFor("unicode.txt", encoding.GetPreamble().Concat(encoding.GetBytes("Año 🌿")).ToArray());
+        card.EnsureCodeContentLoaded();
+        Assert.Equal("Año 🌿", card.CodeContent);
+    }
+
+    [Fact]
     public void UpdateFile_ForgetsTheLoadedText_SoItIsReadAgainFromTheNewFile()
     {
         var card = CardFor("uno.txt", Encoding.UTF8.GetBytes("uno"));

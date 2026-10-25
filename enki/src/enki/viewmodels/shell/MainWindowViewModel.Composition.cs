@@ -18,6 +18,8 @@ namespace enki.ViewModels;
 /// file declares them — so no wiring, timing or field-initialization order changed by this split.</summary>
 public sealed partial class MainWindowViewModel
 {
+    public SidePanelLayoutViewModel SidePanels { get; }
+
     public MainWindowViewModel() : this(new SettingsService()) { }
 
     public MainWindowViewModel(SettingsService settingsService)
@@ -38,6 +40,7 @@ public sealed partial class MainWindowViewModel
         _brandLogoService = new BrandLogoService(_settingsService);
         _brandLogoService.LogoChanged += ReloadBrandLogo;
         _settingsService.SettingsChanged += RefreshBrandLogo;
+        _settingsService.SettingsChanged += RefreshWindowControls;
         ReloadBrandLogo();
         // Fase 0 del roadmap de deficiencias: Program.Main ya inicializó LogService con el nivel Warning
         // por defecto antes de que este ajuste (persistido en settings.json) exista siquiera — aquí es
@@ -60,6 +63,8 @@ public sealed partial class MainWindowViewModel
         _sessionService = new SessionService(_vaultService);
         _kanbanService = new KanbanService(_vaultService, deferSeedCreation: SupportedLanguages.Find(_settingsService.Settings.Language) is null);
         _notificationService = new NotificationService(_settingsService, _vaultService);
+        SidePanels = new SidePanelLayoutViewModel(_settingsService, _notificationService);
+        _settingsService.SettingsChanged += SidePanels.Reload;
         void NotifyCorruptVaultSettings(string backupPath) => _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Notification_VaultSettingsCorrupt_Title"),
             LocalizedTextFormatter.Format("Notification_VaultSettingsCorrupt_Message", backupPath),
@@ -91,6 +96,13 @@ public sealed partial class MainWindowViewModel
         _polarTaskService = new PolarTaskService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
         _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService, _vaultSettingsService);
         _polarRealtimeService = new PolarRealtimeService(_polarAuthService, _polarSyncService);
+        // La clave de API del modo "Claude con clave propia" vive en el almacén seguro del sistema, con su
+        // propia entrada junto a la sesión de Polar; el almacén no se abre hasta que se usa ese modo.
+        _claudeCliService = new ClaudeCliService(_settingsService,
+            apiKeys: new AiApiKeyStore(System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath)!));
+        _aiChatService = new AiChatService();
+        AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService, backend: new AiBackendService(_claudeCliService, _settingsService));
+        InitializePageRefresh();
 
         // Fase 1 (docs/analisis-proyecto/roadmap.md): extiende el patrón de KanbanService.LoadedFromCorruptData
         // (antes el único caso) al resto de los stores JSON de arranque, para que un archivo dañado avise
@@ -107,7 +119,7 @@ public sealed partial class MainWindowViewModel
         {
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Title"),
-                LocalizedTextFormatter.Format("Notification_KanbanCorrupt_Message"),
+                LocalizedTextFormatter.Format("Kanban_Multi_LoadFailed"),
                 Models.NotificationSeverity.Error);
         }
         if (_notificationService.LoadedFromCorruptData)
@@ -149,6 +161,7 @@ public sealed partial class MainWindowViewModel
         _tagManagerPanelEnabled = _settingsService.Settings.TagManagerPanelEnabled;
         _habitsPanelEnabled = _settingsService.Settings.HabitsPanelEnabled;
         _statisticsPanelEnabled = _settingsService.Settings.StatisticsPanelEnabled;
+        _assistantPanelEnabled = _settingsService.Settings.Ai.Enabled;
         _uiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
 
         // Always live (not gated behind vault readiness): the kanban board and the notification log are
@@ -187,8 +200,7 @@ public sealed partial class MainWindowViewModel
             {
                 if (result.Destination == Models.QuickCaptureDestination.InboxNote) Notes?.Reload();
                 else Kanban?.Reload();
-                Dashboard?.Reload();
-                Statistics?.Reload();
+                InvalidatePages(AppPage.Dashboard, AppPage.Statistics);
             });
         _globalHotkeyService = new GlobalHotkeyService();
         _shortcutChangedHandler = () => ApplyQuickCaptureHotkey(notifyOnFailure: true);
@@ -388,7 +400,10 @@ public sealed partial class MainWindowViewModel
     {
         LanguageSetup = null;
 
-        if (_vaultService.IsVaultConfigured && SingleInstanceGuard.IsFirstInstance)
+        // La misma condición que consulta MainWindow para decidir si arranca con la pantalla de arranque
+        // puesta (ver StartupGate): escrita una sola vez, porque la ventana decide antes de que este método
+        // exista y las dos respuestas tienen que coincidir.
+        if (StartupGate.OpensShellDirectly(_settingsService))
         {
             InitializeShell();
         }
@@ -466,8 +481,12 @@ public sealed partial class MainWindowViewModel
         IsZenMode = false;
 
         var calendarLayerColorService = new CalendarLayerColorService(_kanbanService, _polarTaskService, _polarAuthService, _settingsService);
-        var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService);
-        Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor);
+        var externalCalendarService = new ExternalCalendarService(System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath));
+        externalCalendarService.RefreshFailed += _ => _notificationService.Push(
+            LocalizationService.Instance["Calendar_External_Source"],
+            LocalizationService.Instance["Calendar_External_Failed"], enki.Models.NotificationSeverity.Warning);
+        var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService, externalCalendarService);
+        Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor, externalCalendarService);
         Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService,
             _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics), _vaultChangeWatcher);
         Notes.PropertyChanged += OnNotesPropertyChanged;
@@ -476,7 +495,40 @@ public sealed partial class MainWindowViewModel
         // estén abiertas la primera vez que el usuario navega a Documentos.
         Notes.RestoreOpenTabs();
         Files = new FilesViewModel(_vaultService, _sessionService, _notificationService, _settingsService);
-        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService);
+        var skillService = new SkillService(_vaultService);
+        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService, StartAssistantChatWithSkill, skillService)
+        {
+            IsAssistantAvailable = AssistantPanelEnabled
+        };
+        // Herramientas del vault para el asistente: trabajan sobre los mismos servicios que las pantallas y
+        // avisan a Notas antes y después de tocar una nota, igual que sus propias acciones. El servidor MCP no
+        // escucha hasta el primer turno con la IA encendida.
+        _aiVaultTools?.Stop();
+        var aiVaultToolbox = new AiVaultToolbox(_vaultService, _sessionService, _kanbanService, _polarTaskService, _polarAuthService,
+            _reminderService, _settingsService, calendarAggregationService, new AiVaultHost
+            {
+                PrepareNoteChange = path => Notes.PrepareAssistantNoteChange(path),
+                NoteChanged = (oldPath, note) => Notes.ApplyAssistantNoteChange(oldPath, note),
+                PrepareSessionRemoval = session => Notes.CloseEditorsUnderSession(session, out _),
+                SessionsChanged = OnSessionsChanged,
+                VaultChanged = OnAssistantChangedVault
+            }, skillService);
+        _aiVaultTools = new EnkiMcpServer(aiVaultToolbox, work => Dispatcher.UIThread.InvokeAsync(work));
+        Assistant = new AssistantViewModel(_claudeCliService, _aiChatService, _settingsService, _vaultService,
+            _notificationService, AiCliStatus, _sessionService,
+            activeNoteProvider: () => Notes?.ActiveEditor?.Note,
+            flushPendingEdits: () => { foreach (var editor in Notes.OpenEditors) editor.FlushPendingSave(); },
+            openNote: note => { Navigate(AppPage.Notes); Notes.OpenNote(note); },
+            openSettings: OpenAiSettings,
+            vaultTools: _aiVaultTools,
+            openKanbanCard: OpenKanbanCard,
+            isVisible: () => IsAssistantVisible,
+            isPolarLinked: () => _polarAuthService.IsLinked,
+            vaultIdentity: create => create ? _vaultSettingsService.EnsureVaultId() : _vaultSettingsService.Settings.VaultId,
+            appendToNote: aiVaultToolbox.AppendToNote);
+        // El botón del asistente de la barra de título y el panel lateral pueden enlazarse antes de que
+        // exista (primer arranque, con la configuración del vault delante): se les avisa de que ya está.
+        OnPropertyChanged(nameof(Assistant));
         var taskManagement = new PolarTaskManagementViewModel(_polarTaskService, _polarSyncService, _settingsService)
         {
             ShowTagFilter = _settingsService.Settings.PolarShowTaskTags
@@ -484,16 +536,21 @@ public sealed partial class MainWindowViewModel
         Kanban = new KanbanViewModel(_kanbanService, _polarAuthService, taskManagement, _vaultService, _sessionService, OpenLinkedNoteFromKanban, _settingsService, _notificationService);
         Habits = new HabitsViewModel(_habitService, _settingsService);
         var statisticsAggregationService = new StatisticsAggregationService(_vaultService, _kanbanService, _polarTaskService, _polarAuthService, _habitService, _reminderService, _sessionService);
-        Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService, _settingsService);
+        Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService, _settingsService,
+            loadOnCreate: false, loadInBackground: true, notificationService: _notificationService);
         Dashboard = new DashboardViewModel(_vaultService, _sessionService, _kanbanService, _polarTaskService,
             _polarAuthService, _notificationService, calendarAggregationService, _habitService, OpenNoteFromDashboard,
             () => Notes.NewNoteCommand.Execute(null), () => Navigate(AppPage.Kanban), () => Navigate(AppPage.Sessions),
             () => Navigate(AppPage.Notes), () => Navigate(AppPage.Trash),
             CalendarPanelEnabled, () => Navigate(AppPage.Calendar), OpenReminders, OpenNotifications, OpenSettings,
             () => Navigate(AppPage.Habits),
-            _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService);
+            _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService,
+            loadOnCreate: false, loadInBackground: true);
         Sessions = new SessionsViewModel(_vaultService, _sessionService, _notificationService, OpenSessionInNotes, OnSessionsChanged,
-            _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession);
+            _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession, StartAssistantChatInSession)
+        {
+            IsAssistantAvailable = AssistantPanelEnabled
+        };
         Trash = new TrashViewModel(_vaultService, _kanbanService, _polarTaskService, _reminderService, _notificationService, _sessionService, OnSessionsChanged);
         Trash.PropertyChanged += (_, e) =>
         {
@@ -516,8 +573,7 @@ public sealed partial class MainWindowViewModel
                 Notes.Reload();
                 Kanban.Reload();
                 Kanban.TaskManagement.Reload();
-                Dashboard?.Reload();
-                Statistics?.Reload();
+                InvalidatePages(AppPage.Dashboard, AppPage.Statistics);
             });
         Settings = new SettingsViewModel(_settingsService, _customThemeService, _brandLogoService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, SwitchToVaultAsync, OnTitleBarModeChanged,
@@ -525,7 +581,10 @@ public sealed partial class MainWindowViewModel
             OnSidebarSectionChanged, OnSidebarSectionOrderChanged, OnCalendarSettingsChanged, OnDashboardShowScrollbarModeChanged,
             OnKanbanBoardOrientationChanged,
             OnPolarShowTaskTagsChanged, OnUiZoomChanged, RefreshAllLocalizedLabels, _noteTemplateService,
-            OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService);
+            OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
+            () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; },
+            _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService,
+            AiCliStatus, _aiChatService, SidePanels);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>
@@ -539,6 +598,10 @@ public sealed partial class MainWindowViewModel
 
         RebuildNavItems();
 
+        _dirtyPages.Clear();
+        _dirtyPages.Add(AppPage.Statistics);
+        _dirtyPages.Add(AppPage.Dashboard);
+
         var startupPage = ResolveStartupPage();
         CurrentPage = startupPage switch
         {
@@ -548,12 +611,17 @@ public sealed partial class MainWindowViewModel
             AppPage.Files => Files,
             AppPage.Sessions => Sessions,
             AppPage.TagManager => TagManager,
+            AppPage.Habits => Habits,
+            AppPage.Statistics => Statistics,
             _ => Dashboard
         };
         foreach (var item in NavItems) item.IsActive = item.Page == startupPage;
         foreach (var item in BottomNavItems) item.IsActive = item.Page == startupPage;
         VaultSetup = null;
         IsVaultReady = true;
+        // La página de inicio se prepara antes que las demás y es la que fija en qué momento se retira la
+        // pantalla de arranque: ver RunSectionWarmUpAsync.
+        StartSectionWarmUp(startupPage);
 
         UpdateTrashBadge();
         UpdateCalendarBadge();

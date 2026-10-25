@@ -65,7 +65,7 @@ public sealed class NoteTemplateService
 
     // ===================== Siembra =====================
 
-    /// <summary>Crea la carpeta de plantillas y siembra los dos ejemplos traducidos si —y solo si— la
+    /// <summary>Crea la carpeta de plantillas y siembra los ejemplos traducidos si —y solo si— la
     /// carpeta no existía todavía.
     ///
     /// <para>La marca de "ya sembrado" es la existencia de la carpeta, no que esté vacía (el criterio de
@@ -95,6 +95,7 @@ public sealed class NoteTemplateService
                 LocalizationService.Instance["Templates_Seed_Meeting_Description"],
                 titlePattern: null,
                 LocalizationService.Instance["Templates_Seed_Meeting_Body"]);
+            AddSuggestedTemplatesCore();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -105,6 +106,36 @@ public sealed class NoteTemplateService
         }
 
         TemplatesChanged?.Invoke();
+    }
+
+    /// <summary>Añade las plantillas de proyecto y lectura a un vault existente por petición expresa
+    /// del usuario. Solo crea los archivos ausentes; nunca modifica una plantilla personalizada.</summary>
+    public int AddSuggestedTemplates()
+    {
+        Directory.CreateDirectory(TemplatesDirectory);
+        var added = AddSuggestedTemplatesCore();
+        if (added > 0) TemplatesChanged?.Invoke();
+        return added;
+    }
+
+    private int AddSuggestedTemplatesCore()
+    {
+        var added = 0;
+        foreach (var category in new[] { "Project", "Reading" })
+        {
+            var fileName = category.ToLowerInvariant() + ".md";
+            var path = Path.Combine(TemplatesDirectory, fileName);
+            if (File.Exists(path)) continue;
+
+            var prefix = "Templates_Seed_" + category + "_";
+            WriteTemplateFile(path,
+                LocalizationService.Instance[prefix + "Name"],
+                LocalizationService.Instance[prefix + "Description"],
+                titlePattern: null,
+                LocalizationService.Instance[prefix + "Body"], overwrite: false);
+            added++;
+        }
+        return added;
     }
 
     // ===================== Lectura =====================
@@ -251,7 +282,8 @@ public sealed class NoteTemplateService
     /// temporal y <see cref="File.Move(string, string, bool)"/>—, mismo patrón que
     /// <see cref="VaultService.WriteContent"/> y <see cref="SkillService.SaveSkill"/>: nadie llega a leer
     /// una plantilla a medio escribir.</summary>
-    private static void WriteTemplateFile(string path, string name, string description, string? titlePattern, string body)
+    private static void WriteTemplateFile(string path, string name, string description, string? titlePattern, string body,
+        bool overwrite = true)
     {
         var frontMatter = new List<string>
         {
@@ -266,7 +298,8 @@ public sealed class NoteTemplateService
 
         var tempPath = $"{path}.tmp-{Guid.NewGuid():N}";
         File.WriteAllText(tempPath, content);
-        File.Move(tempPath, path, overwrite: true);
+        try { File.Move(tempPath, path, overwrite); }
+        finally { if (File.Exists(tempPath)) File.Delete(tempPath); }
     }
 
     /// <summary>Entrecomillado YAML de un escalar. Se cita siempre en vez de solo cuando hace falta: los

@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:models="clr-namespace:enki.Models"
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
@@ -239,6 +240,37 @@
          El dato mono de la fila de metadatos es el recuento de notas y no una fecha (Session no guarda
          cuándo se borró): es además el dato que decide la acción, porque restaurar o purgar una sesión
          arrastra consigo toda su carpeta de notas. -->
+    <DataTemplate DataType="models:NoteFolder">
+      <Border Classes="card trash-card">
+        <Grid RowDefinitions="16,*,30">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="7">
+            <mi:MaterialIcon Kind="FolderOutline" Width="13" Height="13"
+                             Foreground="{DynamicResource Ink30}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr Folders_Trash}" Classes="trash-card-meta" />
+          </StackPanel>
+
+          <TextBlock Grid.Row="1" Text="{Binding Name}" Classes="trash-card-title"
+                     Margin="0,10,0,8" VerticalAlignment="Top" />
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Classes="icon-btn trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RestoreFolderCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_RestoreTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_RestoreTooltip}">
+              <mi:MaterialIcon Kind="Restore" Width="15" Height="15" />
+            </Button>
+            <Button Classes="icon-btn icon-btn-danger trash-card-action"
+                    Command="{Binding $parent[ItemsControl].((vm:TrashViewModel)DataContext).RequestDeleteFolderForeverCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{loc:Tr Trash_DeleteForeverTooltip}"
+                    AutomationProperties.Name="{loc:Tr Trash_DeleteForeverTooltip}">
+              <mi:MaterialIcon Kind="DeleteForeverOutline" Width="15" Height="15" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
     <DataTemplate DataType="vm:TrashedSessionCardViewModel">
       <Border Classes="card trash-card">
         <Grid RowDefinitions="16,*,30">
@@ -278,14 +310,15 @@
          240px se reparten a lo largo de toda la pantalla y la página deja de alinearse con el resto. -->
     <Grid RowDefinitions="Auto,*" Margin="36,30,36,26" MaxWidth="1180" HorizontalAlignment="Stretch">
 
-      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,24">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,28">
         <StackPanel Grid.Column="0" Spacing="6">
           <TextBlock Text="{loc:Tr Trash_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
           <TextBlock Text="{loc:Tr Trash_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
           <TextBlock Text="{loc:Tr Trash_PageSubtitle}" Classes="page-subtitle" />
         </StackPanel>
 
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"
+                    IsVisible="{Binding !IsFullyEmpty}">
           <!-- El mismo total que la insignia del nav, escrito, para no tener que sumar de cabeza las
                seis secciones. Se oculta cuando no hay nada que contar. -->
           <Border Classes="trash-count-badge" IsVisible="{Binding !IsFullyEmpty}">
@@ -305,11 +338,32 @@
       <!-- Margen derecho extra en el contenido (no Padding del ScrollViewer, mismo motivo que en
            Dashboard/Ajustes: Avalonia 12 resta el padding del extent scrolleable) — deja hueco para que
            la scrollbar no se dibuje encima de los botones "VACIAR" de cada sección. -->
-      <ScrollViewer Grid.Row="1">
-        <StackPanel Spacing="30" Margin="0,0,16,0">
+      <!-- Cuando no hay elementos, una sola composición evita repetir siete paneles vacíos y
+           acciones deshabilitadas. Las categorías reaparecen en cuanto hay algo recuperable. -->
+      <Border Grid.Row="1" Classes="trash-overview-empty" IsVisible="{Binding IsFullyEmpty}">
+        <StackPanel Spacing="22" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    MaxWidth="450" Margin="24">
+          <Border Classes="trash-overview-icon" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="TrashCanOutline" Width="36" Height="36"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+          </Border>
+          <StackPanel Spacing="9">
+            <TextBlock Text="{loc:Tr Trash_OverviewEmptyTitle, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="trash-overview-title" TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Trash_OverviewEmptyDescription}" Classes="trash-overview-description"
+                       TextAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+          <Border Classes="trash-count-badge" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding TotalCountLabel, Converter={StaticResource UpperCaseConverter}}" />
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <ScrollViewer Grid.Row="1" IsVisible="{Binding !IsFullyEmpty}" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="32" Margin="0,0,16,0">
 
           <!-- ===================== Documentos ===================== -->
-          <StackPanel Spacing="14">
+          <StackPanel Spacing="14" IsVisible="{Binding !IsEmpty}">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
               <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
                          Text="{loc:Tr Trash_Documents_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
@@ -338,16 +392,10 @@
               </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <Border Classes="trash-empty-state" IsVisible="{Binding IsEmpty}">
-              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="NoteTextOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
-                <TextBlock Text="{loc:Tr Trash_Documents_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
           </StackPanel>
 
           <!-- ===================== Archivos ===================== -->
-          <StackPanel Spacing="14">
+          <StackPanel Spacing="14" IsVisible="{Binding !IsFilesEmpty}">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
               <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
                          Text="{loc:Tr Trash_Files_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
@@ -373,16 +421,10 @@
               </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <Border Classes="trash-empty-state" IsVisible="{Binding IsFilesEmpty}">
-              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="FileOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
-                <TextBlock Text="{loc:Tr Trash_Files_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
           </StackPanel>
 
           <!-- ===================== Tareas ===================== -->
-          <StackPanel Spacing="14">
+          <StackPanel Spacing="14" IsVisible="{Binding !IsTasksEmpty}">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
               <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
                          Text="{loc:Tr Trash_Tasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
@@ -408,19 +450,13 @@
               </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <Border Classes="trash-empty-state" IsVisible="{Binding IsTasksEmpty}">
-              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="ViewColumnOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
-                <TextBlock Text="{loc:Tr Trash_Tasks_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
           </StackPanel>
 
           <!-- ===================== Tareas Polar (análisis alfa-3 §4.3) =====================
                Única sección con dos colecciones (listas y tareas). Cada una tiene su propio WrapPanel,
                así que van bajo su propio subtítulo: sin él, el salto de línea entre la última lista y
                la primera tarea se lee como una fila rota en vez de como el cambio de grupo que es. -->
-          <StackPanel Spacing="14">
+          <StackPanel Spacing="14" IsVisible="{Binding !IsPolarTasksEmpty}">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
               <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
                          Text="{loc:Tr Trash_PolarTasks_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
@@ -472,12 +508,6 @@
               </ItemsControl>
             </StackPanel>
 
-            <Border Classes="trash-empty-state" IsVisible="{Binding IsPolarTasksEmpty}">
-              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="CloudOffOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
-                <TextBlock Text="{loc:Tr Trash_PolarTasks_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
 
             <Border Classes="trash-hint" IsVisible="{Binding !IsPolarTasksEmpty}">
               <Grid ColumnDefinitions="Auto,*">
@@ -490,7 +520,7 @@
           </StackPanel>
 
           <!-- ===================== Recordatorios ===================== -->
-          <StackPanel Spacing="14">
+          <StackPanel Spacing="14" IsVisible="{Binding !IsRemindersEmpty}">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
               <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
                          Text="{loc:Tr Trash_Reminders_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
@@ -516,12 +546,6 @@
               </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <Border Classes="trash-empty-state" IsVisible="{Binding IsRemindersEmpty}">
-              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="BellRingOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
-                <TextBlock Text="{loc:Tr Trash_Reminders_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
 
             <!-- análisis alfa-3 §4.3, Baja: sin esta pista, la ausencia del botón "borrar para siempre" que
                  sí tienen el resto de categorías se puede leer como un bug en vez de una decisión deliberada
@@ -536,8 +560,19 @@
             </Border>
           </StackPanel>
 
+          <StackPanel Spacing="14" IsVisible="{Binding Folders.Count, Converter={StaticResource CountToBoolConverter}}">
+            <Grid ColumnDefinitions="Auto,Auto,*" Height="28">
+              <TextBlock Classes="eyebrow" Text="{loc:Tr Folders_Trash}" VerticalAlignment="Center" />
+              <Border Grid.Column="1" Classes="trash-count-badge" Margin="6,0,0,0"><TextBlock Text="{Binding Folders.Count}" /></Border>
+              <Rectangle Grid.Column="2" Classes="section-rule" Margin="16,0" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Folders}" Margin="0,0,-16,-16">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </StackPanel>
+
           <!-- ===================== Sesiones ===================== -->
-          <StackPanel Spacing="14">
+          <StackPanel Spacing="14" IsVisible="{Binding !IsSessionsEmpty}">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" Height="28">
               <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
                          Text="{loc:Tr Trash_Sessions_Eyebrow, Converter={StaticResource UpperCaseConverter}}" />
@@ -563,12 +598,6 @@
               </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <Border Classes="trash-empty-state" IsVisible="{Binding IsSessionsEmpty}">
-              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="SitemapOutline" Width="17" Height="17" Foreground="{DynamicResource Ink30}" />
-                <TextBlock Text="{loc:Tr Trash_Sessions_Empty}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
           </StackPanel>
 
         </StackPanel>

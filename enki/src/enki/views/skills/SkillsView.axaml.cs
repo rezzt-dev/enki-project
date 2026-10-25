@@ -44,6 +44,13 @@ public partial class SkillsView : UserControl
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(SkillsViewModel.IsTreeView)) ApplyLayout();
+        if (e.PropertyName == nameof(SkillsViewModel.NamePrompt) && Vm?.NamePrompt is not null)
+            Dispatcher.UIThread.Post(() =>
+            {
+                var input = this.FindControl<TextBox>("NamePromptTextBox");
+                input?.Focus();
+                input?.SelectAll();
+            }, DispatcherPriority.Input);
     }
 
     private void NamePromptTextBox_Initialized(object? sender, EventArgs e)

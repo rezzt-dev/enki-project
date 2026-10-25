@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using enki.Models;
 
 namespace enki.Services;
@@ -102,6 +103,32 @@ public sealed record StatisticsReport(
 
 public sealed partial class StatisticsAggregationService
 {
+    /// <summary>Resultado efímero de una sola lectura del disco. No captura las listas mutables de
+    /// tareas o hábitos: esas se agregan en el hilo de UI una vez terminada la lectura.</summary>
+    internal sealed record VaultStatisticsSnapshot(string VaultPath, List<NoteFile> Notes,
+        List<(NoteFile Note, DateTime Created, DateTime Modified)> NoteTimes,
+        List<ChartDatum> FileTypes, List<ChartDatum> SessionNotes, VaultComposition Vault);
+
+    internal Task<VaultStatisticsSnapshot> ReadVaultSnapshotAsync() => Task.Run(ReadVaultSnapshot);
+
+    private VaultStatisticsSnapshot ReadVaultSnapshot()
+    {
+        var root = vaultService.VaultPath;
+        var notes = !string.IsNullOrEmpty(root) && Directory.Exists(root)
+            ? vaultService.GetAllNotesRecursive(root) : [];
+        var times = notes.Select(n => (Note: n, Created: SafeCreationTimeUtc(n).ToLocalTime(),
+            Modified: n.ModifiedUtc.ToLocalTime())).ToList();
+        var files = BuildFileTypes(out var filesCount, out var filesBytes);
+        var sessions = sessionService?.List();
+        var sessionNotes = sessions is null ? [] : sessions.OrderByDescending(s => s.NoteCount)
+            .Take(TopListSize).Select(s => new ChartDatum(s.Name, s.NoteCount)).ToList();
+        return new(root, notes, times, files, sessionNotes,
+            BuildVaultComposition(notes, filesCount, filesBytes, sessions?.Count ?? CountSessionDirectories()));
+    }
+
+    internal bool IsSnapshotCurrent(VaultStatisticsSnapshot snapshot) =>
+        string.Equals(snapshot.VaultPath, vaultService.VaultPath, VaultService.PathComparison);
+
     /// <summary>Ventana fija del mapa de calor anual — 53 columnas para que siempre entre un año completo
     /// aunque el primer día caiga a mitad de semana.</summary>
     private const int HeatmapWeeks = 53;
@@ -112,7 +139,10 @@ public sealed partial class StatisticsAggregationService
     /// <paramref name="rangeEndUtc"/>). El mapa de calor anual y la composición del vault son
     /// deliberadamente independientes del rango: uno es un histórico fijo y la otra es una foto del
     /// estado actual, y ninguno de los dos significaría nada recortado a "esta semana".</summary>
-    public StatisticsReport BuildReport(DateTime rangeStartUtc, DateTime rangeEndUtc)
+    public StatisticsReport BuildReport(DateTime rangeStartUtc, DateTime rangeEndUtc) =>
+        BuildReport(rangeStartUtc, rangeEndUtc, ReadVaultSnapshot());
+
+    internal StatisticsReport BuildReport(DateTime rangeStartUtc, DateTime rangeEndUtc, VaultStatisticsSnapshot snapshot)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
         var rangeStart = DateOnly.FromDateTime(rangeStartUtc.ToLocalTime());
@@ -120,15 +150,10 @@ public sealed partial class StatisticsAggregationService
         if (rangeEnd > today) rangeEnd = today;
         if (rangeStart > rangeEnd) rangeStart = rangeEnd;
 
-        var notes = vaultService.VaultPath is { Length: > 0 } vaultPath && Directory.Exists(vaultPath)
-            ? vaultService.GetAllNotesRecursive(vaultPath)
-            : [];
+        var notes = snapshot.Notes;
+        var noteTimes = snapshot.NoteTimes;
 
-        var noteTimes = notes
-            .Select(n => (Note: n, Created: SafeCreationTimeUtc(n).ToLocalTime(), Modified: n.ModifiedUtc.ToLocalTime()))
-            .ToList();
-
-        var cards = kanbanService.Board.Columns.SelectMany(c => c.Cards).ToList();
+        var cards = kanbanService.AllColumns.SelectMany(c => c.Cards).ToList();
         var polarTasks = polarAuthService.IsLinked
             ? polarTaskService.Store.Tasks.Where(t => !t.IsDeleted).ToList()
             : [];
@@ -141,7 +166,14 @@ public sealed partial class StatisticsAggregationService
             .ToList();
 
         var daily = BuildDailySeries(rangeStart, rangeEnd, noteTimes, completions, activeHabits, today);
-        var weekly = BuildWeeklySeries(rangeStartUtc, rangeEndUtc);
+        var weeklyCompletions = cards.Where(c => c.CompletedAtUtc is not null).Select(c => c.CompletedAtUtc!.Value)
+            .Concat(polarAuthService.IsLinked ? polarTaskService.Store.Tasks
+                .Where(t => t.Completed && t.CompletedAtUtc is not null).Select(t => t.CompletedAtUtc!.Value) : []);
+        var weekly = BuildWeeklySeriesFromDates(DateOnly.FromDateTime(rangeStartUtc.ToLocalTime()),
+            DateOnly.FromDateTime(rangeEndUtc.ToLocalTime()),
+            noteTimes.Select(n => DateOnly.FromDateTime(n.Created)),
+            noteTimes.Select(n => DateOnly.FromDateTime(n.Modified)),
+            weeklyCompletions.Select(d => DateOnly.FromDateTime(d.ToLocalTime())), activeHabits, today);
 
         return new StatisticsReport(
             Daily: daily,
@@ -155,15 +187,15 @@ public sealed partial class StatisticsAggregationService
             TopFolders: BuildTopFolders(notes),
             LongestNotes: BuildLongestNotes(notes),
             NoteLengthBuckets: BuildNoteLengthBuckets(notes),
-            FileTypes: BuildFileTypes(out var filesCount, out var filesBytes),
-            SessionNotes: BuildSessionNotes(),
+            FileTypes: snapshot.FileTypes,
+            SessionNotes: snapshot.SessionNotes,
             HabitConsistency: BuildHabitConsistency(activeHabits, rangeStart, rangeEnd, today),
             ColumnDistribution: BuildColumnDistribution(),
             PriorityCounts: BuildPriorityCounts(cards),
             Flow: BuildKanbanFlow(),
             Tasks: BuildTaskHealth(cards, polarTasks),
             Reminders: BuildReminderHealth(),
-            Vault: BuildVaultComposition(notes, filesCount, filesBytes),
+            Vault: snapshot.Vault,
             ActivityStreak: BuildActivityStreak(noteTimes, completions, today),
             HabitStreak: BuildHabitStreak(activeHabits, today),
             HabitCompletionPercent: RangeHabitPercent(daily),
@@ -475,14 +507,13 @@ public sealed partial class StatisticsAggregationService
         var counts = new Dictionary<string, (int Count, long Bytes)>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            foreach (var path in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+            foreach (var info in VaultService.EnumerateVisibleFileInfos(root, includeNoteAttachments: true))
             {
+                var path = info.FullName;
                 if (path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) continue;
-                var relative = Path.GetRelativePath(root, path);
-                if (relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(s => s.StartsWith('.'))) continue;
 
                 long length;
-                try { length = new FileInfo(path).Length; }
+                try { length = info.Length; }
                 catch (IOException ex)
                 {
                     LogService.Debug($"No se pudo medir '{path}' para las estadísticas: {ex}");
@@ -512,19 +543,11 @@ public sealed partial class StatisticsAggregationService
             .Select(kv => new ChartDatum(kv.Key, kv.Value.Count, FormatBytes(kv.Value.Bytes)))];
     }
 
-    private List<ChartDatum> BuildSessionNotes() =>
-        sessionService is null
-            ? []
-            : [.. sessionService.List()
-                .OrderByDescending(s => s.NoteCount)
-                .Take(TopListSize)
-                .Select(s => new ChartDatum(s.Name, s.NoteCount))];
-
     /// <summary>Reparto real de tarjetas entre las columnas tal y como el usuario las ha nombrado — el
     /// flujo de tres estados (<see cref="BuildKanbanFlow"/>) colapsa las columnas intermedias, y quien ha
     /// montado un tablero de seis columnas quiere ver las seis.</summary>
     private List<ChartDatum> BuildColumnDistribution() =>
-        [.. kanbanService.Board.Columns.Select(c => new ChartDatum(c.Title, c.Cards.Count))];
+        [.. kanbanService.AllColumns.Select(c => new ChartDatum(kanbanService.ColumnLabel(c), c.Cards.Count))];
 
     private static List<int> BuildPriorityCounts(List<KanbanCard> cards) =>
         [cards.Count(c => c.Priority == KanbanPriority.High),
@@ -596,7 +619,7 @@ public sealed partial class StatisticsAggregationService
 
     // ===================== Composición del vault =====================
 
-    private VaultComposition BuildVaultComposition(List<NoteFile> notes, int files, long filesBytes)
+    private VaultComposition BuildVaultComposition(List<NoteFile> notes, int files, long filesBytes, int sessions)
     {
         long notesBytes = 0;
         foreach (var note in notes)
@@ -617,7 +640,7 @@ public sealed partial class StatisticsAggregationService
             Notes: notes.Count,
             Folders: CountFolders(vaultService.VaultPath),
             Files: files,
-            Sessions: sessionService?.List().Count ?? CountSessionDirectories(),
+            Sessions: sessions,
             DistinctTags: distinctTags,
             TotalWords: notes.Sum(n => n.WordCount),
             LongestNoteWords: longest?.WordCount ?? 0,

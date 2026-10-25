@@ -76,10 +76,8 @@
         </StackPanel>
       </ScrollViewer>
 
-      <!-- Same outline-square language as the "+" tab button (Button.tab-add) instead of the
-           generic faint-fill icon-btn, so the two sit as a matched pair at opposite ends of the
-           tab strip. -->
-      <Button Grid.Column="1" Classes="tab-add" Margin="0,8,8,8" VerticalAlignment="Center"
+      <!-- Conserva el tamaño y los estados del botón de pestaña, sin borde exterior. -->
+      <Button Grid.Column="1" Classes="tab-add" BorderThickness="0" Margin="0,8,8,8" VerticalAlignment="Center"
               Command="{Binding CloseAllEditorsCommand}" ToolTip.Tip="{loc:Tr Notes_CloseAllTabsTooltip}"
               AutomationProperties.Name="{loc:Tr Notes_CloseAllTabsTooltip}">
         <mi:MaterialIcon Kind="TabRemove" Width="16" Height="16" />

@@ -56,13 +56,13 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     /// <summary>Whether any group filter is currently narrowing the graph — drives the filter chip's
     /// "active" visual state, same convention as <see cref="IsLinkMode"/>'s toggle button.</summary>
-    public bool IsGraphFiltered => GraphGroupFilters.Any(f => !f.IsActive)
+    public bool IsGraphFiltered => !string.IsNullOrWhiteSpace(GraphSearchText) || GraphGroupFilters.Any(f => !f.IsActive)
         || GraphTagFilters.Any(f => f.IsActive) || GraphExplorationIndex != 0
         || !string.IsNullOrEmpty(SelectedGraphCluster?.Id);
 
     /// <summary>Tarjetas Kanban vinculadas a alguna nota del subárbol de <see cref="SelectedSession"/> —
     /// consecuencia derivada del enlace nota↔tarea, sin almacén propio: se recalcula contra
-    /// <see cref="KanbanService.Board"/> cada vez que cambia la
+    /// <see cref="KanbanService.AllColumns"/> cada vez que cambia la
     /// sesión seleccionada.</summary>
     public ObservableCollection<LinkedCardItemViewModel> LinkedCards { get; } = [];
 
@@ -291,8 +291,10 @@ public sealed partial class SessionsViewModel : ViewModelBase
         Action onSessionsChanged,
         KanbanService? kanbanService = null,
         Action<string>? onOpenLinkedCard = null,
-        Func<Session, bool>? onSessionLocked = null)
+        Func<Session, bool>? onSessionLocked = null,
+        Action<Session>? onOpenInAssistant = null)
     {
+        _onOpenInAssistant = onOpenInAssistant;
         _vaultService = vaultService;
         _sessionService = sessionService;
         _notificationService = notificationService;
@@ -372,7 +374,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
             if (notePaths.Count > 0)
             {
-                var cards = _kanbanService.Board.Columns.SelectMany(c => c.Cards)
+                var cards = _kanbanService.AllColumns.SelectMany(c => c.Cards)
                     .Where(c => c.LinkedNotePath is not null && notePaths.Contains(c.LinkedNotePath));
                 foreach (var card in cards) LinkedCards.Add(new LinkedCardItemViewModel(card.Id, card.Title));
             }
@@ -491,7 +493,8 @@ public sealed partial class SessionsViewModel : ViewModelBase
         foreach (var (groupId, name) in groups)
         {
             var isActive = !previousSelection.TryGetValue(groupId, out var previouslyActive) || previouslyActive;
-            GraphGroupFilters.Add(new GraphGroupFilterItemViewModel(groupId, name, isActive, OnGraphFilterToggled));
+            GraphGroupFilters.Add(new GraphGroupFilterItemViewModel(groupId, name, isActive, OnGraphFilterToggled,
+                graph.Nodes.Count(n => n.SessionId == groupId)));
         }
 
         RebuildGraphDiscoveryFilters(graph);
@@ -545,6 +548,29 @@ public sealed partial class SessionsViewModel : ViewModelBase
         }
 
         _onOpenInNotes(item.Session, null);
+    }
+
+    private readonly Action<Session>? _onOpenInAssistant;
+
+    /// <summary>El asistente está activado (Ajustes › Inteligencia artificial). Lo mantiene al día el shell,
+    /// igual que <c>SkillsViewModel.IsAssistantAvailable</c>.</summary>
+    [ObservableProperty]
+    private bool _isAssistantAvailable;
+
+    /// <summary>"Preguntar al asistente": un chat nuevo dentro de la sesión seleccionada, con acceso solo a su
+    /// contenido. Una sesión protegida y bloqueada se desbloquea primero, como para abrirla en Notas.</summary>
+    [RelayCommand]
+    private void OpenInAssistant()
+    {
+        if (SelectedSession is not { } item || _onOpenInAssistant is null) return;
+
+        if (item.IsEncrypted && !item.IsUnlocked)
+        {
+            RequestUnlockSession(item);
+            return;
+        }
+
+        _onOpenInAssistant(item.Session);
     }
 
     // ===================== Bloqueo/desbloqueo de sesiones protegidas =====================
@@ -943,6 +969,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     [RelayCommand]
     private void ToggleGraphFilterPopover() => IsGraphFilterOpen = !IsGraphFilterOpen;
+
+    [RelayCommand]
+    private void CloseGraphFilter() => IsGraphFilterOpen = false;
 
     // ===================== Messages posted from the graph's WebView =====================
     // The combined graph's node ids are "{sessionId}::{relativePath}" (SessionGraphNode.GlobalId) since

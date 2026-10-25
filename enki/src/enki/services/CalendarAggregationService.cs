@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using enki.Models;
+using enki.Localization;
 using enki.ViewModels;
 using Material.Icons;
 
@@ -16,7 +17,8 @@ public sealed class CalendarAggregationService(
     PolarTaskService polarTaskService,
     ReminderService reminderService,
     PolarAuthService polarAuthService,
-    CalendarLayerColorService? layerColorService = null)
+    CalendarLayerColorService? layerColorService = null,
+    ExternalCalendarService? externalCalendarService = null)
 {
     /// <summary>Hard safety cap on chained <c>CalculateNextDueDate</c> calls per recurring task when
     /// expanding ghost occurrences (docs/calendar-feature/03-glosario-y-modelo-de-datos.md §4) — every
@@ -30,6 +32,7 @@ public sealed class CalendarAggregationService(
     /// <c>Layers</c> panel with the exact same keys these items are tagged with.</summary>
     public const string KanbanLayerKey = "kanban";
     public const string ReminderLayerKey = "reminder";
+    public const string ExternalLayerPrefix = "external:";
 
     /// <summary>Every <see cref="CalendarItemViewModel"/> whose positioning moment falls in
     /// [<paramref name="rangeStartUtc"/>, <paramref name="rangeEndUtc"/>), ordered the same way Google
@@ -47,24 +50,29 @@ public sealed class CalendarAggregationService(
         // recorrería columnas y listas una vez por tarjeta.
         var colors = layerColorService?.BuildMap();
 
-        foreach (var column in kanbanService.Board.Columns)
+        foreach (var column in kanbanService.AllColumns)
         foreach (var card in column.Cards)
+        foreach (var milestone in new[] { (Date: card.StartDateUtc, IsOpening: true), (Date: card.DueDateUtc, IsOpening: false) })
         {
-            if (card.DueDateUtc is not { } due || due < rangeStartUtc || due >= rangeEndUtc) continue;
+            if (milestone.Date is not { } due || due < rangeStartUtc || due >= rangeEndUtc) continue;
 
             var isAllDay = IsAllDay(due);
             items.Add(new CalendarItemViewModel
             {
+                ParentContextLabel = kanbanService.ColumnLabel(column),
                 SourceId = card.Id,
                 SourceType = CalendarItemSourceType.Kanban,
-                Title = card.Title,
+                Title = card.StartDateUtc is not null
+                    ? $"{LocalizationService.Instance[milestone.IsOpening ? "Kanban_Field_StartDateLabel" : "Kanban_Field_EndDateLabel"]}: {card.Title}"
+                    : card.Title,
+                IsOpeningMilestone = milestone.IsOpening,
                 Description = card.Description,
                 MomentUtc = due,
                 IsAllDay = isAllDay,
                 IsCompleted = card.CompletedAtUtc is not null,
                 // A duration only ever means something alongside a real time of day (doc §5) — an all-day
                 // card ignores whatever DurationMinutes happens to be stored.
-                DurationMinutes = isAllDay ? null : card.DurationMinutes,
+                DurationMinutes = isAllDay || milestone.IsOpening ? null : card.DurationMinutes,
                 LayerColorHex = CalendarItemViewModel.KanbanLayerColorHex,
                 CalendarColorHex = ResolveKanbanColumnColor(colors, column.Id),
                 LayerKey = KanbanLayerKey,
@@ -173,6 +181,32 @@ public sealed class CalendarAggregationService(
                 items.AddRange(BuildGhostOccurrences(reminder, rangeStartUtc, rangeEndUtc, Resolve(colors, ReminderLayerKey)));
         }
 
+        if (externalCalendarService is not null)
+        {
+            var externalColors = externalCalendarService.Subscriptions
+                .Select((feed, index) => (feed.Id, Color: CalendarLayerPalette.PickerSwatches[index % CalendarLayerPalette.PickerSwatches.Count]))
+                .ToDictionary(entry => entry.Id, entry => entry.Color);
+            foreach (var entry in externalCalendarService.GetEvents(rangeStartUtc, rangeEndUtc))
+            {
+                var color = externalColors[entry.Feed.Id];
+                items.Add(new CalendarItemViewModel
+                {
+                    SourceId = entry.Feed.Id + ":" + entry.Uid + ":" + entry.StartUtc.Ticks,
+                    SourceType = CalendarItemSourceType.ExternalCalendar,
+                    Title = entry.Title,
+                    Description = entry.Description,
+                    MomentUtc = entry.StartUtc,
+                    IsAllDay = entry.IsAllDay,
+                    IsCompleted = false,
+                    DurationMinutes = entry.DurationMinutes,
+                    LayerColorHex = color,
+                    LayerKey = ExternalLayerPrefix + entry.Feed.Id,
+                    ParentContextLabel = entry.Feed.Name,
+                    IconKind = MaterialIconKind.CalendarOutline
+                });
+            }
+        }
+
         return items
             .OrderBy(i => i.IsAllDay ? 0 : 1)
             .ThenBy(i => i.MomentLocal)
@@ -188,12 +222,13 @@ public sealed class CalendarAggregationService(
         var items = new List<CalendarUnscheduledItemViewModel>();
         var colors = layerColorService?.BuildMap();
 
-        foreach (var column in kanbanService.Board.Columns)
+        foreach (var column in kanbanService.AllColumns)
         foreach (var card in column.Cards)
         {
-            if (card.DueDateUtc is not null) continue;
+            if (card.DueDateUtc is not null || card.StartDateUtc is not null) continue;
             items.Add(new CalendarUnscheduledItemViewModel
             {
+                ParentContextLabel = kanbanService.ColumnLabel(column),
                 SourceId = card.Id,
                 SourceType = CalendarItemSourceType.Kanban,
                 Title = card.Title,
@@ -202,7 +237,6 @@ public sealed class CalendarAggregationService(
                 LayerKey = KanbanLayerKey,
                 Priority = MapPriority(card.Priority),
                 IconKind = MaterialIconKind.ViewColumnOutline,
-                ParentContextLabel = column.Title,
                 IsCompleted = card.CompletedAtUtc is not null
             });
         }
