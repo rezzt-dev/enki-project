@@ -109,6 +109,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
             if (_settingsService.Settings.Ai.Enabled) _ = Cli.RefreshAsync();
         };
         _chats.ChatsChanged += () => _dispatch(OnChatsChanged);
+        _settingsService.SettingsChanged += () => _dispatch(RefreshScope);
 
         Messages.CollectionChanged += (_, _) => RefreshConversationState();
         PendingAttachments.CollectionChanged += (_, _) => RefreshComposerState();

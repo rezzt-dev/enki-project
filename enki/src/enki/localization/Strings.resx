@@ -7176,7 +7176,7 @@ Happy writing.</value>
     <value>Allow changes to the vault</value>
   </data>
   <data name="Settings_Ai_Vault_AllowChanges_Description" xml:space="preserve">
-    <value>Allow the assistant to create, edit, organize and trash items in the selected scope. Turn off for read-only access.</value>
+    <value>Allow the assistant to create, edit, organize and delete notes, files, skills, Kanban cards, Polar tasks and reminders in the selected scope. Turn off for read-only access. Permanent deletion still requires confirmation.</value>
   </data>
   <data name="Settings_Ai_Vault_Confirmations" xml:space="preserve">
     <value>Permanent deletion and taking content out of a protected session always require confirmation in the chat.</value>
@@ -7516,5 +7516,35 @@ Happy writing.</value>
   </data>
   <data name="Assistant_State_ApiKeyMissing" xml:space="preserve">
     <value>Claude · no API key saved</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Label" xml:space="preserve">
+    <value>Allow searches and reading by default</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Description" xml:space="preserve">
+    <value>Let the assistant read notes, files, skills, Kanban cards, Polar tasks and reminders in each chat’s scope without asking first. You can revoke access for an individual chat. Enable changes below to also create, edit, organize and delete items.</value>
+  </data>
+  <data name="Assistant_Tool_list_skills" xml:space="preserve">
+    <value>List skills</value>
+  </data>
+  <data name="Assistant_Tool_read_skill" xml:space="preserve">
+    <value>Read skill</value>
+  </data>
+  <data name="Assistant_Tool_create_skill" xml:space="preserve">
+    <value>Create skill</value>
+  </data>
+  <data name="Assistant_Tool_write_skill" xml:space="preserve">
+    <value>Edit skill</value>
+  </data>
+  <data name="Assistant_Tool_delete_skill" xml:space="preserve">
+    <value>Delete skill</value>
+  </data>
+  <data name="Assistant_Skill_DeleteConfirm" xml:space="preserve">
+    <value>Permanently delete this skill?</value>
+  </data>
+  <data name="Assistant_Activity_Expand" xml:space="preserve">
+    <value>Show actions</value>
+  </data>
+  <data name="Assistant_Activity_Collapse" xml:space="preserve">
+    <value>Hide actions</value>
   </data>
 </root>

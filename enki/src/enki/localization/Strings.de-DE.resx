@@ -7175,7 +7175,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>Änderungen am Speicher erlauben</value>
   </data>
   <data name="Settings_Ai_Vault_AllowChanges_Description" xml:space="preserve">
-    <value>Der Assistent darf Elemente im gewählten Bereich erstellen, bearbeiten, ordnen und in den Papierkorb verschieben. Ausschalten für reinen Lesezugriff.</value>
+    <value>Erlaubt das Erstellen, Bearbeiten, Organisieren und Löschen von Notizen, Dateien, Skills, Kanban-Karten, Polar-Aufgaben und Erinnerungen im gewählten Bereich. Für reinen Lesezugriff deaktivieren. Endgültiges Löschen erfordert weiterhin eine Bestätigung.</value>
   </data>
   <data name="Settings_Ai_Vault_Confirmations" xml:space="preserve">
     <value>Endgültiges Löschen und das Herausnehmen von Inhalten aus einer geschützten Sitzung erfordern immer eine Bestätigung im Chat.</value>
@@ -7515,5 +7515,35 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="Assistant_State_ApiKeyMissing" xml:space="preserve">
     <value>Claude · kein API-Schlüssel gespeichert</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Label" xml:space="preserve">
+    <value>Lesen standardmäßig erlauben</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Description" xml:space="preserve">
+    <value>Erlaubt dem Assistenten, Notizen, Dateien, Skills, Kanban-Karten, Polar-Aufgaben und Erinnerungen im Chat-Bereich ohne Rückfrage zu lesen. Der Zugriff kann pro Chat widerrufen werden. Aktivieren Sie unten Änderungen, um Elemente auch zu erstellen, zu bearbeiten, zu organisieren und zu löschen.</value>
+  </data>
+  <data name="Assistant_Tool_list_skills" xml:space="preserve">
+    <value>Skills auflisten</value>
+  </data>
+  <data name="Assistant_Tool_read_skill" xml:space="preserve">
+    <value>Skill lesen</value>
+  </data>
+  <data name="Assistant_Tool_create_skill" xml:space="preserve">
+    <value>Skill erstellen</value>
+  </data>
+  <data name="Assistant_Tool_write_skill" xml:space="preserve">
+    <value>Skill bearbeiten</value>
+  </data>
+  <data name="Assistant_Tool_delete_skill" xml:space="preserve">
+    <value>Skill löschen</value>
+  </data>
+  <data name="Assistant_Skill_DeleteConfirm" xml:space="preserve">
+    <value>Diesen Skill endgültig löschen?</value>
+  </data>
+  <data name="Assistant_Activity_Expand" xml:space="preserve">
+    <value>Aktionen anzeigen</value>
+  </data>
+  <data name="Assistant_Activity_Collapse" xml:space="preserve">
+    <value>Aktionen ausblenden</value>
   </data>
 </root>

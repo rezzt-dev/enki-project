@@ -495,7 +495,8 @@ public sealed partial class MainWindowViewModel
         // estén abiertas la primera vez que el usuario navega a Documentos.
         Notes.RestoreOpenTabs();
         Files = new FilesViewModel(_vaultService, _sessionService, _notificationService, _settingsService);
-        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService, StartAssistantChatWithSkill)
+        var skillService = new SkillService(_vaultService);
+        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService, StartAssistantChatWithSkill, skillService)
         {
             IsAssistantAvailable = AssistantPanelEnabled
         };
@@ -511,7 +512,7 @@ public sealed partial class MainWindowViewModel
                 PrepareSessionRemoval = session => Notes.CloseEditorsUnderSession(session, out _),
                 SessionsChanged = OnSessionsChanged,
                 VaultChanged = OnAssistantChangedVault
-            });
+            }, skillService);
         _aiVaultTools = new EnkiMcpServer(aiVaultToolbox, work => Dispatcher.UIThread.InvokeAsync(work));
         Assistant = new AssistantViewModel(_claudeCliService, _aiChatService, _settingsService, _vaultService,
             _notificationService, AiCliStatus, _sessionService,

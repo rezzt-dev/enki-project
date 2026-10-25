@@ -56,6 +56,42 @@ public sealed class AiVaultToolboxTests : IDisposable
     }
 
     [Fact]
+    public async Task Skills_UseLibrary_RequireReadBeforeWrite_AndDetectExternalChanges()
+    {
+        var context = Context();
+        var created = Json(await Call("create_skill", new { name = "Editor", content = "Original" }, context));
+        var path = created.GetProperty("path").GetString()!;
+        var fullPath = Path.Combine(_vault.VaultPath, ".enki", "skills", path);
+        var skills = new SkillService(_vault);
+        Assert.Single(skills.LoadSkills());
+        Assert.True((await Call("write_skill", new { path, content = "Sin leer" })).IsError);
+        Json(await Call("read_skill", new { path }, context));
+        Json(await Call("write_skill", new { path, content = "Revisado" }, context));
+        Assert.Contains("Revisado", skills.LoadSkills().Single().Content);
+        File.WriteAllText(fullPath, "Cambio externo");
+        Assert.True((await Call("write_skill", new { path, content = "No sobrescribir" }, context)).IsError);
+        Assert.Equal("Cambio externo", File.ReadAllText(fullPath));
+        Assert.True((await Call("read_skill", new { path = "../settings.json" })).IsError);
+        Assert.True((await Call("read_skill", new { path = fullPath })).IsError);
+    }
+
+    [Fact]
+    public async Task Skills_RespectScope_ReadOnly_AndPermanentDeletionApproval()
+    {
+        var path = Json(await Call("create_skill", new { name = "Editor" })).GetProperty("path").GetString()!;
+        Assert.True((await Call("delete_skill", new { path })).IsError);
+        Assert.Single(new SkillService(_vault).LoadSkills());
+        var session = _sessions.Create("Privado");
+        Assert.DoesNotContain(_tools.AvailableTools(Context(new AiAccessScope(session.Id, false))), t => t.Name.EndsWith("skill") || t.Name == "list_skills");
+        _settings.Settings.Ai.AllowVaultChanges = false;
+        Assert.True((await Call("write_skill", new { path, content = "No" })).IsError);
+        _settings.Settings.Ai.AllowVaultChanges = true;
+        var approved = new AiToolContext { Scope = AiAccessScope.Vault, ApprovalRequested = (_, _) => Task.FromResult(true) };
+        Json(await Call("delete_skill", new { path }, approved));
+        Assert.Empty(new SkillService(_vault).LoadSkills());
+    }
+
+    [Fact]
     public async Task Notes_CreateReadEditTrashRestore_UseRealEntities()
     {
         var context = Context();

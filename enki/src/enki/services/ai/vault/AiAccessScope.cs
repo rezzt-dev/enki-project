@@ -70,6 +70,9 @@ public sealed class AiToolContext
     /// <summary>Se cancela al detener la respuesta: corta una confirmación pendiente.</summary>
     public CancellationToken Cancellation { get; init; }
 
+    /// <summary>Skills leídas completas en este turno: su contenido original permite detectar conflictos.</summary>
+    internal Dictionary<string, SkillFile> SkillReads { get; } = new(StringComparer.Ordinal);
+
     /// <summary>Huella de cada nota que el modelo leyó entera en este turno, para que reescribirla entera
     /// solo pueda hacerse sobre lo que de verdad vio (ver <c>write_note</c>).</summary>
     internal Dictionary<string, NoteDiskStamp> CompleteReads { get; } = new(VaultService.PathComparison ==

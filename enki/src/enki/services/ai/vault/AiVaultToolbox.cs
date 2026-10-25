@@ -60,6 +60,7 @@ public sealed partial class AiVaultToolbox
     private readonly PolarAuthService _polarAuth;
     private readonly ReminderService _reminders;
     private readonly SettingsService _settings;
+    private readonly SkillService _skills;
     private readonly CalendarAggregationService? _calendar;
     private readonly AiVaultHost _host;
     private readonly NoteSearchService _search;
@@ -74,7 +75,8 @@ public sealed partial class AiVaultToolbox
         ReminderService reminderService,
         SettingsService settingsService,
         CalendarAggregationService? calendarAggregationService = null,
-        AiVaultHost? host = null)
+        AiVaultHost? host = null,
+        SkillService? skillService = null)
     {
         _vault = vaultService;
         _sessions = sessionService;
@@ -83,6 +85,7 @@ public sealed partial class AiVaultToolbox
         _polarAuth = polarAuthService;
         _reminders = reminderService;
         _settings = settingsService;
+        _skills = skillService ?? new SkillService(vaultService);
         _calendar = calendarAggregationService;
         _host = host ?? new AiVaultHost();
         _search = new NoteSearchService(vaultService);
@@ -95,6 +98,7 @@ public sealed partial class AiVaultToolbox
         RegisterPolarTools();
         RegisterReminderTools();
         RegisterTrashTools();
+        RegisterSkillTools();
     }
 
     /// <summary>Todas las herramientas que existen, se ofrezcan o no en un chat concreto.</summary>

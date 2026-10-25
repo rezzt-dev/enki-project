@@ -107,6 +107,13 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
+  <!-- El texto seleccionable también invierte ambos colores: conservar el primer plano normal
+       hace ilegible la selección en los mensajes Markdown, enlaces y bloques de código del asistente. -->
+  <Style Selector="SelectableTextBlock">
+    <Setter Property="SelectionBrush" Value="{DynamicResource SelectionBackgroundBrush}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SelectionForegroundBrush}" />
+  </Style>
+
   <!-- ===================== Chrome de Fluent en botones: neutralizado (§7.2) =====================
        El ControlTheme de Fluent pinta ButtonBackgroundPointerOver / ButtonBackgroundPressed (y su
        Foreground) directamente sobre el ContentPresenter de la plantilla, y esos setters ganan al
@@ -1778,7 +1785,7 @@
   <!-- Spinner de carga genérico: rotación infinita del icono al que se le aplique esta clase (usado hoy
        por el visor de PDF mientras renderiza, ver FilesView.axaml). -->
   <Style Selector="mi|MaterialIcon.spin">
-    <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
     <Setter Property="RenderTransform">
       <RotateTransform />
     </Setter>

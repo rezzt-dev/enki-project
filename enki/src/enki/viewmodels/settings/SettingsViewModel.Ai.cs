@@ -210,6 +210,9 @@ public sealed partial class SettingsViewModel
     private bool _aiAllowVaultChanges;
 
     [ObservableProperty]
+    private bool _aiAllowReadAccessByDefault;
+
+    [ObservableProperty]
     private bool _isClearAiHistoryConfirmOpen;
 
     /// <summary>La tarjeta de estado del CLI solo se enseña con la IA encendida: apagada, Enki no ejecuta
@@ -272,6 +275,7 @@ public sealed partial class SettingsViewModel
             AiMaxContextChars = ai.MaxContextChars;
             AiConfirmBeforeSending = ai.ConfirmBeforeSendingContext;
             AiAllowVaultChanges = ai.AllowVaultChanges;
+            AiAllowReadAccessByDefault = ai.AllowReadAccessByDefault;
         }
         finally
         {
@@ -410,6 +414,14 @@ public sealed partial class SettingsViewModel
     {
         if (_loadingAiSettings) return;
         _settingsService.Settings.Ai.ConfirmBeforeSendingContext = value;
+        _settingsService.Save();
+    }
+
+    /// <summary>Se aplica en caliente sin convertir el permiso heredado en un permiso permanente del chat.</summary>
+    partial void OnAiAllowReadAccessByDefaultChanged(bool value)
+    {
+        if (_loadingAiSettings) return;
+        _settingsService.Settings.Ai.AllowReadAccessByDefault = value;
         _settingsService.Save();
     }
 

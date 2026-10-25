@@ -31,6 +31,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - catálogo operativo de herramientas del vault en `AiVaultToolbox` y servidor MCP local en `EnkiMcpServer`, con 52 acciones sobre notas, archivos, sesiones, Kanban, Polar, recordatorios, agenda y papelera usando las entidades y servicios existentes.
 - selector de ámbito por conversación para trabajar en el vault o en una sesión, acceso ampliado opcional, apertura de chats desde Sesiones y resumen visible del alcance bajo el compositor.
 - actividad persistida en cada respuesta del asistente, destinos navegables para notas y tarjetas, tarjetas de aprobación para borrados permanentes y para sacar contenido de sesiones protegidas, y estados de denegación, error y cancelación.
+- permiso opcional de lectura por defecto en `ajustes > inteligencia artificial > herramientas del vault`, aplicable en caliente a cada ámbito de chat y revocable de forma independiente en una conversación.
+- herramientas `list_skills`, `read_skill`, `create_skill`, `write_skill` y `delete_skill` sobre la biblioteca real de `<vault>/.enki/skills/`, con detección de cambios externos, protección de skills empaquetadas y confirmación para borrados definitivos.
 - guía de sincronización privada del almacén en `.docs/project-info/sincronizacion-privada-notas.md`, con instrucciones para Syncthing, iCloud Drive y Google Drive, trabajo sin conexión y resolución de conflictos.
 - consulta integrada de la guía en `ajustes > vault y archivos`, con despliegue dentro de la pantalla, búsqueda por proveedor y contenido, y traducciones en los siete recursos de idioma.
 - filtro de intervalos por una propiedad de fecha del frontmatter, como `due`, y opción de coincidencia exacta para valores de estado u otras propiedades.
@@ -77,6 +79,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - documentación del módulo en `.docs/project-info/asistente-ia.md`, sección 8.9 del checklist de qa manual y pruebas de servicio, viewmodel e interfaz contra un cli de claude simulado.
 
 #### CAMBIOS
+- agrupar las acciones de cada respuesta del asistente bajo una lista desplegable plegada por defecto, conservando el contador en vivo, el estado elegido al actualizar la respuesta y los accesos a notas y tarjetas al desplegarla.
 - tras una respuesta interrumpida que ya había cambiado el vault, el reintento pasa a «continuar» y envía al modelo la lista de acciones completadas para que no las repita.
 - el compositor, el hilo, el ámbito, el modelo, el historial y los diálogos del asistente se reorganizan en controles compartidos por la sección y el panel lateral, que se construyen la primera vez que se usan.
 - «guardar como nota» indica que crea una nota nueva y la abre, y la confirmación de envío nombra el proveedor que recibirá el contenido.
@@ -155,6 +158,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - añadir `Assistant` al orden por defecto de la barra lateral, a las secciones de ajustes y a la navegación del shell, y referenciar `.docs/project-info/asistente-ia.md` en `AGENTS.md`.
 
 #### CORREGIDO
+- corregir la selección de texto en `SelectableTextBlock` para aplicar simultáneamente `SelectionBackgroundBrush` y `SelectionForegroundBrush` en mensajes Markdown, enlaces, listas, tablas y código, también al cambiar de tema.
+- sustituir los indicadores de carga del asistente por `LoadingSpinner`, un anillo completo con giro centrado, y corregir el origen relativo de los spinners compartidos.
 - impedir que una nota truncada autorice un reemplazo completo, que una edición parcial cambie `CRLF`, que una pestaña con cambios pendientes sea sobrescrita o que una ruta fuera del ámbito revele contenido vinculado.
 - evitar que llamadas MCP pendientes actúen después de cancelar el turno, revocar el token o desactivar los cambios del vault, y excluir enlaces simbólicos de la enumeración de sesiones y rutas del asistente.
 - impedir escrituras parciales cuando el frontmatter YAML está incompleto o no se puede analizar, y conservar las claves ajenas y los saltos del cuerpo al modificar o eliminar una propiedad.
@@ -205,6 +210,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - an operational vault tool catalogue in `AiVaultToolbox` and a local MCP server in `EnkiMcpServer`, with 52 actions for notes, files, sessions, Kanban, Polar, reminders, agenda and trash using the existing entities and services.
 - a per-conversation scope selector for the vault or a session, optional expanded access, chat opening from Sessions, and a visible scope summary below the composer.
 - persisted activity for every assistant response, navigable note and card targets, approval cards for permanent deletion and protected-session transfers, and denied, error and cancellation states.
+- optional default read access under `settings > artificial intelligence > vault tools`, applied live to each chat scope and independently revocable from a conversation.
+- `list_skills`, `read_skill`, `create_skill`, `write_skill` and `delete_skill` tools over the real `<vault>/.enki/skills/` library, with external-change detection, bundled-skill protection and confirmation for permanent deletion.
 - a private vault sync guide in `.docs/project-info/sincronizacion-privada-notas.md` covering Syncthing, iCloud Drive, Google Drive, offline access and conflict handling.
 - an integrated guide under `settings > vault and files`, expandable inside the settings screen, searchable by provider and content, and translated across all seven language resources.
 - frontmatter date-property range filtering, such as `due`, and an exact-match option for status and other property values.
@@ -251,6 +258,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - module documentation in `.docs/project-info/asistente-ia.md`, section 8.9 of the manual qa checklist, and service, viewmodel and ui tests against a simulated claude cli.
 
 #### CHANGED
+- group each assistant reply's actions under a collapsed-by-default disclosure list, keeping the live counter, the user's expanded state during updates and note/card links when opened.
 - after an interrupted reply that had already changed the vault, retry becomes “continue” and tells the model which actions completed so it does not repeat them.
 - the assistant composer, transcript, scope, model, history and dialogs are reorganised into controls shared by the section and the side panel, built the first time they are used.
 - “save as note” now says it creates a new note and opens it, and the send confirmation names the provider that will receive the content.
@@ -328,6 +336,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add `Assistant` to the default sidebar order, the settings sections and the shell navigation, and reference `.docs/project-info/asistente-ia.md` in `AGENTS.md`.
 
 #### FIXED
+- fix `SelectableTextBlock` text selection by applying both `SelectionBackgroundBrush` and `SelectionForegroundBrush` to Markdown messages, links, lists, tables and code, including live theme changes.
+- replace the assistant's loading indicators with `LoadingSpinner`, a complete ring with centered rotation, and correct the relative origin of shared spinners.
 - prevent truncated notes from authorising full replacement, partial edits from changing `CRLF`, pending editor changes from being overwritten, or out-of-scope linked paths from revealing content.
 - prevent pending MCP calls from acting after turn cancellation, token revocation or disabling vault changes, and exclude symbolic links from assistant session and path enumeration.
 - prevent partial writes when YAML frontmatter is incomplete or cannot be parsed, and preserve unrelated keys and body line breaks when a property is changed or removed.

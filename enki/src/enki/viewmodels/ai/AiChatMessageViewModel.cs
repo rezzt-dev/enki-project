@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
 
@@ -55,6 +56,18 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
     public bool HasActivities => Activities.Count > 0;
 
     public string ActivitiesLabel => Plural.Get("Assistant_Activity_Count", Activities.Count, Activities.Count);
+
+    /// <summary>El detalle de acciones nace plegado en cada respuesta, también al reabrir el historial.
+    /// Solo el usuario lo despliega; las actualizaciones del turno conservan su elección.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActivitiesToggleTooltip))]
+    private bool _isActivitiesExpanded;
+
+    public string ActivitiesToggleTooltip => LocalizationService.Instance[IsActivitiesExpanded
+        ? "Assistant_Activity_Collapse" : "Assistant_Activity_Expand"];
+
+    [RelayCommand]
+    private void ToggleActivities() => IsActivitiesExpanded = !IsActivitiesExpanded;
 
     /// <summary>Acción que espera la confirmación del usuario, si la hay.</summary>
     [ObservableProperty]
@@ -110,6 +123,7 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(TimeLabel));
         OnPropertyChanged(nameof(ActivitiesLabel));
+        OnPropertyChanged(nameof(ActivitiesToggleTooltip));
         foreach (var attachment in Attachments) attachment.RefreshLocalizedLabels();
         foreach (var activity in Activities) activity.RefreshLocalizedLabels();
         PendingApproval?.RefreshLocalizedLabels();

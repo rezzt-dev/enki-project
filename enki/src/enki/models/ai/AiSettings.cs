@@ -90,6 +90,10 @@ public sealed class AiSettings
     /// ni siquiera se le ofrecen. Borrar algo para siempre pide además confirmación en el chat, siempre.</summary>
     public bool AllowVaultChanges { get; set; } = true;
 
+    /// <summary>Autoriza las consultas del asistente por defecto dentro del ámbito de cada chat, sin pedir
+    /// permiso en la primera lectura. Una revocación explícita en un chat prevalece sobre este ajuste.</summary>
+    public bool AllowReadAccessByDefault { get; set; }
+
     /// <summary>Último chat abierto en cada vault (clave: <see cref="AiChatSession.VaultId"/>), para volver a
     /// él al entrar de nuevo en la sección. Por vault porque el historial también lo es: el último chat de un
     /// vault no debe abrirse estando en otro.</summary>

@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="clr-namespace:enki.Controls"
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="280" d:DesignHeight="600"
@@ -76,7 +77,7 @@
                           <Panel Grid.Column="0" Width="15" Margin="0,0,10,0" VerticalAlignment="Center">
                             <mi:MaterialIcon Kind="MessageTextOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}"
                                              IsVisible="{Binding !HasStatus}" />
-                            <mi:MaterialIcon Kind="Loading" Width="14" Height="14" Classes="spin" Foreground="{DynamicResource Ink50}"
+                            <controls:LoadingSpinner Width="14" Height="14" Foreground="{DynamicResource Ink50}"
                                              IsVisible="{Binding IsRunning}" ToolTip.Tip="{Binding StatusLabel}" />
                           </Panel>
                           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">

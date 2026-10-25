@@ -297,7 +297,7 @@ respuesta conserva lo que llegó, marcado como interrumpido.
 `AiSettings` (clave de instalación `Ai` en `settings.json`): `Enabled`, `ConsentAcceptedUtc`, `Provider`,
 `ClaudeCliPath`, `ClaudeUseApi`, `DefaultModel` (alias de `claude --model`: `fable`, `opus`, `sonnet`,
 `haiku`, o vacío para el del CLI), los modelos de cada proveedor, `IdleTimeoutSeconds` (30–1800),
-`MaxContextChars` (2 000–200 000), `ConfirmBeforeSendingContext`, `AllowVaultChanges`, `PanelWidth`
+`MaxContextChars` (2 000–200 000), `ConfirmBeforeSendingContext`, `AllowReadAccessByDefault`, `AllowVaultChanges`, `PanelWidth`
 (340–720) y `LastChatByVault`. `Normalize()` apaga la IA si falta el consentimiento.
 
 ### Claude con clave de API propia
@@ -418,3 +418,35 @@ se guardan antes de actuar y se actualizan después, sin resolver conflictos por
 Pruebas específicas: `Services/AiVaultToolboxTests` (servicios reales aislados, permisos, conflictos,
 papelera, cancelación y autenticación MCP), `ClaudeCliServiceTests` (restricción de herramientas y
 texto entre acciones) y `AssistantViewUiTests` (actividad y confirmación sobre el XAML real).
+
+
+### Permisos por defecto e indicadores de carga
+
+En Ajustes › Inteligencia artificial › Herramientas del vault, **Permitir consultas por defecto**
+autoriza al asistente a buscar y leer dentro del ámbito de cada chat sin la petición inicial. Nace
+apagado y se guarda en la instalación. Se aplica en caliente a chats nuevos y existentes; no amplía
+sus espacios ni accede a sesiones protegidas ajenas. Una revocación explícita desde la cabecera del
+chat prevalece sobre el ajuste y se conserva en el historial (`ReadAccessRevoked`). Al desactivar el
+ajuste dejan de autorizarse las consultas heredadas; los permisos concedidos expresamente por chat
+se conservan. **Permitir cambios en el vault** controla por separado la creación, edición,
+organización y eliminación de notas, archivos, skills, tarjetas Kanban, tareas Polar y recordatorios.
+
+Las herramientas `list_skills`, `read_skill`, `create_skill`, `write_skill` y `delete_skill` operan
+sobre el mismo `SkillService` que la biblioteca. Solo se ofrecen en chats del vault; para Polar sigue
+siendo necesaria una cuenta vinculada. Editar una skill exige leerla antes en ese turno y no pisa
+cambios externos. Las skills empaquetadas no se sobrescriben ni eliminan. Borrar una skill es
+irreversible y pide confirmación, igual que el borrado definitivo de otros elementos.
+
+Los indicadores del historial, comprobación del proveedor, respuesta, actividad y botón del panel usan
+`LoadingSpinner`: una pista circular completa y un arco que gira alrededor del centro, escalados
+juntos a 10, 12, 14 o 22 px para evitar recortes y mantener visible la rueda completa. Los iconos
+rotatorios de comprobación usan también un origen relativo explícito (`50%,50%`).
+
+La selección de mensajes usa los dos recursos del tema: `SelectionBackgroundBrush` para el fondo y
+`SelectionForegroundBrush` para el texto. El estilo de `SelectableTextBlock` cubre mensajes del usuario,
+párrafos Markdown, títulos, listas, citas, enlaces, tablas y código, también al cambiar de tema en caliente.
+
+Las acciones de cada respuesta se agrupan bajo una cabecera desplegable con el contador actualizado
+en vivo. Nacen plegadas, también al reabrir el historial. Añadir o actualizar acciones durante un turno
+no cambia el estado elegido por el usuario. El detalle mantiene los accesos a notas y tarjetas. Las
+peticiones de permiso y las confirmaciones permanecen visibles fuera del bloque plegable.

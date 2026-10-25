@@ -18,9 +18,9 @@ namespace enki.ViewModels;
 
 /// <summary>Backs the "Skills" section — listar, organizar en carpetas, importar, exportar, duplicar,
 /// editar y eliminar skills almacenadas en <c>&lt;vault&gt;/.enki/skills/</c>
-/// (docs/agent-docs/ia-skills/especificacion-desarrollo.md). Construye su propio
-/// <see cref="SkillService"/> a partir de <see cref="VaultService"/> en vez de recibirlo ya construido —
-/// mismo motivo por el que <see cref="SkillService.SkillsDirectory"/> se calcula en vivo: la instancia
+/// (docs/agent-docs/ia-skills/especificacion-desarrollo.md). Comparte el
+/// <see cref="SkillService"/> con el asistente cuando lo recibe de la composición; si no, lo construye
+/// a partir de <see cref="VaultService"/>. Como <see cref="SkillService.SkillsDirectory"/> se calcula en vivo: la instancia
 /// sobrevive a un cambio de vault sin necesitar reconstrucción.
 ///
 /// La sección se puede navegar de dos formas, elegidas con el conmutador de su propia barra de
@@ -213,10 +213,10 @@ public sealed partial class SkillsViewModel : ViewModelBase
     private static void OpenCommunitySkills() => UrlOpener.Open(CommunitySkillsUrl);
 
     public SkillsViewModel(VaultService vaultService, NotificationService notificationService, SettingsService? settingsService = null,
-        Action<SkillFile>? onUseWithAssistant = null)
+        Action<SkillFile>? onUseWithAssistant = null, SkillService? skillService = null)
     {
         _onUseWithAssistant = onUseWithAssistant;
-        _skillService = new SkillService(vaultService);
+        _skillService = skillService ?? new SkillService(vaultService);
         _notificationService = notificationService;
         _settingsService = settingsService;
         _skillService.SkillsChanged += Reload;

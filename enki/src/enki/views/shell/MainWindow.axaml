@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:controls="clr-namespace:enki.Controls"
         xmlns:models="clr-namespace:enki.Models"
         xmlns:vm="clr-namespace:enki.ViewModels"
         xmlns:views="clr-namespace:enki.Views"
@@ -730,7 +731,7 @@
           <Panel Width="20" Height="20">
             <mi:MaterialIcon Kind="Creation" Width="19" Height="19"
                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <mi:MaterialIcon Kind="Loading" Width="10" Height="10" Classes="spin" Margin="0,-4,-4,0"
+            <controls:LoadingSpinner Width="10" Height="10" Margin="0,-4,-4,0"
                              HorizontalAlignment="Right" VerticalAlignment="Top"
                              IsVisible="{Binding Assistant.IsActivityWorking, FallbackValue=False}" />
             <Border Classes="titlebar-badge" IsVisible="{Binding Assistant.IsActivityNeedsDecision, FallbackValue=False}">

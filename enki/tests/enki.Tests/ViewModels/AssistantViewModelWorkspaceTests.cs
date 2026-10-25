@@ -63,6 +63,32 @@ public sealed class AssistantViewModelWorkspaceTests : IDisposable
     // ===================== Historial por vault =====================
 
     [Fact]
+    public async Task DefaultReadAccess_AppliesLive_AndChatRevocationSurvivesReload()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var vm = await CreateAsync();
+        Assert.False(vm.ReadAccessGranted);
+        _settings.Settings.Ai.AllowReadAccessByDefault = true;
+        _settings.Save();
+        Assert.True(vm.ReadAccessGranted);
+        await SendAsync(vm, "Hola");
+        Assert.True(vm.ReadAccessGranted);
+        _settings.Settings.Ai.AllowReadAccessByDefault = false;
+        _settings.Save();
+        Assert.False(vm.ReadAccessGranted);
+        _settings.Settings.Ai.AllowReadAccessByDefault = true;
+        _settings.Save();
+        vm.RevokeReadAccessCommand.Execute(null);
+        Assert.False(vm.ReadAccessGranted);
+        Assert.True(new AiChatService(_storageDirectory).Sessions.Single().ReadAccessRevoked);
+        var reloaded = await CreateAsync();
+        reloaded.SelectSessionCommand.Execute(reloaded.Sessions.Single());
+        Assert.False(reloaded.ReadAccessGranted);
+        vm.NewChatCommand.Execute(null);
+        Assert.True(vm.ReadAccessGranted);
+    }
+
+    [Fact]
     public async Task NewChats_BelongToTheOpenVault_AndOtherVaultsChatsAreHidden()
     {
         if (OperatingSystem.IsWindows()) return;

@@ -473,6 +473,7 @@ public sealed partial class AssistantViewModel
                 SessionId = _draftSessionId,
                 SessionName = _scopeSession?.Name ?? _draftSessionName,
                 FullVaultAccess = _draftFullAccess,
+                ReadAccessRevoked = _draftReadAccessRevoked,
                 ReadAccess = _draftReadAccess
             };
             _activeSession = session;

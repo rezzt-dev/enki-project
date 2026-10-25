@@ -30,6 +30,9 @@ public sealed class AiChatSession
     /// <see langword="null"/> mientras no se haya concedido.</summary>
     public AiReadGrant? ReadAccess { get; set; }
 
+    /// <summary>Revocación explícita del chat: impide heredar el permiso de consulta de Ajustes.</summary>
+    public bool ReadAccessRevoked { get; set; }
+
     /// <summary>Mensaje a medio escribir en este chat: se conserva al cambiar de chat, de sección o al cerrar
     /// Enki. <see langword="null"/> sin borrador.</summary>
     public AiChatDraft? Draft { get; set; }

@@ -56,6 +56,21 @@ public sealed class SettingsViewModelAiTests : IDisposable
     }
 
     [Fact]
+    public void DefaultReadAccess_PersistsInInstallation_IndependentlyOfChanges()
+    {
+        var (vm, settings, _, vaultPath) = Create();
+        Assert.False(vm.AiAllowReadAccessByDefault);
+        vm.AiAllowReadAccessByDefault = true;
+        vm.AiAllowVaultChanges = false;
+        var saved = new SettingsService(_storageDirectory).Settings.Ai;
+        Assert.True(saved.AllowReadAccessByDefault);
+        Assert.False(saved.AllowVaultChanges);
+        Assert.DoesNotContain("AllowReadAccessByDefault", File.ReadAllText(Path.Combine(vaultPath, ".enki", "settings.json")));
+        vm.AiAllowReadAccessByDefault = false;
+        Assert.False(new SettingsService(_storageDirectory).Settings.Ai.AllowReadAccessByDefault);
+    }
+
+    [Fact]
     public void ProviderSettings_KeepModelsSeparate_WithoutProbingWhenDisabled()
     {
         var (vm, settings, _, _) = Create();

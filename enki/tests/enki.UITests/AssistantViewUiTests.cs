@@ -128,6 +128,79 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     [Fact]
+    public void SelectedChatText_UsesContrastingColors_AndUpdatesWithTheme()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var previousTheme = Application.Current!.RequestedThemeVariant;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, _) =>
+        {
+            var session = new AiChatSession { Title = "Selección" };
+            session.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Seleccionar texto del chat" });
+            session.Messages.Add(new AiChatMessage
+            {
+                Role = AiChatRole.Assistant,
+                Text = "## Texto seleccionado\n\nPárrafo con **negrita**, `código` y [enlace](https://example.com).\n\n1. Elemento de lista\n\n> Una cita\n\n| Columna |\n|---|\n| Celda |\n\n```text\nBloque de código\n```"
+            });
+            chats.Save(session);
+        });
+        try
+        {
+            vm.SelectSessionCommand.Execute(vm.Sessions.Single());
+            foreach (var light in new[] { false, true })
+            {
+                Application.Current!.RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+                Dispatcher.UIThread.RunJobs();
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                Assert.True(window.TryFindResource("AppBackgroundBrush", out var background));
+                window.Background = Assert.IsAssignableFrom<IBrush>(background);
+                var blocks = view.GetVisualDescendants().OfType<SelectableTextBlock>()
+                    .Where(block => block.IsEffectivelyVisible).ToArray();
+                Assert.True(blocks.Length >= 7);
+                foreach (var block in blocks)
+                {
+                    block.SelectAll();
+                    Assert.True(block.SelectionEnd > block.SelectionStart);
+                    Assert.Equal(light ? Colors.White : Colors.Black,
+                        Assert.IsAssignableFrom<ISolidColorBrush>(block.SelectionForegroundBrush).Color);
+                    Assert.Equal(light ? Colors.Black : Colors.White,
+                        Assert.IsAssignableFrom<ISolidColorBrush>(block.SelectionBrush).Color);
+                }
+                Dispatcher.UIThread.RunJobs();
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                SavePreview(view, light ? "assistant-selection-light" : "assistant-selection-dark");
+            }
+        }
+        finally { window.Close(); Application.Current!.RequestedThemeVariant = previousTheme; }
+    }
+
+    [Fact]
+    public void LoadingRings_RenderAtAllAssistantSizes()
+    {
+        var row = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 20, Margin = new Thickness(20) };
+        foreach (var size in new[] { 10, 12, 14, 22 })
+            row.Children.Add(new LoadingSpinner { Width = size, Height = size, Foreground = Brushes.White,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+        var refresh = new Material.Icons.Avalonia.MaterialIcon { Kind = Material.Icons.MaterialIconKind.Refresh,
+            Width = 14, Height = 14, Classes = { "spin" }, Foreground = Brushes.White };
+        row.Children.Add(refresh);
+        var window = new Window { Width = 220, Height = 70, Background = Brushes.Black, Content = row };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            foreach (var ring in row.Children.OfType<LoadingSpinner>())
+            {
+                Assert.Equal(ring.Width, ring.Bounds.Width);
+                Assert.Equal(ring.Height, ring.Bounds.Height);
+            }
+            Assert.Equal(new Point(7, 7), refresh.RenderTransformOrigin.ToPixels(new Size(14, 14)));
+            SavePreview(window, "assistant-loading-rings", 220, 70);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
     public void HistoryToggle_ReclaimsConversationSpace_AndPreservesDraftAndSearch()
     {
         var (view, vm, window, _) = Create(Path.Combine(_directory, "no-existe"));
@@ -377,6 +450,16 @@ public sealed class AssistantViewUiTests : IDisposable
 
             Assert.Contains(Localization.LocalizationService.Instance["Settings_Ai_Cli_Path_Label"], RenderedText(view));
             SavePreview(view, "settings-ai", 1280, 1100);
+            var accessLabel = Localization.LocalizationService.Instance["Settings_Ai_Vault_DefaultAccess_Label"];
+            vm.SearchText = accessLabel;
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var accessToggle = view.GetVisualDescendants().OfType<ToggleSwitch>()
+                .Single(toggle => Avalonia.Automation.AutomationProperties.GetName(toggle) == accessLabel);
+            accessToggle.IsChecked = true;
+            Assert.True(vm.AiAllowReadAccessByDefault);
+            Assert.True(settings.Settings.Ai.AllowReadAccessByDefault);
+            SavePreview(view, "settings-ai-default-access", 1280, 1100);
         }
         finally
         {
@@ -407,12 +490,35 @@ public sealed class AssistantViewUiTests : IDisposable
                 enki.Localization.LocalizedTextFormatter.Format("Assistant_Approval_DeleteForever_one", 1), ["Nota antigua"]));
             window.GetLayoutManager()!.ExecuteLayoutPass();
             var text = RenderedText(view);
-            Assert.Contains("Plan semanal", text);
+            Assert.DoesNotContain("Plan semanal", text);
             Assert.Contains("Nota antigua", text);
+            var toggle = view.GetVisualDescendants().OfType<Button>()
+                .Single(button => button.Name == "ActivitiesToggle" && ReferenceEquals(button.DataContext, reply));
+            var list = view.GetVisualDescendants().OfType<ItemsControl>()
+                .Single(control => control.Name == "ActivitiesList" && ReferenceEquals(control.DataContext, reply));
+            Assert.False(reply.IsActivitiesExpanded);
+            Assert.False(list.IsEffectivelyVisible);
+            Assert.Contains(reply.ActivitiesLabel.ToUpperInvariant(), text);
+            SavePreview(view, "assistant-tools-collapsed");
+            reply.ReportActivity(new AiToolActivity { Tool = "read_note", Target = "Lectura nueva", State = AiToolActivityState.Running });
+            Assert.False(reply.IsActivitiesExpanded);
+            toggle.Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(list.IsEffectivelyVisible);
+            Assert.Contains("Plan semanal", RenderedText(view));
+            Assert.Contains("Lectura nueva", RenderedText(view));
+            reply.ReportActivity(new AiToolActivity { Tool = "list_notes", State = AiToolActivityState.Succeeded });
+            Assert.True(reply.IsActivitiesExpanded);
+            Assert.False(new AiChatMessageViewModel(reply.Model).IsActivitiesExpanded);
             Assert.DoesNotContain("[[", text);
             Assert.True(reply.HasActivities);
             Assert.True(reply.HasPendingApproval);
             SavePreview(view, "assistant-tools-approval");
+            toggle.Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(list.IsEffectivelyVisible);
+            Assert.Contains("Nota antigua", RenderedText(view));
             reply.PendingApproval.DenyCommand.Execute(null);
             Assert.True(reply.PendingApproval.Decision.IsCompletedSuccessfully);
         }

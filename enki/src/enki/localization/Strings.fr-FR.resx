@@ -7175,7 +7175,7 @@ Bonne rédaction.</value>
     <value>Autoriser les modifications du coffre</value>
   </data>
   <data name="Settings_Ai_Vault_AllowChanges_Description" xml:space="preserve">
-    <value>Autoriser l’assistant à créer, modifier, organiser et mettre des éléments à la corbeille dans le périmètre choisi. Désactivez pour un accès en lecture seule.</value>
+    <value>Autorise la création, la modification, l’organisation et la suppression des notes, fichiers, skills, cartes Kanban, tâches Polar et rappels dans le périmètre sélectionné. Désactivez pour un accès en lecture seule. La suppression définitive exige une confirmation.</value>
   </data>
   <data name="Settings_Ai_Vault_Confirmations" xml:space="preserve">
     <value>La suppression définitive et la sortie de contenu d’une session protégée nécessitent toujours une confirmation dans la conversation.</value>
@@ -7515,5 +7515,35 @@ Bonne rédaction.</value>
   </data>
   <data name="Assistant_State_ApiKeyMissing" xml:space="preserve">
     <value>Claude · aucune clé d’API enregistrée</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Label" xml:space="preserve">
+    <value>Autoriser la lecture par défaut</value>
+  </data>
+  <data name="Settings_Ai_Vault_DefaultAccess_Description" xml:space="preserve">
+    <value>Autorise l’assistant à lire les notes, fichiers, skills, cartes Kanban, tâches Polar et rappels dans le périmètre du chat sans demander. Cet accès peut être révoqué par chat. Activez les modifications ci-dessous pour créer, modifier, organiser et supprimer des éléments.</value>
+  </data>
+  <data name="Assistant_Tool_list_skills" xml:space="preserve">
+    <value>Lister les skills</value>
+  </data>
+  <data name="Assistant_Tool_read_skill" xml:space="preserve">
+    <value>Lire une skill</value>
+  </data>
+  <data name="Assistant_Tool_create_skill" xml:space="preserve">
+    <value>Créer une skill</value>
+  </data>
+  <data name="Assistant_Tool_write_skill" xml:space="preserve">
+    <value>Modifier une skill</value>
+  </data>
+  <data name="Assistant_Tool_delete_skill" xml:space="preserve">
+    <value>Supprimer une skill</value>
+  </data>
+  <data name="Assistant_Skill_DeleteConfirm" xml:space="preserve">
+    <value>Supprimer définitivement cette skill ?</value>
+  </data>
+  <data name="Assistant_Activity_Expand" xml:space="preserve">
+    <value>Afficher les actions</value>
+  </data>
+  <data name="Assistant_Activity_Collapse" xml:space="preserve">
+    <value>Masquer les actions</value>
   </data>
 </root>

@@ -27,6 +27,7 @@ public sealed partial class AssistantViewModel
 
     /// <summary>Permiso de consulta concedido desde la cabecera antes del primer mensaje; pasa al chat al crearlo.</summary>
     private AiReadGrant? _draftReadAccess;
+    private bool _draftReadAccessRevoked;
 
     /// <summary>La sesión del ámbito tal como está ahora en el vault (se resuelve en <see cref="RefreshScope"/>
     /// y no en cada lectura: listar sesiones lee sus manifiestos del disco).</summary>
@@ -152,6 +153,7 @@ public sealed partial class AssistantViewModel
         // El acceso ampliado y el permiso de consulta significan cosas distintas en cada espacio: no se arrastran.
         _draftFullAccess = false;
         _draftReadAccess = null;
+        _draftReadAccessRevoked = false;
         RefreshScope();
         foreach (var chip in PendingAttachments.Where(c => c.FullPath is null || !IsPathInScope(c.FullPath)).ToList())
             PendingAttachments.Remove(chip);
@@ -264,6 +266,7 @@ public sealed partial class AssistantViewModel
         _draftSessionName = null;
         _draftFullAccess = false;
         _draftReadAccess = null;
+        _draftReadAccessRevoked = false;
     }
 
     // ===================== Permiso de consulta =====================
@@ -272,10 +275,12 @@ public sealed partial class AssistantViewModel
     /// actual. Un permiso dado solo para la raíz no cubre el acceso a sesiones activado después.</summary>
     public bool ReadAccessGranted => _activeSession is { } session
         ? HasReadAccess(session)
-        : _draftReadAccess is { } grant && Covers(grant, _draftSessionId is not null, _draftFullAccess);
+        : !_draftReadAccessRevoked && (_settingsService.Settings.Ai.AllowReadAccessByDefault
+            || _draftReadAccess is { } grant && Covers(grant, _draftSessionId is not null, _draftFullAccess));
 
-    private static bool HasReadAccess(AiChatSession session) =>
-        session.ReadAccess is { } grant && Covers(grant, session.SessionId is not null, session.FullVaultAccess);
+    private bool HasReadAccess(AiChatSession session) =>
+        !session.ReadAccessRevoked && (_settingsService.Settings.Ai.AllowReadAccessByDefault
+            || session.ReadAccess is { } grant && Covers(grant, session.SessionId is not null, session.FullVaultAccess));
 
     private static bool Covers(AiReadGrant grant, bool sessionChat, bool fullVaultAccess) =>
         sessionChat || !fullVaultAccess || grant.IncludesSessions;
@@ -303,6 +308,7 @@ public sealed partial class AssistantViewModel
         if (_activeSession is { } session) GrantReadAccess(session);
         else
         {
+            _draftReadAccessRevoked = false;
             _draftReadAccess = new AiReadGrant { IncludesSessions = _draftSessionId is null && _draftFullAccess };
             RefreshScope();
         }
@@ -313,17 +319,20 @@ public sealed partial class AssistantViewModel
     [RelayCommand]
     private void RevokeReadAccess()
     {
-        if (_activeSession is { ReadAccess: not null } session)
+        if (_activeSession is { } session)
         {
             session.ReadAccess = null;
+            session.ReadAccessRevoked = true;
             TrySaveSession(session, touch: false);
         }
         _draftReadAccess = null;
+        _draftReadAccessRevoked = true;
         RefreshScope();
     }
 
     private void GrantReadAccess(AiChatSession session)
     {
+        session.ReadAccessRevoked = false;
         session.ReadAccess = new AiReadGrant { IncludesSessions = session.SessionId is null && session.FullVaultAccess };
         TrySaveSession(session, touch: false);
         if (session == _activeSession) RefreshScope();
