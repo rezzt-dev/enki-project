@@ -116,4 +116,52 @@ public sealed class AiChatServiceTests : IDisposable
 
         Assert.Throws<ArgumentException>(() => service.Save(new AiChatSession { Id = "../fuera" }));
     }
+
+    // ===================== Historial por vault =====================
+
+    [Fact]
+    public void AssignToVault_AssociatesAnOldChatOnce_AndPersists()
+    {
+        var service = new AiChatService(_storageDirectory);
+        var old = new AiChatSession { Title = "Antiguo" };
+        service.Save(old);
+        Assert.Single(service.UnassignedSessions);
+
+        service.AssignToVault(old, "vault1", "Personal");
+
+        var reloaded = new AiChatService(_storageDirectory);
+        var saved = Assert.Single(reloaded.Sessions);
+        Assert.Equal("vault1", saved.VaultId);
+        Assert.Equal("Personal", saved.VaultName);
+        Assert.Empty(reloaded.UnassignedSessions);
+        // Una conversación que ya tiene vault no se reasigna a otro.
+        Assert.Throws<InvalidOperationException>(() => reloaded.AssignToVault(saved, "vault2", "Trabajo"));
+    }
+
+    // ===================== Borradores de chats nuevos =====================
+
+    [Fact]
+    public void NewChatDrafts_ArePerKey_Persist_AndEmptyOnesAreRemoved()
+    {
+        var service = new AiChatService(_storageDirectory);
+        service.SaveNewChatDraft("v|vault", new AiChatDraft { Text = "Idea", Attachments = [new AiDraftAttachment { RelativePath = "Plan.md" }] });
+        service.SaveNewChatDraft("v|s1", new AiChatDraft { Text = "Sesión" });
+
+        var reloaded = new AiChatService(_storageDirectory);
+        Assert.Equal("Idea", reloaded.FindNewChatDraft("v|vault")!.Text);
+        Assert.Equal("Plan.md", reloaded.FindNewChatDraft("v|vault")!.Attachments.Single().RelativePath);
+        Assert.Equal("Sesión", reloaded.FindNewChatDraft("v|s1")!.Text);
+
+        reloaded.SaveNewChatDraft("v|vault", new AiChatDraft());
+        Assert.Null(new AiChatService(_storageDirectory).FindNewChatDraft("v|vault"));
+    }
+
+    [Fact]
+    public void DeleteAll_AlsoRemovesNewChatDrafts()
+    {
+        var service = new AiChatService(_storageDirectory);
+        service.SaveNewChatDraft("v|vault", new AiChatDraft { Text = "Idea" });
+        service.DeleteAll();
+        Assert.Null(new AiChatService(_storageDirectory).FindNewChatDraft("v|vault"));
+    }
 }

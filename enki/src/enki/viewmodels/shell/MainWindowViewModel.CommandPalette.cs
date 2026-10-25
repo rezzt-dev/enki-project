@@ -73,7 +73,10 @@ public sealed partial class MainWindowViewModel
         if (AssistantPanelEnabled && Assistant is not null)
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_NewAssistantChat"], MaterialIconKind.Creation,
-                () => { Navigate(AppPage.Assistant); Assistant.NewChatCommand.Execute(null); }));
+                () => { Assistant.NewChatCommand.Execute(null); ShowAssistant(); }));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance[IsAssistantPanelVisible
+                    ? "CommandPalette_Action_CloseAssistantPanel" : "CommandPalette_Action_OpenAssistantPanel"],
+                MaterialIconKind.DockRight, () => ToggleAssistantPanelCommand.Execute(null)));
             if (Notes?.ActiveEditor is not null)
                 items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AskAssistantAboutNote"],
                     MaterialIconKind.MessageTextOutline, StartAssistantChatAboutActiveNote));

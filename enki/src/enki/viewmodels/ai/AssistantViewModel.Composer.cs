@@ -14,9 +14,10 @@ using enki.Services;
 
 namespace enki.ViewModels;
 
-/// <summary>Compositor del chat y ciclo de vida de un turno: texto, notas adjuntas, skill de partida,
-/// confirmación de lo que se envía, streaming de la respuesta, cancelación, reintento y recuperación de una
-/// conversación que el CLI ya no conserva.</summary>
+/// <summary>Compositor del chat y ciclo de vida de un turno: texto, notas y archivos adjuntos, skill de
+/// partida, confirmación de lo que se envía, streaming de la respuesta, permisos que el asistente pide por el
+/// camino, cancelación, reintento (o continuación, si la respuesta interrumpida ya había hecho cambios) y
+/// recuperación de una conversación que el CLI ya no conserva.</summary>
 public sealed partial class AssistantViewModel
 {
     public const int MaxAttachments = 5;
@@ -26,14 +27,15 @@ public sealed partial class AssistantViewModel
 
     private CancellationTokenSource? _turnCancellation;
 
-    /// <summary>Último turno fallido, para "Reintentar" sin volver a escribir ni releer las notas.</summary>
-    private (AiChatSession Session, string Prompt)? _retryTurn;
+    /// <summary>Último turno fallido, para "Reintentar" sin volver a escribir ni releer los adjuntos. Guarda
+    /// también lo que la respuesta interrumpida ya llegó a hacer en el vault, para no repetirlo.</summary>
+    private (AiChatSession Session, string Prompt, IReadOnlyList<AiToolActivity> Completed)? _retryTurn;
 
     private ClaudeTurnResult? _lastFailure;
     private ClaudeFailureKind _lastNotifiedFailure = ClaudeFailureKind.None;
 
-    /// <summary>Contenido de las notas leído al pedir confirmación, para que se envíe exactamente lo que el
-    /// usuario aprobó aunque la nota cambie mientras el diálogo está abierto.</summary>
+    /// <summary>Contenido de los adjuntos leído al pedir confirmación, para que se envíe exactamente lo que el
+    /// usuario aprobó aunque cambien mientras el diálogo está abierto.</summary>
     private List<AiContextNote>? _confirmedNotes;
 
     // ===================== Texto =====================
@@ -44,17 +46,20 @@ public sealed partial class AssistantViewModel
     private string _draftText = string.Empty;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanSend), nameof(CanPickSkill), nameof(CanStartNewChat))]
+    [NotifyPropertyChangedFor(nameof(CanSend), nameof(CanPickSkill), nameof(CanStartNewChat), nameof(CanRetry))]
     [NotifyCanExecuteChangedFor(nameof(SendCommand), nameof(StopCommand), nameof(RetryCommand))]
     private bool _isSending;
 
-    public bool CanSend => Cli.IsReady && !Cli.IsChecking && !IsSending && !string.IsNullOrWhiteSpace(DraftText);
+    public bool CanSend => Cli.IsReady && !Cli.IsChecking && !IsSending && !IsUnassignedChat
+        && !string.IsNullOrWhiteSpace(DraftText);
 
     public bool CanStartNewChat => !IsSending;
 
     /// <summary>Pide a la vista que lleve el foco al cuadro de texto (al abrir un chat nuevo o elegir una
     /// sugerencia), para poder escribir sin tocar el ratón.</summary>
     public event Action? ComposerFocusRequested;
+
+    partial void OnDraftTextChanged(string value) => ScheduleDraftSave();
 
     /// <summary>Sugerencias de la pantalla de bienvenida: rellenan el cuadro de texto sin enviarlo, para que
     /// el usuario pueda adjuntar una nota o ajustar la petición antes.</summary>
@@ -71,7 +76,7 @@ public sealed partial class AssistantViewModel
         ComposerFocusRequested?.Invoke();
     }
 
-    // ===================== Notas adjuntas =====================
+    // ===================== Adjuntos =====================
 
     public ObservableCollection<AiAttachmentChipViewModel> PendingAttachments { get; } = [];
 
@@ -86,14 +91,15 @@ public sealed partial class AssistantViewModel
         : string.Format(LocalizationService.Instance.CurrentCulture,
             LocalizationService.Instance["Assistant_Composer_AttachActiveNote"], _activeNote.Title);
 
-    public bool CanAttachActiveNote => _activeNote is not null && CanAttachMore
-        && PendingAttachments.All(a => !SamePath(a.Note, _activeNote)) && IsInScope(_activeNote);
+    public bool CanAttachActiveNote => _activeNote is not null && CanAttachMore && !IsUnassignedChat
+        && PendingAttachments.All(a => !SamePath(a.FullPath, _activeNote.FullPath)) && IsInScope(_activeNote);
 
     partial void OnIsSendingChanged(bool value)
     {
         OnPropertyChanged(nameof(CanChangeWorkspace));
         OnPropertyChanged(nameof(CanChangeAccess));
         OnPropertyChanged(nameof(CanChangeEffort));
+        RefreshActivityState();
     }
 
     private void RefreshActiveNote()
@@ -101,6 +107,8 @@ public sealed partial class AssistantViewModel
         _activeNote = _activeNoteProvider();
         OnPropertyChanged(nameof(ActiveNoteLabel));
         OnPropertyChanged(nameof(CanAttachActiveNote));
+        OnPropertyChanged(nameof(CanAppendToActiveNote));
+        OnPropertyChanged(nameof(AppendToActiveNoteLabel));
     }
 
     private void RefreshComposerState()
@@ -110,13 +118,14 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(CanAttachActiveNote));
         OnPropertyChanged(nameof(CanSend));
         SendCommand.NotifyCanExecuteChanged();
+        ScheduleDraftSave();
     }
 
     [RelayCommand]
     private void AttachActiveNote()
     {
         RefreshActiveNote();
-        if (_activeNote is { } note && CanAttachActiveNote) Attach(note, WorkspaceLabelFor(note));
+        if (_activeNote is { } note && CanAttachActiveNote) Attach(note, WorkspaceLabelFor(note.FullPath));
     }
 
     /// <summary>Abre un chat nuevo con <paramref name="note"/> ya adjunta — "Preguntar al asistente sobre esta
@@ -125,6 +134,7 @@ public sealed partial class AssistantViewModel
     public void StartChatAboutNote(NoteFile note)
     {
         if (IsSending) return;
+        SaveDraft();
         StartNewChat();
         if (_sessionService?.List().FirstOrDefault(s => VaultService.IsWithinFolder(note.FullPath, s.RootPath)) is { } session)
         {
@@ -132,32 +142,58 @@ public sealed partial class AssistantViewModel
             _draftSessionName = session.Name;
             RefreshScope();
         }
-        Attach(note, WorkspaceLabelFor(note));
+        RestoreDraft();
+        Attach(note, WorkspaceLabelFor(note.FullPath));
         ComposerFocusRequested?.Invoke();
     }
 
     private void Attach(NoteFile note, string workspaceLabel)
     {
-        if (!CanAttachMore || !IsInScope(note) || PendingAttachments.Any(a => SamePath(a.Note, note))) return;
+        if (!CanAttachMore || !IsInScope(note) || PendingAttachments.Any(a => SamePath(a.FullPath, note.FullPath))) return;
         PendingAttachments.Add(new AiAttachmentChipViewModel(note, workspaceLabel));
     }
 
-    /// <summary>Las notas pendientes de adjuntar son del vault que se acaba de cerrar: se descartan antes de
-    /// que nadie pueda enviarlas creyendo que son del nuevo. Una respuesta en curso se corta, porque sus
-    /// herramientas pasarían a actuar sobre el vault recién abierto. El historial no cambia, no depende del vault.</summary>
+    private void Attach(VaultFile file, string workspaceLabel)
+    {
+        if (!CanAttachMore || AiTextFiles.Check(file) != AiTextFileProblem.None || !IsPathInScope(file.FullPath)
+            || PendingAttachments.Any(a => SamePath(a.FullPath, file.FullPath))) return;
+        PendingAttachments.Add(new AiAttachmentChipViewModel(file, workspaceLabel));
+    }
+
+    /// <summary>Cambio de vault, ya con la ruta nueva adoptada: una respuesta en curso se corta —sus herramientas
+    /// pasarían a actuar sobre el vault recién abierto— y el chat abierto se cierra, porque el historial es de
+    /// cada vault. El borrador ya se guardó antes del cambio (ver <c>TryFlushEverythingBeforeVaultSwitch</c>):
+    /// aquí ya no se puede, porque las rutas de sus adjuntos se resolverían contra el vault nuevo. La identidad
+    /// del vault nuevo la carga <see cref="ReloadForVault"/>, cuando sus ajustes ya están leídos.</summary>
     public void CloseForVaultChange()
     {
+        CancelScheduledDraftSave();
         _turnCancellation?.Cancel();
-        PendingAttachments.Clear();
         IsNotePickerOpen = false;
         IsSkillPickerOpen = false;
         IsConfirmSendOpen = false;
         IsScopePickerOpen = false;
         IsEffortPickerOpen = false;
+        IsPanelHistoryOpen = false;
+        CancelAppendToNote();
         _confirmedNotes = null;
-        _allNotesCache = [];
-        if (_activeSession is null) ResetDraftScope();
+        _allPickerItems = [];
+        _restoringDraft = true;
+        StartNewChat(forgetLastChat: false);
+        _restoringDraft = false;
+        _restoredLastChat = false;
+        _responseReady = false;
+        RefreshActivityState();
+    }
+
+    /// <summary>Segunda mitad del cambio de vault: con los ajustes del vault nuevo ya cargados, resuelve su
+    /// identidad, su historial y el borrador de su chat nuevo. El último chat de este vault se abre la próxima
+    /// vez que se enseñe el asistente.</summary>
+    public void ReloadForVault()
+    {
+        RefreshVaultIdentity();
         RefreshScope();
+        RestoreDraft();
     }
 
     [RelayCommand]
@@ -166,24 +202,27 @@ public sealed partial class AssistantViewModel
         if (chip is not null) PendingAttachments.Remove(chip);
     }
 
-    private static bool SamePath(NoteFile? a, NoteFile? b) =>
-        a is not null && b is not null && VaultService.PathsEqual(a.FullPath, b.FullPath);
+    private static bool SamePath(string? a, string? b) => a is not null && b is not null && VaultService.PathsEqual(a, b);
 
-    private string WorkspaceLabelFor(NoteFile note) =>
-        _sessionService?.ListAllNotesByWorkspace().FirstOrDefault(t => SamePath(t.Note, note)).WorkspaceLabel
+    private string WorkspaceLabelFor(string fullPath) =>
+        _sessionService?.List().FirstOrDefault(s => VaultService.IsWithinFolder(fullPath, s.RootPath))?.Name
         ?? LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"];
 
-    // ----- Selector de notas (mismo comportamiento que el de vincular nota de Kanban) -----
+    // ----- Selector de adjuntos: notas o archivos del ámbito -----
 
-    private List<(NoteFile Note, string Workspace)> _allNotesCache = [];
+    private List<AiAttachmentPickerItemViewModel> _allPickerItems = [];
 
-    public ObservableCollection<NotePickerItemViewModel> NotePickerResults { get; } = [];
+    public ObservableCollection<AiAttachmentPickerItemViewModel> NotePickerResults { get; } = [];
 
     [ObservableProperty]
     private bool _isNotePickerOpen;
 
     [ObservableProperty]
     private string _notePickerSearchText = string.Empty;
+
+    /// <summary>El selector enseña archivos en vez de notas.</summary>
+    [ObservableProperty]
+    private bool _isPickingFiles;
 
     public bool HasNoNotePickerResults => IsNotePickerOpen && NotePickerResults.Count == 0;
 
@@ -192,7 +231,7 @@ public sealed partial class AssistantViewModel
     {
         if (!IsNotePickerOpen)
         {
-            _allNotesCache = CollectNotes();
+            _allPickerItems = CollectPickerItems();
             NotePickerSearchText = string.Empty;
             RefreshNotePickerResults();
         }
@@ -200,25 +239,48 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(HasNoNotePickerResults));
     }
 
-    /// <summary>Las notas que se pueden adjuntar: las de los espacios del ámbito del chat (ver
-    /// <see cref="IsInScope"/>), recorridas espacio a espacio.</summary>
-    private List<(NoteFile, string)> CollectNotes()
+    [RelayCommand]
+    private void ShowPickerNotes() => IsPickingFiles = false;
+
+    [RelayCommand]
+    private void ShowPickerFiles() => IsPickingFiles = true;
+
+    partial void OnIsPickingFilesChanged(bool value)
+    {
+        if (!IsNotePickerOpen) return;
+        _allPickerItems = CollectPickerItems();
+        RefreshNotePickerResults();
+    }
+
+    /// <summary>Lo que se puede adjuntar: las notas, o los archivos, de los espacios del ámbito del chat (ver
+    /// <see cref="IsInScope"/>), recorridos espacio a espacio.</summary>
+    private List<AiAttachmentPickerItemViewModel> CollectPickerItems()
     {
         try
         {
             var scope = CurrentScope;
-            var notes = new List<(NoteFile, string)>();
+            var roots = new List<(string Root, string Label)>();
             if (scope.IncludesVault)
-                notes.AddRange(_vaultService.GetAllNotesRecursive(_vaultService.VaultPath)
-                    .Select(n => (n, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"])));
+                roots.Add((_vaultService.VaultPath, LocalizationService.Instance["Kanban_NotePicker_VaultWorkspaceLabel"]));
             if (_sessionService is not null)
                 foreach (var session in _sessionService.List().Where(s => scope.Includes(s) && _sessionService.IsUnlocked(s)))
-                    notes.AddRange(_vaultService.GetAllNotesRecursive(session.RootPath).Select(n => (n, session.Name)));
-            return notes;
+                    roots.Add((session.RootPath, session.Name));
+
+            var items = new List<AiAttachmentPickerItemViewModel>();
+            foreach (var (root, label) in roots)
+            {
+                if (IsPickingFiles)
+                    items.AddRange(_vaultService.GetFilesRecursive(root).Where(f => IsPathInScope(f.FullPath))
+                        .OrderByDescending(f => f.ModifiedUtc).Select(f => new AiAttachmentPickerItemViewModel(f, label)));
+                else
+                    items.AddRange(_vaultService.GetAllNotesRecursive(root).Where(IsInScope)
+                        .Select(n => new AiAttachmentPickerItemViewModel(n, label)));
+            }
+            return items;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or VaultUnavailableException)
         {
-            LogService.Warning("No se pudieron listar las notas para el asistente", ex);
+            LogService.Warning("No se pudieron listar los adjuntos posibles para el asistente", ex);
             return [];
         }
     }
@@ -230,17 +292,18 @@ public sealed partial class AssistantViewModel
         NotePickerResults.Clear();
         var query = NotePickerSearchText.Trim();
         var matches = query.Length == 0
-            ? _allNotesCache
-            : _allNotesCache.Where(t => t.Note.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase));
-        foreach (var (note, workspace) in matches.Take(40))
-            NotePickerResults.Add(new NotePickerItemViewModel(note, workspace));
+            ? _allPickerItems
+            : _allPickerItems.Where(t => t.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase));
+        foreach (var item in matches.Take(40)) NotePickerResults.Add(item);
         OnPropertyChanged(nameof(HasNoNotePickerResults));
     }
 
     [RelayCommand]
-    private void PickNote(NotePickerItemViewModel? item)
+    private void PickNote(AiAttachmentPickerItemViewModel? item)
     {
-        if (item is not null) Attach(item.Note, item.WorkspaceLabel);
+        if (item is { Note: { } note }) Attach(note, item.WorkspaceLabel);
+        else if (item is { File: { } file, IsEnabled: true }) Attach(file, item.WorkspaceLabel);
+        else if (item is not null) return;
         IsNotePickerOpen = false;
     }
 
@@ -293,6 +356,7 @@ public sealed partial class AssistantViewModel
         DraftSkillName = skill.Name;
         DraftSkillInstructions = SkillService.GetMarkdownBody(skill.Content);
         RefreshHeader();
+        ScheduleDraftSave();
     }
 
     [RelayCommand]
@@ -302,13 +366,16 @@ public sealed partial class AssistantViewModel
         DraftSkillName = null;
         DraftSkillInstructions = null;
         RefreshHeader();
+        ScheduleDraftSave();
     }
 
     /// <summary>"Usar en el asistente" desde el detalle de una skill.</summary>
     public void StartChatWithSkill(SkillFile skill)
     {
         if (IsSending) return;
+        SaveDraft();
         StartNewChat();
+        RestoreDraft();
         DraftSkillName = skill.Name;
         DraftSkillInstructions = SkillService.GetMarkdownBody(skill.Content);
         RefreshHeader();
@@ -320,7 +387,7 @@ public sealed partial class AssistantViewModel
     [ObservableProperty]
     private bool _isConfirmSendOpen;
 
-    /// <summary>Filas del diálogo: título de cada nota y cuánto se enviará de ella.</summary>
+    /// <summary>Filas del diálogo: título de cada adjunto y cuánto se enviará de él.</summary>
     public ObservableCollection<AiAttachmentChipViewModel> ConfirmSendItems { get; } = [];
 
     [ObservableProperty]
@@ -358,7 +425,8 @@ public sealed partial class AssistantViewModel
         foreach (var attachment in attachments) ConfirmSendItems.Add(new AiAttachmentChipViewModel(attachment));
         var total = attachments.Sum(a => a.SentChars) + DraftText.Trim().Length;
         ConfirmSendSummary = string.Format(LocalizationService.Instance.CurrentCulture,
-            LocalizationService.Instance["Assistant_Confirm_Summary"], AiAttachmentChipViewModel.FormatCount(total));
+            LocalizationService.Instance["Assistant_Confirm_Summary"], AiAttachmentChipViewModel.FormatCount(total),
+            Cli.ProviderLabel);
         SkipFutureConfirmations = false;
         return true;
     }
@@ -390,9 +458,13 @@ public sealed partial class AssistantViewModel
         var session = _activeSession;
         if (session is null)
         {
+            var draftKey = NewChatDraftKey;
+            EnsureVaultIdentity();
             session = new AiChatSession
             {
                 Provider = _cli.Provider,
+                VaultId = VaultKey,
+                VaultName = _vaultName,
                 Title = AiPromptBuilder.SuggestTitle(text),
                 Model = SelectedModel?.Alias ?? string.Empty,
                 Effort = SelectedEffort,
@@ -400,19 +472,26 @@ public sealed partial class AssistantViewModel
                 SkillInstructions = DraftSkillInstructions,
                 SessionId = _draftSessionId,
                 SessionName = _scopeSession?.Name ?? _draftSessionName,
-                FullVaultAccess = _draftFullAccess
+                FullVaultAccess = _draftFullAccess,
+                ReadAccess = _draftReadAccess
             };
             _activeSession = session;
+            ClearNewChatDraft(draftKey);
             ResetDraftScope();
             RefreshScope();
         }
 
         var userMessage = new AiChatMessage { Role = AiChatRole.User, Text = text, Attachments = attachments };
         session.Messages.Add(userMessage);
+        session.Draft = null;
+        CancelScheduledDraftSave();
         TrySaveSession(session);
         Messages.Add(new AiChatMessageViewModel(userMessage));
+        _restoringDraft = true;
         DraftText = string.Empty;
         PendingAttachments.Clear();
+        _restoringDraft = false;
+        DraftMissingAttachments = 0;
         RememberActiveChat();
         RefreshHeader();
         RebuildSessionList();
@@ -420,31 +499,58 @@ public sealed partial class AssistantViewModel
         await RunTurnAsync(session, prompt);
     }
 
-    /// <summary>Lee las notas pendientes de adjuntar. Antes vuelca lo que el editor tenga sin guardar, para
-    /// que se envíe lo que el usuario ve y no la última versión en disco.</summary>
+    /// <summary>Lee los adjuntos pendientes. Antes vuelca lo que el editor tenga sin guardar, para que se envíe
+    /// lo que el usuario ve y no la última versión en disco. Un adjunto que ya no se puede enviar queda marcado
+    /// en su chip con el motivo y no se envía nada hasta que el usuario lo retire.</summary>
     private bool TryReadAttachments(out List<AiContextNote> notes)
     {
         notes = [];
         if (PendingAttachments.Count == 0) return true;
         _flushPendingEdits();
-        try
+        var failed = false;
+        foreach (var chip in PendingAttachments)
         {
-            foreach (var chip in PendingAttachments)
+            chip.Problem = null;
+            try
             {
-                var note = chip.Note!;
-                if (!IsInScope(note)) throw new SessionLockedException(note.FullPath);
-                var relative = Path.GetRelativePath(_vaultService.VaultPath, note.FullPath).Replace('\\', '/');
-                notes.Add(new AiContextNote(note.Title, relative, _vaultService.ReadContent(note)));
+                var path = chip.FullPath!;
+                if (!IsPathInScope(path)) throw new SessionLockedException(path);
+                var relative = Path.GetRelativePath(_vaultService.VaultPath, path).Replace('\\', '/');
+                if (chip.Kind == AiAttachmentKind.Note)
+                {
+                    notes.Add(new AiContextNote(chip.Title, relative, _vaultService.ReadContent(chip.Note!)));
+                    continue;
+                }
+                if (!File.Exists(path)) throw new FileNotFoundException(null, path);
+                chip.Problem = AiTextFiles.Check(AiTextFiles.Describe(path)) switch
+                {
+                    AiTextFileProblem.NotText => LocalizationService.Instance["Assistant_Attachment_NotText"],
+                    AiTextFileProblem.TooLarge => LocalizationService.Instance["Assistant_Attachment_TooLarge"],
+                    _ => null
+                };
+                if (chip.HasProblem)
+                {
+                    failed = true;
+                    continue;
+                }
+                notes.Add(new AiContextNote(chip.Title, relative, AiTextFiles.Read(_vaultService, path), AiAttachmentKind.File));
             }
-            return true;
+            catch (InvalidDataException)
+            {
+                chip.Problem = LocalizationService.Instance["Assistant_Attachment_NotText"];
+                failed = true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException or VaultUnavailableException)
+            {
+                chip.Problem = LocalizedTextFormatter.Resolve(VaultFailureReasons.DescribeLocalized(ex));
+                failed = true;
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException or VaultUnavailableException)
-        {
-            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_AttachmentFailed_Title"),
-                VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
-            notes = [];
-            return false;
-        }
+        if (!failed) return true;
+        _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_AttachmentFailed_Title"),
+            LocalizedTextFormatter.Format("Assistant_Notify_AttachmentFailed_Message"), NotificationSeverity.Error);
+        notes = [];
+        return false;
     }
 
     [RelayCommand(CanExecute = nameof(IsSending))]
@@ -452,14 +558,22 @@ public sealed partial class AssistantViewModel
 
     public bool CanRetry => _retryTurn is { } retry && retry.Session == _activeSession && !IsSending;
 
+    /// <summary>"Continuar" en vez de "Reintentar" cuando la respuesta interrumpida ya llegó a cambiar algo en el
+    /// vault: el siguiente intento recibe la lista de lo hecho y sigue desde ahí en vez de repetirlo.</summary>
+    public bool RetryContinues => _retryTurn is { Completed.Count: > 0 };
+
+    public string RetryLabel => LocalizationService.Instance[RetryContinues ? "Assistant_Error_Continue" : "Assistant_Error_Retry"];
+
     [RelayCommand(CanExecute = nameof(CanRetry))]
     private async Task RetryAsync()
     {
         if (_retryTurn is not { } retry || retry.Session != _activeSession || IsSending) return;
-        await RunTurnAsync(retry.Session, retry.Prompt);
+        await RunTurnAsync(retry.Session, AiPromptBuilder.WithCompletedActions(retry.Completed, retry.Prompt), retry.Prompt);
     }
 
-    private async Task RunTurnAsync(AiChatSession session, string prompt)
+    /// <param name="retryPrompt">Lo que se reenvía si este turno falla; por defecto el propio
+    /// <paramref name="prompt"/>. Un reintento lo fija al mensaje original para no encadenar avisos.</param>
+    private async Task RunTurnAsync(AiChatSession session, string prompt, string? retryPrompt = null)
     {
         ClearError();
         var assistant = new AiChatMessage { Role = AiChatRole.Assistant };
@@ -467,7 +581,10 @@ public sealed partial class AssistantViewModel
         Messages.Add(bubble);
         ScrollToEndRequested?.Invoke();
 
+        _runningSession = session;
+        _responseReady = false;
         IsSending = true;
+        RefreshSessionActivity();
         using var cancellation = new CancellationTokenSource();
         _turnCancellation = cancellation;
 
@@ -503,7 +620,7 @@ public sealed partial class AssistantViewModel
         {
             if (vaultTools) _flushPendingEdits();
             toolAccess = vaultTools ? RegisterTurnTools(session, bubble, activitySignal, cancellation.Token) : null;
-            var turnPrompt = toolAccess is null ? prompt : AiPromptBuilder.WithScope(BuildScopeNotice(), prompt);
+            var turnPrompt = toolAccess is null ? prompt : AiPromptBuilder.WithScope(BuildScopeNotice(session), prompt);
             if (session.Provider != AiProvider.Claude)
             {
                 var lastUser = session.Messages.FindLastIndex(m => m.Role == AiChatRole.User);
@@ -543,13 +660,20 @@ public sealed partial class AssistantViewModel
             if (toolAccess is not null) _vaultTools!.Unregister(toolAccess.BearerToken);
             bubble.PendingApproval?.Cancel();
             bubble.PendingApproval = null;
+            bubble.PendingReadAccess?.Cancel();
+            bubble.PendingReadAccess = null;
             _turnCancellation = null;
             bubble.IsStreaming = false;
+            _runningSession = null;
+            _pendingDecisions = 0;
             IsSending = false;
         }
 
         string partial;
         lock (buffer) partial = buffer.ToString();
+        // El chat puede haberse cerrado mientras tanto (cambio de vault): lo que llegó se guarda igual en su
+        // conversación, pero ya no se pinta en la que esté abierta.
+        var stillOpen = session == _activeSession;
 
         if (result is { Succeeded: true })
         {
@@ -562,7 +686,7 @@ public sealed partial class AssistantViewModel
                 _retryTurn = null;
                 _lastNotifiedFailure = ClaudeFailureKind.None;
                 TrySaveSession(session);
-                FinishTurn();
+                FinishTurn(responded: true);
                 return;
             }
             result = new ClaudeTurnResult(string.Empty, result.SessionId, ClaudeFailureKind.Failed,
@@ -584,18 +708,23 @@ public sealed partial class AssistantViewModel
             Messages.Remove(bubble);
         }
 
-        if (result is not null)
+        var completed = assistant.Activities.Where(a => a.State == AiToolActivityState.Succeeded).ToList();
+        // Un reintento que vuelve a cortarse conserva también lo que hizo el intento anterior.
+        if (retryPrompt is not null && _retryTurn is { } previous && previous.Session == session)
+            completed.InsertRange(0, previous.Completed);
+        _retryTurn = (session, retryPrompt ?? prompt, completed);
+        if (result is not null && stillOpen)
         {
-            _retryTurn = (session, prompt);
             ShowFailure(result);
             NotifyFailure(result);
             if (result.Failure is ClaudeFailureKind.SignedOut or ClaudeFailureKind.NotInstalled) _ = Cli.RefreshAsync();
         }
-        FinishTurn();
+        FinishTurn(responded: false);
     }
 
-    /// <summary>Da de alta el turno en el servidor del vault con el ámbito del chat. Las acciones y las
-    /// confirmaciones llegan desde el hilo en que se ejecutan las herramientas y se pintan en la burbuja.</summary>
+    /// <summary>Da de alta el turno en el servidor del vault con el ámbito y el permiso de consulta del chat.
+    /// Las acciones, las confirmaciones y la petición de permiso llegan desde el hilo en que se ejecutan las
+    /// herramientas y se pintan en la burbuja.</summary>
     private ClaudeToolAccess RegisterTurnTools(AiChatSession session, AiChatMessageViewModel bubble, CliActivitySignal activity,
         CancellationToken cancellation) =>
         _vaultTools!.Register(new AiToolContext
@@ -607,42 +736,82 @@ public sealed partial class AssistantViewModel
                 ScrollToEndRequested?.Invoke();
             }),
             ApprovalRequested = (request, token) => RequestApprovalAsync(bubble, request, token),
+            ReadAccess = new AiReadAccess(() => HasReadAccess(session),
+                token => RequestReadAccessAsync(bubble, session, token)),
             Activity = activity,
             Cancellation = cancellation
         });
 
     /// <summary>Enseña la tarjeta de confirmación en la respuesta en curso y espera a que el usuario decida. Si
-    /// no está mirando el Asistente, se le avisa: el turno queda parado hasta entonces.</summary>
-    private async Task<bool> RequestApprovalAsync(AiChatMessageViewModel bubble, AiApprovalRequest request, CancellationToken cancellation)
+    /// no está mirando el asistente, se le avisa: el turno queda parado hasta entonces.</summary>
+    private Task<bool> RequestApprovalAsync(AiChatMessageViewModel bubble, AiApprovalRequest request, CancellationToken cancellation)
     {
         var approval = new AiApprovalViewModel(request);
+        return AwaitDecisionAsync(approval.Decision, approval.Cancel,
+            () => bubble.PendingApproval = approval,
+            () =>
+            {
+                if (bubble.PendingApproval == approval) bubble.PendingApproval = null;
+            },
+            request.Title, cancellation);
+    }
+
+    /// <summary>Tarjeta "¿Permitir que este chat busque y consulte…?" en la respuesta en curso. Concedido, el
+    /// permiso se guarda en el chat y no se vuelve a preguntar en los turnos siguientes.</summary>
+    private async Task<bool> RequestReadAccessAsync(AiChatMessageViewModel bubble, AiChatSession session, CancellationToken cancellation)
+    {
+        var request = new AiReadAccessRequestViewModel(ReadAccessTargetLabel(session), Cli.ProviderLabel);
+        var granted = await AwaitDecisionAsync(request.Decision, request.Cancel,
+            () => bubble.PendingReadAccess = request,
+            () =>
+            {
+                if (bubble.PendingReadAccess == request) bubble.PendingReadAccess = null;
+            },
+            LocalizedTextFormatter.Format("Assistant_ReadAccess_Notify", request.ScopeLabel), cancellation);
+        if (granted) _dispatch(() => GrantReadAccess(session));
+        return granted;
+    }
+
+    /// <summary>Lo común a toda decisión que el turno espera del usuario: enseñar la tarjeta, avisar si no está
+    /// mirando, contarla en el indicador global y retirarla al terminar, decida o no.</summary>
+    private async Task<bool> AwaitDecisionAsync(Task<bool> decision, Action cancel, Action show, Action hide,
+        LocalizedText notice, CancellationToken cancellation)
+    {
         _dispatch(() =>
         {
-            bubble.PendingApproval = approval;
+            show();
+            _pendingDecisions++;
+            RefreshActivityState();
             ScrollToEndRequested?.Invoke();
             if (!_isVisible())
                 _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_ApprovalPending_Title"),
-                    request.Title, NotificationSeverity.Warning);
+                    notice, NotificationSeverity.Warning);
         });
-        using (cancellation.Register(approval.Cancel))
+        using (cancellation.Register(cancel))
         {
             try
             {
-                return await approval.Decision;
+                return await decision;
             }
             finally
             {
                 _dispatch(() =>
                 {
-                    if (bubble.PendingApproval == approval) bubble.PendingApproval = null;
+                    hide();
+                    _pendingDecisions = Math.Max(0, _pendingDecisions - 1);
+                    RefreshActivityState();
                 });
             }
         }
     }
 
-    private void FinishTurn()
+    private void FinishTurn(bool responded)
     {
+        if (responded && !_isVisible()) _responseReady = true;
+        RefreshActivityState();
         OnPropertyChanged(nameof(CanRetry));
+        OnPropertyChanged(nameof(RetryContinues));
+        OnPropertyChanged(nameof(RetryLabel));
         RetryCommand.NotifyCanExecuteChanged();
         RebuildSessionList();
         ScrollToEndRequested?.Invoke();
@@ -656,6 +825,10 @@ public sealed partial class AssistantViewModel
     [ObservableProperty]
     private bool _errorShowsLoginHelp;
 
+    /// <summary>El fallo se arregla en Ajustes (la clave de API): el aviso ofrece ir allí.</summary>
+    [ObservableProperty]
+    private bool _errorShowsSettings;
+
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
     partial void OnErrorMessageChanged(string? value) => OnPropertyChanged(nameof(HasError));
@@ -665,16 +838,24 @@ public sealed partial class AssistantViewModel
         _lastFailure = null;
         ErrorMessage = null;
         ErrorShowsLoginHelp = false;
+        ErrorShowsSettings = false;
         OnPropertyChanged(nameof(CanRetry));
+        OnPropertyChanged(nameof(RetryContinues));
+        OnPropertyChanged(nameof(RetryLabel));
         RetryCommand.NotifyCanExecuteChanged();
     }
+
+    private bool UsesApiKey => _cli.Provider == AiProvider.Claude && _settingsService.Settings.Ai.ClaudeUseApi;
 
     private void ShowFailure(ClaudeTurnResult result)
     {
         _lastFailure = result;
         ErrorMessage = LocalizedTextFormatter.Resolve(DescribeFailure(result));
-        ErrorShowsLoginHelp = result.Failure == ClaudeFailureKind.SignedOut;
+        ErrorShowsLoginHelp = result.Failure == ClaudeFailureKind.SignedOut && !UsesApiKey;
+        ErrorShowsSettings = result.Failure == ClaudeFailureKind.SignedOut && UsesApiKey;
         OnPropertyChanged(nameof(CanRetry));
+        OnPropertyChanged(nameof(RetryContinues));
+        OnPropertyChanged(nameof(RetryLabel));
     }
 
     /// <summary>Un mismo tipo de fallo se notifica una vez hasta que vuelva a haber un turno correcto: si se
@@ -691,6 +872,7 @@ public sealed partial class AssistantViewModel
     private LocalizedText DescribeFailure(ClaudeTurnResult result) => result.Failure switch
     {
         ClaudeFailureKind.NotInstalled => LocalizedTextFormatter.Format(_cli.Provider == AiProvider.Claude ? "Assistant_Error_NotInstalled" : "Ai_NotInstalled"),
+        ClaudeFailureKind.SignedOut when UsesApiKey => LocalizedTextFormatter.Format("Assistant_Error_ApiKeyRejected"),
         ClaudeFailureKind.SignedOut => LocalizedTextFormatter.Format("Assistant_Error_SignedOut", Cli.LoginCommand),
         ClaudeFailureKind.RateLimited when result.RateLimitResetsAt is { } resetsAt =>
             LocalizedTextFormatter.Format("Assistant_Error_RateLimitedUntil",

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace enki.Models;
 
@@ -9,11 +10,27 @@ namespace enki.Models;
 /// <c>.docs/project-info/asistente-ia.md</c>.</summary>
 public sealed class AiSettings
 {
+    /// <summary>Proveedor con el que se abren los chats nuevos. Cada chat guarda el suyo
+    /// (<see cref="AiChatSession.Provider"/>) y lo restaura al reabrirse.</summary>
     public AiProvider Provider { get; set; }
+
+    /// <summary>Claude se usa con la clave de API propia del usuario en vez de con la sesión de su suscripción.
+    /// El CLI oficial sigue siendo el mismo: solo cambia la credencial con la que se lanza, que se lee del
+    /// almacén seguro del sistema (<see cref="Services.AiApiKeyStore"/>) y nunca se guarda aquí.</summary>
+    public bool ClaudeUseApi { get; set; }
+
     public string CodexCliPath { get; set; } = string.Empty;
     public string OpenAiModel { get; set; } = string.Empty;
     public string OllamaEndpoint { get; set; } = "http://localhost:11434";
     public string LocalModel { get; set; } = string.Empty;
+
+    public const double DefaultPanelWidth = 420;
+    public const double MinPanelWidth = 340;
+    public const double MaxPanelWidth = 720;
+
+    /// <summary>Ancho del panel lateral del asistente, el que se abre junto al contenido sin salir de la
+    /// sección en la que se está.</summary>
+    public double PanelWidth { get; set; } = DefaultPanelWidth;
 
     public string ModelFor(AiProvider provider) => provider switch
     {
@@ -73,8 +90,10 @@ public sealed class AiSettings
     /// ni siquiera se le ofrecen. Borrar algo para siempre pide además confirmación en el chat, siempre.</summary>
     public bool AllowVaultChanges { get; set; } = true;
 
-    /// <summary>Último chat abierto, para volver a él al entrar de nuevo en la sección.</summary>
-    public string? LastChatId { get; set; }
+    /// <summary>Último chat abierto en cada vault (clave: <see cref="AiChatSession.VaultId"/>), para volver a
+    /// él al entrar de nuevo en la sección. Por vault porque el historial también lo es: el último chat de un
+    /// vault no debe abrirse estando en otro.</summary>
+    public Dictionary<string, string> LastChatByVault { get; set; } = [];
 
     /// <summary>Sanea valores imposibles de un archivo editado a mano o de otra versión. Mismos rangos que
     /// los controles de Ajustes.</summary>
@@ -91,6 +110,8 @@ public sealed class AiSettings
             ? DefaultIdleTimeoutSeconds : IdleTimeoutSeconds;
         MaxContextChars = MaxContextChars is < MinMaxContextChars or > MaxMaxContextChars
             ? DefaultMaxContextChars : MaxContextChars;
+        PanelWidth = double.IsFinite(PanelWidth) ? Math.Clamp(PanelWidth, MinPanelWidth, MaxPanelWidth) : DefaultPanelWidth;
+        LastChatByVault ??= [];
         // Un archivo con la IA encendida pero sin consentimiento registrado no la deja encendida.
         if (ConsentAcceptedUtc is null) Enabled = false;
     }

@@ -1,0 +1,451 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:views="clr-namespace:enki.Views"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="860" d:DesignHeight="640"
+             x:Class="enki.Views.AssistantTranscriptView"
+             x:Name="Root"
+             x:DataType="vm:AssistantViewModel">
+
+  <!-- Lo que se ve entre la cabecera y el compositor del asistente, compartido por la sección y el panel
+       lateral: comprobación del proveedor, puesta en marcha (instalar, iniciar sesión, clave de API,
+       actualizar), la conversación o la bienvenida de un chat vacío, y el error del último turno. El host la
+       marca con la clase "compact" en el panel, donde los márgenes y la rejilla de sugerencias se estrechan. -->
+
+  <UserControl.Styles>
+    <Style Selector="views|AssistantTranscriptView.compact ItemsControl#MessageList">
+      <Setter Property="Margin" Value="16,16,16,12" />
+    </Style>
+    <Style Selector="views|AssistantTranscriptView.compact StackPanel#WelcomePanel">
+      <Setter Property="Margin" Value="18,28,18,16" />
+    </Style>
+    <Style Selector="views|AssistantTranscriptView.compact UniformGrid#SuggestionGrid">
+      <Setter Property="Columns" Value="1" />
+    </Style>
+    <Style Selector="views|AssistantTranscriptView.compact StackPanel#SetupPanel">
+      <Setter Property="Margin" Value="18,28" />
+    </Style>
+    <Style Selector="views|AssistantTranscriptView.compact Border#ErrorBox">
+      <Setter Property="Margin" Value="16,0,16,8" />
+    </Style>
+    <Style Selector="views|AssistantTranscriptView.compact TextBlock.page-title">
+      <Setter Property="FontSize" Value="18" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="*,Auto">
+
+    <!-- · Comprobando el proveedor por primera vez · -->
+    <StackPanel Grid.Row="0" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center"
+                IsVisible="{Binding Cli.ShowChecking}">
+      <mi:MaterialIcon Kind="Loading" Width="22" Height="22" Classes="spin" Foreground="{DynamicResource Ink40}" />
+      <TextBlock Text="{loc:Tr Assistant_State_Checking}" Classes="muted" FontSize="12.5" HorizontalAlignment="Center" />
+    </StackPanel>
+
+    <!-- · Puesta en marcha: instalar, iniciar sesión, guardar la clave de API o actualizar · -->
+    <ScrollViewer Grid.Row="0" Grid.RowSpan="2" IsVisible="{Binding ShowSetupPanel}">
+      <StackPanel x:Name="SetupPanel" MaxWidth="600" Margin="32,48" Spacing="22" HorizontalAlignment="Center">
+        <StackPanel Spacing="10">
+          <TextBlock Text="{loc:Tr Assistant_Setup_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <TextBlock Text="{loc:Tr Assistant_Setup_NotInstalled_Title}" Classes="page-title" TextWrapping="Wrap"
+                     IsVisible="{Binding Cli.IsNotInstalled}" />
+          <TextBlock Text="{loc:Tr Assistant_Setup_SignedOut_Title}" Classes="page-title" TextWrapping="Wrap"
+                     IsVisible="{Binding ShowLoginSetup}" />
+          <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Title}" Classes="page-title" TextWrapping="Wrap"
+                     IsVisible="{Binding ShowApiKeySetup}" />
+          <TextBlock Text="{loc:Tr Assistant_Setup_Unsupported_Title}" Classes="page-title" TextWrapping="Wrap"
+                     IsVisible="{Binding Cli.IsUnsupported}" />
+          <TextBlock Text="{loc:Tr Assistant_Setup_NotInstalled_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
+                     IsVisible="{Binding Cli.IsNotInstalled}" />
+          <TextBlock Text="{loc:Tr Assistant_Setup_SignedOut_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
+                     IsVisible="{Binding ShowLoginSetup}" />
+          <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
+                     IsVisible="{Binding ShowApiKeySetup}" />
+          <TextBlock Text="{Binding Cli.UnsupportedMessage}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
+                     IsVisible="{Binding Cli.IsUnsupported}" />
+        </StackPanel>
+
+        <!-- Orden a copiar en una terminal. Enki no la ejecuta: instalar e iniciar sesión pasan siempre
+             por el propio CLI y por la página del proveedor. Con la clave de API no hay orden: se guarda en
+             Ajustes. -->
+        <Border Classes="card" Padding="0" IsVisible="{Binding !ShowApiKeySetup}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Grid.Column="0" Text="$" Classes="faint" FontFamily="{DynamicResource CodeFontFamily}"
+                       FontSize="13" VerticalAlignment="Center" Margin="16,0,10,0" />
+            <SelectableTextBlock Grid.Column="1" Text="{Binding Cli.LoginCommand}" IsVisible="{Binding ShowLoginSetup}"
+                                 FontFamily="{DynamicResource CodeFontFamily}" FontSize="13" VerticalAlignment="Center" Margin="0,14" />
+            <SelectableTextBlock Grid.Column="1" Text="{Binding Cli.InstallCommand}" IsVisible="{Binding !Cli.IsSignedOut}"
+                                 FontFamily="{DynamicResource CodeFontFamily}" FontSize="13" VerticalAlignment="Center"
+                                 TextWrapping="Wrap" Margin="0,14" />
+            <Button Grid.Column="2" Classes="icon-btn" Width="36" Height="36" Margin="8,0"
+                    Command="{Binding CopyTextCommand}" CommandParameter="{Binding Cli.LoginCommand}"
+                    IsVisible="{Binding ShowLoginSetup}"
+                    ToolTip.Tip="{loc:Tr Assistant_Setup_CopyCommand}" AutomationProperties.Name="{loc:Tr Assistant_Setup_CopyCommand}">
+              <mi:MaterialIcon Kind="ContentCopy" Width="15" Height="15" />
+            </Button>
+            <Button Grid.Column="2" Classes="icon-btn" Width="36" Height="36" Margin="8,0"
+                    Command="{Binding CopyTextCommand}" CommandParameter="{Binding Cli.InstallCommand}"
+                    IsVisible="{Binding !Cli.IsSignedOut}"
+                    ToolTip.Tip="{loc:Tr Assistant_Setup_CopyCommand}" AutomationProperties.Name="{loc:Tr Assistant_Setup_CopyCommand}">
+              <mi:MaterialIcon Kind="ContentCopy" Width="15" Height="15" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <WrapPanel Orientation="Horizontal">
+          <Button Classes="pill-primary" Margin="0,0,10,10" Command="{Binding OpenSettingsCommand}"
+                  IsVisible="{Binding ShowApiKeySetup}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="KeyOutline" Width="14" Height="14" />
+              <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Open, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="pill-primary" Margin="0,0,10,10" Command="{Binding Cli.RefreshCommand}"
+                  IsVisible="{Binding !ShowApiKeySetup}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Refresh" Width="14" Height="14" Classes.spin="{Binding Cli.IsChecking}" />
+              <TextBlock Text="{loc:Tr Assistant_Setup_CheckAgain, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="pill" Margin="0,0,10,10" Command="{Binding OpenSetupDocumentationCommand}"
+                  IsVisible="{Binding !Cli.IsSignedOut}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
+              <TextBlock Text="{loc:Tr Assistant_Setup_OpenGuide, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="ghost" Margin="0,0,10,10" Command="{Binding OpenSettingsCommand}"
+                  IsVisible="{Binding !ShowApiKeySetup}"
+                  Content="{loc:Tr Assistant_Setup_CustomPath, Converter={StaticResource UpperCaseConverter}}" />
+        </WrapPanel>
+
+        <TextBlock Text="{Binding Cli.ExecutablePathLabel}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                   IsVisible="{Binding Cli.ExecutablePathLabel, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+
+        <Rectangle Classes="section-rule" />
+        <StackPanel Spacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ShieldLockOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Assistant_Privacy_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr Assistant_Privacy_Message}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+          <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding OpenTermsCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="OpenInNew" Width="12" Height="12" />
+              <TextBlock Text="{loc:Tr Assistant_Privacy_TermsLink, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- · Conversación o bienvenida · -->
+    <Grid Grid.Row="0" IsVisible="{Binding Cli.IsReady}">
+      <ScrollViewer x:Name="TranscriptScroll" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasMessages}">
+        <ItemsControl x:Name="MessageList" ItemsSource="{Binding Messages}" MaxWidth="860" Margin="32,24,32,16">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="22" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:AiChatMessageViewModel">
+              <Panel>
+                <!-- Mensaje del usuario: a la derecha, sobre un fondo sutil, con sus adjuntos. -->
+                <StackPanel IsVisible="{Binding IsUser}" HorizontalAlignment="Right" MaxWidth="640" Spacing="6">
+                  <Border Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1"
+                          Padding="16,11" HorizontalAlignment="Right">
+                    <SelectableTextBlock Text="{Binding Text}" FontSize="13.5" LineHeight="20" TextWrapping="Wrap"
+                                         SelectionBrush="{DynamicResource SelectionBackgroundBrush}" />
+                  </Border>
+                  <ItemsControl ItemsSource="{Binding Attachments}" IsVisible="{Binding HasAttachments}" HorizontalAlignment="Right">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:AiAttachmentChipViewModel">
+                        <Border Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1"
+                                Padding="8,4" Margin="6,0,0,6" ToolTip.Tip="{Binding WorkspaceLabel}">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <mi:MaterialIcon Kind="{Binding Icon}" Width="12" Height="12" Foreground="{DynamicResource Ink50}" />
+                            <TextBlock Text="{Binding Title}" FontSize="11" MaxWidth="200" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Detail}" Classes="faint" FontSize="10" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+
+                <!-- Respuesta: a todo el ancho, renderizada desde su Markdown. -->
+                <StackPanel IsVisible="{Binding IsAssistant}" Spacing="10">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="Creation" Width="13" Height="13" Foreground="{DynamicResource Ink50}" />
+                    <TextBlock Text="{loc:Tr Assistant_Message_Author, Converter={StaticResource UpperCaseConverter}}"
+                               Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding TimeLabel}" Classes="faint" FontSize="10" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsThinking}">
+                    <mi:MaterialIcon Kind="Loading" Width="14" Height="14" Classes="spin" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Assistant_Message_Thinking}" Classes="muted" FontSize="12.5" />
+                  </StackPanel>
+
+                  <!-- Lo que el asistente hizo en el vault, en orden y en vivo: cada fila dice qué, sobre qué y
+                       cómo acabó; las notas y tarjetas se abren desde la propia fila, nunca solas. -->
+                  <Border IsVisible="{Binding HasActivities}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,0,0"
+                          Padding="14,2,0,2">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="{Binding ActivitiesLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
+                      <ItemsControl ItemsSource="{Binding Activities}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Spacing="2" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="vm:AiToolActivityViewModel">
+                            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" MinHeight="24">
+                              <Panel Grid.Column="0" Width="14" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <mi:MaterialIcon Kind="Loading" Width="12" Height="12" Classes="spin" Foreground="{DynamicResource Ink40}"
+                                                 IsVisible="{Binding IsRunning}" />
+                                <mi:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="{DynamicResource SuccessBrush}"
+                                                 IsVisible="{Binding IsSucceeded}" />
+                                <mi:MaterialIcon Kind="AlertCircleOutline" Width="12" Height="12" Foreground="{DynamicResource DangerBrush}"
+                                                 IsVisible="{Binding IsFailed}" />
+                                <mi:MaterialIcon Kind="Cancel" Width="12" Height="12" Foreground="{DynamicResource Ink40}"
+                                                 IsVisible="{Binding IsDenied}" />
+                              </Panel>
+                              <mi:MaterialIcon Grid.Column="1" Kind="{Binding Icon}" Width="12" Height="12" Margin="0,0,8,0"
+                                               Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
+                              <TextBlock Grid.Column="2" Text="{Binding Label}" FontSize="12" VerticalAlignment="Center" />
+                              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0" VerticalAlignment="Center"
+                                          ClipToBounds="True">
+                                <TextBlock Text="{Binding Target}" Classes="muted" FontSize="12" MaxWidth="340"
+                                           TextTrimming="CharacterEllipsis" IsVisible="{Binding HasTarget}" ToolTip.Tip="{Binding Target}" />
+                                <TextBlock Text="{Binding Error}" FontSize="11" Foreground="{DynamicResource DangerBrush}" MaxWidth="320"
+                                           TextTrimming="CharacterEllipsis" IsVisible="{Binding HasError}" ToolTip.Tip="{Binding Error}" />
+                              </StackPanel>
+                              <Button Grid.Column="4" Classes="icon-btn" Width="24" Height="24" IsVisible="{Binding CanOpen}"
+                                      Command="{Binding #Root.((vm:AssistantViewModel)DataContext).OpenActivityCommand}" CommandParameter="{Binding}"
+                                      ToolTip.Tip="{loc:Tr Assistant_Activity_Open}" AutomationProperties.Name="{loc:Tr Assistant_Activity_Open}">
+                                <mi:MaterialIcon Kind="OpenInNew" Width="12" Height="12" />
+                              </Button>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Permiso de consulta: la primera vez que el asistente quiere buscar o leer por su cuenta.
+                       Dice qué ámbito y qué proveedor; no cambia de pantalla ni abre Ajustes. -->
+                  <Border IsVisible="{Binding HasPendingReadAccess}" BorderThickness="1" Padding="16,14"
+                          BorderBrush="{DynamicResource Ink30}" Background="{DynamicResource Ink05}">
+                    <StackPanel Spacing="12">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <mi:MaterialIcon Kind="FileSearchOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" />
+                        <TextBlock Text="{loc:Tr Assistant_ReadAccess_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
+                                   VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding PendingReadAccess.Question}" FontSize="13.5" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding PendingReadAccess.Detail}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                      <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Classes="ghost" Margin="0,0,12,0" Command="{Binding PendingReadAccess.DenyCommand}">
+                          <TextBlock Text="{loc:Tr Assistant_ReadAccess_Deny, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                        <Button Classes="pill-primary" Command="{Binding PendingReadAccess.AllowCommand}">
+                          <TextBlock Text="{loc:Tr Assistant_ReadAccess_Allow, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Confirmación de una acción sin vuelta atrás: la respuesta queda parada hasta decidir. -->
+                  <Border IsVisible="{Binding HasPendingApproval}" BorderThickness="1" Padding="16,14"
+                          BorderBrush="{DynamicResource DangerBrush}" Background="{DynamicResource Ink05}">
+                    <StackPanel Spacing="12">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DangerBrush}" />
+                        <TextBlock Text="{loc:Tr Assistant_Approval_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
+                                   Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding PendingApproval.Title}" FontSize="13.5" TextWrapping="Wrap" />
+                      <ScrollViewer MaxHeight="160">
+                        <ItemsControl ItemsSource="{Binding PendingApproval.Items}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <TextBlock Text="{Binding}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,1" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                      <TextBlock Text="{loc:Tr Assistant_Approval_Hint}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+                      <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Classes="ghost" Margin="0,0,12,0" Command="{Binding PendingApproval.DenyCommand}">
+                          <TextBlock Text="{loc:Tr Assistant_Approval_Deny, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                        <Button Classes="pill-primary-danger" Command="{Binding PendingApproval.AllowCommand}">
+                          <TextBlock Text="{loc:Tr Assistant_Approval_Allow, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+
+                  <controls:ChatMarkdownView Markdown="{Binding Text}" IsVisible="{Binding HasText}" />
+                  <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsInterrupted}">
+                    <mi:MaterialIcon Kind="StopCircleOutline" Width="12" Height="12" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Assistant_Message_Interrupted}" Classes="faint" FontSize="11" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding CanAct}" Margin="-6,-4,0,0">
+                    <Button Classes="icon-btn" Width="30" Height="30"
+                            Command="{Binding #Root.((vm:AssistantViewModel)DataContext).CopyMessageCommand}" CommandParameter="{Binding}"
+                            ToolTip.Tip="{loc:Tr Assistant_Message_Copy}" AutomationProperties.Name="{loc:Tr Assistant_Message_Copy}">
+                      <Panel>
+                        <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" IsVisible="{Binding !IsCopied}" />
+                        <mi:MaterialIcon Kind="Check" Width="14" Height="14" IsVisible="{Binding IsCopied}" Foreground="{DynamicResource SuccessBrush}" />
+                      </Panel>
+                    </Button>
+                    <Button Classes="icon-btn" Width="30" Height="30"
+                            Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestAppendToNoteCommand}" CommandParameter="{Binding}"
+                            IsVisible="{Binding #Root.((vm:AssistantViewModel)DataContext).CanAppendToActiveNote}"
+                            ToolTip.Tip="{Binding #Root.((vm:AssistantViewModel)DataContext).AppendToActiveNoteLabel}"
+                            AutomationProperties.Name="{Binding #Root.((vm:AssistantViewModel)DataContext).AppendToActiveNoteLabel}">
+                      <mi:MaterialIcon Kind="TextBoxPlusOutline" Width="14" Height="14" />
+                    </Button>
+                    <Button Classes="icon-btn" Width="30" Height="30"
+                            Command="{Binding #Root.((vm:AssistantViewModel)DataContext).SaveMessageAsNoteCommand}" CommandParameter="{Binding}"
+                            ToolTip.Tip="{loc:Tr Assistant_Message_SaveAsNote}" AutomationProperties.Name="{loc:Tr Assistant_Message_SaveAsNote}">
+                      <mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" />
+                    </Button>
+                  </StackPanel>
+                </StackPanel>
+              </Panel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <!-- Leyendo mensajes anteriores mientras llega la respuesta: el hilo no se mueve solo; esto lo baja. -->
+      <Button x:Name="JumpToEndButton" Classes="pill pill-compact" IsVisible="False"
+              HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"
+              Click="JumpToEndButton_Click"
+              ToolTip.Tip="{loc:Tr Assistant_Transcript_JumpToEnd}" AutomationProperties.Name="{loc:Tr Assistant_Transcript_JumpToEnd}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <mi:MaterialIcon Kind="ArrowDown" Width="13" Height="13" />
+          <TextBlock Text="{loc:Tr Assistant_Transcript_JumpToEnd, Converter={StaticResource UpperCaseConverter}}" />
+        </StackPanel>
+      </Button>
+
+      <!-- Bienvenida de un chat vacío: las sugerencias rellenan el compositor, nunca envían solas. -->
+      <ScrollViewer IsVisible="{Binding ShowWelcome}">
+        <StackPanel x:Name="WelcomePanel" MaxWidth="640" Margin="32,56,32,24" Spacing="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{loc:Tr Assistant_Welcome_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            <TextBlock Text="{loc:Tr Assistant_Welcome_Title}" Classes="page-title" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Assistant_Welcome_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
+                       IsVisible="{Binding !VaultToolsAvailable}" />
+            <TextBlock Text="{loc:Tr Assistant_Welcome_MessageTools}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
+                       IsVisible="{Binding VaultToolsAvailable}" />
+          </StackPanel>
+          <UniformGrid x:Name="SuggestionGrid" Columns="2" ColumnSpacing="10" RowSpacing="10">
+            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_SummarizeNote">
+              <StackPanel Spacing="6">
+                <mi:MaterialIcon Kind="TextBoxOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
+                <TextBlock Text="{loc:Tr Assistant_Suggestion_SummarizeNote_Label}" FontSize="12.5" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_TasksNote">
+              <StackPanel Spacing="6">
+                <mi:MaterialIcon Kind="CheckboxMarkedOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
+                <TextBlock Text="{loc:Tr Assistant_Suggestion_TasksNote_Label}" FontSize="12.5" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Rewrite">
+              <StackPanel Spacing="6">
+                <mi:MaterialIcon Kind="FormatTextVariantOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
+                <TextBlock Text="{loc:Tr Assistant_Suggestion_Rewrite_Label}" FontSize="12.5" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Ideas">
+              <StackPanel Spacing="6">
+                <mi:MaterialIcon Kind="LightbulbOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
+                <TextBlock Text="{loc:Tr Assistant_Suggestion_Ideas_Label}" FontSize="12.5" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+            <!-- Sugerencias que trabajan sobre el vault: solo con herramientas. -->
+            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Agenda"
+                    IsVisible="{Binding VaultToolsAvailable}">
+              <StackPanel Spacing="6">
+                <mi:MaterialIcon Kind="CalendarBlankOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
+                <TextBlock Text="{loc:Tr Assistant_Suggestion_Agenda_Label}" FontSize="12.5" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Organize"
+                    IsVisible="{Binding VaultToolsAvailable}">
+              <StackPanel Spacing="6">
+                <mi:MaterialIcon Kind="TagMultipleOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
+                <TextBlock Text="{loc:Tr Assistant_Suggestion_Organize_Label}" FontSize="12.5" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+          </UniformGrid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ShieldLockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+            <TextBlock Text="{loc:Tr Assistant_Welcome_Privacy}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"
+                       IsVisible="{Binding !VaultToolsAvailable}" />
+            <TextBlock Text="{loc:Tr Assistant_Welcome_PrivacyTools}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"
+                       IsVisible="{Binding VaultToolsAvailable}" />
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- · Error del último turno · -->
+    <Border x:Name="ErrorBox" Grid.Row="1" Margin="32,0,32,10" MaxWidth="860" Padding="14,12" BorderThickness="1"
+            BorderBrush="{DynamicResource DangerBrush}" Background="{DynamicResource Ink05}"
+            IsVisible="{Binding HasError}">
+      <Grid ColumnDefinitions="Auto,*">
+        <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Margin="0,1,12,0"
+                         VerticalAlignment="Top" Foreground="{DynamicResource DangerBrush}" />
+        <StackPanel Grid.Column="1" Spacing="8">
+          <SelectableTextBlock Text="{Binding ErrorMessage}" FontSize="12.5" TextWrapping="Wrap" />
+          <WrapPanel Orientation="Horizontal">
+            <Button Classes="pill pill-compact" Margin="0,0,10,0" Command="{Binding RetryCommand}" IsVisible="{Binding CanRetry}"
+                    ToolTip.Tip="{loc:Tr Assistant_Error_Continue_Tooltip}" ToolTip.IsEnabled="{Binding RetryContinues}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Refresh" Width="13" Height="13" />
+                <TextBlock Text="{Binding RetryLabel, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" IsVisible="{Binding ErrorShowsLoginHelp}"
+                    Command="{Binding CopyTextCommand}" CommandParameter="{Binding Cli.LoginCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
+                <TextBlock Text="{loc:Tr Assistant_Setup_CopyCommand, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost" IsVisible="{Binding ErrorShowsSettings}" Command="{Binding OpenSettingsCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="KeyOutline" Width="12" Height="12" />
+                <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Open, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
+          </WrapPanel>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

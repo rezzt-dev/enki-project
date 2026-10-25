@@ -9,8 +9,30 @@ namespace enki.Models;
 /// (<c>~/.claude/</c>); el CLI conserva su propia copia, que se retoma con <see cref="CliSessionId"/>.</summary>
 public sealed class AiChatSession
 {
+    /// <summary>Proveedor con el que se habla en este chat. Los archivos anteriores a esta propiedad son de
+    /// Claude (el valor cero).</summary>
     public AiProvider Provider { get; set; }
+
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
+    /// <summary>Identidad del vault al que pertenece el chat (<see cref="VaultSettings.VaultId"/>). El historial
+    /// solo enseña los chats del vault abierto. <see langword="null"/> en los chats guardados antes de que el
+    /// historial se separara por vault: no se atribuyen al vault que esté abierto por casualidad, sino que
+    /// esperan a que el usuario los asocie de forma explícita.</summary>
+    public string? VaultId { get; set; }
+
+    /// <summary>Nombre de la carpeta del vault al crear el chat, solo para mostrarlo. La identidad es
+    /// <see cref="VaultId"/>: renombrar o mover la carpeta no separa al vault de su historial.</summary>
+    public string? VaultName { get; set; }
+
+    /// <summary>Permiso del usuario para que el asistente busque y lea contenido del ámbito por su cuenta, más
+    /// allá de lo que se le adjunta. Se concede una vez por chat y se puede revocar desde la cabecera.
+    /// <see langword="null"/> mientras no se haya concedido.</summary>
+    public AiReadGrant? ReadAccess { get; set; }
+
+    /// <summary>Mensaje a medio escribir en este chat: se conserva al cambiar de chat, de sección o al cerrar
+    /// Enki. <see langword="null"/> sin borrador.</summary>
+    public AiChatDraft? Draft { get; set; }
 
     /// <summary>Título visible en el historial: el principio del primer mensaje, o el que el usuario le
     /// ponga al renombrar.</summary>
@@ -82,8 +104,18 @@ public sealed class AiChatMessage
     public bool IsInterrupted { get; set; }
 }
 
+/// <summary>Qué clase de elemento del vault se adjunta como contexto.</summary>
+public enum AiAttachmentKind
+{
+    Note,
+    /// <summary>Archivo de texto que no es una nota (código, CSV, JSON, texto plano…).</summary>
+    File
+}
+
 public sealed class AiContextAttachment
 {
+    public AiAttachmentKind Kind { get; set; }
+
     public string Title { get; set; } = string.Empty;
 
     /// <summary>Ruta relativa al vault, con <c>/</c> como separador — nunca la absoluta del equipo.</summary>
@@ -93,4 +125,43 @@ public sealed class AiContextAttachment
     public int SentChars { get; set; }
 
     public bool WasTruncated { get; set; }
+}
+
+/// <summary>Permiso concedido a un chat para buscar y leer contenido por su cuenta (ver
+/// <see cref="AiChatSession.ReadAccess"/>). En un chat de sesión cubre esa sesión; en un chat del vault cubre
+/// la raíz y, solo si <see cref="IncludesSessions"/>, también las sesiones sin protección: ampliar el acceso a
+/// sesiones después exige aceptar el alcance nuevo.</summary>
+public sealed class AiReadGrant
+{
+    public bool IncludesSessions { get; set; }
+
+    public DateTime GrantedUtc { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>Borrador del compositor. Guarda referencias a lo adjuntado (rutas relativas al vault), nunca el
+/// contenido: al restaurarlo se vuelve a comprobar que cada elemento existe, sigue en el ámbito y no está
+/// bloqueado.</summary>
+public sealed class AiChatDraft
+{
+    public string Text { get; set; } = string.Empty;
+
+    public List<AiDraftAttachment> Attachments { get; set; } = [];
+
+    /// <summary>Skill elegida para un chat que aún no se ha empezado (en uno empezado la skill ya es fija).</summary>
+    public string? SkillName { get; set; }
+
+    public string? SkillInstructions { get; set; }
+
+    /// <summary>Capacidad elegida para un chat que aún no se ha empezado.</summary>
+    public string? Effort { get; set; }
+
+    public bool IsEmpty => string.IsNullOrWhiteSpace(Text) && Attachments.Count == 0 && SkillName is null && Effort is null;
+}
+
+public sealed class AiDraftAttachment
+{
+    public AiAttachmentKind Kind { get; set; }
+
+    /// <summary>Ruta relativa al vault, con <c>/</c> como separador.</summary>
+    public string RelativePath { get; set; } = string.Empty;
 }

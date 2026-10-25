@@ -16,11 +16,14 @@ using enki.Services;
 
 namespace enki.ViewModels;
 
-/// <summary>Sección "Asistente": chat con Claude, OpenAI o modelos locales (ver
-/// <see cref="AiBackendService"/>), con historial de conversaciones, notas del
-/// vault como contexto y skills como instrucciones de partida. Este archivo lleva el estado del CLI, el
-/// historial y la conversación abierta; el compositor y el envío de turnos viven en
-/// <c>AssistantViewModel.Composer.cs</c>. Ver <c>.docs/project-info/asistente-ia.md</c>.</summary>
+/// <summary>Asistente: chat con Claude, OpenAI o modelos locales (ver <see cref="AiBackendService"/>), con
+/// historial de conversaciones separado por vault, notas y archivos del vault como contexto y skills como
+/// instrucciones de partida. Una sola instancia sirve a las dos superficies —la sección Asistente y el panel
+/// lateral que se abre junto a cualquier otra sección—, así que cambiar de una a otra conserva chat, borrador,
+/// adjuntos, permisos y respuesta en curso. Este archivo lleva el estado del CLI, el historial y la
+/// conversación abierta; el resto vive en sus parciales (<c>.Composer</c>, <c>.Scope</c>, <c>.Drafts</c>,
+/// <c>.Vault</c>, <c>.Activity</c>, <c>.NoteInsert</c>, <c>.Effort</c>). Ver
+/// <c>.docs/project-info/asistente-ia.md</c>.</summary>
 public sealed partial class AssistantViewModel : ViewModelBase
 {
     private readonly AiBackendService _cli;
@@ -41,6 +44,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
     private readonly Action<string> _openKanbanCard;
     private readonly Func<bool> _isVisible;
     private readonly Func<bool> _isPolarLinked;
+    /// <summary>Identidad del vault abierto: con <see langword="false"/> la consulta (puede no tenerla todavía);
+    /// con <see langword="true"/> la crea si hace falta. Ver <c>AssistantViewModel.Vault.cs</c>.</summary>
+    private readonly Func<bool, string?> _vaultIdentity;
 
     /// <summary>Lleva al hilo de interfaz lo que llega desde el hilo de fondo del proceso del CLI. Inyectable
     /// para que los tests lo ejecuten en línea sin una aplicación Avalonia levantada.</summary>
@@ -68,8 +74,12 @@ public sealed partial class AssistantViewModel : ViewModelBase
         EnkiMcpServer? vaultTools = null,
         Action<string>? openKanbanCard = null,
         Func<bool>? isVisible = null,
-        Func<bool>? isPolarLinked = null)
+        Func<bool>? isPolarLinked = null,
+        Func<bool, string?>? vaultIdentity = null,
+        Func<string, string, NoteDiskStamp, NoteFile>? appendToNote = null)
     {
+        _vaultIdentity = vaultIdentity ?? (_ => VaultSettingsService.PathIdentity(vaultService.VaultPath));
+        _appendToNote = appendToNote;
         _vaultTools = vaultTools;
         _openKanbanCard = openKanbanCard ?? (_ => { });
         _isVisible = isVisible ?? (() => true);
@@ -94,6 +104,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         {
             CancelAll();
             StartNewChat();
+            RestoreDraft();
             OnPropertyChanged(nameof(SelectedProvider));
             if (_settingsService.Settings.Ai.Enabled) _ = Cli.RefreshAsync();
         };
@@ -101,12 +112,18 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
         Messages.CollectionChanged += (_, _) => RefreshConversationState();
         PendingAttachments.CollectionChanged += (_, _) => RefreshComposerState();
+        RefreshVaultIdentity();
         RebuildSessionList();
         RefreshScope();
+        RestoreDraft();
     }
 
     /// <summary>Pide a la vista que baje hasta el último mensaje (al enviar y según llega la respuesta).</summary>
     public event Action? ScrollToEndRequested;
+
+    /// <summary>Pide a la superficie que se acaba de enseñar (sección o panel) que retome el punto de lectura
+    /// de <see cref="TranscriptScrollOffset"/>, o el final al abrir otra conversación.</summary>
+    public event Action? TranscriptRestoreRequested;
 
     // ===================== Estado del CLI =====================
 
@@ -115,6 +132,12 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
     /// <summary>Panel de puesta en marcha (instalar, iniciar sesión, actualizar) en lugar del chat.</summary>
     public bool ShowSetupPanel => Cli.IsKnown && !Cli.IsReady;
+
+    /// <summary>Claude con clave de API propia y sin clave guardada: lo que falta se arregla en Ajustes.</summary>
+    public bool ShowApiKeySetup => Cli.NeedsApiKey;
+
+    /// <summary>Sin sesión iniciada en el CLI: se enseña la orden de inicio de sesión para una terminal.</summary>
+    public bool ShowLoginSetup => Cli.NeedsLogin;
 
     private void OnCliPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -127,6 +150,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
         RefreshModels();
         OnPropertyChanged(nameof(ShowSetupPanel));
         OnPropertyChanged(nameof(ShowWelcome));
+        OnPropertyChanged(nameof(ShowTranscript));
+        OnPropertyChanged(nameof(ShowApiKeySetup));
+        OnPropertyChanged(nameof(ShowLoginSetup));
         OnPropertyChanged(nameof(VaultToolsAvailable));
         OnPropertyChanged(nameof(ScopeSummary));
         OnPropertyChanged(nameof(ScopeWarning));
@@ -145,8 +171,16 @@ public sealed partial class AssistantViewModel : ViewModelBase
         if (!_restoredLastChat)
         {
             _restoredLastChat = true;
-            if (_chats.Find(_settingsService.Settings.Ai.LastChatId) is { } last) OpenSession(last);
+            if (_activeSession is null
+                && _settingsService.Settings.Ai.LastChatByVault.TryGetValue(VaultKey, out var lastId)
+                && _chats.Find(lastId) is { } last && BelongsToVault(last))
+            {
+                SaveDraft();
+                OpenSession(last);
+            }
         }
+        MarkConversationSeen();
+        TranscriptRestoreRequested?.Invoke();
 
         var stale = DateTime.UtcNow - Cli.LastCheckedUtc > TimeSpan.FromSeconds(5);
         if (!IsSending && !Cli.IsChecking && (!Cli.IsReady || stale)) _ = Cli.RefreshAsync();
@@ -201,33 +235,49 @@ public sealed partial class AssistantViewModel : ViewModelBase
     [ObservableProperty]
     private string _sessionSearchText = string.Empty;
 
-    public bool HasAnySessions => _chats.Sessions.Count > 0;
+    /// <summary>Hay conversaciones que enseñar en este vault (las suyas o las antiguas sin vault asignado).</summary>
+    public bool HasAnySessions => _chats.Sessions.Any(s => BelongsToVault(s) || s.VaultId is null);
     public bool HasNoSearchMatches => HasAnySessions && Sessions.Count == 0;
+    public bool HasSessionSearch => SessionSearchText.Length > 0;
 
-    partial void OnSessionSearchTextChanged(string value) => RebuildSessionList();
+    partial void OnSessionSearchTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasSessionSearch));
+        RebuildSessionList();
+    }
 
+    [RelayCommand]
+    private void ClearSessionSearch() => SessionSearchText = string.Empty;
+
+    /// <summary>El historial del vault abierto, agrupado en «Vault» y una entrada por sesión, y al final las
+    /// conversaciones antiguas sin vault asignado. Buscar filtra sin cambiar el ámbito de nada; un grupo sin
+    /// coincidencias desaparece.</summary>
     private void RebuildSessionList()
     {
         var query = SessionSearchText.Trim();
-        var matches = _chats.Sessions.Where(s => query.Length == 0
+        bool Matches(AiChatSession s) => query.Length == 0
             || s.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
-            || (s.SessionId is { } id && _scopeNames.GetValueOrDefault(id, s.SessionName ?? id)
-                .Contains(query, StringComparison.CurrentCultureIgnoreCase))
+            || (s.SessionId is { } id && ScopeNameFor(id, s.SessionName).Contains(query, StringComparison.CurrentCultureIgnoreCase))
             || (s.SkillName?.Contains(query, StringComparison.CurrentCultureIgnoreCase) ?? false)
-            || s.Messages.Any(m => m.Text.Contains(query, StringComparison.CurrentCultureIgnoreCase)));
+            || s.Messages.Any(m => m.Text.Contains(query, StringComparison.CurrentCultureIgnoreCase));
 
         Sessions.Clear();
-        foreach (var session in matches)
+        foreach (var session in _chats.Sessions.Where(BelongsToVault).Concat(_chats.UnassignedSessions).Where(Matches))
             Sessions.Add(new AiChatSessionItemViewModel(session) { IsActive = session == _activeSession });
+        RefreshSessionActivity();
+
         ChatGroups.Clear();
-        foreach (var group in Sessions.GroupBy(item => item.Session.SessionId)
+        foreach (var group in Sessions.Where(item => !item.IsUnassigned).GroupBy(item => item.Session.SessionId)
                      .OrderBy(group => group.Key is null ? 0 : 1))
         {
             var title = group.Key is null
                 ? LocalizationService.Instance["Assistant_Scope_Vault"]
-                : _scopeNames.GetValueOrDefault(group.Key, group.First().Session.SessionName ?? group.Key);
+                : ScopeNameFor(group.Key, group.First().Session.SessionName);
             ChatGroups.Add(new AiChatGroupViewModel(title, group.ToList()));
         }
+        if (Sessions.Where(item => item.IsUnassigned).ToList() is { Count: > 0 } unassigned)
+            ChatGroups.Add(new AiChatGroupViewModel(LocalizationService.Instance["Assistant_History_Unassigned"], unassigned,
+                IsUnassigned: true));
         OnPropertyChanged(nameof(HasAnySessions));
         OnPropertyChanged(nameof(HasNoSearchMatches));
     }
@@ -243,20 +293,30 @@ public sealed partial class AssistantViewModel : ViewModelBase
     private void NewChat()
     {
         if (IsSending) return;
+        SaveDraft();
         StartNewChat();
+        RestoreDraft();
+        IsPanelHistoryOpen = false;
         ComposerFocusRequested?.Invoke();
     }
 
-    private void StartNewChat()
+    /// <param name="forgetLastChat">Deja de recordar el último chat del vault (lo que quiere el usuario al pulsar
+    /// "nuevo chat"); al cambiar de vault no, para volver a él al regresar.</param>
+    private void StartNewChat(bool forgetLastChat = true)
     {
         _activeSession = null;
         Messages.Clear();
         DraftSkillName = null;
         DraftSkillInstructions = null;
+        _restoringDraft = true;
+        DraftText = string.Empty;
+        _restoringDraft = false;
         PendingAttachments.Clear();
+        DraftMissingAttachments = 0;
         ClearError();
+        _retryTurn = null;
         IsRenamingTitle = false;
-        _settingsService.Settings.Ai.LastChatId = null;
+        if (forgetLastChat && _settingsService.Settings.Ai.LastChatByVault.Remove(VaultKey)) TrySaveSettings();
         RefreshModels();
         SelectedModel = FindModel(_settingsService.Settings.Ai.ModelFor(_cli.Provider));
         RestoreEffort("medium");
@@ -271,7 +331,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
     private void SelectSession(AiChatSessionItemViewModel? item)
     {
         if (item is null || IsSending || item.Session == _activeSession) return;
+        SaveDraft();
         OpenSession(item.Session);
+        IsPanelHistoryOpen = false;
     }
 
     private void OpenSession(AiChatSession session)
@@ -284,6 +346,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         foreach (var message in session.Messages) Messages.Add(new AiChatMessageViewModel(message));
         PendingAttachments.Clear();
         ClearError();
+        _retryTurn = null;
         IsRenamingTitle = false;
         SelectedModel = FindModel(session.Model);
         RestoreEffort(session.Effort);
@@ -291,13 +354,18 @@ public sealed partial class AssistantViewModel : ViewModelBase
         RememberActiveChat();
         RefreshHeader();
         RefreshScope();
-        ScrollToEndRequested?.Invoke();
+        RestoreDraft();
+        TranscriptScrollOffset = null;
+        TranscriptRestoreRequested?.Invoke();
     }
 
     private void RememberActiveChat()
     {
-        if (_settingsService.Settings.Ai.LastChatId == _activeSession?.Id) return;
-        _settingsService.Settings.Ai.LastChatId = _activeSession?.Id;
+        // Una conversación sin vault asignado no es "la última de este vault" hasta que se asocie.
+        if (_activeSession is not { } session || !BelongsToVault(session)) return;
+        var last = _settingsService.Settings.Ai.LastChatByVault;
+        if (last.TryGetValue(VaultKey, out var id) && id == session.Id) return;
+        last[VaultKey] = session.Id;
         TrySaveSettings();
     }
 
@@ -323,7 +391,11 @@ public sealed partial class AssistantViewModel : ViewModelBase
         {
             var wasActive = item.Session == _activeSession;
             _chats.Delete(item.Id);
-            if (wasActive) StartNewChat();
+            if (wasActive)
+            {
+                StartNewChat();
+                RestoreDraft();
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -340,6 +412,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
     /// <summary>Pantalla de bienvenida de un chat vacío (con el CLI listo).</summary>
     public bool ShowWelcome => Cli.IsReady && !HasMessages;
+
+    /// <summary>La conversación tiene mensajes y el proveedor está listo: se enseña el hilo.</summary>
+    public bool ShowTranscript => Cli.IsReady && HasMessages;
 
     public bool IsDraft => _activeSession is null;
 
@@ -497,6 +572,10 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
     private void RefreshHeader()
     {
+        OnPropertyChanged(nameof(ActivityTooltip));
+        OnPropertyChanged(nameof(IsUnassignedChat));
+        OnPropertyChanged(nameof(CanSend));
+        SendCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(IsDraft));
         OnPropertyChanged(nameof(ChatTitle));
         OnPropertyChanged(nameof(ActiveSkillName));
@@ -509,6 +588,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasMessages));
         OnPropertyChanged(nameof(ShowWelcome));
+        OnPropertyChanged(nameof(ShowTranscript));
         OnPropertyChanged(nameof(CanPickSkill));
         OnPropertyChanged(nameof(CanChangeWorkspace));
     }
@@ -543,8 +623,13 @@ public sealed partial class AssistantViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Apagar la IA desde Ajustes corta en seco cualquier respuesta en curso.</summary>
-    public void CancelAll() => _turnCancellation?.Cancel();
+    /// <summary>Apagar la IA desde Ajustes (o cerrar Enki) corta en seco cualquier respuesta en curso. Lo que
+    /// el usuario tuviera escrito se guarda antes como borrador.</summary>
+    public void CancelAll()
+    {
+        SaveDraft();
+        _turnCancellation?.Cancel();
+    }
 
     public void RefreshLocalizedLabels()
     {
@@ -554,8 +639,12 @@ public sealed partial class AssistantViewModel : ViewModelBase
         SelectedModel = FindModel(alias);
 
         OnPropertyChanged(nameof(ActiveNoteLabel));
+        OnPropertyChanged(nameof(AppendToActiveNoteLabel));
         RefreshHeader();
         RefreshScopeLocalizedLabels();
+        RefreshActivityLocalizedLabels();
+        OnPropertyChanged(nameof(RetryLabel));
+        OnPropertyChanged(nameof(DraftNotice));
         foreach (var session in Sessions) session.RefreshLocalizedLabels();
         foreach (var message in Messages) message.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(EffortLabel));

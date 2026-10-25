@@ -506,6 +506,35 @@ Requiere una máquina con Claude Code instalado y otra (o una cuenta de usuario)
 - [ ] En tema claro, oscuro y uno personalizado, las respuestas (código, tablas, listas, citas) y el
       compositor respetan los colores del tema.
 
+## 8.10 Asistente: panel lateral, permisos, borradores e historial por vault
+
+Ver `.docs/project-info/asistente-ia.md`, secciones "Dos superficies" y siguientes.
+
+- [ ] Con un chat respondiendo, abrir el panel desde la barra de título en Documentos: la respuesta sigue
+      llegando, la nota abierta no cambia y "Ampliar" lleva a la sección con el mismo chat, borrador y punto
+      de lectura; "Ver como panel" en la sección vuelve a la sección anterior con el panel abierto.
+- [ ] Cerrar el panel durante una respuesta: el botón del asistente gira; al terminar muestra la marca de
+      "respuesta lista", que desaparece al volver a abrir el panel.
+- [ ] Un chat con herramientas pide permiso la primera vez que busca: la tarjeta nombra el ámbito y el
+      proveedor; "Ahora no" deja seguir sin repetir la pregunta en ese turno; "Permitir en este chat" no
+      vuelve a preguntar al reabrirlo. Activar el acceso a sesiones vuelve a pedirlo. Revocar desde el menú
+      de ámbito impide la lectura siguiente.
+- [ ] Con el panel cerrado y una decisión pendiente, el botón muestra "!" y llega una notificación.
+- [ ] Escribir un borrador con un adjunto, cambiar de chat, de sección y cerrar Enki: al volver el borrador
+      sigue en su chat. Borrar la nota adjunta y volver: el borrador avisa de que se retiró un adjunto.
+- [ ] Abrir otro vault: el historial solo enseña sus chats; al volver, el último chat del primer vault se
+      restaura. Las conversaciones antiguas aparecen en "Sin vault asignado", se leen, no dejan escribir y se
+      asocian con "Asociar a este vault".
+- [ ] Adjuntar un `.json` o `.csv` del vault y preguntar por su contenido; una imagen o un PDF aparecen
+      deshabilitados en el selector con el motivo.
+- [ ] "Añadir a la nota activa" enseña las líneas que se añaden; editar la nota antes de confirmar hace que
+      no se escriba nada y se avise. Tras confirmar, la versión anterior está en el historial de la nota.
+- [ ] Claude con clave de API propia: sin clave, el asistente lleva a Ajustes; guardarla (Keychain, Secret
+      Service o DPAPI) permite conversar; la clave no aparece en `settings.json` ni en la lista de procesos;
+      una clave revocada muestra el aviso de clave rechazada con acceso a Ajustes.
+- [ ] Escape cierra los popovers de ámbito, capacidad, adjuntos y skills y devuelve el foco a su botón; con
+      lector de pantalla, el botón del asistente anuncia su estado.
+
 ---
 
 ## 9. Criterio de salida antes de `0.2.0`

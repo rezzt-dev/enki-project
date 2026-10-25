@@ -6,14 +6,14 @@ using System.Threading;
 namespace enki.Services;
 
 /// <summary>Secret Service de la sesión de usuario, a través de libsecret.</summary>
-internal sealed class LibsecretPolarCredentialStore(string installationId) : IPolarCredentialStore
+internal sealed class LibsecretPolarCredentialStore(string installationId, string purpose = "polar") : IPolarCredentialStore
 {
     private static readonly IntPtr Glib = NativeLibrary.Load("libglib-2.0.so.0");
     private readonly string _installationId = installationId;
 
     public PolarCredentials? Read()
     {
-        using var attributes = new Attributes(_installationId);
+        using var attributes = new Attributes(_installationId, purpose);
         using var cancellation = new NativeCancellable();
         var password = SecretPasswordLookup(IntPtr.Zero, attributes.Table, cancellation.Handle, out var error);
         ThrowIfError(error);
@@ -24,17 +24,17 @@ internal sealed class LibsecretPolarCredentialStore(string installationId) : IPo
 
     public void Write(PolarCredentials credentials)
     {
-        using var attributes = new Attributes(_installationId);
+        using var attributes = new Attributes(_installationId, purpose);
         using var cancellation = new NativeCancellable();
         var stored = SecretPasswordStore(IntPtr.Zero, attributes.Table, IntPtr.Zero,
-            "Enki Polar", PolarCredentialStore.Serialize(credentials), cancellation.Handle, out var error);
+            "Enki " + purpose, PolarCredentialStore.Serialize(credentials), cancellation.Handle, out var error);
         ThrowIfError(error);
         if (stored == 0) throw new IOException("Secret Service no pudo guardar la sesión Polar.");
     }
 
     public void Delete()
     {
-        using var attributes = new Attributes(_installationId);
+        using var attributes = new Attributes(_installationId, purpose);
         using var cancellation = new NativeCancellable();
         _ = SecretPasswordClear(IntPtr.Zero, attributes.Table, cancellation.Handle, out var error);
         ThrowIfError(error);
@@ -64,13 +64,13 @@ internal sealed class LibsecretPolarCredentialStore(string installationId) : IPo
         private readonly IntPtr[] _strings;
         public IntPtr Table { get; }
 
-        public Attributes(string installationId)
+        public Attributes(string installationId, string purpose)
         {
             Table = GHashTableNew(NativeLibrary.GetExport(Glib, "g_str_hash"),
                 NativeLibrary.GetExport(Glib, "g_str_equal"));
             if (Table == IntPtr.Zero) throw new IOException("No se pudo crear la consulta de Secret Service.");
             _strings = [
-                Marshal.StringToCoTaskMemUTF8("application"), Marshal.StringToCoTaskMemUTF8("enki.polar"),
+                Marshal.StringToCoTaskMemUTF8("application"), Marshal.StringToCoTaskMemUTF8("enki." + purpose),
                 Marshal.StringToCoTaskMemUTF8("installation"), Marshal.StringToCoTaskMemUTF8(installationId)
             ];
             _ = GHashTableInsert(Table, _strings[0], _strings[1]);

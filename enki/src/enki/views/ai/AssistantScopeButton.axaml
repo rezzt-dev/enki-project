@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d"
+             x:Class="enki.Views.AssistantScopeButton"
+             x:Name="Root"
+             x:DataType="vm:AssistantViewModel">
+
+  <!-- Ámbito del chat: dónde trabaja el asistente. Siempre visible en la cabecera para que nunca haya dudas de
+       hasta dónde llega. El menú permite elegir el espacio (antes del primer mensaje), el acceso a sesiones de
+       un chat del vault y el permiso de consulta, que se concede o se revoca aquí. -->
+  <Panel>
+    <Button x:Name="ScopeTrigger" Classes="date-picker-trigger" HorizontalAlignment="Left"
+            VerticalAlignment="Center" Padding="10,7" MaxWidth="280"
+            Command="{Binding ToggleScopePickerCommand}"
+            ToolTip.Tip="{loc:Tr Assistant_Scope_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Scope_Tooltip}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+        <mi:MaterialIcon Grid.Column="0" Kind="{Binding ScopeIcon}" Width="13" Height="13" Margin="0,0,8,0"
+                         Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding ScopeLabel}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <Border Grid.Column="2" Background="{DynamicResource Ink10}" Padding="5,1" Margin="8,0,0,0"
+                VerticalAlignment="Center" IsVisible="{Binding HasScopeBadge}">
+          <TextBlock Text="{Binding ScopeBadge, Converter={StaticResource UpperCaseConverter}}" FontSize="9" FontWeight="Bold" />
+        </Border>
+        <mi:MaterialIcon Grid.Column="3" Kind="FileSearchOutline" Width="12" Height="12" Margin="8,0,0,0"
+                         Foreground="{DynamicResource Ink50}" VerticalAlignment="Center"
+                         IsVisible="{Binding ReadAccessGranted}" ToolTip.Tip="{Binding ReadAccessStatus}" />
+        <mi:MaterialIcon Grid.Column="4" Kind="ChevronDown" Width="12" Height="12" Margin="8,0,0,0"
+                         Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+      </Grid>
+    </Button>
+
+    <Popup PlacementTarget="{Binding #ScopeTrigger}" Placement="BottomEdgeAlignedLeft" VerticalOffset="6"
+           IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #ScopeTrigger}"
+           controls:PopoverKeyboard.CloseOnEscape="True"
+           IsOpen="{Binding IsScopePickerOpen, Mode=TwoWay}">
+      <Border Classes="dropdown-popover" Width="360" MaxHeight="600">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Tr Assistant_Scope_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+            <TextBlock Text="{loc:Tr Assistant_Scope_Intro}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+            <ScrollViewer MaxHeight="220" IsEnabled="{Binding CanChangeWorkspace}">
+              <ItemsControl ItemsSource="{Binding ScopeOptions}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:AiScopeOptionViewModel">
+                    <Button Classes="dropdown-item" IsEnabled="{Binding IsEnabled}"
+                            Command="{Binding #Root.((vm:AssistantViewModel)DataContext).PickScopeCommand}"
+                            CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="14" Height="14" Margin="0,0,10,0"
+                                         Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Spacing="1">
+                          <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="14" Height="14" Margin="10,0,0,0"
+                                         VerticalAlignment="Center" IsVisible="{Binding IsSelected}" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Text="{loc:Tr Assistant_Scope_FixedWorkspace}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                       IsVisible="{Binding !CanChangeWorkspace}" />
+            <Rectangle Classes="section-rule" />
+            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !IsSessionChat}">
+              <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,12,0">
+                <TextBlock Text="{Binding FullAccessLabel}" FontSize="12.5" />
+                <TextBlock Text="{Binding FullAccessDescription}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding FullVaultAccess}" IsEnabled="{Binding CanChangeAccess}"
+                            OnContent="" OffContent="" VerticalAlignment="Top"
+                            AutomationProperties.Name="{Binding FullAccessLabel}" />
+            </Grid>
+
+            <!-- Permiso de consulta: lo que el asistente puede buscar y leer por su cuenta. Revocar corta las
+                 lecturas siguientes, no lo que ya se envió: el texto lo explica junto al botón. -->
+            <StackPanel Spacing="8" IsVisible="{Binding CanChangeReadAccess}">
+              <Rectangle Classes="section-rule" />
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="FileSearchOutline" Width="14" Height="14" Margin="0,1,10,0"
+                                 VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="{loc:Tr Assistant_ReadAccess_Title}" FontSize="12.5" />
+                  <TextBlock Text="{Binding ReadAccessStatus}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="{loc:Tr Assistant_ReadAccess_RevokeHint}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                         IsVisible="{Binding ReadAccessGranted}" />
+              <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding RevokeReadAccessCommand}"
+                      IsVisible="{Binding ReadAccessGranted}">
+                <TextBlock Text="{loc:Tr Assistant_ReadAccess_Revoke, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Classes="pill pill-compact" HorizontalAlignment="Left" Command="{Binding AllowReadAccessCommand}"
+                      IsVisible="{Binding !ReadAccessGranted}">
+                <TextBlock Text="{loc:Tr Assistant_ReadAccess_Allow, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="LockOutline" Width="12" Height="12" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+              <TextBlock Text="{loc:Tr Assistant_Scope_ProtectedNote}" Classes="faint" FontSize="11" TextWrapping="Wrap" MaxWidth="300" />
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Popup>
+  </Panel>
+</UserControl>

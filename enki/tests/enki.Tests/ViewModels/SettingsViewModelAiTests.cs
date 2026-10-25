@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using enki.Models;
 using enki.Services;
+using enki.Tests.Services;
 using enki.ViewModels;
 using Xunit;
 
@@ -26,7 +27,7 @@ public sealed class SettingsViewModelAiTests : IDisposable
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
-    private (SettingsViewModel Vm, SettingsService Settings, AiChatService Chats, string VaultPath) Create()
+    private (SettingsViewModel Vm, SettingsService Settings, AiChatService Chats, string VaultPath) Create(TestPolarCredentialStore? apiKeys = null)
     {
         var settingsService = new SettingsService(_storageDirectory);
         var vaultPath = Path.Combine(_storageDirectory, "vault");
@@ -39,7 +40,7 @@ public sealed class SettingsViewModelAiTests : IDisposable
             new ReminderService(_storageDirectory), settingsService);
         var notificationService = new NotificationService(settingsService, _storageDirectory);
         settingsService.Settings.Ai.ClaudeCliPath = Path.Combine(_storageDirectory, "no-existe", "claude");
-        var cli = new ClaudeCliService(settingsService, _storageDirectory);
+        var cli = new ClaudeCliService(settingsService, _storageDirectory, apiKeys is null ? null : new AiApiKeyStore(apiKeys));
         var chats = new AiChatService(_storageDirectory);
 
         var vm = new SettingsViewModel(
@@ -209,5 +210,54 @@ public sealed class SettingsViewModelAiTests : IDisposable
         Assert.Equal(AiSettings.DefaultIdleTimeoutSeconds, ai.IdleTimeoutSeconds);
         Assert.Equal(AiSettings.DefaultMaxContextChars, ai.MaxContextChars);
         Assert.Equal("/x/claude", ai.ClaudeCliPath);
+    }
+
+    [Fact]
+    public async Task ClaudeApiKey_IsSavedToTheSecureStore_NeverToSettings_AndCanBeDeleted()
+    {
+        var store = new TestPolarCredentialStore();
+        var (vm, settings, _, _) = Create(store);
+        Assert.False(vm.ShowAiApiKey);
+
+        vm.UseClaudeApiKeyCommand.Execute(null);
+        Assert.True(settings.Settings.Ai.ClaudeUseApi);
+        Assert.True(vm.ShowAiApiKey);
+        Assert.False(vm.HasAiApiKey);
+
+        vm.AiApiKeyDraft = "no-es-una-clave";
+        await vm.SaveAiApiKeyCommand.ExecuteAsync(null);
+        Assert.NotNull(vm.AiApiKeyError);
+        Assert.Null(store.Credentials);
+
+        const string key = "sk-ant-api03-0123456789abcdefWXYZ";
+        vm.AiApiKeyDraft = key;
+        await vm.SaveAiApiKeyCommand.ExecuteAsync(null);
+        Assert.Null(vm.AiApiKeyError);
+        Assert.Equal(string.Empty, vm.AiApiKeyDraft);
+        Assert.Equal(key, store.Credentials!.AccessToken);
+        Assert.Equal("sk-ant-…WXYZ", vm.AiApiKeyMasked);
+        Assert.DoesNotContain(key, File.ReadAllText(Path.Combine(_storageDirectory, "settings.json")), StringComparison.Ordinal);
+
+        await vm.DeleteAiApiKeyCommand.ExecuteAsync(null);
+        Assert.Null(store.Credentials);
+        Assert.False(vm.HasAiApiKey);
+
+        vm.UseClaudeSubscriptionCommand.Execute(null);
+        Assert.False(settings.Settings.Ai.ClaudeUseApi);
+    }
+
+    [Fact]
+    public async Task ClaudeApiKey_StoreFailure_IsExplained_AndNothingIsLost()
+    {
+        var store = new TestPolarCredentialStore { FailWrites = true };
+        var (vm, _, _, _) = Create(store);
+        vm.UseClaudeApiKeyCommand.Execute(null);
+        vm.AiApiKeyDraft = "sk-ant-api03-0123456789abcdefWXYZ";
+
+        await vm.SaveAiApiKeyCommand.ExecuteAsync(null);
+
+        Assert.NotNull(vm.AiApiKeyError);
+        Assert.Equal("sk-ant-api03-0123456789abcdefWXYZ", vm.AiApiKeyDraft);
+        Assert.False(vm.HasAiApiKey);
     }
 }

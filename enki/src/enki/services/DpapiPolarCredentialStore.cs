@@ -8,15 +8,15 @@ namespace enki.Services;
 
 /// <summary>DPAPI con ámbito CurrentUser; el archivo contiene sólo bytes cifrados.</summary>
 [SupportedOSPlatform("windows")]
-internal sealed class DpapiPolarCredentialStore(string directory) : IPolarCredentialStore
+internal sealed class DpapiPolarCredentialStore(string directory, string purpose = "polar") : IPolarCredentialStore
 {
-    private readonly string _path = Path.Combine(directory, "polar-session.dat");
-    private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("Enki.Polar.Session.v1");
+    private readonly string _path = Path.Combine(directory, purpose + "-session.dat");
+    private readonly byte[] _entropy = Encoding.UTF8.GetBytes(purpose == "polar" ? "Enki.Polar.Session.v1" : "Enki." + purpose + ".v1");
 
     public PolarCredentials? Read()
     {
         if (!File.Exists(_path)) return null;
-        var plain = ProtectedData.Unprotect(File.ReadAllBytes(_path), Entropy, DataProtectionScope.CurrentUser);
+        var plain = ProtectedData.Unprotect(File.ReadAllBytes(_path), _entropy, DataProtectionScope.CurrentUser);
         try { return PolarCredentialStore.Deserialize(Encoding.UTF8.GetString(plain)); }
         finally { CryptographicOperations.ZeroMemory(plain); }
     }
@@ -25,7 +25,7 @@ internal sealed class DpapiPolarCredentialStore(string directory) : IPolarCreden
     {
         var plain = Encoding.UTF8.GetBytes(PolarCredentialStore.Serialize(credentials));
         byte[] encrypted;
-        try { encrypted = ProtectedData.Protect(plain, Entropy, DataProtectionScope.CurrentUser); }
+        try { encrypted = ProtectedData.Protect(plain, _entropy, DataProtectionScope.CurrentUser); }
         finally { CryptographicOperations.ZeroMemory(plain); }
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         var temp = _path + ".tmp-" + Guid.NewGuid().ToString("N");

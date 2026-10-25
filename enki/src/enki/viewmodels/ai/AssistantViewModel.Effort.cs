@@ -35,7 +35,12 @@ public sealed partial class AssistantViewModel
             EffortLevel = System.Math.Clamp(value, 0, 2);
             return;
         }
-        if (_activeSession is null || _activeSession.Effort == SelectedEffort) return;
+        if (_activeSession is null)
+        {
+            ScheduleDraftSave();
+            return;
+        }
+        if (_activeSession.Effort == SelectedEffort) return;
         _activeSession.Effort = SelectedEffort;
         TrySaveSession(_activeSession, touch: false);
     }

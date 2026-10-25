@@ -2446,7 +2446,7 @@
               </Border>
             </controls:SettingsSearchOption>
 
-            <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Ai Ai_Provider Ai_ProviderHelp Ai_LocalEndpoint Ai_CustomModel">
+            <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Ai Ai_Provider Ai_ProviderHelp Ai_LocalEndpoint Ai_CustomModel Settings_Ai_ClaudeAuth_Label Settings_Ai_ClaudeAuth_ApiKey">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="12">
                   <TextBlock Text="{loc:Tr Ai_Provider, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
@@ -2461,6 +2461,50 @@
                     <TextBlock Text="{Binding AiCliStatus.LoginCommand}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" />
                     <TextBlock Text="{loc:Tr Ai_CustomModel}" FontSize="13" />
                     <TextBox Classes="search" Text="{Binding AiCustomModel}" AutomationProperties.Name="{loc:Tr Ai_CustomModel}" />
+                  </StackPanel>
+                  <!-- Claude: la suscripción del usuario (inicio de sesión en Claude Code) o su clave de API, que
+                       Enki guarda en el almacén seguro del sistema y pasa al mismo CLI al lanzar cada turno. -->
+                  <StackPanel IsVisible="{Binding IsAiClaude}" Spacing="10">
+                    <TextBlock Text="{loc:Tr Settings_Ai_ClaudeAuth_Label}" FontSize="13" />
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="segment" GroupName="AiClaudeAuth"
+                                   Content="{loc:Tr Settings_Ai_ClaudeAuth_Subscription, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding !AiClaudeUseApi, Mode=OneWay}" Command="{Binding UseClaudeSubscriptionCommand}" />
+                      <RadioButton Classes="segment" GroupName="AiClaudeAuth"
+                                   Content="{loc:Tr Settings_Ai_ClaudeAuth_ApiKey, Converter={StaticResource UpperCaseConverter}}"
+                                   IsChecked="{Binding AiClaudeUseApi, Mode=OneWay}" Command="{Binding UseClaudeApiKeyCommand}" />
+                    </StackPanel>
+                    <TextBlock Text="{loc:Tr Settings_Ai_ClaudeAuth_SubscriptionHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap"
+                               IsVisible="{Binding !AiClaudeUseApi}" />
+                    <StackPanel Spacing="8" IsVisible="{Binding ShowAiApiKey}">
+                      <TextBlock Text="{loc:Tr Settings_Ai_ClaudeAuth_ApiKeyHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                      <Grid ColumnDefinitions="Auto,*">
+                        <mi:MaterialIcon Grid.Column="0" Kind="KeyOutline" Width="14" Height="14" Margin="0,0,8,0" VerticalAlignment="Center"
+                                         Foreground="{DynamicResource Ink50}" />
+                        <TextBlock Grid.Column="1" Text="{Binding AiApiKeyStatus}" FontSize="12.5" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBox Grid.Column="0" Classes="search" Text="{Binding AiApiKeyDraft}" PasswordChar="•" Height="36"
+                                 PlaceholderText="{loc:Tr Settings_Ai_ApiKey_Placeholder}"
+                                 AutomationProperties.Name="{loc:Tr Settings_Ai_ApiKey_Placeholder}" />
+                        <Button Grid.Column="1" Classes="pill" Margin="8,0,0,0" Command="{Binding SaveAiApiKeyCommand}">
+                          <TextBlock Text="{loc:Tr Settings_Ai_ApiKey_Save, Converter={StaticResource UpperCaseConverter}}" />
+                        </Button>
+                        <Button Grid.Column="2" Classes="icon-btn icon-btn-danger" Width="36" Height="36" Margin="4,0,0,0"
+                                Command="{Binding DeleteAiApiKeyCommand}" IsVisible="{Binding HasAiApiKey}"
+                                ToolTip.Tip="{loc:Tr Settings_Ai_ApiKey_Delete}" AutomationProperties.Name="{loc:Tr Settings_Ai_ApiKey_Delete}">
+                          <mi:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" />
+                        </Button>
+                      </Grid>
+                      <TextBlock Text="{Binding AiApiKeyError}" Foreground="{DynamicResource DangerBrush}" FontSize="11.5" TextWrapping="Wrap"
+                                 IsVisible="{Binding AiApiKeyError, Converter={x:Static baseconv:StringConverters.IsNotNullOrEmpty}}" />
+                      <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding OpenAnthropicConsoleCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <mi:MaterialIcon Kind="OpenInNew" Width="12" Height="12" />
+                          <TextBlock Text="{loc:Tr Settings_Ai_ApiKey_Console, Converter={StaticResource UpperCaseConverter}}" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel>
                   </StackPanel>
                   <StackPanel IsVisible="{Binding IsAiLocal}" Spacing="8">
                     <TextBlock Text="{loc:Tr Ai_LocalHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
@@ -2555,7 +2599,9 @@
                   </Grid>
 
                   <TextBlock Text="{Binding AiCliStatus.LoginCommand}" Classes="muted" FontSize="11.5" TextWrapping="Wrap"
-                             IsVisible="{Binding AiCliStatus.IsSignedOut}" />
+                             IsVisible="{Binding AiCliStatus.NeedsLogin}" />
+                  <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Title}" Classes="muted" FontSize="11.5" TextWrapping="Wrap"
+                             IsVisible="{Binding AiCliStatus.NeedsApiKey}" />
                   <TextBlock Text="{Binding AiCliStatus.UnsupportedMessage}" Classes="muted" FontSize="11.5" TextWrapping="Wrap"
                              IsVisible="{Binding AiCliStatus.IsUnsupported}" />
 

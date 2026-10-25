@@ -17,10 +17,8 @@ consultar y actuar mediante las herramientas de Enki. La regla inicial de produc
 ya no describe el alcance acordado. Siguen siendo obligatorios el aislamiento, la trazabilidad,
 las comprobaciones de escritura y las confirmaciones para operaciones irreversibles.
 
-En el código inspeccionado solo existe el backend de Claude Code (`ClaudeCliService`). No hay backends
-de Codex ni Ollama, aunque el responsable indica que están implementados. Antes de desarrollar su
-interfaz, localizar la rama o los archivos correspondientes; no mostrar conexiones ficticias ni sustituir
-la integración de Claude. Esta discrepancia no impide concretar la UX común.
+Los backends de Codex y Ollama ya están integrados (`CodexCliService`, `OllamaService`) junto al de
+Claude Code, detrás de `AiBackendService`, y comparten historial, permisos y herramientas.
 
 ## 2. Producto acordado
 
@@ -258,12 +256,13 @@ selección existentes. Extraer una abstracción de proveedores solo cuando haya 
 | Historial agrupado en vault y sesiones | Desarrollado sobre los chats existentes |
 | Sesión sin salida a otro ámbito | Desarrollado en el servicio, incluso para acceso ampliado heredado |
 | Sonnet 5.5 inicial y slider de tres niveles por chat | Desarrollado con detección del flag del CLI |
-| Panel lateral y sección con estado compartido | UX acordada; desarrollo posterior |
-| Búsqueda autorizada una vez por chat y revocación | UX acordada; desarrollo posterior |
-| Identidad de vault, migración e historial separado | UX acordada; desarrollo posterior; el almacén actual es global |
-| Borradores persistentes e indicador global | UX acordada; desarrollo posterior |
-| Adjuntos de archivos genéricos | UX acordada; ampliar el selector actual de notas en desarrollo posterior |
-| Codex y Ollama | No encontrados en esta copia; localizar implementación antes de integrarlos |
+| Panel lateral y sección con estado compartido | Desarrollado (`AssistantPanelView`, controles compartidos, `MainWindowViewModel.Assistant.cs`) |
+| Búsqueda autorizada una vez por chat y revocación | Desarrollado; lo exige `AiVaultToolbox` mediante `AiReadAccess` |
+| Identidad de vault, migración e historial separado | Desarrollado; los chats sin identidad se asocian de forma expresa |
+| Borradores persistentes e indicador global | Desarrollado |
+| Adjuntos de archivos genéricos | Desarrollado para archivos de texto; binarios listados y deshabilitados |
+| Codex y Ollama | Desarrollado (`CodexCliService`, `OllamaService`, `AiBackendService`) |
+| Claude con clave de API propia | Desarrollado como segunda credencial del mismo CLI (`AiApiKeyStore`) |
 
 Criterios de aceptación del desarrollo actual:
 
@@ -279,7 +278,8 @@ Criterios de aceptación del desarrollo actual:
 7. Las pruebas de servicios, viewmodels, localización y XAML compilan y verifican el aislamiento y
    el transporte. Revisar además los controles con el proyecto de pruebas de interfaz.
 
-Para los desarrollos posteriores, añadir pruebas de permiso concedido/denegado/revocado y persistencia,
-cambio de vault durante aprobación, historial sin identidad, borradores y cambio entre panel/sección,
-lecturas de adjuntos bloqueados y ausencia de navegación al completar herramientas. No dar esos flujos
-por implementados a partir de esta especificación.
+Actualización 2026-10-25: los flujos de la matriz están implementados y cubiertos por
+`AssistantViewModelWorkspaceTests`, `AiVaultToolboxTests` (puerta de lectura y `AppendToNote`),
+`ClaudeCliServiceTests`, `AiApiKeyStoreTests`, `SettingsViewModelAiTests` y `AssistantViewUiTests`. La
+referencia viva de su comportamiento es [Asistente de IA](../../project-info/asistente-ia.md); la sección 8.10
+de la checklist de QA manual recoge su validación con proveedores reales.

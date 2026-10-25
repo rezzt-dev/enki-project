@@ -337,19 +337,47 @@ public sealed partial class AiVaultToolbox
 
         var updated = transform(fresh.Content);
         // Las ediciones parciales conservan el formato de línea del documento original.
-        if (!requireCompleteRead && fresh.Content.Contains("\r\n", StringComparison.Ordinal))
-            updated = updated.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal);
+        if (!requireCompleteRead) updated = KeepLineEndings(fresh.Content, updated);
         if (updated == fresh.Content) return fresh.Note;
 
-        _vault.CaptureSnapshotChecked(fresh.Note, fresh.Content, NoteVersionTrigger.Assistant);
-        var stamp = _vault.WriteContentChecked(fresh.Note, updated, fresh.Stamp);
+        var (note, stamp) = CommitNoteChange(path, fresh.Note, fresh.Content, fresh.Stamp, updated);
         // Lo que acaba de quedar escrito lo conoce el modelo entero si lo escribió entero o si ya lo había leído.
         if (stamp is { } written && (requireCompleteRead || reads.ContainsKey(path))) reads[path] = written;
         else reads.Remove(path);
-
-        var note = _vault.GetNote(path) ?? fresh.Note;
-        _host.NoteChanged(path, note);
         call.Target(AiToolTargetKind.Note, note.Title, path);
+        return note;
+    }
+
+    /// <summary>Guarda lo que había en el historial de la nota, escribe contra la huella leída y avisa a las
+    /// pestañas abiertas. Común a las herramientas y a "Añadir a la nota activa".</summary>
+    private (NoteFile Note, NoteDiskStamp? Stamp) CommitNoteChange(string path, NoteFile current, string previousContent,
+        NoteDiskStamp baseline, string updated)
+    {
+        _vault.CaptureSnapshotChecked(current, previousContent, NoteVersionTrigger.Assistant);
+        var stamp = _vault.WriteContentChecked(current, updated, baseline);
+        var note = _vault.GetNote(path) ?? current;
+        _host.NoteChanged(path, note);
+        return (note, stamp);
+    }
+
+    private static string KeepLineEndings(string original, string updated) =>
+        original.Contains("\r\n", StringComparison.Ordinal)
+            ? updated.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal)
+            : updated;
+
+    /// <summary>"Añadir a la nota activa" del chat: lo pide el usuario sobre una respuesta, no el modelo, pero
+    /// pasa por el mismo camino de escritura que las herramientas. <paramref name="baseline"/> es lo que el
+    /// usuario vio en la vista previa: si la nota cambió desde entonces (también por un guardado pendiente de su
+    /// pestaña), no se escribe nada y se lanza <see cref="ExternalModificationException"/>.</summary>
+    public NoteFile AppendToNote(string path, string text, NoteDiskStamp baseline)
+    {
+        if (!_host.PrepareNoteChange(path)) throw new ExternalModificationException(path, VaultExternalChangeKind.Modified);
+        var fresh = _vault.ReadFromDisk(path) ?? throw new FileNotFoundException(null, path);
+        if (!string.Equals(fresh.Stamp.ContentHash, baseline.ContentHash, StringComparison.Ordinal))
+            throw new ExternalModificationException(path, VaultExternalChangeKind.Modified);
+        var (note, _) = CommitNoteChange(path, fresh.Note, fresh.Content, fresh.Stamp,
+            KeepLineEndings(fresh.Content, AppendAtEnd(fresh.Content, text.Trim('\n'))));
+        _host.VaultChanged();
         return note;
     }
 
@@ -388,7 +416,7 @@ public sealed partial class AiVaultToolbox
         return count;
     }
 
-    private static string AppendAtEnd(string content, string text) =>
+    internal static string AppendAtEnd(string content, string text) =>
         content.TrimEnd() + (content.Trim().Length == 0 ? string.Empty : "\n\n") + text + "\n";
 
     /// <summary>Al principio del cuerpo: tras el frontmatter y tras el título si es lo primero que hay.</summary>

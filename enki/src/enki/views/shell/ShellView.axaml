@@ -326,15 +326,30 @@
            itself once UseCustomTitleBar is off. -->
       <Border Grid.Row="0" Height="44" />
 
-      <Grid Grid.Row="1">
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
         <!-- Una entrada cancelable por navegación, después de construir la sección. -->
         <views:SectionHost x:Name="PageHost" Page="{Binding CurrentPage}" Scope="{Binding Notes}"
                          motion:MotionReveal.AllowTranslation="{Binding PageRevealAllowsTranslation}"
                          motion:MotionReveal.Revision="{Binding PageRevealRevision}" />
 
+        <!-- Panel lateral del asistente (.docs/project-info/asistente-ia.md): el mismo chat que la sección
+             Asistente, junto a cualquier otra sección y sin navegar. Su ancho se ajusta arrastrando el borde
+             izquierdo y se guarda al soltar. Su vista no se construye hasta que se abre por primera vez (ver
+             ShellView.EnsureAssistantSurfaces): con la IA apagada, la shell no paga su XAML. -->
+        <Grid x:Name="AssistantPanelHost" Grid.Column="1" Width="{Binding AssistantPanelWidth}" IsVisible="{Binding IsAssistantPanelVisible}">
+          <Panel Width="7" HorizontalAlignment="Left" Cursor="SizeWestEast" Background="Transparent"
+                 PointerPressed="AssistantPanelGrip_PointerPressed"
+                 PointerMoved="AssistantPanelGrip_PointerMoved"
+                 PointerReleased="AssistantPanelGrip_PointerReleased" />
+        </Grid>
+
         <!-- Grano de película sutil sobre todo el shell (§5.1) -->
-        <Border Background="{DynamicResource GrainBrush}" IsHitTestVisible="False" />
+        <Border Grid.ColumnSpan="2" Background="{DynamicResource GrainBrush}" IsHitTestVisible="False" />
       </Grid>
+
+      <!-- Diálogos del asistente: una sola copia para la sección y el panel, anclada a la ventana. También se
+           construyen la primera vez que se enseña el asistente. -->
+      <Panel x:Name="AssistantDialogsHost" Grid.Row="1" IsVisible="{Binding AssistantPanelEnabled}" />
     </Grid>
 
   </Grid>

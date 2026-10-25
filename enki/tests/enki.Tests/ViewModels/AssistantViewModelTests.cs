@@ -76,7 +76,7 @@ public sealed class AssistantViewModelTests : IDisposable
         Assert.Equal("Hola, ¿qué tal?", saved.Title);
         Assert.Equal("sess-1", saved.CliSessionId);
         Assert.Equal([AiChatRole.User, AiChatRole.Assistant], saved.Messages.Select(m => m.Role));
-        Assert.Equal(saved.Id, _settings.Settings.Ai.LastChatId);
+        Assert.Equal(saved.Id, _settings.Settings.Ai.LastChatByVault[saved.VaultId!]);
         Assert.Single(vm.Sessions);
         Assert.True(vm.Sessions[0].IsActive);
     }

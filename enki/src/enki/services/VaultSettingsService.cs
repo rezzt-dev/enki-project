@@ -57,4 +57,33 @@ public sealed class VaultSettingsService
         });
         SettingsChanged?.Invoke();
     }
+
+    /// <summary>Identidad del vault abierto (<see cref="VaultSettings.VaultId"/>), creándola y guardándola si
+    /// todavía no la tiene. Si el vault no se puede escribir (solo lectura, disco lleno), se usa una identidad
+    /// derivada de su ruta: es estable mientras la carpeta no se mueva y no impide usar el asistente.</summary>
+    public string EnsureVaultId()
+    {
+        if (Settings.VaultId is { Length: > 0 } existing) return existing;
+        if (!_vaultService.IsVaultConfigured) return PathIdentity(_vaultService.VaultPath);
+        var created = Guid.NewGuid().ToString("N");
+        Settings.VaultId = created;
+        try
+        {
+            Save();
+            return created;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or TimeoutException)
+        {
+            LogService.Warning("No se pudo guardar la identidad del vault; se usa la de su ruta", ex);
+            Settings.VaultId = null;
+            return PathIdentity(_vaultService.VaultPath);
+        }
+    }
+
+    /// <summary>Identidad de reserva para un vault sin <see cref="VaultSettings.VaultId"/>: un resumen de su
+    /// ruta completa, con un prefijo que la distingue de las generadas.</summary>
+    public static string PathIdentity(string vaultPath) => string.IsNullOrWhiteSpace(vaultPath)
+        ? "pathnone"
+        : "path" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(vaultPath)))).ToLowerInvariant()[..28];
 }

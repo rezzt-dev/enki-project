@@ -39,6 +39,9 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     }
 
     public bool IsBusy => Backend?.IsBusy == true;
+
+    /// <summary>Almacén de la clave de API de Claude, compartido con Ajustes.</summary>
+    public AiApiKeyStore? ApiKeys => _cli.ApiKeys;
     public AiBackendService? Backend { get; }
     public AiProvider Provider => Backend?.Provider ?? AiProvider.Claude;
     public string ProviderLabel => Provider switch { AiProvider.OpenAi => "OpenAI · ChatGPT", AiProvider.Ollama => "Ollama", _ => "Claude" };
@@ -56,7 +59,8 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsReady), nameof(IsNotInstalled), nameof(IsSignedOut), nameof(IsUnsupported),
         nameof(IsKnown), nameof(ShowChecking), nameof(StateLabel), nameof(AccountLabel), nameof(HasAccount),
-        nameof(VersionLabel), nameof(ExecutablePathLabel), nameof(UnsupportedMessage), nameof(SupportsVaultTools))]
+        nameof(VersionLabel), nameof(ExecutablePathLabel), nameof(UnsupportedMessage), nameof(SupportsVaultTools),
+        nameof(NeedsApiKey), nameof(NeedsLogin))]
     private ClaudeCliStatus _status;
 
     /// <summary>El CLI deja trabajar al asistente dentro del vault (ver
@@ -74,6 +78,12 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     public bool IsUnsupported => Status.State == ClaudeCliState.Unsupported;
     public bool IsKnown => Status.State != ClaudeCliState.Unknown;
 
+    /// <summary>Falta la clave de API de Claude (modo de clave propia): se arregla en Ajustes, no en una terminal.</summary>
+    public bool NeedsApiKey => IsSignedOut && Status.NeedsApiKey;
+
+    /// <summary>Falta iniciar sesión en el CLI: se enseña la orden para una terminal.</summary>
+    public bool NeedsLogin => IsSignedOut && !Status.NeedsApiKey;
+
     /// <summary>Primera comprobación aún en curso: todavía no se sabe qué enseñar.</summary>
     public bool ShowChecking => IsChecking && !IsKnown;
 
@@ -83,6 +93,7 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     {
         ClaudeCliState.Ready => "Assistant_State_Ready",
         ClaudeCliState.NotInstalled => "Assistant_State_NotInstalled",
+        ClaudeCliState.SignedOut when Status.NeedsApiKey => "Assistant_State_ApiKeyMissing",
         ClaudeCliState.SignedOut => "Assistant_State_SignedOut",
         ClaudeCliState.Unsupported => "Assistant_State_Unsupported",
         _ => "Assistant_State_Checking"

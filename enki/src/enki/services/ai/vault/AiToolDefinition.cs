@@ -41,6 +41,8 @@ public enum AiToolErrorKind
     Conflict,
     /// <summary>El usuario no confirmó la acción.</summary>
     Denied,
+    /// <summary>El chat no tiene permiso para buscar ni leer por su cuenta y el usuario no lo concedió.</summary>
+    ReadDenied,
     /// <summary>El vault o el módulo no está disponible (unidad desconectada, Polar sin vincular…).</summary>
     Unavailable,
     Failed

@@ -9,7 +9,77 @@
 La sección **Asistente** permite elegir Claude, OpenAI mediante la cuenta de Codex o modelos locales
 servidos por Ollama. Comparte historial, notas adjuntas, skills, ámbitos y herramientas del vault.
 La IA está **apagada por defecto**, exige aceptar el aviso de privacidad y términos y, apagada, no ejecuta
-comprobaciones ni envía contenido. Claude conserva su integración mediante el CLI oficial (`claude -p`).
+comprobaciones ni envía contenido. Claude conserva su integración mediante el CLI oficial (`claude -p`), con
+la suscripción del usuario o con su propia clave de API.
+
+La conversación se usa desde dos superficies sobre el mismo estado: la **sección Asistente** y un **panel
+lateral** que se abre junto a cualquier otra sección. El historial es **de cada vault**, cada chat pide
+**permiso una vez** antes de buscar y leer por su cuenta, y lo que se está escribiendo se conserva como
+**borrador** por conversación.
+
+## Dos superficies: sección y panel lateral
+
+- `AssistantViewModel` es una sola instancia. La sección (`AssistantView`) y el panel (`AssistantPanelView`)
+  se componen de los mismos controles: `AssistantTranscriptView` (puesta en marcha, hilo, bienvenida, error),
+  `AssistantComposerView`, `AssistantScopeButton`, `AssistantModelControls` y `AssistantHistoryList`. El panel
+  los marca con la clase `compact`. Los diálogos (`AssistantDialogs`) los monta una sola vez el shell.
+- El panel vive en la columna derecha de `ShellView`, con ancho ajustable (`AiSettings.PanelWidth`,
+  340–720 px). Su vista y los diálogos se construyen la primera vez que hacen falta, para no encarecer el
+  arranque con la IA apagada.
+- `MainWindowViewModel.Assistant.cs` decide qué se ve: el panel solo se enseña con la IA encendida, fuera del
+  modo enfoque y sin la sección Asistente delante, así que nunca hay dos compositores a la vista. "Ampliar"
+  lleva el chat a la sección; "Ver como panel" vuelve a la sección anterior con el panel abierto; cerrar
+  el panel solo lo oculta y la respuesta sigue. Abrirlo no navega ni cambia la nota seleccionada.
+- Accesos: botón del asistente en la barra de título, `Ctrl+Shift+9` (remapeable), la paleta de comandos.
+  "Usar en el asistente", "Preguntar al asistente" de Sesiones y la paleta abren el chat en el panel si
+  está abierto y, si no, en la sección.
+- El punto de lectura del hilo (`TranscriptScrollOffset`) se conserva al cambiar de superficie. Si el usuario
+  sube a releer mientras llega una respuesta, el hilo no se mueve y aparece "Ir al final".
+- **Indicador global.** El botón de la barra de título refleja `AssistantActivityState`: girando mientras
+  trabaja, "!" cuando una respuesta espera un permiso o una confirmación, y una marca de "respuesta lista"
+  cuando terminó sin estar a la vista (se borra al enseñar el chat). Cada fila del historial dice además si
+  su respuesta está en curso o esperando. Solo las decisiones pendientes fuera de la vista generan una
+  notificación; nunca un aviso por fragmento ni por herramienta.
+
+## Permiso de consulta por chat
+
+Adjuntar contenido no exige ningún permiso. Para que el asistente **busque y lea por su cuenta**, el chat
+necesita `AiChatSession.ReadAccess` (`AiReadGrant`):
+
+- Lo exige `AiVaultToolbox.ExecuteAsync` antes de cada herramienta de lectura, a través de
+  `AiToolContext.ReadAccess` (`AiReadAccess`): no basta con decirlo en el prompt. Sin permiso, la primera
+  lectura enseña en la respuesta la tarjeta "¿Permitir que este chat busque y consulte documentos de …?",
+  con el ámbito y el proveedor que recibirá el contenido. Las lecturas simultáneas comparten una sola
+  petición.
+- "Permitir en este chat" lo guarda en la conversación y no se vuelve a preguntar, tampoco al reabrirla.
+  "Ahora no" vale para el resto del turno: el modelo recibe que no puede buscar y no se pregunta en bucle.
+  Detener, apagar la IA, cambiar de vault o dejar pasar cinco minutos cuentan como "Ahora no".
+- En un chat del vault, el permiso de la raíz no cubre el acceso a sesiones activado después
+  (`AiReadGrant.IncludesSessions`): hay que aceptarlo de nuevo.
+- El menú de ámbito enseña el estado y permite conceder o revocar el permiso. Revocar impide las lecturas
+  siguientes, incluso dentro de una respuesta en curso, pero no borra lo que ya se envió al proveedor; el
+  menú lo explica. El bloque `<enki_scope>` de cada turno le dice al modelo si puede buscar.
+- El permiso de consulta, el consentimiento de activación, la confirmación de adjuntos y las aprobaciones
+  de borrados son decisiones distintas, y ninguna implica a las demás.
+
+## Historial por vault y borradores
+
+- Cada vault tiene una identidad estable (`VaultSettings.VaultId`, en `.enki/settings.json`), que se crea
+  la primera vez que se guarda un chat o un borrador; consultarla nunca escribe en el vault. Si el vault no
+  se puede escribir se usa una identidad derivada de su ruta (`VaultSettingsService.PathIdentity`), y los
+  chats guardados con ella siguen siendo de ese vault.
+- Cada chat guarda `VaultId` y `VaultName`. El historial solo enseña los del vault abierto; el último chat se
+  recuerda por vault (`AiSettings.LastChatByVault`). Cambiar de vault corta la respuesta, cierra el chat y,
+  cuando los ajustes del vault nuevo están cargados (`AssistantViewModel.ReloadForVault`), carga su historial.
+- Las conversaciones de antes de esta separación (sin `VaultId`) no se atribuyen al vault abierto: aparecen
+  en el grupo "Sin vault asignado", se pueden leer y, para continuarlas, se asocian con "Asociar a este
+  vault" (`AiChatService.AssignToVault`). Nunca se borran ni se reasignan solas.
+- **Borradores.** Cada conversación guarda lo que se estaba escribiendo (`AiChatSession.Draft`) y cada vault
+  y ámbito, el de su chat nuevo (`ai/drafts.json`): texto, adjuntos como rutas relativas, skill y capacidad.
+  Se guardan poco después de dejar de escribir, al cambiar de chat, de superficie o de vault (antes del
+  cambio, mientras las rutas siguen siendo las del vault anterior) y al cerrar Enki. Al restaurarlos se
+  comprueba cada adjunto: si ya no existe, quedó fuera del ámbito o está bloqueado, se retira y el compositor
+  lo dice.
 
 ## Configurar OpenAI
 
@@ -103,11 +173,17 @@ services/ai/CodexCliService.cs       cuenta de ChatGPT por CLI oficial, turnos e
 services/ai/OllamaService.cs         catálogo local, capacidades, streaming y herramientas por MCP
 services/ai/AiBackendService.cs      selección de transporte y estado compartido
 services/ai/AiPromptBuilder.cs       prompt de sistema + skill, contexto de notas, recuperación de historial
-services/ai/AiChatService.cs         historial: un JSON por chat en %AppData%/Enki/ai/chats/
+services/ai/AiChatService.cs         historial: un JSON por chat en %AppData%/Enki/ai/chats/, borradores de
+                                     chats nuevos en ai/drafts.json
+services/ai/AiApiKeyStore.cs         clave de API de Claude en el almacén seguro del sistema
+services/ai/AiTextFiles.cs           reglas comunes para leer archivos de texto (adjuntos y read_text_file)
 services/ai/ChatMarkdownParser.cs    subconjunto de Markdown para pintar las respuestas
 controls/ChatMarkdownView.cs         render de esos bloques con los recursos del tema
-viewmodels/ai/                       AssistantViewModel (+ .Composer), ClaudeCliStatusViewModel, filas
+viewmodels/ai/                       AssistantViewModel (+ .Composer, .Scope, .Effort, .Drafts, .Vault,
+                                     .Activity, .NoteInsert), ClaudeCliStatusViewModel, filas y tarjetas
 views/ai/AssistantView.axaml         sección Asistente
+views/ai/AssistantPanelView.axaml    panel lateral; ambos componen los controles compartidos de views/ai/
+viewmodels/shell/MainWindowViewModel.Assistant.cs  panel, ampliar/volver e indicador global
 viewmodels/settings/SettingsViewModel.Ai.cs + sección "Ai" de SettingsView.axaml
 ```
 
@@ -155,7 +231,7 @@ stdout → líneas JSON (init, fragmentos de texto, límite de uso, resultado)
 - **Log**: solo metadatos (duración, código de salida, caracteres enviados y recibidos, resultado). El
   contenido de prompts y respuestas nunca pasa por `LogService`.
 
-## Historial y sesiones
+## Historial y sesiones del CLI
 
 - El panel de conversaciones se pliega con la flecha de su cabecera y se despliega desde la barra
   estrecha resultante. El chat gana ese espacio sin perder la conversación, el borrador ni la búsqueda.
@@ -169,13 +245,18 @@ stdout → líneas JSON (init, fragmentos de texto, límite de uso, resultado)
   `<enki_previous_conversation>` (los mensajes más recientes que quepan, 60 000 caracteres). El usuario no
   ve ningún error.
 - El historial vive en la instalación, no en el vault, igual que `AiSettings`: depende del CLI de este
-  equipo y no debe viajar por Syncthing/Dropbox. "Borrar historial" en Ajustes elimina la copia de Enki,
-  no la del CLI.
+  equipo y no debe viajar por Syncthing/Dropbox. Dentro de la instalación se separa por vault (ver "Historial
+  por vault y borradores"). "Borrar historial" en Ajustes elimina la copia de Enki y los borradores, no la
+  del CLI.
 
 ## Contexto, skills y salida
 
-- **Notas adjuntas** (clip, "Adjuntar «nota activa»", o "Preguntar al asistente sobre esta nota" en la
-  paleta): hasta 5 por mensaje. Antes de leerlas se vuelcan los editores con cambios sin guardar. El
+- **Adjuntos** (clip, "Adjuntar «nota activa»", o "Preguntar al asistente sobre esta nota" en la
+  paleta): notas o archivos de texto, hasta 5 por mensaje. El selector tiene dos pestañas, Notas y Archivos;
+  los archivos que no son texto (imágenes, PDF, multimedia) o pasan de 1 MB se listan deshabilitados con el
+  motivo. Un archivo viaja como `<file>` dentro de `<enki_context>` con las mismas reglas que
+  `read_text_file` (`AiTextFiles`). Si al enviar un adjunto ya no se puede leer, su chip enseña el motivo y
+  no se envía nada hasta retirarlo. Antes de leerlas se vuelcan los editores con cambios sin guardar. El
   presupuesto `MaxContextChars` (24 000 por defecto) se reparte a partes iguales y lo que una nota corta no
   usa pasa a las demás; lo recortado se marca en el chip. Se envía la ruta relativa al vault, nunca la
   absoluta. Las sesiones cifradas bloqueadas no aparecen en el selector.
@@ -184,8 +265,15 @@ stdout → líneas JSON (init, fragmentos de texto, límite de uso, resultado)
 - **Skills**: "Usar en el asistente" en el detalle de una skill, o el selector del compositor antes del
   primer mensaje. El cuerpo de la skill (sin frontmatter) se copia al chat y forma parte del prompt de
   sistema de toda la conversación, aunque la skill se edite después.
-- **Salida**: la respuesta nunca se escribe sola en una nota. Acciones explícitas: copiar, o "Guardar como
-  nota nueva" (crea una nota en la raíz del vault y la abre; nunca sobrescribe una existente).
+- **Salida**: la respuesta nunca se escribe sola en una nota. Acciones explícitas: copiar; "Guardar como
+  nota nueva y abrirla" (crea una nota en la raíz del espacio del chat; nunca sobrescribe una existente); y
+  "Añadir a «nota activa»", que enseña antes las líneas que se añaden al final de la nota abierta en
+  Documentos y escribe por el mismo camino que las herramientas (`AiVaultToolbox.AppendToNote`: versión
+  "Asistente" en el historial, `WriteContentChecked` contra lo previsualizado, pestaña actualizada). Si la
+  nota cambió desde la vista previa no se escribe nada. No navega a la nota.
+- **Reintentar o continuar**: si una respuesta interrumpida ya había completado acciones en el vault, el
+  botón pasa a "Continuar" y el turno lleva `<enki_previous_attempt>` con esas acciones para que el modelo no
+  las repita (`AiPromptBuilder.WithCompletedActions`).
 
 ## Estados y errores
 
@@ -206,10 +294,31 @@ respuesta conserva lo que llegó, marcado como interrumpido.
 
 ## Ajustes
 
-`AiSettings` (clave de instalación `Ai` en `settings.json`): `Enabled`, `ConsentAcceptedUtc`,
-`ClaudeCliPath`, `DefaultModel` (alias de `claude --model`: `fable`, `opus`, `sonnet`, `haiku`, o vacío
-para el del CLI), `IdleTimeoutSeconds` (30–1800), `MaxContextChars` (2 000–200 000),
-`ConfirmBeforeSendingContext` y `LastChatId`. `Normalize()` apaga la IA si falta el consentimiento.
+`AiSettings` (clave de instalación `Ai` en `settings.json`): `Enabled`, `ConsentAcceptedUtc`, `Provider`,
+`ClaudeCliPath`, `ClaudeUseApi`, `DefaultModel` (alias de `claude --model`: `fable`, `opus`, `sonnet`,
+`haiku`, o vacío para el del CLI), los modelos de cada proveedor, `IdleTimeoutSeconds` (30–1800),
+`MaxContextChars` (2 000–200 000), `ConfirmBeforeSendingContext`, `AllowVaultChanges`, `PanelWidth`
+(340–720) y `LastChatByVault`. `Normalize()` apaga la IA si falta el consentimiento.
+
+### Claude con clave de API propia
+
+En Ajustes › Inteligencia artificial, con Claude seleccionado, "Cómo se usa Claude" elige entre
+**Suscripción** (la cuenta iniciada en Claude Code) y **Clave de API propia**. Es la misma integración con el
+mismo CLI oficial, no un backend aparte: solo cambia la credencial con la que se lanza cada turno.
+
+- La clave se guarda en el almacén seguro del sistema (`AiApiKeyStore` sobre `PolarCredentialStore` con su
+  propia entrada: DPAPI, Keychain o Secret Service), nunca en `settings.json`, en el vault ni en el log. Solo
+  se lee con ese modo activo, para que nadie que use su suscripción vea un aviso del llavero.
+- Cada turno la pasa al proceso hijo como `ANTHROPIC_API_KEY` (`ClaudeCliService.BuildEnvironmentOverrides`)
+  y quita las credenciales que competirían con ella (`ANTHROPIC_AUTH_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN`); nunca
+  viaja por argumentos ni por stdin.
+- Sin clave guardada, el estado es "sin sesión" con `NeedsApiKey`: el asistente enseña "Añade tu clave de
+  API de Anthropic" con acceso a Ajustes en vez de la orden de inicio de sesión. Una clave rechazada se
+  explica con el mismo acceso. Ajustes valida la forma (`sk-ant-…`), enseña solo sus últimos caracteres y
+  permite borrarla.
+- Se eligió pasar la clave al CLI oficial en vez de llamar a la API de mensajes directamente: conserva el
+  aislamiento, las herramientas MCP, `--effort` y `--resume` que ya existen y no añade dependencias. El uso
+  se factura por API al usuario.
 
 ## Pruebas
 
@@ -222,14 +331,25 @@ para el del CLI), `IdleTimeoutSeconds` (30–1800), `MaxContextChars` (2 000–2
   consentimiento, persistencia fuera del vault).
 - `enki.UITests/AssistantViewUiTests`: cada estado sobre el XAML real; con `ENKI_GRAPH_PREVIEW=<carpeta>`
   guarda capturas.
-- QA manual: sección 8.9 de `qa-manual-release-candidate.md`.
+- `ViewModels/AssistantViewModelWorkspaceTests`: historial por vault y asociación de chats antiguos, cambio
+  de vault, borradores por chat y por ámbito, adjuntos de archivos, "Añadir a la nota activa", indicador de
+  actividad y permiso de consulta. `AiVaultToolboxTests` cubre la puerta de lectura (pregunta única,
+  denegación por turno, cancelación) y `AppendToNote`; `ClaudeCliServiceTests` y `AiApiKeyStoreTests`, el
+  modo de clave de API; `SettingsViewModelAiTests`, su gestión desde Ajustes.
+- `enki.UITests/AssistantViewUiTests` incluye el panel lateral, la tarjeta de permiso y el aviso de chat sin
+  vault.
+- QA manual: secciones 8.9 y 8.10 de `qa-manual-release-candidate.md`.
 
-## Fuera de alcance (siguiente fase)
+## Fuera de alcance
 
-Backends de Codex y Ollama, modo con API key propia (almacén seguro del sistema), insertar una respuesta
-en la nota abierta con diff (`TextDiffService` + `WriteContentChecked`) y extraer tareas a Kanban o Polar
-con las entidades reales mediante propuestas revisables. La gestión directa del vault ya está conectada
-por las herramientas descritas a continuación. Ver las fases 2 y 3 de la guía de implementación.
+- `codex app-server` (proceso persistente por JSON-RPC): evaluado y aplazado. El arranque de `codex exec` por
+  turno es aceptable y `exec` es la interfaz con los flags de aislamiento que Enki exige.
+- Varios chats respondiendo a la vez y subagentes: cada chat es una instancia independiente, pero solo una
+  responde en cada momento.
+- Niveles de capacidad `xhigh`/`max`: requieren una matriz de compatibilidad por modelo antes de exponerse.
+- Cambiar la skill de un chat entre turnos: se fija antes del primer mensaje.
+- Extraer tareas a Kanban o Polar ya lo hacen las herramientas del vault sobre las entidades reales; no hay
+  un flujo aparte de propuestas.
 
 ## Herramientas del vault y ámbitos de conversación
 
@@ -266,8 +386,7 @@ posiciones (ligera, media, alta). El nivel se pasa con `--effort` si el CLI anun
 contrario el control está deshabilitado y explica cómo actualizar. Durante un turno queda deshabilitado.
 La capacidad se guarda en `AiChatSession.Effort` y se recupera al reabrir el chat; los archivos antiguos
 sin ese campo usan media. Ver la especificación de evolución de UX en
-[Interfaz y agentes](../agent-docs/implement-ia/interfaz-ux-agentes-ia.md), que distingue estas mejoras
-implementadas del panel lateral, permiso de búsqueda por chat e historial separado por vault pendientes.
+[Interfaz y agentes](../agent-docs/implement-ia/interfaz-ux-agentes-ia.md).
 
 `AiSettings.AllowVaultChanges` permite pasar a solo lectura en caliente. Las herramientas de escritura
 se ocultan y sus llamadas se rechazan. La actividad de cada respuesta muestra acción, destino y estado,

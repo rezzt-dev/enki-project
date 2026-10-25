@@ -144,7 +144,8 @@
             Cursor="BottomRightCorner" IsVisible="{Binding UseCustomTitleBar}" Tag="SouthEast" PointerPressed="ResizeGrip_PointerPressed" />
 
     <!-- ===================== Botones de contenido de la barra de título =====================
-         Orden fijo, de izquierda a derecha: buscar · notificaciones · recordatorios · bandeja de entrada.
+         Orden fijo, de izquierda a derecha: buscar · notificaciones · recordatorios · bandeja de entrada ·
+         asistente (este último solo con la IA encendida).
          Deliberately NOT gated by UseCustomTitleBar like the window controls below, since they carry app
          content (not window chrome) and stay meaningful whether Enki or the OS is drawing the title bar.
          Each is independently hideable from Ajustes › Notificaciones (MainWindowViewModel
@@ -715,6 +716,31 @@
             </StackPanel>
           </Border>
         </Popup>
+      </Grid>
+
+      <!-- ===================== Asistente =====================
+           Quinto botón de contenido, solo con la IA encendida: abre y cierra el panel lateral del asistente
+           (desde la sección Asistente, pasa la conversación al panel). Es también el indicador global de la
+           respuesta mientras se navega por Enki: girando mientras trabaja, con "!" cuando espera una decisión
+           del usuario y con una marca cuando hay una respuesta lista sin ver. Pulsarlo lleva a la conversación. -->
+      <Grid IsVisible="{Binding AssistantPanelEnabled}">
+        <Button Name="AssistantTrigger" Classes="titlebar-btn titlebar-btn-plain" Command="{Binding ToggleAssistantPanelCommand}"
+                ToolTip.Tip="{Binding Assistant.ActivityTooltip, FallbackValue={x:Null}}"
+                AutomationProperties.Name="{Binding Assistant.ActivityTooltip, FallbackValue={x:Null}}">
+          <Panel Width="20" Height="20">
+            <mi:MaterialIcon Kind="Creation" Width="19" Height="19"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="Loading" Width="10" Height="10" Classes="spin" Margin="0,-4,-4,0"
+                             HorizontalAlignment="Right" VerticalAlignment="Top"
+                             IsVisible="{Binding Assistant.IsActivityWorking, FallbackValue=False}" />
+            <Border Classes="titlebar-badge" IsVisible="{Binding Assistant.IsActivityNeedsDecision, FallbackValue=False}">
+              <TextBlock Classes="titlebar-badge-text" Text="!" />
+            </Border>
+            <Border Width="7" Height="7" Margin="0,-2,-2,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Background="{DynamicResource SuccessBrush}"
+                    IsVisible="{Binding Assistant.IsActivityResponseReady, FallbackValue=False}" />
+          </Panel>
+        </Button>
       </Grid>
 
       <!-- Controles de ventana: al ocultarlos también desaparece el margen del botón de minimizar.

@@ -31,6 +31,7 @@ public static class ShortcutCatalog
         new(ShortcutIds.NavigateTrash, "Ctrl+D7", "Settings_Navigation_Title", "Settings_Navigation_ToTrash"),
         new(ShortcutIds.NavigateSkills, "Ctrl+D8", "Settings_Navigation_Title", "Settings_Navigation_ToSkills"),
         new(ShortcutIds.NavigateAssistant, "Ctrl+D9", "Settings_Navigation_Title", "Settings_Navigation_ToAssistant"),
+        new(ShortcutIds.ToggleAssistantPanel, "Ctrl+Shift+D9", "Settings_Navigation_Title", "Settings_Navigation_ToggleAssistantPanel"),
         new(ShortcutIds.NavigateStatistics, "Ctrl+Shift+T", "Settings_Navigation_Title", "Settings_Navigation_ToStatistics"),
         new(ShortcutIds.OpenSettings, "Ctrl+OemComma", "Settings_Navigation_Title", "Settings_Navigation_OpenSettings"),
 

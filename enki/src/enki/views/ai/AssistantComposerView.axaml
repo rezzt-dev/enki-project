@@ -1,0 +1,252 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:views="clr-namespace:enki.Views"
+             xmlns:models="clr-namespace:enki.Models"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="860" d:DesignHeight="220"
+             x:Class="enki.Views.AssistantComposerView"
+             x:Name="Root"
+             x:DataType="vm:AssistantViewModel">
+
+  <!-- Compositor del asistente, compartido por la sección y el panel lateral (que lo marca "compact"): avisos
+       del chat, adjuntos pendientes, cuadro de texto, acciones, alcance y aviso del proveedor. Solo se monta
+       una superficie a la vez delante del usuario, así que nunca hay dos compositores editando el mismo
+       borrador a la vista. -->
+
+  <UserControl.Styles>
+    <Style Selector="views|AssistantComposerView.compact Border#ComposerFrame">
+      <Setter Property="Padding" Value="16,12,16,10" />
+    </Style>
+    <Style Selector="views|AssistantComposerView.compact TextBlock#ComposerHint">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="views|AssistantComposerView.compact TextBox#ComposerBox">
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="MaxHeight" Value="180" />
+    </Style>
+    <!-- Adjunto que no se puede enviar: además del icono y el motivo, el borde lo distingue sin depender solo
+         del color del texto. -->
+    <Style Selector="Border.attachment-chip">
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    </Style>
+    <Style Selector="Border.attachment-chip.problem">
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border x:Name="ComposerFrame" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="32,14,32,12">
+    <StackPanel MaxWidth="860" Spacing="10">
+
+      <!-- Conversación de antes de separar el historial por vault: se lee, pero se continúa tras asociarla. -->
+      <Border Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="12,10"
+              IsVisible="{Binding IsUnassignedChat}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <mi:MaterialIcon Grid.Column="0" Kind="LinkVariant" Width="14" Height="14" Margin="0,1,10,0" VerticalAlignment="Top"
+                           Foreground="{DynamicResource Ink50}" />
+          <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Unassigned_Banner}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="pill pill-compact" Margin="12,0,0,0" VerticalAlignment="Center"
+                  Command="{Binding AssignActiveChatToVaultCommand}">
+            <TextBlock Text="{loc:Tr Assistant_Unassigned_Assign, Converter={StaticResource UpperCaseConverter}}" />
+          </Button>
+        </Grid>
+      </Border>
+
+      <!-- El espacio del chat no está disponible (sesión borrada o bloqueada): se dice antes de escribir. -->
+      <Border Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="12,9"
+              IsVisible="{Binding HasScopeWarning}">
+        <Grid ColumnDefinitions="Auto,*">
+          <mi:MaterialIcon Grid.Column="0" Kind="LockOutline" Width="14" Height="14" Margin="0,1,10,0" VerticalAlignment="Top"
+                           Foreground="{DynamicResource Ink50}" />
+          <TextBlock Grid.Column="1" Text="{Binding ScopeWarning}" FontSize="12" TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+
+      <!-- Borrador restaurado con adjuntos que ya no existen o quedaron fuera del ámbito. -->
+      <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding HasDraftNotice}">
+        <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="13" Height="13" Margin="0,0,8,0" VerticalAlignment="Center"
+                         Foreground="{DynamicResource Ink50}" />
+        <TextBlock Grid.Column="1" Text="{Binding DraftNotice}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+        <Button Grid.Column="2" Classes="icon-btn" Width="22" Height="22" Command="{Binding DismissDraftNoticeCommand}"
+                ToolTip.Tip="{loc:Tr Common_Close}" AutomationProperties.Name="{loc:Tr Common_Close}">
+          <mi:MaterialIcon Kind="Close" Width="11" Height="11" />
+        </Button>
+      </Grid>
+
+      <ItemsControl ItemsSource="{Binding PendingAttachments}" IsVisible="{Binding HasPendingAttachments}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:AiAttachmentChipViewModel">
+            <Border Classes="attachment-chip" Classes.problem="{Binding HasProblem}" Background="{DynamicResource Ink05}"
+                    BorderThickness="1" Padding="10,2,2,2" Margin="0,0,6,6" ToolTip.Tip="{Binding WorkspaceLabel}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="12" Height="12" Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Title}" FontSize="11.5" MaxWidth="220" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding HasProblem}" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="AlertCircleOutline" Width="11" Height="11" Foreground="{DynamicResource DangerBrush}" />
+                  <TextBlock Text="{Binding Problem}" FontSize="10.5" Foreground="{DynamicResource DangerBrush}" MaxWidth="220"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Problem}" />
+                </StackPanel>
+                <Button Classes="icon-btn" Width="22" Height="22"
+                        Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RemoveAttachmentCommand}" CommandParameter="{Binding}"
+                        ToolTip.Tip="{loc:Tr Assistant_Composer_RemoveAttachment}" AutomationProperties.Name="{loc:Tr Assistant_Composer_RemoveAttachment}">
+                  <mi:MaterialIcon Kind="Close" Width="11" Height="11" />
+                </Button>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <TextBox x:Name="ComposerBox" Classes="search" Text="{Binding DraftText}" AcceptsReturn="True"
+               TextWrapping="Wrap" MinHeight="64" MaxHeight="220" Padding="14,10"
+               VerticalContentAlignment="Top" IsEnabled="{Binding !IsUnassignedChat}"
+               PlaceholderText="{loc:Tr Assistant_Composer_Placeholder}"
+               AutomationProperties.Name="{loc:Tr Assistant_Composer_Placeholder}" />
+
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+        <Button Grid.Column="0" x:Name="AttachNoteTrigger" Classes="icon-btn" Width="34" Height="34"
+                Command="{Binding ToggleNotePickerCommand}" IsEnabled="{Binding CanAttachMore}"
+                ToolTip.Tip="{loc:Tr Assistant_Composer_AttachNote}" AutomationProperties.Name="{loc:Tr Assistant_Composer_AttachNote}">
+          <mi:MaterialIcon Kind="Paperclip" Width="16" Height="16" />
+        </Button>
+        <Button Grid.Column="1" x:Name="SkillTrigger" Classes="icon-btn" Width="34" Height="34"
+                Command="{Binding ToggleSkillPickerCommand}" IsVisible="{Binding CanPickSkill}"
+                ToolTip.Tip="{loc:Tr Assistant_Composer_PickSkill}" AutomationProperties.Name="{loc:Tr Assistant_Composer_PickSkill}">
+          <mi:MaterialIcon Kind="Brain" Width="16" Height="16" />
+        </Button>
+        <Button Grid.Column="2" Classes="icon-btn" Width="34" Height="34"
+                Command="{Binding ClearSkillCommand}" IsVisible="{Binding CanPickSkill}"
+                IsEnabled="{Binding HasActiveSkill}"
+                ToolTip.Tip="{loc:Tr Assistant_Composer_ClearSkill}" AutomationProperties.Name="{loc:Tr Assistant_Composer_ClearSkill}">
+          <mi:MaterialIcon Kind="CloseCircleOutline" Width="16" Height="16" />
+        </Button>
+        <Button Grid.Column="3" Classes="ghost" Margin="6,0,0,0" VerticalAlignment="Center"
+                Command="{Binding AttachActiveNoteCommand}" IsVisible="{Binding CanAttachActiveNote}"
+                ToolTip.Tip="{Binding ActiveNoteLabel}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="NotePlusOutline" Width="13" Height="13" />
+            <TextBlock Text="{Binding ActiveNoteLabel}" MaxWidth="240" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Button>
+        <TextBlock x:Name="ComposerHint" Grid.Column="4" Text="{loc:Tr Assistant_Composer_Hint}" Classes="faint" FontSize="10.5"
+                   VerticalAlignment="Center" HorizontalAlignment="Right" Margin="12,0" TextTrimming="CharacterEllipsis" />
+        <Button Grid.Column="5" Classes="pill-primary" Command="{Binding SendCommand}" IsVisible="{Binding !IsSending}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Send" Width="13" Height="13" />
+            <TextBlock Text="{loc:Tr Assistant_Composer_Send, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="5" Classes="pill" Command="{Binding StopCommand}" IsVisible="{Binding IsSending}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="StopCircleOutline" Width="14" Height="14" />
+            <TextBlock Text="{loc:Tr Assistant_Composer_Stop, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <Grid ColumnDefinitions="Auto,*">
+        <mi:MaterialIcon Grid.Column="0" Kind="{Binding ScopeIcon}" Width="11" Height="11" Margin="0,1,6,0" VerticalAlignment="Top"
+                         Foreground="{DynamicResource Ink40}" />
+        <TextBlock Grid.Column="1" Text="{Binding ScopeSummary}" Classes="faint" FontSize="10.5" TextWrapping="Wrap" />
+      </Grid>
+      <TextBlock Text="{loc:Tr Assistant_Composer_Disclaimer}" Classes="faint" FontSize="10" TextWrapping="Wrap" />
+
+      <!-- Selector de adjuntos: notas o archivos de texto del ámbito, mismo popover que "vincular nota" de
+           Kanban. Los archivos que no son texto se ven, deshabilitados y con el motivo. -->
+      <Popup PlacementTarget="{Binding #AttachNoteTrigger}" Placement="TopEdgeAlignedLeft" VerticalOffset="-6"
+             IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #AttachNoteTrigger}"
+             controls:PopoverKeyboard.CloseOnEscape="True"
+             IsOpen="{Binding IsNotePickerOpen, Mode=TwoWay}">
+        <Border Classes="dropdown-popover" Width="360">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton Classes="segment" GroupName="AssistantAttachKind"
+                           Content="{loc:Tr Assistant_Picker_Notes, Converter={StaticResource UpperCaseConverter}}"
+                           IsChecked="{Binding !IsPickingFiles, Mode=OneWay}" Command="{Binding ShowPickerNotesCommand}" />
+              <RadioButton Classes="segment" GroupName="AssistantAttachKind"
+                           Content="{loc:Tr Assistant_Picker_Files, Converter={StaticResource UpperCaseConverter}}"
+                           IsChecked="{Binding IsPickingFiles, Mode=OneWay}" Command="{Binding ShowPickerFilesCommand}" />
+            </StackPanel>
+            <TextBox Classes="search" Text="{Binding NotePickerSearchText}"
+                     PlaceholderText="{loc:Tr Kanban_NotePicker_SearchPlaceholder}"
+                     AutomationProperties.Name="{loc:Tr Kanban_NotePicker_SearchPlaceholder}" />
+            <ScrollViewer MaxHeight="280">
+              <ItemsControl ItemsSource="{Binding NotePickerResults}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:AiAttachmentPickerItemViewModel">
+                    <Button Classes="dropdown-item" IsEnabled="{Binding IsEnabled}"
+                            Command="{Binding #Root.((vm:AssistantViewModel)DataContext).PickNoteCommand}"
+                            CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}">
+                      <Grid ColumnDefinitions="Auto,*">
+                        <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="14" Height="14" Margin="0,0,10,0"
+                                         Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Spacing="1">
+                          <TextBlock Text="{Binding Title}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Text="{loc:Tr Kanban_NotePicker_NoResults}" Classes="muted" FontSize="12.5"
+                       IsVisible="{Binding !NotePickerResults.Count}" />
+            <TextBlock Text="{loc:Tr Assistant_Picker_FilesHint}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                       IsVisible="{Binding IsPickingFiles}" />
+          </StackPanel>
+        </Border>
+      </Popup>
+
+      <!-- Selector de skill de partida. -->
+      <Popup PlacementTarget="{Binding #SkillTrigger}" Placement="TopEdgeAlignedLeft" VerticalOffset="-6"
+             IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #SkillTrigger}"
+             controls:PopoverKeyboard.CloseOnEscape="True"
+             IsOpen="{Binding IsSkillPickerOpen, Mode=TwoWay}">
+        <Border Classes="dropdown-popover" Width="340">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{loc:Tr Assistant_Composer_PickSkill, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+            <TextBlock Text="{loc:Tr Assistant_Composer_SkillFixedHint}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+            <ScrollViewer MaxHeight="300">
+              <ItemsControl ItemsSource="{Binding SkillOptions}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="models:SkillFile">
+                    <Button Classes="dropdown-item"
+                            Command="{Binding #Root.((vm:AssistantViewModel)DataContext).PickSkillCommand}"
+                            CommandParameter="{Binding}">
+                      <StackPanel Spacing="1">
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Description}" Classes="faint" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Text="{loc:Tr Assistant_Composer_NoSkills}" Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                       IsVisible="{Binding !SkillOptions.Count}" />
+          </StackPanel>
+        </Border>
+      </Popup>
+    </StackPanel>
+  </Border>
+</UserControl>

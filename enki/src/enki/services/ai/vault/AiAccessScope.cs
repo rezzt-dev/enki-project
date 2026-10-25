@@ -58,6 +58,11 @@ public sealed class AiToolContext
     /// <summary>Pide confirmación al usuario. Sin él, las acciones que la necesitan se deniegan.</summary>
     public Func<AiApprovalRequest, CancellationToken, Task<bool>>? ApprovalRequested { get; init; }
 
+    /// <summary>Si el chat permite buscar y leer contenido por su cuenta. El asistente siempre pasa uno ligado
+    /// al permiso del chat; <see cref="AiReadAccess.Unrestricted"/> queda para quien compone el servidor sin
+    /// chat detrás (pruebas de las herramientas).</summary>
+    public AiReadAccess ReadAccess { get; init; } = AiReadAccess.Unrestricted;
+
     /// <summary>Mantiene vivo el turno (ver <see cref="CliProcessStartInfo.Activity"/>) mientras se ejecuta una
     /// herramienta o se espera una confirmación.</summary>
     public CliActivitySignal? Activity { get; init; }
@@ -69,6 +74,44 @@ public sealed class AiToolContext
     /// solo pueda hacerse sobre lo que de verdad vio (ver <c>write_note</c>).</summary>
     internal Dictionary<string, NoteDiskStamp> CompleteReads { get; } = new(VaultService.PathComparison ==
         StringComparison.OrdinalIgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+}
+
+/// <summary>Permiso de un chat para que el asistente busque y lea contenido del ámbito más allá de lo adjuntado.
+/// Lo comprueba <see cref="AiVaultToolbox"/> antes de cada herramienta de lectura, no el prompt: un modelo que
+/// lo ignore no lee nada. Si no está concedido se pide una vez —las lecturas simultáneas comparten la misma
+/// petición— y una negativa vale para el resto del turno, para no repetir la pregunta en bucle.</summary>
+public sealed class AiReadAccess(Func<bool> isGranted, Func<CancellationToken, Task<bool>>? request)
+{
+    public static AiReadAccess Unrestricted => new(() => true, null);
+
+    private Task<bool>? _pending;
+
+    /// <summary>El permiso, leído en vivo: revocarlo a mitad de un turno ya impide la lectura siguiente.</summary>
+    public bool IsGranted => isGranted();
+
+    /// <summary>El usuario dijo que no (o dejó pasar la pregunta) en este turno.</summary>
+    public bool DeniedThisTurn { get; private set; }
+
+    /// <summary>Espera a que el permiso esté concedido, preguntando si hace falta mediante
+    /// <paramref name="wait"/>, que envuelve la petición con el tiempo máximo y el latido del turno.</summary>
+    internal async Task<bool> EnsureAsync(Func<Func<CancellationToken, Task<bool>>, Task<bool>> wait)
+    {
+        if (IsGranted) return true;
+        if (DeniedThisTurn || request is null) return false;
+        var pending = _pending ??= wait(request);
+        bool granted;
+        try
+        {
+            granted = await pending;
+        }
+        finally
+        {
+            // La primera lectura que termina retira la petición; las demás que la compartían ya tienen su copia.
+            if (ReferenceEquals(_pending, pending)) _pending = null;
+        }
+        if (!granted || !IsGranted) DeniedThisTurn = true;
+        return !DeniedThisTurn;
+    }
 }
 
 /// <summary>Lo que la interfaz necesita saber cuando el asistente toca una nota, para que una pestaña abierta

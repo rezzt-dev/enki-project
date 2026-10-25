@@ -136,6 +136,11 @@ public sealed partial class AiVaultToolbox
         context.Activity?.Touch();
         try
         {
+            if (tool.Effect == AiToolEffect.Read
+                && !await context.ReadAccess.EnsureAsync(request => WaitForUserAsync(context, request)))
+                throw new AiToolException(AiToolErrorKind.ReadDenied,
+                    "The user has not allowed this chat to search or read content on its own. Work with what they wrote and attached, "
+                    + "and tell them they can allow it from the scope menu in the chat header if they want you to look things up. Do not retry.");
             var result = await tool.Handler(new AiToolCall(context, arguments, activity));
             // Dentro del try: los resultados llevan secuencias perezosas que se recorren al serializar.
             var json = JsonSerializer.Serialize(result ?? new { Ok = true }, JsonOptions);
@@ -145,7 +150,8 @@ public sealed partial class AiVaultToolbox
         }
         catch (Exception ex) when (Describe(ex) is { } failure)
         {
-            activity.State = failure.Kind == AiToolErrorKind.Denied ? AiToolActivityState.Denied : AiToolActivityState.Failed;
+            activity.State = failure.Kind is AiToolErrorKind.Denied or AiToolErrorKind.ReadDenied
+                ? AiToolActivityState.Denied : AiToolActivityState.Failed;
             activity.Error = LocalizedTextFormatter.Resolve(failure.UserMessage);
             if (failure.Kind is AiToolErrorKind.Failed or AiToolErrorKind.Unavailable)
                 LogService.Warning($"[ia] la herramienta '{name}' falló", ex);
@@ -218,24 +224,34 @@ public sealed partial class AiVaultToolbox
         if (context.ApprovalRequested is null)
             throw new AiToolException(AiToolErrorKind.Denied, "This action needs the user's confirmation, which is not available here.");
 
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Cancellation);
-        timeout.CancelAfter(ApprovalTimeout);
-        using var heartbeat = new Timer(_ => context.Activity?.Touch(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
-        bool approved;
-        try
-        {
-            approved = await context.ApprovalRequested(new AiApprovalRequest(call.Activity.Tool, title, items), timeout.Token);
-        }
-        catch (OperationCanceledException) when (!context.Cancellation.IsCancellationRequested)
-        {
-            approved = false;
-        }
-        context.Cancellation.ThrowIfCancellationRequested();
+        var request = new AiApprovalRequest(call.Activity.Tool, title, items);
+        var approved = await WaitForUserAsync(context, token => context.ApprovalRequested(request, token));
         if (!ChangesAllowed)
             throw new AiToolException(AiToolErrorKind.Denied, "The user disabled vault changes while this action was waiting for approval.");
         if (!approved)
             throw new AiToolException(AiToolErrorKind.Denied,
                 "The user did not confirm this action, so nothing was done. Do not retry it unless the user asks again.");
+    }
+
+    /// <summary>Espera una decisión del usuario (una confirmación, un permiso) con el límite de
+    /// <see cref="ApprovalTimeout"/>, que cuenta como "no". Mientras espera mantiene vivo el turno para que el
+    /// límite de inactividad del CLI no lo corte. Detener el turno sí se propaga como cancelación.</summary>
+    private static async Task<bool> WaitForUserAsync(AiToolContext context, Func<CancellationToken, Task<bool>> ask)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Cancellation);
+        timeout.CancelAfter(ApprovalTimeout);
+        using var heartbeat = new Timer(_ => context.Activity?.Touch(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        bool decision;
+        try
+        {
+            decision = await ask(timeout.Token);
+        }
+        catch (OperationCanceledException) when (!context.Cancellation.IsCancellationRequested)
+        {
+            decision = false;
+        }
+        context.Cancellation.ThrowIfCancellationRequested();
+        return decision;
     }
 
     // ===================== Espacios =====================

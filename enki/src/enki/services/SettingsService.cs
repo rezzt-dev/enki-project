@@ -232,7 +232,7 @@ public sealed class SettingsService
         });
     }
 
-    private static bool IsCredentialStoreFailure(Exception ex) =>
+    internal static bool IsCredentialStoreFailure(Exception ex) =>
         ex is IOException or UnauthorizedAccessException or JsonException or System.Security.Cryptography.CryptographicException
             or DllNotFoundException or EntryPointNotFoundException or BadImageFormatException
         || ex is TypeInitializationException { InnerException: { } inner } && IsCredentialStoreFailure(inner);

@@ -96,7 +96,10 @@ public sealed partial class MainWindowViewModel
         _polarTaskService = new PolarTaskService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
         _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService, _vaultSettingsService);
         _polarRealtimeService = new PolarRealtimeService(_polarAuthService, _polarSyncService);
-        _claudeCliService = new ClaudeCliService(_settingsService);
+        // La clave de API del modo "Claude con clave propia" vive en el almacén seguro del sistema, con su
+        // propia entrada junto a la sesión de Polar; el almacén no se abre hasta que se usa ese modo.
+        _claudeCliService = new ClaudeCliService(_settingsService,
+            apiKeys: new AiApiKeyStore(System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath)!));
         _aiChatService = new AiChatService();
         AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService, backend: new AiBackendService(_claudeCliService, _settingsService));
         InitializePageRefresh();
@@ -518,8 +521,13 @@ public sealed partial class MainWindowViewModel
             openSettings: OpenAiSettings,
             vaultTools: _aiVaultTools,
             openKanbanCard: OpenKanbanCard,
-            isVisible: () => CurrentPage is AssistantViewModel,
-            isPolarLinked: () => _polarAuthService.IsLinked);
+            isVisible: () => IsAssistantVisible,
+            isPolarLinked: () => _polarAuthService.IsLinked,
+            vaultIdentity: create => create ? _vaultSettingsService.EnsureVaultId() : _vaultSettingsService.Settings.VaultId,
+            appendToNote: aiVaultToolbox.AppendToNote);
+        // El botón del asistente de la barra de título y el panel lateral pueden enlazarse antes de que
+        // exista (primer arranque, con la configuración del vault delante): se les avisa de que ya está.
+        OnPropertyChanged(nameof(Assistant));
         var taskManagement = new PolarTaskManagementViewModel(_polarTaskService, _polarSyncService, _settingsService)
         {
             ShowTagFilter = _settingsService.Settings.PolarShowTaskTags

@@ -48,6 +48,12 @@ public sealed class VaultSettings
     /// already shipped at.</summary>
     public int UiZoomPercent { get; set; } = 100;
 
+    /// <summary>Identidad estable del vault, generada la primera vez que hace falta (ver
+    /// <see cref="Services.VaultSettingsService.EnsureVaultId"/>). La usa el historial del asistente para
+    /// separar las conversaciones de cada vault: vive dentro del vault, así que renombrar o mover su carpeta
+    /// no lo separa de sus chats.</summary>
+    public string? VaultId { get; set; }
+
     /// <summary>Plantilla que se aplica al crear la nota diaria, como
     /// <see cref="NoteTemplate.RelativePath"/> dentro de <c>&lt;vault&gt;/.enki/templates/</c>
     /// (p. ej. <c>daily.md</c>). Null o vacío —el valor de salida— mantiene el comportamiento de siempre:

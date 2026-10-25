@@ -6609,7 +6609,7 @@ Happy writing.</value>
     <value>Copy reply</value>
   </data>
   <data name="Assistant_Message_SaveAsNote" xml:space="preserve">
-    <value>Save as new note</value>
+    <value>Save as a new note and open it</value>
   </data>
   <data name="Assistant_Code_Label" xml:space="preserve">
     <value>Code</value>
@@ -6666,7 +6666,7 @@ Happy writing.</value>
     <value>Your message will be sent to the selected provider with the contents of these notes:</value>
   </data>
   <data name="Assistant_Confirm_Summary" xml:space="preserve">
-    <value>About {0} characters in total.</value>
+    <value>About {0} characters in total, sent to {1}.</value>
   </data>
   <data name="Assistant_Confirm_DontAskAgain" xml:space="preserve">
     <value>Don't ask again when attaching notes</value>
@@ -7288,5 +7288,233 @@ Happy writing.</value>
   </data>
   <data name="Ai_LocalOnly" xml:space="preserve">
     <value>This Ollama model uses a remote server. Choose a downloaded model for local processing.</value>
+  </data>
+  <data name="Ai_ApiKey_Invalid" xml:space="preserve">
+    <value>That doesn't look like an Anthropic API key. Keys start with sk-ant-.</value>
+  </data>
+  <data name="Assistant_Activity_Idle" xml:space="preserve">
+    <value>Idle</value>
+  </data>
+  <data name="Assistant_Activity_Working" xml:space="preserve">
+    <value>Working</value>
+  </data>
+  <data name="Assistant_Activity_NeedsDecision" xml:space="preserve">
+    <value>Needs your decision</value>
+  </data>
+  <data name="Assistant_Activity_ResponseReady" xml:space="preserve">
+    <value>Reply ready</value>
+  </data>
+  <data name="Assistant_Append_Title" xml:space="preserve">
+    <value>Add to the open note</value>
+  </data>
+  <data name="Assistant_Append_Message" xml:space="preserve">
+    <value>This reply will be added at the end of:</value>
+  </data>
+  <data name="Assistant_Append_Hint" xml:space="preserve">
+    <value>The previous content stays in the note's version history. If the note changes before you confirm, nothing is written.</value>
+  </data>
+  <data name="Assistant_Append_Confirm" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Assistant_Attachment_NotText" xml:space="preserve">
+    <value>Not a text file</value>
+  </data>
+  <data name="Assistant_Attachment_TooLarge" xml:space="preserve">
+    <value>Too large (over 1 MB)</value>
+  </data>
+  <data name="Assistant_Composer_SkillFixedHint" xml:space="preserve">
+    <value>The skill guides the whole conversation, so it is chosen before the first message.</value>
+  </data>
+  <data name="Assistant_Draft_MissingAttachments_one" xml:space="preserve">
+    <value>{0} attachment of this draft is no longer available and was removed.</value>
+  </data>
+  <data name="Assistant_Draft_MissingAttachments_other" xml:space="preserve">
+    <value>{0} attachments of this draft are no longer available and were removed.</value>
+  </data>
+  <data name="Assistant_Error_ApiKeyRejected" xml:space="preserve">
+    <value>Anthropic rejected your API key, or there is none saved. Check it in Settings › Artificial intelligence.</value>
+  </data>
+  <data name="Assistant_Error_Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Assistant_Error_Continue_Tooltip" xml:space="preserve">
+    <value>Changes already made in the vault are not repeated: the assistant picks up from there.</value>
+  </data>
+  <data name="Assistant_History_ClearSearch" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="Assistant_History_Unassigned" xml:space="preserve">
+    <value>No vault assigned</value>
+  </data>
+  <data name="Assistant_History_Unassigned_Hint" xml:space="preserve">
+    <value>Saved before history was kept per vault. Link them to this vault to continue them here.</value>
+  </data>
+  <data name="Assistant_Message_AppendToNote" xml:space="preserve">
+    <value>Add to the open note</value>
+  </data>
+  <data name="Assistant_Message_AppendToNamedNote" xml:space="preserve">
+    <value>Add to “{0}”</value>
+  </data>
+  <data name="Assistant_Notify_AppendFailed_Title" xml:space="preserve">
+    <value>Could not add to the note</value>
+  </data>
+  <data name="Assistant_Notify_AppendConflict_Message" xml:space="preserve">
+    <value>“{0}” changed after the preview, so nothing was written. Open the reply again and add it with the current content.</value>
+  </data>
+  <data name="Assistant_Notify_Appended_Title" xml:space="preserve">
+    <value>Added to the note</value>
+  </data>
+  <data name="Assistant_Notify_Appended_Message" xml:space="preserve">
+    <value>The reply was added at the end of “{0}”.</value>
+  </data>
+  <data name="Assistant_Notify_AttachmentFailed_Message" xml:space="preserve">
+    <value>Some attachments can't be sent. Each one says why: remove it or choose another.</value>
+  </data>
+  <data name="Assistant_Notify_ChatAssigned_Title" xml:space="preserve">
+    <value>Conversation linked</value>
+  </data>
+  <data name="Assistant_Notify_ChatAssigned_Message" xml:space="preserve">
+    <value>“{0}” now belongs to the vault {1}.</value>
+  </data>
+  <data name="Assistant_Panel_Toggle" xml:space="preserve">
+    <value>Assistant panel</value>
+  </data>
+  <data name="Assistant_Panel_History" xml:space="preserve">
+    <value>Conversations</value>
+  </data>
+  <data name="Assistant_Panel_Expand" xml:space="preserve">
+    <value>Open in the Assistant section</value>
+  </data>
+  <data name="Assistant_Panel_Close" xml:space="preserve">
+    <value>Close panel (the reply keeps going)</value>
+  </data>
+  <data name="Assistant_Panel_ShowAsPanel" xml:space="preserve">
+    <value>Show as side panel</value>
+  </data>
+  <data name="Assistant_Picker_Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="Assistant_Picker_Files" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="Assistant_Picker_FilesHint" xml:space="preserve">
+    <value>Only text files up to 1 MB can be attached. Images, PDFs and media are listed but can't be sent as text.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Eyebrow" xml:space="preserve">
+    <value>Search permission</value>
+  </data>
+  <data name="Assistant_ReadAccess_Question" xml:space="preserve">
+    <value>Allow this chat to search and read documents in {0}?</value>
+  </data>
+  <data name="Assistant_ReadAccess_Detail" xml:space="preserve">
+    <value>What it reads is sent to {0}. The permission stays with this chat. It doesn't give access to other sessions or more editing permissions.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Allow" xml:space="preserve">
+    <value>Allow in this chat</value>
+  </data>
+  <data name="Assistant_ReadAccess_Deny" xml:space="preserve">
+    <value>Not now</value>
+  </data>
+  <data name="Assistant_ReadAccess_Notify" xml:space="preserve">
+    <value>Wants to search and read documents in {0}</value>
+  </data>
+  <data name="Assistant_ReadAccess_Title" xml:space="preserve">
+    <value>Searching and reading documents</value>
+  </data>
+  <data name="Assistant_ReadAccess_Status_Granted" xml:space="preserve">
+    <value>Allowed: it can search and read documents in {0} on its own.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Status_Ask" xml:space="preserve">
+    <value>Not allowed yet: it only sees what you attach and will ask before searching {0}.</value>
+  </data>
+  <data name="Assistant_ReadAccess_RevokeHint" xml:space="preserve">
+    <value>Revoking stops further reads. It doesn't delete what was already sent to the provider.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Revoke" xml:space="preserve">
+    <value>Revoke permission</value>
+  </data>
+  <data name="Assistant_ReadAccess_VaultAndSessions" xml:space="preserve">
+    <value>the vault and its unprotected sessions</value>
+  </data>
+  <data name="Assistant_Scope_Summary_SearchAllowed" xml:space="preserve">
+    <value>search allowed</value>
+  </data>
+  <data name="Assistant_Scope_Summary_SearchAsk" xml:space="preserve">
+    <value>asks before searching</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Title" xml:space="preserve">
+    <value>Add your Anthropic API key</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Message" xml:space="preserve">
+    <value>Claude is set to use your own API key, and none is saved yet. Save it in Settings: Enki keeps it in your system's secure storage and only hands it to Claude Code when sending a message. API usage is billed by Anthropic.</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Open" xml:space="preserve">
+    <value>Open settings</value>
+  </data>
+  <data name="Assistant_ToolError_ReadDenied" xml:space="preserve">
+    <value>Not allowed to search in this chat.</value>
+  </data>
+  <data name="Assistant_Transcript_JumpToEnd" xml:space="preserve">
+    <value>Go to the end</value>
+  </data>
+  <data name="Assistant_Unassigned_Banner" xml:space="preserve">
+    <value>This conversation is from before history was kept per vault. Link it to this vault to continue it here; it stays in your history either way.</value>
+  </data>
+  <data name="Assistant_Unassigned_Assign" xml:space="preserve">
+    <value>Link to this vault</value>
+  </data>
+  <data name="CommandPalette_Action_OpenAssistantPanel" xml:space="preserve">
+    <value>Open the assistant in the side panel</value>
+  </data>
+  <data name="CommandPalette_Action_CloseAssistantPanel" xml:space="preserve">
+    <value>Close the assistant side panel</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_Label" xml:space="preserve">
+    <value>How Claude is used</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_Subscription" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_ApiKey" xml:space="preserve">
+    <value>Own API key</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_SubscriptionHelp" xml:space="preserve">
+    <value>Uses the account you signed in to in Claude Code; replies count against your plan. Enki never sees your credentials.</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_ApiKeyHelp" xml:space="preserve">
+    <value>Claude Code runs with your Anthropic API key instead of your subscription, and usage is billed per token by Anthropic. The key is kept in your system's secure storage, never in Enki's settings or your vault.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Saved" xml:space="preserve">
+    <value>Key saved: {0}</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_None" xml:space="preserve">
+    <value>No key saved yet.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Placeholder" xml:space="preserve">
+    <value>Paste your API key (sk-ant-…)</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Save" xml:space="preserve">
+    <value>Save key</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Delete" xml:space="preserve">
+    <value>Delete saved key</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Console" xml:space="preserve">
+    <value>Manage keys in the Anthropic Console</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_StoreFailed" xml:space="preserve">
+    <value>Your system's secure storage didn't respond, so the key wasn't saved or deleted. On Linux, check that a keyring (Secret Service) is running.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_SavedTitle" xml:space="preserve">
+    <value>API key saved</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_SavedMessage" xml:space="preserve">
+    <value>Claude will use it from the next message. It is stored in your system's secure storage.</value>
+  </data>
+  <data name="Settings_Navigation_ToggleAssistantPanel" xml:space="preserve">
+    <value>Open or close the assistant panel</value>
+  </data>
+  <data name="Assistant_State_ApiKeyMissing" xml:space="preserve">
+    <value>Claude · no API key saved</value>
   </data>
 </root>

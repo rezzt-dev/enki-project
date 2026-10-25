@@ -336,4 +336,111 @@ public sealed class AiVaultToolboxTests : IDisposable
         Assert.Equal("# Plan\r\n\r\nUno\r\nDos\r\n", File.ReadAllText(note.FullPath));
     }
 
+
+    // ===================== Permiso de consulta =====================
+
+    [Fact]
+    public async Task ReadAccess_NotGranted_AsksOnce_AndDenialHoldsForTheRestOfTheTurn()
+    {
+        _vault.CreateNote("Plan", _vault.VaultPath);
+        var asked = 0;
+        var activities = new List<AiToolActivity>();
+        var context = new AiToolContext
+        {
+            Scope = AiAccessScope.Vault,
+            ReadAccess = new AiReadAccess(() => false, _ => { asked++; return Task.FromResult(false); }),
+            ActivityReported = activities.Add
+        };
+
+        var first = await Call("list_notes", new { }, context);
+        var second = await Call("search_notes", new { query = "Plan" }, context);
+
+        Assert.True(first.IsError);
+        Assert.True(second.IsError);
+        Assert.Contains("not allowed this chat to search", first.Text, StringComparison.Ordinal);
+        Assert.Equal(1, asked);
+        Assert.All(activities, activity => Assert.Equal(AiToolActivityState.Denied, activity.State));
+    }
+
+    [Fact]
+    public async Task ReadAccess_GrantedWhenAsked_RunsTheRead_AndConcurrentReadsShareOneRequest()
+    {
+        _vault.CreateNote("Plan", _vault.VaultPath);
+        var granted = false;
+        var asked = 0;
+        var decision = new TaskCompletionSource<bool>();
+        var context = new AiToolContext
+        {
+            Scope = AiAccessScope.Vault,
+            ReadAccess = new AiReadAccess(() => granted, async _ =>
+            {
+                asked++;
+                var allowed = await decision.Task;
+                granted = allowed;
+                return allowed;
+            })
+        };
+
+        var first = Call("list_notes", new { }, context);
+        var second = Call("get_workspace_overview", new { }, context);
+        decision.SetResult(true);
+
+        Json(await first);
+        Json(await second);
+        Assert.Equal(1, asked);
+        // Concedido, las lecturas siguientes no vuelven a preguntar.
+        Json(await Call("search_notes", new { query = "Plan" }, context));
+        Assert.Equal(1, asked);
+    }
+
+    [Fact]
+    public async Task ReadAccess_DoesNotGateChanges_AndUnrestrictedNeverAsks()
+    {
+        var context = new AiToolContext
+        {
+            Scope = AiAccessScope.Vault,
+            ReadAccess = new AiReadAccess(() => false, _ => throw new InvalidOperationException("No debería preguntar."))
+        };
+        Json(await Call("create_note", new { title = "Nueva" }, context));
+        Assert.Single(_vault.GetAllNotesRecursive(_vault.VaultPath));
+        Json(await Call("list_notes", new { }));
+    }
+
+    [Fact]
+    public async Task ReadAccess_StoppingTheTurnWhileAsking_CancelsWithoutGranting()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var context = new AiToolContext
+        {
+            Scope = AiAccessScope.Vault,
+            Cancellation = cancellation.Token,
+            ReadAccess = new AiReadAccess(() => false, token =>
+            {
+                cancellation.Cancel();
+                token.ThrowIfCancellationRequested();
+                return Task.FromResult(true);
+            })
+        };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Call("list_notes", new { }, context));
+    }
+
+    // ===================== Añadir a la nota activa =====================
+
+    [Fact]
+    public void AppendToNote_WritesAtTheEnd_KeepsVersion_AndRefusesAChangedNote()
+    {
+        var note = _vault.CreateNote("Plan", _vault.VaultPath, initialContent: "# Plan\n\nUno\n");
+        var preview = _vault.ReadFromDisk(note.FullPath)!.Value;
+
+        var updated = _tools.AppendToNote(note.FullPath, "Dos", preview.Stamp);
+
+        Assert.Equal("# Plan\n\nUno\n\nDos\n", File.ReadAllText(note.FullPath));
+        Assert.Equal("Plan", updated.Title);
+        Assert.Contains(_vault.GetVersionHistory(note), version => version.Trigger == NoteVersionTrigger.Assistant);
+
+        // Lo que se previsualizó ya no es lo que hay: no se escribe nada.
+        File.WriteAllText(note.FullPath, "# Plan\n\nCambiado fuera\n");
+        Assert.Throws<ExternalModificationException>(() => _tools.AppendToNote(note.FullPath, "Tres", preview.Stamp));
+        Assert.Equal("# Plan\n\nCambiado fuera\n", File.ReadAllText(note.FullPath));
+    }
 }

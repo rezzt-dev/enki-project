@@ -11,11 +11,15 @@ namespace enki.Services;
 /// porque cada mensaje nuevo reescribe su conversación, y reescribir todo el historial en cada turno crecería
 /// sin límite. Vive en la instalación y no en el vault por el mismo motivo que
 /// <see cref="Models.AiSettings"/>: el CLI guarda su parte de cada conversación en este equipo, y retomarla
-/// desde otro no funcionaría. Ver <c>.docs/project-info/asistente-ia.md</c>.</summary>
+/// desde otro no funcionaría. Dentro de la instalación, cada chat sabe de qué vault es
+/// (<see cref="AiChatSession.VaultId"/>) y el asistente solo enseña los del vault abierto. Ver
+/// <c>.docs/project-info/asistente-ia.md</c>.</summary>
 public sealed class AiChatService
 {
     private readonly string _directory;
+    private readonly string _draftsPath;
     private List<AiChatSession>? _sessions;
+    private Dictionary<string, AiChatDraft>? _newChatDrafts;
 
     /// <summary>Se dispara tras guardar, borrar o vaciar el historial.</summary>
     public event Action? ChatsChanged;
@@ -27,7 +31,9 @@ public sealed class AiChatService
     /// <param name="storageDirectory">Sustituye a <c>%AppData%/Enki</c> como raíz — para los tests.</param>
     public AiChatService(string? storageDirectory = null)
     {
-        _directory = Path.Combine(storageDirectory ?? AppDataDirectory.Resolve(), "ai", "chats");
+        var root = Path.Combine(storageDirectory ?? AppDataDirectory.Resolve(), "ai");
+        _directory = Path.Combine(root, "chats");
+        _draftsPath = Path.Combine(root, "drafts.json");
     }
 
     /// <summary>Todas las conversaciones, la más reciente primero. Se leen de disco la primera vez que se
@@ -36,6 +42,29 @@ public sealed class AiChatService
 
     public AiChatSession? Find(string? id) =>
         id is null ? null : Sessions.FirstOrDefault(s => s.Id == id);
+
+    /// <summary>Conversaciones guardadas antes de que el historial se separara por vault: no se sabe de cuál
+    /// son, así que se conservan aparte hasta que el usuario las asocia (ver <see cref="AssignToVault"/>).</summary>
+    public IEnumerable<AiChatSession> UnassignedSessions => Sessions.Where(s => s.VaultId is null);
+
+    /// <summary>Asocia una conversación sin vault al vault indicado, por decisión expresa del usuario. Una
+    /// conversación que ya pertenece a un vault no se reasigna.</summary>
+    public void AssignToVault(AiChatSession session, string vaultId, string? vaultName)
+    {
+        if (session.VaultId is not null) throw new InvalidOperationException("El chat ya pertenece a un vault.");
+        session.VaultId = vaultId;
+        session.VaultName = vaultName;
+        try
+        {
+            Save(session);
+        }
+        catch
+        {
+            session.VaultId = null;
+            session.VaultName = null;
+            throw;
+        }
+    }
 
     private List<AiChatSession> Load()
     {
@@ -94,9 +123,42 @@ public sealed class AiChatService
     {
         if (Directory.Exists(_directory))
             foreach (var file in Directory.EnumerateFiles(_directory, "*.json")) File.Delete(file);
+        if (File.Exists(_draftsPath)) File.Delete(_draftsPath);
         _sessions = [];
+        _newChatDrafts = [];
         UnreadableFileCount = 0;
         ChatsChanged?.Invoke();
+    }
+
+    // ===================== Borradores de chats nuevos =====================
+
+    /// <summary>Borradores de chats que aún no se han empezado, uno por vault y ámbito (la clave la compone
+    /// el asistente). Los de un chat empezado viven en el propio chat (<see cref="AiChatSession.Draft"/>).
+    /// Todos juntos en un archivo pequeño: solo guardan texto y referencias, nunca contenido de notas.</summary>
+    private Dictionary<string, AiChatDraft> NewChatDrafts => _newChatDrafts ??= LoadDrafts();
+
+    private Dictionary<string, AiChatDraft> LoadDrafts() =>
+        File.Exists(_draftsPath) && JsonFileStore.TryLoad<Dictionary<string, AiChatDraft>>(_draftsPath, out var drafts) && drafts is not null
+            ? new Dictionary<string, AiChatDraft>(drafts.Where(d => d.Value is not null), StringComparer.Ordinal)
+            : new Dictionary<string, AiChatDraft>(StringComparer.Ordinal);
+
+    public AiChatDraft? FindNewChatDraft(string key) => NewChatDrafts.GetValueOrDefault(key);
+
+    /// <summary>Guarda (o, vacío o <see langword="null"/>, borra) el borrador de un chat nuevo. Lanza
+    /// <see cref="IOException"/>/<see cref="UnauthorizedAccessException"/> si el disco falla.</summary>
+    public void SaveNewChatDraft(string key, AiChatDraft? draft)
+    {
+        var drafts = NewChatDrafts;
+        if (draft is null || draft.IsEmpty)
+        {
+            if (!drafts.Remove(key)) return;
+        }
+        else
+        {
+            drafts[key] = draft;
+        }
+        PrivateDataPermissions.EnsurePrivateDirectory(Path.GetDirectoryName(_draftsPath)!);
+        JsonFileStore.Save(_draftsPath, drafts);
     }
 
     private string PathFor(string id)

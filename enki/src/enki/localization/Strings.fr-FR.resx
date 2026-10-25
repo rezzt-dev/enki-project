@@ -6608,7 +6608,7 @@ Bonne rédaction.</value>
     <value>Copier la réponse</value>
   </data>
   <data name="Assistant_Message_SaveAsNote" xml:space="preserve">
-    <value>Enregistrer comme nouvelle note</value>
+    <value>Enregistrer comme nouvelle note et l’ouvrir</value>
   </data>
   <data name="Assistant_Code_Label" xml:space="preserve">
     <value>Extrait</value>
@@ -6665,7 +6665,7 @@ Bonne rédaction.</value>
     <value>Votre message sera envoyé au fournisseur choisi avec le contenu de ces notes :</value>
   </data>
   <data name="Assistant_Confirm_Summary" xml:space="preserve">
-    <value>Environ {0} caractères au total.</value>
+    <value>Environ {0} caractères au total, envoyés à {1}.</value>
   </data>
   <data name="Assistant_Confirm_DontAskAgain" xml:space="preserve">
     <value>Ne plus demander lors de l'ajout de notes</value>
@@ -7287,5 +7287,233 @@ Bonne rédaction.</value>
   </data>
   <data name="Ai_LocalOnly" xml:space="preserve">
     <value>Ce modèle Ollama utilise un serveur distant. Choisissez un modèle téléchargé pour un traitement local.</value>
+  </data>
+  <data name="Ai_ApiKey_Invalid" xml:space="preserve">
+    <value>Cela ne ressemble pas à une clé d’API Anthropic. Les clés commencent par sk-ant-.</value>
+  </data>
+  <data name="Assistant_Activity_Idle" xml:space="preserve">
+    <value>Au repos</value>
+  </data>
+  <data name="Assistant_Activity_Working" xml:space="preserve">
+    <value>En cours</value>
+  </data>
+  <data name="Assistant_Activity_NeedsDecision" xml:space="preserve">
+    <value>Attend votre décision</value>
+  </data>
+  <data name="Assistant_Activity_ResponseReady" xml:space="preserve">
+    <value>Réponse prête</value>
+  </data>
+  <data name="Assistant_Append_Title" xml:space="preserve">
+    <value>Ajouter à la note ouverte</value>
+  </data>
+  <data name="Assistant_Append_Message" xml:space="preserve">
+    <value>Cette réponse sera ajoutée à la fin de :</value>
+  </data>
+  <data name="Assistant_Append_Hint" xml:space="preserve">
+    <value>Le contenu précédent reste dans l’historique des versions de la note. Si la note change avant votre confirmation, rien n’est écrit.</value>
+  </data>
+  <data name="Assistant_Append_Confirm" xml:space="preserve">
+    <value>Ajouter</value>
+  </data>
+  <data name="Assistant_Attachment_NotText" xml:space="preserve">
+    <value>Pas un fichier texte</value>
+  </data>
+  <data name="Assistant_Attachment_TooLarge" xml:space="preserve">
+    <value>Trop volumineux (plus de 1 Mo)</value>
+  </data>
+  <data name="Assistant_Composer_SkillFixedHint" xml:space="preserve">
+    <value>La compétence guide toute la conversation : elle se choisit avant le premier message.</value>
+  </data>
+  <data name="Assistant_Draft_MissingAttachments_one" xml:space="preserve">
+    <value>{0} pièce jointe de ce brouillon n’est plus disponible et a été retirée.</value>
+  </data>
+  <data name="Assistant_Draft_MissingAttachments_other" xml:space="preserve">
+    <value>{0} pièces jointes de ce brouillon ne sont plus disponibles et ont été retirées.</value>
+  </data>
+  <data name="Assistant_Error_ApiKeyRejected" xml:space="preserve">
+    <value>Anthropic a refusé votre clé d’API, ou aucune n’est enregistrée. Vérifiez-la dans Réglages › Intelligence artificielle.</value>
+  </data>
+  <data name="Assistant_Error_Continue" xml:space="preserve">
+    <value>Continuer</value>
+  </data>
+  <data name="Assistant_Error_Continue_Tooltip" xml:space="preserve">
+    <value>Les modifications déjà faites dans le coffre ne sont pas répétées : l’assistant reprend à partir de là.</value>
+  </data>
+  <data name="Assistant_History_ClearSearch" xml:space="preserve">
+    <value>Effacer la recherche</value>
+  </data>
+  <data name="Assistant_History_Unassigned" xml:space="preserve">
+    <value>Aucun coffre attribué</value>
+  </data>
+  <data name="Assistant_History_Unassigned_Hint" xml:space="preserve">
+    <value>Enregistrées avant la séparation de l’historique par coffre. Associez-les à ce coffre pour les poursuivre ici.</value>
+  </data>
+  <data name="Assistant_Message_AppendToNote" xml:space="preserve">
+    <value>Ajouter à la note ouverte</value>
+  </data>
+  <data name="Assistant_Message_AppendToNamedNote" xml:space="preserve">
+    <value>Ajouter à « {0} »</value>
+  </data>
+  <data name="Assistant_Notify_AppendFailed_Title" xml:space="preserve">
+    <value>Impossible d’ajouter à la note</value>
+  </data>
+  <data name="Assistant_Notify_AppendConflict_Message" xml:space="preserve">
+    <value>« {0} » a changé après l’aperçu : rien n’a été écrit. Ajoutez de nouveau la réponse au contenu actuel.</value>
+  </data>
+  <data name="Assistant_Notify_Appended_Title" xml:space="preserve">
+    <value>Ajouté à la note</value>
+  </data>
+  <data name="Assistant_Notify_Appended_Message" xml:space="preserve">
+    <value>La réponse a été ajoutée à la fin de « {0} ».</value>
+  </data>
+  <data name="Assistant_Notify_AttachmentFailed_Message" xml:space="preserve">
+    <value>Certaines pièces jointes ne peuvent pas être envoyées. Chacune indique pourquoi : retirez-la ou choisissez-en une autre.</value>
+  </data>
+  <data name="Assistant_Notify_ChatAssigned_Title" xml:space="preserve">
+    <value>Conversation associée</value>
+  </data>
+  <data name="Assistant_Notify_ChatAssigned_Message" xml:space="preserve">
+    <value>« {0} » appartient maintenant au coffre {1}.</value>
+  </data>
+  <data name="Assistant_Panel_Toggle" xml:space="preserve">
+    <value>Panneau de l’assistant</value>
+  </data>
+  <data name="Assistant_Panel_History" xml:space="preserve">
+    <value>Historique</value>
+  </data>
+  <data name="Assistant_Panel_Expand" xml:space="preserve">
+    <value>Ouvrir dans la section Assistant</value>
+  </data>
+  <data name="Assistant_Panel_Close" xml:space="preserve">
+    <value>Fermer le panneau (la réponse continue)</value>
+  </data>
+  <data name="Assistant_Panel_ShowAsPanel" xml:space="preserve">
+    <value>Afficher en panneau latéral</value>
+  </data>
+  <data name="Assistant_Picker_Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="Assistant_Picker_Files" xml:space="preserve">
+    <value>Fichiers</value>
+  </data>
+  <data name="Assistant_Picker_FilesHint" xml:space="preserve">
+    <value>Seuls les fichiers texte jusqu’à 1 Mo peuvent être joints. Images, PDF et médias sont listés mais ne peuvent pas être envoyés comme texte.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Eyebrow" xml:space="preserve">
+    <value>Autorisation de recherche</value>
+  </data>
+  <data name="Assistant_ReadAccess_Question" xml:space="preserve">
+    <value>Autoriser ce chat à rechercher et consulter les documents de {0} ?</value>
+  </data>
+  <data name="Assistant_ReadAccess_Detail" xml:space="preserve">
+    <value>Ce qui est lu est envoyé à {0}. L’autorisation est conservée pour ce chat. Elle ne donne pas accès aux autres sessions ni de droits de modification supplémentaires.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Allow" xml:space="preserve">
+    <value>Autoriser dans ce chat</value>
+  </data>
+  <data name="Assistant_ReadAccess_Deny" xml:space="preserve">
+    <value>Pas maintenant</value>
+  </data>
+  <data name="Assistant_ReadAccess_Notify" xml:space="preserve">
+    <value>Souhaite rechercher et consulter les documents de {0}</value>
+  </data>
+  <data name="Assistant_ReadAccess_Title" xml:space="preserve">
+    <value>Recherche et consultation de documents</value>
+  </data>
+  <data name="Assistant_ReadAccess_Status_Granted" xml:space="preserve">
+    <value>Autorisé : il peut rechercher et consulter seul les documents de {0}.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Status_Ask" xml:space="preserve">
+    <value>Pas encore autorisé : il ne voit que ce que vous joignez et demandera avant de chercher dans {0}.</value>
+  </data>
+  <data name="Assistant_ReadAccess_RevokeHint" xml:space="preserve">
+    <value>Révoquer empêche les lectures suivantes. Cela n’efface pas ce qui a déjà été envoyé au fournisseur.</value>
+  </data>
+  <data name="Assistant_ReadAccess_Revoke" xml:space="preserve">
+    <value>Révoquer l’autorisation</value>
+  </data>
+  <data name="Assistant_ReadAccess_VaultAndSessions" xml:space="preserve">
+    <value>le coffre et ses sessions non protégées</value>
+  </data>
+  <data name="Assistant_Scope_Summary_SearchAllowed" xml:space="preserve">
+    <value>recherche autorisée</value>
+  </data>
+  <data name="Assistant_Scope_Summary_SearchAsk" xml:space="preserve">
+    <value>demande avant de rechercher</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Title" xml:space="preserve">
+    <value>Ajoutez votre clé d’API Anthropic</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Message" xml:space="preserve">
+    <value>Claude est configuré pour utiliser votre propre clé d’API et aucune n’est encore enregistrée. Enregistrez-la dans les Réglages : Enki la conserve dans le stockage sécurisé du système et ne la transmet à Claude Code qu’à l’envoi d’un message. L’utilisation de l’API est facturée par Anthropic.</value>
+  </data>
+  <data name="Assistant_Setup_ApiKey_Open" xml:space="preserve">
+    <value>Ouvrir les réglages</value>
+  </data>
+  <data name="Assistant_ToolError_ReadDenied" xml:space="preserve">
+    <value>Recherche non autorisée dans ce chat.</value>
+  </data>
+  <data name="Assistant_Transcript_JumpToEnd" xml:space="preserve">
+    <value>Aller à la fin</value>
+  </data>
+  <data name="Assistant_Unassigned_Banner" xml:space="preserve">
+    <value>Cette conversation date d’avant la séparation de l’historique par coffre. Associez-la à ce coffre pour la poursuivre ici ; elle reste dans votre historique dans tous les cas.</value>
+  </data>
+  <data name="Assistant_Unassigned_Assign" xml:space="preserve">
+    <value>Associer à ce coffre</value>
+  </data>
+  <data name="CommandPalette_Action_OpenAssistantPanel" xml:space="preserve">
+    <value>Ouvrir l’assistant dans le panneau latéral</value>
+  </data>
+  <data name="CommandPalette_Action_CloseAssistantPanel" xml:space="preserve">
+    <value>Fermer le panneau latéral de l’assistant</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_Label" xml:space="preserve">
+    <value>Utilisation de Claude</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_Subscription" xml:space="preserve">
+    <value>Abonnement</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_ApiKey" xml:space="preserve">
+    <value>Clé d’API personnelle</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_SubscriptionHelp" xml:space="preserve">
+    <value>Utilise le compte connecté dans Claude Code ; les réponses sont décomptées de votre forfait. Enki ne voit jamais vos identifiants.</value>
+  </data>
+  <data name="Settings_Ai_ClaudeAuth_ApiKeyHelp" xml:space="preserve">
+    <value>Claude Code s’exécute avec votre clé d’API Anthropic au lieu de votre abonnement, et l’utilisation est facturée au jeton par Anthropic. La clé est conservée dans le stockage sécurisé du système, jamais dans les réglages d’Enki ni dans votre coffre.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Saved" xml:space="preserve">
+    <value>Clé enregistrée : {0}</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_None" xml:space="preserve">
+    <value>Aucune clé enregistrée pour l’instant.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Placeholder" xml:space="preserve">
+    <value>Collez votre clé d’API (sk-ant-…)</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Save" xml:space="preserve">
+    <value>Enregistrer la clé</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Delete" xml:space="preserve">
+    <value>Supprimer la clé enregistrée</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_Console" xml:space="preserve">
+    <value>Gérer les clés dans la console Anthropic</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_StoreFailed" xml:space="preserve">
+    <value>Le stockage sécurisé du système n’a pas répondu : la clé n’a été ni enregistrée ni supprimée. Sous Linux, vérifiez qu’un trousseau (Secret Service) est actif.</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_SavedTitle" xml:space="preserve">
+    <value>Clé d’API enregistrée</value>
+  </data>
+  <data name="Settings_Ai_ApiKey_SavedMessage" xml:space="preserve">
+    <value>Claude l’utilisera dès le prochain message. Elle est conservée dans le stockage sécurisé du système.</value>
+  </data>
+  <data name="Settings_Navigation_ToggleAssistantPanel" xml:space="preserve">
+    <value>Ouvrir ou fermer le panneau de l’assistant</value>
+  </data>
+  <data name="Assistant_State_ApiKeyMissing" xml:space="preserve">
+    <value>Claude · aucune clé d’API enregistrée</value>
   </data>
 </root>

@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:services="clr-namespace:enki.Services"
+             xmlns:controls="clr-namespace:enki.Controls"
+             xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d"
+             x:Class="enki.Views.AssistantDialogs"
+             x:DataType="vm:AssistantViewModel">
+
+  <!-- Diálogos del asistente, compartidos por la sección y el panel. ModalOverlayHost los ancla a la ventana,
+       así que cubren toda la aplicación aunque los abra el panel estrecho. -->
+  <Panel>
+    <!-- · Borrar una conversación · -->
+    <controls:ModalOverlayHost IsOpen="{Binding PendingDeleteSession, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+            <TextBlock Text="{loc:Tr Assistant_DeleteModal_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
+                       Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Spacing="6">
+            <TextBlock Text="{loc:Tr Assistant_DeleteModal_Message}" FontSize="14" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding PendingDeleteSession.Title}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Margin="0,0,18,0" Command="{Binding CancelDeleteSessionCommand}">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmDeleteSessionCommand}">
+              <TextBlock Text="{loc:Tr Common_Delete, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- · Confirmar lo que se envía · -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsConfirmSendOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="ShieldLockOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Assistant_Confirm_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr Assistant_Confirm_Message}" FontSize="13.5" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding ConfirmSendItems}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="6" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:AiAttachmentChipViewModel">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="13" Height="13" Margin="0,0,8,0"
+                                   Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12.5" TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center" ToolTip.Tip="{Binding WorkspaceLabel}" />
+                  <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="faint" FontSize="11" Margin="12,0,0,0" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="{Binding ConfirmSendSummary}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+          <CheckBox IsChecked="{Binding SkipFutureConfirmations}">
+            <TextBlock Text="{loc:Tr Assistant_Confirm_DontAskAgain}" FontSize="12.5" TextWrapping="Wrap" />
+          </CheckBox>
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Margin="0,0,18,0" Command="{Binding CancelSendCommand}">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmSendCommand}">
+              <TextBlock Text="{loc:Tr Assistant_Composer_Send, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- · Añadir una respuesta a la nota activa: vista previa de lo que cambia · -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsAppendPreviewOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center" Width="560" MaxWidth="560">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="TextBoxPlusOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Assistant_Append_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Tr Assistant_Append_Message}" FontSize="13.5" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding AppendPreviewTitle}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
+          <Border Classes="card" Padding="2" MaxHeight="320">
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding AppendPreviewLines}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="0" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="services:DiffLine">
+                    <Border Classes="diff-line"
+                            Classes.diff-added="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}"
+                            Classes.diff-removed="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="diff-marker" Text="+"
+                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}" />
+                        <TextBlock Classes="diff-marker" Text="−"
+                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}" />
+                        <TextBlock Classes="diff-text" Text="{Binding Text}"
+                                   FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
+          <TextBlock Text="{loc:Tr Assistant_Append_Hint}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Margin="0,0,18,0" Command="{Binding CancelAppendToNoteCommand}">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmAppendToNoteCommand}">
+              <TextBlock Text="{loc:Tr Assistant_Append_Confirm, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+  </Panel>
+</UserControl>

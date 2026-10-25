@@ -47,6 +47,10 @@ public sealed record ClaudeCliStatus(
     public bool SupportsVaultTools => VaultToolsSupported ?? ClaudeCliService.VaultToolFlags.All(Capabilities.Contains);
 
     public bool SupportsEffort => EffortSupported ?? Capabilities.Contains("--effort");
+
+    /// <summary>Claude está configurado para usar la clave de API del usuario y no hay ninguna guardada: el
+    /// estado es <see cref="ClaudeCliState.SignedOut"/>, pero lo que falta es la clave, no iniciar sesión.</summary>
+    public bool NeedsApiKey { get; init; }
 }
 
 public enum ClaudeFailureKind
@@ -145,19 +149,32 @@ public sealed class ClaudeCliService
     /// CLI. Las de Anthropic (<c>ANTHROPIC_*</c>) sí pasan: son configuración del propio usuario para su CLI.</summary>
     private static readonly string[] ForeignSecretPrefixes = ["OPENAI_", "SUPABASE_", "GITHUB_TOKEN", "GH_TOKEN"];
 
+    /// <summary>Variables con las que el usuario puede haber configurado otra credencial para su CLI. Con la
+    /// clave de API de Enki se quitan, para que el turno use de verdad la clave que el usuario eligió aquí.</summary>
+    private static readonly string[] CompetingCredentialVariables = ["ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"];
+
+    public const string ApiKeyAuthMethod = "apiKey";
+
     private readonly SettingsService _settingsService;
+    private readonly AiApiKeyStore? _apiKeys;
     private readonly string _workingDirectory;
     private readonly object _detectLock = new();
     private Task<ClaudeCliStatus>? _pendingDetection;
 
     /// <param name="storageDirectory">Sustituye a <c>%AppData%/Enki</c> como raíz de la carpeta de trabajo
     /// del CLI — para que los tests no toquen la del desarrollador.</param>
-    public ClaudeCliService(SettingsService settingsService, string? storageDirectory = null)
+    /// <param name="apiKeys">Clave de API del usuario para <see cref="Models.AiSettings.ClaudeUseApi"/>; sin
+    /// almacén, ese modo se comporta como si no hubiera clave.</param>
+    public ClaudeCliService(SettingsService settingsService, string? storageDirectory = null, AiApiKeyStore? apiKeys = null)
     {
         _settingsService = settingsService;
+        _apiKeys = apiKeys;
         StorageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
         _workingDirectory = Path.Combine(StorageDirectory, "ai", "claude-workspace");
     }
+
+    /// <summary>Clave de API del usuario, si la composición la ofrece (Ajustes la guarda y la borra aquí).</summary>
+    public AiApiKeyStore? ApiKeys => _apiKeys;
 
     /// <summary>Raíz compartida por los transportes, también cuando la composición usa un disco de pruebas.</summary>
     internal string StorageDirectory { get; }
@@ -221,6 +238,13 @@ public sealed class ClaudeCliService
         if (!capabilities.Contains("--output-format") || !capabilities.Contains("--resume"))
             return new ClaudeCliStatus(ClaudeCliState.Unsupported, executable, version) { Capabilities = capabilities };
 
+        // Con la clave de API del usuario no importa con qué cuenta haya iniciado sesión el CLI: el turno se
+        // lanza con esa clave, y lo único que hay que saber es si existe.
+        if (_settingsService.Settings.Ai.ClaudeUseApi)
+            return _apiKeys?.TryRead() is null
+                ? new ClaudeCliStatus(ClaudeCliState.SignedOut, executable, version) { Capabilities = capabilities, NeedsApiKey = true }
+                : new ClaudeCliStatus(ClaudeCliState.Ready, executable, version, AuthMethod: ApiKeyAuthMethod) { Capabilities = capabilities };
+
         var (authResult, authOutput) = await RunProbeAsync(executable, ["auth", "status", "--json"]).ConfigureAwait(false);
         var status = ParseAuthStatus(authOutput, executable, version) with { Capabilities = capabilities };
         // Un CLI sin el subcomando de estado responde con error: no se sabe si hay sesión, así que se da por
@@ -255,6 +279,9 @@ public sealed class ClaudeCliService
             return new ClaudeTurnResult(string.Empty, null, ClaudeFailureKind.NotInstalled);
         if (status.State == ClaudeCliState.SignedOut)
             return new ClaudeTurnResult(string.Empty, null, ClaudeFailureKind.SignedOut);
+        string? apiKey = null;
+        if (_settingsService.Settings.Ai.ClaudeUseApi && (apiKey = _apiKeys?.TryRead()) is null)
+            return new ClaudeTurnResult(string.Empty, null, ClaudeFailureKind.SignedOut);
 
         PrivateDataPermissions.EnsurePrivateDirectory(_workingDirectory);
         var useSystemPromptFile = status.Capabilities.Contains("--system-prompt-file");
@@ -287,14 +314,16 @@ public sealed class ClaudeCliService
                 StandardInput = stdin,
                 WorkingDirectory = _workingDirectory,
                 IdleTimeout = TimeSpan.FromSeconds(_settingsService.Settings.Ai.IdleTimeoutSeconds),
-                ExcludeEnvironmentVariable = IsExcludedEnvironmentVariable,
-                EnvironmentOverrides = tools is null ? null : new Dictionary<string, string> { ["MCP_TOOL_TIMEOUT"] = McpToolTimeoutMilliseconds },
+                ExcludeEnvironmentVariable = apiKey is null
+                    ? IsExcludedEnvironmentVariable
+                    : name => IsExcludedEnvironmentVariable(name) || CompetingCredentialVariables.Contains(name, StringComparer.OrdinalIgnoreCase),
+                EnvironmentOverrides = BuildEnvironmentOverrides(tools is not null, apiKey),
                 Activity = request.Activity
             }, accumulator.OnLine, cancellationToken).ConfigureAwait(false);
 
             var result = accumulator.Complete(processResult);
             // Solo metadatos: el contenido de los prompts y las respuestas nunca pasa por el log.
-            LogService.Debug($"[ia] claude-cli: {stopwatch.ElapsedMilliseconds} ms, salida {processResult.ExitCode}, "
+            LogService.Debug($"[ia] claude-cli ({(apiKey is null ? "suscripción" : "clave de API")}): {stopwatch.ElapsedMilliseconds} ms, salida {processResult.ExitCode}, "
                 + $"{request.Prompt.Length} car. enviados, {result.Text.Length} recibidos, herramientas {(tools is null ? "no" : "sí")}, "
                 + $"resultado {result.Failure}");
             return result;
@@ -315,6 +344,17 @@ public sealed class ClaudeCliService
             if (systemPromptFile is not null) TryDelete(systemPromptFile);
             if (mcpConfigFile is not null) TryDelete(mcpConfigFile);
         }
+    }
+
+    /// <summary>Variables propias del proceso hijo: el límite de espera de las herramientas del vault y, en modo
+    /// API, la clave del usuario. Viajan solo en el entorno de ese proceso, nunca en la línea de órdenes.</summary>
+    internal static Dictionary<string, string>? BuildEnvironmentOverrides(bool vaultTools, string? apiKey)
+    {
+        if (!vaultTools && apiKey is null) return null;
+        var overrides = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (vaultTools) overrides["MCP_TOOL_TIMEOUT"] = McpToolTimeoutMilliseconds;
+        if (apiKey is not null) overrides["ANTHROPIC_API_KEY"] = apiKey;
+        return overrides;
     }
 
     /// <summary>Configuración MCP del turno: un único servidor, el del vault, por HTTP local y con el token del

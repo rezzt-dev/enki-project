@@ -37,6 +37,113 @@ public sealed partial class SettingsViewModel
     public bool IsAiOpenAi => AiProvider?.Provider == Models.AiProvider.OpenAi;
     public bool IsAiLocal => AiProvider?.Provider == Models.AiProvider.Ollama;
 
+    // ----- Claude: suscripción o clave de API propia -----
+
+    /// <summary>Claude se usa con la clave de API del usuario (facturación por uso) en vez de con su
+    /// suscripción. El CLI es el mismo; solo cambia la credencial con la que Enki lo lanza.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowAiApiKey))]
+    private bool _aiClaudeUseApi;
+
+    /// <summary>Lo que el usuario pega en el campo de la clave. Se vacía al guardarla: la clave guardada no se
+    /// vuelve a enseñar, solo sus últimos caracteres.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveAiApiKeyCommand))]
+    private string _aiApiKeyDraft = string.Empty;
+
+    [ObservableProperty]
+    private string? _aiApiKeyError;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AiApiKeyStatus), nameof(HasAiApiKey))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteAiApiKeyCommand))]
+    private string? _aiApiKeyMasked;
+
+    public bool HasAiApiKey => AiApiKeyMasked is not null;
+
+    public bool ShowAiApiKey => AiClaudeUseApi && AiCliStatus?.ApiKeys is not null;
+
+    public string AiApiKeyStatus => AiApiKeyMasked is { } masked
+        ? string.Format(LocalizationService.Instance.CurrentCulture, LocalizationService.Instance["Settings_Ai_ApiKey_Saved"], masked)
+        : LocalizationService.Instance["Settings_Ai_ApiKey_None"];
+
+    partial void OnAiClaudeUseApiChanged(bool value)
+    {
+        if (_loadingAiSettings) return;
+        _settingsService.Settings.Ai.ClaudeUseApi = value;
+        _settingsService.Save();
+        if (value) LoadAiApiKeyStatus();
+        if (AiEnabled && AiCliStatus is { IsChecking: false }) _ = AiCliStatus.RefreshAsync();
+    }
+
+    /// <summary>Solo se pregunta al almacén seguro cuando el modo de clave está activo: en macOS leer el
+    /// Keychain puede pedir permiso, y nadie que use su suscripción debería ver ese aviso.</summary>
+    private void LoadAiApiKeyStatus()
+    {
+        var key = AiClaudeUseApi ? AiCliStatus?.ApiKeys?.TryRead() : null;
+        AiApiKeyMasked = key is null ? null : AiApiKeyStore.Mask(key);
+    }
+
+    private bool CanSaveAiApiKey => AiApiKeyDraft.Trim().Length > 0;
+
+    [RelayCommand(CanExecute = nameof(CanSaveAiApiKey))]
+    private async Task SaveAiApiKey()
+    {
+        if (AiCliStatus?.ApiKeys is not { } store) return;
+        var key = AiApiKeyDraft.Trim();
+        if (!AiApiKeyStore.LooksLikeApiKey(key))
+        {
+            AiApiKeyError = LocalizationService.Instance["Ai_ApiKey_Invalid"];
+            return;
+        }
+        try
+        {
+            store.Write(key);
+        }
+        catch (Exception ex) when (AiApiKeyStore.IsStoreFailure(ex))
+        {
+            LogService.Warning("No se pudo guardar la clave de API del asistente en el almacén seguro", ex);
+            AiApiKeyError = LocalizationService.Instance["Settings_Ai_ApiKey_StoreFailed"];
+            return;
+        }
+        AiApiKeyError = null;
+        AiApiKeyDraft = string.Empty;
+        AiApiKeyMasked = AiApiKeyStore.Mask(key);
+        _notificationService.PushLocalized(LocalizedTextFormatter.Format("Settings_Ai_ApiKey_SavedTitle"),
+            LocalizedTextFormatter.Format("Settings_Ai_ApiKey_SavedMessage"), NotificationSeverity.Success);
+        if (AiEnabled && AiCliStatus is { IsChecking: false }) await AiCliStatus.RefreshAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(HasAiApiKey))]
+    private async Task DeleteAiApiKey()
+    {
+        if (AiCliStatus?.ApiKeys is not { } store) return;
+        try
+        {
+            store.Delete();
+        }
+        catch (Exception ex) when (AiApiKeyStore.IsStoreFailure(ex))
+        {
+            LogService.Warning("No se pudo borrar la clave de API del asistente del almacén seguro", ex);
+            AiApiKeyError = LocalizationService.Instance["Settings_Ai_ApiKey_StoreFailed"];
+            return;
+        }
+        AiApiKeyError = null;
+        AiApiKeyMasked = null;
+        if (AiEnabled && AiCliStatus is { IsChecking: false }) await AiCliStatus.RefreshAsync();
+    }
+
+    [RelayCommand]
+    private static void OpenAnthropicConsole() => UrlOpener.Open(AiApiKeyStore.ConsoleUrl);
+
+    partial void OnAiApiKeyDraftChanged(string value) => AiApiKeyError = null;
+
+    [RelayCommand]
+    private void UseClaudeSubscription() => AiClaudeUseApi = false;
+
+    [RelayCommand]
+    private void UseClaudeApiKey() => AiClaudeUseApi = true;
+
     [ObservableProperty]
     private string _aiCodexPath = string.Empty;
     [ObservableProperty]
@@ -153,6 +260,8 @@ public sealed partial class SettingsViewModel
         {
             var ai = _settingsService.Settings.Ai;
             AiProvider = AiProviderOptions.First(p => p.Provider == ai.Provider);
+            AiClaudeUseApi = ai.ClaudeUseApi;
+            LoadAiApiKeyStatus();
             AiCodexPath = ai.CodexCliPath;
             AiLocalEndpoint = ai.OllamaEndpoint;
             AiCustomModel = ai.ModelFor(ai.Provider);
@@ -352,6 +461,7 @@ public sealed partial class SettingsViewModel
     private void RefreshAiLocalizedLabels()
     {
         LoadAiSettings();
+        OnPropertyChanged(nameof(AiApiKeyStatus));
         AiCliStatus?.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(AiHistoryCountLabel));
     }

@@ -83,7 +83,7 @@ public sealed class AssistantViewUiTests : IDisposable
         {
             window.GetLayoutManager()!.ExecuteLayoutPass();
             if (vm.Cli.IsReady)
-                return view.FindControl<TextBox>("ComposerBox")!.IsEffectivelyVisible
+                return Find<TextBox>(view, "ComposerBox").IsEffectivelyVisible
                     && (!vm.Messages.Any(m => m.IsAssistant && m.HasText)
                         || view.GetVisualDescendants().OfType<ChatMarkdownView>().Any());
             return RenderedText(view).Contains(vm.Cli.IsSignedOut ? ClaudeCliService.LoginCommand : vm.Cli.InstallCommand,
@@ -91,6 +91,16 @@ public sealed class AssistantViewUiTests : IDisposable
         });
         return (view, vm, window, chats);
     }
+
+    /// <summary>Identidad con la que el asistente reconoce el vault de prueba (la de su ruta: estos tests no
+    /// componen <c>VaultSettingsService</c>).</summary>
+    private string VaultId => VaultSettingsService.PathIdentity(Path.Combine(_directory, "vault"));
+
+    /// <summary>Busca un control por nombre en todo el árbol: el hilo, el compositor y la cabecera son controles
+    /// propios, cada uno con su ámbito de nombres.</summary>
+    private static T Find<T>(Control root, string name) where T : Control =>
+        root.GetVisualDescendants().OfType<T>().Concat(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(root).OfType<T>())
+            .First(control => control.Name == name);
 
     private static void Pump(Func<bool> until)
     {
@@ -123,10 +133,10 @@ public sealed class AssistantViewUiTests : IDisposable
         var (view, vm, window, _) = Create(Path.Combine(_directory, "no-existe"));
         try
         {
-            var panel = view.FindControl<Grid>("HistoryPanel")!;
-            var rail = view.FindControl<Grid>("HistoryRail")!;
-            var collapse = view.FindControl<Button>("CollapseHistoryButton")!;
-            var expand = view.FindControl<Button>("ExpandHistoryButton")!;
+            var panel = Find<Grid>(view, "HistoryPanel");
+            var rail = Find<Grid>(view, "HistoryRail");
+            var collapse = Find<Button>(view, "CollapseHistoryButton");
+            var expand = Find<Button>(view, "ExpandHistoryButton");
             vm.DraftText = "Borrador pendiente";
             vm.SessionSearchText = "Mi búsqueda";
             Assert.True(panel.IsEffectivelyVisible);
@@ -171,7 +181,7 @@ public sealed class AssistantViewUiTests : IDisposable
             var text = RenderedText(view);
             Assert.Contains("Claude Code", text);
             Assert.Contains(vm.Cli.InstallCommand, text);
-            Assert.False(view.FindControl<TextBox>("ComposerBox")!.IsEffectivelyVisible);
+            Assert.False(view.GetVisualDescendants().OfType<AssistantComposerView>().Single().IsEffectivelyVisible);
             SavePreview(view, "assistant-not-installed");
         }
         finally
@@ -205,7 +215,7 @@ public sealed class AssistantViewUiTests : IDisposable
         try
         {
             Assert.True(vm.ShowWelcome);
-            Assert.True(view.FindControl<TextBox>("ComposerBox")!.IsEffectivelyVisible);
+            Assert.True(Find<TextBox>(view, "ComposerBox").IsEffectivelyVisible);
             Assert.Contains("ana@example.com · Claude Pro", RenderedText(view));
             SavePreview(view, "assistant-welcome");
         }
@@ -233,8 +243,9 @@ public sealed class AssistantViewUiTests : IDisposable
                 Role = AiChatRole.Assistant,
                 Text = "## Resumen\n\nSe decidió **lanzar el viernes** con el equipo de `beta`.\n\n- [ ] Preparar notas de versión\n- [x] Revisar QA\n\n| Tarea | Responsable |\n|---|---|\n| Notas | Ana |\n\n```bash\ndotnet test\n```"
             });
+            session.VaultId = VaultId;
             chats.Save(session);
-            settings.Settings.Ai.LastChatId = session.Id;
+            settings.Settings.Ai.LastChatByVault[VaultId] = session.Id;
         });
         try
         {
@@ -270,7 +281,7 @@ public sealed class AssistantViewUiTests : IDisposable
             vm.ToggleEffortPickerCommand.Execute(null);
             Dispatcher.UIThread.RunJobs();
             window.GetLayoutManager()!.ExecuteLayoutPass();
-            var slider = view.FindControl<Slider>("EffortSlider")!;
+            var slider = Find<Slider>(view, "EffortSlider");
             Assert.Equal(supportsEffort, slider.IsEnabled);
             Assert.Equal(!supportsEffort, vm.ShowEffortUnavailable);
             if (supportsEffort)
@@ -309,12 +320,12 @@ public sealed class AssistantViewUiTests : IDisposable
         });
         try
         {
-            var picker = view.FindControl<ComboBox>("ProviderPicker")!;
+            var picker = Find<ComboBox>(view, "ProviderPicker");
             Assert.True(picker.IsEffectivelyVisible);
             Assert.Equal(3, picker.ItemCount);
             Assert.Equal(AiProvider.OpenAi, ((AiProviderOption)picker.SelectedItem!).Provider);
             Assert.Contains("OpenAI", RenderedText(view));
-            Assert.True(view.FindControl<TextBox>("ComposerBox")!.IsEffectivelyVisible);
+            Assert.True(Find<TextBox>(view, "ComposerBox").IsEffectivelyVisible);
             Assert.False(vm.ShowSetupPanel);
             SavePreview(view, "assistant-openai");
             vm.IsSending = true;
@@ -385,8 +396,9 @@ public sealed class AssistantViewUiTests : IDisposable
                 Role = AiChatRole.Assistant, Text = "Nota creada.", Activities =
                 [new AiToolActivity { Tool = "create_note", Target = "Plan semanal", State = AiToolActivityState.Succeeded }]
             });
+            chat.VaultId = VaultId;
             chats.Save(chat);
-            settings.Settings.Ai.LastChatId = chat.Id;
+            settings.Settings.Ai.LastChatByVault[VaultId] = chat.Id;
         });
         try
         {
@@ -407,4 +419,102 @@ public sealed class AssistantViewUiTests : IDisposable
         finally { window.Close(); }
     }
 
+    [Fact]
+    public void SidePanel_SharesTheConversationAndDraft_AndOpensHistoryOnDemand()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (_, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, settings) =>
+        {
+            var chat = new AiChatSession { Title = "Plan semanal", VaultId = VaultId };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "¿Qué toca esta semana?" });
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.Assistant, Text = "Revisar el **lanzamiento**." });
+            chats.Save(chat);
+            settings.Settings.Ai.LastChatByVault[VaultId] = chat.Id;
+        });
+        try
+        {
+            vm.DraftText = "Borrador desde la sección";
+            var panel = new AssistantPanelView { DataContext = vm };
+            window.Content = panel;
+            window.Width = 420;
+            Pump(() =>
+            {
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                return panel.GetVisualDescendants().OfType<ChatMarkdownView>().Any(m => m.IsEffectivelyVisible);
+            });
+
+            var text = RenderedText(panel);
+            Assert.Contains("Plan semanal", text);
+            Assert.Contains("lanzamiento", text);
+            Assert.Equal("Borrador desde la sección", Find<TextBox>(panel, "ComposerBox").Text);
+            Assert.Contains("compact", panel.GetVisualDescendants().OfType<AssistantComposerView>().Single().Classes);
+            SavePreview(panel, "assistant-side-panel", 420, 860);
+
+            Find<Button>(panel, "PanelHistoryToggle").Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(vm.IsPanelHistoryOpen);
+            Assert.True(panel.GetVisualDescendants().OfType<AssistantHistoryList>().Single().IsEffectivelyVisible);
+            SavePreview(panel, "assistant-side-panel-history", 420, 860);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void ReadAccessCard_AsksInsideTheReply_NamingScopeAndProvider()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, settings) =>
+        {
+            var chat = new AiChatSession { Title = "Buscar", VaultId = VaultId };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Busca mis notas de viaje" });
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.Assistant, Text = "Voy a buscar." });
+            chats.Save(chat);
+            settings.Settings.Ai.LastChatByVault[VaultId] = chat.Id;
+        });
+        try
+        {
+            var reply = vm.Messages.Last();
+            reply.PendingReadAccess = new AiReadAccessRequestViewModel("Vault", "Claude");
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var text = RenderedText(view);
+            Assert.Contains(reply.PendingReadAccess.Question, text);
+            Assert.Contains("Claude", reply.PendingReadAccess.Detail);
+            Assert.DoesNotContain("[[", text);
+            SavePreview(view, "assistant-read-access");
+            reply.PendingReadAccess.AllowCommand.Execute(null);
+            Assert.True(reply.PendingReadAccess.Decision.IsCompletedSuccessfully);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void UnassignedChat_ShowsTheLinkBanner_AndLocksTheComposer()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, _) =>
+        {
+            var old = new AiChatSession { Title = "Conversación antigua" };
+            old.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Hola" });
+            chats.Save(old);
+        });
+        try
+        {
+            Assert.Contains(vm.ChatGroups, group => group.IsUnassigned);
+            vm.SelectSessionCommand.Execute(vm.Sessions.Single());
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Assistant_Unassigned_Banner"], RenderedText(view));
+            Assert.False(Find<TextBox>(view, "ComposerBox").IsEffectivelyEnabled);
+            SavePreview(view, "assistant-unassigned");
+
+            vm.AssignActiveChatToVaultCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(Find<TextBox>(view, "ComposerBox").IsEffectivelyEnabled);
+        }
+        finally { window.Close(); }
+    }
 }

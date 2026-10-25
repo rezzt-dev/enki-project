@@ -7,6 +7,13 @@
 > con Claude Code y herramientas del vault. Para su estado real consultar
 > [Asistente de IA](../../project-info/asistente-ia.md); para las decisiones confirmadas de producto,
 > interfaz y aislamiento consultar [Interfaz y agentes](interfaz-ux-agentes-ia.md).
+>
+> Estado de las fases (2026-10-25): las fases 1 a 3 están implementadas con las decisiones de producto
+> posteriores — Ollama, Codex y Claude Code como backends; clave de API propia para Claude como segunda
+> credencial del mismo CLI, en el almacén seguro del sistema; asistente con herramientas del vault en vez de
+> solo texto; inserción en la nota activa con vista previa; panel lateral, permisos de consulta por chat,
+> historial por vault y borradores. `codex app-server` se evaluó y se aplaza (ver "Fuera de alcance" en la
+> referencia del módulo).
 
 ## RESUMEN
 

@@ -63,6 +63,13 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
 
     public bool HasPendingApproval => PendingApproval is not null;
 
+    /// <summary>Petición de permiso para buscar y leer por su cuenta, si la respuesta la está esperando.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingReadAccess))]
+    private AiReadAccessRequestViewModel? _pendingReadAccess;
+
+    public bool HasPendingReadAccess => PendingReadAccess is not null;
+
     /// <summary>Añade o refresca la fila de una acción. El servidor del vault avisa con la misma instancia al
     /// empezar y al terminar, así que una segunda llamada solo actualiza la fila existente.</summary>
     public void ReportActivity(AiToolActivity activity)
@@ -106,5 +113,6 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
         foreach (var attachment in Attachments) attachment.RefreshLocalizedLabels();
         foreach (var activity in Activities) activity.RefreshLocalizedLabels();
         PendingApproval?.RefreshLocalizedLabels();
+        PendingReadAccess?.RefreshLocalizedLabels();
     }
 }

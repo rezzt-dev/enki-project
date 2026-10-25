@@ -162,6 +162,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     /// <c>Notes.ActiveEditor.IsZenMode</c> path. Set via <see cref="OnNotesPropertyChanged"/>, wired once
     /// per <see cref="Notes"/> instance in <c>InitializeShell</c>.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAssistantPanelVisible))]
     private bool _isZenMode;
 
     private void OnNotesPropertyChanged(object? sender, PropertyChangedEventArgs e)

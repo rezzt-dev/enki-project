@@ -375,6 +375,7 @@ public sealed partial class MainWindowViewModel
         _sessionService.EnsureDefaultSession();
 
         _vaultSettingsService.Reload();
+        Assistant?.ReloadForVault();
         UiZoomScale = _vaultSettingsService.Settings.UiZoomPercent / 100.0;
         QuickCapture.RefreshLocalizedLabels();
         QuickCapture.ReloadDestinations();
@@ -578,24 +579,24 @@ public sealed partial class MainWindowViewModel
     private void StartAssistantChatWithSkill(SkillFile skill)
     {
         if (!AssistantPanelEnabled || Assistant is null) return;
-        Navigate(AppPage.Assistant);
         Assistant.StartChatWithSkill(skill);
+        ShowAssistant();
     }
 
     /// <summary>"Preguntar al asistente" en Sesiones: un chat nuevo con el ámbito de esa sesión.</summary>
     private void StartAssistantChatInSession(Session session)
     {
         if (!AssistantPanelEnabled || Assistant is null) return;
-        Navigate(AppPage.Assistant);
         Assistant.StartChatInSession(session);
+        ShowAssistant();
     }
 
     /// <summary>"Preguntar al asistente sobre esta nota" de la paleta de comandos.</summary>
     private void StartAssistantChatAboutActiveNote()
     {
         if (!AssistantPanelEnabled || Assistant is null || Notes?.ActiveEditor?.Note is not { } note) return;
-        Navigate(AppPage.Assistant);
         Assistant.StartChatAboutNote(note);
+        ShowAssistant();
     }
 
     private void OpenAiSettings()

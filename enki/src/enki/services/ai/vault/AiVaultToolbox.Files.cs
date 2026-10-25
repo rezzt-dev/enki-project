@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using enki.Models;
 
 namespace enki.Services;
@@ -13,9 +12,6 @@ namespace enki.Services;
 /// al día las pestañas abiertas y los enlaces de Kanban.</summary>
 public sealed partial class AiVaultToolbox
 {
-    /// <summary>Tamaño máximo de un archivo de texto que se lee entero para el modelo.</summary>
-    private const long MaxTextFileBytes = 1_000_000;
-
     private void RegisterFolderAndFileTools()
     {
         Register("list_folders", AiToolScope.Content, AiToolEffect.Read,
@@ -122,13 +118,22 @@ public sealed partial class AiVaultToolbox
             {
                 var (workspace, file) = ExistingFile(call);
                 call.Target(AiToolTargetKind.File, file.FileName, file.FullPath);
-                if (file.Kind != VaultFileKind.Code)
-                    throw AiToolCall.Invalid($"\"{file.FileName}\" is a {file.Kind.ToString().ToLowerInvariant()} file; only text files can be read.");
-                if (file.SizeBytes > MaxTextFileBytes)
-                    throw AiToolCall.Invalid($"\"{file.FileName}\" is too large to read ({file.SizeBytes} bytes).");
-                var text = Encoding.UTF8.GetString(_vault.ReadFileBytes(file.FullPath));
-                if (text.Contains('\0', StringComparison.Ordinal))
-                    throw AiToolCall.Invalid($"\"{file.FileName}\" is not a text file.");
+                switch (AiTextFiles.Check(file))
+                {
+                    case AiTextFileProblem.NotText:
+                        throw AiToolCall.Invalid($"\"{file.FileName}\" is a {file.Kind.ToString().ToLowerInvariant()} file; only text files can be read.");
+                    case AiTextFileProblem.TooLarge:
+                        throw AiToolCall.Invalid($"\"{file.FileName}\" is too large to read ({file.SizeBytes} bytes).");
+                }
+                string text;
+                try
+                {
+                    text = AiTextFiles.Read(_vault, file.FullPath);
+                }
+                catch (InvalidDataException ex)
+                {
+                    throw AiToolCall.Invalid(ex.Message);
+                }
                 return new
                 {
                     Workspace = WorkspaceKey(workspace),
@@ -207,14 +212,7 @@ public sealed partial class AiVaultToolbox
             throw AiToolCall.Invalid($"\"{requested}\" is a note: use the note tools (read_note, move_note…).");
         if (!File.Exists(path))
             throw new AiToolException(AiToolErrorKind.NotFound, $"There is no file \"{requested}\". Use list_files.");
-        var info = new FileInfo(path);
-        return (workspace, new VaultFile
-        {
-            FullPath = path,
-            ModifiedUtc = info.LastWriteTimeUtc,
-            SizeBytes = info.Length,
-            Kind = VaultFile.KindFromPath(path)
-        });
+        return (workspace, AiTextFiles.Describe(path));
     }
 
     private static object FileSummary(AiWorkspace workspace, VaultFile file) => new

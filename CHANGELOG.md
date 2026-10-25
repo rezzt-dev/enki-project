@@ -10,6 +10,15 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- panel lateral del asistente junto a cualquier sección, sin navegar ni cambiar la nota abierta: comparte chat, borrador, adjuntos, permisos, respuesta en curso y punto de lectura con la sección `asistente`, se amplía a ella o vuelve desde ella, se redimensiona arrastrando su borde y se abre con el botón de la barra de título, `ctrl+shift+9` o la paleta de comandos.
+- indicador global del asistente en la barra de título con los estados trabajando, necesita tu decisión y respuesta lista, y estado de la respuesta en cada fila del historial; una decisión pendiente con el chat fuera de la vista se anuncia en las notificaciones.
+- permiso de consulta una vez por chat: la primera lectura por cuenta propia muestra una tarjeta dentro de la respuesta con el ámbito y el proveedor, el permiso se guarda en la conversación, se puede conceder o revocar desde el menú de ámbito y ampliar el acceso a sesiones exige aceptarlo de nuevo; `AiVaultToolbox` lo comprueba antes de cada herramienta de lectura.
+- historial del asistente separado por vault mediante una identidad estable guardada en el propio vault; las conversaciones anteriores sin vault se conservan aparte, se pueden leer y se asocian de forma expresa al vault abierto.
+- borradores persistentes por conversación y por ámbito del chat nuevo, con texto, adjuntos, skill y capacidad, guardados al cambiar de chat, de superficie o de vault y al cerrar Enki; los adjuntos que ya no existen o quedaron fuera del ámbito se retiran avisando.
+- adjuntar archivos de texto del vault además de notas, con selector de notas y archivos, formatos no compatibles visibles pero deshabilitados y motivo en el chip cuando un adjunto ya no se puede enviar.
+- modo de clave de API propia para Claude: la clave se guarda en el almacén seguro del sistema y se pasa solo al proceso del CLI oficial como `ANTHROPIC_API_KEY`, con estado, validación, borrado y pantalla de puesta en marcha propia.
+- acción «añadir a la nota activa» sobre una respuesta, con vista previa de las líneas añadidas, historial de versiones y escritura comprobada contra lo previsualizado.
+- botón «ir al final» mientras llega una respuesta y se leen mensajes anteriores, y cierre de los popovers del asistente con `escape` devolviendo el foco a su botón.
 - selección del proveedor del asistente entre Claude, OpenAI mediante el CLI oficial de Codex y modelos locales de Ollama, con configuración de ejecutables, endpoints y modelos desde `ajustes > inteligencia artificial`.
 - backends `CodexCliService`, `OllamaService` y `AiBackendService` que comparten el historial, el contexto, las herramientas del vault y los permisos existentes sin duplicar la integración de Enki.
 - soporte para descubrir modelos locales de Ollama, streaming NDJSON, capacidades de herramientas, autenticación de Codex y detección de versiones no compatibles antes de iniciar una conversación.
@@ -67,6 +76,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - documentación del módulo en `.docs/project-info/asistente-ia.md`, sección 8.9 del checklist de qa manual y pruebas de servicio, viewmodel e interfaz contra un cli de claude simulado.
 
 #### CAMBIOS
+- tras una respuesta interrumpida que ya había cambiado el vault, el reintento pasa a «continuar» y envía al modelo la lista de acciones completadas para que no las repita.
+- el compositor, el hilo, el ámbito, el modelo, el historial y los diálogos del asistente se reorganizan en controles compartidos por la sección y el panel lateral, que se construyen la primera vez que se usan.
+- «guardar como nota» indica que crea una nota nueva y la abre, y la confirmación de envío nombra el proveedor que recibirá el contenido.
 - ejecutar Codex con configuración efímera y aislamiento estricto, desactivar sus herramientas integradas y limitar Ollama a endpoints de loopback, rechazando modelos remotos y redirecciones antes de enviar contenido.
 - reconstruir el contexto local para Codex y Ollama con las acciones del vault y las respuestas interrumpidas, evitando repetir escrituras ya realizadas cuando un turno se reintenta.
 - actualizar la interfaz del asistente, los ajustes y los siete recursos de idioma para mostrar el proveedor, sus estados, comandos de inicio de sesión, modelos disponibles y limitaciones de cada transporte.
@@ -171,6 +183,15 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- assistant side panel next to any section, without navigating or changing the open note: it shares the chat, draft, attachments, permissions, running reply and reading position with the `assistant` section, can be expanded into it or opened from it, is resized by dragging its edge and opens from the title bar button, `ctrl+shift+9` or the command palette.
+- global assistant indicator in the title bar with working, needs your decision and reply ready states, and the reply status on each history row; a pending decision while the chat is out of view is also announced in notifications.
+- search permission granted once per chat: the first time the assistant wants to read on its own, a card inside the reply names the scope and the provider; the permission is stored in the conversation, can be granted or revoked from the scope menu, and widening access to sessions asks again; `AiVaultToolbox` enforces it before every read tool.
+- assistant history kept per vault through a stable identity stored in the vault itself; earlier conversations without a vault are kept apart, can be read and are linked to the open vault only on request.
+- persistent drafts per conversation and per new-chat scope, with text, attachments, skill and effort, saved when switching chats, surfaces or vaults and when closing Enki; attachments that no longer exist or fell out of scope are removed with a notice.
+- attach vault text files as well as notes, with a notes/files picker, unsupported formats listed but disabled, and the reason shown on the chip when an attachment can no longer be sent.
+- own API key mode for Claude: the key is kept in the system's secure storage and only handed to the official CLI process as `ANTHROPIC_API_KEY`, with status, validation, deletion and its own setup screen.
+- “add to the open note” action on a reply, with a preview of the added lines, version history and a write checked against what was previewed.
+- “go to the end” button while a reply streams and earlier messages are being read, and `escape` closes the assistant popovers returning focus to their button.
 - provider selection for the assistant between Claude, OpenAI through the official Codex CLI and local Ollama models, with executable, endpoint and model settings in `settings > artificial intelligence`.
 - `CodexCliService`, `OllamaService` and `AiBackendService` backends that share Enki's existing history, context, vault tools and permissions without duplicating the integration.
 - local Ollama model discovery, NDJSON streaming, tool capability detection, Codex authentication and unsupported-version checks before starting a conversation.
@@ -228,6 +249,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - module documentation in `.docs/project-info/asistente-ia.md`, section 8.9 of the manual qa checklist, and service, viewmodel and ui tests against a simulated claude cli.
 
 #### CHANGED
+- after an interrupted reply that had already changed the vault, retry becomes “continue” and tells the model which actions completed so it does not repeat them.
+- the assistant composer, transcript, scope, model, history and dialogs are reorganised into controls shared by the section and the side panel, built the first time they are used.
+- “save as note” now says it creates a new note and opens it, and the send confirmation names the provider that will receive the content.
 - run Codex with ephemeral configuration and strict isolation, disable its integrated tools, and limit Ollama to loopback endpoints while rejecting remote models and redirects before sending content.
 - rebuild local context for Codex and Ollama with vault actions and interrupted responses, avoiding repeated writes when a turn is retried.
 - update the assistant UI, settings and all seven language resources to show each provider's status, login commands, available models and transport limitations.

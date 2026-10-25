@@ -375,4 +375,56 @@ public sealed class ClaudeCliServiceTests : IDisposable
         Assert.Equal("Voy a revisar.\n\nListo.", result.Text);
     }
 
+    // ===================== Clave de API propia =====================
+
+    private (ClaudeCliService Service, TestPolarCredentialStore Store) CreateApiKeyService(string? key)
+    {
+        var settings = new SettingsService(_storageDirectory);
+        settings.Settings.Ai.ClaudeCliPath = _fake.ExecutablePath;
+        settings.Settings.Ai.ClaudeUseApi = true;
+        var store = new TestPolarCredentialStore();
+        if (key is not null) store.Write(new PolarCredentials(key, null));
+        return (new ClaudeCliService(settings, _storageDirectory, new AiApiKeyStore(store)), store);
+    }
+
+    [Fact]
+    public async Task ApiKeyMode_WithoutAKey_AsksForIt_AndDoesNotRunATurn()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (service, _) = CreateApiKeyService(null);
+
+        var status = await service.DetectAsync();
+        var result = await service.RunTurnAsync(SimpleTurn, null, CancellationToken.None);
+
+        Assert.Equal(ClaudeCliState.SignedOut, status.State);
+        Assert.True(status.NeedsApiKey);
+        Assert.Equal(ClaudeFailureKind.SignedOut, result.Failure);
+        Assert.Equal(0, _fake.TurnCount);
+    }
+
+    [Fact]
+    public async Task ApiKeyMode_PassesTheKeyOnlyThroughTheChildEnvironment()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        const string key = "sk-ant-api03-PRUEBA-0123456789abcdef";
+        var (service, _) = CreateApiKeyService(key);
+
+        var status = await service.DetectAsync();
+        var result = await service.RunTurnAsync(SimpleTurn, null, CancellationToken.None);
+
+        Assert.Equal(ClaudeCliState.Ready, status.State);
+        Assert.Equal(ClaudeCliService.ApiKeyAuthMethod, status.AuthMethod);
+        Assert.True(result.Succeeded);
+        Assert.Contains("ANTHROPIC_API_KEY=" + key, _fake.Environment(0), StringComparison.Ordinal);
+        Assert.DoesNotContain(key, string.Join(' ', _fake.Arguments(0)), StringComparison.Ordinal);
+        Assert.DoesNotContain(key, _fake.Stdin(0), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildEnvironmentOverrides_OnlyWhenThereIsSomethingToPass()
+    {
+        Assert.Null(ClaudeCliService.BuildEnvironmentOverrides(vaultTools: false, apiKey: null));
+        Assert.Equal(["MCP_TOOL_TIMEOUT"], ClaudeCliService.BuildEnvironmentOverrides(true, null)!.Keys);
+        Assert.Equal("k", ClaudeCliService.BuildEnvironmentOverrides(false, "k")!["ANTHROPIC_API_KEY"]);
+    }
 }

@@ -15,13 +15,18 @@ namespace enki.ViewModels;
 
 /// <summary>Ámbito de la conversación: vault o sesión fija. Solo los chats del vault pueden habilitar
 /// acceso a sesiones sin protección; un chat de sesión nunca sale de su espacio. El ámbito se elige antes
-/// del primer mensaje y se muestra siempre en la cabecera y bajo el compositor.</summary>
+/// del primer mensaje y se muestra siempre en la cabecera y bajo el compositor. Aquí vive también el permiso
+/// de consulta del chat: si el asistente puede buscar y leer por su cuenta dentro de ese ámbito o solo ve lo
+/// que se le adjunta.</summary>
 public sealed partial class AssistantViewModel
 {
     /// <summary>Ámbito elegido para el chat que se va a empezar.</summary>
     private string? _draftSessionId;
     private string? _draftSessionName;
     private bool _draftFullAccess;
+
+    /// <summary>Permiso de consulta concedido desde la cabecera antes del primer mensaje; pasa al chat al crearlo.</summary>
+    private AiReadGrant? _draftReadAccess;
 
     /// <summary>La sesión del ámbito tal como está ahora en el vault (se resuelve en <see cref="RefreshScope"/>
     /// y no en cada lectura: listar sesiones lee sus manifiestos del disco).</summary>
@@ -94,7 +99,8 @@ public sealed partial class AssistantViewModel
                 (true, false) => "Assistant_Scope_Summary_Session",
                 (true, true) => "Assistant_Scope_Summary_Auto"
             };
-            var summary = string.Format(LocalizationService.Instance.CurrentCulture, LocalizationService.Instance[key], ScopeLabel);
+            var summary = string.Format(LocalizationService.Instance.CurrentCulture, LocalizationService.Instance[key], ScopeLabel)
+                + " · " + LocalizationService.Instance[ReadAccessGranted ? "Assistant_Scope_Summary_SearchAllowed" : "Assistant_Scope_Summary_SearchAsk"];
             return _settingsService.Settings.Ai.AllowVaultChanges
                 ? summary
                 : summary + " · " + LocalizationService.Instance["Assistant_Scope_Summary_ReadOnly"];
@@ -131,27 +137,37 @@ public sealed partial class AssistantViewModel
         IsScopePickerOpen = !IsScopePickerOpen;
     }
 
+    /// <summary>Cambia el espacio del chat que se va a empezar. Lo escrito y la skill se conservan —el borrador
+    /// pasa a ser el del espacio nuevo—, pero los adjuntos que queden fuera de él se retiran: adjuntar no puede
+    /// ser una forma de saltarse el ámbito.</summary>
     [RelayCommand]
     private void PickScope(AiScopeOptionViewModel? option)
     {
         if (option is null || !option.IsEnabled || !CanChangeWorkspace) return;
+        IsScopePickerOpen = false;
+        if (option.Session?.Id == _draftSessionId) return;
+        ClearNewChatDraft(NewChatDraftKey);
         _draftSessionId = option.Session?.Id;
         _draftSessionName = option.Session?.Name;
-        // El acceso ampliado significa cosas distintas en cada clase de chat: no se arrastra de una a otra.
+        // El acceso ampliado y el permiso de consulta significan cosas distintas en cada espacio: no se arrastran.
         _draftFullAccess = false;
-        PendingAttachments.Clear();
-        IsScopePickerOpen = false;
+        _draftReadAccess = null;
         RefreshScope();
+        foreach (var chip in PendingAttachments.Where(c => c.FullPath is null || !IsPathInScope(c.FullPath)).ToList())
+            PendingAttachments.Remove(chip);
+        ScheduleDraftSave();
     }
 
     /// <summary>Abre un chat nuevo dentro de <paramref name="session"/> — "Preguntar al asistente" de Sesiones.</summary>
     public void StartChatInSession(Session session)
     {
         if (IsSending) return;
+        SaveDraft();
         StartNewChat();
         _draftSessionId = session.Id;
         _draftSessionName = session.Name;
         RefreshScope();
+        RestoreDraft();
         ComposerFocusRequested?.Invoke();
     }
 
@@ -163,7 +179,7 @@ public sealed partial class AssistantViewModel
         try
         {
             foreach (var session in _sessionService.List())
-                ScopeOptions.Add(new AiScopeOptionViewModel(session, !_sessionService.IsUnlocked(session))
+                ScopeOptions.Add(new AiScopeOptionViewModel(session, !_sessionService.IsUnlocked(session), ScopeNameFor(session.Id, session.Name))
                 {
                     IsSelected = session.Id == ScopeSessionId
                 });
@@ -208,6 +224,7 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(ScopeSummary));
         OnPropertyChanged(nameof(ScopeWarning));
         OnPropertyChanged(nameof(HasScopeWarning));
+        RefreshReadAccessState();
         RefreshActiveNote();
         RebuildSessionList();
     }
@@ -215,33 +232,113 @@ public sealed partial class AssistantViewModel
     /// <summary>Si una nota cae dentro del ámbito del chat: la raíz del vault solo con un chat del vault; una sesión, si es la del chat o —sin contraseña— con acceso ampliado del vault,
     /// y siempre desbloqueada.
     /// Rige también qué notas se pueden adjuntar, para que adjuntar no sea una forma de saltarse el ámbito.</summary>
-    private bool IsInScope(NoteFile note)
+    private bool IsInScope(NoteFile note) => IsPathInScope(note.FullPath);
+
+    /// <summary>Lo mismo para cualquier ruta del vault (archivos adjuntos, borradores restaurados). Nunca entra
+    /// en las carpetas internas del vault (papelera, adjuntos de notas, configuración).</summary>
+    private bool IsPathInScope(string fullPath)
     {
+        if (!_vaultService.IsVaultConfigured || !VaultService.IsWithinFolder(fullPath, _vaultService.VaultPath)) return false;
+        var relative = Path.GetRelativePath(_vaultService.VaultPath, fullPath).Replace('\\', '/');
+        if (relative.Split('/').Any(segment => segment.StartsWith('.'))) return false;
         var scope = CurrentScope;
-        var session = _sessionService?.List().FirstOrDefault(s => VaultService.IsWithinFolder(note.FullPath, s.RootPath));
+        var session = _sessionService?.List().FirstOrDefault(s => VaultService.IsWithinFolder(fullPath, s.RootPath));
         return session is null
-            ? scope.IncludesVault && VaultService.IsWithinFolder(note.FullPath, _vaultService.VaultPath)
+            ? scope.IncludesVault && !_vaultService.IsPathInLockedSession(fullPath)
             : scope.Includes(session) && _sessionService!.IsUnlocked(session);
     }
 
-    private AiScopeNotice BuildScopeNotice() => new(
+    private AiScopeNotice BuildScopeNotice(AiChatSession session) => new(
         IsSessionChat ? ScopeLabel : null,
         SessionMissing: IsSessionChat && _scopeSession is null,
         FullVaultAccess,
         _settingsService.Settings.Ai.AllowVaultChanges,
         _isPolarLinked(),
         DateTimeOffset.Now,
-        TimeZoneInfo.Local.Id);
+        TimeZoneInfo.Local.Id,
+        HasReadAccess(session));
 
     private void ResetDraftScope()
     {
         _draftSessionId = null;
         _draftSessionName = null;
         _draftFullAccess = false;
+        _draftReadAccess = null;
+    }
+
+    // ===================== Permiso de consulta =====================
+
+    /// <summary>El chat abierto (o el que se va a empezar) puede buscar y leer por su cuenta en su ámbito
+    /// actual. Un permiso dado solo para la raíz no cubre el acceso a sesiones activado después.</summary>
+    public bool ReadAccessGranted => _activeSession is { } session
+        ? HasReadAccess(session)
+        : _draftReadAccess is { } grant && Covers(grant, _draftSessionId is not null, _draftFullAccess);
+
+    private static bool HasReadAccess(AiChatSession session) =>
+        session.ReadAccess is { } grant && Covers(grant, session.SessionId is not null, session.FullVaultAccess);
+
+    private static bool Covers(AiReadGrant grant, bool sessionChat, bool fullVaultAccess) =>
+        sessionChat || !fullVaultAccess || grant.IncludesSessions;
+
+    /// <summary>Qué se autoriza a consultar: el nombre de la sesión, el vault, o el vault con sus sesiones.</summary>
+    private string ReadAccessTargetLabel(AiChatSession session) => session.SessionId is { } id
+        ? ScopeNameFor(id, session.SessionName)
+        : LocalizationService.Instance[session.FullVaultAccess ? "Assistant_ReadAccess_VaultAndSessions" : "Assistant_Scope_Vault"];
+
+    /// <summary>Línea del menú de ámbito que dice qué puede hacer ahora el chat por su cuenta.</summary>
+    public string ReadAccessStatus => string.Format(LocalizationService.Instance.CurrentCulture,
+        LocalizationService.Instance[ReadAccessGranted ? "Assistant_ReadAccess_Status_Granted" : "Assistant_ReadAccess_Status_Ask"],
+        _activeSession is { } session ? ReadAccessTargetLabel(session) : DraftReadAccessTargetLabel);
+
+    private string DraftReadAccessTargetLabel => _draftSessionId is { } id
+        ? ScopeNameFor(id, _draftSessionName)
+        : LocalizationService.Instance[_draftFullAccess ? "Assistant_ReadAccess_VaultAndSessions" : "Assistant_Scope_Vault"];
+
+    public bool CanChangeReadAccess => VaultToolsAvailable && !IsUnassignedChat;
+
+    [RelayCommand]
+    private void AllowReadAccess()
+    {
+        if (!CanChangeReadAccess || ReadAccessGranted) return;
+        if (_activeSession is { } session) GrantReadAccess(session);
+        else
+        {
+            _draftReadAccess = new AiReadGrant { IncludesSessions = _draftSessionId is null && _draftFullAccess };
+            RefreshScope();
+        }
+    }
+
+    /// <summary>Revocar impide las lecturas siguientes —también dentro de una respuesta en curso—, pero no borra
+    /// lo que ya se envió al proveedor; el menú lo explica junto al botón.</summary>
+    [RelayCommand]
+    private void RevokeReadAccess()
+    {
+        if (_activeSession is { ReadAccess: not null } session)
+        {
+            session.ReadAccess = null;
+            TrySaveSession(session, touch: false);
+        }
+        _draftReadAccess = null;
+        RefreshScope();
+    }
+
+    private void GrantReadAccess(AiChatSession session)
+    {
+        session.ReadAccess = new AiReadGrant { IncludesSessions = session.SessionId is null && session.FullVaultAccess };
+        TrySaveSession(session, touch: false);
+        if (session == _activeSession) RefreshScope();
+    }
+
+    private void RefreshReadAccessState()
+    {
+        OnPropertyChanged(nameof(ReadAccessGranted));
+        OnPropertyChanged(nameof(ReadAccessStatus));
+        OnPropertyChanged(nameof(CanChangeReadAccess));
     }
 
     private void RefreshScopeLocalizedLabels()
     {
+        RefreshReadAccessState();
         OnPropertyChanged(nameof(ScopeLabel));
         OnPropertyChanged(nameof(ScopeBadge));
         OnPropertyChanged(nameof(FullAccessLabel));
@@ -253,7 +350,7 @@ public sealed partial class AssistantViewModel
 }
 
 /// <summary>Una fila del selector de ámbito: el vault o una sesión.</summary>
-public sealed partial class AiScopeOptionViewModel(Session? session, bool isLocked) : ObservableObject
+public sealed partial class AiScopeOptionViewModel(Session? session, bool isLocked, string? displayName = null) : ObservableObject
 {
     public Session? Session { get; } = session;
 
@@ -264,7 +361,8 @@ public sealed partial class AiScopeOptionViewModel(Session? session, bool isLock
     /// <summary>Una sesión bloqueada no se puede elegir: su contenido no se puede leer hasta desbloquearla.</summary>
     public bool IsEnabled => !IsLocked;
 
-    public string Name => Session?.Name ?? LocalizationService.Instance["Assistant_Scope_Vault"];
+    /// <summary>Nombre visible; con dos sesiones del mismo nombre lleva el principio de su identificador.</summary>
+    public string Name => Session is null ? LocalizationService.Instance["Assistant_Scope_Vault"] : displayName ?? Session.Name;
 
     public string Detail => Session is null
         ? LocalizationService.Instance["Assistant_Scope_Vault_Detail"]
