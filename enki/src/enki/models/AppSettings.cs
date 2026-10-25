@@ -720,4 +720,8 @@ public sealed class AppSettings
 
     /// <summary>Orden de las hasta 3 secciones fijadas en el grupo inferior del sidebar, junto a Ajustes.</summary>
     public List<string> SidebarBottomSectionOrder { get; set; } = [];
+
+    /// <summary>Nombres personalizados de las secciones del sidebar, por clave (<c>AppPage</c>). Una sección
+    /// sin entrada usa su nombre localizado por defecto.</summary>
+    public Dictionary<string, string> SidebarSectionNames { get; set; } = [];
 }

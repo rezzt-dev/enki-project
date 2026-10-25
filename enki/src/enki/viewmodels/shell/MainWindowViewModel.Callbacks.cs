@@ -94,7 +94,7 @@ public sealed partial class MainWindowViewModel
             var page = Enum.Parse<AppPage>(key);
             if (!IsSidebarSectionEnabled(page)) continue;
             var meta = SidebarSectionCatalog.Meta[key];
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
+            NavItems.Add(new NavItemViewModel { Label = SidebarSectionCatalog.CustomName(_settingsService.Settings.SidebarSectionNames, key) ?? LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
         }
 
         BottomNavItems.Clear();
@@ -103,7 +103,7 @@ public sealed partial class MainWindowViewModel
             var page = Enum.Parse<AppPage>(key);
             if (!IsSidebarSectionEnabled(page)) continue;
             var meta = SidebarSectionCatalog.Meta[key];
-            BottomNavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
+            BottomNavItems.Add(new NavItemViewModel { Label = SidebarSectionCatalog.CustomName(_settingsService.Settings.SidebarSectionNames, key) ?? LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
         }
 
         foreach (var item in NavItems) item.IsActive = activePages.Contains(item.Page);
