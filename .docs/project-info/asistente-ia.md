@@ -21,13 +21,25 @@ lateral** que se abre junto a cualquier otra sección. El historial es **de cada
 
 - `AssistantViewModel` es una sola instancia. La sección (`AssistantView`) y el panel (`AssistantPanelView`)
   se componen de los mismos controles: `AssistantTranscriptView` (puesta en marcha, hilo, bienvenida, error),
-  `AssistantComposerView`, `AssistantScopeButton`, `AssistantModelControls` y `AssistantHistoryList`. El panel
-  los marca con la clase `compact`. Los diálogos (`AssistantDialogs`) los monta una sola vez el shell.
-- El compositor reúne el texto, los adjuntos y la barra de acciones en un marco de borde recto, que
-  destaca al recibir el foco. Enviar o detener conserva su espacio a la derecha; las acciones auxiliares
-  pasan a otra línea cuando falta ancho. El botón de información abre al pulsarlo un popover con el
-  ámbito del chat, el aviso del proveedor y los atajos de teclado, sin ocupar altura bajo el compositor.
-  Se cierra pulsando fuera, de nuevo en el botón o con Escape.
+  `AssistantWelcomeView` (bienvenida de un chat vacío y sugerencias), `AssistantComposerView`,
+  `AssistantScopeButton`, `AssistantModelControls` y `AssistantHistoryList`. El panel los marca con la clase
+  `compact`. Los diálogos (`AssistantDialogs`) los monta una sola vez el shell.
+- El compositor reúne el texto, los adjuntos y la barra de acciones en un único marco de borde recto, con
+  el mismo fondo y sin línea entre ambos; el borde sube de tinta al pasar el cursor y al recibir el foco, y
+  pulsar en cualquier hueco del marco lleva al cuadro de texto. Enviar (flecha, sólido) o detener
+  (contorno) son un cuadrado fijo a la derecha; enviar deshabilitado es un hueco apenas marcado, para que se
+  note al instante cuándo hay algo que mandar. Las acciones auxiliares pasan a otra línea cuando falta
+  ancho. Mientras se escribe, la sección enseña los atajos de teclado junto a las acciones; el botón de
+  información abre al pulsarlo un popover con el ámbito del chat, el aviso del proveedor y los atajos, sin
+  ocupar altura bajo el compositor. Se cierra pulsando fuera, de nuevo en el botón o con Escape.
+- **Chat vacío en la sección.** La bienvenida (`AssistantWelcomeView` con la clase `hero`) se centra en la
+  vista con el compositor en medio: el titular encima, las sugerencias debajo. Cabecera y sugerencias
+  comparten alto (`SharedSizeGroup`), así que el compositor queda en el centro exacto vertical y
+  horizontal; si la ventana es baja, la bienvenida se desplaza. Al enviar el primer mensaje (o abrir un
+  chat con mensajes) el compositor baja al pie del hilo, y vuelve al centro con un chat nuevo. Es siempre
+  el mismo control, que `AssistantView` cambia de hueco: el borrador, los adjuntos, los popovers y el foco
+  no se pierden. El hilo compartido se marca `external-welcome` para no pintar su propia bienvenida
+  detrás. En el panel, por su ancho, la bienvenida queda en el hilo y el compositor fijo abajo.
 - El panel vive en la columna derecha de `ShellView`, con ancho ajustable (`AiSettings.PanelWidth`,
   340–720 px). Su vista y los diálogos se construyen la primera vez que hacen falta, para no encarecer el
   arranque con la IA apagada.

@@ -15,18 +15,27 @@
 
   <!-- Lo que se ve entre la cabecera y el compositor del asistente, compartido por la sección y el panel
        lateral: comprobación del proveedor, puesta en marcha (instalar, iniciar sesión, clave de API,
-       actualizar), la conversación o la bienvenida de un chat vacío, y el error del último turno. El host la
-       marca con la clase "compact" en el panel, donde los márgenes y la rejilla de sugerencias se estrechan. -->
+       actualizar), la conversación o la bienvenida de un chat vacío, y el error del último turno. El panel la
+       marca con la clase "compact", donde los márgenes y el titular se estrechan; la sección, con
+       "external-welcome", porque monta su propia bienvenida con el compositor centrado. -->
 
   <UserControl.Styles>
+    <!-- Márgenes por estilo y no en el XAML de cada control: un valor local le gana a cualquier estilo, y la
+         variante "compact" de abajo no llegaría a aplicarse. -->
+    <Style Selector="ItemsControl#MessageList">
+      <Setter Property="Margin" Value="32,24,32,16" />
+    </Style>
+    <Style Selector="StackPanel#SetupPanel">
+      <Setter Property="Margin" Value="32,48" />
+    </Style>
+    <Style Selector="Border#ErrorBox">
+      <Setter Property="Margin" Value="32,0,32,10" />
+    </Style>
     <Style Selector="views|AssistantTranscriptView.compact ItemsControl#MessageList">
       <Setter Property="Margin" Value="16,16,16,12" />
     </Style>
-    <Style Selector="views|AssistantTranscriptView.compact StackPanel#WelcomePanel">
-      <Setter Property="Margin" Value="18,28,18,16" />
-    </Style>
-    <Style Selector="views|AssistantTranscriptView.compact UniformGrid#SuggestionGrid">
-      <Setter Property="Columns" Value="1" />
+    <Style Selector="views|AssistantTranscriptView.external-welcome Panel#WelcomeHost">
+      <Setter Property="IsVisible" Value="False" />
     </Style>
     <Style Selector="views|AssistantTranscriptView.compact StackPanel#SetupPanel">
       <Setter Property="Margin" Value="18,28" />
@@ -50,7 +59,7 @@
 
     <!-- · Puesta en marcha: instalar, iniciar sesión, guardar la clave de API o actualizar · -->
     <ScrollViewer Grid.Row="0" Grid.RowSpan="2" IsVisible="{Binding ShowSetupPanel}">
-      <StackPanel x:Name="SetupPanel" MaxWidth="600" Margin="32,48" Spacing="22" HorizontalAlignment="Center">
+      <StackPanel x:Name="SetupPanel" MaxWidth="600" Spacing="22" HorizontalAlignment="Center">
         <StackPanel Spacing="10">
           <TextBlock Text="{loc:Tr Assistant_Setup_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
           <TextBlock Text="{loc:Tr Assistant_Setup_NotInstalled_Title}" Classes="page-title" TextWrapping="Wrap"
@@ -148,7 +157,7 @@
     <!-- · Conversación o bienvenida · -->
     <Grid Grid.Row="0" IsVisible="{Binding Cli.IsReady}">
       <ScrollViewer x:Name="TranscriptScroll" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasMessages}">
-        <ItemsControl x:Name="MessageList" ItemsSource="{Binding Messages}" MaxWidth="860" Margin="32,24,32,16">
+        <ItemsControl x:Name="MessageList" ItemsSource="{Binding Messages}" MaxWidth="860">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <StackPanel Spacing="22" />
@@ -352,77 +361,17 @@
         </StackPanel>
       </Button>
 
-      <!-- Bienvenida de un chat vacío: las sugerencias rellenan el compositor, nunca envían solas. -->
-      <ScrollViewer IsVisible="{Binding ShowWelcome}">
-        <StackPanel x:Name="WelcomePanel" MaxWidth="640" Margin="32,56,32,24" Spacing="24" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <StackPanel Spacing="10">
-            <TextBlock Text="{loc:Tr Assistant_Welcome_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-            <TextBlock Text="{loc:Tr Assistant_Welcome_Title}" Classes="page-title" TextWrapping="Wrap" />
-            <TextBlock Text="{loc:Tr Assistant_Welcome_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
-                       IsVisible="{Binding !VaultToolsAvailable}" />
-            <TextBlock Text="{loc:Tr Assistant_Welcome_MessageTools}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
-                       IsVisible="{Binding VaultToolsAvailable}" />
-          </StackPanel>
-          <UniformGrid x:Name="SuggestionGrid" Columns="2" ColumnSpacing="10" RowSpacing="10">
-            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_SummarizeNote">
-              <StackPanel Spacing="6">
-                <mi:MaterialIcon Kind="TextBoxOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
-                <TextBlock Text="{loc:Tr Assistant_Suggestion_SummarizeNote_Label}" FontSize="12.5" TextWrapping="Wrap" />
-              </StackPanel>
-            </Button>
-            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_TasksNote">
-              <StackPanel Spacing="6">
-                <mi:MaterialIcon Kind="CheckboxMarkedOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
-                <TextBlock Text="{loc:Tr Assistant_Suggestion_TasksNote_Label}" FontSize="12.5" TextWrapping="Wrap" />
-              </StackPanel>
-            </Button>
-            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Rewrite">
-              <StackPanel Spacing="6">
-                <mi:MaterialIcon Kind="FormatTextVariantOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
-                <TextBlock Text="{loc:Tr Assistant_Suggestion_Rewrite_Label}" FontSize="12.5" TextWrapping="Wrap" />
-              </StackPanel>
-            </Button>
-            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Ideas">
-              <StackPanel Spacing="6">
-                <mi:MaterialIcon Kind="LightbulbOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
-                <TextBlock Text="{loc:Tr Assistant_Suggestion_Ideas_Label}" FontSize="12.5" TextWrapping="Wrap" />
-              </StackPanel>
-            </Button>
-            <!-- Sugerencias que trabajan sobre el vault: solo con herramientas. -->
-            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Agenda"
-                    IsVisible="{Binding VaultToolsAvailable}">
-              <StackPanel Spacing="6">
-                <mi:MaterialIcon Kind="CalendarBlankOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
-                <TextBlock Text="{loc:Tr Assistant_Suggestion_Agenda_Label}" FontSize="12.5" TextWrapping="Wrap" />
-              </StackPanel>
-            </Button>
-            <Button Classes="ghost-card" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                    Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Organize"
-                    IsVisible="{Binding VaultToolsAvailable}">
-              <StackPanel Spacing="6">
-                <mi:MaterialIcon Kind="TagMultipleOutline" Width="16" Height="16" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
-                <TextBlock Text="{loc:Tr Assistant_Suggestion_Organize_Label}" FontSize="12.5" TextWrapping="Wrap" />
-              </StackPanel>
-            </Button>
-          </UniformGrid>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="ShieldLockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
-            <TextBlock Text="{loc:Tr Assistant_Welcome_Privacy}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"
-                       IsVisible="{Binding !VaultToolsAvailable}" />
-            <TextBlock Text="{loc:Tr Assistant_Welcome_PrivacyTools}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"
-                       IsVisible="{Binding VaultToolsAvailable}" />
-          </StackPanel>
-        </StackPanel>
-      </ScrollViewer>
+      <!-- Bienvenida de un chat vacío. La sección la desactiva aquí (clase "external-welcome") y monta la suya
+           propia con el compositor en medio; el panel la usa tal cual, con el compositor fijo abajo. -->
+      <Panel x:Name="WelcomeHost">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding ShowWelcome}">
+          <views:AssistantWelcomeView />
+        </ScrollViewer>
+      </Panel>
     </Grid>
 
     <!-- · Error del último turno · -->
-    <Border x:Name="ErrorBox" Grid.Row="1" Margin="32,0,32,10" MaxWidth="860" Padding="14,12" BorderThickness="1"
+    <Border x:Name="ErrorBox" Grid.Row="1" MaxWidth="860" Padding="14,12" BorderThickness="1"
             BorderBrush="{DynamicResource DangerBrush}" Background="{DynamicResource Ink05}"
             IsVisible="{Binding HasError}">
       <Grid ColumnDefinitions="Auto,*">

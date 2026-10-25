@@ -1,0 +1,161 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:views="clr-namespace:enki.Views"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="860" d:DesignHeight="640"
+             x:Class="enki.Views.AssistantWelcomeView"
+             x:DataType="vm:AssistantViewModel">
+
+  <!-- Bienvenida de un chat vacío, compartida por el panel lateral (dentro de AssistantTranscriptView, con el
+       compositor fijo abajo) y la sección (clase "hero", con el compositor dentro de ComposerSlot). En "hero"
+       la cabecera y las sugerencias comparten alto (SharedSizeGroup, con Grid.IsSharedSizeScope puesto por el
+       host), así que el compositor queda en el centro exacto de la bienvenida y esta, centrada en la vista.
+       Las sugerencias rellenan el compositor, nunca envían solas. -->
+
+  <UserControl.Styles>
+    <Style Selector="Button.suggestion">
+      <Setter Property="Padding" Value="14,11" />
+    </Style>
+    <Style Selector="Button.suggestion mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource Ink50}" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.suggestion:pointerover mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- · Panel: columna estrecha alineada a la izquierda · -->
+    <Style Selector="Grid#WelcomeLayout">
+      <Setter Property="MaxWidth" Value="640" />
+      <Setter Property="Margin" Value="18,28,18,16" />
+    </Style>
+    <Style Selector="StackPanel#WelcomeFooter">
+      <Setter Property="Margin" Value="0,24,0,0" />
+    </Style>
+    <Style Selector="UniformGrid#SuggestionGrid">
+      <Setter Property="Columns" Value="1" />
+    </Style>
+    <Style Selector="Border#WelcomeMark">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- · Sección: bloque centrado, con el compositor en medio · -->
+    <Style Selector="views|AssistantWelcomeView.hero Grid#WelcomeLayout">
+      <Setter Property="MaxWidth" Value="760" />
+      <Setter Property="Margin" Value="40,32" />
+    </Style>
+    <Style Selector="views|AssistantWelcomeView.hero StackPanel#WelcomeHeader">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,0,28" />
+    </Style>
+    <Style Selector="views|AssistantWelcomeView.hero StackPanel#WelcomeHeader TextBlock">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style Selector="views|AssistantWelcomeView.hero TextBlock#WelcomeEyebrow">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="views|AssistantWelcomeView.hero Border#WelcomeMark">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="views|AssistantWelcomeView.hero StackPanel#WelcomeFooter">
+      <Setter Property="Margin" Value="0,20,0,0" />
+    </Style>
+    <Style Selector="views|AssistantWelcomeView.hero UniformGrid#SuggestionGrid">
+      <Setter Property="Columns" Value="2" />
+    </Style>
+    <Style Selector="views|AssistantWelcomeView.hero Grid#PrivacyNote">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid x:Name="WelcomeLayout" VerticalAlignment="Center">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" SharedSizeGroup="WelcomeBalance" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" SharedSizeGroup="WelcomeBalance" />
+    </Grid.RowDefinitions>
+
+    <StackPanel x:Name="WelcomeHeader" Grid.Row="0" Spacing="10" VerticalAlignment="Bottom">
+      <Border x:Name="WelcomeMark" Width="44" Height="44" Margin="0,0,0,8" HorizontalAlignment="Center"
+              BorderBrush="{DynamicResource Ink15}" BorderThickness="1" Background="{DynamicResource Ink05}">
+        <mi:MaterialIcon Kind="Creation" Width="20" Height="20" Foreground="{DynamicResource Ink70}" />
+      </Border>
+      <TextBlock x:Name="WelcomeEyebrow" Text="{loc:Tr Assistant_Welcome_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+      <TextBlock Text="{loc:Tr Assistant_Welcome_Title}" Classes="page-title" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Tr Assistant_Welcome_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap" MaxWidth="600"
+                 IsVisible="{Binding !VaultToolsAvailable}" />
+      <TextBlock Text="{loc:Tr Assistant_Welcome_MessageTools}" Classes="muted" FontSize="13.5" TextWrapping="Wrap" MaxWidth="600"
+                 IsVisible="{Binding VaultToolsAvailable}" />
+    </StackPanel>
+
+    <Decorator x:Name="ComposerSlot" Grid.Row="1" />
+
+    <StackPanel x:Name="WelcomeFooter" Grid.Row="2" Spacing="20" VerticalAlignment="Top">
+      <UniformGrid x:Name="SuggestionGrid" ColumnSpacing="10" RowSpacing="10">
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_SummarizeNote">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="TextBoxOutline" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_SummarizeNote_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_TasksNote">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="CheckboxMarkedOutline" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_TasksNote_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Rewrite">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="FormatTextVariantOutline" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_Rewrite_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Ideas">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="LightbulbOutline" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_Ideas_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <!-- Sugerencias que trabajan sobre el vault: solo con herramientas. -->
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Agenda"
+                IsVisible="{Binding VaultToolsAvailable}">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="CalendarBlankOutline" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_Agenda_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Organize"
+                IsVisible="{Binding VaultToolsAvailable}">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="TagMultipleOutline" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_Organize_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </UniformGrid>
+      <!-- Rejilla y no StackPanel horizontal: este da ancho infinito al texto, que no llegaba a partirse en el
+           ancho del panel. -->
+      <Grid x:Name="PrivacyNote" ColumnDefinitions="Auto,*">
+        <mi:MaterialIcon Kind="ShieldLockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,8,0" />
+        <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Welcome_Privacy}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"
+                   IsVisible="{Binding !VaultToolsAvailable}" />
+        <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Welcome_PrivacyTools}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"
+                   IsVisible="{Binding VaultToolsAvailable}" />
+      </Grid>
+    </StackPanel>
+  </Grid>
+</UserControl>

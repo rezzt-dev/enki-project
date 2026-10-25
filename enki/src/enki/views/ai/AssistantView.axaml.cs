@@ -7,8 +7,9 @@ using enki.ViewModels;
 namespace enki.Views;
 
 /// <summary>Sección Asistente. El hilo, el compositor y el historial son controles compartidos con el panel
-/// lateral, cada uno con su propia mecánica de vista; aquí solo queda el renombrado del título en línea. Todo lo
-/// demás vive en <see cref="AssistantViewModel"/>.</summary>
+/// lateral, cada uno con su propia mecánica de vista; aquí solo quedan el renombrado del título en línea y el
+/// hueco del compositor (centrado en un chat vacío, fijo bajo el hilo con mensajes). Todo lo demás vive en
+/// <see cref="AssistantViewModel"/>.</summary>
 public partial class AssistantView : UserControl
 {
     private AssistantViewModel? _subscribed;
@@ -24,10 +25,32 @@ public partial class AssistantView : UserControl
         if (_subscribed is not null) _subscribed.PropertyChanged -= OnViewModelPropertyChanged;
         _subscribed = DataContext as AssistantViewModel;
         if (_subscribed is not null) _subscribed.PropertyChanged += OnViewModelPropertyChanged;
+        PlaceComposer();
+    }
+
+    /// <summary>Con el chat vacío el compositor va al centro de la bienvenida; con mensajes, bajo el hilo. Es un
+    /// solo control que cambia de hueco —no dos compositores sobre el mismo borrador—, y si tenía el foco lo
+    /// recupera al llegar, para seguir escribiendo tras enviar el primer mensaje.</summary>
+    private void PlaceComposer()
+    {
+        var centered = _subscribed?.ShowWelcome == true;
+        Composer.Classes.Set("hero", centered);
+        Decorator target = centered ? Welcome.Slot : DockedComposerHost;
+        if (ReferenceEquals(Composer.Parent, target)) return;
+
+        var hadFocus = Composer.IsKeyboardFocusWithin;
+        if (Composer.Parent is Decorator current) current.Child = null;
+        target.Child = Composer;
+        if (hadFocus) Composer.FocusInput();
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(AssistantViewModel.ShowWelcome))
+        {
+            PlaceComposer();
+            return;
+        }
         if (e.PropertyName != nameof(AssistantViewModel.IsRenamingTitle) || _subscribed?.IsRenamingTitle != true) return;
         Dispatcher.UIThread.Post(() =>
         {

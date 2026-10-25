@@ -298,6 +298,69 @@ public sealed class AssistantViewUiTests : IDisposable
         }
     }
 
+    /// <summary>En la sección, un chat vacío centra el compositor en la vista, entre la bienvenida y las
+    /// sugerencias; con mensajes vuelve bajo el hilo. Es el mismo control en los dos huecos, así que el cuadro
+    /// de texto (y con él el borrador y el foco) no se recrea al cambiar.</summary>
+    [Fact]
+    public void Section_EmptyChat_CentersTheComposer_AndDocksItOnceTheChatHasMessages()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, _) =>
+        {
+            var chat = new AiChatSession { Title = "Con mensajes", VaultId = VaultId };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Hola" });
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.Assistant, Text = "¿En qué te ayudo?" });
+            chats.Save(chat);
+        });
+        try
+        {
+            var composer = view.GetVisualDescendants().OfType<AssistantComposerView>().Single();
+            var box = Find<TextBox>(view, "ComposerBox");
+            var docked = Find<Decorator>(view, "DockedComposerHost");
+            var welcome = Find<AssistantWelcomeView>(view, "Welcome");
+            var body = Assert.IsAssignableFrom<Control>(docked.Parent);
+
+            Assert.True(vm.ShowWelcome);
+            Assert.Same(welcome.Slot, composer.Parent);
+            Assert.Contains("hero", composer.Classes);
+            // La bienvenida del hilo compartido no se duplica detrás de la de la sección.
+            Assert.False(Find<Panel>(view, "WelcomeHost").IsEffectivelyVisible);
+            var surface = Find<Border>(view, "ComposerSurface");
+            var origin = surface.TranslatePoint(default, body)!.Value;
+            Assert.InRange(origin.X + surface.Bounds.Width / 2 - body.Bounds.Width / 2, -1, 1);
+            Assert.InRange(origin.Y + surface.Bounds.Height / 2 - body.Bounds.Height / 2, -1, 1);
+            Assert.True(surface.Bounds.Width >= 700, surface.Bounds.Width.ToString());
+            SavePreview(view, "assistant-welcome-centered");
+            box.Focus();
+            vm.DraftText = "Resume la nota abierta";
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            SavePreview(view, "assistant-welcome-centered-focused");
+
+            vm.SelectSessionCommand.Execute(vm.Sessions.Single());
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.False(vm.ShowWelcome);
+            Assert.Same(docked, composer.Parent);
+            Assert.DoesNotContain("hero", composer.Classes);
+            Assert.Same(box, Find<TextBox>(view, "ComposerBox"));
+            Assert.True(box.IsEffectivelyVisible);
+            Assert.Equal(body.Bounds.Height, docked.Bounds.Bottom, 1);
+
+            vm.NewChatCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.Same(welcome.Slot, composer.Parent);
+            Assert.True(box.IsEffectivelyVisible);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [Fact]
     public void Ready_RestoredConversation_RendersMarkdownBlocksAndAttachments()
     {
@@ -562,6 +625,18 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.True(vm.IsPanelHistoryOpen);
             Assert.True(panel.GetVisualDescendants().OfType<AssistantHistoryList>().Single().IsEffectivelyVisible);
             SavePreview(panel, "assistant-side-panel-history", 420, 860);
+
+            // Chat vacío en el panel: su propia bienvenida, con el compositor fijo abajo (no centrado).
+            Find<Button>(panel, "PanelHistoryToggle").Command!.Execute(null);
+            vm.NewChatCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(Find<Panel>(panel, "WelcomeHost").IsEffectivelyVisible);
+            Assert.True(panel.GetVisualDescendants().OfType<AssistantWelcomeView>().Single().IsEffectivelyVisible);
+            var panelComposer = panel.GetVisualDescendants().OfType<AssistantComposerView>().Single();
+            Assert.DoesNotContain("hero", panelComposer.Classes);
+            Assert.Equal(panel.Bounds.Height, panelComposer.TranslatePoint(new Point(0, panelComposer.Bounds.Height), panel)!.Value.Y, 1);
+            SavePreview(panel, "assistant-side-panel-welcome", 420, 860);
         }
         finally { window.Close(); }
     }

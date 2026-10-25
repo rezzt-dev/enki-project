@@ -165,6 +165,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - añadir `Assistant` al orden por defecto de la barra lateral, a las secciones de ajustes y a la navegación del shell, y referenciar `.docs/project-info/asistente-ia.md` en `AGENTS.md`.
 - reorganizar el compositor del asistente en una superficie única para agrupar borrador, adjuntos y acciones, mejorar el contraste y la adaptación del panel lateral, y trasladar el ámbito, el aviso del proveedor y los atajos a un popover de ayuda bajo demanda mediante el botón de información; traducirlo en los siete recursos de idioma.
 - cambiar el lema de la marca de «notas markdown» a «segundo cerebro» en la cabecera, la pantalla de arranque y el título de la ventana, traducido en todos los recursos de idioma (`SEGUNDO CEREBRO`, `SECOND BRAIN`, `ZWEITES GEHIRN`, `SECOND CERVEAU`).
+- centrar el compositor del asistente en un chat vacío de la sección `asistente`: la bienvenida (`AssistantWelcomeView`) coloca el titular encima, el compositor en el centro exacto de la vista y las sugerencias debajo, y al enviar el primer mensaje el mismo control baja al pie del hilo —y vuelve al centro con un chat nuevo— sin perder borrador, adjuntos ni foco; en el panel lateral se mantiene fijo abajo.
+- rediseñar el compositor del asistente como un único marco sin línea interna, con borde que sube de tinta al pasar el cursor y al enfocar, foco al pulsar en cualquier hueco, botón de enviar cuadrado con flecha (hueco apenas marcado si no hay texto) y de detener con contorno, chip con borde fino para adjuntar la nota abierta y atajos de teclado visibles mientras se escribe en la sección.
+- mostrar las sugerencias de la bienvenida del asistente como filas con icono a la izquierda, en dos columnas en la sección y una en el panel lateral, con el icono resaltado al pasar el cursor.
 
 #### CORREGIDO
 - corregir la selección de texto en `SelectableTextBlock` para aplicar simultáneamente `SelectionBackgroundBrush` y `SelectionForegroundBrush` en mensajes Markdown, enlaces, listas, tablas y código, también al cambiar de tema.
@@ -194,6 +197,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - actualizar la ruta de destino de los botones de crear carpeta al cambiar la sesión seleccionada en Notas y Archivos, notificando el cambio de `EffectiveRootPath` y cubriéndolo con `FilesViewModelSessionPersistenceTests`.
 - evitar renders de PDF obsoletos y temporales descifrados huérfanos al cerrar o cambiar de adjunto, y conservar los archivos originales al retirar una referencia de la nota.
 - corregir el rango diario de `StatisticsViewModel` para usar el día local completo y no ocultar la actividad de hoy alrededor de la medianoche UTC; cubrir el caso en las pruebas de estadísticas.
+- corregir el recuadro negro que aparecía dentro del compositor del asistente al enfocarlo o con un chat sin vault asignado, porque los estados de Fluent pintaban su propio fondo sobre la plantilla del cuadro de texto.
+- aplicar de verdad los márgenes compactos del panel lateral del asistente (hilo, puesta en marcha y errores), que un valor local en el XAML anulaba, y eliminar el hueco invisible bajo el compositor que dejaban sus popovers dentro de la pila.
+- partir en varias líneas la nota de privacidad de la bienvenida del asistente en el panel lateral, que se salía por el borde derecho.
 
 ### ENGLISH
 
@@ -352,6 +358,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - add `Assistant` to the default sidebar order, the settings sections and the shell navigation, and reference `.docs/project-info/asistente-ia.md` in `AGENTS.md`.
 - reorganise the assistant composer into one surface for the draft, attachments and actions, improve contrast and compact-panel adaptation, and move scope, provider notice and keyboard shortcuts into an on-demand help popover opened by the information button; translate it across all seven language resources.
 - change the brand tagline from “markdown notes” to “second brain” in the header, the startup screen and the window title, translated in all language resources (`SEGUNDO CEREBRO`, `SECOND BRAIN`, `ZWEITES GEHIRN`, `SECOND CERVEAU`).
+- centre the assistant composer in an empty chat of the `assistant` section: the welcome (`AssistantWelcomeView`) places the headline above, the composer at the exact centre of the view and the suggestions below, and sending the first message moves the same control to the foot of the thread —and back to the centre on a new chat— without losing the draft, attachments or focus; in the side panel it stays docked at the bottom.
+- redesign the assistant composer as a single frame with no inner divider, a border that brightens on hover and focus, focus on clicking any gap, a square arrow send button (barely marked when there is no text) and an outlined stop button, a thin-bordered chip to attach the open note, and keyboard shortcuts shown while typing in the section.
+- show the assistant welcome suggestions as rows with a leading icon, in two columns in the section and one in the side panel, with the icon highlighted on hover.
 
 #### FIXED
 - fix `SelectableTextBlock` text selection by applying both `SelectionBackgroundBrush` and `SelectionForegroundBrush` to Markdown messages, links, lists, tables and code, including live theme changes.
@@ -381,6 +390,9 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - update the destination path of the create-folder buttons when the selected session changes in Notes and Files, notifying the `EffectiveRootPath` change and covering it with `FilesViewModelSessionPersistenceTests`.
 - prevent stale PDF renders and orphaned decrypted temporary files when closing or switching attachments, and preserve original files when removing a note reference.
 - fix `StatisticsViewModel` daily ranges to use the complete local day so today's activity is not hidden around UTC midnight, and cover the case in statistics tests.
+- fix the black box that appeared inside the assistant composer on focus or in a chat with no vault assigned, because Fluent states painted their own background over the text box template.
+- actually apply the compact margins of the assistant side panel (thread, setup and errors), which a local XAML value was overriding, and remove the invisible gap below the composer left by its popovers sitting inside the stack.
+- wrap the assistant welcome privacy note onto several lines in the side panel, where it ran off the right edge.
 
 ## [0.2.0] - 2026-09-23
 
