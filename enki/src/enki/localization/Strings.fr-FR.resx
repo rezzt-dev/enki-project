@@ -3646,7 +3646,7 @@
     <value>Zoomer avec la molette de la souris</value>
   </data>
   <data name="Shell_BrandTagline" xml:space="preserve">
-    <value>NOTES MARKDOWN</value>
+    <value>SECOND CERVEAU</value>
   </data>
   <data name="Shell_MaximizeRestoreTooltip" xml:space="preserve">
     <value>Agrandir/Restaurer</value>
@@ -3670,7 +3670,7 @@
     <value>Impossible de charger le coffre</value>
   </data>
   <data name="Shell_WindowTitle" xml:space="preserve">
-    <value>Enki — Notes Markdown</value>
+    <value>Enki — Second Cerveau</value>
   </data>
   <data name="Skills_Badge_Default" xml:space="preserve">
     <value>Par défaut</value>

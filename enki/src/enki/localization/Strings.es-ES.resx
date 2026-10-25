@@ -3940,7 +3940,7 @@
     <value>Zoom con la rueda del ratón</value>
   </data>
   <data name="Shell_BrandTagline" xml:space="preserve">
-    <value>NOTAS MARKDOWN</value>
+    <value>SEGUNDO CEREBRO</value>
   </data>
   <data name="Shell_MaximizeRestoreTooltip" xml:space="preserve">
     <value>Maximizar/Restaurar</value>
@@ -3964,7 +3964,7 @@
     <value>No se ha podido cargar el almacén</value>
   </data>
   <data name="Shell_WindowTitle" xml:space="preserve">
-    <value>Enki — Notas Markdown</value>
+    <value>Enki — Segundo Cerebro</value>
   </data>
   <data name="Skills_Badge_Default" xml:space="preserve">
     <value>Predeterminada</value>

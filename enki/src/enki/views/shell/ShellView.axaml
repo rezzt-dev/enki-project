@@ -57,7 +57,7 @@
                  una imagen cuadrada, el radio vuelve a 0 como todo lo demás.
 
                  El logo se redujo de 32x32 a 24x24 para que el icono personalizado del panel lateral no
-                 dominara visualmente la fila del header junto al texto ENKI / NOTAS MARKDOWN y al toggle de
+                 dominara visualmente la fila del header junto al texto ENKI / SEGUNDO CEREBRO y al toggle de
                  pliegue, mientras que los 24px siguen una proporción coherente con los 20px de los íconos
                  del raíl y con la vista previa de Ajustes › Apariencia (44px). -->
             <Grid Grid.Row="0" Classes="brand-header" Classes.collapsed="{Binding !IsSidebarExpanded}"

@@ -3646,7 +3646,7 @@
     <value>Mit Mausrad zoomen</value>
   </data>
   <data name="Shell_BrandTagline" xml:space="preserve">
-    <value>MARKDOWN-NOTIZEN</value>
+    <value>ZWEITES GEHIRN</value>
   </data>
   <data name="Shell_MaximizeRestoreTooltip" xml:space="preserve">
     <value>Maximieren/Wiederherstellen</value>
@@ -3670,7 +3670,7 @@
     <value>Tresor konnte nicht geladen werden</value>
   </data>
   <data name="Shell_WindowTitle" xml:space="preserve">
-    <value>Enki — Markdown-Notizen</value>
+    <value>Enki — Zweites Gehirn</value>
   </data>
   <data name="Skills_Badge_Default" xml:space="preserve">
     <value>Standard</value>

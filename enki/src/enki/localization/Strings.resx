@@ -3973,7 +3973,7 @@
     <value>Zoom with mouse wheel</value>
   </data>
   <data name="Shell_BrandTagline" xml:space="preserve">
-    <value>MARKDOWN NOTES</value>
+    <value>SECOND BRAIN</value>
   </data>
   <data name="Shell_MaximizeRestoreTooltip" xml:space="preserve">
     <value>Maximize/Restore</value>
@@ -3997,7 +3997,7 @@
     <value>Couldn't load vault</value>
   </data>
   <data name="Shell_WindowTitle" xml:space="preserve">
-    <value>Enki — Markdown Notes</value>
+    <value>Enki — Second Brain</value>
   </data>
   <data name="Skills_Badge_Default" xml:space="preserve">
     <value>Default</value>
