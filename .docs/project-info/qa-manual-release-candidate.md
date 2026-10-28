@@ -452,8 +452,22 @@ exportable existe y está maquetada, pero que la imagen se vea bien solo se ve m
       cortada por la derecha o por abajo); a 2× solo gana nitidez. Tras exportar, la vista sigue con el
       mismo desplazamiento que tenía.
 - [ ] El PDF abre correctamente en el visor del sistema, en Evince/Preview/Adobe y en un navegador.
-- [ ] Una nota larga da un PDF de varias páginas A4, con encabezados, listas, citas y bloques de código
-      reconocibles.
+- [ ] Una nota larga da un PDF de varias páginas (A4 con la app en español; Carta en inglés de EE. UU.),
+      con márgenes de Word, número de página en el pie y **ninguna línea partida** entre dos páginas.
+- [ ] En el PDF de una nota el texto se puede seleccionar, copiar y buscar (Ctrl+F encuentra «fichero»,
+      con ligaduras incluidas) y los enlaces externos se abren al pulsarlos.
+- [ ] Con el tema oscuro activo, el PDF de una nota sale igualmente en papel blanco y tinta negra.
+- [ ] Una nota con todo lo que dibuja el editor sale igual que en pantalla: texto centrado/justificado con
+      `<div align>`, `<u>`/`<mark>`/`<br>`, listas anidadas y tareas, citas anidadas, avisos con icono,
+      código coloreado, tabla con alineaciones, imagen adjunta centrada y con `|300`, fórmulas en línea y en
+      bloque, y una `![[nota]]` embebida. Ver `exportar-notas-pdf.md`.
+- [ ] Una tabla que no cabe en una página repite su fila de encabezados en la siguiente; un encabezado no
+      queda solo al pie de una página; un párrafo de tres líneas no se parte 1 + 2.
+- [ ] Una nota con una foto grande da un PDF de pocos megas con la foto nítida al ampliar; una imagen rota
+      sale como un hueco con su nombre y no impide exportar.
+- [ ] Mientras se exporta una nota con muchas imágenes, el icono de exportar del editor gira y no se puede
+      lanzar otra exportación; al terminar se avisa y se abre la carpeta.
+- [ ] Abrir el PDF de una nota en Evince, Preview, Adobe Reader, Chrome y Firefox.
 - [ ] En tema claro y en tema oscuro, el fondo de la lámina y el contenido son coherentes entre sí.
 - [ ] Con el idioma cambiado, la cabecera y el nombre propuesto respetan el idioma y el formato de fecha.
 - [ ] Cancelar el diálogo de guardado no deja ningún archivo ni ningún aviso.

@@ -13,4 +13,4 @@ Las notas se crean bajo una nueva carpeta `Importado de …` del vault activo. L
 
 ## Exportación
 
-La exportación de notas a HTML sigue en `NoteExportService`. Notas, Kanban y calendario ya pueden exportarse a PNG o PDF desde sus menús y desde la paleta de comandos: ver `exportar-vistas-imagen-pdf.md` para el alcance visual, paginación y pruebas.
+La exportación de notas a HTML sigue en `NoteExportService`. Una nota se exporta además a un PDF vectorial maquetado (A4 o Carta con márgenes de Word, paginación sin cortar líneas, tablas, imágenes y enlaces): ver `exportar-notas-pdf.md`. Kanban y calendario se exportan a PNG o PDF desde sus menús y desde la paleta de comandos: ver `exportar-vistas-imagen-pdf.md`.

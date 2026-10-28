@@ -38,84 +38,101 @@ public sealed record ViewExportRequest(IReadOnlyList<string> RootNames, string T
 /// referencia propia a <see cref="NotificationService"/>.</para></summary>
 public static class ViewExportService
 {
+    /// <summary>Claves de los textos del flujo: el título del diálogo de guardado y los avisos de éxito y
+    /// fallo. Una nota exportada se anuncia como nota, no como «vista».</summary>
+    private sealed record FlowTexts(string DialogTitle, string SuccessTitle, string SuccessMessage, string FailedTitle);
+
+    private static readonly FlowTexts ViewTexts = new("Export_ViewDialog_Title", "Notification_ViewExportSuccess_Title",
+        "Notification_ViewExportSuccess_Message", "Notification_ViewExportFailed_Title");
+
+    private static readonly FlowTexts NoteTexts = new("Export_NoteDialog_Title", "Notification_NoteExportSuccess_Title",
+        "Notification_NoteExportSuccess_Message", "Notification_NoteExportFailed_Title");
+
     /// <summary>Exporta una región de la interfaz ya en pantalla: el calendario o el tablero Kanban.</summary>
     public static Task ExportViewAsync(ViewExportRequest request, ExportFormat format, double scale,
         TopLevel? topLevel, Action<LocalizedText, LocalizedText, NotificationSeverity>? notify)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return RunAsync(request.SuggestedFileName, format, topLevel, notify, appearance =>
+        return RunAsync(request.SuggestedFileName, format, ViewTexts, topLevel, notify, appearance =>
         {
             var target = FindExportRoot(request.RootNames)
                 ?? throw new ExportRenderException(
                     $"Ninguna de las regiones exportables [{string.Join(", ", request.RootNames)}] está visible.",
                     LocalizedTextFormatter.Format("Export_Error_ViewNotOpen"));
 
-            return [VisualSnapshotRenderer.Capture(target, request.Title, request.Subtitle, scale, appearance)];
+            var snapshot = VisualSnapshotRenderer.Capture(target, request.Title, request.Subtitle, scale, appearance);
+            return Task.FromResult(format == ExportFormat.Png
+                ? snapshot.Png
+                : PdfImageWriter.Create([snapshot.ToPdfPage()]));
         });
     }
 
-    /// <summary>Exporta una nota. A diferencia del calendario y del tablero, la lámina no se rasteriza de
-    /// la pantalla sino que se compone aparte (<see cref="NotePageComposer"/>) — ver allí por qué el editor
-    /// no sirve de origen. El PDF sale paginado en A4; el PNG, en una sola lámina.</summary>
-    public static Task ExportNoteAsync(string title, string markdown, string suggestedFileName, ExportFormat format,
-        double scale, TopLevel? topLevel, Action<LocalizedText, LocalizedText, NotificationSeverity>? notify)
+    /// <summary>Exporta una nota. A diferencia del calendario y del tablero, no se rasteriza la pantalla:
+    /// el documento se compone aparte a partir del Markdown (ver <see cref="NoteDocumentExporter"/>, y en
+    /// <see cref="NoteDocumentComposer"/> por qué el editor no sirve de origen). El PDF sale vectorial y
+    /// paginado en la hoja de la región del usuario (A4 o Carta, con los márgenes de Word); el PNG, en una
+    /// sola lámina con la paleta del tema activo.</summary>
+    public static Task ExportNoteAsync(NoteExportSource source, ExportFormat format, TopLevel? topLevel,
+        Action<LocalizedText, LocalizedText, NotificationSeverity>? notify)
     {
-        return RunAsync(suggestedFileName, format, topLevel, notify, appearance => format == ExportFormat.Pdf
-            ? NotePageComposer.BuildPages(title, markdown, appearance)
-                .Select(page => VisualSnapshotRenderer.Capture(page, string.Empty, string.Empty, scale, appearance))
-                .ToList()
-            : [VisualSnapshotRenderer.Capture(NotePageComposer.Build(title, markdown, appearance), string.Empty, string.Empty, scale, appearance)]);
+        ArgumentNullException.ThrowIfNull(source);
+        var page = NotePageSetup.ForCulture(LocalizationService.Instance.CurrentCulture);
+
+        return RunAsync(source.Title, format, NoteTexts, topLevel, notify, async appearance => format == ExportFormat.Pdf
+            ? await NoteDocumentExporter.CreatePdfAsync(source, page)
+            // La lámina se compone en puntos, como el PDF: 96/72 la devuelve al tamaño en píxeles que
+            // tenía la exportación PNG de una nota antes de compartir composición con el PDF.
+            : (await NoteDocumentExporter.CreatePngAsync(source, page, appearance,
+                VisualSnapshotRenderer.ScaleHighResolution * 96 / 72)).Png);
     }
 
-    private static async Task RunAsync(string suggestedFileName, ExportFormat format, TopLevel? topLevel,
+    private static async Task RunAsync(string suggestedFileName, ExportFormat format, FlowTexts texts, TopLevel? topLevel,
         Action<LocalizedText, LocalizedText, NotificationSeverity>? notify,
-        Func<ExportAppearance, IReadOnlyList<ExportSnapshot>> capture)
+        Func<ExportAppearance, Task<byte[]>> render)
     {
         // Sin TopLevel no hay diálogo de guardado ni ventana que rasterizar — mismo no-op silencioso que
         // NoteExportService y que los comandos de importar/exportar ajustes en los tests.
         if (topLevel?.StorageProvider is null) return;
 
-        var destination = await AskDestinationAsync(suggestedFileName, format, topLevel);
+        var destination = await AskDestinationAsync(suggestedFileName, format, texts.DialogTitle, topLevel);
         if (destination is null) return;
 
         try
         {
-            var snapshots = capture(ResolveAppearance());
-            var bytes = format == ExportFormat.Png
-                ? snapshots[0].Png
-                : PdfImageWriter.Create([.. snapshots.Select(s => s.ToPdfPage())]);
+            var bytes = await render(ResolveAppearance());
 
             DurableFile.WriteAllBytesAtomic(destination, bytes);
             notify?.Invoke(
-                LocalizedTextFormatter.Format("Notification_ViewExportSuccess_Title"),
-                LocalizedTextFormatter.Format("Notification_ViewExportSuccess_Message", destination),
+                LocalizedTextFormatter.Format(texts.SuccessTitle),
+                LocalizedTextFormatter.Format(texts.SuccessMessage, destination),
                 NotificationSeverity.Success);
             FolderOpener.RevealFile(destination);
         }
         catch (ExportRenderException ex)
         {
             LogService.Warning("Exportación de vista cancelada antes de rasterizar", ex);
-            notify?.Invoke(LocalizedTextFormatter.Format("Notification_ViewExportFailed_Title"), ex.UserMessage, NotificationSeverity.Error);
+            notify?.Invoke(LocalizedTextFormatter.Format(texts.FailedTitle), ex.UserMessage, NotificationSeverity.Error);
         }
         // Los errores visibles usan recursos; el diagnóstico técnico se conserva en el log — mismo reparto
         // que NoteExportService.
         catch (UnauthorizedAccessException)
         {
-            notify?.Invoke(LocalizedTextFormatter.Format("Notification_ViewExportFailed_Title"), LocalizedTextFormatter.Format("Common_Error_AccessDenied"), NotificationSeverity.Error);
+            notify?.Invoke(LocalizedTextFormatter.Format(texts.FailedTitle), LocalizedTextFormatter.Format("Common_Error_AccessDenied"), NotificationSeverity.Error);
         }
         catch (IOException)
         {
-            notify?.Invoke(LocalizedTextFormatter.Format("Notification_ViewExportFailed_Title"), LocalizedTextFormatter.Format("Common_Error_IOFailure"), NotificationSeverity.Error);
+            notify?.Invoke(LocalizedTextFormatter.Format(texts.FailedTitle), LocalizedTextFormatter.Format("Common_Error_IOFailure"), NotificationSeverity.Error);
         }
         catch (Exception ex)
         {
-            LogService.Error($"No se pudo exportar la vista a {format}", ex);
-            notify?.Invoke(LocalizedTextFormatter.Format("Notification_ViewExportFailed_Title"), VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
+            LogService.Error($"No se pudo exportar a {format}", ex);
+            notify?.Invoke(LocalizedTextFormatter.Format(texts.FailedTitle), VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
         }
     }
 
-    private static async Task<string?> AskDestinationAsync(string suggestedFileName, ExportFormat format, TopLevel topLevel)
+    private static async Task<string?> AskDestinationAsync(string suggestedFileName, ExportFormat format, string dialogTitle,
+        TopLevel topLevel)
     {
         var loc = LocalizationService.Instance;
         var extension = format == ExportFormat.Png ? "png" : "pdf";
@@ -123,7 +140,7 @@ public static class ViewExportService
 
         var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = loc["Export_ViewDialog_Title"],
+            Title = loc[dialogTitle],
             SuggestedFileName = SanitizeFileName(suggestedFileName) + "." + extension,
             DefaultExtension = extension,
             FileTypeChoices = [new FilePickerFileType(typeLabel) { Patterns = ["*." + extension] }]
@@ -168,11 +185,7 @@ public static class ViewExportService
             Resource("PanelBackgroundColor", theme, Colors.White),
             text,
             muted,
-            text,
-            muted,
-            Resource("InputBackgroundColor", theme, Color.FromRgb(0xF2, 0xF2, 0xF2)),
-            Font("DisplayFontFamily", theme),
-            Font("CodeFontFamily", theme));
+            Font("DisplayFontFamily", theme));
     }
 
     /// <summary>Acepta tanto una clave de <c>Color</c> como una de <c>SolidColorBrush</c>: Colors.axaml

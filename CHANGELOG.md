@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- exportar cualquier nota a un PDF maquetado como en un procesador de textos: hoja A4 o Carta según el idioma con los márgenes «Normal» de Word, texto vectorial que se puede seleccionar, copiar y buscar, tipografías del editor incrustadas, número de página en el pie, enlaces clicables y título y etiquetas en los metadatos. La paginación nunca parte una línea, controla viudas y huérfanas, no deja encabezados solos al pie y repite la fila de encabezados de las tablas en cada página.
+- el PDF reproduce lo que dibuja el editor: alineaciones y formato HTML (`<div align>`, `<u>`, `<mark>`, `<br>`…), justificado, listas anidadas y tareas, citas anidadas, avisos con icono y tono, código coloreado con las mismas gramáticas, tablas con alineación por columna, imágenes adjuntas a resolución de impresión con su tamaño y alineación, fórmulas y notas embebidas con `![[…]]`.
+- menú de exportar en la cabecera del editor con PDF, HTML y PNG, con indicador de progreso mientras se compone el documento.
+- guía `.docs/project-info/exportar-notas-pdf.md` con la composición, la paginación y las decisiones del PDF de notas, nuevos casos en el QA manual y pruebas de `DocumentPaginator` y de la exportación en `ViewExportUiTests`.
 - grafo de `sesiones` en 3D: cada sesión es una esfera volumétrica de notas y enlaces reales —alrededor del 65 % de las notas en una corteza con variación radial y el resto a distintas profundidades del interior, con las más conectadas dentro y las comunidades en regiones contiguas— que gira despacio sobre su propio eje (0,10 rad/s, delta time) con perspectiva, notas sombreadas como pequeñas esferas y atenuación por profundidad; mismo layout en el visor web y en el nativo, sin notas ni enlaces inventados.
 - botón global de rotación en la barra inferior del grafo, junto al zoom: detiene y reanuda todas las esferas a la vez conservando su orientación, se guarda en `AppSettings.SessionsGraphRotationEnabled` y, sin elección previa, respeta el perfil de animaciones sutiles y el movimiento reducido del sistema.
 - arrastrar el volumen de una esfera la gira a mano y un clic sobre ella selecciona su sesión en la lista, que queda marcada en el grafo con un contorno circular.
@@ -83,6 +87,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - nombres personalizados para las secciones del panel lateral desde `ajustes > general > secciones de la barra lateral`: cada fila incluye un campo de texto de hasta 16 caracteres, por el ancho del panel desplegado, que se guarda en `AppSettings.SidebarSectionNames` y se aplica al instante al panel lateral y a la paleta de comandos; vaciar el campo recupera el nombre traducido por defecto.
 
 #### CAMBIOS
+- la exportación de una nota a PNG usa la misma composición que el PDF, con la paleta del editor en el tema activo; la anterior composición rasterizada de notas (`NotePageComposer`) se elimina.
+- el coloreado de código del editor se separa en `CodeTokenizer`, que comparten el editor y el PDF para que ambos usen las mismas gramáticas; `MarkdownCodeHighlighter` pasa a ser solo el adaptador del editor.
 - el grafo de `sesiones` deja de depender de `sigma.js` y `d3-force` (retirados de `assets/js/`): lo dibuja un motor 3D propio sobre Canvas 2D, porque WebGL no puede presentar en el WebView de Linux (WPE solo compone por software); pinta bajo demanda, sin fotogramas cuando nada se mueve, y si el documento falla al pintar se cambia al visor nativo.
 - las posiciones guardadas al arrastrar una nota del grafo pasan a ser coordenadas locales normalizadas al radio de su esfera; las de layouts anteriores se ignoran sin modificar el manifiesto hasta el siguiente arrastre.
 - el visor nativo del grafo reutiliza el mismo layout esférico que el web (`SessionSphereLayout`, `SessionSphereProjection`) y sustituye `NativeSessionGraphLayout` y `NativeSessionGraphMesh`; el fichero de licencia pasa de `LICENSE` a `license.md`.
@@ -204,6 +210,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- export any note to a PDF laid out like a word processor would: A4 or Letter depending on the language with Word's "Normal" margins, vector text that can be selected, copied and searched, the editor's fonts embedded, a page number in the footer, clickable links, and the note's title and tags in the metadata. Pagination never splits a line, controls widows and orphans, never leaves a heading alone at the bottom of a page and repeats table header rows on every page.
+- the PDF reproduces what the editor draws: HTML alignment and formatting (`<div align>`, `<u>`, `<mark>`, `<br>`…), justification, nested lists and tasks, nested quotes, callouts with their icon and tone, code highlighted with the same grammars, tables with per-column alignment, attached images at print resolution with their size and alignment, formulas, and notes embedded with `![[…]]`.
+- export menu in the editor header with PDF, HTML and PNG, with a progress indicator while the document is being composed.
+- guide `.docs/project-info/exportar-notas-pdf.md` covering the PDF's composition, pagination and design decisions, new manual QA cases, and tests for `DocumentPaginator` and the export in `ViewExportUiTests`.
 - 3D `sessions` graph: every session is a volumetric sphere of its real notes and links —about 65 % of the notes on a shell with radial variation and the rest at several depths inside, with the most connected notes inside and communities in contiguous regions— slowly turning on its own axis (0.10 rad/s, delta time) with perspective, notes shaded as small spheres and depth fading; the web and native viewers share the same layout, and no notes or links are invented.
 - global rotation button in the graph's bottom bar, next to zoom: it pauses and resumes every sphere at once keeping its orientation, is saved in `AppSettings.SessionsGraphRotationEnabled` and, with no saved choice, follows the subtle motion profile and the system's reduced-motion preference.
 - dragging a sphere's volume turns it by hand, and clicking it selects its session in the list, marked in the graph with a circular outline.
@@ -277,6 +287,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - custom names for the sidebar sections from `settings > general > sidebar sections`: each row includes a text field of up to 16 characters, because of the expanded sidebar width, saved in `AppSettings.SidebarSectionNames` and applied instantly to the sidebar and the command palette; clearing the field restores the default translated name.
 
 #### CHANGED
+- exporting a note to PNG uses the same composition as the PDF, with the editor's palette in the active theme; the previous rasterized note composer (`NotePageComposer`) is removed.
+- the editor's code highlighting is split out into `CodeTokenizer`, shared by the editor and the PDF so both use the same grammars; `MarkdownCodeHighlighter` becomes just the editor's adapter.
 - the `sessions` graph no longer depends on `sigma.js` and `d3-force` (removed from `assets/js/`): a dedicated 3D engine on Canvas 2D draws it, because WebGL cannot present in the Linux WebView (WPE only composites in software); it paints on demand, with no frames while nothing moves, and switches to the native viewer if the document fails to paint.
 - positions saved by dragging a graph note are now local coordinates normalised to their sphere's radius; positions from earlier layouts are ignored without touching the manifest until the next drag.
 - the native graph viewer reuses the web viewer's spherical layout (`SessionSphereLayout`, `SessionSphereProjection`) and replaces `NativeSessionGraphLayout` and `NativeSessionGraphMesh`; the license file moves from `LICENSE` to `license.md`.

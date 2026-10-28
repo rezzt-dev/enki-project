@@ -303,11 +303,36 @@
           <mi:MaterialIcon Kind="{Binding ZenModeToggleIcon}" Width="17" Height="17" />
         </Button>
 
-        <!-- Exportar (propuesta 6, docs/propuesta-nuevas-funcionalidades.md): HTML directo autónomo. -->
-        <Button Classes="icon-btn" Command="{Binding ExportAsHtmlCommand}"
-                ToolTip.Tip="{loc:Tr Notes_ExportHtmlMenuItem}"
-                AutomationProperties.Name="{loc:Tr Notes_ExportHtmlMenuItem}">
-          <mi:MaterialIcon Kind="FileExportOutline" Width="17" Height="17" />
+        <!-- Exportar (propuesta 6, docs/propuesta-nuevas-funcionalidades.md): HTML autónomo, PDF maquetado
+             y PNG, con el mismo menú de icono que el tablero Kanban. Mientras se compone el PDF (unos
+             segundos con muchas imágenes) el icono gira y el menú no admite otra exportación. -->
+        <Button Classes="icon-btn"
+                ToolTip.Tip="{loc:Tr Export_MenuTooltip}"
+                AutomationProperties.Name="{loc:Tr Export_MenuTooltip}">
+          <Panel>
+            <mi:MaterialIcon Kind="FileExportOutline" Width="17" Height="17" IsVisible="{Binding !IsExportingDocument}" />
+            <mi:MaterialIcon Kind="Loading" Classes="spin" Width="17" Height="17" IsVisible="{Binding IsExportingDocument}"
+                             ToolTip.Tip="{loc:Tr Export_InProgress}" />
+          </Panel>
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight">
+              <MenuItem Header="{loc:Tr Export_ToPdf, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportAsPdfCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Notes_ExportHtmlMenuItem, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportAsHtmlCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="{loc:Tr Export_ToPng, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportAsPngCommand}">
+                <MenuItem.Icon>
+                  <mi:MaterialIcon Kind="ImageOutline" Width="14" Height="14" />
+                </MenuItem.Icon>
+              </MenuItem>
+            </MenuFlyout>
+          </Button.Flyout>
         </Button>
 
         <Button Classes="icon-btn icon-btn-danger" Command="{Binding RequestDeleteCommand}"

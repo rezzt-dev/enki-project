@@ -38,7 +38,7 @@ internal sealed class FullSizeLayout : IDisposable
     }
 
     /// <summary>Deja <paramref name="target"/> dispuesto a su tamaño completo. Un control fuera del árbol
-    /// visual (la hoja de una nota, que <see cref="NotePageComposer"/> ya mide y dispone a mano) se deja
+    /// visual (la hoja de una nota, que <see cref="NoteDocumentExporter"/> ya mide y dispone a mano) se deja
     /// como está.</summary>
     public static IDisposable Apply(Control target)
     {

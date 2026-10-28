@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
@@ -13,6 +14,7 @@ using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
+using enki.Services.Export;
 
 namespace enki.ViewModels;
 
@@ -34,6 +36,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     private readonly Action<NoteFile>? _onOpenNote;
     private readonly Action<string>? _onOpenLinkedCard;
     private readonly Action<NoteFile, string>? _onExportHtml;
+    private readonly Func<NoteFile, ExportFormat, Task>? _onExportDocument;
     private readonly DispatcherTimer _saveTimer;
     private string _lastSavedContent;
     private string? _pendingText;
@@ -366,7 +369,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         SettingsService? settingsService = null, NotificationService? notificationService = null,
         Action<NoteFile, string>? onExportHtml = null, SessionService? sessionService = null,
         DailyNoteService? dailyNoteService = null, Action<DateOnly>? onOpenDailyNoteFor = null,
-        VaultChangeWatcher? changeWatcher = null)
+        VaultChangeWatcher? changeWatcher = null, Func<NoteFile, ExportFormat, Task>? onExportDocument = null)
     {
         _vaultService = vaultService;
         _onBack = onBack;
@@ -378,6 +381,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         _settingsService = settingsService;
         _notificationService = notificationService;
         _onExportHtml = onExportHtml;
+        _onExportDocument = onExportDocument;
         _dailyNoteService = dailyNoteService;
         _onOpenDailyNoteFor = onOpenDailyNoteFor;
         _changeWatcher = changeWatcher;
@@ -861,6 +865,38 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// guardar. No-op en tests (sin callback).</summary>
     [RelayCommand]
     private void ExportAsHtml() => _onExportHtml?.Invoke(Note, Document.Text);
+
+    /// <summary>Si la exportación a PDF o PNG lanzada desde esta pestaña sigue en curso: el botón de
+    /// exportar enseña entonces que está trabajando y no admite otra.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportAsPdfCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ExportAsPngCommand))]
+    private bool _isExportingDocument;
+
+    private bool CanExportDocument() => !IsExportingDocument && _onExportDocument is not null;
+
+    /// <summary>"Exportar como PDF…" (menú de exportar de la cabecera del editor). Igual que
+    /// <see cref="ExportAsHtml"/>, delega en <see cref="NotesViewModel"/>, que exporta el texto en vivo
+    /// de esta pestaña.</summary>
+    [RelayCommand(CanExecute = nameof(CanExportDocument))]
+    private Task ExportAsPdf() => ExportDocumentAsync(ExportFormat.Pdf);
+
+    [RelayCommand(CanExecute = nameof(CanExportDocument))]
+    private Task ExportAsPng() => ExportDocumentAsync(ExportFormat.Png);
+
+    private async Task ExportDocumentAsync(ExportFormat format)
+    {
+        if (_onExportDocument is null) return;
+        IsExportingDocument = true;
+        try
+        {
+            await _onExportDocument(Note, format);
+        }
+        finally
+        {
+            IsExportingDocument = false;
+        }
+    }
 
     [RelayCommand]
     private void RequestDelete()

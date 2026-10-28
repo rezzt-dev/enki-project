@@ -885,6 +885,12 @@
   <data name="Export_MenuTooltip" xml:space="preserve">
     <value>Exporter…</value>
   </data>
+  <data name="Export_NoteDialog_Title" xml:space="preserve">
+    <value>Exporter la note</value>
+  </data>
+  <data name="Export_InProgress" xml:space="preserve">
+    <value>Exportation…</value>
+  </data>
   <data name="Export_PdfFileType" xml:space="preserve">
     <value>Document PDF</value>
   </data>
