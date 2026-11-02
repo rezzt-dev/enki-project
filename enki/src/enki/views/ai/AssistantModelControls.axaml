@@ -29,7 +29,7 @@
     <Popup PlacementTarget="{Binding #EffortTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="6"
            IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #EffortTrigger}"
            controls:PopoverKeyboard.CloseOnEscape="True"
-           IsOpen="{Binding IsEffortPickerOpen, Mode=TwoWay}">
+           controls:SharedPopover.IsOpen="{Binding IsEffortPickerOpen, Mode=TwoWay}">
       <Border Classes="dropdown-popover" Width="260">
         <StackPanel Spacing="10">
           <TextBlock Text="{loc:Tr Assistant_Effort_Title}" Classes="eyebrow" />

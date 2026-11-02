@@ -38,7 +38,7 @@
     <Popup PlacementTarget="{Binding #ScopeTrigger}" Placement="BottomEdgeAlignedLeft" VerticalOffset="6"
            IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #ScopeTrigger}"
            controls:PopoverKeyboard.CloseOnEscape="True"
-           IsOpen="{Binding IsScopePickerOpen, Mode=TwoWay}">
+           controls:SharedPopover.IsOpen="{Binding IsScopePickerOpen, Mode=TwoWay}">
       <Border Classes="dropdown-popover" Width="360" MaxHeight="600">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="12">

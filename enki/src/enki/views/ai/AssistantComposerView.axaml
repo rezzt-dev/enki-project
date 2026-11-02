@@ -323,7 +323,7 @@
       <Popup PlacementTarget="{Binding #AttachNoteTrigger}" Placement="TopEdgeAlignedLeft" VerticalOffset="-6"
              IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #AttachNoteTrigger}"
              controls:PopoverKeyboard.CloseOnEscape="True"
-             IsOpen="{Binding IsNotePickerOpen, Mode=TwoWay}">
+             controls:SharedPopover.IsOpen="{Binding IsNotePickerOpen, Mode=TwoWay}">
         <Border Classes="dropdown-popover" Width="360">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal">
@@ -374,7 +374,7 @@
       <Popup PlacementTarget="{Binding #SkillTrigger}" Placement="TopEdgeAlignedLeft" VerticalOffset="-6"
              IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #SkillTrigger}"
              controls:PopoverKeyboard.CloseOnEscape="True"
-             IsOpen="{Binding IsSkillPickerOpen, Mode=TwoWay}">
+             controls:SharedPopover.IsOpen="{Binding IsSkillPickerOpen, Mode=TwoWay}">
         <Border Classes="dropdown-popover" Width="340">
           <StackPanel Spacing="10">
             <TextBlock Text="{loc:Tr Assistant_Composer_PickSkill, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />

@@ -176,6 +176,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - mostrar las sugerencias de la bienvenida del asistente como filas con icono a la izquierda, en dos columnas en la sección y una en el panel lateral, con el icono resaltado al pasar el cursor.
 
 #### CORREGIDO
+- corregir que los menús del asistente (ámbito, capacidad, adjuntar nota y skill) se abrieran también en la sección del asistente oculta al lanzarlos desde el panel lateral, dejando un popover duplicado flotando sobre la página actual, con el nuevo comportamiento `SharedPopover` que abre un popover compartido solo en la vista que está en pantalla.
 - corregir la selección de texto en `SelectableTextBlock` para aplicar simultáneamente `SelectionBackgroundBrush` y `SelectionForegroundBrush` en mensajes Markdown, enlaces, listas, tablas y código, también al cambiar de tema.
 - sustituir los indicadores de carga del asistente por `LoadingSpinner`, un anillo completo con giro centrado, y corregir el origen relativo de los spinners compartidos.
 - impedir que una nota truncada autorice un reemplazo completo, que una edición parcial cambie `CRLF`, que una pestaña con cambios pendientes sea sobrescrita o que una ruta fuera del ámbito revele contenido vinculado.
@@ -375,6 +376,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - show the assistant welcome suggestions as rows with a leading icon, in two columns in the section and one in the side panel, with the icon highlighted on hover.
 
 #### FIXED
+- fix the assistant menus (scope, capacity, attach note and skill) opening a second time in the hidden assistant section when launched from the side panel, which left a duplicate popover floating over the current page, with the new `SharedPopover` behavior that opens a shared popover only in the view that is on screen.
 - fix `SelectableTextBlock` text selection by applying both `SelectionBackgroundBrush` and `SelectionForegroundBrush` to Markdown messages, links, lists, tables and code, including live theme changes.
 - replace the assistant's loading indicators with `LoadingSpinner`, a complete ring with centered rotation, and correct the relative origin of shared spinners.
 - prevent truncated notes from authorising full replacement, partial edits from changing `CRLF`, pending editor changes from being overwritten, or out-of-scope linked paths from revealing content.
