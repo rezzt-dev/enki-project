@@ -217,6 +217,7 @@ public sealed partial class MainWindowViewModel
                     // Apagar la IA corta la respuesta en curso y deja de escuchar: ningún CLI puede tocar ya el vault.
                     Assistant?.CancelAll();
                     _aiVaultTools?.Stop();
+                    _aiWebService.ClearCache();
                 }
                 break;
         }
@@ -368,6 +369,7 @@ public sealed partial class MainWindowViewModel
         Kanban?.CloseForVaultChange();
         Assistant?.CloseForVaultChange();
         _aiVaultTools?.Stop();
+        _aiWebService.ClearCache();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
         // Settings' "change vault folder" can point at any folder, old-version vault included — same

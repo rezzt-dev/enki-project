@@ -101,6 +101,16 @@ public sealed class AiSettings
     /// permiso en la primera lectura. Una revocación explícita en un chat prevalece sobre este ajuste.</summary>
     public bool AllowReadAccessByDefault { get; set; }
 
+    /// <summary>Los chats nuevos nacen con el acceso a internet encendido (<see cref="AiChatSession.WebAccess"/>).
+    /// Nace apagado: buscar envía el texto de la consulta al buscador elegido y leer una página la descarga
+    /// desde este equipo, así que es una decisión del usuario, no un valor por defecto. Cada chat lo cambia
+    /// después con el botón del globo del compositor.</summary>
+    public bool WebAccessForNewChats { get; set; }
+
+    /// <summary>Buscador con el que el asistente busca en internet. La clave de Brave Search, si se usa, vive
+    /// en el almacén seguro (<see cref="Services.AiApiKeyStore"/>), nunca aquí.</summary>
+    public AiWebSearchEngine WebSearchEngine { get; set; }
+
     /// <summary>Último chat abierto en cada vault (clave: <see cref="AiChatSession.VaultId"/>), para volver a
     /// él al entrar de nuevo en la sección. Por vault porque el historial también lo es: el último chat de un
     /// vault no debe abrirse estando en otro.</summary>
@@ -111,6 +121,7 @@ public sealed class AiSettings
     public void Normalize()
     {
         if (!Enum.IsDefined(Provider)) Provider = AiProvider.Claude;
+        if (!Enum.IsDefined(WebSearchEngine)) WebSearchEngine = AiWebSearchEngine.DuckDuckGo;
         CodexCliPath = (CodexCliPath ?? string.Empty).Trim();
         OpenAiModel = (OpenAiModel ?? string.Empty).Trim();
         LocalModel = (LocalModel ?? string.Empty).Trim();
@@ -132,3 +143,13 @@ public sealed class AiSettings
 /// <summary>Proveedor del chat. Cero conserva la compatibilidad con los historiales de Claude; los valores
 /// nuevos se añaden al final para no reinterpretar los chats ni los ajustes ya guardados.</summary>
 public enum AiProvider { Claude, OpenAi, Ollama, Gemini }
+
+/// <summary>Buscador del acceso a internet del asistente. Mismo criterio que <see cref="AiProvider"/>: los
+/// valores nuevos se añaden al final.</summary>
+public enum AiWebSearchEngine
+{
+    /// <summary>DuckDuckGo, sin cuenta ni clave: lo que funciona nada más activarlo.</summary>
+    DuckDuckGo,
+    /// <summary>Brave Search API con la clave del propio usuario: resultados más estables, con nivel gratuito.</summary>
+    Brave
+}

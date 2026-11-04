@@ -106,6 +106,54 @@ public static class HtmlReadability
         return meta with { Markdown = markdown };
     }
 
+    /// <summary>Variante para leer una página entera, no para recortar un artículo: la usa el acceso a internet
+    /// del asistente (<see cref="AiWebService"/>). Resuelve los enlaces relativos contra
+    /// <paramref name="pageUrl"/> (o contra el <c>&lt;base href&gt;</c> del documento) para que se puedan seguir,
+    /// descarta las imágenes, que al modelo solo le cuestan espacio, y cuando la heurística de legibilidad no
+    /// encuentra un artículo —portadas, listados, resultados, documentación troceada— devuelve el texto de todo
+    /// el <c>body</c> en vez de nada.</summary>
+    public static HtmlArticle ExtractPage(string html, Uri pageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return new HtmlArticle(null, null, null, null, string.Empty);
+
+        var root = Parse(html);
+        var meta = ReadMetadata(root);
+        var baseUrl = Descendants(root).FirstOrDefault(n => n.Name == "base") is { } baseNode
+            && Uri.TryCreate(pageUrl, baseNode.Attribute("href"), out var declared) && RemoteImagePolicy.IsAllowedScheme(declared)
+                ? declared
+                : pageUrl;
+        Drop(root);
+        DropImages(root);
+        ResolveLinks(root, baseUrl);
+
+        var candidate = SelectContentRoot(root);
+        var markdown = candidate is null ? string.Empty : MarkdownRenderer.Render(candidate);
+        if (markdown.Length < MinimumContentLength)
+            markdown = MarkdownRenderer.Render(Descendants(root).FirstOrDefault(n => n.Name == "body") ?? root);
+
+        return meta with { Markdown = markdown };
+    }
+
+    private static void DropImages(Node node)
+    {
+        node.Children.RemoveAll(child => child.Name is "img" or "picture" or "source" or "figure" && !Descendants(child).Any(d => d.IsText && d.Text.Trim().Length > 0));
+        foreach (var child in node.Children) DropImages(child);
+    }
+
+    /// <summary>Convierte cada <c>href</c> relativo en absoluto. Los anclas del propio documento (<c>#…</c>) y
+    /// lo que no sea <c>http</c>/<c>https</c> se dejan como están: el render ya los reduce a su texto.</summary>
+    private static void ResolveLinks(Node root, Uri baseUrl)
+    {
+        foreach (var node in Descendants(root))
+        {
+            if (node.Name != "a" || node.Attributes is not { } attributes) continue;
+            var href = node.Attribute("href").Trim();
+            if (href.Length == 0 || href.StartsWith('#')) continue;
+            if (Uri.TryCreate(baseUrl, href, out var absolute) && RemoteImagePolicy.IsAllowedScheme(absolute))
+                attributes["href"] = absolute.AbsoluteUri;
+        }
+    }
+
     // ===================== Árbol =====================
 
     private sealed class Node
@@ -584,7 +632,9 @@ public static class HtmlReadability
                     default:
                         if (IsInline(child.Name))
                         {
-                            var inline = Inline(child).Trim();
+                            // Inline() escribe los hijos de un nodo: envuelto, cuenta también el propio elemento, y
+                            // un enlace (o un énfasis) que cuelga directamente de un bloque no pierde su destino.
+                            var inline = Inline(new Node { Name = "span", Children = { child } }).Trim();
                             if (inline.Length > 0) AppendParagraph(output, indent, inline);
                         }
                         else RenderBlock(child, output, indent);

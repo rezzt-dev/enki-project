@@ -7615,4 +7615,106 @@ A disfrutar escribiendo.</value>
   <data name="Ai_Gemini_Blocked" xml:space="preserve">
     <value>Los filtros de seguridad de Google bloquearon esta respuesta. Reformula el mensaje y vuelve a intentarlo.</value>
   </data>
+  <data name="Assistant_Tool_web_search" xml:space="preserve">
+    <value>Buscar en internet</value>
+  </data>
+  <data name="Assistant_Tool_web_fetch" xml:space="preserve">
+    <value>Leer página web</value>
+  </data>
+  <data name="Assistant_Web_Toggle_Label" xml:space="preserve">
+    <value>Web</value>
+  </data>
+  <data name="Assistant_Web_Toggle_OnTooltip" xml:space="preserve">
+    <value>Acceso a internet activado en este chat: el asistente puede buscar y leer páginas web. Pulsa para desactivarlo.</value>
+  </data>
+  <data name="Assistant_Web_Toggle_OffTooltip" xml:space="preserve">
+    <value>Acceso a internet desactivado en este chat. Pulsa para que el asistente pueda buscar y leer páginas web.</value>
+  </data>
+  <data name="Assistant_Scope_Summary_WebOn" xml:space="preserve">
+    <value>internet activado</value>
+  </data>
+  <data name="Assistant_Scope_Summary_WebOff" xml:space="preserve">
+    <value>sin internet</value>
+  </data>
+  <data name="Assistant_Web_ApproveFetch" xml:space="preserve">
+    <value>¿Abrir esta dirección web? No aparece en tus mensajes ni en resultados anteriores.</value>
+  </data>
+  <data name="Assistant_Web_ApproveFetch_Hint" xml:space="preserve">
+    <value>Revisa la dirección completa antes de permitirla: una página podría intentar enviar tus datos dentro de un enlace. No se cambia nada en tu vault.</value>
+  </data>
+  <data name="Assistant_Web_Error_InvalidUrl" xml:space="preserve">
+    <value>Dirección web no válida o no pública.</value>
+  </data>
+  <data name="Assistant_Web_Error_PrivateAddress" xml:space="preserve">
+    <value>No se pueden abrir direcciones de este equipo ni de tu red local.</value>
+  </data>
+  <data name="Assistant_Web_Error_Unreachable" xml:space="preserve">
+    <value>No se pudo conectar con el sitio.</value>
+  </data>
+  <data name="Assistant_Web_Error_Timeout" xml:space="preserve">
+    <value>El sitio tardó demasiado en responder.</value>
+  </data>
+  <data name="Assistant_Web_Error_HttpStatus" xml:space="preserve">
+    <value>El sitio respondió con el error {0}.</value>
+  </data>
+  <data name="Assistant_Web_Error_Unsupported" xml:space="preserve">
+    <value>No es una página legible ({0}).</value>
+  </data>
+  <data name="Assistant_Web_Error_TooLarge" xml:space="preserve">
+    <value>La página es demasiado grande.</value>
+  </data>
+  <data name="Assistant_Web_Error_Redirects" xml:space="preserve">
+    <value>Demasiadas redirecciones.</value>
+  </data>
+  <data name="Assistant_Web_Error_SearchUnavailable" xml:space="preserve">
+    <value>{0} no devolvió resultados ahora mismo.</value>
+  </data>
+  <data name="Assistant_Web_Error_KeyMissing" xml:space="preserve">
+    <value>Añade tu clave de Brave Search en Ajustes.</value>
+  </data>
+  <data name="Assistant_Web_Error_KeyRejected" xml:space="preserve">
+    <value>Brave Search rechazó la clave.</value>
+  </data>
+  <data name="Assistant_Web_Error_RateLimited" xml:space="preserve">
+    <value>Se alcanzó el límite de búsquedas de {0}.</value>
+  </data>
+  <data name="Settings_Ai_Web_Title" xml:space="preserve">
+    <value>Acceso a internet</value>
+  </data>
+  <data name="Settings_Ai_Web_NewChats_Label" xml:space="preserve">
+    <value>Internet en los chats nuevos</value>
+  </data>
+  <data name="Settings_Ai_Web_NewChats_Description" xml:space="preserve">
+    <value>Los chats nuevos empiezan con el acceso a internet activado, para que el asistente busque y lea páginas web cuando lo necesite. Cada chat puede activarlo o desactivarlo con el botón del globo del cuadro de mensaje.</value>
+  </data>
+  <data name="Settings_Ai_Web_Engine_Label" xml:space="preserve">
+    <value>Buscador</value>
+  </data>
+  <data name="Settings_Ai_Web_DuckDuckGoHelp" xml:space="preserve">
+    <value>Funciona sin cuenta ni clave. Si DuckDuckGo limita las búsquedas automáticas, cambia a Brave Search.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveHelp" xml:space="preserve">
+    <value>Usa tu propia clave de la API de Brave Search, que tiene nivel gratuito, para obtener resultados más estables. La clave se guarda en el almacén seguro del sistema.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_None" xml:space="preserve">
+    <value>No hay ninguna clave de Brave Search guardada</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_Placeholder" xml:space="preserve">
+    <value>Pega tu clave de la API de Brave Search</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_Invalid" xml:space="preserve">
+    <value>Eso no parece una clave de la API de Brave Search.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_SavedMessage" xml:space="preserve">
+    <value>El asistente buscará en internet con Brave Search.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_GetKey" xml:space="preserve">
+    <value>Consigue una clave en el panel de Brave Search</value>
+  </data>
+  <data name="Settings_Ai_Web_Privacy" xml:space="preserve">
+    <value>Una búsqueda envía solo la consulta al buscador elegido, y las páginas se descargan directamente desde este equipo. Lo que el asistente lee llega al proveedor de IA como parte de la conversación. No se guarda nada en disco.</value>
+  </data>
+  <data name="Settings_Ai_Web_Safety" xml:space="preserve">
+    <value>Solo se pueden abrir sitios web públicos, nunca este equipo ni tu red local. El contenido de las páginas se trata como datos, no como instrucciones, y una dirección que el asistente proponga por su cuenta te pide confirmación antes.</value>
+  </data>
 </root>

@@ -198,7 +198,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ExternalCalendarService? externalCalendarService = null,
         ClaudeCliStatusViewModel? aiCliStatus = null,
         AiChatService? aiChatService = null,
-        SidePanelLayoutViewModel? sidePanels = null)
+        SidePanelLayoutViewModel? sidePanels = null,
+        AiWebService? aiWebService = null)
     {
         _reminderImportService = reminderService;
         _onExternalImportCompleted = onExternalImportCompleted;
@@ -439,6 +440,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ApplyCodeFont(settingsService.Settings.CodeFontFamily);
         InitializeExternalCalendars();
         InitializeAi(aiCliStatus, aiChatService);
+        InitializeAiWeb(aiWebService);
     }
 
     private void DebouncedSave()

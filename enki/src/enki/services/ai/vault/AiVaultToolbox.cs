@@ -64,6 +64,7 @@ public sealed partial class AiVaultToolbox
     private readonly CalendarAggregationService? _calendar;
     private readonly AiVaultHost _host;
     private readonly NoteSearchService _search;
+    private readonly AiWebService? _web;
     private readonly Dictionary<string, AiToolDefinition> _tools = new(StringComparer.Ordinal);
 
     public AiVaultToolbox(
@@ -76,7 +77,8 @@ public sealed partial class AiVaultToolbox
         SettingsService settingsService,
         CalendarAggregationService? calendarAggregationService = null,
         AiVaultHost? host = null,
-        SkillService? skillService = null)
+        SkillService? skillService = null,
+        AiWebService? webService = null)
     {
         _vault = vaultService;
         _sessions = sessionService;
@@ -89,6 +91,7 @@ public sealed partial class AiVaultToolbox
         _calendar = calendarAggregationService;
         _host = host ?? new AiVaultHost();
         _search = new NoteSearchService(vaultService);
+        _web = webService;
 
         RegisterOverviewTools();
         RegisterNoteTools();
@@ -99,6 +102,7 @@ public sealed partial class AiVaultToolbox
         RegisterReminderTools();
         RegisterTrashTools();
         RegisterSkillTools();
+        if (_web is not null) RegisterWebTools();
     }
 
     /// <summary>Todas las herramientas que existen, se ofrezcan o no en un chat concreto.</summary>
@@ -108,17 +112,19 @@ public sealed partial class AiVaultToolbox
 
     /// <summary>Las herramientas que se ofrecen al modelo en este turno.</summary>
     public IReadOnlyList<AiToolDefinition> AvailableTools(AiToolContext context) =>
-        _tools.Values.Where(tool => IsAvailable(tool, context.Scope)).ToList();
+        _tools.Values.Where(tool => IsAvailable(tool, context)).ToList();
 
-    private bool IsAvailable(AiToolDefinition tool, AiAccessScope scope)
+    private bool IsAvailable(AiToolDefinition tool, AiToolContext context)
     {
         if (tool.Effect != AiToolEffect.Read && !ChangesAllowed) return false;
+        var scope = context.Scope;
         return tool.Scope switch
         {
             AiToolScope.Content => true,
             AiToolScope.Vault => scope.IncludesVault,
             AiToolScope.Polar => scope.IncludesVault && _polarAuth.IsLinked,
             AiToolScope.Sessions => scope.IncludesVault && scope.FullVaultAccess,
+            AiToolScope.Web => context.WebAccess(),
             _ => false
         };
     }
@@ -130,17 +136,20 @@ public sealed partial class AiVaultToolbox
         context.Cancellation.ThrowIfCancellationRequested();
         if (!_tools.TryGetValue(name, out var tool))
             return new AiToolOutcome($"Unknown tool '{name}'.", IsError: true);
-        if (!IsAvailable(tool, context.Scope))
+        if (!IsAvailable(tool, context))
             return new AiToolOutcome(tool.Effect != AiToolEffect.Read && !ChangesAllowed
                 ? "The user has disabled vault changes in Settings: you can only read."
-                : $"'{name}' is not available in this chat's scope.", IsError: true);
+                : tool.Scope == AiToolScope.Web
+                    ? "The user has turned off web access for this chat. Do not try again unless they turn it back on."
+                    : $"'{name}' is not available in this chat's scope.", IsError: true);
 
         var activity = new AiToolActivity { Tool = name };
         context.ActivityReported?.Invoke(activity);
         context.Activity?.Touch();
         try
         {
-            if (tool.Effect == AiToolEffect.Read
+            // El permiso de consulta es sobre el contenido del vault; la web tiene su propio interruptor.
+            if (tool.Effect == AiToolEffect.Read && tool.Scope != AiToolScope.Web
                 && !await context.ReadAccess.EnsureAsync(request => WaitForUserAsync(context, request)))
                 throw new AiToolException(AiToolErrorKind.ReadDenied,
                     "The user has not allowed this chat to search or read content on its own. Work with what they wrote and attached, "
@@ -181,7 +190,7 @@ public sealed partial class AiVaultToolbox
         return ex switch
         {
             OperationCanceledException => null,
-            AiToolException tool => new Failure(tool.Kind, tool.Message, User(tool.Kind)),
+            AiToolException tool => new Failure(tool.Kind, tool.Message, tool.UserMessage ?? User(tool.Kind)),
             SessionLockedException => new Failure(AiToolErrorKind.Locked,
                 "That content belongs to a password-protected session that is locked. Ask the user to unlock it in Enki (Sessions) and try again.",
                 User(AiToolErrorKind.Locked)),
@@ -224,17 +233,23 @@ public sealed partial class AiVaultToolbox
     /// espera, mantiene vivo el turno para que el límite de inactividad no lo corte.</summary>
     private async Task RequireApprovalAsync(AiToolCall call, LocalizedText title, IReadOnlyList<string> items)
     {
-        var context = call.Context;
-        if (context.ApprovalRequested is null)
-            throw new AiToolException(AiToolErrorKind.Denied, "This action needs the user's confirmation, which is not available here.");
-
-        var request = new AiApprovalRequest(call.Activity.Tool, title, items);
-        var approved = await WaitForUserAsync(context, token => context.ApprovalRequested(request, token));
+        var approved = await AskApprovalAsync(call, title, items);
         if (!ChangesAllowed)
             throw new AiToolException(AiToolErrorKind.Denied, "The user disabled vault changes while this action was waiting for approval.");
         if (!approved)
             throw new AiToolException(AiToolErrorKind.Denied,
                 "The user did not confirm this action, so nothing was done. Do not retry it unless the user asks again.");
+    }
+
+    /// <summary>Enseña la tarjeta de confirmación en el chat y espera la respuesta (ver <see cref="WaitForUserAsync"/>).</summary>
+    private static async Task<bool> AskApprovalAsync(AiToolCall call, LocalizedText title, IReadOnlyList<string> items,
+        LocalizedText? hint = null)
+    {
+        var context = call.Context;
+        if (context.ApprovalRequested is null)
+            throw new AiToolException(AiToolErrorKind.Denied, "This action needs the user's confirmation, which is not available here.");
+        var request = new AiApprovalRequest(call.Activity.Tool, title, items, hint);
+        return await WaitForUserAsync(context, token => context.ApprovalRequested(request, token));
     }
 
     /// <summary>Espera una decisión del usuario (una confirmación, un permiso) con el límite de

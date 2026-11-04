@@ -41,8 +41,9 @@ public sealed record AiWorkspace(string Id, string Name, string RootPath, Sessio
 }
 
 /// <summary>Una acción que necesita la confirmación del usuario antes de ejecutarse (borrar algo para
-/// siempre, sacar contenido de una sesión protegida). <see cref="Items"/> son las etiquetas de lo afectado.</summary>
-public sealed record AiApprovalRequest(string Tool, LocalizedText Title, IReadOnlyList<string> Items);
+/// siempre, sacar contenido de una sesión protegida, abrir una dirección web desconocida). <see cref="Items"/> son
+/// las etiquetas de lo afectado; <see cref="Hint"/>, una explicación propia en vez de la genérica de la tarjeta.</summary>
+public sealed record AiApprovalRequest(string Tool, LocalizedText Title, IReadOnlyList<string> Items, LocalizedText? Hint = null);
 
 /// <summary>Lo que el servidor MCP sabe de un turno: el ámbito del chat y cómo avisar a la conversación. Se
 /// registra al empezar el turno con un token propio (ver <see cref="EnkiMcpServer.Register"/>) y se retira al
@@ -69,6 +70,15 @@ public sealed class AiToolContext
 
     /// <summary>Se cancela al detener la respuesta: corta una confirmación pendiente.</summary>
     public CancellationToken Cancellation { get; init; }
+
+    /// <summary>Si el chat tiene encendido el acceso a internet, leído en vivo: apagarlo a mitad de una
+    /// respuesta ya impide la búsqueda o la lectura siguiente. Apagado por defecto.</summary>
+    public Func<bool> WebAccess { get; init; } = () => false;
+
+    /// <summary>Direcciones que el modelo puede abrir sin preguntar: las que el usuario escribió en el chat y las
+    /// que salieron de resultados de búsqueda o de páginas ya leídas. Cualquier otra pide confirmación, para que
+    /// una instrucción escondida en una página no pueda sacar datos del vault metiéndolos en una URL inventada.</summary>
+    public AiWebUrlSet KnownWebUrls { get; init; } = new();
 
     /// <summary>Skills leídas completas en este turno: su contenido original permite detectar conflictos.</summary>
     internal Dictionary<string, SkillFile> SkillReads { get; } = new(StringComparer.Ordinal);
@@ -140,4 +150,44 @@ public sealed class AiVaultHost
 
     /// <summary>Tras cualquier acción que cambie algo, para refrescar las pantallas afectadas.</summary>
     public Action VaultChanged { get; init; } = () => { };
+}
+
+/// <summary>Conjunto de direcciones web comparadas sin fragmento ni barra final y con el host en minúsculas
+/// (<see cref="AiToolContext.KnownWebUrls"/>). Se usa siempre desde el hilo de las herramientas.</summary>
+public sealed partial class AiWebUrlSet
+{
+    private readonly HashSet<string> _urls = new(StringComparer.Ordinal);
+
+    public int Count => _urls.Count;
+
+    public void Add(string url)
+    {
+        if (Normalize(url) is { } key) _urls.Add(key);
+    }
+
+    public void Add(Uri url) => Add(url.AbsoluteUri);
+
+    public void AddRange(IEnumerable<string> urls)
+    {
+        foreach (var url in urls) Add(url);
+    }
+
+    /// <summary>Añade las direcciones que aparezcan escritas en <paramref name="text"/> (un mensaje del usuario).</summary>
+    public void AddFrom(string text)
+    {
+        foreach (System.Text.RegularExpressions.Match match in UrlRegex().Matches(text))
+            Add(match.Value.TrimEnd('.', ',', ';', ':', '!', '?', '»', '"', '\''));
+    }
+
+    public bool Contains(Uri url) => Normalize(url.AbsoluteUri) is { } key && _urls.Contains(key);
+
+    private static string? Normalize(string url)
+    {
+        if (!Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) return null;
+        var path = uri.AbsolutePath.Length > 1 ? uri.AbsolutePath.TrimEnd('/') : string.Empty;
+        return $"{uri.Scheme}://{uri.Host.ToLowerInvariant()}{(uri.IsDefaultPort ? string.Empty : ":" + uri.Port)}{path}{uri.Query}";
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"https?://[^\s<>()\[\]{}""'`]+", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex UrlRegex();
 }

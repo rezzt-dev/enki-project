@@ -10,14 +10,17 @@ public enum AiApiKeyKind
     /// <summary>Clave de Anthropic para Claude con facturación por API (<see cref="Models.AiSettings.ClaudeUseApi"/>).</summary>
     Anthropic,
     /// <summary>Clave de Google AI Studio con la que Enki llama a la API de Gemini (<see cref="GeminiApiService"/>).</summary>
-    Gemini
+    Gemini,
+    /// <summary>Clave de la API de Brave Search, para el acceso a internet del asistente (<see cref="AiWebService"/>).</summary>
+    BraveSearch
 }
 
 /// <summary>Clave de API del propio usuario para un proveedor del asistente. Vive en el almacén seguro del
 /// sistema —DPAPI en Windows, Keychain en macOS, Secret Service en Linux—, el mismo que guarda la sesión de
 /// Polar (<see cref="PolarCredentialStore"/>) con una entrada por proveedor: nunca en <c>settings.json</c>, en
 /// el vault ni en el log. La de Anthropic solo se le pasa al CLI oficial como <c>ANTHROPIC_API_KEY</c> en su
-/// propio proceso; la de Gemini, solo en la cabecera <c>x-goog-api-key</c> de las peticiones a Google.</summary>
+/// propio proceso; la de Gemini, solo en la cabecera <c>x-goog-api-key</c> de las peticiones a Google; la de
+/// Brave Search, solo en la cabecera <c>X-Subscription-Token</c> de las búsquedas.</summary>
 public sealed class AiApiKeyStore
 {
     /// <summary>Página de la consola de Anthropic donde el usuario crea y gestiona sus claves.</summary>
@@ -25,6 +28,9 @@ public sealed class AiApiKeyStore
 
     /// <summary>Página de Google AI Studio donde se crea una clave, también gratuita, con una cuenta de Google.</summary>
     public const string GeminiKeysUrl = "https://aistudio.google.com/apikey";
+
+    /// <summary>Panel de la API de Brave Search, donde se crea la clave (con nivel gratuito).</summary>
+    public const string BraveSearchKeysUrl = "https://api-dashboard.search.brave.com/app/keys";
 
     private readonly Lazy<IPolarCredentialStore> _store;
 
@@ -46,10 +52,20 @@ public sealed class AiApiKeyStore
     public AiApiKeyKind Kind { get; }
 
     /// <summary>Dónde crea y gestiona el usuario las claves de este proveedor.</summary>
-    public string KeysUrl => Kind == AiApiKeyKind.Gemini ? GeminiKeysUrl : AnthropicKeysUrl;
+    public string KeysUrl => Kind switch
+    {
+        AiApiKeyKind.Gemini => GeminiKeysUrl,
+        AiApiKeyKind.BraveSearch => BraveSearchKeysUrl,
+        _ => AnthropicKeysUrl
+    };
 
     // "anthropic" es la entrada que ya existía: cambiarla perdería las claves guardadas.
-    private static string Purpose(AiApiKeyKind kind) => kind == AiApiKeyKind.Gemini ? "gemini" : "anthropic";
+    private static string Purpose(AiApiKeyKind kind) => kind switch
+    {
+        AiApiKeyKind.Gemini => "gemini",
+        AiApiKeyKind.BraveSearch => "brave-search",
+        _ => "anthropic"
+    };
 
     /// <summary>La clave guardada, o <see langword="null"/> si no hay ninguna o el almacén no responde (en ese
     /// caso se registra el motivo, sin la clave).</summary>
@@ -87,16 +103,16 @@ public sealed class AiApiKeyStore
     {
         var key = value?.Trim() ?? string.Empty;
         if (key.Length is < 24 or > 512 || key.Any(char.IsWhiteSpace)) return false;
-        // Las claves de AI Studio no tienen un prefijo documentado como estable: basta con descartar lo que
-        // claramente es otra cosa (una clave de Anthropic u OpenAI, una URL, texto con signos).
-        return kind == AiApiKeyKind.Gemini
+        // Las claves de AI Studio y de Brave no tienen un prefijo documentado como estable: basta con descartar
+        // lo que claramente es otra cosa (una clave de Anthropic u OpenAI, una URL, texto con signos).
+        return kind is AiApiKeyKind.Gemini or AiApiKeyKind.BraveSearch
             ? !key.StartsWith("sk-", StringComparison.Ordinal) && key.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.')
             : key.StartsWith("sk-ant-", StringComparison.Ordinal);
     }
 
     /// <summary>Los cuatro últimos caracteres, para que el usuario reconozca qué clave tiene guardada.</summary>
     public static string Mask(string apiKey, AiApiKeyKind kind = AiApiKeyKind.Anthropic) =>
-        (kind == AiApiKeyKind.Gemini ? apiKey[..4] : "sk-ant-") + "…" + apiKey[^4..];
+        (kind is AiApiKeyKind.Gemini or AiApiKeyKind.BraveSearch ? apiKey[..4] : "sk-ant-") + "…" + apiKey[^4..];
 
     /// <summary>Los fallos esperables del almacén seguro: los mismos que con la sesión de Polar, más una
     /// plataforma sin almacén.</summary>

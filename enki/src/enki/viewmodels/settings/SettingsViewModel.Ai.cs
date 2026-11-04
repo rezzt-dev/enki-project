@@ -499,5 +499,6 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(AiApiKeysPageLabel));
         AiCliStatus?.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(AiHistoryCountLabel));
+        RefreshAiWebLocalizedLabels();
     }
 }

@@ -577,6 +577,26 @@ software), en Linux sin WPE (visor nativo) y en Windows o macOS.
       rotación continúa sin saltar.
 - [ ] Con lector de pantalla, el botón de rotación anuncia su acción y se activa con teclado.
 
+## 8.12 Asistente: acceso a internet
+
+Ver `.docs/project-info/asistente-ia.md`, sección "Acceso a internet". Hacerlo con red real y con al menos
+dos proveedores (uno por CLI y Gemini u Ollama).
+
+- [ ] Un chat nuevo nace con el globo apagado; preguntar por algo de actualidad: el asistente explica que puede
+      encenderse con el globo. Encenderlo y repetir: la actividad muestra "Buscar en internet" y "Leer página
+      web"; la respuesta cita las páginas con enlaces y el botón de la fila abre la página en el navegador.
+- [ ] Una página larga (artículo de Wikipedia) se lee por tramos sin volver a descargarse.
+- [ ] Pedir "abre https://ejemplo.org/x" en el mensaje: se abre sin preguntar. Pedir que abra una dirección que
+      no salió del mensaje ni de resultados: aparece la tarjeta de confirmación con la dirección completa;
+      "Denegar" no descarga nada.
+- [ ] Pedir que abra `http://localhost:11434`, `http://192.168.1.1` o `http://169.254.169.254`: se rechaza sin
+      conexión (comprobar con un servidor local escuchando que no recibe la petición).
+- [ ] Apagar el globo durante una respuesta: la búsqueda siguiente se rechaza. El chat recuerda el estado al
+      reabrirlo; "Internet en los chats nuevos" en Ajustes cambia el valor de los chats nuevos.
+- [ ] Brave Search: sin clave, la búsqueda avisa de añadirla en Ajustes; con una clave real busca; una clave
+      revocada muestra "Brave Search rechazó la clave". La clave no aparece en `settings.json` ni en el log.
+- [ ] Sin red: "No se pudo conectar con el sitio", sin cortar la respuesta.
+
 ---
 
 ## 9. Criterio de salida antes de `0.2.0`

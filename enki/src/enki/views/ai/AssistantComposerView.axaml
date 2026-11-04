@@ -137,6 +137,23 @@
       <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
+    <!-- Acceso a internet del chat: el mismo chip, con más tinta cuando está encendido (estado que no depende
+         solo del color: el icono también cambia). -->
+    <Style Selector="Button.composer-chip.on /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Ink05}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink50}" />
+    </Style>
+    <Style Selector="Button.composer-chip.on:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Ink10}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Ink60}" />
+    </Style>
+    <Style Selector="Button.composer-chip.on TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.composer-chip.on mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
     <!-- Enviar y detener: cuadrados de icono. Enviar parte de Button.pill-primary (sólido, invierte al pasar el
          cursor); deshabilitado no es un bloque gris al 35 % sino un hueco apenas marcado, para que se note al
          instante cuándo ya se puede enviar. Detener parte de Button.pill (contorno). -->
@@ -267,6 +284,17 @@
                         Command="{Binding ClearSkillCommand}" IsVisible="{Binding HasActiveSkill}"
                         ToolTip.Tip="{loc:Tr Assistant_Composer_ClearSkill}" AutomationProperties.Name="{loc:Tr Assistant_Composer_ClearSkill}">
                   <mi:MaterialIcon Kind="CloseCircleOutline" Width="16" Height="16" />
+                </Button>
+                <Button x:Name="WebAccessToggle" Classes="composer-chip" Classes.on="{Binding WebAccessEnabled}"
+                        Command="{Binding ToggleWebAccessCommand}" IsVisible="{Binding CanToggleWebAccess}"
+                        ToolTip.Tip="{Binding WebAccessTooltip}" AutomationProperties.Name="{Binding WebAccessTooltip}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Panel Width="13" Height="13" VerticalAlignment="Center">
+                      <mi:MaterialIcon Kind="Web" Width="13" Height="13" IsVisible="{Binding WebAccessEnabled}" />
+                      <mi:MaterialIcon Kind="WebOff" Width="13" Height="13" IsVisible="{Binding !WebAccessEnabled}" />
+                    </Panel>
+                    <TextBlock Text="{loc:Tr Assistant_Web_Toggle_Label}" FontSize="11.5" VerticalAlignment="Center" />
+                  </StackPanel>
                 </Button>
                 <Button Classes="composer-chip"
                         Command="{Binding AttachActiveNoteCommand}" IsVisible="{Binding CanAttachActiveNote}"

@@ -7615,4 +7615,106 @@ Happy writing.</value>
   <data name="Ai_Gemini_Blocked" xml:space="preserve">
     <value>Google’s safety filters blocked this response. Rephrase the message and try again.</value>
   </data>
+  <data name="Assistant_Tool_web_search" xml:space="preserve">
+    <value>Search the web</value>
+  </data>
+  <data name="Assistant_Tool_web_fetch" xml:space="preserve">
+    <value>Read web page</value>
+  </data>
+  <data name="Assistant_Web_Toggle_Label" xml:space="preserve">
+    <value>Web</value>
+  </data>
+  <data name="Assistant_Web_Toggle_OnTooltip" xml:space="preserve">
+    <value>Web access is on for this chat: the assistant can search the internet and read pages. Click to turn it off.</value>
+  </data>
+  <data name="Assistant_Web_Toggle_OffTooltip" xml:space="preserve">
+    <value>Web access is off for this chat. Click to let the assistant search the internet and read pages.</value>
+  </data>
+  <data name="Assistant_Scope_Summary_WebOn" xml:space="preserve">
+    <value>web on</value>
+  </data>
+  <data name="Assistant_Scope_Summary_WebOff" xml:space="preserve">
+    <value>web off</value>
+  </data>
+  <data name="Assistant_Web_ApproveFetch" xml:space="preserve">
+    <value>Open this web address? It didn’t come from your messages or from earlier search results.</value>
+  </data>
+  <data name="Assistant_Web_ApproveFetch_Hint" xml:space="preserve">
+    <value>Check the full address before allowing it: a page could try to send your data inside a link. Nothing in your vault changes.</value>
+  </data>
+  <data name="Assistant_Web_Error_InvalidUrl" xml:space="preserve">
+    <value>Invalid or non-public web address.</value>
+  </data>
+  <data name="Assistant_Web_Error_PrivateAddress" xml:space="preserve">
+    <value>Addresses on this computer or your local network can’t be opened.</value>
+  </data>
+  <data name="Assistant_Web_Error_Unreachable" xml:space="preserve">
+    <value>The site couldn’t be reached.</value>
+  </data>
+  <data name="Assistant_Web_Error_Timeout" xml:space="preserve">
+    <value>The site took too long to respond.</value>
+  </data>
+  <data name="Assistant_Web_Error_HttpStatus" xml:space="preserve">
+    <value>The site responded with error {0}.</value>
+  </data>
+  <data name="Assistant_Web_Error_Unsupported" xml:space="preserve">
+    <value>Not a readable page ({0}).</value>
+  </data>
+  <data name="Assistant_Web_Error_TooLarge" xml:space="preserve">
+    <value>The page is too large.</value>
+  </data>
+  <data name="Assistant_Web_Error_Redirects" xml:space="preserve">
+    <value>Too many redirects.</value>
+  </data>
+  <data name="Assistant_Web_Error_SearchUnavailable" xml:space="preserve">
+    <value>{0} didn’t return results right now.</value>
+  </data>
+  <data name="Assistant_Web_Error_KeyMissing" xml:space="preserve">
+    <value>Add your Brave Search key in Settings.</value>
+  </data>
+  <data name="Assistant_Web_Error_KeyRejected" xml:space="preserve">
+    <value>Brave Search rejected the key.</value>
+  </data>
+  <data name="Assistant_Web_Error_RateLimited" xml:space="preserve">
+    <value>{0} search limit reached.</value>
+  </data>
+  <data name="Settings_Ai_Web_Title" xml:space="preserve">
+    <value>Internet access</value>
+  </data>
+  <data name="Settings_Ai_Web_NewChats_Label" xml:space="preserve">
+    <value>Web access in new chats</value>
+  </data>
+  <data name="Settings_Ai_Web_NewChats_Description" xml:space="preserve">
+    <value>New chats start with web access on, so the assistant can search the internet and read pages when it needs to. Each chat can turn it on or off with the globe button in the message box.</value>
+  </data>
+  <data name="Settings_Ai_Web_Engine_Label" xml:space="preserve">
+    <value>Search engine</value>
+  </data>
+  <data name="Settings_Ai_Web_DuckDuckGoHelp" xml:space="preserve">
+    <value>Works without an account or key. If DuckDuckGo limits automated searches, switch to Brave Search.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveHelp" xml:space="preserve">
+    <value>Uses your own Brave Search API key, which has a free tier, for more stable results. The key is kept in the system’s secure store.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_None" xml:space="preserve">
+    <value>No Brave Search key saved</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_Placeholder" xml:space="preserve">
+    <value>Paste your Brave Search API key</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_Invalid" xml:space="preserve">
+    <value>That doesn’t look like a Brave Search API key.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_SavedMessage" xml:space="preserve">
+    <value>The assistant will search the web with Brave Search.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_GetKey" xml:space="preserve">
+    <value>Get a key in the Brave Search dashboard</value>
+  </data>
+  <data name="Settings_Ai_Web_Privacy" xml:space="preserve">
+    <value>A search sends only the query to the chosen engine, and pages are downloaded directly from this computer. Whatever the assistant reads goes to the AI provider as part of the conversation. Nothing is saved to disk.</value>
+  </data>
+  <data name="Settings_Ai_Web_Safety" xml:space="preserve">
+    <value>Only public websites can be opened, never this computer or your local network. Page content is treated as data, not instructions, and an address the assistant comes up with on its own asks you first.</value>
+  </data>
 </root>

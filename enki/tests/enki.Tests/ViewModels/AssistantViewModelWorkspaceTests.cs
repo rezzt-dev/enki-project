@@ -336,4 +336,49 @@ public sealed class AssistantViewModelWorkspaceTests : IDisposable
         vm.NewChatCommand.Execute(null);
         Assert.False(vm.ReadAccessGranted);
     }
+
+    // ===================== Acceso a internet =====================
+
+    [Fact]
+    public async Task WebAccess_IsPerChat_FollowsTheNewChatDefault_AndReachesTheModel()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var textOnly = await CreateAsync();
+        Assert.False(textOnly.CanToggleWebAccess);
+        Assert.False(textOnly.WebAccessEnabled);
+
+        File.WriteAllText(Path.Combine(_fake.Root, "help.txt"), FakeClaudeCli.HelpText
+            + "  --mcp-config <configs...>\n  --allowedTools <tools...>\n  --setting-sources <sources>\n  --permission-mode <mode>\n");
+        var toolbox = new AiVaultToolbox(_vault, new SessionService(_vault), new KanbanService(_storageDirectory), new PolarTaskService(_storageDirectory),
+            new PolarAuthService(_settings, baseUrl: "https://test.example", anonKey: "test"), new ReminderService(_storageDirectory), _settings);
+        using var server = new EnkiMcpServer(toolbox);
+        var vm = await CreateAsync(vaultTools: server);
+        Assert.True(vm.CanToggleWebAccess);
+        Assert.False(vm.WebAccessEnabled);
+
+        // Un chat por empezar sigue al ajuste mientras el usuario no lo toque.
+        _settings.Settings.Ai.WebAccessForNewChats = true;
+        vm.RefreshScope();
+        Assert.True(vm.WebAccessEnabled);
+        Assert.Contains("·", vm.ScopeSummary, StringComparison.Ordinal);
+
+        vm.ToggleWebAccessCommand.Execute(null);
+        Assert.False(vm.WebAccessEnabled);
+        vm.ToggleWebAccessCommand.Execute(null);
+        await SendAsync(vm, "¿Qué tiempo hace?");
+
+        Assert.True(new AiChatService(_storageDirectory).Sessions.Single().WebAccess);
+        Assert.Contains("Web: on.", _fake.Stdin(0), StringComparison.Ordinal);
+
+        // Apagarlo en el chat abierto se guarda y llega al turno siguiente.
+        vm.ToggleWebAccessCommand.Execute(null);
+        Assert.False(new AiChatService(_storageDirectory).Sessions.Single().WebAccess);
+        await SendAsync(vm, "Sin internet");
+        Assert.Contains("Web: off.", _fake.Stdin(1), StringComparison.Ordinal);
+
+        // Un chat nuevo vuelve al valor de Ajustes.
+        _settings.Settings.Ai.WebAccessForNewChats = false;
+        vm.NewChatCommand.Execute(null);
+        Assert.False(vm.WebAccessEnabled);
+    }
 }

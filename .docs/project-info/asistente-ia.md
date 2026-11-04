@@ -7,7 +7,8 @@
 ## Resumen
 
 La sección **Asistente** permite elegir Claude, OpenAI mediante la cuenta de Codex, Gemini con la clave de
-API de Google AI Studio del usuario o modelos locales servidos por Ollama. Comparte historial, notas adjuntas, skills, ámbitos y herramientas del vault.
+API de Google AI Studio del usuario o modelos locales servidos por Ollama. Comparte historial, notas adjuntas, skills, ámbitos y herramientas del vault,
+y puede buscar en internet y leer páginas web cuando el chat lo permite (ver "Acceso a internet").
 La IA está **apagada por defecto**, exige aceptar el aviso de privacidad y términos y, apagada, no ejecuta
 comprobaciones ni envía contenido. Claude conserva su integración mediante el CLI oficial (`claude -p`), con
 la suscripción del usuario o con su propia clave de API.
@@ -112,7 +113,8 @@ con acceso a Codex o una clave API configurada por el usuario en el CLI. La inte
 métodos; el uso de API se factura por separado. Enki no implementa un inicio de sesión alternativo.
 
 Los turnos usan `codex exec --strict-config --json --ephemeral --ignore-user-config --ignore-rules`, directorio privado,
-sandbox de solo lectura, búsqueda web y herramientas de shell desactivadas. No se carga la configuración
+sandbox de solo lectura, búsqueda web propia de Codex y herramientas de shell desactivadas (la web llega, como
+en el resto de proveedores, por las herramientas de Enki: ver "Acceso a internet"). No se carga la configuración
 personal de MCP, reglas o instrucciones del proyecto. Se exige que el CLI anuncie los flags de aislamiento;
 una versión antigua muestra el estado de actualización y no ejecuta el chat. El único MCP configurado es
 el de Enki; el token efímero viaja por una variable del proceso hijo, nunca por argumentos. Se exigen tanto
@@ -248,16 +250,18 @@ services/ai/AiBackendService.cs      selección de transporte y estado compartid
 services/ai/AiPromptBuilder.cs       prompt de sistema + skill, contexto de notas, recuperación de historial
 services/ai/AiChatService.cs         historial: un JSON por chat en %AppData%/Enki/ai/chats/, borradores de
                                      chats nuevos en ai/drafts.json
-services/ai/AiApiKeyStore.cs         claves de API (Anthropic, Gemini) en el almacén seguro del sistema
+services/ai/AiApiKeyStore.cs         claves de API (Anthropic, Gemini, Brave Search) en el almacén seguro del sistema
+services/ai/AiWebService.cs          acceso a internet: búsqueda (DuckDuckGo, Brave Search) y lectura de páginas
+services/WebFetch.cs                 descarga acotada de páginas públicas, compartida con el web clipper
 services/ai/AiTextFiles.cs           reglas comunes para leer archivos de texto (adjuntos y read_text_file)
 services/ai/ChatMarkdownParser.cs    subconjunto de Markdown para pintar las respuestas
 controls/ChatMarkdownView.cs         render de esos bloques con los recursos del tema
 viewmodels/ai/                       AssistantViewModel (+ .Composer, .Scope, .Effort, .Drafts, .Vault,
-                                     .Activity, .NoteInsert), ClaudeCliStatusViewModel, filas y tarjetas
+                                     .Activity, .NoteInsert, .Web), ClaudeCliStatusViewModel, filas y tarjetas
 views/ai/AssistantView.axaml         sección Asistente
 views/ai/AssistantPanelView.axaml    panel lateral; ambos componen los controles compartidos de views/ai/
 viewmodels/shell/MainWindowViewModel.Assistant.cs  panel, ampliar/volver e indicador global
-viewmodels/settings/SettingsViewModel.Ai.cs + sección "Ai" de SettingsView.axaml
+viewmodels/settings/SettingsViewModel.Ai.cs (+ .AiWeb) + sección "Ai" de SettingsView.axaml
 ```
 
 - Composición manual en `MainWindowViewModel.Composition.cs`: `ClaudeCliService`, `AiChatService` y
@@ -428,6 +432,81 @@ mismo CLI oficial, no un backend aparte: solo cambia la credencial con la que se
 - Cambiar la skill de un chat entre turnos: se fija antes del primer mensaje.
 - Extraer tareas a Kanban o Polar ya lo hacen las herramientas del vault sobre las entidades reales; no hay
   un flujo aparte de propuestas.
+
+## Acceso a internet
+
+El asistente puede **buscar en internet y leer páginas web** con cualquiera de los cuatro proveedores. No usa la
+búsqueda propia de cada proveedor (Claude Code, Codex o Gemini la tienen, Ollama no): son dos herramientas más
+del catálogo de Enki, `web_search` y `web_fetch` (`AiVaultToolbox.Web.cs`), servidas por el mismo MCP y con las
+mismas reglas de actividad, confirmación y cancelación que las del vault. Así el comportamiento, los permisos y
+lo que se ve en la respuesta son iguales con todos, y Enki decide qué se puede abrir.
+
+### Cómo se activa
+
+- **Por chat**, con el botón del globo del compositor ("Web"). Encendido, el chip sube de tinta y el icono cambia;
+  el estado se guarda en `AiChatSession.WebAccess` y se recupera al reabrir el chat. Se aplica en caliente: el
+  servidor lo lee en cada llamada (`AiToolContext.WebAccess`), así que apagarlo durante una respuesta impide la
+  búsqueda siguiente. Solo aparece con herramientas disponibles (en modo texto el modelo no puede llamar a nada).
+- **Chats nuevos**: Ajustes › Inteligencia artificial › Acceso a internet › "Internet en los chats nuevos"
+  (`AiSettings.WebAccessForNewChats`, apagado por defecto). Un chat por empezar sigue a ese ajuste mientras el
+  usuario no toque el globo.
+- Es independiente del **permiso de consulta** del vault: buscar en internet no lee el vault, y leer el vault no
+  da acceso a internet. El bloque `<enki_scope>` de cada turno dice "Web: on/off", y el resumen del ámbito bajo
+  el compositor lo repite.
+
+### Buscadores
+
+`AiSettings.WebSearchEngine`:
+
+- **DuckDuckGo** (predeterminado): sin cuenta ni clave, por su versión HTML (`html.duckduckgo.com`). Se descartan
+  los anuncios y se deshacen sus enlaces de redirección. Si DuckDuckGo contesta con su verificación anti-robots,
+  la herramienta lo dice ("no devolvió resultados ahora mismo") y Ajustes sugiere Brave Search.
+- **Brave Search API** con la clave del usuario (nivel gratuito), en el almacén seguro (`AiApiKeyKind.BraveSearch`,
+  entrada `brave-search`). Solo se lee con Brave elegido; viaja solo en la cabecera `X-Subscription-Token`. Clave
+  ausente, rechazada (401/403) o límite (429) tienen su propio mensaje.
+
+### Lectura de páginas
+
+`AiWebService.FetchAsync` sobre `WebFetch`, la misma descarga acotada que el web clipper:
+
+- Solo `http`/`https`, sin credenciales en la URL y solo **direcciones públicas**: las IP literales privadas se
+  rechazan antes de conectar, y el handler de `RemoteImagePolicy` resuelve el nombre y conecta solo a direcciones
+  públicas (cierra el DNS rebinding). Sin proxy del sistema, para que ese filtro vea la dirección real. El modelo
+  no puede llegar a `localhost`, al router, a Ollama ni al propio MCP de Enki.
+- Redirecciones seguidas a mano (5), sin bajar de `https` a `http`; 3 MB como máximo, cortados al leer; 20 s por
+  operación. Solo tipos de texto (HTML, texto, Markdown, CSV, JSON, XML/RSS); un PDF o una imagen se rechazan
+  con el motivo.
+- El HTML pasa por `HtmlReadability.ExtractPage`: el artículo si lo hay y, si no (portadas, listados), todo el
+  `body`; enlaces convertidos en absolutos (respetando `<base href>`) para poder seguirlos, imágenes fuera. El
+  análisis va fuera del hilo de interfaz.
+- Las páginas largas se devuelven por tramos (`start`, `max_chars`, `next_start`), cortando en un salto de línea.
+  Las últimas ocho páginas se recuerdan diez minutos en memoria para pasar de tramo sin volver a descargarlas;
+  nada se escribe en disco y la caché se vacía al apagar la IA, cambiar de vault o salir.
+
+### Defensa ante instrucciones escondidas
+
+Una página puede pedirle al modelo que meta contenido del vault en una URL suya. Por eso `web_fetch` abre sin
+preguntar solo las direcciones **conocidas** del chat (`AiWebUrlSet`): las que el usuario escribió en sus mensajes,
+las de los resultados de búsqueda, los enlaces de las páginas ya leídas y las páginas leídas en turnos anteriores.
+Cualquier otra enseña la tarjeta de confirmación con la **dirección completa** y una explicación propia; denegar o
+dejar pasar el tiempo no descarga nada. El prompt de sistema trata las páginas como datos de terceros, nunca como
+instrucciones, y pide no poner contenido del vault ni datos personales en búsquedas ni URLs salvo petición expresa.
+
+### Actividad y errores
+
+"Buscar en internet" muestra lo buscado; "Leer página web", el título de la página, su dirección completa al pasar
+el cursor y un botón para abrirla en el navegador (`UrlOpener`). Cada fallo llega al modelo con qué hacer y al
+usuario con su motivo (`AiVaultToolbox.Describe(AiWebException…)`): dirección no válida o local, sin conexión,
+tiempo agotado, error HTTP, contenido no legible, demasiado grande, demasiadas redirecciones, buscador no
+disponible, clave ausente o rechazada y límite de búsquedas. Ni las consultas ni las direcciones pasan por el log.
+
+Pruebas: `Services/AiWebServiceTests` (DuckDuckGo y Brave, clave solo en cabecera, errores, HTML a Markdown,
+redirecciones a direcciones privadas, tipos y tamaños, caché, `ParseUrl`, `AiWebUrlSet`),
+`Services/AiVaultToolboxWebTests` (interruptor en caliente, independencia del permiso de consulta, confirmación de
+direcciones desconocidas, tramos, errores), `HtmlReadabilityTests.ExtractPage_*`, `AiPromptBuilderTests`,
+`AssistantViewModelWorkspaceTests.WebAccess_*`, `SettingsViewModelAiTests.WebAccess_*` y, sobre el XAML real,
+`AssistantViewUiTests.WebAccess_*` y `Settings_InternetAccess_*`. QA manual: sección 8.12 de
+`qa-manual-release-candidate.md`.
 
 ## Herramientas del vault y ámbitos de conversación
 

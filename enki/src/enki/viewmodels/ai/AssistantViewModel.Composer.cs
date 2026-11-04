@@ -474,7 +474,8 @@ public sealed partial class AssistantViewModel
                 SessionName = _scopeSession?.Name ?? _draftSessionName,
                 FullVaultAccess = _draftFullAccess,
                 ReadAccessRevoked = _draftReadAccessRevoked,
-                ReadAccess = _draftReadAccess
+                ReadAccess = _draftReadAccess,
+                WebAccess = WebAccessEnabled
             };
             _activeSession = session;
             ClearNewChatDraft(draftKey);
@@ -739,6 +740,8 @@ public sealed partial class AssistantViewModel
             ApprovalRequested = (request, token) => RequestApprovalAsync(bubble, request, token),
             ReadAccess = new AiReadAccess(() => HasReadAccess(session),
                 token => RequestReadAccessAsync(bubble, session, token)),
+            WebAccess = () => session.WebAccess,
+            KnownWebUrls = KnownWebUrls(session),
             Activity = activity,
             Cancellation = cancellation
         });

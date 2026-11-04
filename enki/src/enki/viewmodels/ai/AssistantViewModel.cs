@@ -168,6 +168,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(ScopeSummary));
         OnPropertyChanged(nameof(ScopeWarning));
         OnPropertyChanged(nameof(HasScopeWarning));
+        // El permiso de consulta y el globo dependen de que el proveedor ofrezca herramientas.
+        RefreshReadAccessState();
+        RefreshWebAccessState();
         OnPropertyChanged(nameof(CanChangeEffort));
         OnPropertyChanged(nameof(ShowEffortUnavailable));
         OnPropertyChanged(nameof(EffortSummary));
@@ -558,7 +561,8 @@ public sealed partial class AssistantViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Abre lo que tocó una acción del asistente: la nota en Documentos o la tarjeta en Kanban.</summary>
+    /// <summary>Abre lo que tocó una acción del asistente: la nota en Documentos, la tarjeta en Kanban o la página
+    /// web en el navegador.</summary>
     [RelayCommand]
     private void OpenActivity(AiToolActivityViewModel? activity)
     {
@@ -575,6 +579,9 @@ public sealed partial class AssistantViewModel : ViewModelBase
                 break;
             case AiToolTargetKind.KanbanCard:
                 _openKanbanCard(id);
+                break;
+            case AiToolTargetKind.WebPage:
+                UrlOpener.Open(id);
                 break;
         }
     }

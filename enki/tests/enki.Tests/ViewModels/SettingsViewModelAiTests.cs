@@ -28,7 +28,7 @@ public sealed class SettingsViewModelAiTests : IDisposable
     }
 
     private (SettingsViewModel Vm, SettingsService Settings, AiChatService Chats, string VaultPath) Create(TestPolarCredentialStore? apiKeys = null,
-        TestPolarCredentialStore? geminiKeys = null)
+        TestPolarCredentialStore? geminiKeys = null, TestPolarCredentialStore? braveKeys = null)
     {
         var settingsService = new SettingsService(_storageDirectory);
         var vaultPath = Path.Combine(_storageDirectory, "vault");
@@ -54,7 +54,8 @@ public sealed class SettingsViewModelAiTests : IDisposable
             onPolarShowTaskTagsChanged: _ => { }, onUiZoomChanged: _ => { }, onLanguageChanged: () => { },
             aiCliStatus: new ClaudeCliStatusViewModel(cli, action => action(), new AiBackendService(cli, settingsService, _storageDirectory,
                 gemini: geminiKeys is null ? null : new GeminiApiService(settingsService, new AiApiKeyStore(geminiKeys, AiApiKeyKind.Gemini)))),
-            aiChatService: chats);
+            aiChatService: chats,
+            aiWebService: braveKeys is null ? null : new AiWebService(settingsService, new AiApiKeyStore(braveKeys, AiApiKeyKind.BraveSearch)));
         return (vm, settingsService, chats, vaultPath);
     }
 
@@ -316,5 +317,42 @@ public sealed class SettingsViewModelAiTests : IDisposable
         await vm.DeleteAiApiKeyCommand.ExecuteAsync(null);
         Assert.Null(geminiStore.Credentials);
         Assert.False(vm.HasAiApiKey);
+    }
+
+    [Fact]
+    public void WebAccess_NewChatDefaultAndEngine_PersistInTheInstallation_AndBraveKeyStaysInTheSecureStore()
+    {
+        Assert.False(Create().Vm.ShowAiWebSettings);
+
+        var store = new TestPolarCredentialStore();
+        var (vm, settings, _, _) = Create(braveKeys: store);
+        Assert.True(vm.ShowAiWebSettings);
+        Assert.False(vm.AiWebAccessForNewChats);
+        Assert.True(vm.IsAiWebDuckDuckGo);
+
+        vm.AiWebAccessForNewChats = true;
+        vm.UseBraveSearchCommand.Execute(null);
+        var saved = new SettingsService(_storageDirectory).Settings.Ai;
+        Assert.True(saved.WebAccessForNewChats);
+        Assert.Equal(AiWebSearchEngine.Brave, saved.WebSearchEngine);
+        Assert.False(vm.HasAiWebSearchKey);
+
+        vm.AiWebSearchKeyDraft = "sk-ant-no-es-de-brave-0123456789";
+        vm.SaveAiWebSearchKeyCommand.Execute(null);
+        Assert.NotNull(vm.AiWebSearchKeyError);
+        Assert.Null(store.Credentials);
+
+        const string key = "BSAabcdefghijklmnopqrstuvwx1234";
+        vm.AiWebSearchKeyDraft = key;
+        vm.SaveAiWebSearchKeyCommand.Execute(null);
+        Assert.Null(vm.AiWebSearchKeyError);
+        Assert.Equal(key, store.Credentials!.AccessToken);
+        Assert.Equal("BSAa…1234", vm.AiWebSearchKeyMasked);
+        Assert.DoesNotContain(key, File.ReadAllText(Path.Combine(_storageDirectory, "settings.json")), StringComparison.Ordinal);
+
+        vm.DeleteAiWebSearchKeyCommand.Execute(null);
+        Assert.Null(store.Credentials);
+        vm.UseDuckDuckGoSearchCommand.Execute(null);
+        Assert.Equal(AiWebSearchEngine.DuckDuckGo, settings.Settings.Ai.WebSearchEngine);
     }
 }

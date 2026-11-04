@@ -19,7 +19,11 @@ public enum AiToolScope
     /// <summary>Como <see cref="Vault"/>, y además con una cuenta de Polar vinculada.</summary>
     Polar,
     /// <summary>Crear, renombrar o borrar sesiones: solo con acceso al vault entero.</summary>
-    Sessions
+    Sessions,
+    /// <summary>Buscar en internet y leer páginas: solo con el acceso a internet del chat encendido
+    /// (<see cref="AiToolContext.WebAccess"/>). No toca el vault, así que no depende del espacio del chat ni de
+    /// su permiso de consulta.</summary>
+    Web
 }
 
 public enum AiToolEffect
@@ -49,10 +53,13 @@ public enum AiToolErrorKind
 }
 
 /// <summary>Fallo de una herramienta que se devuelve al modelo como resultado con error (en inglés, que es
-/// para él) en vez de cortar el turno. El usuario ve su propia versión traducida según <see cref="Kind"/>.</summary>
-public sealed class AiToolException(AiToolErrorKind kind, string message) : Exception(message)
+/// para él) en vez de cortar el turno. El usuario ve su propia versión traducida: <see cref="UserMessage"/> si
+/// la herramienta sabe explicar el motivo concreto, o la genérica de <see cref="Kind"/>.</summary>
+public sealed class AiToolException(AiToolErrorKind kind, string message, LocalizedText? userMessage = null) : Exception(message)
 {
     public AiToolErrorKind Kind { get; } = kind;
+
+    public LocalizedText? UserMessage { get; } = userMessage;
 }
 
 /// <summary>Una herramienta del vault: nombre MCP, descripción y esquema de entrada para el modelo, y la
