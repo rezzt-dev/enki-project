@@ -66,7 +66,7 @@
                      IsVisible="{Binding Cli.IsNotInstalled}" />
           <TextBlock Text="{loc:Tr Assistant_Setup_SignedOut_Title}" Classes="page-title" TextWrapping="Wrap"
                      IsVisible="{Binding ShowLoginSetup}" />
-          <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Title}" Classes="page-title" TextWrapping="Wrap"
+          <TextBlock Text="{Binding Cli.ApiKeySetupTitle}" Classes="page-title" TextWrapping="Wrap"
                      IsVisible="{Binding ShowApiKeySetup}" />
           <TextBlock Text="{loc:Tr Assistant_Setup_Unsupported_Title}" Classes="page-title" TextWrapping="Wrap"
                      IsVisible="{Binding Cli.IsUnsupported}" />
@@ -74,16 +74,16 @@
                      IsVisible="{Binding Cli.IsNotInstalled}" />
           <TextBlock Text="{loc:Tr Assistant_Setup_SignedOut_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
                      IsVisible="{Binding ShowLoginSetup}" />
-          <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
+          <TextBlock Text="{Binding Cli.ApiKeySetupMessage}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
                      IsVisible="{Binding ShowApiKeySetup}" />
           <TextBlock Text="{Binding Cli.UnsupportedMessage}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"
                      IsVisible="{Binding Cli.IsUnsupported}" />
         </StackPanel>
 
         <!-- Orden a copiar en una terminal. Enki no la ejecuta: instalar e iniciar sesión pasan siempre
-             por el propio CLI y por la página del proveedor. Con la clave de API no hay orden: se guarda en
-             Ajustes. -->
-        <Border Classes="card" Padding="0" IsVisible="{Binding !ShowApiKeySetup}">
+             por el propio CLI y por la página del proveedor. Con una clave de API (Claude con clave propia,
+             Gemini) no hay orden: se guarda en Ajustes. -->
+        <Border Classes="card" Padding="0" IsVisible="{Binding ShowSetupCommand}">
           <Grid ColumnDefinitions="Auto,*,Auto">
             <TextBlock Grid.Column="0" Text="$" Classes="faint" FontFamily="{DynamicResource CodeFontFamily}"
                        FontSize="13" VerticalAlignment="Center" Margin="16,0,10,0" />
@@ -115,6 +115,13 @@
               <TextBlock Text="{loc:Tr Assistant_Setup_ApiKey_Open, Converter={StaticResource UpperCaseConverter}}" />
             </StackPanel>
           </Button>
+          <Button Classes="pill" Margin="0,0,10,10" Command="{Binding Cli.OpenApiKeysPageCommand}"
+                  IsVisible="{Binding ShowApiKeySetup}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
+              <TextBlock Text="{Binding Cli.ApiKeysPageLabel, Converter={StaticResource UpperCaseConverter}}" />
+            </StackPanel>
+          </Button>
           <Button Classes="pill-primary" Margin="0,0,10,10" Command="{Binding Cli.RefreshCommand}"
                   IsVisible="{Binding !ShowApiKeySetup}">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -126,12 +133,15 @@
                   IsVisible="{Binding !Cli.IsSignedOut}">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="OpenInNew" Width="13" Height="13" />
-              <TextBlock Text="{loc:Tr Assistant_Setup_OpenGuide, Converter={StaticResource UpperCaseConverter}}" />
+              <TextBlock Text="{Binding Cli.SetupGuideLabel, Converter={StaticResource UpperCaseConverter}}" />
             </StackPanel>
           </Button>
           <Button Classes="ghost" Margin="0,0,10,10" Command="{Binding OpenSettingsCommand}"
-                  IsVisible="{Binding !ShowApiKeySetup}"
+                  IsVisible="{Binding ShowSetupCommand}"
                   Content="{loc:Tr Assistant_Setup_CustomPath, Converter={StaticResource UpperCaseConverter}}" />
+          <Button Classes="ghost" Margin="0,0,10,10" Command="{Binding OpenSettingsCommand}"
+                  IsVisible="{Binding ShowSettingsShortcut}"
+                  Content="{loc:Tr Assistant_Setup_ApiKey_Open, Converter={StaticResource UpperCaseConverter}}" />
         </WrapPanel>
 
         <TextBlock Text="{Binding Cli.ExecutablePathLabel}" Classes="faint" FontSize="11" TextWrapping="Wrap"

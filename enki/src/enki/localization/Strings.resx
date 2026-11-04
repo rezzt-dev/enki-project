@@ -6750,22 +6750,22 @@ Happy writing.</value>
     <value>Enable the assistant</value>
   </data>
   <data name="Settings_Ai_Enable_Description" xml:space="preserve">
-    <value>Enable the assistant with Claude, OpenAI or local models. While disabled nothing runs or is sent.</value>
+    <value>Enable the assistant with Claude, OpenAI, Gemini or local models. While disabled nothing runs or is sent.</value>
   </data>
   <data name="Settings_Ai_Usage_Title" xml:space="preserve">
     <value>How the assistant works</value>
   </data>
   <data name="Settings_Ai_Usage_HowItWorks" xml:space="preserve">
-    <value>Claude and OpenAI use their official CLIs and the account signed in there. Ollama runs the model on this computer. Enki does not install providers or modify their credentials.</value>
+    <value>Claude and OpenAI use their official CLIs and the account signed in there. Gemini uses your own Google AI Studio API key. Ollama runs the model on this computer. Enki does not install providers or modify their credentials.</value>
   </data>
   <data name="Settings_Ai_Usage_SignIn" xml:space="preserve">
-    <value>Sign in from a terminal: claude auth login or codex login. Local Ollama models need no account. Enki never reads or stores access tokens.</value>
+    <value>Sign in from a terminal: claude auth login or codex login. API keys for Claude and Gemini are kept in your system’s secure storage. Local Ollama models need no account. Enki never reads or stores access tokens.</value>
   </data>
   <data name="Settings_Ai_Usage_Data" xml:space="preserve">
     <value>The provider receives messages, attached context and tool results within the chat scope. Writes respect vault permissions; irreversible actions require confirmation.</value>
   </data>
   <data name="Settings_Ai_Usage_Terms" xml:space="preserve">
-    <value>Usage is subject to the selected provider’s terms and limits. Enki is independent of Anthropic, OpenAI and Ollama. Review the terms before enabling the assistant.</value>
+    <value>Usage is subject to the selected provider’s terms and limits. Enki is independent of Anthropic, OpenAI, Google and Ollama. Review the terms before enabling the assistant.</value>
   </data>
   <data name="Settings_Ai_Usage_ClaudeCodeTerms" xml:space="preserve">
     <value>Provider terms</value>
@@ -7242,7 +7242,7 @@ Happy writing.</value>
     <value>AI provider</value>
   </data>
   <data name="Ai_ProviderHelp" xml:space="preserve">
-    <value>Choose Claude, your ChatGPT account or a local model. Switching provider starts a new chat; each conversation keeps its provider.</value>
+    <value>Choose Claude, your ChatGPT account, Gemini with your Google AI Studio key or a local model. Switching provider starts a new chat; each conversation keeps its provider.</value>
   </data>
   <data name="Ai_OpenAiHelp" xml:space="preserve">
     <value>Install Codex and sign in with codex login to use your eligible ChatGPT plan. Enki does not store credentials. If Codex uses an API key, usage is billed separately.</value>
@@ -7561,5 +7561,59 @@ Happy writing.</value>
   </data>
   <data name="Assistant_Composer_Help" xml:space="preserve">
     <value>Chat information</value>
+  </data>
+  <data name="Ai_ApiKeyMissing" xml:space="preserve">
+    <value>no API key saved</value>
+  </data>
+  <data name="Ai_GeminiHelp" xml:space="preserve">
+    <value>Use Gemini with your own Google AI Studio API key: there is nothing to install. The free tier only needs a Google account and has daily limits. On it, outside the EEA, Switzerland and the UK, Google may use and have people review your messages and notes to improve its products, so avoid sending sensitive content. With billing enabled, Google bills usage and does not use it to improve its products.</value>
+  </data>
+  <data name="Ai_GeminiStudents" xml:space="preserve">
+    <value>Have Google AI Pro through a student offer? Google does not allow consumer plans, the student one included, to be used from third-party apps, so Enki cannot use it. Create a free AI Studio key with the same Google account instead. The Gemini API requires you to be 18 or older.</value>
+  </data>
+  <data name="Ai_Gemini_ApiKeyHelp" xml:space="preserve">
+    <value>Enki calls the Gemini API directly with this key and sends it only to Google. It is kept in your system’s secure storage, never in Enki’s settings or your vault.</value>
+  </data>
+  <data name="Ai_Gemini_ApiKey_Placeholder" xml:space="preserve">
+    <value>Paste your Google AI Studio API key</value>
+  </data>
+  <data name="Ai_Gemini_ApiKey_Invalid" xml:space="preserve">
+    <value>That doesn’t look like a Google AI Studio API key. Copy it again from aistudio.google.com/apikey.</value>
+  </data>
+  <data name="Ai_Gemini_ApiKey_SavedMessage" xml:space="preserve">
+    <value>Gemini will use it from the next message. It is stored in your system’s secure storage.</value>
+  </data>
+  <data name="Ai_Gemini_GetKey" xml:space="preserve">
+    <value>Get a free key in Google AI Studio</value>
+  </data>
+  <data name="Ai_Gemini_Guide" xml:space="preserve">
+    <value>Gemini API guide</value>
+  </data>
+  <data name="Ai_Gemini_Setup_Title" xml:space="preserve">
+    <value>Add your Gemini API key</value>
+  </data>
+  <data name="Ai_Gemini_Setup_Message" xml:space="preserve">
+    <value>Gemini works with your own Google AI Studio API key. Create one for free with your Google account and save it in Settings: Enki keeps it in your system’s secure storage and only sends it to Google with each message.</value>
+  </data>
+  <data name="Ai_Gemini_KeyRejected" xml:space="preserve">
+    <value>Google rejected the saved API key. Check it in Settings or create a new one in Google AI Studio.</value>
+  </data>
+  <data name="Ai_Gemini_Error_KeyRejected" xml:space="preserve">
+    <value>Google rejected your Gemini API key, or there is none saved. Check it in Settings › Artificial intelligence.</value>
+  </data>
+  <data name="Ai_Gemini_Region" xml:space="preserve">
+    <value>The Gemini API is not available in your region. Check the list of available regions in Google’s documentation.</value>
+  </data>
+  <data name="Ai_Gemini_Unavailable" xml:space="preserve">
+    <value>Could not connect to the Gemini API. Check your internet connection and try again.</value>
+  </data>
+  <data name="Ai_Gemini_NoModels" xml:space="preserve">
+    <value>Your key has no Gemini chat models available. Check the project the key belongs to in Google AI Studio.</value>
+  </data>
+  <data name="Ai_Gemini_RequestFailed" xml:space="preserve">
+    <value>Gemini could not complete the response. Try again in a moment.</value>
+  </data>
+  <data name="Ai_Gemini_Blocked" xml:space="preserve">
+    <value>Google’s safety filters blocked this response. Rephrase the message and try again.</value>
   </data>
 </root>

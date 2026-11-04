@@ -846,7 +846,10 @@ public sealed partial class AssistantViewModel
         RetryCommand.NotifyCanExecuteChanged();
     }
 
-    private bool UsesApiKey => _cli.Provider == AiProvider.Claude && _settingsService.Settings.Ai.ClaudeUseApi;
+    /// <summary>La credencial del proveedor activo es una clave de API guardada en Ajustes (Claude con clave
+    /// propia, Gemini), no una sesión que se inicia en una terminal.</summary>
+    private bool UsesApiKey => _cli.Provider == AiProvider.Gemini
+        || _cli.Provider == AiProvider.Claude && _settingsService.Settings.Ai.ClaudeUseApi;
 
     private void ShowFailure(ClaudeTurnResult result)
     {
@@ -873,6 +876,7 @@ public sealed partial class AssistantViewModel
     private LocalizedText DescribeFailure(ClaudeTurnResult result) => result.Failure switch
     {
         ClaudeFailureKind.NotInstalled => LocalizedTextFormatter.Format(_cli.Provider == AiProvider.Claude ? "Assistant_Error_NotInstalled" : "Ai_NotInstalled"),
+        ClaudeFailureKind.SignedOut when _cli.Provider == AiProvider.Gemini => LocalizedTextFormatter.Format("Ai_Gemini_Error_KeyRejected"),
         ClaudeFailureKind.SignedOut when UsesApiKey => LocalizedTextFormatter.Format("Assistant_Error_ApiKeyRejected"),
         ClaudeFailureKind.SignedOut => LocalizedTextFormatter.Format("Assistant_Error_SignedOut", Cli.LoginCommand),
         ClaudeFailureKind.RateLimited when result.RateLimitResetsAt is { } resetsAt =>

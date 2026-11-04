@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -19,8 +18,6 @@ namespace enki.Services;
 /// Las herramientas se ejecutan por el mismo MCP autenticado que usa Claude: no existe otra vía de escritura.</summary>
 public sealed class OllamaService
 {
-    private static readonly HttpClient LocalHttp = new(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false })
-        { Timeout = Timeout.InfiniteTimeSpan };
     private readonly HttpClient _http;
     private readonly SettingsService _settings;
     public IReadOnlyList<string> Models { get; private set; } = [];
@@ -28,7 +25,7 @@ public sealed class OllamaService
     public OllamaService(SettingsService settings, HttpClient? httpClient = null)
     {
         _settings = settings;
-        _http = httpClient ?? LocalHttp;
+        _http = httpClient ?? EnkiMcpClient.LoopbackHttp;
     }
 
     internal static Uri Endpoint(string endpoint, string path)
@@ -158,10 +155,9 @@ public sealed class OllamaService
                     var name = function["name"]?.GetValue<string>() ?? throw new JsonException();
                     if (request.Tools is null || tools is null || !tools.Any(t => t?["function"]?["name"]?.GetValue<string>() == name))
                         throw new JsonException();
-                    var result = await RpcAsync(request.Tools, "tools/call", new JsonObject
-                        { ["name"] = name, ["arguments"] = function["arguments"]?.DeepClone() ?? new JsonObject() }, cancellation).ConfigureAwait(false);
-                    messages.Add(new JsonObject { ["role"] = "tool", ["tool_name"] = name,
-                        ["content"] = string.Join("\n", result["content"]!.AsArray().Select(c => c?["text"]?.GetValue<string>())) });
+                    var (output, _) = await EnkiMcpClient.CallToolAsync(_http, request.Tools, name, function["arguments"], cancellation)
+                        .ConfigureAwait(false);
+                    messages.Add(new JsonObject { ["role"] = "tool", ["tool_name"] = name, ["content"] = output });
                 }
             }
             return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]);
@@ -178,8 +174,8 @@ public sealed class OllamaService
 
     private async Task<JsonArray> LoadToolsAsync(ClaudeToolAccess access, CancellationToken cancellation)
     {
-        var result = await RpcAsync(access, "tools/list", new JsonObject(), cancellation).ConfigureAwait(false);
-        return new JsonArray(result["tools"]!.AsArray().Select(t => (JsonNode)new JsonObject
+        var tools = await EnkiMcpClient.ListToolsAsync(_http, access, cancellation).ConfigureAwait(false);
+        return new JsonArray(tools.Select(t => (JsonNode)new JsonObject
         {
             ["type"] = "function", ["function"] = new JsonObject
             {
@@ -187,18 +183,5 @@ public sealed class OllamaService
                 ["parameters"] = t["inputSchema"]!.DeepClone()
             }
         }).ToArray());
-    }
-
-    private async Task<JsonObject> RpcAsync(ClaudeToolAccess access, string method, JsonObject parameters, CancellationToken cancellation)
-    {
-        using var post = new HttpRequestMessage(HttpMethod.Post, access.Endpoint)
-        {
-            Content = JsonContent.Create(new JsonObject { ["jsonrpc"] = "2.0", ["id"] = 1, ["method"] = method, ["params"] = parameters })
-        };
-        post.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access.BearerToken);
-        using var response = await _http.SendAsync(post, cancellation).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-        var data = await response.Content.ReadFromJsonAsync<JsonObject>(cancellation).ConfigureAwait(false);
-        return data?["result"]?.AsObject() ?? throw new JsonException();
     }
 }

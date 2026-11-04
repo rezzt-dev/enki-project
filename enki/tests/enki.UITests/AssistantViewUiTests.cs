@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -11,6 +12,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Controls;
+using enki.Localization;
 using enki.Models;
 using enki.Services;
 using enki.ViewModels;
@@ -458,7 +460,7 @@ public sealed class AssistantViewUiTests : IDisposable
         {
             var picker = Find<ComboBox>(view, "ProviderPicker");
             Assert.True(picker.IsEffectivelyVisible);
-            Assert.Equal(3, picker.ItemCount);
+            Assert.Equal(4, picker.ItemCount);
             Assert.Equal(AiProvider.OpenAi, ((AiProviderOption)picker.SelectedItem!).Provider);
             Assert.Contains("OpenAI", RenderedText(view));
             Assert.True(Find<TextBox>(view, "ComposerBox").IsEffectivelyVisible);
@@ -469,6 +471,123 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.False(picker.IsEnabled);
         }
         finally { window.Close(); }
+    }
+
+    /// <summary>Gemini sin clave enseña cómo conseguirla (sin órdenes de terminal) y, con una clave válida, el chat
+    /// con los modelos que la API lista para ella.</summary>
+    [Fact]
+    public async Task Gemini_AsksForAiStudioKey_ThenOffersItsModels()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.Ai.ConsentAcceptedUtc = DateTime.UtcNow;
+        settings.Settings.Ai.Enabled = true;
+        settings.Settings.Ai.Provider = AiProvider.Gemini;
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var keys = new AiApiKeyStore(new MemoryCredentialStore(), AiApiKeyKind.Gemini);
+        using var http = new HttpClient(new CatalogHandler());
+        var cli = new ClaudeCliService(settings, _directory);
+        var backend = new AiBackendService(cli, settings, _directory, gemini: new GeminiApiService(settings, keys, http));
+        var status = new ClaudeCliStatusViewModel(cli, backend: backend);
+        var vm = new AssistantViewModel(cli, new AiChatService(_directory), settings, vault, new NotificationService(settings, _directory),
+            status);
+        var view = new AssistantView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1280, Height = 860, Background = new SolidColorBrush(Color.Parse("#121212")) };
+        window.Show();
+        try
+        {
+            vm.OnActivated();
+            Pump(() => vm.Cli.IsKnown && !vm.Cli.IsChecking);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(vm.ShowSetupPanel);
+            Assert.True(vm.ShowApiKeySetup);
+            Assert.False(vm.ShowSetupCommand);
+            var text = RenderedText(view);
+            Assert.Contains(LocalizationService.Instance["Ai_Gemini_Setup_Title"], text);
+            Assert.Contains(LocalizationService.Instance["Ai_Gemini_GetKey"].ToUpper(LocalizationService.Instance.CurrentCulture), text);
+            Assert.DoesNotContain(ClaudeCliService.LoginCommand, text);
+            SavePreview(view, "assistant-gemini-key");
+
+            keys.Write("AIzaSyA-0123456789abcdefghijklmnopWXYZ");
+            await vm.Cli.RefreshAsync();
+            Pump(() =>
+            {
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                return vm.Cli.IsReady && Find<TextBox>(view, "ComposerBox").IsEffectivelyVisible;
+            });
+            Assert.False(vm.ShowSetupPanel);
+            Assert.Equal(AiProvider.Gemini, ((AiProviderOption)Find<ComboBox>(view, "ProviderPicker").SelectedItem!).Provider);
+            Assert.Contains(vm.ModelOptions, o => o.Alias == "gemini-2.5-pro" && o.Label == "Gemini 2.5 Pro");
+            Assert.Equal(string.Empty, vm.SelectedModel!.Alias);
+            Assert.Contains("Google AI Studio · AIza…WXYZ", vm.Cli.AccountLabel);
+            SavePreview(view, "assistant-gemini");
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void Settings_Gemini_ShowsKeyField_StudentNote_AndNoCliPath()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.Ai.ConsentAcceptedUtc = DateTime.UtcNow;
+        settings.Settings.Ai.Enabled = true;
+        settings.Settings.Ai.Provider = AiProvider.Gemini;
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var auth = new PolarAuthService(settings);
+        var sync = new PolarSyncService(auth, new SupabaseRestClient(auth), new PolarTaskService(_directory),
+            new ReminderService(_directory), settings);
+        var keys = new AiApiKeyStore(new MemoryCredentialStore(), AiApiKeyKind.Gemini);
+        keys.Write("AIzaSyA-0123456789abcdefghijklmnopWXYZ");
+        using var http = new HttpClient(new CatalogHandler());
+        var cli = new ClaudeCliService(settings, _directory);
+        var backend = new AiBackendService(cli, settings, _directory, gemini: new GeminiApiService(settings, keys, http));
+        var vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(_directory),
+            new VaultSettingsService(vault), vault, new VaultBackupService(vault, _directory), auth, sync,
+            new NotificationService(settings, _directory),
+            (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
+            _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            aiCliStatus: new ClaudeCliStatusViewModel(cli, backend: backend), aiChatService: new AiChatService(_directory));
+        var view = new SettingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1280, Height = 1400, Background = new SolidColorBrush(Color.Parse("#121212")) };
+        window.Show();
+        try
+        {
+            vm.SelectSectionCommand.Execute(SettingsSection.Ai);
+            vm.CheckClaudeCliCommand.Execute(null);
+            Pump(() => vm.AiCliStatus!.IsReady && vm.AiModelOptions.Count > 2);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var text = RenderedText(view);
+            Assert.True(vm.IsAiGemini);
+            Assert.Contains(LocalizationService.Instance["Ai_GeminiStudents"], text);
+            Assert.Contains(LocalizationService.Instance["Ai_Gemini_ApiKeyHelp"], text);
+            Assert.Contains("AIza…WXYZ", text);
+            Assert.DoesNotContain(LocalizationService.Instance["Settings_Ai_Cli_Path_Label"], text);
+            Assert.Contains(vm.AiModelOptions, o => o.Label == "Gemini 2.5 Pro");
+            SavePreview(view, "settings-ai-gemini", 1280, 1400);
+        }
+        finally { window.Close(); }
+    }
+
+    private sealed class MemoryCredentialStore : IPolarCredentialStore
+    {
+        private PolarCredentials? _credentials;
+        public PolarCredentials? Read() => _credentials;
+        public void Write(PolarCredentials credentials) => _credentials = credentials;
+        public void Delete() => _credentials = null;
+    }
+
+    private sealed class CatalogHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {"models":[{"name":"models/gemini-flash-latest","displayName":"Gemini Flash Latest","supportedGenerationMethods":["generateContent"]},
+                    {"name":"models/gemini-2.5-pro","displayName":"Gemini 2.5 Pro","supportedGenerationMethods":["generateContent"]}]}
+                    """, System.Text.Encoding.UTF8, "application/json")
+            });
     }
 
     [Fact]

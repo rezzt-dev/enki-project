@@ -548,6 +548,13 @@ Ver `.docs/project-info/asistente-ia.md`, secciones "Dos superficies" y siguient
       una clave revocada muestra el aviso de clave rechazada con acceso a Ajustes.
 - [ ] Escape cierra los popovers de ámbito, capacidad, adjuntos y skills y devuelve el foco a su botón; con
       lector de pantalla, el botón del asistente anuncia su estado.
+- [ ] Gemini con una clave real de Google AI Studio (nivel gratuito): sin clave, el asistente enseña "Añade
+      tu clave de API de Gemini" con "Abrir ajustes" y "Consigue una clave gratis en Google AI Studio", sin
+      ninguna orden de terminal. Guardarla conecta, carga los modelos en ambos selectores y la cuenta muestra
+      solo sus últimos caracteres; la clave no aparece en `settings.json` ni en el log. Un chat responde con
+      streaming, cambia la capacidad y crea una nota con herramientas (actividad visible, versión «Asistente»
+      en el historial). Una clave borrada en AI Studio muestra "clave rechazada" con acceso a Ajustes; agotar la
+      cuota diaria muestra el límite de uso con su hora de reinicio; sin red, "No se pudo conectar".
 
 ## 8.11 Grafo de sesiones en esferas 3D
 

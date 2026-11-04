@@ -96,7 +96,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         _openSettings = openSettings ?? (() => { });
         _dispatch = dispatch ?? (action => Dispatcher.UIThread.Post(action));
 
-        ModelOptions = new ObservableCollection<AiModelOption>(AiModelOption.Build(_cli.Provider, _cli.LocalModels));
+        ModelOptions = new ObservableCollection<AiModelOption>(AiModelOption.Build(_cli.Provider, _cli.Models));
         _selectedModel = FindModel(_settingsService.Settings.Ai.ModelFor(_cli.Provider));
         Cli = cliStatus ?? new ClaudeCliStatusViewModel(cli, _dispatch, _cli);
         Cli.PropertyChanged += OnCliPropertyChanged;
@@ -140,6 +140,14 @@ public sealed partial class AssistantViewModel : ViewModelBase
     /// <summary>Sin sesión iniciada en el CLI: se enseña la orden de inicio de sesión para una terminal.</summary>
     public bool ShowLoginSetup => Cli.NeedsLogin;
 
+    /// <summary>Orden de terminal y ruta personalizada: solo para los proveedores que se instalan o arrancan
+    /// desde una terminal. Con una clave de API todo se resuelve en Ajustes.</summary>
+    public bool ShowSetupCommand => !ShowApiKeySetup && Cli.HasSetupCommand;
+
+    /// <summary>Proveedor sin orden de terminal que no responde (red, región sin servicio): el acceso a Ajustes
+    /// sustituye al de la ruta personalizada.</summary>
+    public bool ShowSettingsShortcut => !ShowApiKeySetup && !Cli.HasSetupCommand;
+
     private void OnCliPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ClaudeCliStatusViewModel.IsChecking))
@@ -154,6 +162,8 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowTranscript));
         OnPropertyChanged(nameof(ShowApiKeySetup));
         OnPropertyChanged(nameof(ShowLoginSetup));
+        OnPropertyChanged(nameof(ShowSetupCommand));
+        OnPropertyChanged(nameof(ShowSettingsShortcut));
         OnPropertyChanged(nameof(VaultToolsAvailable));
         OnPropertyChanged(nameof(ScopeSummary));
         OnPropertyChanged(nameof(ScopeWarning));
@@ -476,7 +486,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
     private void RefreshModels()
     {
         var alias = _activeSession?.Model ?? _settingsService.Settings.Ai.ModelFor(_cli.Provider);
-        var options = AiModelOption.Build(_cli.Provider, _cli.LocalModels, alias);
+        var options = AiModelOption.Build(_cli.Provider, _cli.Models, alias);
         if (ModelOptions.SequenceEqual(options)) return;
         ModelOptions.Clear();
         foreach (var option in options) ModelOptions.Add(option);
@@ -636,7 +646,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
     {
         var alias = SelectedModel?.Alias;
         ModelOptions.Clear();
-        foreach (var option in AiModelOption.Build(_cli.Provider, _cli.LocalModels, alias)) ModelOptions.Add(option);
+        foreach (var option in AiModelOption.Build(_cli.Provider, _cli.Models, alias)) ModelOptions.Add(option);
         SelectedModel = FindModel(alias);
 
         OnPropertyChanged(nameof(ActiveNoteLabel));

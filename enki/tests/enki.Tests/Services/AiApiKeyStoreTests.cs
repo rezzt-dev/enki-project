@@ -5,7 +5,7 @@ using Xunit;
 
 namespace enki.Tests.Services;
 
-/// <summary>La clave de API de Claude en el almacén seguro (aquí, uno en memoria): forma, máscara y fallos.</summary>
+/// <summary>Las claves de API de Claude y Gemini en el almacén seguro (aquí, uno en memoria): forma, máscara y fallos.</summary>
 public sealed class AiApiKeyStoreTests
 {
     [Theory]
@@ -16,6 +16,27 @@ public sealed class AiApiKeyStoreTests
     [InlineData("sk-ant-api03 con espacios 0123456789", false)]
     [InlineData("", false)]
     public void LooksLikeApiKey(string value, bool expected) => Assert.Equal(expected, AiApiKeyStore.LooksLikeApiKey(value));
+
+    [Theory]
+    [InlineData("AIzaSyA-0123456789abcdefghijklmnopqrstu", true)]
+    [InlineData("  AIzaSyA-0123456789abcdefghijklmnopqrstu  ", true)]
+    [InlineData("sk-ant-api03-0123456789abcdefghij", false)]
+    [InlineData("https://aistudio.google.com/apikey", false)]
+    [InlineData("AIzaSy con espacios 0123456789abcdef", false)]
+    [InlineData("AIzaSy", false)]
+    public void LooksLikeApiKey_Gemini(string value, bool expected) =>
+        Assert.Equal(expected, AiApiKeyStore.LooksLikeApiKey(value, AiApiKeyKind.Gemini));
+
+    [Fact]
+    public void GeminiStore_ValidatesAndMasksItsOwnKeys_AndLinksToAiStudio()
+    {
+        var store = new AiApiKeyStore(new TestPolarCredentialStore(), AiApiKeyKind.Gemini);
+        Assert.Throws<ArgumentException>(() => store.Write("sk-ant-api03-0123456789abcdefghij"));
+        store.Write("AIzaSyA-0123456789abcdefghijklmnopWXYZ");
+        Assert.Equal("AIza…WXYZ", store.MaskKey(store.TryRead()!));
+        Assert.Equal(AiApiKeyStore.GeminiKeysUrl, store.KeysUrl);
+        Assert.Equal(AiApiKeyStore.AnthropicKeysUrl, new AiApiKeyStore(new TestPolarCredentialStore()).KeysUrl);
+    }
 
     [Fact]
     public void Mask_ShowsOnlyTheLastCharacters() =>

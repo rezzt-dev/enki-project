@@ -96,12 +96,13 @@ public sealed partial class MainWindowViewModel
         _polarTaskService = new PolarTaskService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
         _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService, _vaultSettingsService);
         _polarRealtimeService = new PolarRealtimeService(_polarAuthService, _polarSyncService);
-        // La clave de API del modo "Claude con clave propia" vive en el almacén seguro del sistema, con su
-        // propia entrada junto a la sesión de Polar; el almacén no se abre hasta que se usa ese modo.
-        _claudeCliService = new ClaudeCliService(_settingsService,
-            apiKeys: new AiApiKeyStore(System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath)!));
+        // Las claves de API (Claude con clave propia, Gemini) viven en el almacén seguro del sistema, cada una
+        // con su propia entrada junto a la sesión de Polar; el almacén no se abre hasta que se usa ese modo.
+        var aiKeysDirectory = System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath)!;
+        _claudeCliService = new ClaudeCliService(_settingsService, apiKeys: new AiApiKeyStore(aiKeysDirectory));
         _aiChatService = new AiChatService();
-        AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService, backend: new AiBackendService(_claudeCliService, _settingsService));
+        AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService, backend: new AiBackendService(_claudeCliService, _settingsService,
+            gemini: new GeminiApiService(_settingsService, new AiApiKeyStore(aiKeysDirectory, AiApiKeyKind.Gemini))));
         InitializePageRefresh();
 
         // Fase 1 (docs/analisis-proyecto/roadmap.md): extiende el patrón de KanbanService.LoadedFromCorruptData
