@@ -20,6 +20,10 @@ public sealed partial class AiApprovalViewModel(AiApprovalRequest request) : Obs
 
     public IReadOnlyList<string> Items => request.Items;
 
+    public string Hint => request.Hint is { } hint
+        ? LocalizedTextFormatter.Resolve(hint)
+        : LocalizationService.Instance["Assistant_Approval_Hint"];
+
     [RelayCommand]
     private void Allow() => _decision.TrySetResult(true);
 
@@ -29,5 +33,9 @@ public sealed partial class AiApprovalViewModel(AiApprovalRequest request) : Obs
     /// <summary>El turno terminó sin que el usuario decidiera.</summary>
     public void Cancel() => _decision.TrySetResult(false);
 
-    public void RefreshLocalizedLabels() => OnPropertyChanged(nameof(Title));
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(Hint));
+    }
 }

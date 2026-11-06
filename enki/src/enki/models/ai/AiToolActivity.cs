@@ -26,7 +26,12 @@ public enum AiToolTargetKind
     PolarList,
     PolarTask,
     Reminder,
-    Trash
+    Trash,
+    /// <summary>Una búsqueda en internet: <see cref="AiToolActivity.Target"/> es el texto buscado.</summary>
+    WebSearch,
+    /// <summary>Una página web leída: <see cref="AiToolActivity.TargetId"/> es su dirección final, que se
+    /// abre en el navegador desde el chat.</summary>
+    WebPage
 }
 
 /// <summary>Una llamada del asistente a una herramienta del vault (ver <see cref="Services.AiVaultToolbox"/>):

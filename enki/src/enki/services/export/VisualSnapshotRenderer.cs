@@ -18,22 +18,13 @@ namespace enki.Services.Export;
 /// <param name="Background">Fondo de la lámina, bajo el contenido y la cabecera.</param>
 /// <param name="Title">Color del título.</param>
 /// <param name="Subtitle">Color de la línea secundaria (rango de fechas, nombre del vault…).</param>
-/// <param name="Body">Color del texto normal — solo lo usa la lámina de una nota
-/// (<see cref="NotePageComposer"/>), que sí compone texto propio.</param>
-/// <param name="Muted">Color del texto secundario y de las reglas de la lámina de una nota.</param>
-/// <param name="Surface">Fondo de los bloques de código de la lámina de una nota.</param>
 /// <param name="FontFamily">Tipografía de la cabecera — la de la interfaz, para que la lámina y la app se
 /// lean como lo mismo.</param>
-/// <param name="MonoFontFamily">Tipografía de ancho fijo para el código.</param>
 public readonly record struct ExportAppearance(
     Color Background,
     Color Title,
     Color Subtitle,
-    Color Body,
-    Color Muted,
-    Color Surface,
-    FontFamily FontFamily,
-    FontFamily MonoFontFamily);
+    FontFamily FontFamily);
 
 /// <summary>Rasteriza un control de la aplicación —el tablero Kanban, el calendario, una hoja de nota— a
 /// PNG y a píxeles RGB en una sola pasada (T8).

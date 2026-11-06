@@ -7,7 +7,7 @@ sincronización Polar. **No declara la aplicación lista para beta**: los result
 sustituyen la revisión visual, de accesibilidad y de integración en los sistemas de escritorio soportados.
 
 Se ha aplicado la skill local [code-reviewer](agents-skills/code-reviewer/SKILL.md), contrastando las
-convenciones de `AGENTS.md`, la documentación y el código. Se mantienen MVVM, composición manual,
+convenciones de `agents.md`, la documentación y el código. Se mantienen MVVM, composición manual,
 las entidades existentes y `NotificationService`; no se añaden almacenes paralelos.
 
 ## Fallos críticos corregidos

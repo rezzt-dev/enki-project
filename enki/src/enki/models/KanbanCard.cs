@@ -38,6 +38,12 @@ public sealed class KanbanCard
     [JsonIgnore]
     public bool IsArchived => ArchivedAtUtc is not null;
 
+    /// <summary>La tarjeta ya está terminada: tiene fecha de completado o está archivada (archivar solo es
+    /// posible desde "Hecho"). Una tarjeta terminada nunca cuenta como vencida. <see cref="JsonIgnoreAttribute"/>
+    /// porque es derivada.</summary>
+    [JsonIgnore]
+    public bool IsCompleted => CompletedAtUtc is not null || IsArchived;
+
     public List<KanbanSubtask> Subtasks { get; set; } = [];
 
     /// <summary>Etiquetas de texto libre compartidas con el resto del sistema (Notas, Polar). La

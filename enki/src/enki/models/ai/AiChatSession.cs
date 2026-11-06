@@ -33,6 +33,11 @@ public sealed class AiChatSession
     /// <summary>Revocación explícita del chat: impide heredar el permiso de consulta de Ajustes.</summary>
     public bool ReadAccessRevoked { get; set; }
 
+    /// <summary>El asistente puede buscar en internet y leer páginas web en este chat (<c>web_search</c>,
+    /// <c>web_fetch</c>). Se activa o desactiva con el botón del globo del compositor; los chats nuevos nacen
+    /// con <see cref="AiSettings.WebAccessForNewChats"/>. Los archivos anteriores a esta propiedad, sin ella.</summary>
+    public bool WebAccess { get; set; }
+
     /// <summary>Mensaje a medio escribir en este chat: se conserva al cambiar de chat, de sección o al cerrar
     /// Enki. <see langword="null"/> sin borrador.</summary>
     public AiChatDraft? Draft { get; set; }

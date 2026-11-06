@@ -7,8 +7,8 @@ using enki.ViewModels;
 namespace enki.Views;
 
 /// <summary>Mecánica de vista del compositor: Enter envía, Shift+Enter (o Ctrl+Enter donde un IME intercepta
-/// Shift) inserta un salto de línea, y el foco vuelve al cuadro de texto al abrir un chat o terminar una
-/// respuesta — solo en la superficie que se está viendo.</summary>
+/// Shift) inserta un salto de línea, pulsar en un hueco del marco lleva al cuadro de texto, y el foco vuelve a
+/// él al abrir un chat o terminar una respuesta — solo en la superficie que se está viendo.</summary>
 public partial class AssistantComposerView : UserControl
 {
     private AssistantViewModel? _subscribed;
@@ -45,6 +45,10 @@ public partial class AssistantComposerView : UserControl
         if (e.PropertyName == nameof(AssistantViewModel.IsSending) && _subscribed?.IsSending == false) FocusComposer();
     }
 
+    /// <summary>Lleva el foco al cuadro de texto, con el cursor al final. La sección lo usa al mover el
+    /// compositor entre la bienvenida y el pie del hilo, que lo saca un instante del árbol visual.</summary>
+    public void FocusInput() => FocusComposer();
+
     private void FocusComposer() =>
         Dispatcher.UIThread.Post(() =>
         {
@@ -52,6 +56,14 @@ public partial class AssistantComposerView : UserControl
             ComposerBox.Focus();
             ComposerBox.CaretIndex = ComposerBox.Text?.Length ?? 0;
         }, DispatcherPriority.Input);
+
+    // Los botones y el propio cuadro de texto marcan la pulsación como atendida, así que aquí solo llegan
+    // las de los huecos del marco (márgenes, alrededor de la barra de acciones).
+    private void ComposerSurface_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        FocusComposer();
+    }
 
     private void ComposerHelp_Click(object? sender, RoutedEventArgs e)
     {

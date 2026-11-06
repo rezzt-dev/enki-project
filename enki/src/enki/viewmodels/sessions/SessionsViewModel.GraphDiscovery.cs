@@ -56,8 +56,48 @@ public sealed partial class SessionsViewModel
     [ObservableProperty]
     private double _graphLinkThickness = 1;
 
+    /// <summary>Rotación automática de todas las esferas del grafo. Se inicializa en el constructor desde
+    /// <see cref="AppSettings.SessionsGraphRotationEnabled"/>; solo el botón del visor la guarda.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(GraphRotationTooltip))]
+    private bool _isGraphRotationEnabled;
+
+    public string GraphRotationTooltip => LocalizationService.Instance[IsGraphRotationEnabled
+        ? "Sessions_Graph_RotationPause" : "Sessions_Graph_RotationResume"];
+
     public event Action? GraphDisplayChanged;
     public event Action<string>? GraphCameraRequested;
+    public event Action? GraphRotationChanged;
+
+    partial void OnIsGraphRotationEnabledChanged(bool value) => GraphRotationChanged?.Invoke();
+
+    /// <summary>Elección explícita del usuario: se aplica a todas las esferas a la vez y se recuerda entre
+    /// ejecuciones mediante <see cref="SettingsService"/>.</summary>
+    [RelayCommand]
+    private void ToggleGraphRotation()
+    {
+        IsGraphRotationEnabled = !IsGraphRotationEnabled;
+        if (_settingsService is null) return;
+        _settingsService.Settings.SessionsGraphRotationEnabled = IsGraphRotationEnabled;
+        _settingsService.Save();
+    }
+
+    /// <summary>El sistema pide reducir el movimiento: sin una elección guardada, las esferas quedan quietas
+    /// durante esta ejecución. No se persiste, para no convertir el valor del sistema en una preferencia propia.</summary>
+    public void ApplySystemReducedMotion()
+    {
+        if (HasExplicitGraphRotationPreference) return;
+        IsGraphRotationEnabled = false;
+    }
+
+    public bool HasExplicitGraphRotationPreference => _settingsService?.Settings.SessionsGraphRotationEnabled is not null;
+
+    /// <summary>Clic sobre una esfera: selecciona su sesión en la lista, como un clic en su fila. El grupo de
+    /// notas de la raíz del vault no tiene fila y no cambia la selección.</summary>
+    public void SelectGraphSession(string sessionId)
+    {
+        if (Sessions.FirstOrDefault(s => s.Session.Id == sessionId) is { } item) SelectedSession = item;
+    }
 
     partial void OnGraphSearchTextChanged(string value) => OnGraphFilterToggled();
     partial void OnShowGraphMeshChanged(bool value) => GraphDisplayChanged?.Invoke();

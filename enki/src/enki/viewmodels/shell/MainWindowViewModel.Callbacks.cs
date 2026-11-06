@@ -94,7 +94,7 @@ public sealed partial class MainWindowViewModel
             var page = Enum.Parse<AppPage>(key);
             if (!IsSidebarSectionEnabled(page)) continue;
             var meta = SidebarSectionCatalog.Meta[key];
-            NavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
+            NavItems.Add(new NavItemViewModel { Label = SidebarSectionCatalog.CustomName(_settingsService.Settings.SidebarSectionNames, key) ?? LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
         }
 
         BottomNavItems.Clear();
@@ -103,7 +103,7 @@ public sealed partial class MainWindowViewModel
             var page = Enum.Parse<AppPage>(key);
             if (!IsSidebarSectionEnabled(page)) continue;
             var meta = SidebarSectionCatalog.Meta[key];
-            BottomNavItems.Add(new NavItemViewModel { Label = LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
+            BottomNavItems.Add(new NavItemViewModel { Label = SidebarSectionCatalog.CustomName(_settingsService.Settings.SidebarSectionNames, key) ?? LocalizationService.Instance[meta.LabelKey], Icon = meta.Icon, Page = page });
         }
 
         foreach (var item in NavItems) item.IsActive = activePages.Contains(item.Page);
@@ -217,6 +217,7 @@ public sealed partial class MainWindowViewModel
                     // Apagar la IA corta la respuesta en curso y deja de escuchar: ningún CLI puede tocar ya el vault.
                     Assistant?.CancelAll();
                     _aiVaultTools?.Stop();
+                    _aiWebService.ClearCache();
                 }
                 break;
         }
@@ -368,6 +369,7 @@ public sealed partial class MainWindowViewModel
         Kanban?.CloseForVaultChange();
         Assistant?.CloseForVaultChange();
         _aiVaultTools?.Stop();
+        _aiWebService.ClearCache();
         Reminders?.CloseForVaultChange();
         ReloadVaultData();
         // Settings' "change vault folder" can point at any folder, old-version vault included — same

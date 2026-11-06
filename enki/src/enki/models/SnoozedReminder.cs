@@ -3,7 +3,7 @@ using System;
 namespace enki.Models;
 
 /// <summary>De qué entidad real procede un aplazamiento. El aplazamiento nunca copia el dato de origen
-/// (ver AGENTS.md, "Unificar sin duplicar"): solo guarda a qué fila apuntar para volver a resolver el
+/// (ver agents.md, "Unificar sin duplicar"): solo guarda a qué fila apuntar para volver a resolver el
 /// título en el momento de reavisar.</summary>
 public enum SnoozeSourceKind
 {

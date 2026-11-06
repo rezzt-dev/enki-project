@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia;
@@ -41,6 +42,9 @@ public partial class SessionsView : UserControl
     }
 
     private readonly Func<bool> _isWebEngineAvailable;
+    /// <summary>Geometría de las esferas compartida por el documento web y el visor nativo: filtrar, recargar
+    /// el documento o cambiar de renderizador conserva la forma y la posición de cada sesión.</summary>
+    private readonly SessionSphereLayout _sphereLayout = new();
     private NativeWebView? _graphWebView;
     private NativeSessionGraph? _nativeGraph;
     private SessionGraph? _currentGraph;
@@ -146,6 +150,7 @@ public partial class SessionsView : UserControl
         _subscribedVm.SessionColorChanged += OnSessionColorChanged;
         _subscribedVm.LinkRejected += OnLinkRejected;
         _subscribedVm.PendingLinkChanged += OnPendingLinkChanged;
+        _subscribedVm.GraphRotationChanged += OnGraphRotationChanged;
         _subscribedVm.PropertyChanged += OnVmPropertyChanged;
 
         // The VM already computed (and raised) its initial graph before this view existed to hear it —
@@ -164,12 +169,18 @@ public partial class SessionsView : UserControl
         _subscribedVm.SessionColorChanged -= OnSessionColorChanged;
         _subscribedVm.LinkRejected -= OnLinkRejected;
         _subscribedVm.PendingLinkChanged -= OnPendingLinkChanged;
+        _subscribedVm.GraphRotationChanged -= OnGraphRotationChanged;
         _subscribedVm.PropertyChanged -= OnVmPropertyChanged;
         _subscribedVm = null;
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(SessionsViewModel.SelectedSession))
+        {
+            ApplySelectedSession();
+            return;
+        }
         if (e.PropertyName != nameof(SessionsViewModel.IsCreateDialogOpen)) return;
         if (Vm is not { IsCreateDialogOpen: true }) return;
 
@@ -291,15 +302,18 @@ public partial class SessionsView : UserControl
         DisposeGraphWebView();
         if (_nativeGraph is null)
         {
-            _nativeGraph = new NativeSessionGraph();
+            _nativeGraph = new NativeSessionGraph(_sphereLayout);
             _nativeGraph.NodeClicked += id => Vm?.HandleNodeClicked(id);
             _nativeGraph.NodeDoubleClicked += id => Vm?.HandleNodeDoubleClicked(id);
+            _nativeGraph.SessionClicked += id => Vm?.SelectGraphSession(id);
             _nativeGraph.PositionsChanged += positions => Vm?.HandlePositionsReported(positions);
             GraphContentHost.Content = _nativeGraph;
         }
+        _nativeGraph.SetRotationEnabled(Vm?.IsGraphRotationEnabled ?? true);
         _nativeGraph.SetGraph(_currentGraph, reset: true);
         _nativeGraph.SetPendingLink(_pendingLink);
         ApplyGraphDisplay();
+        ApplySelectedSession();
     }
 
     private async Task InvokeGraphScriptAsync(string script)
@@ -330,6 +344,10 @@ public partial class SessionsView : UserControl
     private void OnGraphReady(SessionGraph graph)
     {
         _currentGraph = graph;
+        // Una recarga completa sin filtros contiene todas las sesiones: las que ya no existen dejan de
+        // reservar hueco. Con filtros activos se conservan, porque solo están ocultas.
+        if (Vm is { IsGraphFiltered: false })
+            _sphereLayout.Retain(graph.Nodes.Select(n => n.SessionId).ToHashSet(StringComparer.Ordinal));
         if (_nativeGraph is not null)
         {
             _nativeGraph.SetGraph(graph, reset: true);
@@ -346,7 +364,8 @@ public partial class SessionsView : UserControl
         ShowGraphLoadingOverlay();
         try
         {
-            var html = SessionGraphRenderer.RenderDocument(graph, UseSubtleAnimations);
+            var html = SessionGraphRenderer.RenderDocument(graph, _sphereLayout.Build(graph), UseSubtleAnimations,
+                Vm?.IsGraphRotationEnabled ?? true, Vm?.HasExplicitGraphRotationPreference ?? true);
             webView.NavigateToString(html, null);
         }
         catch (Exception ex)
@@ -402,10 +421,9 @@ public partial class SessionsView : UserControl
         }, MotionService.InteractionDuration);
     }
 
-    /// <summary>The WebView's own document reported it finished reading its initial nodes/edges into sigma
-    /// (the <c>{ type: 'ready' }</c> message posted right after <c>s.graph.read</c> in
-    /// SessionGraphRenderer) — dismisses the loading skeleton a beat earlier than waiting for the
-    /// never-ending animation loop to draw its first frame would.</summary>
+    /// <summary>The WebView's own document reported its 3D scene is built (the <c>{ type: 'ready' }</c> message
+    /// SessionGraphRenderer posts once the spheres are loaded) — dismisses the loading skeleton and re-applies
+    /// any state that changed while the document was loading.</summary>
     private void OnGraphWebViewReady()
     {
         if (_graphWebView is null) return;
@@ -414,9 +432,26 @@ public partial class SessionsView : UserControl
         HideGraphLoadingOverlay();
         // Un filtro puede cambiar mientras carga el documento: aplica el estado más reciente.
         if (_graphChangedWhileLoading && _currentGraph is { } graph)
-            _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetGraphDataScript(graph));
+            _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetGraphDataScript(graph, _sphereLayout.Build(graph)));
         _graphChangedWhileLoading = false;
         _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetPendingLinkScript(_pendingLink));
+        if (Vm is { } vm) _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetRotationScript(vm.IsGraphRotationEnabled));
+        ApplySelectedSession();
+    }
+
+    /// <summary>Activa o detiene la rotación de todas las esferas a la vez sin reconstruir la escena.</summary>
+    private void OnGraphRotationChanged()
+    {
+        if (Vm is not { } vm) return;
+        _nativeGraph?.SetRotationEnabled(vm.IsGraphRotationEnabled);
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetRotationScript(vm.IsGraphRotationEnabled));
+    }
+
+    private void ApplySelectedSession()
+    {
+        var sessionId = Vm?.SelectedSession?.Session.Id;
+        _nativeGraph?.SetSelectedSession(sessionId);
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetSelectedSessionScript(sessionId));
     }
 
     private void ApplyGraphDisplay()
@@ -440,7 +475,7 @@ public partial class SessionsView : UserControl
         _nativeGraph?.SetGraph(graph, reset: false);
         if (_graphWebView is null) return;
         if (!_webGraphReady) _graphChangedWhileLoading = true;
-        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetGraphDataScript(graph));
+        _ = InvokeGraphScriptAsync(SessionGraphRenderer.BuildSetGraphDataScript(graph, _sphereLayout.Build(graph)));
     }
 
     // Link mode itself no longer needs to reach the WebView at all — SessionsViewModel.HandleNodeClicked
@@ -517,20 +552,45 @@ public partial class SessionsView : UserControl
                         vm.HandleNodeDoubleClicked(dblPath);
                     break;
 
+                // Notas movidas a mano, normalizadas al radio de su esfera: actualizan la geometría compartida
+                // (para que la siguiente escena las conserve) y se guardan por el flujo habitual del viewmodel.
                 case "positions":
                     if (document.RootElement.TryGetProperty("nodes", out var nodesProp) && nodesProp.ValueKind == JsonValueKind.Array)
                     {
                         var positions = new List<(string RelativePath, double X, double Y, double Z)>();
                         foreach (var node in nodesProp.EnumerateArray())
                         {
-                            if (node.TryGetProperty("path", out var p) && p.GetString() is { } relativePath
-                                && node.TryGetProperty("x", out var x) && node.TryGetProperty("y", out var y) && node.TryGetProperty("z", out var z))
+                            if (node.TryGetProperty("path", out var p) && p.GetString() is { } globalId
+                                && node.TryGetProperty("x", out var x) && node.TryGetProperty("y", out var y) && node.TryGetProperty("z", out var z)
+                                && x.TryGetDouble(out var ux) && y.TryGetDouble(out var uy) && z.TryGetDouble(out var uz)
+                                && double.IsFinite(ux) && double.IsFinite(uy) && double.IsFinite(uz))
                             {
-                                positions.Add((relativePath, x.GetDouble(), y.GetDouble(), z.GetDouble()));
+                                var sessionId = globalId[..Math.Max(0, globalId.IndexOf("::", StringComparison.Ordinal))];
+                                var radius = _sphereLayout.RadiusOf(sessionId);
+                                if (radius > 0) _sphereLayout.Move(sessionId, globalId, new Point3(ux, uy, uz) * radius);
+                                positions.Add((globalId, ux, uy, uz));
                             }
                         }
                         vm.HandlePositionsReported(positions);
                     }
+                    break;
+
+                // Clic sobre el volumen de una esfera (no sobre una nota): selecciona su sesión en la lista.
+                case "sessionClick":
+                    if (document.RootElement.TryGetProperty("sessionId", out var sessionProp) && sessionProp.GetString() is { } clicked)
+                        vm.SelectGraphSession(clicked);
+                    break;
+
+                // El sistema pide movimiento reducido y el usuario no ha elegido nada: las esferas quedan quietas.
+                case "reducedMotion":
+                    vm.ApplySystemReducedMotion();
+                    break;
+
+                // Un fallo de pintado dentro del documento no debe dejar el panel vacío.
+                case "error":
+                    LogService.Warning("El documento del grafo 3D falló al pintar; se usará el renderizador nativo: "
+                        + (document.RootElement.TryGetProperty("message", out var message) ? message.GetString() : null));
+                    ShowNativeGraph();
                     break;
             }
         }

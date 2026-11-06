@@ -112,7 +112,7 @@
     </Grid>
 
     <!-- ===================== Conversación ===================== -->
-    <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+    <Grid Grid.Column="1" RowDefinitions="Auto,*">
 
       <!-- Cabecera: título (renombrable), skill del chat, ámbito, modelo, capacidad y paso al panel lateral. -->
       <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="24,0,16,0">
@@ -161,9 +161,20 @@
         </Grid>
       </Border>
 
-      <views:AssistantTranscriptView Grid.Row="1" />
+      <!-- Cuerpo: el hilo con el compositor fijo debajo o, con el chat vacío, la bienvenida con el compositor
+           centrado en la vista. Es el mismo compositor en los dos huecos (lo mueve el code-behind), así que el
+           borrador, los adjuntos y el foco siguen intactos al enviar el primer mensaje. -->
+      <Grid Grid.Row="1" RowDefinitions="*,Auto">
+        <views:AssistantTranscriptView Grid.Row="0" Classes="external-welcome" />
 
-      <views:AssistantComposerView Grid.Row="2" IsVisible="{Binding Cli.IsReady}" />
+        <ScrollViewer Grid.Row="0" Grid.RowSpan="2" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding ShowWelcome}">
+          <views:AssistantWelcomeView x:Name="Welcome" Classes="hero" Grid.IsSharedSizeScope="True" />
+        </ScrollViewer>
+
+        <Decorator x:Name="DockedComposerHost" Grid.Row="1">
+          <views:AssistantComposerView x:Name="Composer" IsVisible="{Binding Cli.IsReady}" />
+        </Decorator>
+      </Grid>
     </Grid>
   </controls:SidePanelGrid>
 </UserControl>

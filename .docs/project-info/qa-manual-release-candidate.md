@@ -452,8 +452,22 @@ exportable existe y está maquetada, pero que la imagen se vea bien solo se ve m
       cortada por la derecha o por abajo); a 2× solo gana nitidez. Tras exportar, la vista sigue con el
       mismo desplazamiento que tenía.
 - [ ] El PDF abre correctamente en el visor del sistema, en Evince/Preview/Adobe y en un navegador.
-- [ ] Una nota larga da un PDF de varias páginas A4, con encabezados, listas, citas y bloques de código
-      reconocibles.
+- [ ] Una nota larga da un PDF de varias páginas (A4 con la app en español; Carta en inglés de EE. UU.),
+      con márgenes de Word, número de página en el pie y **ninguna línea partida** entre dos páginas.
+- [ ] En el PDF de una nota el texto se puede seleccionar, copiar y buscar (Ctrl+F encuentra «fichero»,
+      con ligaduras incluidas) y los enlaces externos se abren al pulsarlos.
+- [ ] Con el tema oscuro activo, el PDF de una nota sale igualmente en papel blanco y tinta negra.
+- [ ] Una nota con todo lo que dibuja el editor sale igual que en pantalla: texto centrado/justificado con
+      `<div align>`, `<u>`/`<mark>`/`<br>`, listas anidadas y tareas, citas anidadas, avisos con icono,
+      código coloreado, tabla con alineaciones, imagen adjunta centrada y con `|300`, fórmulas en línea y en
+      bloque, y una `![[nota]]` embebida. Ver `exportar-notas-pdf.md`.
+- [ ] Una tabla que no cabe en una página repite su fila de encabezados en la siguiente; un encabezado no
+      queda solo al pie de una página; un párrafo de tres líneas no se parte 1 + 2.
+- [ ] Una nota con una foto grande da un PDF de pocos megas con la foto nítida al ampliar; una imagen rota
+      sale como un hueco con su nombre y no impide exportar.
+- [ ] Mientras se exporta una nota con muchas imágenes, el icono de exportar del editor gira y no se puede
+      lanzar otra exportación; al terminar se avisa y se abre la carpeta.
+- [ ] Abrir el PDF de una nota en Evince, Preview, Adobe Reader, Chrome y Firefox.
 - [ ] En tema claro y en tema oscuro, el fondo de la lámina y el contenido son coherentes entre sí.
 - [ ] Con el idioma cambiado, la cabecera y el nombre propuesto respetan el idioma y el formato de fecha.
 - [ ] Cancelar el diálogo de guardado no deja ningún archivo ni ningún aviso.
@@ -534,6 +548,54 @@ Ver `.docs/project-info/asistente-ia.md`, secciones "Dos superficies" y siguient
       una clave revocada muestra el aviso de clave rechazada con acceso a Ajustes.
 - [ ] Escape cierra los popovers de ámbito, capacidad, adjuntos y skills y devuelve el foco a su botón; con
       lector de pantalla, el botón del asistente anuncia su estado.
+- [ ] Gemini con una clave real de Google AI Studio (nivel gratuito): sin clave, el asistente enseña "Añade
+      tu clave de API de Gemini" con "Abrir ajustes" y "Consigue una clave gratis en Google AI Studio", sin
+      ninguna orden de terminal. Guardarla conecta, carga los modelos en ambos selectores y la cuenta muestra
+      solo sus últimos caracteres; la clave no aparece en `settings.json` ni en el log. Un chat responde con
+      streaming, cambia la capacidad y crea una nota con herramientas (actividad visible, versión «Asistente»
+      en el historial). Una clave borrada en AI Studio muestra "clave rechazada" con acceso a Ajustes; agotar la
+      cuota diaria muestra el límite de uso con su hora de reinicio; sin red, "No se pudo conectar".
+
+## 8.11 Grafo de sesiones en esferas 3D
+
+Ver `.docs/project-info/grafo-sesiones-3d.md`. Hacerlo en Linux con WPE disponible (renderizador web por
+software), en Linux sin WPE (visor nativo) y en Windows o macOS.
+
+- [ ] Con un vault de varias sesiones (al menos una con más de 200 notas), Sesiones abre con esferas que
+      giran despacio y de forma continua, sin tirones visibles; las notas interiores se distinguen de la
+      corteza al girar y los nombres de sesión no se mueven.
+- [ ] El botón de rotación de la barra inferior detiene todas las esferas al instante en la orientación en
+      la que estaban y las reanuda sin salto; su tooltip cambia entre «Desactivar rotación» y «Activar
+      rotación». Tras reiniciar Enki se conserva la elección.
+- [ ] Con el perfil Sutiles y sin elección previa, las esferas empiezan quietas. En Windows/macOS con
+      «reducir movimiento» del sistema activo, también, y el botón lo refleja.
+- [ ] Clic, doble clic (abrir), modo enlace, arrastre de una nota, giro manual de una esfera, clic sobre
+      una esfera (selecciona su sesión en la lista), zoom, encuadre, filtros y color de sesión funcionan
+      igual mientras las esferas giran y con la rotación detenida.
+- [ ] Arrastrar una nota, cerrar y volver a Sesiones: la nota sigue donde se dejó.
+- [ ] Minimizar la ventana con la rotación activa no consume CPU de forma apreciable; al restaurarla la
+      rotación continúa sin saltar.
+- [ ] Con lector de pantalla, el botón de rotación anuncia su acción y se activa con teclado.
+
+## 8.12 Asistente: acceso a internet
+
+Ver `.docs/project-info/asistente-ia.md`, sección "Acceso a internet". Hacerlo con red real y con al menos
+dos proveedores (uno por CLI y Gemini u Ollama).
+
+- [ ] Un chat nuevo nace con el globo apagado; preguntar por algo de actualidad: el asistente explica que puede
+      encenderse con el globo. Encenderlo y repetir: la actividad muestra "Buscar en internet" y "Leer página
+      web"; la respuesta cita las páginas con enlaces y el botón de la fila abre la página en el navegador.
+- [ ] Una página larga (artículo de Wikipedia) se lee por tramos sin volver a descargarse.
+- [ ] Pedir "abre https://ejemplo.org/x" en el mensaje: se abre sin preguntar. Pedir que abra una dirección que
+      no salió del mensaje ni de resultados: aparece la tarjeta de confirmación con la dirección completa;
+      "Denegar" no descarga nada.
+- [ ] Pedir que abra `http://localhost:11434`, `http://192.168.1.1` o `http://169.254.169.254`: se rechaza sin
+      conexión (comprobar con un servidor local escuchando que no recibe la petición).
+- [ ] Apagar el globo durante una respuesta: la búsqueda siguiente se rechaza. El chat recuerda el estado al
+      reabrirlo; "Internet en los chats nuevos" en Ajustes cambia el valor de los chats nuevos.
+- [ ] Brave Search: sin clave, la búsqueda avisa de añadirla en Ajustes; con una clave real busca; una clave
+      revocada muestra "Brave Search rechazó la clave". La clave no aparece en `settings.json` ni en el log.
+- [ ] Sin red: "No se pudo conectar con el sitio", sin cortar la respuesta.
 
 ---
 

@@ -44,7 +44,7 @@ barra de progreso son un espejo de lo que se ve en el tablero, así que decir "1
 tablero se ven 2 sería mentir. Las Estadísticas hacen lo contrario a propósito: miran el histórico, no
 el estado actual.
 
-Es el mismo criterio de "unificar sin duplicar" que documenta `AGENTS.md`, y por el que el Calendario
+Es el mismo criterio de "unificar sin duplicar" que documenta `agents.md`, y por el que el Calendario
 lee las entidades reales en vez de mantener su propia copia.
 
 ## 3. Las dos trampas de índices

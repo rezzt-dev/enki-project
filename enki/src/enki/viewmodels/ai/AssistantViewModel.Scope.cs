@@ -101,7 +101,8 @@ public sealed partial class AssistantViewModel
                 (true, true) => "Assistant_Scope_Summary_Auto"
             };
             var summary = string.Format(LocalizationService.Instance.CurrentCulture, LocalizationService.Instance[key], ScopeLabel)
-                + " · " + LocalizationService.Instance[ReadAccessGranted ? "Assistant_Scope_Summary_SearchAllowed" : "Assistant_Scope_Summary_SearchAsk"];
+                + " · " + LocalizationService.Instance[ReadAccessGranted ? "Assistant_Scope_Summary_SearchAllowed" : "Assistant_Scope_Summary_SearchAsk"]
+                + " · " + LocalizationService.Instance[WebAccessEnabled ? "Assistant_Scope_Summary_WebOn" : "Assistant_Scope_Summary_WebOff"];
             return _settingsService.Settings.Ai.AllowVaultChanges
                 ? summary
                 : summary + " · " + LocalizationService.Instance["Assistant_Scope_Summary_ReadOnly"];
@@ -227,6 +228,7 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(ScopeWarning));
         OnPropertyChanged(nameof(HasScopeWarning));
         RefreshReadAccessState();
+        RefreshWebAccessState();
         RefreshActiveNote();
         RebuildSessionList();
     }
@@ -258,7 +260,8 @@ public sealed partial class AssistantViewModel
         _isPolarLinked(),
         DateTimeOffset.Now,
         TimeZoneInfo.Local.Id,
-        HasReadAccess(session));
+        HasReadAccess(session),
+        session.WebAccess);
 
     private void ResetDraftScope()
     {
@@ -267,6 +270,7 @@ public sealed partial class AssistantViewModel
         _draftFullAccess = false;
         _draftReadAccess = null;
         _draftReadAccessRevoked = false;
+        _draftWebAccess = null;
     }
 
     // ===================== Permiso de consulta =====================
@@ -348,6 +352,7 @@ public sealed partial class AssistantViewModel
     private void RefreshScopeLocalizedLabels()
     {
         RefreshReadAccessState();
+        RefreshWebAccessState();
         OnPropertyChanged(nameof(ScopeLabel));
         OnPropertyChanged(nameof(ScopeBadge));
         OnPropertyChanged(nameof(FullAccessLabel));

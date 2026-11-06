@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using enki.Models;
 using enki.Localization;
+using enki.Services;
 
 namespace enki.ViewModels;
 
@@ -11,12 +12,16 @@ public sealed record AiModelOption(string Alias, string Label)
 {
     public override string ToString() => Label;
 
-    public static IReadOnlyList<AiModelOption> Build(AiProvider provider, IReadOnlyList<string>? localModels = null, string? selected = null)
+    /// <param name="catalog">Modelos descubiertos por el proveedor (<see cref="AiBackendService.Models"/>).</param>
+    public static IReadOnlyList<AiModelOption> Build(AiProvider provider, IReadOnlyList<AiModelEntry>? catalog = null, string? selected = null)
     {
+        var discovered = (catalog ?? []).Select(m => new AiModelOption(m.Id, m.Label));
         var options = provider switch
         {
             AiProvider.OpenAi => new List<AiModelOption> { new(string.Empty, LocalizationService.Instance["Assistant_Model_Default"]) },
-            AiProvider.Ollama => (localModels ?? []).Select(m => new AiModelOption(m, m)).ToList(),
+            AiProvider.Ollama => discovered.ToList(),
+            // Vacío = el Flash más reciente que permita la clave, que sigue valiendo cuando Google retira versiones.
+            AiProvider.Gemini => discovered.Prepend(new(string.Empty, LocalizationService.Instance["Assistant_Model_Default"])).ToList(),
             _ => Build().ToList()
         };
         if (!string.IsNullOrWhiteSpace(selected) && options.All(m => m.Alias != selected)) options.Add(new(selected, selected));
@@ -40,5 +45,17 @@ public sealed record AiProviderOption(AiProvider Provider, string Label)
 {
     public override string ToString() => Label;
     public static IReadOnlyList<AiProviderOption> Build() =>
-        [new(AiProvider.Claude, "Claude"), new(AiProvider.OpenAi, "OpenAI · ChatGPT"), new(AiProvider.Ollama, "Ollama")];
+        [
+            new(AiProvider.Claude, LabelFor(AiProvider.Claude)), new(AiProvider.OpenAi, LabelFor(AiProvider.OpenAi)),
+            new(AiProvider.Gemini, LabelFor(AiProvider.Gemini)), new(AiProvider.Ollama, LabelFor(AiProvider.Ollama))
+        ];
+
+    /// <summary>Nombre del proveedor tal como se enseña en selectores, estados y avisos.</summary>
+    public static string LabelFor(AiProvider provider) => provider switch
+    {
+        AiProvider.OpenAi => "OpenAI · ChatGPT",
+        AiProvider.Ollama => "Ollama",
+        AiProvider.Gemini => "Google Gemini",
+        _ => "Claude"
+    };
 }

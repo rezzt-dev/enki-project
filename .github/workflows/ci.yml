@@ -31,7 +31,7 @@ jobs:
             8.0.x
             9.0.x
 
-      # No hay .sln en el repo (ver README.md, "Cómo compilar y correr") — se restauran los tres
+      # No hay .sln en el repo (ver readme.md, "Cómo compilar y correr") — se restauran los tres
       # proyectos por separado, igual que se compilan/testean a continuación.
       - name: Restore
         run: |

@@ -1,17 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
-using Avalonia.Media.Immutable;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using TextMateSharp.Grammars;
-using TextMateSharp.Registry;
-using TmFontStyle = TextMateSharp.Themes.FontStyle;
-using TmTheme = TextMateSharp.Themes.Theme;
 using enki.Services;
 
 namespace enki.Views.Editor.Markdown;
@@ -46,19 +41,14 @@ public sealed class MarkdownCodeHighlighter
     /// <summary>Tope de líneas que se tokenizan por bloque. Un bloque más largo que esto dentro de una
     /// nota es un volcado, no un fragmento para leer; se deja sin colorear antes que meter una pausa en
     /// el repintado.</summary>
-    private const int MaxBlockLines = 2000;
+    internal const int MaxBlockLines = 2000;
 
-    private static readonly TimeSpan TokenizeBudget = TimeSpan.FromMilliseconds(200);
+    internal static readonly TimeSpan TokenizeBudget = TimeSpan.FromMilliseconds(200);
 
     private readonly LivePreviewState _state;
     private readonly Dictionary<int, Block> _blocks = new();
-    private readonly Dictionary<string, IGrammar?> _grammars = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<int, IBrush> _brushes = new();
 
-    private RegistryOptions? _options;
-    private Registry? _registry;
-    private TmTheme? _theme;
-    private ThemeName _loadedTheme;
+    private CodeTokenizer? _tokenizer;
     private bool _loading;
     private int _version;
 
@@ -80,11 +70,8 @@ public sealed class MarkdownCodeHighlighter
     /// La llama la vista cuando cambia la apariencia.</summary>
     public void RefreshTheme()
     {
-        if (_registry is null || _options is null || CurrentTheme() == _loadedTheme) return;
-        _loadedTheme = CurrentTheme();
-        _registry.SetTheme(_options.LoadTheme(_loadedTheme));
-        _theme = _registry.GetTheme();
-        _brushes.Clear();
+        if (_tokenizer is null || CurrentTheme() == _tokenizer.Theme) return;
+        _tokenizer.SetTheme(CurrentTheme());
         Invalidate();
         Changed?.Invoke();
     }
@@ -120,122 +107,27 @@ public sealed class MarkdownCodeHighlighter
     private Block Tokenize(TextDocument document, int openingLine, string language)
     {
         var block = new Block(_version);
-        var grammar = GrammarFor(language);
-        if (grammar is null || _theme is null) return block;
+        if (_tokenizer is null) return block;
 
-        IStateStack? stack = null;
-        var lineNumber = openingLine + 1;
-        var clock = Stopwatch.StartNew();
-        for (var count = 0; count < MaxBlockLines && lineNumber <= document.LineCount; count++, lineNumber++)
+        var lines = new List<string>();
+        for (var lineNumber = openingLine + 1;
+             lines.Count < MaxBlockLines && lineNumber <= document.LineCount && _state.GetFence(lineNumber).IsInside;
+             lineNumber++)
         {
-            var budget = TokenizeBudget - clock.Elapsed;
-            if (budget <= TimeSpan.Zero || !_state.GetFence(lineNumber).IsInside) break;
-            var text = document.GetText(document.GetLineByNumber(lineNumber));
-
-            ITokenizeLineResult result;
-            try
-            {
-                result = grammar.TokenizeLine(new LineText(text), stack!, budget);
-            }
-            catch (Exception ex)
-            {
-                // Una gramática que se atraganta con una línea concreta no puede tumbar el repintado de
-                // la nota: se deja el resto del bloque sin colorear y se sigue.
-                LogService.Warning($"No se pudo resaltar el bloque de código '{language}'", ex);
-                break;
-            }
-
-            stack = result.RuleStack;
-            block.Lines[lineNumber] = Convert(result.Tokens, text.Length);
+            lines.Add(document.GetText(document.GetLineByNumber(lineNumber)));
         }
+
+        var tokenized = _tokenizer.TokenizeLines(lines, language, TokenizeBudget);
+        if (tokenized is null) return block;
+        for (var i = 0; i < tokenized.Count; i++) block.Lines[openingLine + 1 + i] = tokenized[i];
         return block;
-    }
-
-    private List<CodeToken> Convert(IToken[] tokens, int lineLength)
-    {
-        var converted = new List<CodeToken>(tokens.Length);
-        foreach (var token in tokens)
-        {
-            var start = Math.Clamp(token.StartIndex, 0, lineLength);
-            var end = Math.Clamp(token.EndIndex, 0, lineLength);
-            if (end <= start) continue;
-
-            var foreground = -1;
-            var style = TmFontStyle.NotSet;
-            foreach (var rule in _theme!.Match(token.Scopes))
-            {
-                if (foreground == -1 && rule.foreground > 0) foreground = rule.foreground;
-                if (style == TmFontStyle.NotSet && rule.fontStyle != TmFontStyle.NotSet)
-                    style = rule.fontStyle;
-                if (foreground != -1 && style != TmFontStyle.NotSet) break;
-            }
-
-            if (style == TmFontStyle.NotSet) style = TmFontStyle.None;
-            converted.Add(new CodeToken(start, end, BrushFor(foreground),
-                style.HasFlag(TmFontStyle.Italic) ? FontStyle.Italic : FontStyle.Normal,
-                style.HasFlag(TmFontStyle.Bold) ? FontWeight.Bold : FontWeight.Normal,
-                style.HasFlag(TmFontStyle.Underline)));
-        }
-        return converted;
-    }
-
-    private IBrush? BrushFor(int colorId)
-    {
-        if (colorId <= 0 || _theme is null) return null;
-        if (_brushes.TryGetValue(colorId, out var cached)) return cached;
-        if (_theme.GetColor(colorId) is not { Length: > 0 } hex || !Color.TryParse(hex, out var color)) return null;
-        var brush = new ImmutableSolidColorBrush(color);
-        _brushes[colorId] = brush;
-        return brush;
-    }
-
-    private IGrammar? GrammarFor(string language)
-    {
-        if (_grammars.TryGetValue(language, out var cached)) return cached;
-
-        IGrammar? grammar = null;
-        try
-        {
-            if (ScopeFor(language) is { } scope) grammar = _registry!.LoadGrammar(scope);
-        }
-        catch (Exception ex)
-        {
-            // Lenguaje sin gramática o gramática rota: el bloque se ve sin colores, como hasta ahora.
-            LogService.Warning($"No se pudo cargar la gramática de '{language}'", ex);
-        }
-        _grammars[language] = grammar;
-        return grammar;
-    }
-
-    /// <summary>El ámbito TextMate que corresponde al lenguaje escrito tras los acentos graves. Se prueba
-    /// por identificador, por alias y por extensión, que es como la gente escribe de verdad el lenguaje de
-    /// un bloque: <c>csharp</c>, <c>c#</c> y <c>cs</c> tienen que llevar todos al mismo sitio.</summary>
-    private string? ScopeFor(string language)
-    {
-        var options = _options!;
-        var trimmed = language.Trim();
-        if (trimmed.Length == 0) return null;
-
-        foreach (var candidate in options.GetAvailableLanguages())
-        {
-            if (string.Equals(candidate.Id, trimmed, StringComparison.OrdinalIgnoreCase))
-                return options.GetScopeByLanguageId(candidate.Id);
-            if (candidate.Aliases is null) continue;
-            foreach (var alias in candidate.Aliases)
-            {
-                if (string.Equals(alias, trimmed, StringComparison.OrdinalIgnoreCase))
-                    return options.GetScopeByLanguageId(candidate.Id);
-            }
-        }
-        var byExtension = options.GetLanguageByExtension("." + trimmed);
-        return byExtension is null ? null : options.GetScopeByLanguageId(byExtension.Id);
     }
 
     /// <summary>Si las gramáticas ya están en memoria. Si no lo están, arranca la carga en segundo plano y
     /// devuelve false: la nota se dibuja igual, y cuando termine se pide un repintado.</summary>
     private bool EnsureLoaded()
     {
-        if (_registry is not null) return true;
+        if (_tokenizer is not null) return true;
         if (_loading) return false;
 
         _loading = true;
@@ -244,15 +136,10 @@ public sealed class MarkdownCodeHighlighter
         {
             try
             {
-                var options = new RegistryOptions(themeName);
-                var registry = new Registry(options);
-                var theme = registry.GetTheme();
+                var tokenizer = new CodeTokenizer(themeName);
                 Dispatcher.UIThread.Post(() =>
                 {
-                    _options = options;
-                    _registry = registry;
-                    _theme = theme;
-                    _loadedTheme = themeName;
+                    _tokenizer = tokenizer;
                     _loading = false;
                     RefreshTheme();
                     Changed?.Invoke();

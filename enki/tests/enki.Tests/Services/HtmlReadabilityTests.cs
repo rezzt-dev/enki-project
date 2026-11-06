@@ -181,4 +181,31 @@ public class HtmlReadabilityTests
         Assert.Contains("Primero sin cerrar.", article.Markdown, StringComparison.Ordinal);
         Assert.Contains("Segundo sin cerrar.", article.Markdown, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ExtractPage_ResolvesRelativeLinksAgainstTheBaseAndDropsImages()
+    {
+        var page = HtmlReadability.ExtractPage($"""
+            <html><head><title>Docs</title><base href="https://docs.example.org/v2/"></head>
+            <body><article><p>{Filler}</p><p>Ver <a href="guide/start.html">la guía</a>, <a href="/about">acerca de</a>,
+            <a href="#top">arriba</a> y <a href="javascript:alert(1)">nada</a>.</p><img src="logo.png" alt="logo"><p>{Filler}</p></article></body></html>
+            """, new Uri("https://example.org/page"));
+
+        Assert.Contains("[la guía](https://docs.example.org/v2/guide/start.html)", page.Markdown);
+        Assert.Contains("[acerca de](https://docs.example.org/about)", page.Markdown);
+        Assert.DoesNotContain("](#top)", page.Markdown);
+        Assert.DoesNotContain("javascript:", page.Markdown);
+        Assert.DoesNotContain("logo.png", page.Markdown);
+    }
+
+    [Fact]
+    public void ExtractPage_FallsBackToTheWholeBodyWhenThereIsNoArticle()
+    {
+        var page = HtmlReadability.ExtractPage("""
+            <html><body><nav><a href="/a">Inicio</a></nav><ul><li>Precio: 12 €</li><li>Stock: 3</li></ul></body></html>
+            """, new Uri("https://shop.example/item"));
+
+        Assert.Contains("Precio: 12 €", page.Markdown);
+        Assert.Contains("[Inicio](https://shop.example/a)", page.Markdown);
+    }
 }

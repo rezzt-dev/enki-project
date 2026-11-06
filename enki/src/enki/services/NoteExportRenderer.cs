@@ -15,7 +15,7 @@ namespace enki.Services;
 
 /// <summary>Convierte una nota Markdown en un documento HTML autónomo, listo para compartir fuera de
 /// Enki (propuesta 6 de docs/propuesta-nuevas-funcionalidades.md — "Exportar notas a PDF/HTML y vista de
-/// impresión"; por ahora solo la mitad de HTML está implementada, ver <see cref="NoteExportService"/>).
+/// impresión"; el PDF lo maqueta aparte <see cref="Export.NoteDocumentExporter"/>).
 /// El render de bloques e inline reutiliza <see cref="MarkdownLineParser"/>, el mismo parser ligero que
 /// alimenta el live preview del editor, aplicado aquí a un documento estático — lo que la nota muestra
 /// mientras se edita es lo que sale en la exportación. La plantilla es monocroma (blanco/negro/grises,

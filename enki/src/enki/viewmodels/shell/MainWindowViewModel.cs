@@ -69,6 +69,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     /// Ver <c>.docs/project-info/asistente-ia.md</c>.</summary>
     private readonly ClaudeCliService _claudeCliService;
     private readonly AiChatService _aiChatService;
+    private readonly AiWebService _aiWebService;
 
     /// <summary>Servidor MCP con el que el asistente trabaja dentro del vault (<see cref="AiVaultToolbox"/>).
     /// Se construye en <c>InitializeShell</c> porque sus herramientas necesitan a Notas, y solo escucha
@@ -586,6 +587,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         ShortcutRegistry.Changed -= _shortcutChangedHandler;
         Assistant?.CancelAll();
         _aiVaultTools?.Stop();
+        _aiWebService.Dispose();
         _globalHotkeyService.Dispose();
         _vaultChangeWatcher.Dispose();
         _webClipService.Dispose();

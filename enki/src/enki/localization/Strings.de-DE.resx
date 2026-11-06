@@ -885,6 +885,12 @@
   <data name="Export_MenuTooltip" xml:space="preserve">
     <value>Exportieren…</value>
   </data>
+  <data name="Export_NoteDialog_Title" xml:space="preserve">
+    <value>Notiz exportieren</value>
+  </data>
+  <data name="Export_InProgress" xml:space="preserve">
+    <value>Wird exportiert…</value>
+  </data>
   <data name="Export_PdfFileType" xml:space="preserve">
     <value>PDF-Dokument</value>
   </data>
@@ -3646,7 +3652,7 @@
     <value>Mit Mausrad zoomen</value>
   </data>
   <data name="Shell_BrandTagline" xml:space="preserve">
-    <value>MARKDOWN-NOTIZEN</value>
+    <value>ZWEITES GEHIRN</value>
   </data>
   <data name="Shell_MaximizeRestoreTooltip" xml:space="preserve">
     <value>Maximieren/Wiederherstellen</value>
@@ -3670,7 +3676,7 @@
     <value>Tresor konnte nicht geladen werden</value>
   </data>
   <data name="Shell_WindowTitle" xml:space="preserve">
-    <value>Enki — Markdown-Notizen</value>
+    <value>Enki — Zweites Gehirn</value>
   </data>
   <data name="Skills_Badge_Default" xml:space="preserve">
     <value>Standard</value>
@@ -6225,7 +6231,13 @@ Viel Erfolg beim Schreiben.</value>
     <value>Graph einpassen</value>
   </data>
   <data name="Sessions_Graph_NavigationHint" xml:space="preserve">
-    <value>Ziehen zum Verschieben · Scrollen zum Zoomen · Doppelklick zum Öffnen</value>
+    <value>Ziehen zum Verschieben oder Drehen einer Kugel · Scrollen zum Zoomen · Doppelklick zum Öffnen</value>
+  </data>
+  <data name="Sessions_Graph_RotationPause" xml:space="preserve">
+    <value>Rotation deaktivieren</value>
+  </data>
+  <data name="Sessions_Graph_RotationResume" xml:space="preserve">
+    <value>Rotation aktivieren</value>
   </data>
   <data name="Startup_Initializing" xml:space="preserve">
     <value>Wird gestartet</value>
@@ -6737,22 +6749,22 @@ Viel Erfolg beim Schreiben.</value>
     <value>Assistenten aktivieren</value>
   </data>
   <data name="Settings_Ai_Enable_Description" xml:space="preserve">
-    <value>Aktiviere den Assistenten mit Claude, OpenAI oder lokalen Modellen. Deaktiviert wird nichts ausgeführt oder gesendet.</value>
+    <value>Aktiviere den Assistenten mit Claude, OpenAI, Gemini oder lokalen Modellen. Deaktiviert wird nichts ausgeführt oder gesendet.</value>
   </data>
   <data name="Settings_Ai_Usage_Title" xml:space="preserve">
     <value>So funktioniert der Assistent</value>
   </data>
   <data name="Settings_Ai_Usage_HowItWorks" xml:space="preserve">
-    <value>Claude und OpenAI nutzen ihre offiziellen CLIs und das dort angemeldete Konto. Ollama führt das Modell auf diesem Computer aus. Enki installiert keine Anbieter und verändert keine Zugangsdaten.</value>
+    <value>Claude und OpenAI nutzen ihre offiziellen CLIs und das dort angemeldete Konto. Gemini nutzt deinen eigenen API-Schlüssel aus Google AI Studio. Ollama führt das Modell auf diesem Computer aus. Enki installiert keine Anbieter und verändert keine Zugangsdaten.</value>
   </data>
   <data name="Settings_Ai_Usage_SignIn" xml:space="preserve">
-    <value>Melde dich im Terminal an: claude auth login oder codex login. Lokale Ollama-Modelle benötigen kein Konto. Enki liest oder speichert keine Zugriffstoken.</value>
+    <value>Melde dich im Terminal an: claude auth login oder codex login. API-Schlüssel für Claude und Gemini liegen im sicheren Speicher des Systems. Lokale Ollama-Modelle benötigen kein Konto. Enki liest oder speichert keine Zugriffstoken.</value>
   </data>
   <data name="Settings_Ai_Usage_Data" xml:space="preserve">
     <value>Der Anbieter erhält Nachrichten, angehängten Kontext und Werkzeugergebnisse im Chat-Bereich. Schreibzugriffe beachten Vault-Berechtigungen; unumkehrbare Aktionen erfordern eine Bestätigung.</value>
   </data>
   <data name="Settings_Ai_Usage_Terms" xml:space="preserve">
-    <value>Es gelten Bedingungen und Limits des gewählten Anbieters. Enki ist unabhängig von Anthropic, OpenAI und Ollama. Prüfe die Bedingungen vor der Aktivierung.</value>
+    <value>Es gelten Bedingungen und Limits des gewählten Anbieters. Enki ist unabhängig von Anthropic, OpenAI, Google und Ollama. Prüfe die Bedingungen vor der Aktivierung.</value>
   </data>
   <data name="Settings_Ai_Usage_ClaudeCodeTerms" xml:space="preserve">
     <value>Anbieterbedingungen</value>
@@ -7229,7 +7241,7 @@ Viel Erfolg beim Schreiben.</value>
     <value>KI-Anbieter</value>
   </data>
   <data name="Ai_ProviderHelp" xml:space="preserve">
-    <value>Wähle Claude, dein ChatGPT-Konto oder ein lokales Modell. Ein Anbieterwechsel startet einen neuen Chat; bestehende Chats behalten ihren Anbieter.</value>
+    <value>Wähle Claude, dein ChatGPT-Konto, Gemini mit deinem Google-AI-Studio-Schlüssel oder ein lokales Modell. Ein Anbieterwechsel startet einen neuen Chat; bestehende Chats behalten ihren Anbieter.</value>
   </data>
   <data name="Ai_OpenAiHelp" xml:space="preserve">
     <value>Installiere Codex und melde dich mit codex login an, um deinen berechtigten ChatGPT-Tarif zu nutzen. Enki speichert keine Zugangsdaten. API-Schlüssel werden separat abgerechnet.</value>
@@ -7548,5 +7560,161 @@ Viel Erfolg beim Schreiben.</value>
   </data>
   <data name="Assistant_Composer_Help" xml:space="preserve">
     <value>Chat-Informationen</value>
+  </data>
+  <data name="Ai_ApiKeyMissing" xml:space="preserve">
+    <value>kein API-Schlüssel gespeichert</value>
+  </data>
+  <data name="Ai_GeminiHelp" xml:space="preserve">
+    <value>Nutze Gemini mit deinem eigenen API-Schlüssel aus Google AI Studio – es muss nichts installiert werden. Die kostenlose Stufe braucht nur ein Google-Konto und hat Tageslimits. Dort kann Google außerhalb von EWR, Schweiz und Vereinigtem Königreich deine Nachrichten und Notizen verwenden und von Menschen prüfen lassen, um seine Produkte zu verbessern – sende also keine sensiblen Inhalte. Mit aktivierter Abrechnung stellt Google die Nutzung in Rechnung und verwendet sie nicht zur Produktverbesserung.</value>
+  </data>
+  <data name="Ai_GeminiStudents" xml:space="preserve">
+    <value>Du hast Google AI Pro über das Studierendenangebot? Google erlaubt nicht, Verbrauchertarife – auch den für Studierende – aus Drittanbieter-Apps zu nutzen, daher kann Enki ihn nicht verwenden. Erstelle stattdessen mit demselben Google-Konto einen kostenlosen AI-Studio-Schlüssel. Für die Gemini API musst du mindestens 18 Jahre alt sein.</value>
+  </data>
+  <data name="Ai_Gemini_ApiKeyHelp" xml:space="preserve">
+    <value>Enki ruft die Gemini API direkt mit diesem Schlüssel auf und sendet ihn nur an Google. Er liegt im sicheren Speicher des Systems, nie in Enkis Einstellungen oder in deinem Vault.</value>
+  </data>
+  <data name="Ai_Gemini_ApiKey_Placeholder" xml:space="preserve">
+    <value>API-Schlüssel aus Google AI Studio einfügen</value>
+  </data>
+  <data name="Ai_Gemini_ApiKey_Invalid" xml:space="preserve">
+    <value>Das sieht nicht nach einem API-Schlüssel aus Google AI Studio aus. Kopiere ihn erneut von aistudio.google.com/apikey.</value>
+  </data>
+  <data name="Ai_Gemini_ApiKey_SavedMessage" xml:space="preserve">
+    <value>Gemini verwendet ihn ab der nächsten Nachricht. Er liegt im sicheren Speicher des Systems.</value>
+  </data>
+  <data name="Ai_Gemini_GetKey" xml:space="preserve">
+    <value>Kostenlosen Schlüssel in Google AI Studio holen</value>
+  </data>
+  <data name="Ai_Gemini_Guide" xml:space="preserve">
+    <value>Anleitung zur Gemini API</value>
+  </data>
+  <data name="Ai_Gemini_Setup_Title" xml:space="preserve">
+    <value>Gemini-API-Schlüssel hinzufügen</value>
+  </data>
+  <data name="Ai_Gemini_Setup_Message" xml:space="preserve">
+    <value>Gemini funktioniert mit deinem eigenen API-Schlüssel aus Google AI Studio. Erstelle ihn kostenlos mit deinem Google-Konto und speichere ihn in den Einstellungen: Enki legt ihn im sicheren Speicher des Systems ab und sendet ihn nur mit jeder Nachricht an Google.</value>
+  </data>
+  <data name="Ai_Gemini_KeyRejected" xml:space="preserve">
+    <value>Google hat den gespeicherten API-Schlüssel abgelehnt. Prüfe ihn in den Einstellungen oder erstelle einen neuen in Google AI Studio.</value>
+  </data>
+  <data name="Ai_Gemini_Error_KeyRejected" xml:space="preserve">
+    <value>Google hat deinen Gemini-API-Schlüssel abgelehnt, oder es ist keiner gespeichert. Prüfe ihn unter Einstellungen › Künstliche Intelligenz.</value>
+  </data>
+  <data name="Ai_Gemini_Region" xml:space="preserve">
+    <value>Die Gemini API ist in deiner Region nicht verfügbar. Die verfügbaren Regionen stehen in der Dokumentation von Google.</value>
+  </data>
+  <data name="Ai_Gemini_Unavailable" xml:space="preserve">
+    <value>Keine Verbindung zur Gemini API. Prüfe deine Internetverbindung und versuche es erneut.</value>
+  </data>
+  <data name="Ai_Gemini_NoModels" xml:space="preserve">
+    <value>Für deinen Schlüssel sind keine Gemini-Chatmodelle verfügbar. Prüfe das zugehörige Projekt in Google AI Studio.</value>
+  </data>
+  <data name="Ai_Gemini_RequestFailed" xml:space="preserve">
+    <value>Gemini konnte die Antwort nicht abschließen. Versuche es gleich noch einmal.</value>
+  </data>
+  <data name="Ai_Gemini_Blocked" xml:space="preserve">
+    <value>Die Sicherheitsfilter von Google haben diese Antwort blockiert. Formuliere die Nachricht um und versuche es erneut.</value>
+  </data>
+  <data name="Assistant_Tool_web_search" xml:space="preserve">
+    <value>Im Web suchen</value>
+  </data>
+  <data name="Assistant_Tool_web_fetch" xml:space="preserve">
+    <value>Webseite lesen</value>
+  </data>
+  <data name="Assistant_Web_Toggle_Label" xml:space="preserve">
+    <value>Web</value>
+  </data>
+  <data name="Assistant_Web_Toggle_OnTooltip" xml:space="preserve">
+    <value>Webzugriff ist für diesen Chat an: Der Assistent kann im Internet suchen und Seiten lesen. Klicke zum Ausschalten.</value>
+  </data>
+  <data name="Assistant_Web_Toggle_OffTooltip" xml:space="preserve">
+    <value>Webzugriff ist für diesen Chat aus. Klicke, damit der Assistent im Internet suchen und Seiten lesen kann.</value>
+  </data>
+  <data name="Assistant_Scope_Summary_WebOn" xml:space="preserve">
+    <value>Web an</value>
+  </data>
+  <data name="Assistant_Scope_Summary_WebOff" xml:space="preserve">
+    <value>Web aus</value>
+  </data>
+  <data name="Assistant_Web_ApproveFetch" xml:space="preserve">
+    <value>Diese Webadresse öffnen? Sie stammt weder aus deinen Nachrichten noch aus früheren Suchergebnissen.</value>
+  </data>
+  <data name="Assistant_Web_ApproveFetch_Hint" xml:space="preserve">
+    <value>Prüfe die vollständige Adresse, bevor du sie erlaubst: Eine Seite könnte versuchen, deine Daten in einem Link zu versenden. In deinem Speicher ändert sich nichts.</value>
+  </data>
+  <data name="Assistant_Web_Error_InvalidUrl" xml:space="preserve">
+    <value>Ungültige oder nicht öffentliche Webadresse.</value>
+  </data>
+  <data name="Assistant_Web_Error_PrivateAddress" xml:space="preserve">
+    <value>Adressen auf diesem Computer oder in deinem lokalen Netzwerk können nicht geöffnet werden.</value>
+  </data>
+  <data name="Assistant_Web_Error_Unreachable" xml:space="preserve">
+    <value>Die Website ist nicht erreichbar.</value>
+  </data>
+  <data name="Assistant_Web_Error_Timeout" xml:space="preserve">
+    <value>Die Website hat zu lange nicht geantwortet.</value>
+  </data>
+  <data name="Assistant_Web_Error_HttpStatus" xml:space="preserve">
+    <value>Die Website hat mit Fehler {0} geantwortet.</value>
+  </data>
+  <data name="Assistant_Web_Error_Unsupported" xml:space="preserve">
+    <value>Keine lesbare Seite ({0}).</value>
+  </data>
+  <data name="Assistant_Web_Error_TooLarge" xml:space="preserve">
+    <value>Die Seite ist zu groß.</value>
+  </data>
+  <data name="Assistant_Web_Error_Redirects" xml:space="preserve">
+    <value>Zu viele Weiterleitungen.</value>
+  </data>
+  <data name="Assistant_Web_Error_SearchUnavailable" xml:space="preserve">
+    <value>{0} hat gerade keine Ergebnisse geliefert.</value>
+  </data>
+  <data name="Assistant_Web_Error_KeyMissing" xml:space="preserve">
+    <value>Füge deinen Brave-Search-Schlüssel in den Einstellungen hinzu.</value>
+  </data>
+  <data name="Assistant_Web_Error_KeyRejected" xml:space="preserve">
+    <value>Brave Search hat den Schlüssel abgelehnt.</value>
+  </data>
+  <data name="Assistant_Web_Error_RateLimited" xml:space="preserve">
+    <value>Suchlimit von {0} erreicht.</value>
+  </data>
+  <data name="Settings_Ai_Web_Title" xml:space="preserve">
+    <value>Internetzugriff</value>
+  </data>
+  <data name="Settings_Ai_Web_NewChats_Label" xml:space="preserve">
+    <value>Webzugriff in neuen Chats</value>
+  </data>
+  <data name="Settings_Ai_Web_NewChats_Description" xml:space="preserve">
+    <value>Neue Chats starten mit eingeschaltetem Webzugriff, damit der Assistent bei Bedarf im Internet suchen und Seiten lesen kann. Jeder Chat kann ihn mit der Globus-Schaltfläche im Nachrichtenfeld ein- oder ausschalten.</value>
+  </data>
+  <data name="Settings_Ai_Web_Engine_Label" xml:space="preserve">
+    <value>Suchmaschine</value>
+  </data>
+  <data name="Settings_Ai_Web_DuckDuckGoHelp" xml:space="preserve">
+    <value>Funktioniert ohne Konto oder Schlüssel. Wenn DuckDuckGo automatische Suchen einschränkt, wechsle zu Brave Search.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveHelp" xml:space="preserve">
+    <value>Verwendet deinen eigenen Brave-Search-API-Schlüssel (mit kostenloser Stufe) für stabilere Ergebnisse. Der Schlüssel wird im sicheren Speicher des Systems aufbewahrt.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_None" xml:space="preserve">
+    <value>Kein Brave-Search-Schlüssel gespeichert</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_Placeholder" xml:space="preserve">
+    <value>Füge deinen Brave-Search-API-Schlüssel ein</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_Invalid" xml:space="preserve">
+    <value>Das sieht nicht nach einem Brave-Search-API-Schlüssel aus.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_SavedMessage" xml:space="preserve">
+    <value>Der Assistent sucht im Web mit Brave Search.</value>
+  </data>
+  <data name="Settings_Ai_Web_BraveKey_GetKey" xml:space="preserve">
+    <value>Schlüssel im Brave-Search-Dashboard holen</value>
+  </data>
+  <data name="Settings_Ai_Web_Privacy" xml:space="preserve">
+    <value>Eine Suche sendet nur die Anfrage an die gewählte Suchmaschine, und Seiten werden direkt von diesem Computer geladen. Was der Assistent liest, geht als Teil der Unterhaltung an den KI-Anbieter. Nichts wird auf der Festplatte gespeichert.</value>
+  </data>
+  <data name="Settings_Ai_Web_Safety" xml:space="preserve">
+    <value>Nur öffentliche Websites können geöffnet werden, nie dieser Computer oder dein lokales Netzwerk. Seiteninhalte gelten als Daten, nicht als Anweisungen, und bei einer Adresse, die der Assistent selbst vorschlägt, wirst du vorher gefragt.</value>
   </data>
 </root>

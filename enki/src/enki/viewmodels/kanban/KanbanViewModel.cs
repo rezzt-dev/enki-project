@@ -1221,6 +1221,19 @@ public sealed partial class KanbanViewModel : ViewModelBase
         var insertIndex = beforeCard is null ? targetColumn.Cards.Count : targetColumn.Cards.IndexOf(beforeCard);
         if (insertIndex < 0) insertIndex = targetColumn.Cards.Count;
 
+        // Stamps/clears Models.KanbanCard.CompletedAtUtc — the single chokepoint every card move
+        // (drag&drop and this same method's own callers alike) already goes through, so
+        // StatisticsAggregationService can trust it instead of inferring completion from column
+        // membership alone. Only stamped on the transition into Done, not re-stamped on every
+        // same-column reorder inside it. Va ANTES de tocar las colecciones: sus CollectionChanged
+        // recalculan el contador de vencidas (RefreshStats) y una tarjeta terminada no debe contar.
+        if (!sameColumn)
+        {
+            card.Card.CompletedAtUtc = targetColumn.Column.Role == CoreColumnRole.Done
+                ? card.Card.CompletedAtUtc ?? DateTime.UtcNow
+                : null;
+        }
+
         // Removing the card first would shift a later insertIndex down by one when reordering
         // within the same column, so that case adjusts for the removal before inserting.
         if (sameColumn && sourceColumn.Cards.IndexOf(card) < insertIndex) insertIndex--;
@@ -1243,15 +1256,6 @@ public sealed partial class KanbanViewModel : ViewModelBase
         if (!sameColumn)
         {
             ApplySubtaskAutomation(card, targetColumn);
-
-            // Stamps/clears Models.KanbanCard.CompletedAtUtc — the single chokepoint every card move
-            // (drag&drop and this same method's own callers alike) already goes through, so
-            // StatisticsAggregationService can trust it instead of inferring completion from column
-            // membership alone. Only stamped on the transition into Done, not re-stamped on every
-            // same-column reorder inside it.
-            card.Card.CompletedAtUtc = targetColumn.Column.Role == CoreColumnRole.Done
-                ? card.Card.CompletedAtUtc ?? DateTime.UtcNow
-                : null;
         }
 
         Persist();

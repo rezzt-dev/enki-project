@@ -40,18 +40,54 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
 
     public bool IsBusy => Backend?.IsBusy == true;
 
-    /// <summary>Almacén de la clave de API de Claude, compartido con Ajustes.</summary>
-    public AiApiKeyStore? ApiKeys => _cli.ApiKeys;
+    /// <summary>Almacén de la clave de API del proveedor activo (la de Anthropic para Claude, la de Google AI
+    /// Studio para Gemini), compartido con Ajustes. <see langword="null"/> para los que no usan clave.</summary>
+    public AiApiKeyStore? ApiKeys => ApiKeysFor(Provider);
+
+    public AiApiKeyStore? ApiKeysFor(AiProvider provider) => provider switch
+    {
+        AiProvider.Gemini => Backend?.GeminiApiKeys,
+        AiProvider.Claude => _cli.ApiKeys,
+        _ => null
+    };
     public AiBackendService? Backend { get; }
     public AiProvider Provider => Backend?.Provider ?? AiProvider.Claude;
-    public string ProviderLabel => Provider switch { AiProvider.OpenAi => "OpenAI · ChatGPT", AiProvider.Ollama => "Ollama", _ => "Claude" };
+    public string ProviderLabel => AiProviderOption.LabelFor(Provider);
     public string SetupDocumentationUrl => Provider switch
     {
         AiProvider.OpenAi => CodexCliService.SetupDocumentationUrl,
         AiProvider.Ollama => "https://docs.ollama.com/quickstart",
+        AiProvider.Gemini => GeminiApiService.DocumentationUrl,
         _ => ClaudeCliService.SetupDocumentationUrl
     };
-    public string TermsUrl => Provider switch { AiProvider.Claude => ClaudeCliService.LegalAndComplianceUrl, AiProvider.Ollama => "https://ollama.com/terms", _ => "https://openai.com/policies/terms-of-use/" };
+    public string TermsUrl => Provider switch
+    {
+        AiProvider.Claude => ClaudeCliService.LegalAndComplianceUrl,
+        AiProvider.Ollama => "https://ollama.com/terms",
+        AiProvider.Gemini => GeminiApiService.TermsUrl,
+        _ => "https://openai.com/policies/terms-of-use/"
+    };
+
+    /// <summary>El proveedor se pone en marcha con una orden de terminal (instalar, iniciar sesión, arrancar el
+    /// servidor). Gemini no: solo necesita la clave, que se guarda en Ajustes.</summary>
+    public bool HasSetupCommand => Provider != AiProvider.Gemini;
+
+    /// <summary>Título del panel de puesta en marcha cuando falta la clave de API del proveedor activo.</summary>
+    public string ApiKeySetupTitle => LocalizationService.Instance[Provider == AiProvider.Gemini ? "Ai_Gemini_Setup_Title" : "Assistant_Setup_ApiKey_Title"];
+
+    /// <summary>Por qué falta la clave, o por qué la guardada no sirve (Gemini la comprueba al conectar).</summary>
+    public string ApiKeySetupMessage => Provider == AiProvider.Gemini
+        ? Status.Detail ?? LocalizationService.Instance["Ai_Gemini_Setup_Message"]
+        : LocalizationService.Instance["Assistant_Setup_ApiKey_Message"];
+
+    /// <summary>Gemini no se instala: su guía explica cómo conseguir la clave.</summary>
+    public string SetupGuideLabel => LocalizationService.Instance[Provider == AiProvider.Gemini ? "Ai_Gemini_Guide" : "Assistant_Setup_OpenGuide"];
+
+    /// <summary>Texto del enlace a la página del proveedor donde se crean las claves.</summary>
+    public string ApiKeysPageLabel => LocalizationService.Instance[Provider == AiProvider.Gemini ? "Ai_Gemini_GetKey" : "Settings_Ai_ApiKey_Console"];
+
+    [RelayCommand]
+    private void OpenApiKeysPage() => UrlOpener.Open(ApiKeys?.KeysUrl ?? AiApiKeyStore.AnthropicKeysUrl);
 
     /// <summary>Momento de la última comprobación terminada, para no repetirla en cada navegación.</summary>
     public DateTime LastCheckedUtc { get; private set; } = DateTime.MinValue;
@@ -60,7 +96,7 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsReady), nameof(IsNotInstalled), nameof(IsSignedOut), nameof(IsUnsupported),
         nameof(IsKnown), nameof(ShowChecking), nameof(StateLabel), nameof(AccountLabel), nameof(HasAccount),
         nameof(VersionLabel), nameof(ExecutablePathLabel), nameof(UnsupportedMessage), nameof(SupportsVaultTools),
-        nameof(NeedsApiKey), nameof(NeedsLogin))]
+        nameof(NeedsApiKey), nameof(NeedsLogin), nameof(ApiKeySetupMessage))]
     private ClaudeCliStatus _status;
 
     /// <summary>El CLI deja trabajar al asistente dentro del vault (ver
@@ -88,7 +124,8 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     public bool ShowChecking => IsChecking && !IsKnown;
 
     public string StateLabel => Provider != AiProvider.Claude
-        ? ProviderLabel + " · " + LocalizationService.Instance[IsReady ? "Ai_Ready" : IsNotInstalled ? "Ai_NotInstalled" : IsSignedOut ? "Ai_SignedOut" : IsUnsupported ? "Ai_Unavailable" : "Ai_Checking"]
+        ? ProviderLabel + " · " + LocalizationService.Instance[IsReady ? "Ai_Ready" : IsNotInstalled ? "Ai_NotInstalled"
+            : NeedsApiKey ? "Ai_ApiKeyMissing" : IsSignedOut ? "Ai_SignedOut" : IsUnsupported ? "Ai_Unavailable" : "Ai_Checking"]
         : LocalizationService.Instance[Status.State switch
     {
         ClaudeCliState.Ready => "Assistant_State_Ready",
@@ -107,6 +144,8 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
             if (Provider == AiProvider.OpenAi)
                 return IsReady ? Status.AuthMethod == "API" ? "OpenAI · API" : "OpenAI · ChatGPT" : string.Empty;
             if (Provider == AiProvider.Ollama) return IsReady ? "Ollama" : string.Empty;
+            if (Provider == AiProvider.Gemini)
+                return IsReady ? string.Join(" · ", new[] { "Google AI Studio", Status.AccountEmail }.Where(p => !string.IsNullOrEmpty(p))) : string.Empty;
             var plan = Status.SubscriptionType is { Length: > 0 } subscription
                 ? "Claude " + char.ToUpperInvariant(subscription[0]) + subscription[1..]
                 : Status.AuthMethod is { Length: > 0 } method && !method.Contains("claude", StringComparison.OrdinalIgnoreCase)
@@ -181,5 +220,13 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
         OnPropertyChanged(nameof(AccountLabel));
         OnPropertyChanged(nameof(VersionLabel));
         OnPropertyChanged(nameof(UnsupportedMessage));
+        OnPropertyChanged(nameof(ApiKeys));
+        OnPropertyChanged(nameof(SetupDocumentationUrl));
+        OnPropertyChanged(nameof(TermsUrl));
+        OnPropertyChanged(nameof(HasSetupCommand));
+        OnPropertyChanged(nameof(ApiKeySetupTitle));
+        OnPropertyChanged(nameof(ApiKeySetupMessage));
+        OnPropertyChanged(nameof(ApiKeysPageLabel));
+        OnPropertyChanged(nameof(SetupGuideLabel));
     }
 }

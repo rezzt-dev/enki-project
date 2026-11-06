@@ -81,5 +81,5 @@ a partir de ahi, todo lo que crees se guarda en esa carpeta. para usar la sincro
 
 - **funcionalidades**: ver [`features-document.md`](features-document.md)
 - **diseno y aspecto visual**: ver [`project-ux-design.md`](project-ux-design.md)
-- **historial de cambios**: `CHANGELOG.md`
+- **historial de cambios**: `changelog.md`
 - **analisis tecnico y roadmap**: `docs/agent-docs/`

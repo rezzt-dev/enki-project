@@ -9,7 +9,7 @@
   <p><em>tu segundo cerebro, en tu escritorio.</em></p>
 
   <p>
-    <a href="README.en.md">read in english</a>
+    <a href="readme.en.md">read in english</a>
   </p>
 </div>
 
@@ -211,7 +211,7 @@ un flujo cotidiano puede empezar con una idea escrita en la captura rapida, cont
 
 enki ya cubre el flujo diario completo y dispone de empaquetado para windows, linux y macos. aun es un proyecto joven: antes de considerar una version candidata se revisan manualmente los recorridos que dependen del sistema operativo, el lector de pantalla, la sincronizacion real y la convivencia del vault con otras aplicaciones.
 
-el historial detallado esta en [`CHANGELOG.md`](CHANGELOG.md). la lista de cambios sin publicar explica lo que ya existe en el codigo pero todavia no forma parte de una version cerrada.
+el historial detallado esta en [`changelog.md`](changelog.md). la lista de cambios sin publicar explica lo que ya existe en el codigo pero todavia no forma parte de una version cerrada.
 
 ---
 
@@ -267,11 +267,11 @@ la documentacion versionada vive en [`.docs/project-info/`](.docs/project-info/)
 - [sistema de diseno](.docs/project-info/sistema-diseno-web.md) — principios visuales y de interaccion.
 - [qa de release candidate](.docs/project-info/qa-manual-release-candidate.md) — verificaciones manuales antes de publicar una version.
 
-las convenciones para contribuir estan en [`AGENTS.md`](AGENTS.md), las reglas de commits en [`.docs/commit-guidelines.md`](.docs/commit-guidelines.md) y el formato de pull requests, merges y releases en [`.docs/pr-merge-release-guidelines.md`](.docs/pr-merge-release-guidelines.md).
+las convenciones para contribuir estan en [`agents.md`](agents.md), las reglas de commits en [`.docs/commit-guidelines.md`](.docs/commit-guidelines.md) y el formato de pull requests, merges y releases en [`.docs/pr-merge-release-guidelines.md`](.docs/pr-merge-release-guidelines.md).
 
 ---
 
 <div align="center">
   <p><sub>construido con paciencia para uso personal.</sub></p>
-  <p><a href="CHANGELOG.md">changelog</a> · <a href="LICENSE">licencia</a></p>
+  <p><a href="changelog.md">changelog</a> · <a href="license.md">licencia</a></p>
 </div>

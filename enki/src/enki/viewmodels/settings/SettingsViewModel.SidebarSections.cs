@@ -324,8 +324,20 @@ public sealed partial class SettingsViewModel
             Key = key,
             Title = LocalizationService.Instance[meta.LabelKey],
             Icon = meta.Icon,
+            CustomName = SidebarSectionCatalog.CustomName(_settingsService.Settings.SidebarSectionNames, key) ?? "",
+            CustomNameCommitted = OnSidebarSectionNameCommitted,
             IsVisible = GetSidebarSectionFlag(key)
         };
+    }
+
+    /// <summary>Persiste el nombre personalizado de una sección (vacío lo elimina) y reconstruye el sidebar.</summary>
+    private void OnSidebarSectionNameCommitted(SidebarSectionConfigViewModel row)
+    {
+        var names = _settingsService.Settings.SidebarSectionNames;
+        if (string.IsNullOrWhiteSpace(row.CustomName)) names.Remove(row.Key);
+        else names[row.Key] = row.CustomName.Trim();
+        _settingsService.Save();
+        _onSidebarSectionOrderChanged();
     }
 
     /// <summary>Recomputes every row's <c>Position</c>/<c>IsFirst</c>/<c>IsLast</c> within its own group —

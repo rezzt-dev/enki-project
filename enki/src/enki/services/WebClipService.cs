@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -135,12 +134,7 @@ public sealed class WebClipService : IDisposable
         return true;
     }
 
-    /// <summary>Cierto cuando el host ya <em>es</em> una dirección y no sale de la máquina o de la red del
-    /// usuario (<c>127.0.0.1</c>, <c>192.168.1.1</c>, <c>[::1]</c>, <c>169.254.169.254</c>). Es el rechazo
-    /// "sin realizar la petición"; los nombres de dominio los sigue filtrando el handler al resolverlos,
-    /// que es donde se puede hacer sin dejar hueco entre comprobar y conectar.</summary>
-    private static bool IsNonPublicLiteralHost(Uri url) =>
-        IPAddress.TryParse(url.Host.Trim('[', ']'), out var address) && !RemoteImagePolicy.IsPubliclyRoutable(address);
+    private static bool IsNonPublicLiteralHost(Uri url) => WebFetch.IsNonPublicLiteralHost(url);
 
     // ===================== Captura =====================
 
@@ -211,100 +205,28 @@ public sealed class WebClipService : IDisposable
         public LocalizedText Reason { get; } = reason;
     }
 
+    /// <summary>Descarga con las reglas comunes de <see cref="WebFetch"/> y traduce sus rechazos a los de la
+    /// captura: una IP privada tras una redirección es una URL que no se debía pedir; el resto, una página que
+    /// no colaboró.</summary>
     private async Task<(string Html, Uri FinalUrl)> FetchAsync(Uri url, CancellationToken ct)
     {
-        var current = url;
-        for (var hop = 0; ; hop++)
+        try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, current);
-            using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
-                .ConfigureAwait(false);
-
-            if (IsRedirect(response.StatusCode))
+            var response = await WebFetch.GetAsync(_http, url, MaxContentBytes, MaxRedirects,
+                mediaType => mediaType is "text/html" or "application/xhtml+xml" or "text/plain" or null, ct).ConfigureAwait(false);
+            return (response.DecodeText(), response.FinalUrl);
+        }
+        catch (WebFetchException ex)
+        {
+            throw ex.Failure switch
             {
-                if (hop == MaxRedirects)
-                    throw new WebClipContentException(LocalizedTextFormatter.Format("WebClip_Partial_TooManyRedirects"));
-
-                // ResolveRedirect es quien rechaza bajar de https a http y los esquemas raros; la
-                // comprobación de dirección privada la vuelve a hacer el handler en el salto siguiente.
-                current = RemoteImagePolicy.ResolveRedirect(current, response.Headers.Location);
-                if (IsNonPublicLiteralHost(current))
-                    throw new WebClipRejectedException(
-                        LocalizedTextFormatter.Format("WebClip_Error_PrivateAddress", current.Host));
-                continue;
-            }
-
-            response.EnsureSuccessStatusCode();
-
-            var mediaType = response.Content.Headers.ContentType?.MediaType?.ToLowerInvariant();
-            if (mediaType is not ("text/html" or "application/xhtml+xml" or "text/plain" or null))
-                throw new WebClipContentException(
-                    LocalizedTextFormatter.Format("WebClip_Partial_NotHtml", mediaType));
-
-            // Content-Length es una pista del servidor, no una garantía: sirve para no empezar siquiera una
-            // descarga que ya se declara demasiado grande; el corte de verdad es el de ReadCappedAsync.
-            if (response.Content.Headers.ContentLength is > MaxContentBytes)
-                throw new WebClipContentException(LocalizedTextFormatter.Format("WebClip_Partial_TooLarge"));
-
-            var bytes = await ReadCappedAsync(response.Content, ct).ConfigureAwait(false);
-            return (Decode(bytes, response.Content.Headers.ContentType?.CharSet), current);
+                WebFetchFailure.PrivateAddress => new WebClipRejectedException(
+                    LocalizedTextFormatter.Format("WebClip_Error_PrivateAddress", ex.Detail ?? url.Host)),
+                WebFetchFailure.TooManyRedirects => new WebClipContentException(LocalizedTextFormatter.Format("WebClip_Partial_TooManyRedirects")),
+                WebFetchFailure.UnsupportedType => new WebClipContentException(LocalizedTextFormatter.Format("WebClip_Partial_NotHtml", ex.Detail)),
+                _ => new WebClipContentException(LocalizedTextFormatter.Format("WebClip_Partial_TooLarge"))
+            };
         }
-    }
-
-    private static bool IsRedirect(HttpStatusCode status) =>
-        status is HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther
-            or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
-
-    /// <summary>Lee el cuerpo cortando de verdad en <see cref="MaxContentBytes"/>, no comprobando el
-    /// tamaño después: un servidor que no envíe <c>Content-Length</c> —o que mienta— conseguiría si no que
-    /// se descargara entero antes de que nadie mirase cuánto ocupaba.</summary>
-    private static async Task<byte[]> ReadCappedAsync(HttpContent content, CancellationToken ct)
-    {
-        await using var stream = await content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81920];
-
-        int read;
-        while ((read = await stream.ReadAsync(chunk, ct).ConfigureAwait(false)) > 0)
-        {
-            if (buffer.Length + read > MaxContentBytes)
-                throw new WebClipContentException(LocalizedTextFormatter.Format("WebClip_Partial_TooLarge"));
-            buffer.Write(chunk, 0, read);
-        }
-
-        return buffer.ToArray();
-    }
-
-    /// <summary>Decodifica el cuerpo con la codificación que declare la cabecera y, si no la declara, la
-    /// que declare el propio documento en su <c>&lt;meta charset&gt;</c>. UTF-8 es el último recurso.
-    /// Deliberadamente acotado a las codificaciones que trae .NET de serie: registrar el proveedor de
-    /// páginas de código completo significaría otro paquete por un puñado de sitios antiguos, y esos se
-    /// leen mal pero se leen (UTF-8 conserva el ASCII intacto).</summary>
-    private static string Decode(byte[] bytes, string? declaredCharset)
-    {
-        var charset = declaredCharset;
-        if (string.IsNullOrWhiteSpace(charset))
-        {
-            var head = Encoding.ASCII.GetString(bytes, 0, Math.Min(bytes.Length, 4096));
-            var at = head.IndexOf("charset", StringComparison.OrdinalIgnoreCase);
-            if (at >= 0)
-            {
-                var value = head[(at + "charset".Length)..].TrimStart('=', ' ', '"', '\'');
-                var end = value.IndexOfAny(['"', '\'', ' ', ';', '>', '/', '\r', '\n']);
-                charset = end < 0 ? value : value[..end];
-            }
-        }
-
-        var encoding = charset?.Trim().ToLowerInvariant() switch
-        {
-            "utf-8" or "utf8" or null or "" => Encoding.UTF8,
-            "iso-8859-1" or "latin1" or "windows-1252" or "cp1252" => Encoding.Latin1,
-            "us-ascii" or "ascii" => Encoding.ASCII,
-            "utf-16" or "utf-16le" => Encoding.Unicode,
-            "utf-16be" => Encoding.BigEndianUnicode,
-            _ => Encoding.UTF8
-        };
-        return encoding.GetString(bytes);
     }
 
     /// <summary>Título de la nota. Sin título en la página se usa el dominio, que sigue siendo mejor

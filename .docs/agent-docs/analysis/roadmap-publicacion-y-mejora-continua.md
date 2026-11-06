@@ -32,7 +32,7 @@ superficie de producto sin cerrar lo existente.
 
 ### 1.1 arreglar la documentacion visible
 
-- alinear `README.md` con la documentacion real del checkout, porque actualmente apunta a `docs/agent-docs/...` mientras la documentacion viva esta en `.docs/project-info/...`.
+- alinear `readme.md` con la documentacion real del checkout, porque actualmente apunta a `docs/agent-docs/...` mientras la documentacion viva esta en `.docs/project-info/...`.
 - evitar que una persona que entre al repositorio encuentre enlaces rotos o rutas prometidas que no existen.
 - decidir si la documentacion publica debe moverse a `docs/`, si el README debe apuntar a `.docs/`, o si se mantiene una capa publica reducida y una capa interna en `.docs/`.
 
@@ -144,7 +144,7 @@ superficie de producto sin cerrar lo existente.
 
 ### fase a: saneamiento de release
 
-- enlazar correctamente la documentacion visible desde `README.md`.
+- enlazar correctamente la documentacion visible desde `readme.md`.
 - crear y pasar una checklist de qa manual para release candidate.
 - definir y construir el empaquetado minimo por plataforma.
 - evaluar e implementar el almacenamiento seguro de credenciales Polar.

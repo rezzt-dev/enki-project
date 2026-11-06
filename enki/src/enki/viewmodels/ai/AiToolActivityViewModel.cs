@@ -18,6 +18,9 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
     public string Target => Model.Target;
     public bool HasTarget => Model.Target.Length > 0;
 
+    /// <summary>De una página web se enseña la dirección completa al pasar el cursor; del resto, la etiqueta.</summary>
+    public string TargetTooltip => Model.TargetKind == AiToolTargetKind.WebPage && Model.TargetId is { Length: > 0 } url ? url : Model.Target;
+
     public bool IsRunning => Model.State == AiToolActivityState.Running;
     public bool IsSucceeded => Model.State == AiToolActivityState.Succeeded;
     public bool IsFailed => Model.State == AiToolActivityState.Failed;
@@ -26,10 +29,10 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
     public string? Error => Model.Error;
     public bool HasError => !string.IsNullOrEmpty(Model.Error);
 
-    /// <summary>Las notas y las tarjetas se pueden abrir desde la fila; el resto no tiene una pantalla propia
-    /// a la que llevar.</summary>
+    /// <summary>Las notas, las tarjetas y las páginas web se pueden abrir desde la fila; el resto no tiene una
+    /// pantalla propia a la que llevar.</summary>
     public bool CanOpen => IsSucceeded && !string.IsNullOrEmpty(Model.TargetId)
-        && Model.TargetKind is AiToolTargetKind.Note or AiToolTargetKind.KanbanCard;
+        && Model.TargetKind is AiToolTargetKind.Note or AiToolTargetKind.KanbanCard or AiToolTargetKind.WebPage;
 
     public MaterialIconKind Icon => Model.TargetKind switch
     {
@@ -41,6 +44,8 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
         AiToolTargetKind.PolarList or AiToolTargetKind.PolarTask => MaterialIconKind.CheckboxMarkedCircleOutline,
         AiToolTargetKind.Reminder => MaterialIconKind.CalendarClockOutline,
         AiToolTargetKind.Trash => MaterialIconKind.TrashCanOutline,
+        AiToolTargetKind.WebSearch => MaterialIconKind.SearchWeb,
+        AiToolTargetKind.WebPage => MaterialIconKind.Web,
         _ => Model.Tool.StartsWith("search", System.StringComparison.Ordinal) ? MaterialIconKind.Magnify : MaterialIconKind.Creation
     };
 
@@ -48,6 +53,7 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
     {
         OnPropertyChanged(nameof(Target));
         OnPropertyChanged(nameof(HasTarget));
+        OnPropertyChanged(nameof(TargetTooltip));
         OnPropertyChanged(nameof(IsRunning));
         OnPropertyChanged(nameof(IsSucceeded));
         OnPropertyChanged(nameof(IsFailed));

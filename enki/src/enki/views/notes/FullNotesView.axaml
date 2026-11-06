@@ -421,7 +421,7 @@
                                 <mi:MaterialIcon Kind="FileExportOutline" Width="14" Height="14" />
                               </MenuItem.Icon>
                             </MenuItem>
-                            <!-- PNG y PDF (T8): la hoja la compone Services.Export.NotePageComposer a
+                            <!-- PNG y PDF: el documento lo compone Services.Export.NoteDocumentExporter a
                                  partir del Markdown, no se rasteriza el editor (que virtualiza líneas). -->
                             <MenuItem Header="{loc:Tr Export_ToPng, Converter={StaticResource UpperCaseConverter}}"
                                       Command="{Binding #Root.((vm:NotesViewModel)DataContext).ExportNoteAsPngCommand}"

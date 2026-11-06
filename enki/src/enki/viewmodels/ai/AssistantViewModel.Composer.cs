@@ -474,7 +474,8 @@ public sealed partial class AssistantViewModel
                 SessionName = _scopeSession?.Name ?? _draftSessionName,
                 FullVaultAccess = _draftFullAccess,
                 ReadAccessRevoked = _draftReadAccessRevoked,
-                ReadAccess = _draftReadAccess
+                ReadAccess = _draftReadAccess,
+                WebAccess = WebAccessEnabled
             };
             _activeSession = session;
             ClearNewChatDraft(draftKey);
@@ -739,6 +740,8 @@ public sealed partial class AssistantViewModel
             ApprovalRequested = (request, token) => RequestApprovalAsync(bubble, request, token),
             ReadAccess = new AiReadAccess(() => HasReadAccess(session),
                 token => RequestReadAccessAsync(bubble, session, token)),
+            WebAccess = () => session.WebAccess,
+            KnownWebUrls = KnownWebUrls(session),
             Activity = activity,
             Cancellation = cancellation
         });
@@ -846,7 +849,10 @@ public sealed partial class AssistantViewModel
         RetryCommand.NotifyCanExecuteChanged();
     }
 
-    private bool UsesApiKey => _cli.Provider == AiProvider.Claude && _settingsService.Settings.Ai.ClaudeUseApi;
+    /// <summary>La credencial del proveedor activo es una clave de API guardada en Ajustes (Claude con clave
+    /// propia, Gemini), no una sesión que se inicia en una terminal.</summary>
+    private bool UsesApiKey => _cli.Provider == AiProvider.Gemini
+        || _cli.Provider == AiProvider.Claude && _settingsService.Settings.Ai.ClaudeUseApi;
 
     private void ShowFailure(ClaudeTurnResult result)
     {
@@ -873,6 +879,7 @@ public sealed partial class AssistantViewModel
     private LocalizedText DescribeFailure(ClaudeTurnResult result) => result.Failure switch
     {
         ClaudeFailureKind.NotInstalled => LocalizedTextFormatter.Format(_cli.Provider == AiProvider.Claude ? "Assistant_Error_NotInstalled" : "Ai_NotInstalled"),
+        ClaudeFailureKind.SignedOut when _cli.Provider == AiProvider.Gemini => LocalizedTextFormatter.Format("Ai_Gemini_Error_KeyRejected"),
         ClaudeFailureKind.SignedOut when UsesApiKey => LocalizedTextFormatter.Format("Assistant_Error_ApiKeyRejected"),
         ClaudeFailureKind.SignedOut => LocalizedTextFormatter.Format("Assistant_Error_SignedOut", Cli.LoginCommand),
         ClaudeFailureKind.RateLimited when result.RateLimitResetsAt is { } resetsAt =>

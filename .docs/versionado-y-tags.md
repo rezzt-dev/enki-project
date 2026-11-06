@@ -7,7 +7,7 @@
 ## Numero de version
 
 Enki sigue [SemVer](https://semver.org/lang/es/) (`MAJOR.MINOR.PATCH`) tal y como ya dice la cabecera de
-`CHANGELOG.md`:
+`changelog.md`:
 
 - Mientras el proyecto esta en `0.x`, **cualquier cambio puede romper compatibilidad entre versiones
   menores** — no hay compromiso de estabilidad todavia. El numero que sube es siempre `MINOR` (`0.2.0`,
@@ -34,9 +34,9 @@ La primera release publica de Enki (`v0.2.0`) es, por tanto, el tag que abre la 
 
 ## Orden de los tags
 
-- Un tag por version cerrada de `CHANGELOG.md`, nunca uno por commit ni por PR normal.
+- Un tag por version cerrada de `changelog.md`, nunca uno por commit ni por PR normal.
 - Formato fijo: `v<MAJOR.MINOR.PATCH>` (ej. `v0.2.0`), anotado (`git tag -a`), nunca ligero.
-- Se crea **despues** de cerrar la seccion `SIN PUBLICAR / UNRELEASED` de `CHANGELOG.md` en
+- Se crea **despues** de cerrar la seccion `SIN PUBLICAR / UNRELEASED` de `changelog.md` en
   `## [x.y.z] - aaaa-mm-dd` y de subir `<Version>` en `enki/Directory.Build.props` al mismo numero — los
   dos tienen que coincidir siempre entre si y con el tag.
 - Empujar el tag (`git push origin main --follow-tags`) dispara `.github/workflows/release.yml`, que

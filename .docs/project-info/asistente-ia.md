@@ -1,4 +1,4 @@
-# Asistente de IA: Claude, OpenAI y modelos locales
+# Asistente de IA: Claude, OpenAI, Gemini y modelos locales
 
 > Referencia viva del módulo de IA. Concreta, para los proveedores implementados, la propuesta de
 > `.docs/agent-docs/implement-ia/implementacion-ia-desde-cero.md`. Si algo de aquí deja de coincidir con
@@ -6,8 +6,9 @@
 
 ## Resumen
 
-La sección **Asistente** permite elegir Claude, OpenAI mediante la cuenta de Codex o modelos locales
-servidos por Ollama. Comparte historial, notas adjuntas, skills, ámbitos y herramientas del vault.
+La sección **Asistente** permite elegir Claude, OpenAI mediante la cuenta de Codex, Gemini con la clave de
+API de Google AI Studio del usuario o modelos locales servidos por Ollama. Comparte historial, notas adjuntas, skills, ámbitos y herramientas del vault,
+y puede buscar en internet y leer páginas web cuando el chat lo permite (ver "Acceso a internet").
 La IA está **apagada por defecto**, exige aceptar el aviso de privacidad y términos y, apagada, no ejecuta
 comprobaciones ni envía contenido. Claude conserva su integración mediante el CLI oficial (`claude -p`), con
 la suscripción del usuario o con su propia clave de API.
@@ -21,13 +22,25 @@ lateral** que se abre junto a cualquier otra sección. El historial es **de cada
 
 - `AssistantViewModel` es una sola instancia. La sección (`AssistantView`) y el panel (`AssistantPanelView`)
   se componen de los mismos controles: `AssistantTranscriptView` (puesta en marcha, hilo, bienvenida, error),
-  `AssistantComposerView`, `AssistantScopeButton`, `AssistantModelControls` y `AssistantHistoryList`. El panel
-  los marca con la clase `compact`. Los diálogos (`AssistantDialogs`) los monta una sola vez el shell.
-- El compositor reúne el texto, los adjuntos y la barra de acciones en un marco de borde recto, que
-  destaca al recibir el foco. Enviar o detener conserva su espacio a la derecha; las acciones auxiliares
-  pasan a otra línea cuando falta ancho. El botón de información abre al pulsarlo un popover con el
-  ámbito del chat, el aviso del proveedor y los atajos de teclado, sin ocupar altura bajo el compositor.
-  Se cierra pulsando fuera, de nuevo en el botón o con Escape.
+  `AssistantWelcomeView` (bienvenida de un chat vacío y sugerencias), `AssistantComposerView`,
+  `AssistantScopeButton`, `AssistantModelControls` y `AssistantHistoryList`. El panel los marca con la clase
+  `compact`. Los diálogos (`AssistantDialogs`) los monta una sola vez el shell.
+- El compositor reúne el texto, los adjuntos y la barra de acciones en un único marco de borde recto, con
+  el mismo fondo y sin línea entre ambos; el borde sube de tinta al pasar el cursor y al recibir el foco, y
+  pulsar en cualquier hueco del marco lleva al cuadro de texto. Enviar (flecha, sólido) o detener
+  (contorno) son un cuadrado fijo a la derecha; enviar deshabilitado es un hueco apenas marcado, para que se
+  note al instante cuándo hay algo que mandar. Las acciones auxiliares pasan a otra línea cuando falta
+  ancho. Mientras se escribe, la sección enseña los atajos de teclado junto a las acciones; el botón de
+  información abre al pulsarlo un popover con el ámbito del chat, el aviso del proveedor y los atajos, sin
+  ocupar altura bajo el compositor. Se cierra pulsando fuera, de nuevo en el botón o con Escape.
+- **Chat vacío en la sección.** La bienvenida (`AssistantWelcomeView` con la clase `hero`) se centra en la
+  vista con el compositor en medio: el titular encima, las sugerencias debajo. Cabecera y sugerencias
+  comparten alto (`SharedSizeGroup`), así que el compositor queda en el centro exacto vertical y
+  horizontal; si la ventana es baja, la bienvenida se desplaza. Al enviar el primer mensaje (o abrir un
+  chat con mensajes) el compositor baja al pie del hilo, y vuelve al centro con un chat nuevo. Es siempre
+  el mismo control, que `AssistantView` cambia de hueco: el borrador, los adjuntos, los popovers y el foco
+  no se pierden. El hilo compartido se marca `external-welcome` para no pintar su propia bienvenida
+  detrás. En el panel, por su ancho, la bienvenida queda en el hilo y el compositor fijo abajo.
 - El panel vive en la columna derecha de `ShellView`, con ancho ajustable (`AiSettings.PanelWidth`,
   340–720 px). Su vista y los diálogos se construyen la primera vez que hacen falta, para no encarecer el
   arranque con la IA apagada.
@@ -100,12 +113,66 @@ con acceso a Codex o una clave API configurada por el usuario en el CLI. La inte
 métodos; el uso de API se factura por separado. Enki no implementa un inicio de sesión alternativo.
 
 Los turnos usan `codex exec --strict-config --json --ephemeral --ignore-user-config --ignore-rules`, directorio privado,
-sandbox de solo lectura, búsqueda web y herramientas de shell desactivadas. No se carga la configuración
+sandbox de solo lectura, búsqueda web propia de Codex y herramientas de shell desactivadas (la web llega, como
+en el resto de proveedores, por las herramientas de Enki: ver "Acceso a internet"). No se carga la configuración
 personal de MCP, reglas o instrucciones del proyecto. Se exige que el CLI anuncie los flags de aislamiento;
 una versión antigua muestra el estado de actualización y no ejecuta el chat. El único MCP configurado es
 el de Enki; el token efímero viaja por una variable del proceso hijo, nunca por argumentos. Se exigen tanto
 el evento `turn.completed` como un código de salida correcto. Los mensajes del agente se muestran conforme
 se completan; el razonamiento y los resultados internos de MCP no se pintan como respuesta.
+
+## Configurar Gemini
+
+1. Crear una clave en [Google AI Studio](https://aistudio.google.com/apikey) con una cuenta de Google. El
+   nivel gratuito no exige facturación.
+2. En Ajustes › Inteligencia artificial, seleccionar **Google Gemini**, pegar la clave y guardarla. El
+   asistente enseña el mismo acceso a Ajustes y a AI Studio mientras no haya clave.
+3. "Comprobar" lista los modelos de chat que esa clave puede usar (`GET models`) y los ofrece en Ajustes y en
+   el selector del chat. "Predeterminado del proveedor" usa `gemini-flash-latest` o, si la clave no lo tiene,
+   el primer Flash disponible: sigue valiendo cuando Google retira versiones.
+
+**Por qué una clave y no la cuenta de Google (ni el plan de estudiantes).** Comprobado el 2026-11-04:
+
+- Desde el 18 de junio de 2026, Gemini CLI y Gemini Code Assist dejaron de atender a los planes de consumo
+  (Gemini Code Assist para particulares, Google AI Pro y Google AI Ultra); las [notas de versión de Gemini
+  Code Assist](https://docs.cloud.google.com/gemini/docs/codeassist/release-notes) remiten a Antigravity.
+  "Sign in with Google" en el CLI devuelve "This client is no longer supported".
+- La [FAQ de Antigravity](https://antigravity.google/docs/faq) dice que envolver `agy` en aplicaciones de
+  terceros "is not supported under consumer plans", aunque sea el binario oficial sin modificar, y que hacerlo
+  puede suspender la cuenta. Para aplicaciones de terceros recomienda una clave de Google AI Studio o de
+  Gemini Enterprise.
+- Google AI Pro para estudiantes es un plan de consumo. Ajustes lo explica con una nota y propone la clave
+  gratuita de AI Studio con la misma cuenta. Si Google publica una vía permitida para usar esos planes desde
+  terceros, se añadiría como otro modo de autenticación del mismo proveedor, como la suscripción de Claude.
+
+Los [términos de la API de Gemini](https://ai.google.dev/gemini-api/terms) exigen tener 18 años o más. En el
+nivel gratuito, fuera del EEE, Suiza y Reino Unido, Google puede usar el contenido y revisarlo con personas
+para mejorar sus productos; con facturación activa, no. Ajustes lo dice antes de pegar la clave.
+
+### Transporte
+
+`GeminiApiService` llama directamente a `generativelanguage.googleapis.com/v1beta` con `HttpClient`, sin
+SDK ni CLI que instalar:
+
+- La clave viaja solo en la cabecera `x-goog-api-key`, nunca en la URL ni en el log. Vive en el almacén
+  seguro (`AiApiKeyStore` con `AiApiKeyKind.Gemini`, entrada `gemini`, distinta de la de Anthropic) y solo se
+  lee con Gemini seleccionado. Ajustes valida la forma, enseña sus últimos caracteres y permite borrarla.
+- `streamGenerateContent?alt=sse` con `systemInstruction` y el turno como un único mensaje de usuario. Como
+  Ollama, reconstruye el contexto desde el historial de Enki (60 000 caracteres). El texto de razonamiento
+  (`thought`) no se pinta. Se exige `finishReason`: una respuesta cortada conserva el texto como interrumpido.
+- Capacidad: Gemini 3 y posteriores reciben `thinkingLevel` (`low`, `medium`, `high`); 2.x, un
+  `thinkingBudget` (1024, dinámico, 16384). Si el modelo rechaza la configuración, el primer envío se repite
+  sin ella.
+- Herramientas: el catálogo del MCP del vault se declara como `functionDeclarations` con
+  `parametersJsonSchema`. Cada `functionCall` se ejecuta por `EnkiMcpClient`, el mismo cliente MCP que usa
+  Ollama, contra el mismo `EnkiMcpServer`. Ámbito, permisos en caliente, confirmaciones y conflictos de disco
+  siguen en `AiVaultToolbox`. Las partes del modelo se devuelven tal cual, con su `thoughtSignature`. Un
+  nombre de herramienta inventado vuelve al modelo como error sin llegar al servidor. Mismo límite que
+  Ollama: 16 rondas y 32 llamadas por ronda.
+- Errores de Google (`error.status`, `ErrorInfo.reason`, `RetryInfo.retryDelay`): clave inválida o
+  denegada → clave rechazada (acceso a Ajustes); `RESOURCE_EXHAUSTED` → límite de uso con la hora de
+  reinicio; `NOT_FOUND` → modelo no disponible; `UNAVAILABLE`/5xx → saturación; región no admitida y bloqueos
+  de seguridad, con su propio mensaje.
 
 ## Configurar modelos locales
 
@@ -125,9 +192,10 @@ incluso cuando tienen un alias local. El esfuerzo usa el predeterminado del mode
 deshabilitado. Las respuestas se leen como NDJSON; una conexión cortada sin `done` conserva el texto
 parcial como interrumpido. Los ciclos de herramientas tienen un límite de 16 rondas y 32 llamadas por ronda.
 
-Cada chat conserva `AiChatSession.Provider`; los archivos anteriores sin ese campo pertenecen a Claude.
+Cada chat conserva `AiChatSession.Provider`; los archivos anteriores sin ese campo pertenecen a Claude. Los
+valores nuevos de `AiProvider` se añaden al final (`Gemini` = 3) para no reinterpretar lo ya guardado.
 Cambiar de proveedor abre otro chat; reabrir uno restaura su proveedor. Los modelos predeterminados se
-guardan por proveedor, y los selectores se bloquean durante una respuesta. Codex y Ollama reconstruyen el
+guardan por proveedor, y los selectores se bloquean durante una respuesta. Codex, Gemini y Ollama reconstruyen el
 contexto desde el historial local de Enki con el mismo límite de recuperación existente (60 000 caracteres),
 sin reutilizar identificadores de sesión de Claude. Los adjuntos antiguos conservan sus metadatos, no una
 copia del contenido; para volver a enviar ese contenido hay que adjuntarlo de nuevo o consultarlo con herramientas.
@@ -176,20 +244,24 @@ services/ai/ClaudeStreamParser.cs    salida stream-json → eventos (sesión, fr
 services/ai/ClaudeCliService.cs      detección (versión, flags, sesión) y ejecución de un turno
 services/ai/CodexCliService.cs       cuenta de ChatGPT por CLI oficial, turnos efímeros JSONL
 services/ai/OllamaService.cs         catálogo local, capacidades, streaming y herramientas por MCP
+services/ai/GeminiApiService.cs      API de Gemini con la clave del usuario: catálogo, SSE, capacidad, herramientas
+services/ai/EnkiMcpClient.cs         cliente MCP del vault para los proveedores que ejecutan su ciclo de herramientas
 services/ai/AiBackendService.cs      selección de transporte y estado compartido
 services/ai/AiPromptBuilder.cs       prompt de sistema + skill, contexto de notas, recuperación de historial
 services/ai/AiChatService.cs         historial: un JSON por chat en %AppData%/Enki/ai/chats/, borradores de
                                      chats nuevos en ai/drafts.json
-services/ai/AiApiKeyStore.cs         clave de API de Claude en el almacén seguro del sistema
+services/ai/AiApiKeyStore.cs         claves de API (Anthropic, Gemini, Brave Search) en el almacén seguro del sistema
+services/ai/AiWebService.cs          acceso a internet: búsqueda (DuckDuckGo, Brave Search) y lectura de páginas
+services/WebFetch.cs                 descarga acotada de páginas públicas, compartida con el web clipper
 services/ai/AiTextFiles.cs           reglas comunes para leer archivos de texto (adjuntos y read_text_file)
 services/ai/ChatMarkdownParser.cs    subconjunto de Markdown para pintar las respuestas
 controls/ChatMarkdownView.cs         render de esos bloques con los recursos del tema
 viewmodels/ai/                       AssistantViewModel (+ .Composer, .Scope, .Effort, .Drafts, .Vault,
-                                     .Activity, .NoteInsert), ClaudeCliStatusViewModel, filas y tarjetas
+                                     .Activity, .NoteInsert, .Web), ClaudeCliStatusViewModel, filas y tarjetas
 views/ai/AssistantView.axaml         sección Asistente
 views/ai/AssistantPanelView.axaml    panel lateral; ambos componen los controles compartidos de views/ai/
 viewmodels/shell/MainWindowViewModel.Assistant.cs  panel, ampliar/volver e indicador global
-viewmodels/settings/SettingsViewModel.Ai.cs + sección "Ai" de SettingsView.axaml
+viewmodels/settings/SettingsViewModel.Ai.cs (+ .AiWeb) + sección "Ai" de SettingsView.axaml
 ```
 
 - Composición manual en `MainWindowViewModel.Composition.cs`: `ClaudeCliService`, `AiChatService` y
@@ -199,12 +271,13 @@ viewmodels/settings/SettingsViewModel.Ai.cs + sección "Ai" de SettingsView.axam
   de visibilidad **es** `AiSettings.Enabled`: el interruptor de Ajustes › Inteligencia artificial y la fila
   de Ajustes › Navegación son el mismo y pasan por el mismo aviso. `Ctrl+9` navega a ella solo si está
   encendida.
-- `AiBackendService` selecciona los servicios concretos `ClaudeCliService`, `CodexCliService` y
-  `OllamaService`, sin contenedor de DI ni jerarquías genéricas. Los contratos de turno y estado originales
-  conservan sus nombres `Claude*` por compatibilidad y se reutilizan en los tres transportes. Ajustes y el
+- `AiBackendService` selecciona los servicios concretos `ClaudeCliService`, `CodexCliService`,
+  `GeminiApiService` y `OllamaService`, sin contenedor de DI ni jerarquías genéricas. Los contratos de turno y
+  estado originales conservan sus nombres `Claude*` por compatibilidad y se reutilizan en los cuatro
+  transportes. `AiBackendService.Models` expone el catálogo descubierto (Ollama, Gemini) a los selectores. Ajustes y el
   Asistente comparten una única instancia de este selector a través del estado compuesto por el shell.
-- Los tests usan ejecutables falsos de los CLI, HTTP inyectable para Ollama y el MCP real con servicios
-  aislados. Comprueban streaming, cancelación, autenticación, historial, aislamiento y permisos del vault.
+- Los tests usan ejecutables falsos de los CLI, HTTP inyectable para Ollama y Gemini y el MCP real con
+  servicios aislados. Comprueban streaming, cancelación, autenticación, historial, aislamiento y permisos del vault.
 
 ## Cada turno
 
@@ -301,7 +374,7 @@ respuesta conserva lo que llegó, marcado como interrumpido.
 
 `AiSettings` (clave de instalación `Ai` en `settings.json`): `Enabled`, `ConsentAcceptedUtc`, `Provider`,
 `ClaudeCliPath`, `ClaudeUseApi`, `DefaultModel` (alias de `claude --model`: `fable`, `opus`, `sonnet`,
-`haiku`, o vacío para el del CLI), los modelos de cada proveedor, `IdleTimeoutSeconds` (30–1800),
+`haiku`, o vacío para el del CLI), los modelos de cada proveedor (`OpenAiModel`, `LocalModel`, `GeminiModel`), `IdleTimeoutSeconds` (30–1800),
 `MaxContextChars` (2 000–200 000), `ConfirmBeforeSendingContext`, `AllowReadAccessByDefault`, `AllowVaultChanges`, `PanelWidth`
 (340–720) y `LastChatByVault`. `Normalize()` apaga la IA si falta el consentimiento.
 
@@ -341,6 +414,10 @@ mismo CLI oficial, no un backend aparte: solo cambia la credencial con la que se
   actividad y permiso de consulta. `AiVaultToolboxTests` cubre la puerta de lectura (pregunta única,
   denegación por turno, cancelación) y `AppendToNote`; `ClaudeCliServiceTests` y `AiApiKeyStoreTests`, el
   modo de clave de API; `SettingsViewModelAiTests`, su gestión desde Ajustes.
+- `Services/GeminiApiServiceTests`: clave ausente o rechazada, catálogo filtrado, clave solo en cabecera,
+  SSE sin razonamiento, `finishReason` exigido, clasificación de errores y `retryDelay`, reintento sin
+  capacidad, bloqueo de seguridad, firmas devueltas y herramientas por el MCP real con permisos en caliente.
+  `AssistantViewUiTests` cubre el panel "Añade tu clave de API de Gemini" y Ajustes con Gemini.
 - `enki.UITests/AssistantViewUiTests` incluye el panel lateral, la tarjeta de permiso y el aviso de chat sin
   vault.
 - QA manual: secciones 8.9 y 8.10 de `qa-manual-release-candidate.md`.
@@ -355,6 +432,81 @@ mismo CLI oficial, no un backend aparte: solo cambia la credencial con la que se
 - Cambiar la skill de un chat entre turnos: se fija antes del primer mensaje.
 - Extraer tareas a Kanban o Polar ya lo hacen las herramientas del vault sobre las entidades reales; no hay
   un flujo aparte de propuestas.
+
+## Acceso a internet
+
+El asistente puede **buscar en internet y leer páginas web** con cualquiera de los cuatro proveedores. No usa la
+búsqueda propia de cada proveedor (Claude Code, Codex o Gemini la tienen, Ollama no): son dos herramientas más
+del catálogo de Enki, `web_search` y `web_fetch` (`AiVaultToolbox.Web.cs`), servidas por el mismo MCP y con las
+mismas reglas de actividad, confirmación y cancelación que las del vault. Así el comportamiento, los permisos y
+lo que se ve en la respuesta son iguales con todos, y Enki decide qué se puede abrir.
+
+### Cómo se activa
+
+- **Por chat**, con el botón del globo del compositor ("Web"). Encendido, el chip sube de tinta y el icono cambia;
+  el estado se guarda en `AiChatSession.WebAccess` y se recupera al reabrir el chat. Se aplica en caliente: el
+  servidor lo lee en cada llamada (`AiToolContext.WebAccess`), así que apagarlo durante una respuesta impide la
+  búsqueda siguiente. Solo aparece con herramientas disponibles (en modo texto el modelo no puede llamar a nada).
+- **Chats nuevos**: Ajustes › Inteligencia artificial › Acceso a internet › "Internet en los chats nuevos"
+  (`AiSettings.WebAccessForNewChats`, apagado por defecto). Un chat por empezar sigue a ese ajuste mientras el
+  usuario no toque el globo.
+- Es independiente del **permiso de consulta** del vault: buscar en internet no lee el vault, y leer el vault no
+  da acceso a internet. El bloque `<enki_scope>` de cada turno dice "Web: on/off", y el resumen del ámbito bajo
+  el compositor lo repite.
+
+### Buscadores
+
+`AiSettings.WebSearchEngine`:
+
+- **DuckDuckGo** (predeterminado): sin cuenta ni clave, por su versión HTML (`html.duckduckgo.com`). Se descartan
+  los anuncios y se deshacen sus enlaces de redirección. Si DuckDuckGo contesta con su verificación anti-robots,
+  la herramienta lo dice ("no devolvió resultados ahora mismo") y Ajustes sugiere Brave Search.
+- **Brave Search API** con la clave del usuario (nivel gratuito), en el almacén seguro (`AiApiKeyKind.BraveSearch`,
+  entrada `brave-search`). Solo se lee con Brave elegido; viaja solo en la cabecera `X-Subscription-Token`. Clave
+  ausente, rechazada (401/403) o límite (429) tienen su propio mensaje.
+
+### Lectura de páginas
+
+`AiWebService.FetchAsync` sobre `WebFetch`, la misma descarga acotada que el web clipper:
+
+- Solo `http`/`https`, sin credenciales en la URL y solo **direcciones públicas**: las IP literales privadas se
+  rechazan antes de conectar, y el handler de `RemoteImagePolicy` resuelve el nombre y conecta solo a direcciones
+  públicas (cierra el DNS rebinding). Sin proxy del sistema, para que ese filtro vea la dirección real. El modelo
+  no puede llegar a `localhost`, al router, a Ollama ni al propio MCP de Enki.
+- Redirecciones seguidas a mano (5), sin bajar de `https` a `http`; 3 MB como máximo, cortados al leer; 20 s por
+  operación. Solo tipos de texto (HTML, texto, Markdown, CSV, JSON, XML/RSS); un PDF o una imagen se rechazan
+  con el motivo.
+- El HTML pasa por `HtmlReadability.ExtractPage`: el artículo si lo hay y, si no (portadas, listados), todo el
+  `body`; enlaces convertidos en absolutos (respetando `<base href>`) para poder seguirlos, imágenes fuera. El
+  análisis va fuera del hilo de interfaz.
+- Las páginas largas se devuelven por tramos (`start`, `max_chars`, `next_start`), cortando en un salto de línea.
+  Las últimas ocho páginas se recuerdan diez minutos en memoria para pasar de tramo sin volver a descargarlas;
+  nada se escribe en disco y la caché se vacía al apagar la IA, cambiar de vault o salir.
+
+### Defensa ante instrucciones escondidas
+
+Una página puede pedirle al modelo que meta contenido del vault en una URL suya. Por eso `web_fetch` abre sin
+preguntar solo las direcciones **conocidas** del chat (`AiWebUrlSet`): las que el usuario escribió en sus mensajes,
+las de los resultados de búsqueda, los enlaces de las páginas ya leídas y las páginas leídas en turnos anteriores.
+Cualquier otra enseña la tarjeta de confirmación con la **dirección completa** y una explicación propia; denegar o
+dejar pasar el tiempo no descarga nada. El prompt de sistema trata las páginas como datos de terceros, nunca como
+instrucciones, y pide no poner contenido del vault ni datos personales en búsquedas ni URLs salvo petición expresa.
+
+### Actividad y errores
+
+"Buscar en internet" muestra lo buscado; "Leer página web", el título de la página, su dirección completa al pasar
+el cursor y un botón para abrirla en el navegador (`UrlOpener`). Cada fallo llega al modelo con qué hacer y al
+usuario con su motivo (`AiVaultToolbox.Describe(AiWebException…)`): dirección no válida o local, sin conexión,
+tiempo agotado, error HTTP, contenido no legible, demasiado grande, demasiadas redirecciones, buscador no
+disponible, clave ausente o rechazada y límite de búsquedas. Ni las consultas ni las direcciones pasan por el log.
+
+Pruebas: `Services/AiWebServiceTests` (DuckDuckGo y Brave, clave solo en cabecera, errores, HTML a Markdown,
+redirecciones a direcciones privadas, tipos y tamaños, caché, `ParseUrl`, `AiWebUrlSet`),
+`Services/AiVaultToolboxWebTests` (interruptor en caliente, independencia del permiso de consulta, confirmación de
+direcciones desconocidas, tramos, errores), `HtmlReadabilityTests.ExtractPage_*`, `AiPromptBuilderTests`,
+`AssistantViewModelWorkspaceTests.WebAccess_*`, `SettingsViewModelAiTests.WebAccess_*` y, sobre el XAML real,
+`AssistantViewUiTests.WebAccess_*` y `Settings_InternetAccess_*`. QA manual: sección 8.12 de
+`qa-manual-release-candidate.md`.
 
 ## Herramientas del vault y ámbitos de conversación
 
@@ -412,7 +564,7 @@ Solo se activa con un CLI que anuncie `--tools`, `--mcp-config`, `--strict-mcp-c
 solo se permite `mcp__enki`, y no se cargan configuraciones del usuario. La configuración MCP con el
 token va en un temporal privado que se elimina al terminar. Sin esas capacidades se mantiene el modo
 texto anterior, indicado bajo el compositor. El catálogo y el servidor pueden reutilizarse con futuros
-proveedores MCP; los tres proveedores usan este mismo catálogo y sus permisos.
+proveedores MCP; los cuatro proveedores usan este mismo catálogo y sus permisos.
 
 Las rutas son relativas a cada espacio; se rechazan rutas absolutas, segmentos `..`, carpetas internas
 y enlaces simbólicos. Una nota vinculada fuera del ámbito no revela título ni ruta. Los cambios de

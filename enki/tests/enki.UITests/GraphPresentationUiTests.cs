@@ -73,9 +73,11 @@ public class GraphPresentationUiTests
                     File.WriteAllText(Path.Combine(session.RootPath, $"Nota {j}.md"),
                         j % 5 == 0 ? $"# Nota {j}\n[[Nota {j + 1}]]" : $"# Nota {j}");
             }
-            var vm = new SessionsViewModel(vault, sessions, new NotificationService(settings, directory), (_, _) => { }, () => { });
+            var vm = new SessionsViewModel(vault, sessions, new NotificationService(settings, directory), (_, _) => { }, () => { },
+                settingsService: settings);
             AwaitLoad(vm);
             Assert.True(vm.ShowGraphMesh);
+            Assert.True(vm.IsGraphRotationEnabled);
             var view = new SessionsView(() => false) { DataContext = vm };
             window = new Window { Width = 1600, Height = 950, Content = view, Background = new SolidColorBrush(Color.Parse("#121212")) };
             window.Show();
@@ -95,6 +97,21 @@ public class GraphPresentationUiTests
                     bitmap.Save(Path.Combine(preview, "workspace.png"), PngBitmapEncoderOptions.Default);
                 }
             }
+            // Botón global de rotación en la barra de controles del visor: refleja el estado, actúa sobre todas
+            // las esferas a la vez y se recuerda entre ejecuciones.
+            var rotation = view.FindControl<Button>("GraphRotationToggle")!;
+            Assert.Contains("active", rotation.Classes);
+            Assert.Equal(vm.GraphRotationTooltip, ToolTip.GetTip(rotation));
+            Assert.True(graph.IsRotationEnabled);
+            rotation.Command!.Execute(null);
+            Assert.False(vm.IsGraphRotationEnabled);
+            Assert.False(graph.IsRotationEnabled);
+            Assert.DoesNotContain("active", rotation.Classes);
+            Assert.False(new SettingsService(directory).Settings.SessionsGraphRotationEnabled);
+            rotation.Command.Execute(null);
+            Assert.True(graph.IsRotationEnabled);
+            Assert.True(new SettingsService(directory).Settings.SessionsGraphRotationEnabled);
+
             var count = graph.NodeCount;
             vm.GraphGroupFilters[0].IsActive = false;
             Assert.True(graph.NodeCount < count);
@@ -148,10 +165,17 @@ public class GraphPresentationUiTests
     public void WebDocument_ProvidesSharedLayout_AndPresentationControls()
     {
         HeadlessApp.EnsureInitialized();
-        var html = SessionGraphRenderer.RenderDocument(CreateGraph());
+        var graph = CreateGraph();
+        var html = SessionGraphRenderer.RenderDocument(graph, new SessionSphereLayout().Build(graph));
         Assert.Contains("window.__enkiCamera", html);
         Assert.Contains("window.__enkiSetDisplay", html);
-        Assert.Contains("bySession.get(n.sessionId)", html);
+        Assert.Contains("window.__enkiSetRotation", html);
+        Assert.Contains("window.__enkiSetSelectedSession", html);
+        // Motor 3D propio sobre Canvas 2D: sin WebGL (WPE solo compone por software) ni bibliotecas externas.
+        Assert.Contains("getContext('2d')", html);
+        Assert.DoesNotContain("webgl", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("sigma", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("src=\"", html);
         // Exportación optativa para verificar el documento real en un navegador durante el desarrollo.
         if (Environment.GetEnvironmentVariable("ENKI_GRAPH_PREVIEW") is { Length: > 0 } directory)
         {

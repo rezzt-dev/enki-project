@@ -5,7 +5,7 @@ valor para el usuario frente a viabilidad técnica, con la especificación neces
 
 - **Fecha del análisis:** 2026-09-21
 - **Rama de referencia:** `alfa-version`
-- **Método:** cruce de `propuesta-nuevas-funcionalidades.md`, el `CHANGELOG.md` y búsquedas en el código
+- **Método:** cruce de `propuesta-nuevas-funcionalidades.md`, el `changelog.md` y búsquedas en el código
   (por nombre de clase y palabra clave). **No se ha ejecutado la aplicación**: todo lo que aquí se afirma
   como "no existe" significa "no aparece en el código", y debe verificarse antes de empezar cada tarea
   (ver [§9 Dudas abiertas](#9-dudas-abiertas-y-verificaciones-previas)).
@@ -86,7 +86,7 @@ No se vuelve a especificar; se cita para evitar trabajo duplicado.
 - Dashboard configurable (`DashboardLayoutEngine`).
 - Backup y restauración (`VaultBackupService`).
 
-### 1.3 Convenciones obligatorias del proyecto (`AGENTS.md`)
+### 1.3 Convenciones obligatorias del proyecto (`agents.md`)
 
 Toda tarea de este documento debe cumplirlas; no se repiten en cada una.
 
@@ -115,7 +115,7 @@ Toda tarea de este documento debe cumplirlas; no se repiten en cada una.
   respetar sesiones bloqueadas (`SessionLockedException`, `IsPathInLockedSession`).
 - **Tests:** xUnit en `enki/tests/enki.Tests/` (`Services/`, `ViewModels/`, `Views/`, `Models/`,
   `Localization/`). Ejecutar `dotnet test enki/tests/enki.Tests/enki.Tests.csproj`.
-- **Documentación y CHANGELOG:** cada tarea cerrada añade su entrada en `CHANGELOG.md` (sección
+- **Documentación y CHANGELOG:** cada tarea cerrada añade su entrada en `changelog.md` (sección
   *SIN PUBLICAR*, en CASTELLANO e INGLÉS) y su documento en `.docs/project-info/`.
 
 ### 1.4 Definición de "hecho" común
@@ -128,7 +128,7 @@ Una tarea se considera terminada cuando:
    `tests/enki.Tests/Localization/`, verificar).
 4. Funciona con lector de pantalla y solo con teclado (`qa-manual-release-candidate.md`).
 5. Respeta sesiones cifradas/bloqueadas y no escribe en `%AppData%/Enki` real durante los tests.
-6. `CHANGELOG.md` y la documentación del módulo están actualizados.
+6. `changelog.md` y la documentación del módulo están actualizados.
 
 ### 1.5 Formato de los requisitos (EARS)
 
@@ -302,7 +302,7 @@ por poder **soltar una idea** sin abrir la ventana principal ni decidir dónde v
 2. **Atajo global** del sistema operativo. Avalonia no lo ofrece de forma nativa; requiere una capa por
    plataforma (`RegisterHotKey` en Windows, `CGEventTap`/`MASShortcut`-like en macOS, en Linux depende de
    X11/portal y **no es fiable en Wayland**). Diseño:
-   - Interfaz interna `IGlobalHotkey`-like **solo si** hay más de una implementación real (AGENTS.md prohíbe
+   - Interfaz interna `IGlobalHotkey`-like **solo si** hay más de una implementación real (agents.md prohíbe
      interfaces genéricas sin necesidad); implementaciones por `#if`/clase por plataforma junto a
      `DpapiPolarCredentialStore`/`KeychainPolarCredentialStore`/`LibsecretPolarCredentialStore` (mismo patrón
      ya existente para credenciales).
@@ -664,7 +664,7 @@ de PDF.
 instaladores por sistema, el usuario necesita saber que existe una versión más reciente. **Solo aviso, no
 auto-actualización.**
 
-**Base existente.** `CHANGELOG.md` con versiones SemVer, `Directory.Build.props` (versión), pipeline de
+**Base existente.** `changelog.md` con versiones SemVer, `Directory.Build.props` (versión), pipeline de
 release, `UrlOpener`, `ExternalLinkPolicy`, `NotificationService`, `LogService`.
 
 **Diseño propuesto.**
@@ -774,7 +774,7 @@ seguro de archivos externos (límites de tamaño, rutas relativas, `RegexSafety`
 | **Diseño** | `sistema-diseno-web.md`: `CornerRadius="0"`, popovers existentes, tipografías empaquetadas. |
 | **Seguridad** | Escritura atómica/durable, permisos privados, sin ejecutar contenido de terceros, sesiones cifradas respetadas (T1, T3, T7, T8, T10). |
 | **CHANGELOG** | Entrada por tarea en CASTELLANO e INGLÉS bajo *SIN PUBLICAR*. |
-| **Documentación** | Un `.md` por tarea grande en `.docs/project-info/` (p. ej. `cambios-externos-vault.md`, `captura-rapida.md`, `web-clipper.md`) y enlazarlo desde `AGENTS.md`. |
+| **Documentación** | Un `.md` por tarea grande en `.docs/project-info/` (p. ej. `cambios-externos-vault.md`, `captura-rapida.md`, `web-clipper.md`) y enlazarlo desde `agents.md`. |
 
 ---
 
@@ -798,7 +798,7 @@ seguro de archivos externos (límites de tamaño, rutas relativas, `RegexSafety`
 | **H4 — Planificación y cierre** | T9, T6, T8 | Avisos de versión, tiempo real y exportación de vistas. |
 | **H5 — Exploración** | T10–T13 según avatar | Solo tras validar con usuarios reales. |
 
-Cada hito termina con: suite de tests verde, actualización del `CHANGELOG.md`, ejecución de
+Cada hito termina con: suite de tests verde, actualización del `changelog.md`, ejecución de
 `qa-manual-release-candidate.md` en los casos afectados y revisión de accesibilidad.
 
 ---

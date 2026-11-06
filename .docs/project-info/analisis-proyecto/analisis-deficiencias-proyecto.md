@@ -10,7 +10,7 @@ si es un problema técnico [Técnico], de seguridad [Seguridad], de experiencia 
 accesibilidad [Accesibilidad]. Los puntos marcados como "verificado correcto" se incluyen porque el
 alcance de la auditoría los pedía explícitamente, no porque sean un defecto.
 
-> Nota de contexto: `AGENTS.md` documenta decisiones deliberadas del proyecto (sin contenedor de DI,
+> Nota de contexto: `agents.md` documenta decisiones deliberadas del proyecto (sin contenedor de DI,
 > composición manual en `MainWindowViewModel`, JSON plano en `%AppData%/Enki`). Ninguno de esos patrones
 > se reporta aquí como defecto en sí mismo; solo se señalan las consecuencias concretas y verificables que
 > generan.
@@ -356,7 +356,7 @@ de render, cobertura mínima para un módulo de ~2900 líneas de viewmodels.
   uso normal).
 
 ### Documentación desfasada respecto al código
-- **[UX/Proceso] Media** — `README.md` enlaza a `docs/analisis-proyecto/`, `docs/calendar-feature/`,
+- **[UX/Proceso] Media** — `readme.md` enlaza a `docs/analisis-proyecto/`, `docs/calendar-feature/`,
   `docs/supabase-sync/`, `docs/notificaciones-y-recordatorios.md` — las ~30 rutas están borradas del árbol
   de trabajo actual (`git status` las marca `D`, sin commitear).
 - **[UX/Proceso] Media** — Varios comentarios XML-doc en código de producción referencian activamente
@@ -369,7 +369,7 @@ de render, cobertura mínima para un módulo de ~2900 líneas de viewmodels.
 ### Sistema de diseño
 - **[Deuda técnica] Baja** — `views/settings/SettingsView.axaml:288,294`: la barra de zoom de interfaz usa
   `CornerRadius="3"` en dos `Border` rectangulares, contradiciendo la regla explícita de "cero excepciones,
-  `CornerRadius=0` salvo indicadores circulares" de `docs/sistema-diseno-web.md`/`AGENTS.md`. Es la única
+  `CornerRadius=0` salvo indicadores circulares" de `docs/sistema-diseno-web.md`/`agents.md`. Es la única
   violación encontrada en todo el sistema de diseño.
 
 ### Onboarding, ajustes y funcionalidades nuevas — verificado sólido

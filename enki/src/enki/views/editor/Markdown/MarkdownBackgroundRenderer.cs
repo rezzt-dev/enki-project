@@ -63,7 +63,7 @@ public sealed class MarkdownBackgroundRenderer : IBackgroundRenderer
         // at the block's real top and bottom.
         //
         // Esquinas rectas, como el resto de la interfaz: el sistema de diseño no tiene radios de esquina
-        // salvo en indicadores circulares (AGENTS.md, "Diseño visual").
+        // salvo en indicadores circulares (agents.md, "Diseño visual").
         double? codeBlockTop = null;
         double codeBlockBottom = 0;
 

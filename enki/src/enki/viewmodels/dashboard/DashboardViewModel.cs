@@ -432,7 +432,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
         LoadTaskColumn(pendingColumn, PendingTasks);
         LoadTaskColumn(inProgressColumn, InProgressTasks);
-        LoadTaskColumn(doneColumn, DoneTasks);
+        LoadTaskColumn(doneColumn, DoneTasks, isDoneColumn: true);
 
         // Real column totals, not the 5-item preview cap above — otherwise the badge next to "PENDIENTES"
         // would silently read "5" forever on a board with more than five cards, and the completion bar
@@ -648,14 +648,17 @@ public sealed partial class DashboardViewModel : ViewModelBase
         IsGraphLoading = false;
     }
 
-    private static void LoadTaskColumn(IEnumerable<KanbanCard> column, ObservableCollection<KanbanCardViewModel> target)
+    /// <summary>Las tarjetas de este panel se crean sin columna alrededor, así que se les dice si vienen de
+    /// "Hecho": una tarea terminada nunca se pinta como vencida, tenga o no fecha de completado.</summary>
+    private static void LoadTaskColumn(IEnumerable<KanbanCard> column, ObservableCollection<KanbanCardViewModel> target,
+        bool isDoneColumn = false)
     {
         target.Clear();
         foreach (var card in VisibleCards(column)
                      .OrderBy(c => c.DueDateUtc ?? DateTime.MaxValue)
                      .ThenByDescending(c => c.Priority)
                      .Take(5))
-            target.Add(new KanbanCardViewModel(card));
+            target.Add(new KanbanCardViewModel(card) { IsInDoneColumn = isDoneColumn });
     }
 
     /// <summary>Las tarjetas que el tablero Kanban dibuja de verdad — es decir, sin las archivadas

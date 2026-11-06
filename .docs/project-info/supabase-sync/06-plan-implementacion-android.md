@@ -1,7 +1,7 @@
 # 06 — Plan de implementación en Polar (Android / Kotlin)
 
 Plan paso a paso para el agente que implemente esto en el código actual de Polar. Sigue el estilo del
-proyecto (Hilt, Room, WorkManager, MVVM — ver `AGENTS.md` en la raíz del repo). Todas las decisiones de
+proyecto (Hilt, Room, WorkManager, MVVM — ver `agents.md` en la raíz del repo). Todas las decisiones de
 diseño ya están tomadas en los documentos 01-05; aquí solo queda ejecutar.
 
 ## 0. Dependencias a añadir (`app/build.gradle.kts`)

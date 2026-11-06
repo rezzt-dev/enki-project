@@ -14,7 +14,8 @@ using enki.Services;
 namespace enki.ViewModels;
 
 /// <summary>Ajustes › Inteligencia artificial: activar el asistente (con el aviso de privacidad y términos la
-/// primera vez), dónde está el CLI de Claude, el modelo y los límites por defecto, y borrar el historial.
+/// primera vez), el proveedor y su credencial (CLI, clave de API de Claude o de Gemini, servidor de Ollama), el
+/// modelo y los límites por defecto, y borrar el historial.
 /// El interruptor es el mismo que el de la fila "Asistente" de Ajustes › Navegación — <see cref="AiEnabled"/>
 /// es el flag de esa sección de la barra lateral —, así que encenderlo desde cualquiera de los dos sitios
 /// pasa por el mismo aviso. Ver <c>.docs/project-info/asistente-ia.md</c>.</summary>
@@ -30,14 +31,16 @@ public sealed partial class SettingsViewModel
     public System.Collections.Generic.IReadOnlyList<AiProviderOption> AiProviderOptions { get; } = AiProviderOption.Build();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAiClaude), nameof(IsAiOpenAi), nameof(IsAiLocal))]
+    [NotifyPropertyChangedFor(nameof(IsAiClaude), nameof(IsAiOpenAi), nameof(IsAiLocal), nameof(IsAiGemini),
+        nameof(ShowAiApiKey), nameof(AiApiKeyHelp), nameof(AiApiKeyPlaceholder), nameof(AiApiKeysPageLabel))]
     private AiProviderOption? _aiProvider;
 
     public bool IsAiClaude => AiProvider?.Provider == Models.AiProvider.Claude;
     public bool IsAiOpenAi => AiProvider?.Provider == Models.AiProvider.OpenAi;
     public bool IsAiLocal => AiProvider?.Provider == Models.AiProvider.Ollama;
+    public bool IsAiGemini => AiProvider?.Provider == Models.AiProvider.Gemini;
 
-    // ----- Claude: suscripción o clave de API propia -----
+    // ----- Clave de API propia: Claude (en vez de la suscripción) o Gemini (siempre) -----
 
     /// <summary>Claude se usa con la clave de API del usuario (facturación por uso) en vez de con su
     /// suscripción. El CLI es el mismo; solo cambia la credencial con la que Enki lo lanza.</summary>
@@ -61,7 +64,19 @@ public sealed partial class SettingsViewModel
 
     public bool HasAiApiKey => AiApiKeyMasked is not null;
 
-    public bool ShowAiApiKey => AiClaudeUseApi && AiCliStatus?.ApiKeys is not null;
+    /// <summary>El proveedor elegido se usa con una clave de API guardada en el almacén seguro.</summary>
+    private bool UsesAiApiKey => IsAiGemini || IsAiClaude && AiClaudeUseApi;
+
+    /// <summary>Almacén de la clave del proveedor elegido aquí (no del que tenga activo el chat en este momento).</summary>
+    private AiApiKeyStore? SelectedAiApiKeys => AiProvider is { } option ? AiCliStatus?.ApiKeysFor(option.Provider) : null;
+
+    public bool ShowAiApiKey => UsesAiApiKey && SelectedAiApiKeys is not null;
+
+    public string AiApiKeyHelp => LocalizationService.Instance[IsAiGemini ? "Ai_Gemini_ApiKeyHelp" : "Settings_Ai_ClaudeAuth_ApiKeyHelp"];
+
+    public string AiApiKeyPlaceholder => LocalizationService.Instance[IsAiGemini ? "Ai_Gemini_ApiKey_Placeholder" : "Settings_Ai_ApiKey_Placeholder"];
+
+    public string AiApiKeysPageLabel => LocalizationService.Instance[IsAiGemini ? "Ai_Gemini_GetKey" : "Settings_Ai_ApiKey_Console"];
 
     public string AiApiKeyStatus => AiApiKeyMasked is { } masked
         ? string.Format(LocalizationService.Instance.CurrentCulture, LocalizationService.Instance["Settings_Ai_ApiKey_Saved"], masked)
@@ -76,12 +91,13 @@ public sealed partial class SettingsViewModel
         if (AiEnabled && AiCliStatus is { IsChecking: false }) _ = AiCliStatus.RefreshAsync();
     }
 
-    /// <summary>Solo se pregunta al almacén seguro cuando el modo de clave está activo: en macOS leer el
-    /// Keychain puede pedir permiso, y nadie que use su suscripción debería ver ese aviso.</summary>
+    /// <summary>Solo se pregunta al almacén seguro cuando el proveedor elegido usa clave: en macOS leer el
+    /// Keychain puede pedir permiso, y nadie que use su suscripción o un modelo local debería ver ese aviso.</summary>
     private void LoadAiApiKeyStatus()
     {
-        var key = AiClaudeUseApi ? AiCliStatus?.ApiKeys?.TryRead() : null;
-        AiApiKeyMasked = key is null ? null : AiApiKeyStore.Mask(key);
+        var store = UsesAiApiKey ? SelectedAiApiKeys : null;
+        var key = store?.TryRead();
+        AiApiKeyMasked = key is null ? null : store!.MaskKey(key);
     }
 
     private bool CanSaveAiApiKey => AiApiKeyDraft.Trim().Length > 0;
@@ -89,11 +105,11 @@ public sealed partial class SettingsViewModel
     [RelayCommand(CanExecute = nameof(CanSaveAiApiKey))]
     private async Task SaveAiApiKey()
     {
-        if (AiCliStatus?.ApiKeys is not { } store) return;
+        if (SelectedAiApiKeys is not { } store) return;
         var key = AiApiKeyDraft.Trim();
-        if (!AiApiKeyStore.LooksLikeApiKey(key))
+        if (!store.IsWellFormed(key))
         {
-            AiApiKeyError = LocalizationService.Instance["Ai_ApiKey_Invalid"];
+            AiApiKeyError = LocalizationService.Instance[store.Kind == AiApiKeyKind.Gemini ? "Ai_Gemini_ApiKey_Invalid" : "Ai_ApiKey_Invalid"];
             return;
         }
         try
@@ -108,16 +124,17 @@ public sealed partial class SettingsViewModel
         }
         AiApiKeyError = null;
         AiApiKeyDraft = string.Empty;
-        AiApiKeyMasked = AiApiKeyStore.Mask(key);
+        AiApiKeyMasked = store.MaskKey(key);
         _notificationService.PushLocalized(LocalizedTextFormatter.Format("Settings_Ai_ApiKey_SavedTitle"),
-            LocalizedTextFormatter.Format("Settings_Ai_ApiKey_SavedMessage"), NotificationSeverity.Success);
+            LocalizedTextFormatter.Format(store.Kind == AiApiKeyKind.Gemini ? "Ai_Gemini_ApiKey_SavedMessage" : "Settings_Ai_ApiKey_SavedMessage"),
+            NotificationSeverity.Success);
         if (AiEnabled && AiCliStatus is { IsChecking: false }) await AiCliStatus.RefreshAsync();
     }
 
     [RelayCommand(CanExecute = nameof(HasAiApiKey))]
     private async Task DeleteAiApiKey()
     {
-        if (AiCliStatus?.ApiKeys is not { } store) return;
+        if (SelectedAiApiKeys is not { } store) return;
         try
         {
             store.Delete();
@@ -134,7 +151,7 @@ public sealed partial class SettingsViewModel
     }
 
     [RelayCommand]
-    private static void OpenAnthropicConsole() => UrlOpener.Open(AiApiKeyStore.ConsoleUrl);
+    private void OpenAiApiKeysPage() => UrlOpener.Open(SelectedAiApiKeys?.KeysUrl ?? AiApiKeyStore.AnthropicKeysUrl);
 
     partial void OnAiApiKeyDraftChanged(string value) => AiApiKeyError = null;
 
@@ -157,6 +174,9 @@ public sealed partial class SettingsViewModel
         if (AiCliStatus?.IsBusy == true) { LoadAiSettings(); return; }
         _settingsService.Settings.Ai.Provider = value.Provider;
         AiCliStatus?.Backend?.SelectProvider(value.Provider);
+        // Una clave a medio pegar es de otro proveedor: no debe guardarse con el que se acaba de elegir.
+        AiApiKeyDraft = string.Empty;
+        AiApiKeyError = null;
         LoadAiSettings();
         _settingsService.Save();
         if (AiEnabled && AiCliStatus is { IsChecking: false }) _ = AiCliStatus.RefreshAsync();
@@ -291,7 +311,7 @@ public sealed partial class SettingsViewModel
         {
             var ai = _settingsService.Settings.Ai;
             AiModelOptions.Clear();
-            foreach (var option in AiModelOption.Build(ai.Provider, AiCliStatus?.Backend?.LocalModels, ai.ModelFor(ai.Provider)))
+            foreach (var option in AiModelOption.Build(ai.Provider, AiCliStatus?.Backend?.Models, ai.ModelFor(ai.Provider)))
                 AiModelOptions.Add(option);
             AiDefaultModel = AiModelOptions.FirstOrDefault(m => m.Alias == ai.ModelFor(ai.Provider)) ?? AiModelOptions[0];
         }
@@ -474,7 +494,11 @@ public sealed partial class SettingsViewModel
     {
         LoadAiSettings();
         OnPropertyChanged(nameof(AiApiKeyStatus));
+        OnPropertyChanged(nameof(AiApiKeyHelp));
+        OnPropertyChanged(nameof(AiApiKeyPlaceholder));
+        OnPropertyChanged(nameof(AiApiKeysPageLabel));
         AiCliStatus?.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(AiHistoryCountLabel));
+        RefreshAiWebLocalizedLabels();
     }
 }

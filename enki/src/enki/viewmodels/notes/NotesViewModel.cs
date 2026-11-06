@@ -591,33 +591,71 @@ public sealed partial class NotesViewModel : ViewModelBase
             topLevel, NotifyCallback);
     }
 
-    // ===================== Exportar a imagen y a PDF (T8) =====================
+    // ===================== Exportar a PDF y a imagen =====================
     // Mismo flujo que la exportación a HTML de aquí arriba (contenido en vivo si la nota está abierta,
-    // diálogo del sistema, aviso por NotifyCallback); lo que cambia es que la hoja la compone
-    // Services.Export.NotePageComposer en vez de NoteExportRenderer.
+    // diálogo del sistema, aviso por NotifyCallback); lo que cambia es que el documento lo compone y lo
+    // dibuja Services.Export.NoteDocumentExporter en vez de NoteExportRenderer.
+
+    /// <summary>Si hay una exportación de nota a PDF o PNG en curso. Mientras dura no se puede lanzar otra
+    /// (componer una nota con muchas imágenes lleva unos segundos, y un segundo clic impaciente no debe
+    /// abrir otro diálogo de guardado encima) y el botón de exportar del editor enseña que está
+    /// trabajando.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportNoteAsPdfCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ExportNoteAsPngCommand))]
+    private bool _isExportingNote;
+
+    private bool CanExportNote() => !IsExportingNote;
 
     /// <summary>"Exportar como PNG…" desde el menú contextual de una tarjeta de nota.</summary>
-    [RelayCommand]
-    private Task ExportNoteAsPng(NoteCardViewModel card) => ExportNoteAsImageAsync(card.Note, ExportFormat.Png);
+    [RelayCommand(CanExecute = nameof(CanExportNote))]
+    private Task ExportNoteAsPng(NoteCardViewModel card) => ExportNoteDocumentAsync(card.Note, ExportFormat.Png);
 
     /// <summary>"Exportar como PDF…" desde el menú contextual de una tarjeta de nota.</summary>
-    [RelayCommand]
-    private Task ExportNoteAsPdf(NoteCardViewModel card) => ExportNoteAsImageAsync(card.Note, ExportFormat.Pdf);
+    [RelayCommand(CanExecute = nameof(CanExportNote))]
+    private Task ExportNoteAsPdf(NoteCardViewModel card) => ExportNoteDocumentAsync(card.Note, ExportFormat.Pdf);
 
     /// <summary>Exporta la nota activa; no hace nada si no hay ninguna abierta. Es la entrada desde la
     /// paleta de comandos, donde no hay tarjeta sobre la que hacer clic derecho.</summary>
     public Task ExportActiveNoteAsync(ExportFormat format) =>
-        ActiveEditor?.Note is { } note ? ExportNoteAsImageAsync(note, format) : Task.CompletedTask;
+        ActiveEditor?.Note is { } note ? ExportNoteDocumentAsync(note, format) : Task.CompletedTask;
 
-    private async Task ExportNoteAsImageAsync(NoteFile note, ExportFormat format)
+    /// <summary>Exportación a PDF o PNG compartida por la tarjeta, la paleta de comandos y el botón de
+    /// exportar del editor (que la recibe como callback). Una segunda petición mientras otra sigue en
+    /// curso se ignora.</summary>
+    private async Task ExportNoteDocumentAsync(NoteFile note, ExportFormat format)
     {
-        if (!TryReadContentForExport(note, out var content)) return;
+        if (IsExportingNote || !TryReadContentForExport(note, out var content)) return;
 
         var topLevel = App.MainWindowRef is not null
             ? Avalonia.Controls.TopLevel.GetTopLevel(App.MainWindowRef)
             : null;
-        await ViewExportService.ExportNoteAsync(note.Title, content, note.Title, format,
-            VisualSnapshotRenderer.ScaleHighResolution, topLevel, NotifyCallback);
+
+        IsExportingNote = true;
+        try
+        {
+            await ViewExportService.ExportNoteAsync(BuildExportSource(note, content), format, topLevel, NotifyCallback);
+        }
+        finally
+        {
+            IsExportingNote = false;
+        }
+    }
+
+    /// <summary>Lo que el exportador necesita de la nota, con las lecturas del vault que ya usa el editor:
+    /// <see cref="VaultService.ReadFileBytes"/> para sus imágenes —la que descifra sola una sesión
+    /// protegida— y <see cref="NoteTransclusionService"/> para sus <c>![[…]]</c>, sobre las notas reales.
+    /// Las etiquetas salen del texto que se exporta y no de la última lectura de disco, para que un cambio
+    /// aún sin guardar salga también en la cabecera.</summary>
+    private NoteExportSource BuildExportSource(NoteFile note, string content)
+    {
+        var transclusions = new NoteTransclusionService(_vaultService);
+        // La lista de notas del vault solo se lee si la nota transcluye alguna: es la misma lista de
+        // alcance que usan los wikilinks, y leerla entera para una nota sin transclusiones sería gasto.
+        IReadOnlyList<NoteFile>? scope = null;
+        return new NoteExportSource(note.Title, content, NoteTagHelper.ExtractTags(content), note.FullPath,
+            _vaultService.VaultPath, _vaultService.ReadFileBytes,
+            (reference, ancestry) => transclusions.Resolve(reference, scope ??= _vaultService.GetAllNotesAcrossVault(), ancestry));
     }
 
     /// <summary><see cref="NotificationService.Push"/> como callback suelto (o null en tests sin servicio)
@@ -693,7 +731,7 @@ public sealed partial class NotesViewModel : ViewModelBase
                 target => OpenNote(target), _kanbanService, _onOpenLinkedCard, _settingsService, _notificationService,
                 onExportHtml: (n, content) => _ = ExportNoteAsHtmlAsync(n, content), sessionService: _sessionService,
                 dailyNoteService: _dailyNoteService, onOpenDailyNoteFor: OpenDailyNoteFor,
-                changeWatcher: _changeWatcher);
+                changeWatcher: _changeWatcher, onExportDocument: ExportNoteDocumentAsync);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
         {

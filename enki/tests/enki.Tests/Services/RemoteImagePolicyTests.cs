@@ -116,8 +116,9 @@ public class RemoteImagePolicyTests
     {
         // Es la comprobación de verdad: ocurre en la capa de conexión, sobre la dirección resuelta, así que
         // también cubre un nombre público que resuelva a una IP interna (DNS rebinding) — validar la cadena
-        // de la URL no sirve para eso. Y no se conecta a nada: lanza antes del socket.
-        await Assert.ThrowsAsync<HttpRequestException>(async () =>
+        // de la URL no sirve para eso. Y no se conecta a nada: lanza antes del socket, con un tipo propio
+        // (que sigue siendo un HttpRequestException) para que quien lo explica al usuario sepa el motivo.
+        await Assert.ThrowsAsync<NonPublicDestinationException>(async () =>
             await RemoteImagePolicy.ConnectToPublicEndpointAsync(host, 80, CancellationToken.None));
     }
 

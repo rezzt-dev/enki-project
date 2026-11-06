@@ -598,7 +598,7 @@ dedicó la revisión más profunda.
   `.cs`/`.axaml`), cero `NotImplementedException` real (la única mención es en un comentario histórico
   sobre por qué se abandonó el renderizado WebGL del grafo).
 - **Composición manual coherente**: `MainWindowViewModel.Composition.cs` sigue el mismo patrón documentado
-  en `AGENTS.md` — sin contenedor de DI, cableado explícito y comentado de cada servicio/evento, decisión
+  en `agents.md` — sin contenedor de DI, cableado explícito y comentado de cada servicio/evento, decisión
   ya evaluada y documentada (`decision-contenedor-di.md`).
 - **Sin `.sln`** en el repo — los tres proyectos (`enki`, `enki.Tests`, `enki.UITests`) se restauran/
   compilan/testean por separado, tanto en CI como en la documentación de build. Es una decisión, no un

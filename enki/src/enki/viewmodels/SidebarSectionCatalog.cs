@@ -37,6 +37,22 @@ public static class SidebarSectionCatalog
     /// alternative to the scrollable main list.</summary>
     public const int MaxBottomSections = 3;
 
+    /// <summary>Longitud máxima de un nombre personalizado — limitada por el ancho del sidebar desplegado.</summary>
+    public const int MaxCustomNameLength = 16;
+
+    /// <summary>Nombre personalizado de <paramref name="key"/> si el usuario definió uno, o <c>null</c>.</summary>
+    public static string? CustomName(IReadOnlyDictionary<string, string>? names, string key) =>
+        names is not null && names.TryGetValue(key, out var n) && !string.IsNullOrWhiteSpace(n)
+            ? Truncate(n)
+            : null;
+
+    /// <summary>Recorta espacios y limita a <see cref="MaxCustomNameLength"/>; vacío devuelve cadena vacía.</summary>
+    public static string Truncate(string? name)
+    {
+        var t = name?.Trim() ?? "";
+        return t.Length > MaxCustomNameLength ? t[..MaxCustomNameLength] : t;
+    }
+
     public static readonly IReadOnlyDictionary<string, (MaterialIconKind Icon, string LabelKey)> Meta =
         new Dictionary<string, (MaterialIconKind, string)>
         {

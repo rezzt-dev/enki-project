@@ -10,7 +10,7 @@ ajustes anteriores y se aplica en vivo. No cambia colores, fuentes, medidas, bor
 | Entrada de sección | 180 ms, 6 px | 100 ms, solo opacidad |
 | Navegación del calendario | 180 ms, solo opacidad | 100 ms, solo opacidad |
 | Elevación de tarjetas al pasar el cursor | 4 px (1 px en controles compactos) | Sin desplazamiento |
-| Grafo de sesiones | Rotación y partículas; presupuesto de 60 repintados/s | Sin rotación ni partículas; presupuesto de 30 repintados/s |
+| Grafo de sesiones (esferas 3D) | Rotación activa salvo que el usuario la detenga; 30 repintados/s de rotación y 60 de interacción | Rotación detenida hasta que el usuario la active; 30 repintados/s |
 | Indicador de carga de sesiones | Constelación animada y progreso | Constelación estable y progreso |
 
 Los indicadores funcionales de carga siguen activos en ambos modos. Sutiles reduce el movimiento,
@@ -34,8 +34,10 @@ pero no es una opción para desactivar absolutamente todas las animaciones.
 - Sesiones retira su capa de carga en cuanto llega la señal de disponibilidad, con el fundido del perfil.
   Se elimina la espera mínima anterior de 520 ms y el fundido fijo de 360 ms. La capa deja de capturar
   interacción al comenzar su retirada; se conserva el temporizador de seguridad si el WebView falla.
-- El grafo limita el trabajo de canvas, omite efectos decorativos en Sutiles y acota el salto temporal
-  tras pausas. El indicador usa memoria de pila para las posiciones de sus diez nodos.
+- El grafo pinta bajo demanda: sin rotación ni interacción no pide fotogramas, la rotación usa delta time
+  con el salto acotado tras pausas, y Sutiles omite la aparición progresiva y el pulso del enlace
+  pendiente. El botón de rotación del visor guarda una elección explícita que prevalece sobre el perfil
+  (ver `grafo-sesiones-3d.md`). El indicador usa memoria de pila para las posiciones de sus diez nodos.
 - La pantalla de arranque no gira nada: mueve una barra por `Opacity`, por el ancho de su relleno y por una
   `TranslateTransform` en su fase sin pasos que contar, y ninguno de esos gestos obliga a recalcular la
   geometría de un giro por fotograma. El rótulo y el estado de la carga se actualizan en pasos discretos, así

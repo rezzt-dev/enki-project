@@ -22,6 +22,9 @@ public sealed partial class SessionsViewModel : ViewModelBase
     private readonly VaultService _vaultService;
     private readonly SessionService _sessionService;
     private readonly NotificationService _notificationService;
+    /// <summary>Opcional: solo persiste preferencias del visor (la rotación de las esferas); los tests que no
+    /// lo pasan conservan el estado en memoria.</summary>
+    private readonly SettingsService? _settingsService;
     /// <summary>Null <c>Session</c> means "open this note in the vault-root workspace" — the only way a
     /// graph node can reach here without a real session (see <see cref="HandleNodeOpened"/>), since notes
     /// living directly at the vault root have no session to pass.</summary>
@@ -292,9 +295,14 @@ public sealed partial class SessionsViewModel : ViewModelBase
         KanbanService? kanbanService = null,
         Action<string>? onOpenLinkedCard = null,
         Func<Session, bool>? onSessionLocked = null,
-        Action<Session>? onOpenInAssistant = null)
+        Action<Session>? onOpenInAssistant = null,
+        SettingsService? settingsService = null)
     {
         _onOpenInAssistant = onOpenInAssistant;
+        _settingsService = settingsService;
+        // Sin preferencia guardada, el perfil de movimiento sutil decide el estado inicial.
+        _isGraphRotationEnabled = settingsService?.Settings.SessionsGraphRotationEnabled
+            ?? !(settingsService?.Settings.UseSubtleAnimations ?? MotionService.UseSubtleAnimations);
         _vaultService = vaultService;
         _sessionService = sessionService;
         _notificationService = notificationService;
@@ -314,6 +322,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(SessionsCountLabel));
         OnPropertyChanged(nameof(GraphSummaryLabel));
+        OnPropertyChanged(nameof(GraphRotationTooltip));
         var explorationIndex = GraphExplorationIndex;
         _updatingGraphFilters = true;
         try

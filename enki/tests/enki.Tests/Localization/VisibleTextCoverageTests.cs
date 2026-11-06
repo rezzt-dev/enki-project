@@ -22,7 +22,7 @@ public sealed class VisibleTextCoverageTests
         {
             "Text", "Content", "Header", "Watermark", "Title", "ToolTip.Tip", "AutomationProperties.Name"
         };
-        var allowed = new HashSet<string> { "ENKI", "Ctrl+F", "Esc", "Aa" };
+        var allowed = new HashSet<string> { "ENKI", "Ctrl+F", "Esc", "Aa", "DUCKDUCKGO", "BRAVE SEARCH" };
         var leaks = new List<string>();
         foreach (var file in Directory.EnumerateFiles(SourceDirectory, "*.axaml", SearchOption.AllDirectories))
         {
@@ -73,11 +73,11 @@ public sealed class VisibleTextCoverageTests
         var allowed = culture == "de-DE"
             ? new HashSet<string>
             {
-                "Syncthing", "iCloud Drive (macOS / Windows)", "Normal", "AGENDA", "Agenda", "Audio", "Backlinks", "Code", "Community", "DASHBOARD", "DETAILS", "Dashboard", "Details", "EDITOR", "Editor", "FR", "Horizontal", "Info", "KANBAN", "Kanban", "Link", "MIN", "MO", "Name", "Navigation", "OK", "PDFs", "POLAR · SUPABASE", "Polar", "SA", "Skills", "Status", "TAGS", "Tags", "Text", "Version {0}", "Video", "[text](url)", "min", "{0}", "{0} MIN", "{0} PX", "{0} min", "{0} {1}", "{0}%", "{0}:00"
+                "Syncthing", "iCloud Drive (macOS / Windows)", "Normal", "AGENDA", "Agenda", "Audio", "Backlinks", "Code", "Community", "DASHBOARD", "DETAILS", "Dashboard", "Details", "EDITOR", "Editor", "FR", "Horizontal", "Info", "KANBAN", "Kanban", "Link", "MIN", "MO", "Name", "Navigation", "OK", "PDFs", "POLAR · SUPABASE", "Polar", "SA", "Skills", "Status", "TAGS", "Tags", "Text", "Version {0}", "Video", "Web", "[text](url)", "min", "{0}", "{0} MIN", "{0} PX", "{0} min", "{0} {1}", "{0}%", "{0}:00"
             }
             : new HashSet<string>
             {
-                "Page {0}", "Syncthing", "iCloud Drive (macOS / Windows)", "Animations", "AGENDA", "Agenda", "Application", "Audio", "Code", "DESCRIPTION", "Danger", "Date", "Description", "Documents", "Horizontal", "Image", "Images", "Info", "KANBAN", "Kanban", "MIN", "Modules", "NOTES", "NOTIFICATIONS", "Navigation", "Notes", "Notifications", "OK", "PDFs", "POLAR · SUPABASE", "Polar", "Permissions", "SA", "SESSIONS", "Saturation", "Sections", "Sessions", "Surface", "Type", "Version {0}", "Vertical", "Visible", "Volume", "min", "notes", "{0}", "{0} MIN", "{0} PX", "{0} document", "{0} documents", "{0} min", "{0} note", "{0} notes", "{0} session", "{0} sessions", "{0} h", "{0} {1}", "{0}%", "{0}:00"
+                "Page {0}", "Syncthing", "iCloud Drive (macOS / Windows)", "Animations", "AGENDA", "Agenda", "Application", "Audio", "Code", "DESCRIPTION", "Danger", "Date", "Description", "Documents", "Horizontal", "Image", "Images", "Info", "KANBAN", "Kanban", "MIN", "Modules", "NOTES", "NOTIFICATIONS", "Navigation", "Notes", "Notifications", "OK", "PDFs", "POLAR · SUPABASE", "Polar", "Permissions", "SA", "SESSIONS", "Saturation", "Sections", "Sessions", "Surface", "Type", "Version {0}", "Vertical", "Visible", "Volume", "Web", "min", "notes", "{0}", "{0} MIN", "{0} PX", "{0} document", "{0} documents", "{0} min", "{0} note", "{0} notes", "{0} session", "{0} sessions", "{0} h", "{0} {1}", "{0}%", "{0}:00"
             };
         var source = Load("");
         var translation = Load(culture);
