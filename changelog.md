@@ -99,6 +99,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - pruebas de `AiWebService`, de las herramientas web sobre el catálogo real, de `HtmlReadability.ExtractPage`, del prompt, de `AssistantViewModel`, de `SettingsViewModel` y de interfaz sobre el XAML real, la guía «Acceso a internet» en `.docs/project-info/asistente-ia.md` y la sección 8.12 de `qa-manual-release-candidate.md`.
 
 #### CAMBIOS
+- exigir español de españa y conservar `ñ` y `Ñ`, incluso en formatos que pidan escribir sin acentos
 
 - completar las guías de gestión y el contexto específico del proyecto; conservar las reglas técnicas y verificar las rutas
 - corregir el ejemplo de promociones entre ramas para evitar destinos idénticos al origen
@@ -327,6 +328,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - tests for `AiWebService`, the web tools on the real catalogue, `HtmlReadability.ExtractPage`, the prompt, `AssistantViewModel`, `SettingsViewModel` and the real XAML, the “Internet access” guide in `.docs/project-info/asistente-ia.md` and section 8.12 of `qa-manual-release-candidate.md`.
 
 #### CHANGED
+- require spanish from spain and preserve `ñ` and `Ñ`, including formats that omit vowel accents
 
 - complete repository management guides and project-specific context; preserve technical rules and verify paths
 - correct the branch promotion example to avoid destinations identical to the source
