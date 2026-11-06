@@ -192,6 +192,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - renombrar `AGENTS.md`, `CHANGELOG.md`, `README.md` y `README.en.md` a minúsculas (`agents.md`, `changelog.md`, `readme.md`, `readme.en.md`) para igualarlos con `license.md`, y actualizar las referencias en ambos readme, los comentarios del código, `enki/Directory.Build.props`, los workflows `ci.yml` y `release.yml` y `.docs/`; corregir el enlace a `LICENSE` de los readme, que ahora apunta a `license.md`.
 
 #### CORREGIDO
+- aislar las pruebas de busqueda global de la configuracion y el llavero locales, y esperar las escrituras del grafo antes de borrar los vaults temporales de las pruebas del dashboard.
 - seleccionar la plataforma local al compilar Enki en lugar de forzar `linux-x64`, para cargar la aplicacion y ejecutar las pruebas del grafo tambien en macOS y Windows; mantener el runtime explicito de cada paquete.
 - corregir los workflows de CI y release para instalar el SDK fijado en `enki/global.json`, ejecutar CI en las ramas beta y actualizar las rutas de `license.md` en los paquetes de Linux y Windows.
 - excluir los binarios generados de `enki/publish-linux/` del repositorio conservando la compilacion desde el codigo fuente.
@@ -415,6 +416,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - rename `AGENTS.md`, `CHANGELOG.md`, `README.md` and `README.en.md` to lowercase (`agents.md`, `changelog.md`, `readme.md`, `readme.en.md`) to match `license.md`, and update the references in both readmes, the source comments, `enki/Directory.Build.props`, the `ci.yml` and `release.yml` workflows and `.docs/`; fix the `LICENSE` link of the readmes, which now points to `license.md`.
 
 #### FIXED
+- isolate global search tests from local configuration and credential stores, and wait for graph writes before deleting temporary dashboard test vaults.
 - select the local platform when building Enki instead of forcing `linux-x64`, so the application loads and graph tests run on macOS and Windows; preserve each package's explicit runtime.
 - fix CI and release workflows to install the SDK pinned in `enki/global.json`, run CI on beta branches and update `license.md` paths in Linux and Windows packages.
 - exclude generated `enki/publish-linux/` binaries from the repository while retaining builds from source.
