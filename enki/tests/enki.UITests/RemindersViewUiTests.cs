@@ -96,6 +96,41 @@ public class RemindersViewUiTests : IDisposable
         finally { window.Close(); }
     }
 
+    /// <summary>El punto de «sin ver» y el estado «Próximo» de la fila siguen la ventana de aviso previo:
+    /// un recordatorio para la semana que viene se pinta como programado, sin punto, y uno para dentro de
+    /// unas horas como próximo, con punto, hasta que se abre.</summary>
+    [Fact]
+    public void ReminderRows_OnlyMarkRemindersInsideTheirAdvanceNoticeWindow()
+    {
+        var service = new ReminderService(_tempDir);
+        service.Create("Semana que viene", "", DateTime.UtcNow.AddDays(7), "BellRingOutline");
+        service.Create("Esta tarde", "", DateTime.UtcNow.AddHours(4), "BellRingOutline");
+        var (view, vm, window) = CreateView();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.Equal(1, vm.AttentionCount);
+            var rows = view.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("reminder-row")).ToArray();
+            Assert.Equal(2, rows.Length);
+
+            bool DotVisible(Border row) => row.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>().Single().IsEffectivelyVisible;
+            string Text(Border row) => string.Join(" ", row.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+
+            var upcoming = rows.Single(r => Text(r).Contains("Esta tarde"));
+            var scheduled = rows.Single(r => Text(r).Contains("Semana que viene"));
+            Assert.True(DotVisible(upcoming));
+            Assert.False(DotVisible(scheduled));
+            Assert.Contains(LocalizationService.Instance["Reminders_Status_Upcoming"], Text(upcoming), StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(LocalizationService.Instance["Reminders_Status_Scheduled"], Text(scheduled), StringComparison.OrdinalIgnoreCase);
+
+            vm.OpenDetailCommand.Execute(vm.Items.Single(i => i.NeedsAttention));
+            Assert.Equal(0, vm.AttentionCount);
+        }
+        finally { window.Close(); }
+    }
+
     [Fact]
     public void RemindersView_RendersWithoutThrowing()
     {

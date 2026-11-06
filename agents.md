@@ -155,6 +155,7 @@ normalices a un solo idioma.
   el roadmap de mejoras en curso, fase a fase (`roadmap.md`).
 - `.docs/project-info/calendar-feature/`, `.docs/project-info/supabase-sync/`,
   `.docs/project-info/ajustes-docs/`, `.docs/project-info/ia-skills/especificacion-desarrollo.md`,
+  `.docs/project-info/ia-skills/instalacion-en-el-sistema.md`,
   `.docs/project-info/seccion-archivos.md`, `.docs/project-info/vista-simplificada-notas.md`,
   `.docs/project-info/plantillas-de-notas.md`, `.docs/project-info/notas-diarias.md`,
   `.docs/project-info/imagenes-en-notas.md`, `.docs/project-info/tablas-en-notas.md`,

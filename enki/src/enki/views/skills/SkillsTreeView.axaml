@@ -196,6 +196,12 @@
                     AutomationProperties.Name="{loc:Tr Skills_Export_Tooltip}">
               <mi:MaterialIcon Kind="TrayArrowUp" Width="16" Height="16" />
             </Button>
+            <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding OpenSystemSkillsCommand}"
+                    IsVisible="{Binding IsSystemInstallAvailable}"
+                    ToolTip.Tip="{loc:Tr SkillInstall_System_Tooltip}"
+                    AutomationProperties.Name="{loc:Tr SkillInstall_System_Tooltip}">
+              <mi:MaterialIcon Kind="PuzzleOutline" Width="16" Height="16" />
+            </Button>
             <Button Classes="icon-btn" Width="30" Height="30" Command="{Binding CollapseTreeCommand}"
                     ToolTip.Tip="{loc:Tr Skills_Tree_Collapse_Tooltip}"
                     AutomationProperties.Name="{loc:Tr Skills_Tree_Collapse_Tooltip}">
@@ -343,6 +349,12 @@
                     ToolTip.Tip="{loc:Tr Skills_Export_Tooltip}" ToolTip.Placement="Right"
                     AutomationProperties.Name="{loc:Tr Skills_Export_Tooltip}">
               <mi:MaterialIcon Kind="TrayArrowUp" Width="18" Height="18" />
+            </Button>
+            <Button x:Name="RailSystemSkillsButton" Classes="icon-btn" Width="36" Height="36"
+                    Command="{Binding OpenSystemSkillsCommand}" IsVisible="{Binding IsSystemInstallAvailable}"
+                    ToolTip.Tip="{loc:Tr SkillInstall_System_Tooltip}" ToolTip.Placement="Right"
+                    AutomationProperties.Name="{loc:Tr SkillInstall_System_Tooltip}">
+              <mi:MaterialIcon Kind="PuzzleOutline" Width="18" Height="18" />
             </Button>
             <Button x:Name="RailCollapseButton" Classes="icon-btn" Width="36" Height="36"
                     Command="{Binding CollapseTreeCommand}"

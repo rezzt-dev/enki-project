@@ -91,7 +91,10 @@ public sealed partial class MainWindowViewModel
         // currentUserIdProvider stamps which Polar account was linked at the moment each row first became
         // dirty, so PolarSyncService can later refuse to push it under a different account
         // (docs/analisis-proyecto/roadmap.md, Fase 4).
-        _reminderService = new ReminderService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
+        // advanceNoticeHoursProvider se lee en cada pasada del temporizador, así que cambiar la antelación
+        // en Ajustes (o abrir otro vault con sus propios ajustes) se aplica sin reconstruir el servicio.
+        _reminderService = new ReminderService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId,
+            advanceNoticeHoursProvider: () => _settingsService.Settings.ReminderAdvanceNoticeHours);
         _supabaseRestClient = new SupabaseRestClient(_polarAuthService);
         _polarTaskService = new PolarTaskService(_vaultService, currentUserIdProvider: () => _polarAuthService.UserId);
         _polarSyncService = new PolarSyncService(_polarAuthService, _supabaseRestClient, _polarTaskService, _reminderService, _settingsService, _vaultSettingsService);
@@ -500,7 +503,10 @@ public sealed partial class MainWindowViewModel
         Notes.RestoreOpenTabs();
         Files = new FilesViewModel(_vaultService, _sessionService, _notificationService, _settingsService);
         var skillService = new SkillService(_vaultService);
-        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService, StartAssistantChatWithSkill, skillService)
+        // Addon de instalación en el sistema: el único punto que resuelve la carpeta personal real. Los
+        // tests construyen SkillsViewModel sin este servicio y nunca escriben en ~/.claude ni ~/.agents.
+        Skills = new SkillsViewModel(_vaultService, _notificationService, _settingsService, StartAssistantChatWithSkill, skillService,
+            new SkillInstallService())
         {
             IsAssistantAvailable = AssistantPanelEnabled
         };
@@ -593,7 +599,7 @@ public sealed partial class MainWindowViewModel
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(RemindersViewModel.UnreadCount)) UpdateRemindersBadge();
+            if (e.PropertyName == nameof(RemindersViewModel.AttentionCount)) UpdateRemindersBadge();
         };
         Notifications.PropertyChanged += (_, e) =>
         {

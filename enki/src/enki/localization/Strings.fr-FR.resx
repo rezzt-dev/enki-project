@@ -7717,4 +7717,232 @@ Bonne rédaction.</value>
   <data name="Settings_Ai_Web_Safety" xml:space="preserve">
     <value>Seuls les sites web publics peuvent être ouverts, jamais cet ordinateur ni votre réseau local. Le contenu des pages est traité comme des données, pas comme des instructions, et une adresse proposée par l’assistant lui-même vous est d’abord soumise.</value>
   </data>
+  <data name="Skills_Error_CannotConvertDefault" xml:space="preserve">
+    <value>Les compétences par défaut ne peuvent pas devenir un paquet. Dupliquez-la d’abord.</value>
+  </data>
+  <data name="SkillInstall_Error_NameTaken" xml:space="preserve">
+    <value>{1} contient déjà une skill nommée « {0} » qu’Enki n’a pas installée. Renommez le fichier de cette skill pour l’installer.</value>
+  </data>
+  <data name="SkillInstall_Error_ModifiedExternally" xml:space="preserve">
+    <value>La copie de « {0} » dans {1} a été modifiée hors d’Enki. Écrasez-la explicitement pour remplacer ces modifications.</value>
+  </data>
+  <data name="SkillInstall_Error_NotManaged" xml:space="preserve">
+    <value>« {0} » n’a pas été installée par Enki ; Enki ne la supprimera donc pas.</value>
+  </data>
+  <data name="SkillInstall_Error_PackageTooLarge" xml:space="preserve">
+    <value>Le paquet dépasse {0} Mo et n’a pas été installé.</value>
+  </data>
+  <data name="SkillInstall_Warning_NoFrontMatter" xml:space="preserve">
+    <value>Aucun frontmatter YAML : Enki générera name et description lors de l’installation.</value>
+  </data>
+  <data name="SkillInstall_Warning_InvalidYaml" xml:space="preserve">
+    <value>Le frontmatter n’est pas un YAML valide. Les assistants pourraient ignorer cette skill.</value>
+  </data>
+  <data name="SkillInstall_Warning_NoDescription" xml:space="preserve">
+    <value>Aucune description. Les assistants s’en servent pour décider quand charger la skill ; son nom sera utilisé à la place.</value>
+  </data>
+  <data name="SkillInstall_Warning_LongDescription" xml:space="preserve">
+    <value>La description dépasse {0} caractères et sera raccourcie.</value>
+  </data>
+  <data name="SkillInstall_Warning_NameNormalized" xml:space="preserve">
+    <value>« {0} » sera installée sous le nom « {1} » : minuscules, chiffres et tirets uniquement.</value>
+  </data>
+  <data name="SkillInstall_Warning_PackageTooLarge" xml:space="preserve">
+    <value>Le paquet dépasse {0} Mo et ne peut pas être installé.</value>
+  </data>
+  <data name="SkillInstall_State_NotInstalled" xml:space="preserve">
+    <value>Non installée</value>
+  </data>
+  <data name="SkillInstall_State_Installed" xml:space="preserve">
+    <value>Installée et à jour</value>
+  </data>
+  <data name="SkillInstall_State_Outdated" xml:space="preserve">
+    <value>Obsolète</value>
+  </data>
+  <data name="SkillInstall_State_ModifiedExternally" xml:space="preserve">
+    <value>Modifiée hors d’Enki</value>
+  </data>
+  <data name="SkillInstall_State_NameTaken" xml:space="preserve">
+    <value>Nom déjà pris par une autre skill</value>
+  </data>
+  <data name="SkillInstall_Action_Install" xml:space="preserve">
+    <value>Installer</value>
+  </data>
+  <data name="SkillInstall_Action_Update" xml:space="preserve">
+    <value>Mettre à jour</value>
+  </data>
+  <data name="SkillInstall_Action_Overwrite" xml:space="preserve">
+    <value>Écraser</value>
+  </data>
+  <data name="SkillInstall_Action_Uninstall" xml:space="preserve">
+    <value>Désinstaller</value>
+  </data>
+  <data name="SkillInstall_Action_ConfirmUninstall" xml:space="preserve">
+    <value>Confirmer la désinstallation</value>
+  </data>
+  <data name="SkillInstall_Action_InstallAllDetected" xml:space="preserve">
+    <value>Installer dans les assistants détectés</value>
+  </data>
+  <data name="SkillInstall_Origin_Enki" xml:space="preserve">
+    <value>Installée par Enki depuis votre bibliothèque</value>
+  </data>
+  <data name="SkillInstall_Origin_EnkiMissingSource" xml:space="preserve">
+    <value>Installée par Enki ; sa source n’est plus dans la bibliothèque</value>
+  </data>
+  <data name="SkillInstall_Origin_External" xml:space="preserve">
+    <value>Non installée par Enki</value>
+  </data>
+  <data name="SkillInstall_Notify_SyncFailed_Title" xml:space="preserve">
+    <value>Copie installée non mise à jour</value>
+  </data>
+  <data name="SkillInstall_Notify_SyncFailed_Message" xml:space="preserve">
+    <value>« {0} » a été enregistrée, mais sa copie dans {1} n’a pas pu être mise à jour.</value>
+  </data>
+  <data name="SkillInstall_Notify_Failed_Title" xml:space="preserve">
+    <value>Échec de l’installation système</value>
+  </data>
+  <data name="SkillInstall_Notify_Installed_Title" xml:space="preserve">
+    <value>Skill installée</value>
+  </data>
+  <data name="SkillInstall_Notify_Installed_Message" xml:space="preserve">
+    <value>« {0} » est désormais disponible dans {1}.</value>
+  </data>
+  <data name="SkillInstall_Notify_Uninstalled_Title" xml:space="preserve">
+    <value>Skill désinstallée</value>
+  </data>
+  <data name="SkillInstall_Notify_Uninstalled_Message" xml:space="preserve">
+    <value>« {0} » a été retirée de {1}.</value>
+  </data>
+  <data name="Skills_Notify_ConvertedToPackage_Title" xml:space="preserve">
+    <value>Convertie en paquet</value>
+  </data>
+  <data name="Skills_Notify_ConvertedToPackage_Message" xml:space="preserve">
+    <value>« {0} » a désormais son propre dossier pour les scripts, références et modèles.</value>
+  </data>
+  <data name="Skills_Notify_ConvertFailed_Title" xml:space="preserve">
+    <value>Conversion impossible</value>
+  </data>
+  <data name="SkillInstall_InstalledIn" xml:space="preserve">
+    <value>Installée dans</value>
+  </data>
+  <data name="SkillInstall_Button" xml:space="preserve">
+    <value>Installer sur le système</value>
+  </data>
+  <data name="SkillInstall_Button_Tooltip" xml:space="preserve">
+    <value>Rendre cette skill disponible pour Claude Code, Codex ou Gemini CLI hors d’Enki</value>
+  </data>
+  <data name="SkillInstall_NotDetected" xml:space="preserve">
+    <value>Assistant non détecté sur cet ordinateur ; l’installation crée quand même son dossier.</value>
+  </data>
+  <data name="SkillInstall_OpenFolder_Tooltip" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="SkillInstall_Dialog_Title" xml:space="preserve">
+    <value>Installer sur le système</value>
+  </data>
+  <data name="SkillInstall_Dialog_InstallName" xml:space="preserve">
+    <value>Les assistants la verront sous le nom</value>
+  </data>
+  <data name="SkillInstall_Dialog_Description" xml:space="preserve">
+    <value>Enki copie la skill dans le dossier utilisateur de chaque assistant sous forme de SKILL.md. L’enregistrer ici met à jour les copies installées, sauf si elles ont été modifiées ailleurs.</value>
+  </data>
+  <data name="SkillInstall_Dialog_SharedDirectoryHint" xml:space="preserve">
+    <value>Codex lit ~/.agents/skills, que Gemini CLI lit aussi : une skill installée pour Codex apparaîtra également dans Gemini CLI.</value>
+  </data>
+  <data name="SkillInstall_System_Title" xml:space="preserve">
+    <value>Skills du système</value>
+  </data>
+  <data name="SkillInstall_System_Button" xml:space="preserve">
+    <value>Système</value>
+  </data>
+  <data name="SkillInstall_System_Tooltip" xml:space="preserve">
+    <value>Skills installées pour Claude Code, Codex et Gemini CLI</value>
+  </data>
+  <data name="SkillInstall_System_Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="SkillInstall_System_Description" xml:space="preserve">
+    <value>Tout ce que les assistants trouvent dans leurs dossiers utilisateur. Importez-en n’importe laquelle dans le dossier actuel de votre bibliothèque ou désinstallez celles qu’Enki a installées.</value>
+  </data>
+  <data name="SkillInstall_System_Empty" xml:space="preserve">
+    <value>Aucune skill n’est encore installée pour ces assistants.</value>
+  </data>
+  <data name="SkillInstall_System_Import" xml:space="preserve">
+    <value>Importer</value>
+  </data>
+  <data name="SkillInstall_System_Import_Tooltip" xml:space="preserve">
+    <value>La copier, avec ses scripts et références, dans le dossier actuel de la bibliothèque</value>
+  </data>
+  <data name="Skills_Badge_Package" xml:space="preserve">
+    <value>Paquet</value>
+  </data>
+  <data name="Skills_Badge_Package_Tooltip" xml:space="preserve">
+    <value>Dossier avec SKILL.md et des scripts, références ou modèles</value>
+  </data>
+  <data name="Skills_PackageFiles" xml:space="preserve">
+    <value>Fichiers du paquet</value>
+  </data>
+  <data name="Skills_PackageFiles_Empty" xml:space="preserve">
+    <value>Seulement SKILL.md pour l’instant. Ouvrez le dossier pour ajouter des scripts, références ou modèles.</value>
+  </data>
+  <data name="Skills_OpenPackageFolder" xml:space="preserve">
+    <value>Ouvrir le dossier du paquet</value>
+  </data>
+  <data name="Skills_ConvertToPackage" xml:space="preserve">
+    <value>Convertir en paquet</value>
+  </data>
+  <data name="Skills_ConvertToPackage_Tooltip" xml:space="preserve">
+    <value>La déplacer dans son propre dossier sous forme de SKILL.md pour ajouter des scripts et références</value>
+  </data>
+  <data name="Skills_OpenLocation_Tooltip" xml:space="preserve">
+    <value>Afficher dans le gestionnaire de fichiers</value>
+  </data>
+  <data name="Settings_Skills_SystemInstall_Title" xml:space="preserve">
+    <value>Installation système</value>
+  </data>
+  <data name="Settings_Skills_SystemInstall_Label" xml:space="preserve">
+    <value>Installer des skills pour Claude Code, Codex et Gemini CLI</value>
+  </data>
+  <data name="Settings_Skills_SystemInstall_Description" xml:space="preserve">
+    <value>Module qui copie les skills de la bibliothèque dans le dossier utilisateur de chaque assistant pour qu’ils les utilisent sans l’assistant d’Enki. Il écrit hors du coffre, uniquement lors d’une installation.</value>
+  </data>
+  <data name="Settings_Skills_SystemAutoSync_Label" xml:space="preserve">
+    <value>Synchroniser les copies installées</value>
+  </data>
+  <data name="Settings_Skills_SystemAutoSync_Description" xml:space="preserve">
+    <value>Enregistrer, déplacer ou convertir une skill installée met à jour ses copies. Les copies modifiées hors d’Enki ne sont jamais écrasées.</value>
+  </data>
+  <data name="Settings_Skills_SystemInstall_Targets" xml:space="preserve">
+    <value>Destinations sur cet ordinateur</value>
+  </data>
+  <data name="Notification_ReminderUpcoming_Title" xml:space="preserve">
+    <value>Rappel à venir : {0}</value>
+  </data>
+  <data name="Notification_ReminderUpcoming_Message" xml:space="preserve">
+    <value>Prévu le {0}.</value>
+  </data>
+  <data name="Reminders_Status_Upcoming" xml:space="preserve">
+    <value>À venir</value>
+  </data>
+  <data name="Settings_Notifications_Reminders_AdvanceNotice_Label" xml:space="preserve">
+    <value>Préavis</value>
+  </data>
+  <data name="Settings_Notifications_Reminders_AdvanceNotice_Description" xml:space="preserve">
+    <value>Combien de temps à l'avance chaque rappel vous prévient : il affiche une alerte et commence à compter dans le badge des Rappels. D'ici là, un rappel programmé ne compte pas comme en attente.</value>
+  </data>
+  <data name="Settings_Notifications_Reminders_AdvanceNotice_Off" xml:space="preserve">
+    <value>Seulement à l'heure prévue</value>
+  </data>
+  <data name="Settings_Notifications_Reminders_AdvanceNotice_DaysFormat_one" xml:space="preserve">
+    <value>{0} jour avant</value>
+  </data>
+  <data name="Settings_Notifications_Reminders_AdvanceNotice_DaysFormat_other" xml:space="preserve">
+    <value>{0} jours avant</value>
+  </data>
+  <data name="Settings_Notifications_Reminders_AdvanceNotice_HoursFormat_one" xml:space="preserve">
+    <value>{0} h avant</value>
+  </data>
+  <data name="Settings_Notifications_Reminders_AdvanceNotice_HoursFormat_other" xml:space="preserve">
+    <value>{0} h avant</value>
+  </data>
 </root>

@@ -2,6 +2,8 @@
 
 La sección sigue trabajando directamente con los Markdown de `<vault>/.enki/skills/`.
 No añade un almacén de datos ni ejecuta las instrucciones de las skills.
+Los paquetes `carpeta/SKILL.md` y el addon que instala skills en Claude Code, Codex y Gemini CLI se
+describen en [Instalación de skills en el sistema](instalacion-en-el-sistema.md).
 
 ## Interfaz
 

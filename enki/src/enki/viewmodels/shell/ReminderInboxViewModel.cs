@@ -135,6 +135,15 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasItems));
     }
 
+    /// <summary>Repaso periódico (el temporizador de recordatorios del shell, cada 30 s): el cubo de cada
+    /// elemento cambia solo con el paso del tiempo, y sin esto la insignia de vencidas no se movería
+    /// hasta la siguiente edición del tablero. Con el panel abierto no se toca: reconstruir la lista
+    /// cerraría el menú «Aplazar» que el usuario pueda tener desplegado, y al abrirlo ya se recargó.</summary>
+    public void RefreshIfIdle()
+    {
+        if (!IsOpen) Reload();
+    }
+
     [RelayCommand]
     private void Toggle()
     {

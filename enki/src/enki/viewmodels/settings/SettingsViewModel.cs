@@ -344,6 +344,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _muteWarningNotifications = settingsService.Settings.MuteWarningNotifications;
         _muteErrorNotifications = settingsService.Settings.MuteErrorNotifications;
         _reminderSoonWindowDays = settingsService.Settings.ReminderSoonWindowDays;
+        _reminderAdvanceNoticeHours = settingsService.Settings.ReminderAdvanceNoticeHours;
         _checkUpdatesOnStartup = settingsService.Settings.CheckUpdatesOnStartup;
         _snoozePrimaryMinutes = settingsService.Settings.SnoozePrimaryMinutes;
         _snoozeSecondaryMinutes = settingsService.Settings.SnoozeSecondaryMinutes;
@@ -635,6 +636,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(EditorTabSizeLabel));
         OnPropertyChanged(nameof(UiZoomPercentLabel));
         OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
+        OnPropertyChanged(nameof(ReminderAdvanceNoticeLabel));
         OnPropertyChanged(nameof(InstalledVersionLabel));
         OnPropertyChanged(nameof(AvailableUpdateLabel));
         OnPropertyChanged(nameof(UpdateCheckStatusLabel));

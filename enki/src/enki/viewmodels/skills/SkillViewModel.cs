@@ -21,6 +21,12 @@ public sealed partial class SkillViewModel : ObservableObject
     public string Description => Model.Description;
     public string? Emoji => Model.Emoji;
     public bool IsDefault => Model.IsDefault;
+
+    /// <summary>Skill con carpeta propia (<c>&lt;id&gt;/SKILL.md</c> más archivos auxiliares).</summary>
+    public bool IsPackage => Model.IsPackage;
+
+    /// <summary>Solo una skill propia de un archivo se puede convertir en paquete.</summary>
+    public bool CanConvertToPackage => !Model.IsPackage && !Model.IsDefault;
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
     public bool HasTags => Model.Tags.Count > 0;
 
@@ -77,5 +83,7 @@ public sealed partial class SkillViewModel : ObservableObject
         OnPropertyChanged(nameof(FilePath));
         OnPropertyChanged(nameof(RelativeFolderPath));
         OnPropertyChanged(nameof(HasFolder));
+        OnPropertyChanged(nameof(IsPackage));
+        OnPropertyChanged(nameof(CanConvertToPackage));
     }
 }

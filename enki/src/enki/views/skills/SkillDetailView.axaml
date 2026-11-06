@@ -23,6 +23,57 @@
             <TextBlock Text="{Binding SelectedSkill.RelativeFolderPath}" Classes="muted" IsVisible="{Binding SelectedSkill.HasFolder}" />
             <TextBlock Text="{loc:Tr Skills_Detail_Location_Root}" Classes="muted" IsVisible="{Binding !SelectedSkill.HasFolder}" />
             <TextBlock Text="{loc:Tr Skills_Badge_DefaultReadOnly}" Classes="muted" IsVisible="{Binding SelectedSkill.IsDefault}" />
+            <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding SelectedSkill.IsPackage}"
+                        ToolTip.Tip="{loc:Tr Skills_Badge_Package_Tooltip}">
+              <mi:MaterialIcon Kind="PackageVariantClosed" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+              <TextBlock Text="{loc:Tr Skills_Badge_Package}" Classes="muted" />
+            </StackPanel>
+          </StackPanel>
+          <!-- Asistentes del sistema que ya tienen una copia de la skill (addon de instalación). -->
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasSelectedSkillInstallSummary}">
+            <mi:MaterialIcon Kind="CheckCircleOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr SkillInstall_InstalledIn}" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding SelectedSkillInstallSummary}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+          <!-- Archivos auxiliares de un paquete: lo que se instala junto a SKILL.md. -->
+          <StackPanel IsVisible="{Binding SelectedSkill.IsPackage}">
+            <ToggleButton x:Name="PackageFilesToggle" Classes="tag-chip toolbar-chip"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Center" IsChecked="False"
+                          AutomationProperties.Name="{loc:Tr Skills_PackageFiles}">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Tr Skills_PackageFiles, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
+                <mi:MaterialIcon Grid.Column="1" Width="16" Height="16" Margin="12,0,0,0"
+                                 Kind="{Binding #PackageFilesToggle.IsChecked, Converter={StaticResource ExpandChevronConverter}}" />
+              </Grid>
+            </ToggleButton>
+            <Border IsVisible="{Binding #PackageFilesToggle.IsChecked}"
+                    BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,1,1"
+                    Background="{DynamicResource AppBackgroundAltBrush}" Padding="16" CornerRadius="0">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{loc:Tr Skills_PackageFiles_Empty}" Classes="faint" FontSize="11.5" TextWrapping="Wrap"
+                           IsVisible="{Binding !HasSelectedPackageFiles}" />
+                <ScrollViewer MaxHeight="160" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasSelectedPackageFiles}">
+                  <ItemsControl ItemsSource="{Binding SelectedPackageFiles}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
+                          <mi:MaterialIcon Kind="FileOutline" Width="11" Height="11" Foreground="{DynamicResource Ink40}" />
+                          <TextBlock Text="{Binding}" FontSize="11" FontFamily="{DynamicResource InterfaceLabelFontFamily}"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <Button Classes="pill" HorizontalAlignment="Left" Command="{Binding OpenSkillLocationCommand}" CommandParameter="{Binding SelectedSkill}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <mi:MaterialIcon Kind="FolderOpenOutline" Width="13" Height="13" />
+                    <TextBlock Text="{loc:Tr Skills_OpenPackageFolder, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
           </StackPanel>
           <StackPanel x:Name="MetadataSection" IsVisible="{Binding SelectedSkill.HasMetadata}">
             <ToggleButton x:Name="MetadataToggle" Classes="tag-chip toolbar-chip"
@@ -135,11 +186,25 @@
                 <TextBlock Text="{loc:Tr Skills_Detail_UseWithAssistant, Converter={StaticResource UpperCaseConverter}}" />
               </StackPanel>
             </Button>
+            <Button Classes="pill" Command="{Binding OpenInstallDialogCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center"
+                    IsVisible="{Binding IsSystemInstallAvailable}" ToolTip.Tip="{loc:Tr SkillInstall_Button_Tooltip}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="DownloadOutline" Width="13" Height="13" />
+                <TextBlock Text="{loc:Tr SkillInstall_Button, Converter={StaticResource UpperCaseConverter}}" />
+              </StackPanel>
+            </Button>
             <Button Classes="pill" Command="{Binding DuplicateSkillCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Detail_DuplicateButton, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="pill" Command="{Binding ConvertToPackageCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center"
+                    IsVisible="{Binding SelectedSkill.CanConvertToPackage}" ToolTip.Tip="{loc:Tr Skills_ConvertToPackage_Tooltip}"
+                    Content="{loc:Tr Skills_ConvertToPackage, Converter={StaticResource UpperCaseConverter}}" />
             <Button Classes="pill" Command="{Binding ExportSkillsCommand}" Margin="0,0,8,0" VerticalAlignment="Center" Content="{loc:Tr Skills_Export_Button, Converter={StaticResource UpperCaseConverter}}" />
             <Button Classes="icon-btn" Width="40" Height="40" Command="{Binding CopySkillContentCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center"
                     ToolTip.Tip="{loc:Tr Skills_Detail_CopyContent_Tooltip}" AutomationProperties.Name="{loc:Tr Skills_Detail_CopyContent_Tooltip}">
               <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" />
+            </Button>
+            <Button Classes="icon-btn" Width="40" Height="40" Command="{Binding OpenSkillLocationCommand}" CommandParameter="{Binding SelectedSkill}" Margin="0,0,8,0" VerticalAlignment="Center"
+                    ToolTip.Tip="{loc:Tr Skills_OpenLocation_Tooltip}" AutomationProperties.Name="{loc:Tr Skills_OpenLocation_Tooltip}">
+              <mi:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" />
             </Button>
             <Button Classes="icon-btn icon-btn-danger" Width="40" Height="40" VerticalAlignment="Center" Command="{Binding RequestDeleteSkillCommand}" CommandParameter="{Binding SelectedSkill}" IsVisible="{Binding !SelectedSkill.IsDefault}"
                     ToolTip.Tip="{loc:Tr Skills_Detail_DeleteButton}" AutomationProperties.Name="{loc:Tr Skills_Detail_DeleteButton}">

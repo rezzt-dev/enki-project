@@ -517,15 +517,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (item is not null) item.Count = ReminderInbox.OverdueCount;
     }
 
-    /// <summary>Pushes <see cref="Reminders"/>'s unread count into whichever list (main or bottom group)
-    /// currently holds the "Recordatorios" nav entry — live via the <see cref="PropertyChanged"/>
-    /// subscription wired in <c>InitializeShell</c>, same "push on change" approach as
-    /// <see cref="UpdateCalendarBadge"/> rather than a binding straight to <c>Reminders.UnreadCount</c>
-    /// (that only worked before because the entry was a hand-written XAML button, not a data-bound row).</summary>
+    /// <summary>Pushes <see cref="Reminders"/>'s attention count (in their advance-notice window and not
+    /// yet seen — see <see cref="ReminderAttention"/>; a reminder for next month no longer counts) into
+    /// whichever list (main or bottom group) currently holds the "Recordatorios" nav entry — live via the
+    /// <see cref="PropertyChanged"/> subscription wired in <c>InitializeShell</c>, same "push on change"
+    /// approach as <see cref="UpdateCalendarBadge"/> rather than a binding straight to
+    /// <c>Reminders.AttentionCount</c> (that only worked before because the entry was a hand-written XAML
+    /// button, not a data-bound row).</summary>
     private void UpdateRemindersBadge()
     {
         var item = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == AppPage.Reminders);
-        if (item is not null && Reminders is not null) item.Count = Reminders.UnreadCount;
+        if (item is not null && Reminders is not null) item.Count = Reminders.AttentionCount;
     }
 
     /// <summary>See <see cref="UpdateRemindersBadge"/>.</summary>

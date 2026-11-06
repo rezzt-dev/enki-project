@@ -70,7 +70,7 @@ public sealed partial class RemindersViewModel : ViewModelBase
              || i.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase))
             && (Filter switch
             {
-                ActivityFilter.Unread => !i.IsRead,
+                ActivityFilter.Unread => i.NeedsAttention,
                 ActivityFilter.Pending => !i.IsCompleted,
                 ActivityFilter.Overdue => i.IsOverdue,
                 ActivityFilter.Completed => i.IsCompleted,
@@ -101,8 +101,11 @@ public sealed partial class RemindersViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isEmpty;
 
+    /// <summary>Recordatorios en su ventana de aviso previo y sin ver — la insignia de «Recordatorios» del
+    /// sidebar. Antes contaba cualquiera sin leer, aunque fuera para el año siguiente; ver
+    /// <see cref="ReminderAttention"/>.</summary>
     [ObservableProperty]
-    private int _unreadCount;
+    private int _attentionCount;
 
     /// <summary>Non-null while the "nuevo recordatorio" popup is open.</summary>
     [ObservableProperty]
@@ -231,8 +234,24 @@ public sealed partial class RemindersViewModel : ViewModelBase
 
         if (Detail is not null) Detail = Items.FirstOrDefault(i => i.Id == Detail.Id);
         IsEmpty = Items.Count == 0;
-        UnreadCount = Items.Count(i => !i.IsRead);
+        RefreshAttention();
         ApplyFilters();
+    }
+
+    /// <summary>Recalcula lo que depende del reloj (el punto de cada fila, «Próximo»/«Vencido» y
+    /// <see cref="AttentionCount"/>) sin reconstruir la lista, para que el temporizador de recordatorios
+    /// pueda llamarlo cada 30 s sin perder la selección ni el desplazamiento.</summary>
+    public void RefreshAttention()
+    {
+        var attention = 0;
+        foreach (var item in Items)
+        {
+            var needsAttention = _reminderService.NeedsAttention(item.Reminder);
+            item.UpdateAttention(_reminderService.IsInAttentionWindow(item.Reminder), needsAttention);
+            if (needsAttention) attention++;
+        }
+
+        AttentionCount = attention;
     }
 
     // ===================== Crear recordatorio =====================
@@ -292,6 +311,9 @@ public sealed partial class RemindersViewModel : ViewModelBase
         if (item is not null) OpenDetail(item);
     }
 
+    /// <summary>Abre el detalle y, si el recordatorio ya reclama atención, lo da por visto — fuera de su
+    /// ventana de aviso previo <see cref="ReminderService.MarkAsRead(string)"/> no hace nada, para que
+    /// consultar uno futuro no silencie su aviso del día antes.</summary>
     [RelayCommand]
     private void OpenDetail(ReminderListItemViewModel item)
     {

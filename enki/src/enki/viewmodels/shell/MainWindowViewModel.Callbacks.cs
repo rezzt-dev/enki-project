@@ -476,19 +476,38 @@ public sealed partial class MainWindowViewModel
     /// <summary>Pops every reminder whose scheduled time has arrived and turns each into a real
     /// notification — see <see cref="ReminderService.PopDueReminders"/>. Runs on a 30s
     /// <see cref="Avalonia.Threading.DispatcherTimer"/> (see the constructor) plus once at startup, so a
-    /// reminder that came due while the app was closed still fires as soon as it launches.</summary>
+    /// reminder that came due while the app was closed still fires as soon as it launches.
+    ///
+    /// <para>En la misma pasada emite el aviso previo («próximo recordatorio», el día antes de fábrica,
+    /// ver <see cref="ReminderAttention"/>) y, si no ha cambiado nada, refresca lo que depende solo del
+    /// reloj: la insignia de «Recordatorios» y el recuento de vencidos de la bandeja, que de otro modo
+    /// no se moverían hasta la siguiente edición aunque un recordatorio acabe de entrar en su
+    /// ventana.</para></summary>
     private void CheckDueReminders()
     {
         CheckDueSnoozes();
 
-        var due = _reminderService.PopDueReminders();
-        if (due.Count == 0) return;
+        var upcoming = _reminderService.PopUpcomingReminders();
+        foreach (var reminder in upcoming)
+            _notificationService.PushDue(
+                LocalizedTextFormatter.Format("Notification_ReminderUpcoming_Title", reminder.Title),
+                LocalizedTextFormatter.Format("Notification_ReminderUpcoming_Message",
+                    RelativeTimeFormatter.FormatAbsoluteShort(reminder.NotifyAtUtc)),
+                new SnoozeTarget(SnoozeSourceKind.Reminder, reminder.Id, reminder.NotifyAtUtc));
 
+        var due = _reminderService.PopDueReminders();
         foreach (var reminder in due)
             _notificationService.PushDue(
                 LocalizedTextFormatter.Format("Notification_ReminderDue_Title", reminder.Title),
                 LocalizedTextFormatter.Literal(reminder.Description),
                 new SnoozeTarget(SnoozeSourceKind.Reminder, reminder.Id, reminder.NotifyAtUtc));
+
+        if (upcoming.Count == 0 && due.Count == 0)
+        {
+            Reminders?.RefreshAttention();
+            ReminderInbox?.RefreshIfIdle();
+            return;
+        }
 
         Reminders?.Reload();
         Notifications?.Reload();

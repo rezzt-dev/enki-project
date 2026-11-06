@@ -1881,7 +1881,9 @@
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Notifications Settings_Notifications_Reminders_Title
                               Settings_Notifications_Reminders_SoonWindow_Label
-                              Settings_Notifications_Reminders_SoonWindow_Description">
+                              Settings_Notifications_Reminders_SoonWindow_Description
+                              Settings_Notifications_Reminders_AdvanceNotice_Label
+                              Settings_Notifications_Reminders_AdvanceNotice_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -1896,6 +1898,17 @@
                   <TextBlock Text="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Description}"
                              Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                   <Slider Minimum="1" Maximum="30" Value="{Binding ReminderSoonWindowDays}" TickFrequency="1" AutomationProperties.Name="{loc:Tr Settings_Notifications_Reminders_SoonWindow_Label}" />
+
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Settings_Notifications_Reminders_AdvanceNotice_Label}" FontSize="13" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding ReminderAdvanceNoticeLabel}"
+                               Classes="faint" VerticalAlignment="Center" />
+                  </Grid>
+                  <TextBlock Text="{loc:Tr Settings_Notifications_Reminders_AdvanceNotice_Description}"
+                             Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                  <Slider Minimum="0" Maximum="72" Value="{Binding ReminderAdvanceNoticeHours}"
+                          TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="24"
+                          AutomationProperties.Name="{loc:Tr Settings_Notifications_Reminders_AdvanceNotice_Label}" />
                 </StackPanel>
          </Border>
             </controls:SettingsSearchOption>
@@ -2400,6 +2413,51 @@
                   </Grid>
                 </StackPanel>
          </Border>
+            </controls:SettingsSearchOption>
+
+            <!-- Addon de instalación en el sistema (.docs/project-info/ia-skills/instalacion-en-el-sistema.md):
+                 escribe fuera del vault, así que muestra los destinos exactos antes de activarlo. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Skills Settings_Skills_SystemInstall_Title Settings_Skills_SystemInstall_Label
+                              Settings_Skills_SystemInstall_Description Settings_Skills_SystemAutoSync_Label
+                              Settings_Skills_SystemAutoSync_Description Settings_Skills_SystemInstall_Targets">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="PuzzleOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Skills_SystemInstall_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_Skills_SystemInstall_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Skills_SystemInstall_Description}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkillSystemIntegrationEnabled}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Skills_SystemInstall_Label}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding SkillSystemIntegrationEnabled}">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_Skills_SystemAutoSync_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Skills_SystemAutoSync_Description}"
+                                 Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkillSystemAutoSync}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Skills_SystemAutoSync_Label}" />
+                  </Grid>
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{loc:Tr Settings_Skills_SystemInstall_Targets, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                    <ItemsControl ItemsSource="{Binding SkillInstallTargetPaths}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                                     FontFamily="{DynamicResource InterfaceLabelFontFamily}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
             </controls:SettingsSearchOption>
 
             <controls:SettingsSearchOption

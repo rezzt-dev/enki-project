@@ -49,6 +49,7 @@ public class LocalizedPropertyRefreshTests
         ["SessionListItemViewModel"] = "SessionsViewModel.Reload",
         ["SessionOptionViewModel"] = "NotesViewModel.ReloadSessions",
         ["SkillFolderCardViewModel"] = "SkillsViewModel.Reload",
+        ["SkillInstallDialogViewModel"] = "SkillsViewModel.RefreshLocalizedLabels → RecreateOpenInstallDialogs, y tras cada instalación o desinstalación",
         ["TrashedPolarListCardViewModel"] = "TrashViewModel.Reload",
         ["TrashedPolarTaskCardViewModel"] = "TrashViewModel.Reload",
         ["TrashedReminderCardViewModel"] = "TrashViewModel.Reload",

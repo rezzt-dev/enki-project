@@ -10,6 +10,11 @@
 
 > Actualización de la interfaz y estabilidad: [Editor y biblioteca de habilidades](editor-y-biblioteca.md).
 > Esa guía detalla la creación directa, el nuevo lector/editor y los destinos de arrastre.
+>
+> Paquetes `carpeta/SKILL.md` e instalación en Claude Code, Codex y Gemini CLI:
+> [Instalación de skills en el sistema](instalacion-en-el-sistema.md). Esa guía amplía lo descrito aquí
+> sobre formato, importación, exportación y eliminación, y sustituye la afirmación de que las skills no
+> tienen ninguna integración fuera de Enki.
 
 ## Qué es una "skill" en Enki
 

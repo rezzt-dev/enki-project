@@ -71,8 +71,8 @@ public class ReminderServiceTests : IDisposable
     public void MarkAsRead_OnlyAffectsTheGivenReminder()
     {
         var service = CreateService();
-        var a = service.Create("A", "", DateTime.UtcNow.AddDays(1), "BellRingOutline");
-        var b = service.Create("B", "", DateTime.UtcNow.AddDays(1), "BellRingOutline");
+        var a = service.Create("A", "", DateTime.UtcNow.AddHours(2), "BellRingOutline");
+        var b = service.Create("B", "", DateTime.UtcNow.AddHours(2), "BellRingOutline");
 
         service.MarkAsRead(a.Id);
 
@@ -80,16 +80,22 @@ public class ReminderServiceTests : IDisposable
         Assert.False(service.Reminders.Find(r => r.Id == b.Id)!.IsRead);
     }
 
+    /// <summary>«Marcar todos como leídos» deja la insignia a cero, pero no da por vistos de antemano los
+    /// recordatorios que aún no han entrado en su ventana de aviso previo — esos tienen que seguir
+    /// avisando el día antes.</summary>
     [Fact]
-    public void MarkAllAsRead_MarksEveryReminder()
+    public void MarkAllAsRead_MarksOnlyRemindersAlreadyInTheirAdvanceNoticeWindow()
     {
         var service = CreateService();
-        service.Create("A", "", DateTime.UtcNow.AddDays(1), "BellRingOutline");
-        service.Create("B", "", DateTime.UtcNow.AddDays(1), "BellRingOutline");
+        var soon = service.Create("Hoy", "", DateTime.UtcNow.AddHours(2), "BellRingOutline");
+        var overdue = service.Create("Ayer", "", DateTime.UtcNow.AddDays(-1), "BellRingOutline");
+        var nextWeek = service.Create("Semana que viene", "", DateTime.UtcNow.AddDays(7), "BellRingOutline");
 
         service.MarkAllAsRead();
 
-        Assert.All(service.Reminders, r => Assert.True(r.IsRead));
+        Assert.True(soon.IsRead);
+        Assert.True(overdue.IsRead);
+        Assert.False(nextWeek.IsRead);
     }
 
     /// <summary>Delete is a tombstone soft-delete (docs/supabase-sync/03/04), not a physical removal — the

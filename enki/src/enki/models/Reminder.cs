@@ -36,12 +36,24 @@ public sealed class Reminder
     public string Icon { get; set; } = "BellRingOutline";
 
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>«Ya lo he visto» para la ocurrencia actual. Solo se marca dentro de la ventana de aviso
+    /// previo (abrir hoy un recordatorio del mes que viene no debe silenciar el aviso del día antes) y se
+    /// limpia cada vez que la ocurrencia cambia — ver <see cref="Services.ReminderAttention"/>.</summary>
     public bool IsRead { get; set; }
 
     /// <summary>Set once <see cref="NotifyAtUtc"/> has passed and the reminder has already produced its
     /// one-time notification — prevents <see cref="Services.ReminderService.PopDueReminders"/> from firing
     /// the same reminder again on a later poll.</summary>
     public bool IsTriggered { get; set; }
+
+    /// <summary><see cref="NotifyAtUtc"/> de la ocurrencia cuyo aviso previo («próximo recordatorio», el
+    /// día antes de fábrica) ya se emitió o se dio por innecesario — ver
+    /// <see cref="Services.ReminderAttention.ShouldSendAdvanceNotice"/>. Guardar la fecha y no un booleano
+    /// rearma el aviso solo cuando la ocurrencia cambia (reprogramación, avance de una recurrencia o un
+    /// cambio llegado desde Polar), sin tener que acordarse de limpiarlo en cada camino. Igual que
+    /// <see cref="IsTriggered"/>, es un dato local que nunca viaja por el contrato de Polar.</summary>
+    public DateTime? AdvanceNoticeSentForUtc { get; set; }
 
     /// <summary>Evento de calendario importado de ICS. Es local y no programa avisos, incluso
     /// después de moverlo en el calendario. No forma parte del contrato Polar.</summary>

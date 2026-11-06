@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -48,6 +49,25 @@ public sealed partial class SettingsViewModel
 
     public string ReminderSoonWindowDaysLabel =>
         string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Notifications_Reminders_SoonWindow_Unit"], (int)ReminderSoonWindowDays);
+
+    /// <summary>Horas de antelación del aviso previo de los recordatorios (0–72; 0 = sin aviso previo).
+    /// Ver <c>AppSettings.ReminderAdvanceNoticeHours</c> y <see cref="ReminderAttention"/>.</summary>
+    [ObservableProperty]
+    private double _reminderAdvanceNoticeHours;
+
+    /// <summary>«Solo a la hora» / «1 día antes» / «2 días antes» / «6 h antes»: los múltiplos exactos de
+    /// un día se dicen en días, que es como lo piensa quien pide «avísame el día antes».</summary>
+    public string ReminderAdvanceNoticeLabel
+    {
+        get
+        {
+            var hours = ReminderAttention.ClampLeadHours((int)ReminderAdvanceNoticeHours);
+            if (hours == 0) return LocalizationService.Instance["Settings_Notifications_Reminders_AdvanceNotice_Off"];
+            return hours % 24 == 0
+                ? Plural.Get("Settings_Notifications_Reminders_AdvanceNotice_DaysFormat", hours / 24, hours / 24)
+                : Plural.Get("Settings_Notifications_Reminders_AdvanceNotice_HoursFormat", hours, hours);
+        }
+    }
 
     // ===================== Valores rápidos de "Aplazar" (T5) =====================
     // Lo que el usuario ajusta aquí es exactamente lo que ofrecen los menús "Aplazar" de la bandeja de
@@ -192,6 +212,13 @@ public sealed partial class SettingsViewModel
         _settingsService.Settings.ReminderSoonWindowDays = (int)value;
         DebouncedSave();
         OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
+    }
+
+    partial void OnReminderAdvanceNoticeHoursChanged(double value)
+    {
+        _settingsService.Settings.ReminderAdvanceNoticeHours = ReminderAttention.ClampLeadHours((int)Math.Round(value));
+        DebouncedSave();
+        OnPropertyChanged(nameof(ReminderAdvanceNoticeLabel));
     }
 
     partial void OnDoNotDisturbEnabledChanged(bool value)

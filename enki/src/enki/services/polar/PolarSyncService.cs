@@ -647,6 +647,15 @@ public sealed class PolarSyncService
         var reminder = new Reminder { Id = dto.Id, Title = dto.Title, NotifyAtUtc = PolarWire.FromEpochMs(dto.DateTime) };
         ApplyReminderDto(reminder, dto);
         reminder.Dirty = false;
+        // Un recordatorio que llega ya vencido es historial: el dispositivo que lo creó avisó a su hora.
+        // Dejarlo armado haría que vincular la cuenta soltara de golpe un aviso por cada recordatorio
+        // antiguo de Polar y llenara la insignia; sigue visible como «Vencido» en la lista.
+        if (reminder.NotifyAtUtc <= DateTime.UtcNow)
+        {
+            reminder.IsTriggered = true;
+            reminder.IsRead = true;
+            reminder.AdvanceNoticeSentForUtc = reminder.NotifyAtUtc;
+        }
         return reminder;
     }
 
@@ -658,7 +667,13 @@ public sealed class PolarSyncService
         // en true con una fecha nueva haría que no volviera a notificar jamás pese a mostrarse como
         // "Programado" (docs/analisis-proyecto/roadmap.md, Fase 2). Solo se rearma cuando la fecha cambia
         // de verdad — una edición de título/nota del servidor no debe provocar una segunda notificación.
-        if (reminder.NotifyAtUtc != notifyAtUtc) reminder.IsTriggered = false;
+        // Lo mismo para «visto»: es la ocurrencia nueva la que tiene que volver a contar en la insignia.
+        // El aviso previo se rearma solo, porque AdvanceNoticeSentForUtc guarda la fecha avisada.
+        if (reminder.NotifyAtUtc != notifyAtUtc)
+        {
+            reminder.IsTriggered = false;
+            reminder.IsRead = false;
+        }
 
         reminder.Title = dto.Title;
         reminder.Description = dto.Description;

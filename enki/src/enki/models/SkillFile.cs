@@ -55,4 +55,14 @@ public sealed class SkillFile
 
     /// <summary>Indica si es una skill del sistema que no se puede eliminar.</summary>
     public bool IsDefault { get; set; }
+
+    /// <summary>Carpeta del paquete cuando la skill sigue el formato nativo de Claude Code, Codex y
+    /// Gemini CLI (<c>&lt;nombre&gt;/SKILL.md</c> más scripts, referencias o plantillas). Nula para una
+    /// skill de un solo archivo. En un paquete, <see cref="Id"/> es el nombre de esta carpeta y
+    /// <see cref="FolderPath"/> la carpeta que la contiene, para que la biblioteca lo pinte como una
+    /// skill más y no como una carpeta navegable.</summary>
+    public string? PackageDirectory { get; set; }
+
+    /// <summary>Indica si la skill es un paquete con carpeta propia.</summary>
+    public bool IsPackage => !string.IsNullOrEmpty(PackageDirectory);
 }

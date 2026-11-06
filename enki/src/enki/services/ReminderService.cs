@@ -20,8 +20,14 @@ public sealed class ReminderService
         ? VaultDataStorage.FilePath(_vaultService, "reminders.json")
         : Path.Combine(_storageDirectory!, "reminders.json");
     private readonly Func<string?> _currentUserIdProvider;
+    private readonly Func<int> _advanceNoticeHoursProvider;
 
     public List<Reminder> Reminders { get; private set; }
+
+    /// <summary>Horas de antelación del aviso previo, ya acotadas — ver <see cref="ReminderAttention"/>.
+    /// Se lee en cada consulta y no se copia al construir, para que un cambio en Ajustes (o el cambio de
+    /// vault, que trae sus propios ajustes) se aplique en la siguiente pasada del temporizador.</summary>
+    public int AdvanceNoticeHours => ReminderAttention.ClampLeadHours(_advanceNoticeHoursProvider());
 
     /// <summary>True cuando <c>reminders.json</c> existía pero no se pudo leer o deserializar — la lista se
     /// reemplazó por una vacía. Mismo patrón que <see cref="KanbanService.LoadedFromCorruptData"/>
@@ -40,19 +46,26 @@ public sealed class ReminderService
     /// account (or <see langword="null"/> if none is linked) — the composition root wires this to
     /// <c>PolarAuthService.UserId</c>. Same account-isolation stamping as <c>PolarTaskService</c>
     /// (docs/analisis-proyecto/roadmap.md, Fase 4); defaults to "always null" for callers that don't care.</param>
-    public ReminderService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null)
+    /// <param name="advanceNoticeHoursProvider">Antelación del aviso previo en horas — la composición la
+    /// enlaza a <c>AppSettings.ReminderAdvanceNoticeHours</c>; sin proveedor, el día antes
+    /// (<see cref="ReminderAttention.DefaultLeadHours"/>).</param>
+    public ReminderService(string? storageDirectory = null, Func<string?>? currentUserIdProvider = null,
+        Func<int>? advanceNoticeHoursProvider = null)
     {
         _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(_storageDirectory);
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);
+        _advanceNoticeHoursProvider = advanceNoticeHoursProvider ?? (() => ReminderAttention.DefaultLeadHours);
         Reminders = Load();
         PurgeOldTombstones();
     }
 
-    public ReminderService(VaultService vaultService, Func<string?>? currentUserIdProvider = null)
+    public ReminderService(VaultService vaultService, Func<string?>? currentUserIdProvider = null,
+        Func<int>? advanceNoticeHoursProvider = null)
     {
         _vaultService = vaultService;
         _currentUserIdProvider = currentUserIdProvider ?? (() => null);
+        _advanceNoticeHoursProvider = advanceNoticeHoursProvider ?? (() => ReminderAttention.DefaultLeadHours);
         Reminders = Load();
         PurgeOldTombstones();
     }
@@ -136,21 +149,42 @@ public sealed class ReminderService
         return reminder;
     }
 
-    public void MarkAsRead(string id)
+    /// <summary>Si el recordatorio ya está en su ventana de aviso previo (o ha vencido) y sigue activo.</summary>
+    public bool IsInAttentionWindow(Reminder reminder) => IsInAttentionWindow(reminder, DateTime.UtcNow);
+
+    internal bool IsInAttentionWindow(Reminder reminder, DateTime nowUtc) =>
+        ReminderAttention.IsInWindow(reminder, nowUtc, AdvanceNoticeHours);
+
+    /// <summary>Lo que cuenta la insignia de «Recordatorios»: en su ventana y sin ver.</summary>
+    public bool NeedsAttention(Reminder reminder) => NeedsAttention(reminder, DateTime.UtcNow);
+
+    internal bool NeedsAttention(Reminder reminder, DateTime nowUtc) =>
+        ReminderAttention.NeedsAttention(reminder, nowUtc, AdvanceNoticeHours);
+
+    /// <summary>Marca como visto un recordatorio que ya reclama atención. Fuera de su ventana no hace nada
+    /// a propósito: abrir hoy el detalle de un recordatorio del mes que viene no debe silenciar el aviso
+    /// del día antes.</summary>
+    public void MarkAsRead(string id) => MarkAsRead(id, DateTime.UtcNow);
+
+    internal void MarkAsRead(string id, DateTime nowUtc)
     {
         var reminder = Reminders.Find(r => r.Id == id);
-        if (reminder is null || reminder.IsRead) return;
+        if (reminder is null || reminder.IsRead || !IsInAttentionWindow(reminder, nowUtc)) return;
 
         reminder.IsRead = true;
         Save();
     }
 
-    public void MarkAllAsRead()
+    /// <summary>Marca como vistos todos los que reclaman atención ahora — el mismo conjunto que cuenta la
+    /// insignia, para que el botón deje la insignia a cero sin dar por vistos de antemano los futuros.</summary>
+    public void MarkAllAsRead() => MarkAllAsRead(DateTime.UtcNow);
+
+    internal void MarkAllAsRead(DateTime nowUtc)
     {
         var changed = false;
-        foreach (var reminder in Reminders)
+        foreach (var reminder in ActiveReminders)
         {
-            if (reminder.IsRead) continue;
+            if (!NeedsAttention(reminder, nowUtc)) continue;
             reminder.IsRead = true;
             changed = true;
         }
@@ -222,6 +256,7 @@ public sealed class ReminderService
 
         reminder.NotifyAtUtc = notifyAtUtc;
         reminder.IsTriggered = reminder.IsImportedCalendarEvent;
+        ReminderAttention.ArmNewOccurrence(reminder, DateTime.UtcNow, AdvanceNoticeHours);
         Touch(reminder);
         Save();
     }
@@ -320,7 +355,7 @@ public sealed class ReminderService
             LogService.Warning(
                 $"ReminderService: salto de reloj detectado ({nowUtc - lastCheck:g} desde la última comprobación); " +
                 "no se disparan en bloque los recordatorios vencidos durante el hueco.");
-            var missed = ActiveReminders.Where(r => !r.IsImportedCalendarEvent && !r.IsTriggered && r.NotifyAtUtc <= lastCheck).ToList();
+            var missed = ActiveReminders.Where(r => IsPendingToFire(r) && r.NotifyAtUtc <= lastCheck).ToList();
             _lastPopCheckUtc = nowUtc;
             if (missed.Count == 0) return missed;
 
@@ -330,12 +365,37 @@ public sealed class ReminderService
         }
 
         _lastPopCheckUtc = nowUtc;
-        var due = ActiveReminders.Where(r => !r.IsImportedCalendarEvent && !r.IsTriggered && r.NotifyAtUtc <= nowUtc).ToList();
+        var due = ActiveReminders.Where(r => IsPendingToFire(r) && r.NotifyAtUtc <= nowUtc).ToList();
         if (due.Count == 0) return due;
 
         foreach (var reminder in due) Fire(reminder, nowUtc);
         Save();
         return due;
+    }
+
+    /// <summary>Armado y con algo que avisar. Un recordatorio completado antes de su hora —desde aquí o
+    /// desde Polar— ya está resuelto: avisar de él sería ruido.</summary>
+    private static bool IsPendingToFire(Reminder reminder) =>
+        ReminderAttention.IsActionable(reminder) && !reminder.IsTriggered;
+
+    /// <summary>Recordatorios cuyo aviso previo («próximo recordatorio») toca emitir ahora, ya anotados
+    /// como avisados y persistidos — mismo contrato que <see cref="PopDueReminders()"/>: el llamante los
+    /// convierte en notificación exactamente una vez. El dato anotado es local, así que no se marca el
+    /// recordatorio como pendiente de sincronizar.</summary>
+    public List<Reminder> PopUpcomingReminders() => PopUpcomingReminders(DateTime.UtcNow);
+
+    internal List<Reminder> PopUpcomingReminders(DateTime nowUtc)
+    {
+        var leadHours = AdvanceNoticeHours;
+        var upcoming = ActiveReminders
+            .Where(r => ReminderAttention.ShouldSendAdvanceNotice(r, nowUtc, leadHours))
+            .OrderBy(r => r.NotifyAtUtc)
+            .ToList();
+        if (upcoming.Count == 0) return upcoming;
+
+        foreach (var reminder in upcoming) reminder.AdvanceNoticeSentForUtc = reminder.NotifyAtUtc;
+        Save();
+        return upcoming;
     }
 
     /// <summary>Un solo recordatorio que acaba de vencer: para uno normal, se marca disparado (comportamiento
@@ -361,6 +421,7 @@ public sealed class ReminderService
         }
 
         reminder.NotifyAtUtc = next;
+        ReminderAttention.ArmNewOccurrence(reminder, nowUtc, AdvanceNoticeHours);
         Touch(reminder);
     }
 }

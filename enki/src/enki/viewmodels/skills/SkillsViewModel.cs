@@ -213,7 +213,8 @@ public sealed partial class SkillsViewModel : ViewModelBase
     private static void OpenCommunitySkills() => UrlOpener.Open(CommunitySkillsUrl);
 
     public SkillsViewModel(VaultService vaultService, NotificationService notificationService, SettingsService? settingsService = null,
-        Action<SkillFile>? onUseWithAssistant = null, SkillService? skillService = null)
+        Action<SkillFile>? onUseWithAssistant = null, SkillService? skillService = null,
+        SkillInstallService? installService = null)
     {
         _onUseWithAssistant = onUseWithAssistant;
         _skillService = skillService ?? new SkillService(vaultService);
@@ -223,6 +224,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
         TagFilter.Changed += ApplyFilter;
 
         InitializeNavigationPreferences();
+        InitializeSystemInstall(installService);
         Reload();
     }
 
@@ -249,6 +251,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
         OnPropertyChanged(nameof(SkillsCountLabel));
         OnPropertyChanged(nameof(CurrentFolderLabel));
         Reload();
+        RecreateOpenInstallDialogs();
     }
 
     /// <summary>Copia las skills por defecto la primera vez que se activa la sección — llamado desde
@@ -427,6 +430,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
         if (oldValue is not null) oldValue.IsSelected = false;
         if (newValue is not null) newValue.IsSelected = true;
         SyncTreeSelection();
+        RefreshSelectedSkillExtras();
     }
 
     [RelayCommand]
@@ -581,6 +585,14 @@ public sealed partial class SkillsViewModel : ViewModelBase
             Reload();
             SelectedSkill = _allSkills.FirstOrDefault(s => PathsEqual(s.FilePath, moved.FilePath));
             ExpandAncestorsOf(destinationFolderPath);
+            SyncInstalledCopies(moved);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Skills_Notify_MoveFailed_Title"),
+                LocalizedValidationErrors.Describe(ex),
+                NotificationSeverity.Warning);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -699,6 +711,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
         {
             skill.Refresh();
             RefreshTreeNodeFor(skill);
+            SyncInstalledCopies(skill.Model);
         }, _notificationService);
     }
 
@@ -861,10 +874,7 @@ public sealed partial class SkillsViewModel : ViewModelBase
         var target = targetFolderPath ?? CurrentFolderPath;
         try
         {
-            var conflicts = SkillService.ExpandMarkdownFiles(paths)
-                .Select(pair => pair.RelativeDestination)
-                .Where(relative => File.Exists(Path.Combine(target, relative)))
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var conflicts = SkillService.DetectImportConflicts(paths, target);
             if (conflicts.Count == 0)
             {
                 RunImport(paths, ConflictResolution.Rename, target);

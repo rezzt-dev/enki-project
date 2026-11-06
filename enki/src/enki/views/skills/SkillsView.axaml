@@ -8,6 +8,7 @@
              xmlns:views="clr-namespace:enki.Views"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:models="clr-namespace:enki.Models"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
              x:Class="enki.Views.SkillsView"
              x:Name="Root" Background="{DynamicResource AppBackgroundBrush}"
@@ -108,6 +109,173 @@
             <Button Grid.Column="2" Classes="pill-primary"
                     Command="{Binding #Root.((vm:SkillsViewModel)DataContext).ConfirmNamePromptCommand}">
               <TextBlock Text="{Binding ConfirmLabel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Modal: instalar una skill en el sistema ===================== -->
+    <!-- Addon (.docs/project-info/ia-skills/instalacion-en-el-sistema.md): una fila por asistente con su
+         estado real en disco. Las acciones viven en SkillsViewModel; las filas solo describen. -->
+    <controls:ModalOverlayHost IsOpen="{Binding InstallDialog, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" MaxWidth="680" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding InstallDialog}" x:DataType="vm:SkillInstallDialogViewModel">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="DownloadOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr SkillInstall_Dialog_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding Skill.Name}" FontSize="16" FontWeight="Bold" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{loc:Tr SkillInstall_Dialog_InstallName}" Classes="muted" FontSize="12" />
+              <TextBlock Text="{Binding InstallName}" FontSize="12" FontFamily="{DynamicResource InterfaceLabelFontFamily}" />
+            </StackPanel>
+            <TextBlock Text="{loc:Tr SkillInstall_Dialog_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Border IsVisible="{Binding HasWarnings}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="12">
+            <ItemsControl ItemsSource="{Binding Warnings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+                    <mi:MaterialIcon Kind="AlertOutline" Width="12" Height="12" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                    <TextBlock Text="{Binding}" FontSize="11.5" TextWrapping="Wrap" MaxWidth="580" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+
+          <ItemsControl ItemsSource="{Binding Targets}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SkillInstallTargetRowViewModel">
+                <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="14,10" Margin="0,0,0,8">
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="13" />
+                        <TextBlock Text="{Binding StateLabel}" FontSize="11.5" Classes="muted" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding InstallDirectory}" Classes="faint" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                 FontFamily="{DynamicResource InterfaceLabelFontFamily}" ToolTip.Tip="{Binding InstallDirectory}" />
+                      <TextBlock Text="{loc:Tr SkillInstall_NotDetected}" Classes="faint" FontSize="10.5" IsVisible="{Binding !IsAssistantDetected}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="icon-btn" Width="32" Height="32" VerticalAlignment="Center" Margin="0,0,6,0"
+                            Command="{Binding #Root.((vm:SkillsViewModel)DataContext).OpenInstallLocationCommand}" CommandParameter="{Binding}"
+                            ToolTip.Tip="{loc:Tr SkillInstall_OpenFolder_Tooltip}" AutomationProperties.Name="{loc:Tr SkillInstall_OpenFolder_Tooltip}">
+                      <mi:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15" />
+                    </Button>
+                    <Button Grid.Column="2" Classes="ghost" VerticalAlignment="Center" Margin="0,0,6,0" IsVisible="{Binding CanUninstall}"
+                            Command="{Binding #Root.((vm:SkillsViewModel)DataContext).UninstallFromTargetCommand}" CommandParameter="{Binding}">
+                      <TextBlock Text="{loc:Tr SkillInstall_Action_Uninstall, Converter={StaticResource UpperCaseConverter}}" />
+                    </Button>
+                    <Button Grid.Column="3" Classes="pill-primary" VerticalAlignment="Center" IsVisible="{Binding CanInstall}"
+                            Command="{Binding #Root.((vm:SkillsViewModel)DataContext).InstallToTargetCommand}" CommandParameter="{Binding}">
+                      <TextBlock Text="{Binding InstallLabel, Converter={StaticResource UpperCaseConverter}}" />
+                    </Button>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="{loc:Tr SkillInstall_Dialog_SharedDirectoryHint}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Margin="0,0,18,0"
+                    Command="{Binding #Root.((vm:SkillsViewModel)DataContext).CloseInstallDialogCommand}">
+              <TextBlock Text="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" IsEnabled="{Binding CanInstallAll}"
+                    Command="{Binding #Root.((vm:SkillsViewModel)DataContext).InstallToAllDetectedCommand}">
+              <TextBlock Text="{loc:Tr SkillInstall_Action_InstallAllDetected, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Modal: skills del sistema ===================== -->
+    <!-- Todo lo que hay en los directorios de los asistentes: importar a la biblioteca (cualquier skill) o
+         desinstalar (solo las que instaló Enki, con una segunda pulsación de confirmación). -->
+    <controls:ModalOverlayHost IsOpen="{Binding SystemSkillsDialog, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding SystemSkillsDialog}" x:DataType="vm:SystemSkillsDialogViewModel">
+        <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <mi:MaterialIcon Kind="PuzzleOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" Margin="0,0,10,0" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr SkillInstall_System_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Classes="icon-btn" Width="32" Height="32"
+                    Command="{Binding #Root.((vm:SkillsViewModel)DataContext).RefreshSystemSkillsCommand}"
+                    ToolTip.Tip="{loc:Tr SkillInstall_System_Refresh}" AutomationProperties.Name="{loc:Tr SkillInstall_System_Refresh}">
+              <mi:MaterialIcon Kind="Refresh" Width="15" Height="15" />
+            </Button>
+          </Grid>
+          <TextBlock Text="{loc:Tr SkillInstall_System_Description}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+
+          <ItemsControl ItemsSource="{Binding Targets}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:SkillInstallTarget">
+                <Button Classes="pill" Margin="0,0,8,8"
+                        Command="{Binding #Root.((vm:SkillsViewModel)DataContext).OpenTargetDirectoryCommand}" CommandParameter="{Binding}"
+                        ToolTip.Tip="{Binding SkillsDirectory}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <mi:MaterialIcon Kind="FolderOpenOutline" Width="13" Height="13" />
+                    <TextBlock Text="{Binding DisplayName, Converter={StaticResource UpperCaseConverter}}" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="{loc:Tr SkillInstall_System_Empty}" Classes="faint" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}" />
+          <ScrollViewer MaxHeight="380" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding !IsEmpty}">
+            <ItemsControl ItemsSource="{Binding Skills}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SystemSkillRowViewModel">
+                  <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="14,10" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                      <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding TargetName}" Classes="muted" FontSize="11" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis" IsVisible="{Binding HasDescription}" />
+                        <TextBlock Text="{Binding OriginLabel}" Classes="faint" FontSize="10.5" />
+                      </StackPanel>
+                      <Button Grid.Column="1" Classes="icon-btn" Width="32" Height="32" VerticalAlignment="Center" Margin="0,0,6,0"
+                              Command="{Binding #Root.((vm:SkillsViewModel)DataContext).OpenSystemSkillLocationCommand}" CommandParameter="{Binding}"
+                              ToolTip.Tip="{loc:Tr SkillInstall_OpenFolder_Tooltip}" AutomationProperties.Name="{loc:Tr SkillInstall_OpenFolder_Tooltip}">
+                        <mi:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15" />
+                      </Button>
+                      <Button Grid.Column="2" Classes="ghost" VerticalAlignment="Center" Margin="0,0,6,0" IsVisible="{Binding IsManagedByEnki}"
+                              Command="{Binding #Root.((vm:SkillsViewModel)DataContext).UninstallSystemSkillCommand}" CommandParameter="{Binding}">
+                        <TextBlock Text="{Binding UninstallLabel, Converter={StaticResource UpperCaseConverter}}" />
+                      </Button>
+                      <Button Grid.Column="3" Classes="pill" VerticalAlignment="Center"
+                              Command="{Binding #Root.((vm:SkillsViewModel)DataContext).ImportSystemSkillCommand}" CommandParameter="{Binding}"
+                              ToolTip.Tip="{loc:Tr SkillInstall_System_Import_Tooltip}">
+                        <TextBlock Text="{loc:Tr SkillInstall_System_Import, Converter={StaticResource UpperCaseConverter}}" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <Grid ColumnDefinitions="*,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel"
+                    Command="{Binding #Root.((vm:SkillsViewModel)DataContext).CloseSystemSkillsCommand}">
+              <TextBlock Text="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
         </StackPanel>

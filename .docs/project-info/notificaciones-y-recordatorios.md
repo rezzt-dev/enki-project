@@ -130,7 +130,9 @@ Nueva sección en `SettingsViewModel`/`SettingsView.axaml`, mismo patrón de las
   preferencias de categoría, toast y sonido se conservan para cuando se vuelva a activar.
 - **Silenciar por categoría**: un toggle por severidad (`Info/Success/Warning/Error`) — una categoría
   silenciada ni se guarda ni aparece en la campana (ver `NotificationService.Push`/`IsMuted`).
-- **Recordatorios**: slider para la ventana de "próxima a vencer" (`ReminderSoonWindowDays`, 1–30 días).
+- **Recordatorios**: slider para la ventana de "próxima a vencer" (`ReminderSoonWindowDays`, 1–30 días)
+  y slider de **aviso previo** (`ReminderAdvanceNoticeHours`, 0–72 horas, 24 de fábrica; ver la sección
+  "Aviso previo y la insignia de Recordatorios").
 
 ## Toast nativo (`services/ToastService.cs`)
 
@@ -148,6 +150,51 @@ opcional (visible una vez elegida la fecha) suma `DueHour`/`DueMinute` encima de
 ("todo el día", el comportamiento de siempre). `KanbanCard.DueDateUtc` ya soportaba hora (`DateTime?`);
 lo que faltaba era la UI, y el criterio de "vencida" en `KanbanCard.IsPastDue` para no tratar una
 tarjeta con hora futura de hoy como si ya hubiera vencido.
+
+## Aviso previo y la insignia de Recordatorios
+
+Un recordatorio propio no reclama atención por el mero hecho de existir: lo hace a partir de su
+**ventana de aviso previo**, que se abre `ReminderAdvanceNoticeHours` horas antes de `NotifyAtUtc` (de
+fábrica, el día antes a la misma hora). Antes, la insignia de la entrada "Recordatorios" del sidebar
+contaba cualquier recordatorio con `IsRead == false`, así que uno creado para el año siguiente ya sumaba.
+
+Las reglas viven juntas en `services/ReminderAttention.cs`, lógica pura como `SnoozeSchedule`:
+
+- **Insignia** (`RemindersViewModel.AttentionCount` → `MainWindowViewModel.UpdateRemindersBadge`): cuenta
+  los recordatorios activos, no completados y no importados de ICS que están dentro de su ventana (o han
+  vencido) y que no se han visto. El punto de cada fila de la página usa el mismo criterio
+  (`ReminderListItemViewModel.NeedsAttention`), y la fila pasa de "Programado" a "Próximo" al entrar en la
+  ventana.
+- **"Visto" es por ocurrencia.** `ReminderService.MarkAsRead` solo marca dentro de la ventana: abrir hoy
+  el detalle de un recordatorio del mes que viene no silencia su aviso del día antes, y "Marcar todos como
+  leídos" solo afecta a los que cuenta la insignia. Reprogramar (`Reschedule`), el avance de una
+  recurrencia (`Fire`) o una fecha nueva llegada desde Polar (`PolarSyncService.ApplyReminderDto`) vuelven a
+  dejar el recordatorio sin ver.
+- **Aviso emergente** ("Próximo recordatorio: …"): `ReminderService.PopUpcomingReminders` en el mismo ciclo
+  de 30 s de `MainWindowViewModel.CheckDueReminders`, empujado con `NotificationService.PushDue` para que
+  se pueda aplazar igual que el aviso de la hora. Sale una sola vez por ocurrencia —
+  `Reminder.AdvanceNoticeSentForUtc` guarda la fecha avisada, así que se rearma solo cuando la fecha
+  cambia— y nunca para un recordatorio creado, reprogramado o avanzado por su serie cuando la ventana ya
+  estaba abierta: quien lo acaba de poner para dentro de dos horas no necesita que se lo recuerden, y una
+  serie diaria no encadena el aviso de "mañana" justo después del de "ahora".
+- **Aviso a la hora**: `PopDueReminders` ya no dispara los recordatorios completados antes de su hora.
+- **Polar**: `IsRead`, `IsTriggered` y `AdvanceNoticeSentForUtc` son locales y no viajan por el contrato
+  (`docs/supabase-sync/05`). Un recordatorio de Polar sigue las mismas reglas que uno creado en Enki; el
+  que se descarga ya vencido (`PolarSyncService.NewReminderFromDto`) llega como historial —disparado y
+  visto— para que vincular la cuenta no suelte un aviso ni sume en la insignia por cada recordatorio
+  antiguo. Sigue apareciendo como "Vencido" en la lista hasta que se completa.
+- **Paso del tiempo**: si en una pasada del temporizador no se dispara nada, se llama a
+  `RemindersViewModel.RefreshAttention` (sin reconstruir la lista) y a
+  `ReminderInboxViewModel.RefreshIfIdle` (solo con el panel cerrado, para no cerrar un menú "Aplazar"
+  abierto), de modo que la insignia y los cubos cambian a su hora aunque nadie edite nada.
+
+Con `ReminderAdvanceNoticeHours = 0` no hay aviso previo: el recordatorio solo avisa y cuenta a su hora.
+La insignia de la bandeja 📥 de la barra de título y la de "Calendario" no cambian de criterio: siguen
+contando solo lo vencido (tarjetas y recordatorios), como se describe más arriba.
+
+Pruebas: `Services/ReminderAttentionTests.cs` (ventana, antelación configurable, marcar como visto,
+aviso previo, recurrencia, completados y Polar) y `ViewModels/RemindersViewModelAttentionTests.cs`
+(insignia, estado "Próximo", abrir antes de tiempo y "Marcar todos como leídos").
 
 ## Aplazar recordatorios (T5)
 

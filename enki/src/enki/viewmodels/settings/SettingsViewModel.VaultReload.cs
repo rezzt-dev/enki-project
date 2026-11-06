@@ -83,6 +83,7 @@ public sealed partial class SettingsViewModel
         _muteWarningNotifications = _settingsService.Settings.MuteWarningNotifications;
         _muteErrorNotifications = _settingsService.Settings.MuteErrorNotifications;
         _reminderSoonWindowDays = _settingsService.Settings.ReminderSoonWindowDays;
+        _reminderAdvanceNoticeHours = _settingsService.Settings.ReminderAdvanceNoticeHours;
         _doNotDisturbEnabled = _settingsService.Settings.DoNotDisturbEnabled;
         _doNotDisturbStart = _settingsService.Settings.DoNotDisturbStart;
         _doNotDisturbEnd = _settingsService.Settings.DoNotDisturbEnd;
@@ -187,6 +188,9 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(MuteWarningNotifications));
         OnPropertyChanged(nameof(MuteErrorNotifications));
         OnPropertyChanged(nameof(ReminderSoonWindowDays));
+        OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
+        OnPropertyChanged(nameof(ReminderAdvanceNoticeHours));
+        OnPropertyChanged(nameof(ReminderAdvanceNoticeLabel));
         OnPropertyChanged(nameof(DoNotDisturbEnabled));
         OnPropertyChanged(nameof(DoNotDisturbStart));
         OnPropertyChanged(nameof(DoNotDisturbEnd));

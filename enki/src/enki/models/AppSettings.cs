@@ -38,6 +38,8 @@ public sealed class AppSettings
         EditorColumnWidth = Clamp(EditorColumnWidth, 480, 1400, 760);
         EditorTabSize = Clamp(EditorTabSize, 2, 8, 4);
         ReminderSoonWindowDays = Clamp(ReminderSoonWindowDays, 1, 30, 7);
+        ReminderAdvanceNoticeHours = Clamp(ReminderAdvanceNoticeHours, 0, Services.ReminderAttention.MaxLeadHours,
+            Services.ReminderAttention.DefaultLeadHours);
         NotificationSoundVolume = Clamp(NotificationSoundVolume, 0, 100, 70);
         SnoozePrimaryMinutes = Clamp(SnoozePrimaryMinutes, Services.SnoozeSchedule.MinMinutes, Services.SnoozeSchedule.MaxMinutes, 10);
         SnoozeSecondaryMinutes = Clamp(SnoozeSecondaryMinutes, Services.SnoozeSchedule.MinMinutes, Services.SnoozeSchedule.MaxMinutes, 60);
@@ -260,6 +262,12 @@ public sealed class AppSettings
     /// reminder inbox — see <c>ReminderInboxViewModel.Reload</c>.</summary>
     public int ReminderSoonWindowDays { get; set; } = 7;
 
+    /// <summary>Horas de antelación con las que un recordatorio propio empieza a avisar: emite el aviso
+    /// emergente de «próximo recordatorio» y pasa a contar en la insignia de «Recordatorios». De fábrica,
+    /// el día antes (24 h); 0 desactiva el aviso previo y el recordatorio solo avisa a su hora. Ver
+    /// <c>enki.Services.ReminderAttention</c>.</summary>
+    public int ReminderAdvanceNoticeHours { get; set; } = Services.ReminderAttention.DefaultLeadHours;
+
     // ===================== Aplazar recordatorios (T5) =====================
     // Valores rápidos del menú "Aplazar" de la bandeja de recordatorios y del centro de notificaciones.
     // Ver Services.SnoozeSchedule, que es quien los convierte en un instante concreto (y quien los acota
@@ -429,6 +437,16 @@ public sealed class AppSettings
     /// <summary>Ancho en píxeles del panel lateral del modo árbol, arrastrable por su separador. Se acota
     /// al rango permitido al leerlo.</summary>
     public double SkillsTreeSidebarWidth { get; set; } = 272;
+
+    /// <summary>Addon de instalación en el sistema (.docs/project-info/ia-skills/instalacion-en-el-sistema.md):
+    /// permite copiar skills de la biblioteca a los directorios de usuario de Claude Code, Codex y Gemini
+    /// CLI para que esos asistentes las usen fuera de Enki. Desactivado por defecto porque escribe fuera
+    /// del vault.</summary>
+    public bool SkillSystemIntegrationEnabled { get; set; }
+
+    /// <summary>Al guardar una skill instalada, actualiza sus copias del sistema que sigan sin cambios
+    /// externos. Es lo que permite desarrollar una skill en Enki y probarla al momento en el asistente.</summary>
+    public bool SkillSystemAutoSync { get; set; } = true;
 
     // ===================== Asistente de IA (.docs/project-info/asistente-ia.md) =====================
 

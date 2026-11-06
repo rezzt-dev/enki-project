@@ -30,7 +30,10 @@ public sealed class SettingsService
         // Asistente de IA: la ruta del CLI, el consentimiento y el historial son de este equipo. Dentro
         // del vault viajarían por Syncthing/Dropbox a otra máquina donde ni el CLI ni la aceptación del
         // aviso tienen por qué existir.
-        nameof(AppSettings.Ai)
+        nameof(AppSettings.Ai),
+        // Instalación de skills en el sistema: escribe en ~/.claude, ~/.agents y ~/.gemini de este
+        // equipo, así que activarla en un vault sincronizado no debe activarla en otra máquina.
+        nameof(AppSettings.SkillSystemIntegrationEnabled), nameof(AppSettings.SkillSystemAutoSync)
     ];
     /// <summary>Notifica un guardado completado para actualizar las preferencias visibles.</summary>
     public event Action? SettingsChanged;
