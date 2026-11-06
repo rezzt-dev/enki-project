@@ -192,6 +192,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - renombrar `AGENTS.md`, `CHANGELOG.md`, `README.md` y `README.en.md` a minúsculas (`agents.md`, `changelog.md`, `readme.md`, `readme.en.md`) para igualarlos con `license.md`, y actualizar las referencias en ambos readme, los comentarios del código, `enki/Directory.Build.props`, los workflows `ci.yml` y `release.yml` y `.docs/`; corregir el enlace a `LICENSE` de los readme, que ahora apunta a `license.md`.
 
 #### CORREGIDO
+- aislar las pruebas de busqueda global de la configuracion y el llavero locales, y esperar las escrituras del grafo antes de borrar los vaults temporales de las pruebas del dashboard.
+- seleccionar la plataforma local al compilar Enki en lugar de forzar `linux-x64`, para cargar la aplicacion y ejecutar las pruebas del grafo tambien en macOS y Windows; mantener el runtime explicito de cada paquete.
+- corregir los workflows de CI y release para instalar el SDK fijado en `enki/global.json`, ejecutar CI en las ramas beta y actualizar las rutas de `license.md` en los paquetes de Linux y Windows.
+- excluir los binarios generados de `enki/publish-linux/` del repositorio conservando la compilacion desde el codigo fuente.
 - corregir que las tarjetas del Kanban terminadas siguieran apareciendo como vencidas, con la fecha en rojo, en la columna «Hecho», al desarchivarlas y en el panel «tareas del tablero» del dashboard: `KanbanCard.IsCompleted` (fecha de completado o archivada) y la columna «Hecho» donde está la tarjeta impiden ahora que cuente como vencida, también para las creadas sin pasar por un movimiento.
 - calcular el contador de vencidas del tablero con el estado ya actualizado al mover una tarjeta, sellando o limpiando `CompletedAtUtc` en `KanbanViewModel.MoveCard` antes de modificar las colecciones.
 - corregir que los menús del asistente (ámbito, capacidad, adjuntar nota y skill) se abrieran también en la sección del asistente oculta al lanzarlos desde el panel lateral, dejando un popover duplicado flotando sobre la página actual, con el nuevo comportamiento `SharedPopover` que abre un popover compartido solo en la vista que está en pantalla.
@@ -412,6 +416,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - rename `AGENTS.md`, `CHANGELOG.md`, `README.md` and `README.en.md` to lowercase (`agents.md`, `changelog.md`, `readme.md`, `readme.en.md`) to match `license.md`, and update the references in both readmes, the source comments, `enki/Directory.Build.props`, the `ci.yml` and `release.yml` workflows and `.docs/`; fix the `LICENSE` link of the readmes, which now points to `license.md`.
 
 #### FIXED
+- isolate global search tests from local configuration and credential stores, and wait for graph writes before deleting temporary dashboard test vaults.
+- select the local platform when building Enki instead of forcing `linux-x64`, so the application loads and graph tests run on macOS and Windows; preserve each package's explicit runtime.
+- fix CI and release workflows to install the SDK pinned in `enki/global.json`, run CI on beta branches and update `license.md` paths in Linux and Windows packages.
+- exclude generated `enki/publish-linux/` binaries from the repository while retaining builds from source.
 - fix completed Kanban cards still showing as overdue, with a red date, in the "Done" column, after being unarchived and in the dashboard "board tasks" panel: `KanbanCard.IsCompleted` (completion date or archived) and the "Done" column holding the card now stop it from counting as overdue, including cards created without ever being moved.
 - compute the board's overdue counter from the already updated state when a card is moved, stamping or clearing `CompletedAtUtc` in `KanbanViewModel.MoveCard` before touching the collections.
 - fix the assistant menus (scope, capacity, attach note and skill) opening a second time in the hidden assistant section when launched from the side panel, which left a duplicate popover floating over the current page, with the new `SharedPopover` behavior that opens a shared popover only in the view that is on screen.

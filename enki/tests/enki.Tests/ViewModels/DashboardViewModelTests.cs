@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -19,6 +20,7 @@ public class DashboardViewModelTests : IDisposable
         Path.Combine(Path.GetTempPath(), "enki-tests-" + Guid.NewGuid().ToString("N"));
 
     private readonly string _vaultPath;
+    private readonly List<DashboardViewModel> _dashboards = [];
 
     public DashboardViewModelTests()
     {
@@ -27,6 +29,9 @@ public class DashboardViewModelTests : IDisposable
 
     public void Dispose()
     {
+        // El grafo escribe su manifiesto en segundo plano: terminar antes de borrar el vault.
+        foreach (var dashboard in _dashboards)
+            Assert.True(SpinWait.SpinUntil(() => !dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
@@ -57,6 +62,9 @@ public class DashboardViewModelTests : IDisposable
             navigateToNotes: () => { }, navigateToTrash: () => { }, calendarEnabled: true, navigateToCalendar: () => { },
             openReminders: () => { }, openNotifications: () => { }, openSettings: () => { }, navigateToHabits: () => { },
             showScrollbar: true, vaultSettingsService);
+
+        _dashboards.Add(dashboard);
+        Assert.True(SpinWait.SpinUntil(() => !dashboard.IsGraphLoading, TimeSpan.FromSeconds(5)));
 
         return new Harness(dashboard, vault, sessionService, kanbanService, reminderService, notificationService, vaultSettingsService, habitService);
     }

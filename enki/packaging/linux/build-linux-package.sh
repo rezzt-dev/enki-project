@@ -118,7 +118,7 @@ chmod 755 "$STAGE/usr/bin/enki"
 cp "$SCRIPT_DIR/enki.desktop" "$STAGE/usr/share/applications/enki.desktop"
 cp "$REPO_ROOT/enki/src/enki/assets/icon/enki-256.png" "$STAGE/usr/share/icons/hicolor/256x256/apps/enki.png"
 cp "$REPO_ROOT/enki/src/enki/assets/icon/enki-512.png" "$STAGE/usr/share/icons/hicolor/512x512/apps/enki.png"
-cp "$REPO_ROOT/LICENSE" "$STAGE/usr/share/doc/enki/copyright"
+cp "$REPO_ROOT/license.md" "$STAGE/usr/share/doc/enki/copyright"
 
 mkdir -p "$OUTPUT_DIR"
 

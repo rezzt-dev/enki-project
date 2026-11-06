@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using enki.Models;
 using enki.Services;
+using enki.Tests.Services;
 using enki.ViewModels;
 using Xunit;
 
@@ -27,27 +28,13 @@ public class GlobalSearchViewModelTests : IDisposable
     private readonly PolarAuthService _polarAuth;
     private GlobalSearchResultViewModel? _selectedResult;
 
-    static GlobalSearchViewModelTests()
-    {
-        // PolarAuthService.IsLinked depende de SupabaseConfig.IsConfigured, que lee local.properties
-        // en AppContext.BaseDirectory. En tests que necesitan Polar vinculado aseguramos un archivo
-        // dummy para que IsConfigured sea true; las credenciales reales no se usan nunca.
-        var localProperties = Path.Combine(AppContext.BaseDirectory, "local.properties");
-        if (!File.Exists(localProperties))
-        {
-            File.WriteAllText(
-                localProperties,
-                "SUPABASE_URL=https://example.supabase.co\nSUPABASE_ANON_KEY=dummy-test-key\n");
-        }
-    }
-
     public GlobalSearchViewModelTests()
     {
         Directory.CreateDirectory(_storageDirectory);
         _vaultDirectory = Path.Combine(_storageDirectory, "vault");
         Directory.CreateDirectory(_vaultDirectory);
 
-        _settings = new SettingsService(_storageDirectory);
+        _settings = new SettingsService(_storageDirectory, new TestPolarCredentialStore());
         _vault = new VaultService(_settings);
         _vault.InitializeVault(_vaultDirectory, seedWelcomeNote: false);
         _kanban = new KanbanService(_storageDirectory);
@@ -56,7 +43,8 @@ public class GlobalSearchViewModelTests : IDisposable
 
         _settings.Settings.PolarLinked = true;
         _settings.Save();
-        _polarAuth = new PolarAuthService(_settings);
+        // Configuracion aislada: no depender de polar.properties ni del llavero de la maquina.
+        _polarAuth = new PolarAuthService(_settings, baseUrl: "https://example.supabase.co", anonKey: "dummy-test-key");
 
         Assert.True(_polarAuth.IsLinked);
     }
