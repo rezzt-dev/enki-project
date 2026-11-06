@@ -640,7 +640,7 @@ cualquiera de las anteriores.
       restos de la serie de documentos numerados que este mismo roadmap sustituyó) — sus ~19 citas se
       redirigieron a la Fase 5 de este roadmap donde el contenido aplica, o se limpiaron igual que las
       anteriores donde no había un destino real. Verificado con un barrido final
-      (`grep -rohE 'docs/[A-Za-z0-9_./-]+\.md'` sobre `enki/src`, `README.md`, `AGENTS.md` contra los
+      (`grep -rohE 'docs/[A-Za-z0-9_./-]+\.md'` sobre `enki/src`, `readme.md`, `agents.md` contra los
       ficheros reales en disco) sin ningún resultado pendiente.
 - [x] Corregir `views/settings/SettingsView.axaml`: quitar el `CornerRadius="3"` de la barra de zoom de
       interfaz para cumplir la regla de "cero excepciones, `CornerRadius=0`" de `docs/sistema-diseno-web.md`.
@@ -654,7 +654,7 @@ cualquiera de las anteriores.
       `8.0.x` además del que fije `global.json`, porque `enki.csproj` apunta a `net8.0` y el test host de
       `dotnet test` no siempre respeta el `RollForward` de la app — sin el runtime 8.0.x instalado falla al
       lanzar aunque la compilación tenga éxito con un SDK más nuevo (reproducido en esta misma sesión, ver
-      nota en `README.md`, "Cómo compilar y correr").
+      nota en `readme.md`, "Cómo compilar y correr").
 - [x] Activar `TreatWarningsAsErrors` (o al menos `EnableNETAnalyzers`+`AnalysisLevel` con un umbral
       razonable) en `Directory.Build.props`, una vez el CI anterior esté en verde con el código actual.
       (análisis §2) — verificado en local que las tres compilaciones daban 0 warnings antes de activar
@@ -667,10 +667,10 @@ cualquiera de las anteriores.
       `Directory.Build.props` y movido a la Fase 10 como su propia pasada dedicada en vez de colarse aquí
       como efecto secundario.
 - [x] Rellenar `Directory.Build.props` (`Company`, `Copyright`, `Version`) antes de cualquier build de
-      release real, y empezar un `CHANGELOG.md` a partir de esa primera versión etiquetada. (análisis §2) —
+      release real, y empezar un `changelog.md` a partir de esa primera versión etiquetada. (análisis §2) —
       `Company`/`Copyright` acordes a la decisión de licencia de arriba; primera versión real `0.1.0` (antes
       el SDK generaba `1.0.0.0` por defecto sin que nadie lo hubiera decidido — no es un "1.0" porque la app
-      todavía no ha tenido release pública). `CHANGELOG.md` en la raíz, formato Keep a Changelog + SemVer,
+      todavía no ha tenido release pública). `changelog.md` en la raíz, formato Keep a Changelog + SemVer,
       con la entrada `0.1.0` resumiendo el cierre de las Fases 0-8.
 - [x] Evaluar y documentar (aunque sea en un primer borrador) el camino de empaquetado para usuarios no
       técnicos — como mínimo, instrucciones de `dotnet publish` self-contained por plataforma; a más largo
@@ -815,10 +815,10 @@ de seguridad — priorizar según feedback de uso real, no por orden fijo.
       resuelta por un camino más barato — el `storageDirectory`/`currentUserIdProvider` inyectable que cada
       servicio ya acepta (Fases 0/1/4) — y el caso de uso que un contenedor resolvería mejor (construir el
       `MainWindowViewModel` completo en un test) no ha aparecido todavía en los 656 tests de la suite.
-- [x] Traducir `README.md` (o añadir una versión en inglés) dado que la app ya soporta 6 idiomas de UI.
-      (análisis §7) — [README.en.md](../../../README.en.md) (nuevo), con enlace cruzado "Read in
+- [x] Traducir `readme.md` (o añadir una versión en inglés) dado que la app ya soporta 6 idiomas de UI.
+      (análisis §7) — [readme.en.md](../../../README.en.md) (nuevo), con enlace cruzado "Read in
       English"/"Leer en español" al principio de ambos ficheros. El resto de `.docs/project-info/` se deja en español a
-      propósito (es el idioma de trabajo del proyecto, ver `AGENTS.md`) — el README es la única puerta de
+      propósito (es el idioma de trabajo del proyecto, ver `agents.md`) — el README es la única puerta de
       entrada que un visitante angloparlante de GitHub ve antes de decidir si le interesa seguir leyendo.
 - [x] Subir `AnalysisLevel` en `Directory.Build.props` a `latest-recommended` y corregir los diagnósticos
       resultantes. (análisis §2) — subido, pero solo en `src/enki/enki.csproj`, no en

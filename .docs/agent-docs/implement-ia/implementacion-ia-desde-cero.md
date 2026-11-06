@@ -25,7 +25,7 @@ en codigo encaja sin romper la arquitectura: un `AiService` en `services/` (comp
 
 - `.docs/project-info/propuesta-nuevas-funcionalidades.md` (propuesta 10) y `.docs/agent-docs/analysis/roadmap-publicacion-y-mejora-continua.md` (prioridad cuatro, "ia acotada") ya piden una ia opt-in, con clave propia o endpoint local tipo ollama. este documento concreta como hacerlo.
 - el modulo de skills (`SkillService`, archivos markdown con frontmatter yaml en `<vault>/.enki/skills/`) hoy solo son plantillas de prompt para pegar en un asistente externo. es el punto de entrada natural: el "ejecutar con ia" actua sobre una skill existente + el contexto que el usuario elija.
-- reglas del proyecto que aplican (ver `AGENTS.md`):
+- reglas del proyecto que aplican (ver `agents.md`):
   - mvvm estricto, sin contenedor di, composicion manual en `viewmodels/shell/MainWindowViewModel.cs`.
   - persistencia con el mismo patron de los demas servicios (`storageDirectory` opcional, `Save()` + evento `Action?`).
   - avisos al usuario solo con `_notificationService.Push(...)`.
@@ -82,7 +82,7 @@ services/ai/CliProcessRunner.cs            lanza el subproceso, stdin/stdout, ti
 services/ai/AiPromptBuilder.cs             junta skill + contexto + limites de tamaño
 ```
 
-**nota sobre la interfaz**: `AGENTS.md` prohibe interfaces genericas sin motivo. aqui hay tres implementaciones reales con la misma operacion y hace falta un backend falso en los tests, igual que ya ocurre con `IPolarCredentialStore`. se mantiene minima:
+**nota sobre la interfaz**: `agents.md` prohibe interfaces genericas sin motivo. aqui hay tres implementaciones reales con la misma operacion y hace falta un backend falso en los tests, igual que ya ocurre con `IPolarCredentialStore`. se mantiene minima:
 
 ```csharp
 public interface IAiBackend
@@ -222,7 +222,7 @@ dotnet test enki/tests/enki.Tests/enki.Tests.csproj
 - [ ] acciones adicionales: extraer tareas hacia kanban/polar usando las entidades reales (`KanbanCard`, `PolarTask`), sin crear almacenes paralelos.
 - [ ] entrada en `.docs/project-info/qa-manual-release-candidate.md` y documento de referencia viva en `.docs/project-info/`.
 
-al cerrar cada fase: entrada en `## SIN PUBLICAR / UNRELEASED` de `CHANGELOG.md` (bilingue, categorias cerradas) y commits con el formato de `.docs/commit-guidelines.md`.
+al cerrar cada fase: entrada en `## SIN PUBLICAR / UNRELEASED` de `changelog.md` (bilingue, categorias cerradas) y commits con el formato de `.docs/commit-guidelines.md`.
 
 ## 10. RIESGOS Y DECISIONES ABIERTAS
 

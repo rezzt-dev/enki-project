@@ -41,7 +41,7 @@ Reglas del reconocimiento (`MarkdownLineParser.ScanTransclusion`):
 `NoteTransclusionService.Resolve` trabaja **directamente sobre las notas reales del vault**: usa el mismo
 `WikiLinkParser.ResolveTargetWithStatus` que los wikilinks y lee con `VaultService.ReadContent`, cuya caché
 ya se invalida por fecha y tamaño de archivo. No hay un segundo índice ni una copia del contenido embebido
-— es el patrón de "unificar sin duplicar" de `AGENTS.md`.
+— es el patrón de "unificar sin duplicar" de `agents.md`.
 
 El resultado es un `NoteTransclusionResult` inmutable con un `Status`, y **solo el estado `Resolved` lleva
 texto**: ningún error filtra contenido parcial. Los estados y lo que muestran:

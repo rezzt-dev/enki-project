@@ -167,5 +167,5 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           gh release create "$GITHUB_REF_NAME" \
             --title "Enki $VERSION" \
-            --notes "Paquetes generados automáticamente por .github/workflows/release.yml. Ver CHANGELOG.md para el detalle de cambios de esta versión." \
+            --notes "Paquetes generados automáticamente por .github/workflows/release.yml. Ver changelog.md para el detalle de cambios de esta versión." \
             dist-artifacts/*/*

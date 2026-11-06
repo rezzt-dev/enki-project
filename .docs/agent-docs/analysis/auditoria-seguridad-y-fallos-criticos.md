@@ -705,7 +705,7 @@ Consecuencias reales:
   ninguna ventana**, sin dialogo. Solo queda la linea del log.
 - Tres copias en memoria de `AppSettings` que divergen en cuanto algo cambia.
 
-Ademas contradice lo que dice `AGENTS.md`: la composicion manual esta en `MainWindowViewModel`, y esto son
+Ademas contradice lo que dice `agents.md`: la composicion manual esta en `MainWindowViewModel`, y esto son
 dos composiciones paralelas.
 
 **Como cerrarlo.** Un unico `SettingsService` creado antes de `OnFrameworkInitializationCompleted` (o un

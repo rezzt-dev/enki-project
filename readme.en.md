@@ -9,7 +9,7 @@
   <p><em>your second brain, on your desktop.</em></p>
 
   <p>
-    <a href="README.md">leer en castellano</a>
+    <a href="readme.md">leer en castellano</a>
   </p>
 </div>
 
@@ -211,7 +211,7 @@ an everyday workflow can begin with an idea written in quick capture, continue a
 
 enki already covers a complete daily workflow and provides packaging for windows, linux and macos. it is still a young project: workflows that depend on the operating system, a real screen reader, live synchronisation or sharing the vault with other applications are reviewed manually before considering a release candidate.
 
-the detailed history is available in [`CHANGELOG.md`](CHANGELOG.md). its unpublished section explains what already exists in the code but is not yet part of a closed release.
+the detailed history is available in [`changelog.md`](changelog.md). its unpublished section explains what already exists in the code but is not yet part of a closed release.
 
 ---
 
@@ -267,11 +267,11 @@ versioned documentation lives in [`.docs/project-info/`](.docs/project-info/). `
 - [design system](.docs/project-info/sistema-diseno-web.md) — visual and interaction principles.
 - [release candidate qa](.docs/project-info/qa-manual-release-candidate.md) — manual checks required before publishing a release.
 
-contribution conventions are documented in [`AGENTS.md`](AGENTS.md), commit rules in [`.docs/commit-guidelines.md`](.docs/commit-guidelines.md), and the pull request, merge and release format in [`.docs/pr-merge-release-guidelines.md`](.docs/pr-merge-release-guidelines.md).
+contribution conventions are documented in [`agents.md`](agents.md), commit rules in [`.docs/commit-guidelines.md`](.docs/commit-guidelines.md), and the pull request, merge and release format in [`.docs/pr-merge-release-guidelines.md`](.docs/pr-merge-release-guidelines.md).
 
 ---
 
 <div align="center">
   <p><sub>built patiently for personal use.</sub></p>
-  <p><a href="CHANGELOG.md">changelog</a> · <a href="LICENSE">license</a></p>
+  <p><a href="changelog.md">changelog</a> · <a href="license.md">license</a></p>
 </div>

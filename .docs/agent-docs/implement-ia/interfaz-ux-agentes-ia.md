@@ -9,7 +9,7 @@
 
 - Propuesta inicial: [Implementación desde cero](implementacion-ia-desde-cero.md).
 - Referencia del módulo existente: [Asistente de IA](../../project-info/asistente-ia.md).
-- [Sistema de diseño](../../project-info/sistema-diseno-web.md), `AGENTS.md` y código real.
+- [Sistema de diseño](../../project-info/sistema-diseno-web.md), `agents.md` y código real.
 - [Cambios externos en el vault](../../project-info/cambios-externos-en-el-vault.md).
 
 Las decisiones de producto de este documento actualizan la propuesta inicial: el asistente puede

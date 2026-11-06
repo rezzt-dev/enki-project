@@ -1,4 +1,4 @@
-# AGENTS.md
+# agents.md
 
 Convenciones de código y documentación que ya sigue este proyecto — leer antes de tocar código, para no
 tener que inferirlas releyendo todo `enki/src/enki/`.

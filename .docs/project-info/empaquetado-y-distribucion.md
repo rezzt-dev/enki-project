@@ -9,7 +9,7 @@
 
 ## Por qué hace falta esto
 
-Hoy `README.md` solo documenta `dotnet run`/`dotnet build`, que asume un SDK de .NET instalado — inviable
+Hoy `readme.md` solo documenta `dotnet run`/`dotnet build`, que asume un SDK de .NET instalado — inviable
 para repartir Enki a alguien que no es desarrollador. La solución mínima de .NET para esto es un
 **publish autocontenido** (`self-contained`): empaqueta el runtime de .NET junto con la app en un único
 ejecutable, así que el usuario final no necesita instalar nada.
@@ -192,7 +192,7 @@ firmar. Una firma ad-hoc **no** es una firma con certificado de Apple Developer:
 "desarrollador no identificado" al primer intento de abrirlo (el usuario tiene que pasar por
 Ajustes → Privacidad y seguridad, o clic derecho → Abrir). Firmar de verdad y notarizar requiere una
 cuenta de pago de Apple Developer — fuera de alcance mientras Enki no tenga distribución pública (ver
-`README.md`, "Estado del proyecto").
+`readme.md`, "Estado del proyecto").
 
 Verificación histórica anterior al motor multimedia incluido: el ensamblado del bundle y el `.zip`, cross-compilando `osx-arm64`
 desde este entorno Linux (sin SDK de macOS) y confirmando con `plistlib` de Python que el `Info.plist`
@@ -226,7 +226,7 @@ adjuntar los binarios) lo hace `release.yml`:
 2. Subir `<Version>` en `enki/Directory.Build.props` a la versión nueva (p. ej. `0.1.0` → `0.2.0`) — es lo
    que ve el usuario en Ajustes → Acerca de (`SettingsViewModel.AppVersion`), así que tiene que coincidir
    con el tag del paso 4.
-3. Mover la sección `## [Sin publicar]` de `CHANGELOG.md` a `## [0.2.0] - AAAA-MM-DD` (formato
+3. Mover la sección `## [Sin publicar]` de `changelog.md` a `## [0.2.0] - AAAA-MM-DD` (formato
    [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) que ya sigue el fichero).
 4. Confirmar (`git commit`) los dos cambios anteriores, y crear el tag anotado:
    ```bash
@@ -238,7 +238,7 @@ adjuntar los binarios) lo hace `release.yml`:
    y por último `publish-release`).
 6. Revisar la GitHub Release recién creada en el tag: debe tener 5 ficheros adjuntos (`.deb`, `.tar.gz`,
    `.exe`, dos `.zip`+`.dmg` de macOS) y, si se quiere pulir antes de anunciarla, editar sus notas a mano
-   (el texto que genera `gh release create` es un placeholder que remite a `CHANGELOG.md`, no un
+   (el texto que genera `gh release create` es un placeholder que remite a `changelog.md`, no un
    changelog en sí).
 
 Para probar el empaquetado sin cortar una versión real, cualquier paso de este flujo se puede reemplazar
@@ -250,7 +250,7 @@ plataforma correspondiente en local.
 - **Firma de código real**: Authenticode en Windows (evita el aviso de SmartScreen "Windows protegió tu
   PC") y notarización de Apple en macOS (evita el aviso de Gatekeeper más allá de la firma ad-hoc de
   arriba). Ambas requieren certificados/cuentas de pago — tiene sentido revisarlo si Enki pasa a tener
-  distribución pública real (ver `README.md`, "Estado del proyecto"), no antes.
+  distribución pública real (ver `readme.md`, "Estado del proyecto"), no antes.
 - **MSIX / AppImage / `.rpm`**: formatos alternativos mencionados en el roadmap que no se han
   implementado — el `.exe` de Inno Setup y el `.deb`/`.tar.gz` de Linux ya cubren el caso de uso actual
   (instalación de escritorio con desinstalador e icono de menú); añadir más formatos es una extensión
