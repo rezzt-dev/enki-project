@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -251,6 +252,7 @@ public sealed partial class SettingsViewModel
     {
         var row = MainSidebarSections.FirstOrDefault(s => s.Key == key) ?? BottomSidebarSections.FirstOrDefault(s => s.Key == key);
         if (row is not null) row.IsVisible = value;
+        RefreshActiveModuleProfile();
     }
 
     /// <summary>Current on/off flag for a sidebar section key — the single switch statement every
@@ -297,6 +299,42 @@ public sealed partial class SettingsViewModel
             case "Notifications": NotificationsSidebarEnabled = value; break;
             case "Statistics": StatisticsPanelEnabled = value; break;
         }
+    }
+
+    // ===================== Perfiles de uso (ALT-02) =====================
+
+    /// <summary>Id del perfil que coincide con los módulos activos ahora mismo, o <c>null</c> si el usuario
+    /// ha personalizado la selección. Se deduce de los interruptores, no se guarda.</summary>
+    public string? ActiveModuleProfileId =>
+        ModuleProfileCatalog.Detect(SidebarSectionCatalog.AllKeys.Where(GetSidebarSectionFlag));
+
+    /// <summary>Texto de "Perfil activo: …" — el nombre del perfil o "Personalizado".</summary>
+    public string ActiveModuleProfileLabel => LocalizationService.Instance[
+        ActiveModuleProfileId is { } id ? $"ModuleProfile_{id}_Title" : "ModuleProfile_Custom"];
+
+    /// <summary>Aplica un perfil: activa primero los módulos que faltan y apaga después los que sobran, para
+    /// que la regla de "al menos una sección visible" no salte a mitad de camino. Cada cambio pasa por el
+    /// mismo manejador que el interruptor individual (guardado, barra lateral, panel), y los datos de los
+    /// módulos apagados no se tocan.</summary>
+    [RelayCommand]
+    private void ApplyModuleProfile(string? profileId)
+    {
+        if (ModuleProfileCatalog.Find(profileId) is not { } profile) return;
+
+        foreach (var key in ModuleProfileCatalog.ManagedModules.Where(profile.Modules.Contains))
+            SetSidebarSectionFlag(key, true);
+        foreach (var key in ModuleProfileCatalog.ManagedModules.Where(k => !profile.Modules.Contains(k)))
+            SetSidebarSectionFlag(key, false);
+
+        RemindersPanelEnabled = profile.ReminderTray;
+        InboxPanelEnabled = profile.ReminderTray;
+        RefreshActiveModuleProfile();
+    }
+
+    private void RefreshActiveModuleProfile()
+    {
+        OnPropertyChanged(nameof(ActiveModuleProfileId));
+        OnPropertyChanged(nameof(ActiveModuleProfileLabel));
     }
 
     /// <summary>Builds <see cref="MainSidebarSections"/>/<see cref="BottomSidebarSections"/> from

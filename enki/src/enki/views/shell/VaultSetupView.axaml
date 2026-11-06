@@ -32,6 +32,22 @@
                  HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                  IsVisible="{Binding InfoMessage, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
 
+      <!-- Perfil de partida (ALT-02): solo cuenta al crear un vault nuevo. -->
+      <StackPanel Spacing="6" IsVisible="{Binding HasProfileOptions}">
+        <TextBlock Text="{loc:Tr ModuleProfile_Title, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="10.5" />
+        <ComboBox ItemsSource="{Binding ProfileOptions}" SelectedItem="{Binding SelectedProfile}"
+                  AutomationProperties.Name="{loc:Tr ModuleProfile_Title}" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate DataType="vm:ModuleProfileOption">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Title}" FontWeight="Bold" />
+                <TextBlock Text="{Binding Description}" Classes="faint" TextWrapping="Wrap" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+
       <StackPanel Spacing="12">
         <Button Classes="pill-primary" Command="{Binding CreateNewVaultCommand}" HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">

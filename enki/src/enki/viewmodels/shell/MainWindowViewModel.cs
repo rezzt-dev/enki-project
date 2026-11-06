@@ -402,6 +402,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         // Con la IA apagada no hay asistente al que llegar, tampoco por su atajo de teclado.
         if (page == AppPage.Assistant && !AssistantPanelEnabled) return;
+        // ALT-02: un módulo desactivado tampoco es alcanzable por atajo, enlace del panel ni paleta.
+        // Dashboard, Ajustes y las dos bandejas de la barra de título quedan fuera: sus accesos tienen
+        // interruptores propios y Ajustes es la vía para reactivar cualquier módulo.
+        if (page is not (AppPage.Dashboard or AppPage.Settings or AppPage.Reminders or AppPage.Notifications)
+            && !IsSidebarSectionEnabled(page)) return;
         foreach (var item in NavItems) item.IsActive = item.Page == page;
         foreach (var item in BottomNavItems) item.IsActive = item.Page == page;
         IsSettingsActive = false;
@@ -543,6 +548,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void QuickNewNote()
     {
+        if (!NotesPanelEnabled) return;
         Navigate(AppPage.Notes);
         Notes?.NewNoteCommand.Execute(null);
     }
@@ -561,7 +567,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    public void OpenQuickSwitcher() => QuickSwitcher.IsOpen = true;
+    public void OpenQuickSwitcher()
+    {
+        if (NotesPanelEnabled) QuickSwitcher.IsOpen = true;
+    }
 
     [RelayCommand]
     public void OpenCommandPalette() => CommandPalette.IsOpen = true;

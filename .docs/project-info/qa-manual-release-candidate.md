@@ -59,6 +59,9 @@ Versión candidata: _______   Fecha: __________   Plataforma(s): __________   Te
 
 ## 4. Lector de pantalla real
 
+> El procedimiento ampliado (tres recorridos, registro por herramienta y auditoría de foco) y los temas de
+> alto contraste están en [`accesibilidad-y-alto-contraste.md`](accesibilidad-y-alto-contraste.md).
+
 Contexto: Fase 7 de `analisis-proyecto/roadmap.md` añadió `AutomationProperties.Name` a las 17 vistas que
 existían entonces. Desde entonces se han sumado más — a día de hoy, **23 de las 30 vistas `.axaml`**
 tienen al menos una `AutomationProperties`; **7 no tienen ninguna** y deberían revisarse primero por si ya

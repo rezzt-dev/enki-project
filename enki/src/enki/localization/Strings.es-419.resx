@@ -3238,7 +3238,7 @@
     <value>Elige qué secciones aparecen en la barra lateral. Al menos una debe permanecer visible.</value>
   </data>
   <data name="Settings_General_Sidebar_SearchNote" xml:space="preserve">
-    <value>Ocultar una sección solo la quita de la barra lateral: sigue siendo localizable desde la Búsqueda global y la Paleta de comandos.</value>
+    <value>Desactivar una sección también la quita de la Búsqueda global, la Paleta de comandos, el panel y sus atajos. Sus datos siguen en disco y vuelven al reactivarla.</value>
   </data>
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Secciones de la barra lateral</value>
@@ -7944,5 +7944,35 @@ Feliz escritura.</value>
   </data>
   <data name="Settings_Notifications_Reminders_AdvanceNotice_HoursFormat_other" xml:space="preserve">
     <value>{0} h antes</value>
+  </data>
+  <data name="ModuleProfile_Title" xml:space="preserve">
+    <value>Perfiles de uso</value>
+  </data>
+  <data name="ModuleProfile_Description" xml:space="preserve">
+    <value>Parte de un perfil y ajusta después cada sección a mano. Un módulo desactivado desaparece de la barra lateral, la paleta de comandos, la búsqueda global, el panel y los atajos; sus datos siguen intactos en disco.</value>
+  </data>
+  <data name="ModuleProfile_NotesOnly_Title" xml:space="preserve">
+    <value>Solo notas</value>
+  </data>
+  <data name="ModuleProfile_NotesOnly_Description" xml:space="preserve">
+    <value>Notas, archivos, papelera y gestor de etiquetas. Sin kanban, calendario, recordatorios ni Polar.</value>
+  </data>
+  <data name="ModuleProfile_Planner_Title" xml:space="preserve">
+    <value>Planificador</value>
+  </data>
+  <data name="ModuleProfile_Planner_Description" xml:space="preserve">
+    <value>Panel, calendario, kanban, notas, hábitos, recordatorios y estadísticas.</value>
+  </data>
+  <data name="ModuleProfile_Everything_Title" xml:space="preserve">
+    <value>Todo</value>
+  </data>
+  <data name="ModuleProfile_Everything_Description" xml:space="preserve">
+    <value>Todos los módulos salvo Skills, que sigue siendo opcional.</value>
+  </data>
+  <data name="ModuleProfile_Custom" xml:space="preserve">
+    <value>Personalizado</value>
+  </data>
+  <data name="ModuleProfile_Active_Label" xml:space="preserve">
+    <value>Perfil activo:</value>
   </data>
 </root>

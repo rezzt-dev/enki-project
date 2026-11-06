@@ -227,10 +227,21 @@ public sealed class CustomThemeService
     /// any window/view reads a color resource) to re-apply whichever theme was active last session. Clears
     /// a stale/corrupt <see cref="AppSettings.ActiveCustomThemeId"/> instead of failing — a custom theme
     /// must never be able to block Enki from starting.</summary>
-    public void ApplyActiveOnStartup()
+    public void ApplyActiveOnStartup(Func<bool>? systemPrefersHighContrast = null)
     {
         ThemeRegistry.Clear();
         var themeId = _settingsService.Settings.ActiveCustomThemeId;
+
+        // ALT-03: sin tema elegido por el usuario, el contraste alto del sistema manda. No se persiste: el
+        // tema queda activo (y por tanto el usuario puede cambiarlo), pero al volver a "tema del sistema"
+        // en un equipo con contraste alto se recupera en el siguiente arranque.
+        if (themeId is null && (systemPrefersHighContrast ?? SystemPrefersHighContrast)())
+        {
+            Activate(_settingsService.Settings.Theme == "Light"
+                ? BuiltInThemeCatalog.HighContrastLightId : BuiltInThemeCatalog.HighContrastDarkId);
+            return;
+        }
+
         if (themeId is null) return;
 
         if (!Activate(themeId))
@@ -239,6 +250,12 @@ public sealed class CustomThemeService
             _settingsService.Save();
         }
     }
+
+    /// <summary>Si el sistema operativo pide contraste alto (Windows «Temas de contraste», macOS «Aumentar
+    /// contraste», preferencia equivalente en GNOME). Falso sin aplicación o sin soporte de la plataforma.</summary>
+    private static bool SystemPrefersHighContrast() =>
+        Avalonia.Application.Current?.PlatformSettings?.GetColorValues().ContrastPreference
+            == Avalonia.Platform.ColorContrastPreference.High;
 
     /// <summary>Exporta los colores actuales del editor a un archivo CSS sin guardar ni activar el tema.</summary>
     public static void Export(CustomTheme theme, string destinationPath) =>

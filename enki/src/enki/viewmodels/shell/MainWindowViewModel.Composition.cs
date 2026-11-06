@@ -183,7 +183,17 @@ public sealed partial class MainWindowViewModel
         };
         GlobalSearch = new GlobalSearchViewModel(
             _vaultService, _noteSearchService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService,
-            OnGlobalSearchResultSelected);
+            OnGlobalSearchResultSelected)
+        {
+            IsSourceEnabled = type => type switch
+            {
+                GlobalSearchResultType.Note => NotesPanelEnabled,
+                GlobalSearchResultType.KanbanCard => KanbanPanelEnabled,
+                GlobalSearchResultType.PolarTask => IsPolarSurfaceEnabled,
+                GlobalSearchResultType.Reminder => RemindersSidebarEnabled || RemindersPanelEnabled,
+                _ => true
+            }
+        };
         QuickSwitcher = new QuickSwitcherViewModel(_vaultService, _noteSearchService, OpenNoteFromQuickSwitcher);
         // El proveedor se llama de nuevo cada vez que se abre la paleta (ver CommandPaletteViewModel), así
         // que puede referenciar con seguridad Notes/Kanban/Settings aunque todavía sean null aquí — para
@@ -438,7 +448,7 @@ public sealed partial class MainWindowViewModel
                     Models.NotificationSeverity.Error);
             }
 
-            VaultSetup = new VaultSetupViewModel(_vaultService, InitializeShell, infoMessage);
+            VaultSetup = new VaultSetupViewModel(_vaultService, InitializeShell, infoMessage, _settingsService);
         }
     }
 
@@ -555,7 +565,10 @@ public sealed partial class MainWindowViewModel
             CalendarPanelEnabled, () => Navigate(AppPage.Calendar), OpenReminders, OpenNotifications, OpenSettings,
             () => Navigate(AppPage.Habits),
             _settingsService.Settings.DashboardShowScrollbar, _vaultSettingsService,
-            loadOnCreate: false, loadInBackground: true);
+            loadOnCreate: false, loadInBackground: true)
+        {
+            IsModuleEnabled = IsModuleEnabled
+        };
         Sessions = new SessionsViewModel(_vaultService, _sessionService, _notificationService, OpenSessionInNotes, OnSessionsChanged,
             _kanbanService, OpenKanbanCard, Notes.CloseEditorsForLockedSession, StartAssistantChatInSession, _settingsService)
         {

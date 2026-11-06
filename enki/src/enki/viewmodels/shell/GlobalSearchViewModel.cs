@@ -82,6 +82,13 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
     /// reciente y pisara sus resultados con datos obsoletos — este token es lo que de verdad lo resuelve.</summary>
     private CancellationTokenSource? _searchCts;
 
+    /// <summary>Decide si una familia de resultados se busca (ALT-02): <see cref="MainWindowViewModel"/> la
+    /// conecta a los módulos activos, de modo que un módulo desactivado no deja resultados ni gasta
+    /// tiempo de búsqueda. Sin proveedor (tests, uso aislado) se busca en todo.</summary>
+    public Func<GlobalSearchResultType, bool>? IsSourceEnabled { get; set; }
+
+    private bool Includes(GlobalSearchResultType type) => IsSourceEnabled?.Invoke(type) ?? true;
+
     public GlobalSearchViewModel(
         VaultService vaultService,
         NoteSearchService noteSearchService,
@@ -205,10 +212,11 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
             // IEnumerable perezoso (yield return), así que sin materializarlo aquí el recorrido real del
             // vault/tablero/tareas ocurriría al enumerarlo más abajo (SelectMany/OrderBy), es decir en el
             // hilo de UI tras el await — justo el trabajo que Task.Run pretendía sacar de ese hilo.
-            var noteTask = Task.Run(() => SearchNotes(query, token).ToList(), token);
-            var kanbanTask = Task.Run(() => SearchKanban(query, token).ToList(), token);
-            var polarTask = Task.Run(() => SearchPolar(query, token).ToList(), token);
-            var reminderTask = Task.Run(() => SearchReminders(query, token).ToList(), token);
+            var noEntries = Task.FromResult(new List<GlobalSearchResultViewModel>());
+            var noteTask = Includes(GlobalSearchResultType.Note) ? Task.Run(() => SearchNotes(query, token).ToList(), token) : noEntries;
+            var kanbanTask = Includes(GlobalSearchResultType.KanbanCard) ? Task.Run(() => SearchKanban(query, token).ToList(), token) : noEntries;
+            var polarTask = Includes(GlobalSearchResultType.PolarTask) ? Task.Run(() => SearchPolar(query, token).ToList(), token) : noEntries;
+            var reminderTask = Includes(GlobalSearchResultType.Reminder) ? Task.Run(() => SearchReminders(query, token).ToList(), token) : noEntries;
 
             var results = await Task.WhenAll(noteTask, kanbanTask, polarTask, reminderTask);
 

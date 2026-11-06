@@ -3505,7 +3505,7 @@
     <value>Choose which sections appear in the sidebar. At least one must stay visible.</value>
   </data>
   <data name="Settings_General_Sidebar_SearchNote" xml:space="preserve">
-    <value>Hiding a section only removes it from the sidebar — it stays reachable from Global Search and the Command Palette.</value>
+    <value>Turning a section off also removes it from Global Search, the Command Palette, the dashboard and its shortcuts. Its data stays on disk and returns when you turn it back on.</value>
   </data>
   <data name="Settings_General_Sidebar_Title" xml:space="preserve">
     <value>Sidebar sections</value>
@@ -7945,5 +7945,35 @@ Happy writing.</value>
   </data>
   <data name="Settings_Notifications_Reminders_AdvanceNotice_HoursFormat_other" xml:space="preserve">
     <value>{0} h before</value>
+  </data>
+  <data name="ModuleProfile_Title" xml:space="preserve">
+    <value>Usage profiles</value>
+  </data>
+  <data name="ModuleProfile_Description" xml:space="preserve">
+    <value>Start from a profile and then switch individual sections on or off below. A switched-off module disappears from the sidebar, the command palette, global search, the dashboard and the shortcuts; its data stays untouched on disk.</value>
+  </data>
+  <data name="ModuleProfile_NotesOnly_Title" xml:space="preserve">
+    <value>Notes only</value>
+  </data>
+  <data name="ModuleProfile_NotesOnly_Description" xml:space="preserve">
+    <value>Notes, files, trash and tag manager. No kanban, calendar, reminders or Polar.</value>
+  </data>
+  <data name="ModuleProfile_Planner_Title" xml:space="preserve">
+    <value>Planner</value>
+  </data>
+  <data name="ModuleProfile_Planner_Description" xml:space="preserve">
+    <value>Dashboard, calendar, kanban, notes, habits, reminders and statistics.</value>
+  </data>
+  <data name="ModuleProfile_Everything_Title" xml:space="preserve">
+    <value>Everything</value>
+  </data>
+  <data name="ModuleProfile_Everything_Description" xml:space="preserve">
+    <value>Every module except Skills, which stays opt-in.</value>
+  </data>
+  <data name="ModuleProfile_Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="ModuleProfile_Active_Label" xml:space="preserve">
+    <value>Active profile:</value>
   </data>
 </root>

@@ -1,5 +1,20 @@
 # Análisis de deficiencias — Enki
 
+> **NOTA DE VIGENCIA (2026-11-06, rama `beta-v2.0`).** Este documento es histórico y no se ha reescrito.
+> Contrastado con el código actual, lo siguiente **ya no está pendiente**:
+>
+> | punto | afirmación original | estado actual (evidencia) |
+> | --- | --- | --- |
+> | 1 y 2 | escritura de notas sin atomicidad ni manejo de errores | resuelto: `VaultService` escribe con `WriteFileAtomic` y las notas abiertas con `WriteContentChecked` |
+> | 3 | `Reminder.IsTriggered` no se resetea al reprogramar | resuelto: `ReminderService.Reschedule` lo restablece (ver su comentario en `services/ReminderService.cs`) |
+> | 7 | ningún logging ni informe de fallos | resuelto en parte: existe `LogService` (`LogService.Error`/`Debug`) y el ajuste `DebugLoggingEnabled` |
+> | 8 | tokens de Polar en texto plano | resuelto: almacén de credenciales (`IPolarCredentialStore`), ver [`decision-almacenamiento-credenciales-polar.md`](./decision-almacenamiento-credenciales-polar.md) |
+> | 9 y §7 | cero `AutomationProperties` | resuelto en lo esencial: **664** apariciones en **40** vistas `.axaml`. Sigue sin haber `TabIndex` y falta la prueba con lector de pantalla |
+>
+> Lo que permanece abierto de accesibilidad (tema de alto contraste, auditoría de foco, prueba con Orca y
+> NVDA) se sigue en **ALT-03** de [`new-features/prioridad-alta.md`](../../agent-docs/analysis/new-features/prioridad-alta.md). El resto de hallazgos no se ha vuelto a verificar: antes de
+> abordar uno, compruébalo en el código. Prioridades vigentes: [`new-features/indice.md`](../../agent-docs/analysis/new-features/indice.md).
+
 Auditoría completa del proyecto (arquitectura, seguridad, correctitud y experiencia de usuario), realizada
 sobre el **estado actual del árbol de trabajo** (con cambios extensos sin commitear: nuevos módulos de
 i18n, editor, skills, etc.), no solo sobre `HEAD`. El objetivo es servir de inventario de partida para

@@ -130,7 +130,8 @@
             </Grid>
           </Button>
 
-          <Button Classes="card" Command="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).OpenRemindersCommand}">
+          <Button Classes="card" IsVisible="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).IsRemindersEnabled}"
+                  Command="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).OpenRemindersCommand}">
             <Grid ColumnDefinitions="Auto,*">
               <mi:MaterialIcon Grid.Column="0" Kind="CalendarClockOutline" Width="18" Height="18"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,12,0" />
@@ -141,7 +142,8 @@
             </Grid>
           </Button>
 
-          <Button Classes="card" Command="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).OpenNotificationsCommand}">
+          <Button Classes="card" IsVisible="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).IsNotificationsEnabled}"
+                  Command="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).OpenNotificationsCommand}">
             <Grid ColumnDefinitions="Auto,*">
               <Panel Grid.Column="0" Width="18" Height="18" Margin="0,0,12,0" VerticalAlignment="Center">
                 <mi:MaterialIcon Kind="BellRingOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />

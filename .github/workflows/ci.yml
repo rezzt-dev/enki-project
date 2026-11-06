@@ -13,8 +13,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Matriz de sistemas (ALT-04): las pruebas de servicio y de ViewModel se ejecutan también en Windows y
+  # macOS, donde viven la captura global de teclado (WindowsGlobalHotkey, MacGlobalHotkey), las rutas con
+  # separadores propios y el sistema de archivos sin distinción de mayúsculas. fail-fast desactivado para
+  # ver los tres resultados a la vez. Para impedir que una PR se fusione con alguno en rojo, los tres
+  # nombres "Compilar y probar (…)" deben marcarse como comprobaciones obligatorias en la protección de
+  # ramas del repositorio (ver .docs/project-info/politica-de-firma-y-ci-multiplataforma.md).
   build-and-test:
-    runs-on: ubuntu-latest
+    name: Compilar y probar (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout
@@ -54,7 +65,11 @@ jobs:
       # enki.UITests usa Avalonia.Headless — sin display real, pero sin necesitar uno tampoco (headless
       # de verdad). Ver el comentario en enki/tests/enki.UITests/enki.UITests.csproj sobre por qué vive en
       # un proyecto de test separado de enki.Tests.
+      # La batería completa de pruebas de interfaz solo corre en Linux; en Windows y macOS la cubre el job
+      # graph-compatibility de abajo con los casos que dependen del sistema de dibujo. Ampliarla ahí
+      # requiere comprobar antes su estabilidad en esos runners.
       - name: Run UI tests (enki.UITests)
+        if: runner.os == 'Linux'
         run: dotnet test enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
 
   graph-compatibility:

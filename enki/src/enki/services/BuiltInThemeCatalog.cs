@@ -12,8 +12,41 @@ namespace enki.Services;
 /// touching disk, so these ids resolve instantly and can never be edited or deleted by the user.</summary>
 public static class BuiltInThemeCatalog
 {
+    /// <summary>Ids de los dos temas de alto contraste (ALT-03). Los usa <see cref="CustomThemeService"/> para
+    /// activar el que corresponda cuando el sistema operativo pide contraste alto.</summary>
+    public const string HighContrastDarkId = "high-contrast-dark";
+    public const string HighContrastLightId = "high-contrast-light";
+
     public static readonly IReadOnlyList<BuiltInThemeDefinition> All =
     [
+        // Alto contraste (ALT-03): primeros de su grupo en el selector. Toda pareja de texto sobre fondo
+        // supera 4,5:1 (WCAG AA) — lo comprueba BuiltInThemeContrastTests, así que un cambio de color que lo
+        // rompa falla en las pruebas en vez de llegar a quien más depende de él. Sin degradados de gris
+        // entre capas: los fondos se separan por el borde, no por un tono casi idéntico.
+        new()
+        {
+            Id = HighContrastDarkId,
+            Name = "High Contrast Dark",
+            Appearance = ThemeAppearance.Dark,
+            Colors = Palette(
+                "#000000", "#000000", "#000000", "#0A0A0A", "#0A0A0A", "#1F1F1F", "#000000", "#000000", "#1F1F1F",
+                "#FFFFFF", "#F0F0F0", "#C8C8C8",
+                "#FFFFFF", "#000000", "#FFFF00",
+                "#000000",
+                "#FF7A7A", "#5CFF8F", "#FFD700"),
+        },
+        new()
+        {
+            Id = HighContrastLightId,
+            Name = "High Contrast Light",
+            Appearance = ThemeAppearance.Light,
+            Colors = Palette(
+                "#FFFFFF", "#FFFFFF", "#FFFFFF", "#F5F5F5", "#F5F5F5", "#E0E0E0", "#FFFFFF", "#FFFFFF", "#E0E0E0",
+                "#000000", "#1A1A1A", "#404040",
+                "#000000", "#FFFFFF", "#0000CC",
+                "#FFFFFF",
+                "#B00020", "#005A1F", "#6B4600"),
+        },
         new()
         {
             Id = "github-dark-default",

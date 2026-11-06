@@ -156,6 +156,32 @@
                     <TextBlock Text="{loc:Tr Settings_General_Sidebar_SearchNote}"
                                Classes="muted" FontSize="11.5" FontStyle="Italic" TextWrapping="Wrap" />
 
+                    <!-- Perfiles de uso (ALT-02): atajos que activan de una vez un conjunto de módulos. -->
+                    <TextBlock Text="{loc:Tr ModuleProfile_Title, Converter={StaticResource UpperCaseConverter}}"
+                               Classes="faint" FontSize="10.5" Margin="0,6,0,0" />
+                    <TextBlock Text="{loc:Tr ModuleProfile_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal">
+                      <Button Classes="pill" Margin="0,0,8,8" Command="{Binding ApplyModuleProfileCommand}" CommandParameter="NotesOnly"
+                              ToolTip.Tip="{loc:Tr ModuleProfile_NotesOnly_Description}"
+                              AutomationProperties.Name="{loc:Tr ModuleProfile_NotesOnly_Title}">
+                        <TextBlock Text="{loc:Tr ModuleProfile_NotesOnly_Title, Converter={StaticResource UpperCaseConverter}}" />
+                      </Button>
+                      <Button Classes="pill" Margin="0,0,8,8" Command="{Binding ApplyModuleProfileCommand}" CommandParameter="Planner"
+                              ToolTip.Tip="{loc:Tr ModuleProfile_Planner_Description}"
+                              AutomationProperties.Name="{loc:Tr ModuleProfile_Planner_Title}">
+                        <TextBlock Text="{loc:Tr ModuleProfile_Planner_Title, Converter={StaticResource UpperCaseConverter}}" />
+                      </Button>
+                      <Button Classes="pill" Margin="0,0,8,8" Command="{Binding ApplyModuleProfileCommand}" CommandParameter="Everything"
+                              ToolTip.Tip="{loc:Tr ModuleProfile_Everything_Description}"
+                              AutomationProperties.Name="{loc:Tr ModuleProfile_Everything_Title}">
+                        <TextBlock Text="{loc:Tr ModuleProfile_Everything_Title, Converter={StaticResource UpperCaseConverter}}" />
+                      </Button>
+                    </WrapPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{loc:Tr ModuleProfile_Active_Label}" Classes="faint" />
+                      <TextBlock Text="{Binding ActiveModuleProfileLabel}" FontWeight="Bold" FontSize="12.5" />
+                    </StackPanel>
+
                     <!-- Lista principal (desplazable) -->
                     <TextBlock Text="{loc:Tr Settings_General_Sidebar_MainGroup_Title, Converter={StaticResource UpperCaseConverter}}"
                                Classes="faint" FontSize="10.5" Margin="0,6,0,0" />

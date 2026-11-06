@@ -33,22 +33,26 @@ public sealed partial class MainWindowViewModel
         }
 
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenSettings"], MaterialIconKind.CogOutline, OpenSettings));
-        items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenReminders"], MaterialIconKind.CalendarClockOutline, OpenReminders));
-        items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenNotifications"], MaterialIconKind.BellRingOutline, OpenNotifications));
+        if (RemindersSidebarEnabled || RemindersPanelEnabled)
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenReminders"], MaterialIconKind.CalendarClockOutline, OpenReminders));
+        if (NotificationsSidebarEnabled || NotificationsPanelEnabled)
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenNotifications"], MaterialIconKind.BellRingOutline, OpenNotifications));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ToggleSidebar"], MaterialIconKind.ChevronDoubleLeft, ToggleSidebar));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ZoomIn"], MaterialIconKind.MagnifyPlusOutline, ZoomIn));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ZoomOut"], MaterialIconKind.MagnifyMinusOutline, ZoomOut));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ZoomReset"], MaterialIconKind.BackupRestore, ZoomReset));
-        items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_QuickNewNote"], MaterialIconKind.NoteTextOutline, QuickNewNote));
+        if (NotesPanelEnabled)
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_QuickNewNote"], MaterialIconKind.NoteTextOutline, QuickNewNote));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenGlobalSearch"], MaterialIconKind.Magnify, OpenGlobalSearch));
-        items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenQuickSwitcher"], MaterialIconKind.NoteSearchOutline, OpenQuickSwitcher));
+        if (NotesPanelEnabled)
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenQuickSwitcher"], MaterialIconKind.NoteSearchOutline, OpenQuickSwitcher));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_QuickCapture"], MaterialIconKind.LightningBoltOutline, OpenQuickCapture));
         // T4: se ofrece siempre, incluso sin ningún vault reciente además del abierto — el selector
         // también es desde donde se abre una carpeta nueva como vault.
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_SwitchVault"], MaterialIconKind.SafeSquareOutline, OpenVaultSwitcher));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ClipWebPage"], MaterialIconKind.WebPlus, () => WebClip.Open()));
 
-        if (Kanban?.MultipleBoardsEnabled == true)
+        if (KanbanPanelEnabled && Kanban?.MultipleBoardsEnabled == true)
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["Kanban_Multi_Select"], MaterialIconKind.ViewDashboardOutline,
                 () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; }));
@@ -56,7 +60,7 @@ public sealed partial class MainWindowViewModel
                 () => { Navigate(AppPage.Kanban); Kanban.CreateBoardCommand.Execute(null); }));
         }
 
-        if (Notes is not null)
+        if (NotesPanelEnabled && Notes is not null)
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenDailyNote"], MaterialIconKind.CalendarTodayOutline, OpenDailyNoteFromPalette));
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_NewNoteFromTemplate"], MaterialIconKind.FileDocumentMultipleOutline, NewNoteFromTemplateFromPalette));
@@ -77,12 +81,12 @@ public sealed partial class MainWindowViewModel
             items.Add(new CommandPaletteItem(LocalizationService.Instance[IsAssistantPanelVisible
                     ? "CommandPalette_Action_CloseAssistantPanel" : "CommandPalette_Action_OpenAssistantPanel"],
                 MaterialIconKind.DockRight, () => ToggleAssistantPanelCommand.Execute(null)));
-            if (Notes?.ActiveEditor is not null)
+            if (NotesPanelEnabled && Notes?.ActiveEditor is not null)
                 items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AskAssistantAboutNote"],
                     MaterialIconKind.MessageTextOutline, StartAssistantChatAboutActiveNote));
         }
 
-        if (Kanban is not null)
+        if (KanbanPanelEnabled && Kanban is not null)
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AddKanbanColumn"], MaterialIconKind.ViewColumnOutline, AddKanbanColumnFromPalette));
 
         // Exportar vistas (T8). Solo se ofrecen las de la página en la que estamos: la exportación
@@ -103,7 +107,7 @@ public sealed partial class MainWindowViewModel
 
         // La nota, en cambio, se compone desde su Markdown y no desde la pantalla, así que basta con que
         // haya una pestaña activa: no hace falta estar en Documentos.
-        if (Notes?.ActiveEditor is not null)
+        if (NotesPanelEnabled && Notes?.ActiveEditor is not null)
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportNotePng"], MaterialIconKind.ImageOutline, () => _ = Notes.ExportActiveNoteAsync(ExportFormat.Png)));
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportNotePdf"], MaterialIconKind.FilePdfBox, () => _ = Notes.ExportActiveNoteAsync(ExportFormat.Pdf)));
@@ -126,7 +130,7 @@ public sealed partial class MainWindowViewModel
             // Sin cuenta de Polar vinculada, SyncNowCommand sería otro no-op silencioso
             // (PolarSyncService.SyncNowAsync ya lo es), así que se omite igual que el modo enfoque de
             // arriba en vez de mostrarse siempre.
-            if (_polarAuthService.IsLinked)
+            if (_polarAuthService.IsLinked && IsPolarSurfaceEnabled)
                 items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_SyncPolarNow"], MaterialIconKind.Sync, () => Settings.SyncNowCommand.Execute(null)));
         }
 

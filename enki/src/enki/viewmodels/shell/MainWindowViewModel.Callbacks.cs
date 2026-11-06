@@ -74,6 +74,17 @@ public sealed partial class MainWindowViewModel
         _ => true
     };
 
+    /// <summary>Si el módulo <paramref name="key"/> (clave de <see cref="SidebarSectionCatalog.AllKeys"/>) está
+    /// activo (ALT-02). Un módulo desactivado desaparece de la barra, la paleta de comandos, la búsqueda
+    /// global, el panel y los atajos; sus datos siguen en disco. Las claves desconocidas cuentan como
+    /// activas para no ocultar por error algo que no es un módulo.</summary>
+    public bool IsModuleEnabled(string key) =>
+        !Enum.TryParse<AppPage>(key, out var page) || IsSidebarSectionEnabled(page);
+
+    /// <summary>Los datos de Polar (tareas) solo se muestran dentro de Kanban y Calendario; sin ninguno de
+    /// los dos activos no hay dónde enseñarlos, ni en la búsqueda ni en la paleta.</summary>
+    private bool IsPolarSurfaceEnabled => CalendarPanelEnabled || KanbanPanelEnabled;
+
     /// <summary>Rebuilds <see cref="NavItems"/>/<see cref="BottomNavItems"/> from scratch off
     /// <see cref="Models.AppSettings.SidebarMainSectionOrder"/>/<see cref="Models.AppSettings.SidebarBottomSectionOrder"/>
     /// (resolved via <see cref="SidebarSectionCatalog.Resolve"/>, so a missing/stale order list still falls
@@ -225,6 +236,7 @@ public sealed partial class MainWindowViewModel
         var wasActive = NavItems.Concat(BottomNavItems).FirstOrDefault(n => n.Page == page)?.IsActive ?? false;
 
         RebuildNavItems();
+        Dashboard?.RefreshModules();
 
         if (!value && wasActive && (NavItems.FirstOrDefault() ?? BottomNavItems.FirstOrDefault())?.Page is { } fallback)
             Navigate(fallback);

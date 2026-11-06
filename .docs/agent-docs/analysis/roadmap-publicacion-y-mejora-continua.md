@@ -1,5 +1,19 @@
 # ROADMAP DE PUBLICACION Y MEJORA CONTINUA
 
+> **NOTA DE VIGENCIA (2026-11-06, rama `beta-v2.0`).** Contrastado con el repositorio actual, estos puntos
+> **ya no están pendientes**: §1.1 (el `readme.md` apunta a `.docs/…` y ya no a `docs/agent-docs/…`),
+> §1.2 (empaquetado por sistema en `enki/packaging/` y `release.yml`; ver
+> [`empaquetado-y-distribucion.md`](../../project-info/empaquetado-y-distribucion.md)), §1.4 (credenciales de
+> Polar en almacén seguro; ver [`decision-almacenamiento-credenciales-polar.md`](../../project-info/analisis-proyecto/decision-almacenamiento-credenciales-polar.md)),
+> §2.1, §2.2, §2.3, §2.5, §3.1, §3.2 y §3.3 (cada uno tiene su documento en `.docs/project-info/`:
+> `plantillas-de-notas`, `historial-local-de-versiones`, `gestor-global-etiquetas`, `grafo-global-vault`,
+> `imagenes-en-notas`, `notas-diarias`; el web clipper de §3.3 es `WebClipViewModel` y la captura global está en `captura-rapida-global`) y §4 (asistente de IA opcional; ver
+> [`asistente-ia.md`](../../project-info/asistente-ia.md)).
+>
+> Siguen abiertos §3.4 (captura móvil por Polar, **ALT-01**) y la calidad de la entrega fuera de Linux
+> (**ALT-04**, ver [`politica-de-firma-y-ci-multiplataforma.md`](../../project-info/politica-de-firma-y-ci-multiplataforma.md)).
+> Prioridades vigentes: [`new-features/indice.md`](./new-features/indice.md).
+
 > lectura de producto para orientar las siguientes fases de Enki una vez que el
 > nucleo principal ya esta consolidado. este documento no sustituye al roadmap
 > historico ni al inventario funcional: resume que falta para que el proyecto

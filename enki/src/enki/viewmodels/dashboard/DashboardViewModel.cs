@@ -158,9 +158,58 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// <summary>Columnas de la rejilla de "ACCESOS RÁPIDOS": 4 con la tarjeta de Calendario visible,
     /// 3 cuando el panel está desactivado — sin esto la UniformGrid reservaría una celda vacía aunque
     /// la tarjeta oculta no ocupe sitio (los hijos invisibles no se miden ni se colocan).</summary>
-    public int QuickAccessColumns => IsCalendarEnabled ? 4 : 3;
+    public int QuickAccessColumns =>
+        1 + (IsCalendarEnabled ? 1 : 0) + (IsRemindersEnabled ? 1 : 0) + (IsNotificationsEnabled ? 1 : 0);
 
     partial void OnIsCalendarEnabledChanged(bool value) => OnPropertyChanged(nameof(QuickAccessColumns));
+
+    /// <summary>Igual que <see cref="IsCalendarEnabled"/> para las tarjetas "RECORDATORIOS" y "NOTIFICACIONES"
+    /// de "ACCESOS RÁPIDOS" (ALT-02): se ocultan con su módulo para no enlazar a algo que la barra no ofrece.</summary>
+    [ObservableProperty]
+    private bool _isRemindersEnabled = true;
+
+    [ObservableProperty]
+    private bool _isNotificationsEnabled = true;
+
+    partial void OnIsRemindersEnabledChanged(bool value) => OnPropertyChanged(nameof(QuickAccessColumns));
+
+    partial void OnIsNotificationsEnabledChanged(bool value) => OnPropertyChanged(nameof(QuickAccessColumns));
+
+    /// <summary>Consulta a <see cref="MainWindowViewModel"/> si un módulo (clave de
+    /// <see cref="SidebarSectionCatalog.AllKeys"/>) está activo (ALT-02). Sin proveedor todo cuenta como
+    /// activo, que es lo que esperan los tests y el uso aislado.</summary>
+    public Func<string, bool>? IsModuleEnabled { get; set; }
+
+    /// <summary>Módulo del que depende cada bloque del panel; los bloques que no aparecen (accesos rápidos,
+    /// bóveda, actividad) no dependen de ninguno y se muestran siempre.</summary>
+    private static readonly Dictionary<string, string> SectionModules = new()
+    {
+        ["Today"] = "Calendar",
+        ["Sessions"] = "Sessions",
+        ["BoardTasks"] = "Kanban",
+        ["RecentNotes"] = "Notes",
+        ["Habits"] = "Habits"
+    };
+
+    private bool IsSectionAvailable(string key) =>
+        !SectionModules.TryGetValue(key, out var module) || (IsModuleEnabled?.Invoke(module) ?? true);
+
+    /// <summary>Vuelve a leer qué módulos están activos tras activar o desactivar uno desde Ajustes: oculta
+    /// sus bloques y tarjetas sin tocar la lista de bloques ocultos del usuario, de modo que al reactivarlo
+    /// reaparece justo donde estaba.</summary>
+    public void RefreshModules()
+    {
+        SyncModuleFlags();
+        RebuildSections();
+    }
+
+    private void SyncModuleFlags()
+    {
+        if (IsModuleEnabled is null) return;
+        IsCalendarEnabled = IsModuleEnabled("Calendar");
+        IsRemindersEnabled = IsModuleEnabled("Reminders");
+        IsNotificationsEnabled = IsModuleEnabled("Notifications");
+    }
 
     /// <summary>Columnas de la rejilla en la que se vierten las secciones del Dashboard — enlazada al
     /// <see cref="Controls.DashboardGridPanel"/> de <c>DashboardView.axaml</c>. La fija
@@ -468,6 +517,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
         _ = LoadGraphAsync();
 
+        SyncModuleFlags();
         RebuildSections();
     }
 
@@ -549,6 +599,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
             .Concat(DefaultSectionOrder.Except(order))
             .Where(SectionFactories.ContainsKey)
             .Where(key => !hidden.Contains(key))
+            .Where(IsSectionAvailable)
             .ToList();
 
         var layoutStyle = settings?.DashboardLayoutStyle ?? DashboardLayoutEngine.Classic;

@@ -631,6 +631,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public void RefreshLocalizedLabels()
     {
         OnPropertyChanged(nameof(AppVersionLabel));
+        OnPropertyChanged(nameof(ActiveModuleProfileLabel));
         OnPropertyChanged(nameof(EditorFontSizeLabel));
         OnPropertyChanged(nameof(EditorColumnWidthLabel));
         OnPropertyChanged(nameof(EditorTabSizeLabel));

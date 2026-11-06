@@ -1,5 +1,11 @@
 # AUDITORIA DE SEGURIDAD Y FALLOS CRITICOS
 
+> **NOTA DE VIGENCIA (2026-11-06, rama `beta-v2.0`).** El análisis se hizo sobre `alfa-version` (`dee3860`);
+> esa rama ya no existe en el remoto. La sección «ESTADO» de abajo es la fuente de qué hallazgos están
+> corregidos: no se añade aquí ningún cambio de estado que no conste allí. Lo que esta auditoría decía de la
+> integración continua (solo Linux) se sigue en **ALT-04** de [`new-features/prioridad-alta.md`](./new-features/prioridad-alta.md). Prioridades vigentes:
+> [`new-features/indice.md`](./new-features/indice.md).
+
 > revision completa del codigo de `enki/src/enki/` buscando vulnerabilidades, fallos de seguridad,
 > validaciones basicas ausentes, bugs latentes y cualquier cosa que pueda matar el proyecto una vez
 > publicado. no es un roadmap de producto: aqui solo hay problemas y como cerrarlos.

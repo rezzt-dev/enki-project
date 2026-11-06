@@ -1,5 +1,12 @@
 # Funcionalidades pendientes priorizadas
 
+> **NOTA DE VIGENCIA (2026-11-06, rama `beta-v2.0`).** La «rama de referencia» `alfa-version` de arriba es
+> la del momento del análisis: las ramas actuales son `main`, `beta-version` y `beta-v2.0`. De este documento:
+> T1 a T4 constan como hechas (casillas marcadas) y no deben volver a planificarse; **T12** (sincronización
+> de notas y captura desde el móvil) sigue pendiente y es **ALT-01** de [`new-features/prioridad-alta.md`](./new-features/prioridad-alta.md). Las prioridades vigentes, que
+> se solapan con las de aquí, están en [`new-features/indice.md`](./new-features/indice.md). Este documento se
+> conserva como histórico y como especificación detallada de cada tarea.
+
 Análisis de las funcionalidades que faltan en Enki para el avatar de usuario definido abajo, ordenadas por
 valor para el usuario frente a viabilidad técnica, con la especificación necesaria para implementarlas.
 

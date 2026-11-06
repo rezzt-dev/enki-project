@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
@@ -15,6 +17,7 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
 {
     private readonly VaultService _vaultService;
     private readonly Action _onVaultReady;
+    private readonly SettingsService? _settingsService;
 
     [ObservableProperty]
     private string? _errorMessage;
@@ -24,11 +27,32 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
     /// folder. Null on a first-ever launch, where there's nothing to explain yet.</summary>
     public string? InfoMessage { get; }
 
-    public VaultSetupViewModel(VaultService vaultService, Action onVaultReady, string? infoMessage = null)
+    /// <summary>Perfiles de uso entre los que elegir al crear un vault nuevo (ALT-02). Vacío si no hay
+    /// <see cref="SettingsService"/> al que aplicarlos.</summary>
+    public IReadOnlyList<ModuleProfileOption> ProfileOptions { get; }
+
+    /// <summary>Perfil elegido; solo se aplica al crear un vault nuevo, nunca al abrir uno existente, cuyos
+    /// ajustes ya son del usuario.</summary>
+    [ObservableProperty]
+    private ModuleProfileOption? _selectedProfile;
+
+    public bool HasProfileOptions => ProfileOptions.Count > 0;
+
+    public VaultSetupViewModel(VaultService vaultService, Action onVaultReady, string? infoMessage = null,
+        SettingsService? settingsService = null)
     {
         _vaultService = vaultService;
         _onVaultReady = onVaultReady;
+        _settingsService = settingsService;
         InfoMessage = infoMessage;
+
+        ProfileOptions = settingsService is null
+            ? []
+            : ModuleProfileCatalog.All.Select(p => new ModuleProfileOption(
+                p.Id,
+                LocalizationService.Instance[$"ModuleProfile_{p.Id}_Title"],
+                LocalizationService.Instance[$"ModuleProfile_{p.Id}_Description"])).ToArray();
+        _selectedProfile = ProfileOptions.FirstOrDefault(o => o.Id == ModuleProfileCatalog.Everything);
     }
 
     [RelayCommand]
@@ -38,6 +62,17 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenExistingVault() =>
         await PickAndInitialize(LocalizationService.Instance["VaultSetup_OpenFolderPickerTitle"], seedWelcomeNote: false);
+
+    /// <summary>Aplica el perfil elegido a los ajustes del vault recién creado. Se omite al abrir un vault
+    /// existente o con ajustes previos: ahí los módulos activos son los que el usuario ya dejó configurados.</summary>
+    private void ApplySelectedProfile(bool isNewVault)
+    {
+        if (!isNewVault || _settingsService is null) return;
+        if (ModuleProfileCatalog.Find(SelectedProfile?.Id) is not { } profile) return;
+
+        ModuleProfileCatalog.ApplyTo(_settingsService.Settings, profile);
+        _settingsService.Save();
+    }
 
     private async Task PickAndInitialize(string title, bool seedWelcomeNote)
     {
@@ -63,7 +98,10 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
 
         try
         {
+            // "Crear" sobre una carpeta que ya es un vault con ajustes propios no debe pisarlos con un perfil.
+            var isFreshVault = seedWelcomeNote && !File.Exists(Path.Combine(folder, ".enki", "settings.json"));
             _vaultService.InitializeVault(folder, seedWelcomeNote);
+            ApplySelectedProfile(isFreshVault);
             // Ensuring the vault has its "default" session happens centrally in
             // MainWindowViewModel.InitializeShell — covers this path plus a plain app startup against
             // an already-configured vault, so an old vault (created before sessions existed) also gets
@@ -96,3 +134,6 @@ public sealed partial class VaultSetupViewModel : ViewModelBase
         }
     }
 }
+
+/// <summary>Una opción del selector de perfil de la pantalla de bienvenida.</summary>
+public sealed record ModuleProfileOption(string Id, string Title, string Description);
