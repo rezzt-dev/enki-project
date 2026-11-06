@@ -191,6 +191,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - el prompt de sistema del asistente deja de afirmar que no puede navegar y describe la web como datos de terceros que nunca son instrucciones, sin contenido del vault ni datos personales en consultas o URLs; `AiApiKeyStore` admite `AiApiKeyKind.BraveSearch` y las confirmaciones aceptan una explicación propia.
 
 #### CORREGIDO
+- corregir que las tarjetas del Kanban terminadas siguieran apareciendo como vencidas, con la fecha en rojo, en la columna «Hecho», al desarchivarlas y en el panel «tareas del tablero» del dashboard: `KanbanCard.IsCompleted` (fecha de completado o archivada) y la columna «Hecho» donde está la tarjeta impiden ahora que cuente como vencida, también para las creadas sin pasar por un movimiento.
+- calcular el contador de vencidas del tablero con el estado ya actualizado al mover una tarjeta, sellando o limpiando `CompletedAtUtc` en `KanbanViewModel.MoveCard` antes de modificar las colecciones.
 - corregir que los menús del asistente (ámbito, capacidad, adjuntar nota y skill) se abrieran también en la sección del asistente oculta al lanzarlos desde el panel lateral, dejando un popover duplicado flotando sobre la página actual, con el nuevo comportamiento `SharedPopover` que abre un popover compartido solo en la vista que está en pantalla.
 - corregir la selección de texto en `SelectableTextBlock` para aplicar simultáneamente `SelectionBackgroundBrush` y `SelectionForegroundBrush` en mensajes Markdown, enlaces, listas, tablas y código, también al cambiar de tema.
 - sustituir los indicadores de carga del asistente por `LoadingSpinner`, un anillo completo con giro centrado, y corregir el origen relativo de los spinners compartidos.
@@ -408,6 +410,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - the assistant system prompt no longer claims it cannot browse and describes the web as third-party data that is never instructions, with no vault content or personal data in queries or URLs; `AiApiKeyStore` supports `AiApiKeyKind.BraveSearch` and approvals accept their own explanation.
 
 #### FIXED
+- fix completed Kanban cards still showing as overdue, with a red date, in the "Done" column, after being unarchived and in the dashboard "board tasks" panel: `KanbanCard.IsCompleted` (completion date or archived) and the "Done" column holding the card now stop it from counting as overdue, including cards created without ever being moved.
+- compute the board's overdue counter from the already updated state when a card is moved, stamping or clearing `CompletedAtUtc` in `KanbanViewModel.MoveCard` before touching the collections.
 - fix the assistant menus (scope, capacity, attach note and skill) opening a second time in the hidden assistant section when launched from the side panel, which left a duplicate popover floating over the current page, with the new `SharedPopover` behavior that opens a shared popover only in the view that is on screen.
 - fix `SelectableTextBlock` text selection by applying both `SelectionBackgroundBrush` and `SelectionForegroundBrush` to Markdown messages, links, lists, tables and code, including live theme changes.
 - replace the assistant's loading indicators with `LoadingSpinner`, a complete ring with centered rotation, and correct the relative origin of shared spinners.

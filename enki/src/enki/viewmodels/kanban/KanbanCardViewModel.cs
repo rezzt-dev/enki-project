@@ -37,7 +37,14 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         PriorityLabel);
 
     public bool HasDueDate => Card.DueDateUtc is not null || Card.StartDateUtc is not null;
-    public bool IsOverdue => Card.DueDateUtc is { } due && KanbanCard.IsPastDue(due);
+
+    /// <summary>Terminada: sellada como completada, archivada, o ubicada ahora mismo en la columna "Hecho".
+    /// Lo último cubre las tarjetas que están en "Hecho" sin fecha de completado (tablero semilla o
+    /// creadas directamente en esa columna desde el editor, que nunca pasaron por MoveCard).</summary>
+    public bool IsCompleted => IsInDoneColumn || Card.IsCompleted;
+
+    /// <summary>Una tarea terminada nunca está vencida, por mucho que su fecha límite quede atrás.</summary>
+    public bool IsOverdue => !IsCompleted && Card.DueDateUtc is { } due && KanbanCard.IsPastDue(due);
     public string DueDateLabel => Card.StartDateUtc is { } start
         ? (Card.DueDateUtc is { } end
             ? $"{KanbanCard.FormatDueLabel(start)} → {KanbanCard.FormatDueLabel(end)}"
@@ -112,6 +119,17 @@ public sealed partial class KanbanCardViewModel : ObservableObject
     [ObservableProperty]
     private bool _canArchive;
 
+    /// <summary>Sellada por <see cref="KanbanColumnViewModel"/> junto a <see cref="CanArchive"/>: la
+    /// tarjeta no conoce su columna. Alimenta <see cref="IsCompleted"/>.</summary>
+    [ObservableProperty]
+    private bool _isInDoneColumn;
+
+    partial void OnIsInDoneColumnChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsCompleted));
+        OnPropertyChanged(nameof(IsOverdue));
+    }
+
     [ObservableProperty]
     private bool _isDropTarget;
 
@@ -179,6 +197,7 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         OnPropertyChanged(nameof(IsHighPriority));
         OnPropertyChanged(nameof(PriorityTooltip));
         OnPropertyChanged(nameof(HasDueDate));
+        OnPropertyChanged(nameof(IsCompleted));
         OnPropertyChanged(nameof(IsOverdue));
         OnPropertyChanged(nameof(DueDateLabel));
         OnPropertyChanged(nameof(HasSubtasks));

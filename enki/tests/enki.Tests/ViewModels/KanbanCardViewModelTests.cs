@@ -264,4 +264,38 @@ public class KanbanCardViewModelTests
 
         Assert.Contains(nameof(KanbanCardViewModel.Title), raised);
     }
+
+    [Fact]
+    public void PastDueCard_IsOverdue_UntilItIsCompleted()
+    {
+        var card = NewCard();
+        card.DueDateUtc = DateTime.Today.AddDays(-3).ToUniversalTime();
+        var vm = new KanbanCardViewModel(card);
+        Assert.True(vm.IsOverdue);
+
+        card.CompletedAtUtc = DateTime.UtcNow;
+        vm.RefreshFromModel();
+        Assert.False(vm.IsOverdue);
+    }
+
+    [Fact]
+    public void ArchivedCard_IsNeverOverdue_EvenWithoutCompletionDate()
+    {
+        var card = NewCard();
+        card.DueDateUtc = DateTime.Today.AddDays(-3).ToUniversalTime();
+        card.ArchivedAtUtc = DateTime.UtcNow;
+        Assert.False(new KanbanCardViewModel(card).IsOverdue);
+    }
+
+    [Fact]
+    public void CardInDoneColumn_IsNotOverdue_EvenWithoutCompletionDate()
+    {
+        var card = NewCard();
+        card.DueDateUtc = DateTime.Today.AddDays(-3).ToUniversalTime();
+        var column = new KanbanColumn { Id = "c", Title = "Hecho", Role = CoreColumnRole.Done };
+        column.Cards.Add(card);
+        var columnVm = new KanbanColumnViewModel(column);
+
+        Assert.False(columnVm.Cards[0].IsOverdue);
+    }
 }
