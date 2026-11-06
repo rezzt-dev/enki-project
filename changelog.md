@@ -101,6 +101,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 #### CAMBIOS
 
 - completar las guías de gestión y el contexto específico del proyecto; conservar las reglas técnicas y verificar las rutas
+- corregir el ejemplo de promociones entre ramas para evitar destinos idénticos al origen
 - la exportación de una nota a PNG usa la misma composición que el PDF, con la paleta del editor en el tema activo; la anterior composición rasterizada de notas (`NotePageComposer`) se elimina.
 - el coloreado de código del editor se separa en `CodeTokenizer`, que comparten el editor y el PDF para que ambos usen las mismas gramáticas; `MarkdownCodeHighlighter` pasa a ser solo el adaptador del editor.
 - el grafo de `sesiones` deja de depender de `sigma.js` y `d3-force` (retirados de `assets/js/`): lo dibuja un motor 3D propio sobre Canvas 2D, porque WebGL no puede presentar en el WebView de Linux (WPE solo compone por software); pinta bajo demanda, sin fotogramas cuando nada se mueve, y si el documento falla al pintar se cambia al visor nativo.
@@ -328,6 +329,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 #### CHANGED
 
 - complete repository management guides and project-specific context; preserve technical rules and verify paths
+- correct the branch promotion example to avoid destinations identical to the source
 - exporting a note to PNG uses the same composition as the PDF, with the editor's palette in the active theme; the previous rasterized note composer (`NotePageComposer`) is removed.
 - the editor's code highlighting is split out into `CodeTokenizer`, shared by the editor and the PDF so both use the same grammars; `MarkdownCodeHighlighter` becomes just the editor's adapter.
 - the `sessions` graph no longer depends on `sigma.js` and `d3-force` (removed from `assets/js/`): a dedicated 3D engine on Canvas 2D draws it, because WebGL cannot present in the Linux WebView (WPE only composites in software); it paints on demand, with no frames while nothing moves, and switches to the native viewer if the document fails to paint.
