@@ -42,12 +42,12 @@ public class CalendarLayerColorServiceTests
             Colors = new CalendarLayerColorService(Kanban, Tasks, Auth, Settings);
         }
 
-        public KanbanColumn Column(CoreColumnRole role) => Kanban.Board.Columns.First(c => c.Role == role);
+        public KanbanColumn Column(CoreColumnRole role) => Kanban.DefaultBoard.Columns.First(c => c.Role == role);
 
         public KanbanColumn AddCustomColumn(string title)
         {
             var column = new KanbanColumn { Id = Guid.NewGuid().ToString("N"), Title = title };
-            Kanban.Board.Columns.Add(column);
+            Kanban.DefaultBoard.Columns.Add(column);
             Kanban.Save();
             return column;
         }
@@ -85,6 +85,31 @@ public class CalendarLayerColorServiceTests
 
         Assert.Contains(color, CalendarLayerPalette.AccentPool);
         Assert.DoesNotContain(color, KanbanRoleColors);
+    }
+
+    [Theory]
+    [InlineData(CoreColumnRole.Backlog)]
+    [InlineData(CoreColumnRole.InProgress)]
+    [InlineData(CoreColumnRole.Done)]
+    public void SharedRoleColor_PreservesLegacyChoiceAndResetsAcrossBoards(CoreColumnRole role)
+    {
+        using var h = new Harness();
+        var first = h.Column(role);
+        var second = h.Kanban.CreateBoard("Personal").Columns.Single(c => c.Role == role);
+        var legacyKey = CalendarLayerColorService.KanbanColumnColorKey(first.Id);
+        var sharedKey = CalendarLayerColorService.KanbanRoleColorKey(role);
+        h.Settings.Settings.CalendarLayerColors[legacyKey] = "#123abc";
+        h.Settings.Settings.CalendarLayerColors[CalendarLayerColorService.KanbanColumnColorKey(second.Id)] = "#654321";
+
+        Assert.True(h.Colors.HasCustomColor(sharedKey));
+        Assert.Equal("#123ABC", ColorOf(h.Colors.BuildMap(), second));
+        h.Colors.SetColor(sharedKey, "#ABCDEF");
+        Assert.Equal("#ABCDEF", ColorOf(h.Colors.BuildMap(), first));
+        Assert.Equal("#ABCDEF", ColorOf(h.Colors.BuildMap(), second));
+        h.Colors.ResetColor(sharedKey);
+        Assert.False(h.Colors.HasCustomColor(sharedKey));
+        Assert.Equal(CalendarLayerPalette.DefaultForRole(role), ColorOf(h.Colors.BuildMap(), second));
+        Assert.DoesNotContain(legacyKey, new SettingsService(h.Directory).Settings.CalendarLayerColors.Keys);
     }
 
     // ===================== Listas de Polar =====================
@@ -146,7 +171,7 @@ public class CalendarLayerColorServiceTests
 
         Assert.Equal("#123ABC", ColorOf(h.Colors.BuildMap(), column));
         Assert.True(h.Colors.HasCustomColor(key));
-        Assert.Equal("#123ABC", new SettingsService(h.Directory).Settings.CalendarLayerColors[key]);
+        Assert.Equal("#123ABC", new SettingsService(h.Directory).Settings.CalendarLayerColors[CalendarLayerColorService.KanbanRoleColorKey(column.Role)]);
     }
 
     [Fact]

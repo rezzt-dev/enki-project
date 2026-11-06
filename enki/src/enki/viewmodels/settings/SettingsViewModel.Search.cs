@@ -12,6 +12,22 @@ public sealed partial class SettingsViewModel
     [NotifyPropertyChangedFor(nameof(IsSearching))]
     private string _searchText = string.Empty;
 
+    public string CurrentSectionTitle => IsSearching
+        ? LocalizationService.Instance["Settings_Search_Title"]
+        : Sections.First(section => section.Section == SelectedSection).Label;
+
+    public string CurrentSectionDescription => IsSearching
+        ? LocalizationService.Instance["Settings_Search_Description"]
+        : Sections.First(section => section.Section == SelectedSection).Description;
+
+    partial void OnSearchTextChanged(string value) => RefreshSectionHeading();
+
+    private void RefreshSectionHeading()
+    {
+        OnPropertyChanged(nameof(CurrentSectionTitle));
+        OnPropertyChanged(nameof(CurrentSectionDescription));
+    }
+
     public bool IsSearching => !string.IsNullOrWhiteSpace(SearchText);
 
     /// <summary>El índice usa los mismos catálogos y entidades que las listas configurables.</summary>

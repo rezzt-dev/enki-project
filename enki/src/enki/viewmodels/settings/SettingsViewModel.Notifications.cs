@@ -15,6 +15,9 @@ namespace enki.ViewModels;
 public sealed partial class SettingsViewModel
 {
     [ObservableProperty]
+    private bool _notificationsEnabled;
+
+    [ObservableProperty]
     private bool _notificationsPanelEnabled;
 
     [ObservableProperty]
@@ -127,6 +130,12 @@ public sealed partial class SettingsViewModel
     public string NotificationSoundVolumeLabel =>
         string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Notifications_Sound_Volume_Unit"], (int)NotificationSoundVolume);
 
+    partial void OnNotificationsEnabledChanged(bool value)
+    {
+        _settingsService.Settings.NotificationsEnabled = value;
+        _settingsService.Save();
+    }
+
     partial void OnNotificationsPanelEnabledChanged(bool value)
     {
         _settingsService.Settings.NotificationsPanelEnabled = value;
@@ -217,5 +226,8 @@ public sealed partial class SettingsViewModel
     }
 
     [RelayCommand]
-    private void TestNotificationSound() => NotificationSoundPlayer.Play(NotificationSoundVolume);
+    private void TestNotificationSound()
+    {
+        if (NotificationsEnabled) NotificationSoundPlayer.Play(NotificationSoundVolume);
+    }
 }

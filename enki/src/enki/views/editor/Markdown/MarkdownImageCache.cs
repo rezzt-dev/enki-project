@@ -288,6 +288,27 @@ internal static class MarkdownImageCache
         target.LastFreshnessCheckUtc = DateTime.UtcNow;
     }
 
+    /// <summary>Carga una imagen de una vez, sin pasar por la caché compartida ni por el hilo de UI: la
+    /// usa la exportación de notas (<c>Services.Export.NoteDocumentAssets</c>), que necesita la imagen
+    /// ya decodificada —no un hueco gris que se rellenará en el siguiente repintado— y la decodifica a la
+    /// resolución de impresión, que no es la de pantalla. Resuelve, lee (descifrando si la nota está en
+    /// una sesión protegida) y aplica los mismos topes que el editor. Bloquea mientras dure una descarga
+    /// remota, así que se llama desde un hilo de fondo. Cualquier fallo se devuelve como
+    /// <see cref="MarkdownImageState.Failed"/> en vez de propagarse: una imagen rota es un problema del
+    /// contenido, no motivo para abortar el documento entero.</summary>
+    internal static MarkdownImageEntry LoadUncached(MarkdownImageContext context, string src, int decodeWidth)
+    {
+        try
+        {
+            return Load(context, src, decodeWidth);
+        }
+        catch (Exception ex)
+        {
+            LogService.Warning($"No se pudo cargar la imagen '{src}' para exportar la nota", ex);
+            return new MarkdownImageEntry { State = MarkdownImageState.Failed };
+        }
+    }
+
     private static MarkdownImageEntry Load(MarkdownImageContext context, string src, int decodeWidth)
     {
         var target = MarkdownImageResolver.Resolve(context, src);

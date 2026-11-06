@@ -5,7 +5,7 @@
 > escritura propia, la política de recarga y conflicto, y el ajuste que lo gobierna.
 >
 > **Fuera de alcance**: la sincronización de notas entre dispositivos (Enki no la hace; el vault es una
-> carpeta de Markdown y quien la sincroniza es el usuario), el historial local de versiones
+> carpeta de Markdown y quien la sincroniza es el usuario; ver la [guía de sincronización privada](sincronizacion-privada-notas.md)), el historial local de versiones
 > (`historial-local-de-versiones.md` — se apoya en él, no lo sustituye) y el backup completo del vault
 > (`empaquetado-y-distribucion.md` / `VaultBackupService`).
 >

@@ -92,5 +92,20 @@ public sealed partial class TagFilterViewModel : ObservableObject
         if (changed) Changed?.Invoke();
     }
 
+    /// <summary>Aplica una selección guardada a los chips disponibles y notifica un solo cambio.</summary>
+    public void SelectTags(IEnumerable<string> tags)
+    {
+        var selected = tags.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var changed = false;
+        foreach (var item in Items)
+        {
+            var shouldSelect = selected.Contains(item.Tag);
+            if (item.IsSelected == shouldSelect) continue;
+            item.IsSelected = shouldSelect;
+            changed = true;
+        }
+        if (changed) Changed?.Invoke();
+    }
+
     private void OnItemToggled(TagFilterItemViewModel _) => Changed?.Invoke();
 }

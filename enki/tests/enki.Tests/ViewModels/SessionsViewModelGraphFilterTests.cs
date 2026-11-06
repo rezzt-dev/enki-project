@@ -94,6 +94,59 @@ public class SessionsViewModelGraphFilterTests : IDisposable
     }
 
     [Fact]
+    public async Task Search_CombinesTermsAndSessionFilters_AndResetRestoresGraph()
+    {
+        var (vm, sessions, _) = await CreateViewModelAsync();
+        var first = sessions.Create("Research");
+        var second = sessions.Create("Archive");
+        File.WriteAllText(Path.Combine(first.RootPath, "Neural.md"), "---\ntags: [science]\n---\n[[Other]]");
+        File.WriteAllText(Path.Combine(first.RootPath, "Other.md"), "# Other");
+        File.WriteAllText(Path.Combine(second.RootPath, "Neural.md"), "# Neural");
+        await LoadGraphAsync(vm);
+        SessionGraph? visible = null;
+        vm.GraphUpdated += graph => visible = graph;
+        vm.GraphSearchText = "  NEURAL   #SCIENCE ";
+        Assert.Single(visible!.Nodes);
+        Assert.Equal(first.Id, visible.Nodes[0].SessionId);
+        Assert.Empty(visible.Edges);
+        Assert.True(vm.IsGraphFiltered);
+        vm.GraphGroupFilters.Single(f => f.GroupId == first.Id).IsActive = false;
+        Assert.Empty(visible.Nodes);
+        Assert.True(vm.IsGraphEmpty);
+        vm.ResetGraphFiltersCommand.Execute(null);
+        Assert.Equal(3, visible.Nodes.Count);
+        Assert.Single(visible.Edges);
+        Assert.Empty(vm.GraphSearchText);
+        Assert.False(vm.IsGraphFiltered);
+    }
+
+    [Fact]
+    public async Task IsolateSession_PublishesOnceWithCounts_WithoutChangingNotes()
+    {
+        var (vm, sessions, _) = await CreateViewModelAsync();
+        var first = sessions.Create("First");
+        var second = sessions.Create("Second");
+        var path = Path.Combine(first.RootPath, "A.md");
+        File.WriteAllText(path, "[[B]]");
+        File.WriteAllText(Path.Combine(second.RootPath, "B.md"), "# B");
+        await LoadGraphAsync(vm);
+        var item = vm.GraphGroupFilters.Single(f => f.GroupId == first.Id);
+        Assert.Equal(1, item.NoteCount);
+        var updates = 0;
+        string? camera = null;
+        vm.GraphUpdated += _ => updates++;
+        vm.GraphCameraRequested += action => camera = action;
+        vm.IsolateGraphSessionCommand.Execute(item);
+        Assert.Equal(1, updates);
+        Assert.Equal("fit", camera);
+        Assert.Equal(1, vm.NodeCount);
+        Assert.Equal(0, vm.EdgeCount);
+        Assert.True(item.IsActive);
+        Assert.False(vm.GraphGroupFilters.Single(f => f.GroupId == second.Id).IsActive);
+        Assert.Equal("[[B]]", File.ReadAllText(path));
+    }
+
+    [Fact]
     public async Task RebuildGraphGroupFilters_CreatesOneRowPerGroup_VaultRootFirst_AllActiveByDefault()
     {
         var (vm, sessions, vault) = await CreateViewModelAsync();

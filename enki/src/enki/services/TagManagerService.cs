@@ -18,7 +18,7 @@ public readonly record struct TagChangeSummary(int Notes, int Kanban, int Polar)
 /// una función de solo lectura sobre el estado ya cargado por los tres servicios fuente para
 /// <see cref="BuildEntries"/>, más las mutaciones que escriben directamente sobre las entidades reales
 /// (<see cref="NoteFile"/>/<see cref="KanbanCard"/>/<see cref="PolarTask"/>) — nunca crea ni mantiene un
-/// segundo almacén de etiquetas (AGENTS.md, "Unificar sin duplicar").
+/// segundo almacén de etiquetas (agents.md, "Unificar sin duplicar").
 ///
 /// El alcance de las mutaciones son solo entidades activas: notas no borradas, tarjetas del tablero Kanban
 /// (incluidas las archivadas — igual que el filtro de etiquetas principal de Kanban, que tampoco las
@@ -49,7 +49,7 @@ public sealed class TagManagerService(VaultService vaultService, KanbanService k
         }
 
         foreach (var note in vaultService.GetAllNotesAcrossVault()) Count(noteCounts, note.Tags);
-        foreach (var card in kanbanService.Board.Columns.SelectMany(c => c.Cards)) Count(kanbanCounts, card.Tags);
+        foreach (var card in kanbanService.AllColumns.SelectMany(c => c.Cards)) Count(kanbanCounts, card.Tags);
         foreach (var task in polarTaskService.Store.Tasks.Where(t => !t.IsDeleted)) Count(polarCounts, task.Tags);
 
         return names.Values
@@ -87,7 +87,7 @@ public sealed class TagManagerService(VaultService vaultService, KanbanService k
         var notesTouched = vaultService.ReplaceTagAcrossVault(sourceTags, targetName);
 
         var kanbanTouched = 0;
-        foreach (var card in kanbanService.Board.Columns.SelectMany(c => c.Cards))
+        foreach (var card in kanbanService.AllColumns.SelectMany(c => c.Cards))
         {
             if (!TagListRewriter.Matches(card.Tags, sourceTags)) continue;
             card.Tags = TagListRewriter.Apply(card.Tags, sourceTags, targetName);

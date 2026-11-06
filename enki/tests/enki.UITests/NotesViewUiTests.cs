@@ -60,7 +60,7 @@ public class NotesViewUiTests : IDisposable
     public void LinkedCards_AreInHeader_AndPopupOpensTheOriginalTask()
     {
         var kanban = new KanbanService(_tempDir);
-        var card = kanban.Board.Columns[0].Cards[0];
+        var card = kanban.DefaultBoard.Columns[0].Cards[0];
         var path = Path.Combine(_vaultDir, "Vinculada.md");
         File.WriteAllText(path, "Contenido");
         card.LinkedNotePath = path;

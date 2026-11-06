@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using Avalonia.Platform.Storage;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -64,8 +66,9 @@ public partial class SkillsTreeView : UserControl
     /// gratuita.</summary>
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(SkillsViewModel.IsTreeSearchMode)) return;
-        if (Vm is not { IsTreeSearchMode: true }) return;
+        if (e.PropertyName is not (nameof(SkillsViewModel.IsTreeSearchMode) or
+            nameof(SkillsViewModel.IsTreeSidebarVisible))) return;
+        if (Vm is not { IsTreeSearchMode: true, IsTreeSidebarVisible: true }) return;
 
         Dispatcher.UIThread.Post(() =>
         {
@@ -168,8 +171,9 @@ public partial class SkillsTreeView : UserControl
     {
         if (sender is not Border { DataContext: SkillTreeItemViewModel node }) return;
 
-        var valid = node.IsFolder && e.DataTransfer.Contains(SkillDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
+        var valid = node.IsFolder && (e.DataTransfer.Contains(SkillDragFormat) || e.DataTransfer.Contains(DataFormat.File));
+        e.DragEffects = valid ? (e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move : DragDropEffects.Copy) : DragDropEffects.None;
+        e.Handled = node.IsFolder;
         node.IsDropTarget = isOver && valid;
     }
 
@@ -180,20 +184,53 @@ public partial class SkillsTreeView : UserControl
         if (!node.IsFolder || Vm is not { } vm) return;
 
         var sourcePath = e.DataTransfer.TryGetValue(SkillDragFormat);
+        e.Handled = true;
         if (sourcePath is not null) vm.DropOnTreeNode(node, sourcePath);
+        else ImportDroppedFiles(e, node.FullPath);
     }
 
     // ===================== Fondo del árbol: soltar en la raíz de la biblioteca =====================
 
     private static void TreeBackground_DragOver(object? sender, DragEventArgs e) =>
-        e.DragEffects = e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+        e.DragEffects = e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move :
+            e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
 
     private void TreeBackground_Drop(object? sender, DragEventArgs e)
     {
         if (Vm is not { } vm) return;
 
         var sourcePath = e.DataTransfer.TryGetValue(SkillDragFormat);
+        e.Handled = true;
         if (sourcePath is not null) vm.DropOnTreeRoot(sourcePath);
+        else ImportDroppedFiles(e, vm.LibraryRootPath);
+    }
+
+    private void Workspace_DragOver(object? sender, DragEventArgs e)
+    {
+        TreeBackground_DragOver(sender, e);
+        if (Vm is { } vm) vm.IsGridDropTarget = e.DragEffects != DragDropEffects.None;
+    }
+
+    private void Workspace_DragLeave(object? sender, DragEventArgs e)
+    {
+        if (Vm is { } vm) vm.IsGridDropTarget = false;
+    }
+
+    private void Workspace_Drop(object? sender, DragEventArgs e)
+    {
+        if (Vm is not { } vm) return;
+        vm.IsGridDropTarget = false;
+        e.Handled = true;
+        if (e.DataTransfer.TryGetValue(SkillDragFormat) is { } path && vm.FindSkillByPath(path) is { } skill)
+            vm.MoveSkillToFolder(skill, vm.CurrentFolderPath);
+        else ImportDroppedFiles(e, vm.CurrentFolderPath);
+    }
+
+    private void ImportDroppedFiles(DragEventArgs e, string destination)
+    {
+        var paths = e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath())
+            .OfType<string>().ToList();
+        if (paths is { Count: > 0 }) Vm?.BeginImport(paths, destination);
     }
 
     // ===================== Resultados de búsqueda =====================
@@ -274,7 +311,8 @@ public partial class SkillsTreeView : UserControl
     {
         if (!_resizingSidebar || Vm is not { } vm) return;
 
-        var delta = e.GetPosition(this).X - _resizeStartX;
+        var delta = enki.Controls.SidePanelGrid.GetResizeDelta((Control)sender!,
+            e.GetPosition(this).X - _resizeStartX);
         vm.TreeSidebarWidth = Math.Clamp(_resizeStartWidth + delta,
             SkillsViewModel.TreeSidebarMinWidth, SkillsViewModel.TreeSidebarMaxWidth);
     }

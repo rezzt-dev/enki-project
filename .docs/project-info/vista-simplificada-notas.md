@@ -70,8 +70,16 @@ reorganizara el otro a la espalda del usuario.
 
 El panel se puede ocultar (`NotesSimpleSidebarVisible`) y ensanchar arrastrando su separador
 (`NotesSimpleSidebarWidth`, acotado a 200–520px; se escribe al soltar el ratón, no en cada píxel del
-arrastre). Con el panel oculto queda un raíl de 46px con las dos únicas cosas que no pueden quedarse sin
-salida: volver a mostrarlo (arriba) y cambiar de sesión (abajo).
+arrastre). Con el panel plegado queda un raíl de 52px con accesos a **explorar, buscar, nueva nota,
+plantillas y nota diaria**, además de desplegar el panel arriba y cambiar de sesión abajo. Los botones
+incluyen tooltip y nombre accesible; el selector muestra también la sesión actual en su tooltip.
+
+Explorar y buscar abren temporalmente el **mismo panel** sobre el editor, sin desplazarlo ni modificar
+`NotesSimpleSidebarVisible`. El acceso activo queda resaltado. Abrir una nota, volver a pulsar el acceso
+activo, pulsar Escape, cerrar o hacer clic fuera descarta el navegador. La búsqueda recibe el foco al
+abrirse, incluso al retomar una consulta. Las filas del árbol y los resultados admiten Enter/Espacio.
+La chincheta fija el panel desplegado y guarda esa elección. El raíl permite desplazamiento vertical en
+ventanas bajas para mantener accesibles las acciones.
 
 ### Editor y pestañas
 

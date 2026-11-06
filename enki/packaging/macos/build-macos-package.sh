@@ -6,12 +6,14 @@
 #
 #   - Enki-<version>-macos-<arch>.zip   — siempre (Enki.app comprimido).
 #   - Enki-<version>-macos-<arch>.dmg   — solo si `hdiutil` está disponible (macOS real; el job de
-#     macOS en CI lo trae siempre). En Linux/Windows se omite con un aviso.
+#     macOS en CI lo trae siempre).
 #
 # El bundle se firma ad-hoc (`codesign --sign -`) cuando `codesign` está disponible: no sustituye a
 # una firma con certificado de Apple Developer (seguiría avisando "desarrollador no identificado" al
 # abrirlo), pero evita el "Enki.app está dañado" que Gatekeeper muestra para bundles sin firmar en
 # macOS recientes.
+#
+# Requiere macOS con herramientas de Xcode y Python 3 para incorporar y validar el motor multimedia.
 #
 # Uso:
 #   enki/packaging/macos/build-macos-package.sh [opciones]
@@ -81,6 +83,12 @@ if [[ ! -x "$PUBLISH_DIR/enki" ]]; then
   exit 1
 fi
 
+# También impide empaquetar publicaciones antiguas incompletas con --skip-publish.
+if [[ ! -s "$PUBLISH_DIR/polar.properties" ]] || ! grep -q '^SUPABASE_URL=https://' "$PUBLISH_DIR/polar.properties" || ! grep -q '^SUPABASE_ANON_KEY=.' "$PUBLISH_DIR/polar.properties"; then
+  echo "Falta la configuración pública de Polar en $PUBLISH_DIR. Vuelve a ejecutar sin --skip-publish con Supabase configurado." >&2
+  exit 1
+fi
+
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -90,11 +98,16 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # Igual que en el .deb/.tar.gz de Linux: el binario y sus librerías nativas (libSkiaSharp.dylib,
 # libHarfBuzzSharp.dylib...) tienen que quedarse juntos porque .NET las resuelve vía
 # AppContext.BaseDirectory, que dentro de un bundle apunta a Contents/MacOS. local.properties (las
-# credenciales locales de Supabase de quien compila) se excluye: nunca debe viajar en un paquete
-# distribuido.
+# propiedades locales de quien compila) se excluye. polar.properties sí viaja con la URL y
+# la clave pública que necesita la aplicación instalada.
 cp -a "$PUBLISH_DIR/." "$APP/Contents/MacOS/"
 rm -f "$APP/Contents/MacOS/local.properties"
+# Descarta el antiguo runtime NuGet (solo Intel) de publicaciones reutilizadas.
+rm -f "$APP/Contents/MacOS/libvlc.dylib"
 chmod 755 "$APP/Contents/MacOS/enki"
+
+# Siempre se incorpora el runtime correcto, también al reutilizar una publicación antigua.
+bash "$SCRIPT_DIR/bundle-media-runtime.sh" "$RID" "$APP/Contents/MacOS/libvlc"
 
 cp "$REPO_ROOT/enki/src/enki/assets/icon/enki.icns" "$APP/Contents/Resources/enki.icns"
 

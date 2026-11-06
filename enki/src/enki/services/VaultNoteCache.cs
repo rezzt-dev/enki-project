@@ -156,6 +156,7 @@ internal sealed class VaultNoteCache
         var total = StringBytes(key) + StringBytes(content) + StringBytes(note.FullPath)
                     + StringBytes(note.Title) + StringBytes(note.Preview) + 128;
         foreach (var tag in note.Tags) total += StringBytes(tag) + 16;
+        foreach (var (property, value) in note.Properties) total += StringBytes(property) + StringBytes(value) + 32;
         return total;
     }
 }

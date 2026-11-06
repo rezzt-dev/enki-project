@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Avalonia;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Services;
@@ -77,11 +78,33 @@ public sealed partial class CalendarLayerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isColorPickerOpen;
 
-    /// <summary>Texto del campo hex del emergente. Se confirma al pulsar Intro o al salir del campo
+    /// <summary>Texto del campo hex del emergente. Se confirma al pulsar Intro o Guardar
     /// (<see cref="ApplyDraftColorCommand"/>) y no en cada tecla, para no guardar los estados a medio
     /// escribir de "#1A2B3C".</summary>
     [ObservableProperty]
     private string _colorDraftHex = string.Empty;
+
+    /// <summary>Color del selector visual, sincronizado con el borrador hexadecimal sin persistirlo.</summary>
+    [ObservableProperty]
+    private Color _colorDraft;
+
+    partial void OnIsColorPickerOpenChanged(bool value)
+    {
+        if (value) ColorDraftHex = ColorHex;
+    }
+
+    partial void OnColorDraftHexChanged(string value)
+    {
+        if (HexColorUtility.NormalizeHex(value) is { } hex)
+            ColorDraft = Color.Parse(hex);
+    }
+
+    partial void OnColorDraftChanged(Color value)
+    {
+        var hex = HexColorUtility.ColorToHex(value);
+        if (HexColorUtility.NormalizeHex(ColorDraftHex) != hex)
+            ColorDraftHex = hex;
+    }
 
     public CalendarLayerViewModel(
         string key, string label, string colorHex, bool isActive,
@@ -117,8 +140,8 @@ public sealed partial class CalendarLayerViewModel : ObservableObject
     [RelayCommand]
     private void CloseColorPicker() => IsColorPickerOpen = false;
 
-    /// <summary>Un clic en un color de la rejilla lo aplica y cierra — el emergente no tiene "guardar":
-    /// es un ajuste de una sola propiedad, reversible desde el mismo sitio con "automático".</summary>
+    /// <summary>Un clic en un color de la rejilla lo aplica y cierra directamente. El borrador del selector
+    /// visual y del campo hexadecimal se confirma por separado con Guardar.</summary>
     [RelayCommand]
     private void SelectSwatch(string hex)
     {

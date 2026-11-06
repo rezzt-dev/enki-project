@@ -48,6 +48,14 @@ public sealed partial class MainWindowViewModel
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_SwitchVault"], MaterialIconKind.SafeSquareOutline, OpenVaultSwitcher));
         items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ClipWebPage"], MaterialIconKind.WebPlus, () => WebClip.Open()));
 
+        if (Kanban?.MultipleBoardsEnabled == true)
+        {
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["Kanban_Multi_Select"], MaterialIconKind.ViewDashboardOutline,
+                () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; }));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["Kanban_Multi_Create"], MaterialIconKind.Plus,
+                () => { Navigate(AppPage.Kanban); Kanban.CreateBoardCommand.Execute(null); }));
+        }
+
         if (Notes is not null)
         {
             items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_OpenDailyNote"], MaterialIconKind.CalendarTodayOutline, OpenDailyNoteFromPalette));
@@ -60,6 +68,18 @@ public sealed partial class MainWindowViewModel
             // así que este comando simplemente no se ofrece en vez de "funcionar" sin efecto visible.
             if (Notes.ActiveEditor is not null)
                 items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ToggleZenMode"], MaterialIconKind.Fullscreen, () => Notes.ToggleZenModeCommand.Execute(null)));
+        }
+
+        if (AssistantPanelEnabled && Assistant is not null)
+        {
+            items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_NewAssistantChat"], MaterialIconKind.Creation,
+                () => { Assistant.NewChatCommand.Execute(null); ShowAssistant(); }));
+            items.Add(new CommandPaletteItem(LocalizationService.Instance[IsAssistantPanelVisible
+                    ? "CommandPalette_Action_CloseAssistantPanel" : "CommandPalette_Action_OpenAssistantPanel"],
+                MaterialIconKind.DockRight, () => ToggleAssistantPanelCommand.Execute(null)));
+            if (Notes?.ActiveEditor is not null)
+                items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AskAssistantAboutNote"],
+                    MaterialIconKind.MessageTextOutline, StartAssistantChatAboutActiveNote));
         }
 
         if (Kanban is not null)

@@ -26,9 +26,12 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     private const double DipsPerInch = 96;
     private const double PointsPerInch = 72;
 
-    /// <summary>Margen horizontal total alrededor de la página en el panel (24 DIP a cada lado), descontado al
+    /// <summary>Margen horizontal total alrededor de la página en el panel (32 DIP a cada lado), descontado al
     /// ajustar al ancho para que la página no quede pegada a los bordes ni asome la barra horizontal.</summary>
     private const double FitWidthMargin = 64;
+
+    /// <summary>Margen vertical (24 DIP arriba y abajo) y espacio para la barra horizontal.</summary>
+    private const double FitHeightMargin = 64;
 
     /// <summary>Ancho en píxeles de las miniaturas del raíl: se pintan a 110 DIP, así que el doble para HiDPI.</summary>
     private const int ThumbnailWidth = 220;
@@ -51,6 +54,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     private string _fullPath = string.Empty;
 
     private bool _isTempCopy;
+    private bool _isClosed;
 
     /// <summary>Se incrementa en cada render pedido y se compara al terminar: un render adelantado por otro cambio
     /// de página o de zoom antes de acabar se descarta, en vez de pintar un instante la página equivocada.</summary>
@@ -62,11 +66,12 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     private int _lastRenderDpi;
     private double _viewportWidth;
+    private double _viewportHeight;
     private double _renderScale = 1;
     private bool _renderScaleChanged;
-    private bool _applyingFitWidth;
+    private bool _applyingFit;
 
-    /// <summary>Redimensionar la ventana notifica el ancho del panel en cada píxel: se espera a que pare antes de
+    /// <summary>Redimensionar la ventana notifica el tamaño del panel en cada píxel: se espera a que pare antes de
     /// volver a ajustar y renderizar.</summary>
     private readonly DispatcherTimer _viewportDebounce = new() { Interval = TimeSpan.FromMilliseconds(120) };
 
@@ -94,6 +99,10 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     /// apaga, y el botón de ajustar al ancho lo vuelve a encender.</summary>
     [ObservableProperty]
     private bool _isFitWidth = true;
+
+    /// <summary>El zoom sigue al alto del panel. Es excluyente con el ajuste al ancho.</summary>
+    [ObservableProperty]
+    private bool _isFitHeight;
 
     /// <summary>Se dispara al cambiar de página, para que la vista vuelva arriba del todo y lleve la miniatura
     /// actual del raíl a la vista — cosas de scroll que el viewmodel no puede hacer.</summary>
@@ -124,6 +133,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
+        if (_isClosed) return;
         IsLoading = true;
         IsFaulted = false;
         try
@@ -133,17 +143,23 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
             // en vez de descifrar el archivo por cada página.
             _fullPath = await Task.Run(() => _vaultService.ResolveReadablePath(_rawFullPath));
             _isTempCopy = _fullPath != _rawFullPath;
+            if (_isClosed)
+            {
+                if (_isTempCopy) VaultService.TryCleanupDecryptedTempFile(_fullPath);
+                return;
+            }
 
             var count = await Task.Run(() => PdfRenderHelper.GetPageCount(_fullPath));
             if (count <= 0) throw new InvalidOperationException("El PDF no tiene páginas.");
 
             _pageSizes = await Task.Run(() => TryReadPageSizes(_fullPath));
 
+            if (_isClosed) return;
             PageCount = count;
             for (var i = 0; i < count; i++) Pages.Add(new PdfPageThumbnailViewModel(i));
             Pages[0].IsCurrent = true;
 
-            if (IsFitWidth) ApplyFitWidth();
+            ApplyFit();
             await RenderCurrentPageAsync();
         }
         catch (Exception ex)
@@ -171,18 +187,20 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         }
     }
 
-    /// <summary>La vista informa del ancho disponible para la página y de la escala de la pantalla cada vez que
+    /// <summary>La vista informa del tamaño disponible para la página y de la escala de la pantalla cada vez que
     /// cambian. El ajuste y el render se aplazan hasta que el tamaño deja de cambiar.</summary>
-    public void SetViewport(double width, double renderScale)
+    public void SetViewport(double width, double height, double renderScale)
     {
-        if (width <= 0) return;
+        if (width <= 0 || height <= 0) return;
         if (renderScale <= 0) renderScale = 1;
 
         var widthChanged = Math.Abs(width - _viewportWidth) > 1;
+        var heightChanged = Math.Abs(height - _viewportHeight) > 1;
         var scaleChanged = Math.Abs(renderScale - _renderScale) > 0.01;
-        if (!widthChanged && !scaleChanged) return;
+        if (!widthChanged && !heightChanged && !scaleChanged) return;
 
         _viewportWidth = width;
+        _viewportHeight = height;
         _renderScale = renderScale;
         _renderScaleChanged |= scaleChanged;
 
@@ -196,7 +214,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         if (PageCount == 0 || IsLoading) return;
 
         var zoomBefore = ZoomFactor;
-        if (IsFitWidth) ApplyFitWidth();
+        ApplyFit();
 
         // Si el ajuste cambió el zoom, OnZoomFactorChanged ya ha pedido el render; si no, solo hace falta uno
         // nuevo cuando lo que cambió es la escala de la pantalla (la ventana pasó a otro monitor).
@@ -204,22 +222,25 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         _renderScaleChanged = false;
     }
 
-    private void ApplyFitWidth()
+    private void ApplyFit()
     {
-        if (_viewportWidth <= 0 || PageCount == 0) return;
+        if ((!IsFitWidth && !IsFitHeight) || PageCount == 0) return;
 
-        var pageWidthDips = CurrentPagePoints().Width / PointsPerInch * DipsPerInch;
-        if (pageWidthDips <= 0) return;
+        var viewportSize = IsFitHeight ? _viewportHeight : _viewportWidth;
+        var margin = IsFitHeight ? FitHeightMargin : FitWidthMargin;
+        var page = CurrentPagePoints();
+        var pageSizeDips = (IsFitHeight ? page.Height : page.Width) / PointsPerInch * DipsPerInch;
+        if (viewportSize <= 0 || pageSizeDips <= 0) return;
 
-        var zoom = Math.Clamp((_viewportWidth - FitWidthMargin) / pageWidthDips, MinZoom, MaxZoom);
-        _applyingFitWidth = true;
+        var zoom = Math.Clamp((viewportSize - margin) / pageSizeDips, MinZoom, MaxZoom);
+        _applyingFit = true;
         try
         {
             ZoomFactor = Math.Round(zoom, 3);
         }
         finally
         {
-            _applyingFitWidth = false;
+            _applyingFit = false;
         }
     }
 
@@ -229,7 +250,16 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     partial void OnIsFitWidthChanged(bool value)
     {
-        if (value) ApplyFitWidth();
+        if (!value) return;
+        IsFitHeight = false;
+        ApplyFit();
+    }
+
+    partial void OnIsFitHeightChanged(bool value)
+    {
+        if (!value) return;
+        IsFitWidth = false;
+        ApplyFit();
     }
 
     partial void OnPageCountChanged(int value)
@@ -248,10 +278,10 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
         OnPropertyChanged(nameof(CurrentPageDisplayWidth));
         OnPropertyChanged(nameof(CurrentPageDisplayHeight));
 
-        // Un PDF puede mezclar tamaños de página (un anexo apaisado): ajustado al ancho, cada una se ajusta a
-        // su propio ancho. Si el ajuste no mueve el zoom, el render lo pide esta misma llamada.
+        // Un PDF puede mezclar tamaños de página (un anexo apaisado): cada una se ajusta según
+        // sus propias dimensiones. Si el ajuste no mueve el zoom, el render lo pide esta misma llamada.
         var zoomBefore = ZoomFactor;
-        if (IsFitWidth) ApplyFitWidth();
+        ApplyFit();
         if (Math.Abs(zoomBefore - ZoomFactor) < 0.0001 && !IsLoading) _ = RenderCurrentPageAsync();
 
         CurrentPageChanged?.Invoke();
@@ -259,7 +289,11 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     partial void OnZoomFactorChanged(double value)
     {
-        if (!_applyingFitWidth) IsFitWidth = false;
+        if (!_applyingFit)
+        {
+            IsFitWidth = false;
+            IsFitHeight = false;
+        }
 
         OnPropertyChanged(nameof(ZoomLabel));
         OnPropertyChanged(nameof(CanZoomIn));
@@ -285,7 +319,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
 
     private async Task RenderCurrentPageAsync()
     {
-        if (PageCount == 0) return;
+        if (_isClosed || PageCount == 0) return;
 
         var token = ++_renderToken;
         var pageIndex = CurrentPageNumber - 1;
@@ -310,7 +344,11 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
             return;
         }
 
-        if (token != _renderToken) return;
+        if (_isClosed || token != _renderToken)
+        {
+            rendered?.Dispose();
+            return;
+        }
         _lastRenderDpi = renderDpi;
         CurrentPageImage = rendered;
         OnPropertyChanged(nameof(CurrentPageDisplayWidth));
@@ -322,7 +360,7 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     /// documento de cientos de páginas nunca renderiza más de un puñado de miniaturas a la vez.</summary>
     public void EnsurePageThumbnailLoaded(PdfPageThumbnailViewModel page)
     {
-        if (page.LoadAttempted || _fullPath.Length == 0) return;
+        if (_isClosed || page.LoadAttempted || _fullPath.Length == 0) return;
         page.LoadAttempted = true;
 
         Task.Run(() =>
@@ -330,7 +368,11 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
             try
             {
                 var bitmap = PdfRenderHelper.RenderPageByWidth(_fullPath, page.PageIndex, ThumbnailWidth);
-                Dispatcher.UIThread.Post(() => page.Thumbnail = bitmap);
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (_isClosed) bitmap?.Dispose();
+                    else page.Thumbnail = bitmap;
+                });
             }
             catch (Exception ex)
             {
@@ -401,18 +443,33 @@ public sealed partial class PdfDocumentViewModel : ObservableObject
     [RelayCommand]
     private void FitWidth()
     {
-        if (IsFitWidth) ApplyFitWidth();
+        if (IsFitWidth) ApplyFit();
         else IsFitWidth = true;
     }
 
     [RelayCommand]
-    private void ActualSize() => ZoomFactor = 1.0;
+    private void FitHeight()
+    {
+        if (IsFitHeight) ApplyFit();
+        else IsFitHeight = true;
+    }
+
+    [RelayCommand]
+    private void ActualSize()
+    {
+        IsFitWidth = false;
+        IsFitHeight = false;
+        ZoomFactor = 1.0;
+    }
 
     /// <summary>Borra, si la hubo, la copia temporal descifrada que hizo <see cref="LoadAsync"/> — no-op para un
     /// PDF fuera de una sesión protegida. Lo llaman <see cref="FileCardViewModel.UpdateFile"/> y las recargas de
     /// la sección antes de descartar la tarjeta.</summary>
     public void Close()
     {
+        if (_isClosed) return;
+        _isClosed = true;
+        _renderToken++;
         _viewportDebounce.Stop();
         if (_isTempCopy) VaultService.TryCleanupDecryptedTempFile(_fullPath);
     }

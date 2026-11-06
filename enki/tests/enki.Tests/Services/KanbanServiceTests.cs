@@ -25,8 +25,8 @@ public class KanbanServiceTests : IDisposable
     {
         var service = new KanbanService();
 
-        Assert.NotNull(service.Board);
-        Assert.NotEmpty(service.Board.Columns);
+        Assert.NotNull(service.DefaultBoard);
+        Assert.NotEmpty(service.DefaultBoard.Columns);
     }
 
     [Fact]
@@ -34,28 +34,28 @@ public class KanbanServiceTests : IDisposable
     {
         var service = new KanbanService(_storageDirectory);
 
-        Assert.NotNull(service.Board);
-        Assert.NotEmpty(service.Board.Columns);
-        Assert.Contains(service.Board.Columns, c => c.Cards.Count > 0);
+        Assert.NotNull(service.DefaultBoard);
+        Assert.NotEmpty(service.DefaultBoard.Columns);
+        Assert.Contains(service.DefaultBoard.Columns, c => c.Cards.Count > 0);
     }
 
     [Fact]
     public void Save_PersistsChanges_ToTheSameDirectory()
     {
         var first = new KanbanService(_storageDirectory);
-        first.Board.Name = "Tablero de prueba";
+        first.DefaultBoard.Name = "Tablero de prueba";
         first.Save();
 
         var second = new KanbanService(_storageDirectory);
 
-        Assert.Equal("Tablero de prueba", second.Board.Name);
+        Assert.Equal("Tablero de prueba", second.DefaultBoard.Name);
     }
 
     [Fact]
     public void Save_PersistsAddedCards()
     {
         var first = new KanbanService(_storageDirectory);
-        var column = first.Board.Columns[0];
+        var column = first.DefaultBoard.Columns[0];
         column.Cards.Add(new KanbanCard
         {
             Id = Guid.NewGuid().ToString("N"),
@@ -65,18 +65,18 @@ public class KanbanServiceTests : IDisposable
 
         var second = new KanbanService(_storageDirectory);
 
-        Assert.Contains(second.Board.Columns.SelectMany(c => c.Cards), c => c.Title == "Tarjeta de prueba");
+        Assert.Contains(second.DefaultBoard.Columns.SelectMany(c => c.Cards), c => c.Title == "Tarjeta de prueba");
     }
 
     [Fact]
     public void RelinkNotePath_UpdatesMatchingCards_OnBoardAndInTrash()
     {
         var service = new KanbanService(_storageDirectory);
-        var boardCard = service.Board.Columns[0].Cards[0];
+        var boardCard = service.DefaultBoard.Columns[0].Cards[0];
         boardCard.LinkedNotePath = "/vault/Old.md";
 
         var trashedCard = new KanbanCard { Id = "trashed", Title = "Trashed", LinkedNotePath = "/vault/Old.md" };
-        service.Board.TrashedCards.Add(new KanbanTrashedCard { Card = trashedCard, ColumnId = "c1", ColumnTitle = "Col" });
+        service.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard { Card = trashedCard, ColumnId = "c1", ColumnTitle = "Col" });
 
         service.RelinkNotePath("/vault/Old.md", "/vault/New.md");
 
@@ -88,7 +88,7 @@ public class KanbanServiceTests : IDisposable
     public void RelinkNotePath_IgnoresCardsLinkedToOtherPaths()
     {
         var service = new KanbanService(_storageDirectory);
-        var card = service.Board.Columns[0].Cards[0];
+        var card = service.DefaultBoard.Columns[0].Cards[0];
         card.LinkedNotePath = "/vault/Unrelated.md";
 
         service.RelinkNotePath("/vault/Old.md", "/vault/New.md");
@@ -100,13 +100,13 @@ public class KanbanServiceTests : IDisposable
     public void RelinkNotePath_Persists_SoItSurvivesReload()
     {
         var first = new KanbanService(_storageDirectory);
-        first.Board.Columns[0].Cards[0].LinkedNotePath = "/vault/Old.md";
+        first.DefaultBoard.Columns[0].Cards[0].LinkedNotePath = "/vault/Old.md";
         first.Save();
 
         first.RelinkNotePath("/vault/Old.md", "/vault/New.md");
 
         var second = new KanbanService(_storageDirectory);
-        Assert.Equal("/vault/New.md", second.Board.Columns[0].Cards[0].LinkedNotePath);
+        Assert.Equal("/vault/New.md", second.DefaultBoard.Columns[0].Cards[0].LinkedNotePath);
     }
 
     /// <summary>Purga automática de la papelera del tablero (Fase 3 de docs/analisis-proyecto/roadmap.md):
@@ -116,14 +116,14 @@ public class KanbanServiceTests : IDisposable
     public void Constructor_PurgesTrashedCardsOlderThan30Days_ButKeepsRecentOnes()
     {
         var first = new KanbanService(_storageDirectory);
-        first.Board.TrashedCards.Add(new KanbanTrashedCard
+        first.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "old", Title = "Vieja" },
             ColumnId = "c1",
             ColumnTitle = "Col",
             DeletedUtc = DateTime.UtcNow.AddDays(-31)
         });
-        first.Board.TrashedCards.Add(new KanbanTrashedCard
+        first.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "recent", Title = "Reciente" },
             ColumnId = "c1",
@@ -134,12 +134,12 @@ public class KanbanServiceTests : IDisposable
 
         var second = new KanbanService(_storageDirectory);
 
-        Assert.DoesNotContain(second.Board.TrashedCards, t => t.Card.Id == "old");
-        Assert.Contains(second.Board.TrashedCards, t => t.Card.Id == "recent");
+        Assert.DoesNotContain(second.DefaultBoard.TrashedCards, t => t.Card.Id == "old");
+        Assert.Contains(second.DefaultBoard.TrashedCards, t => t.Card.Id == "recent");
 
         // La purga se persiste: una tercera carga no recupera la tarjeta vieja.
         var third = new KanbanService(_storageDirectory);
-        Assert.DoesNotContain(third.Board.TrashedCards, t => t.Card.Id == "old");
+        Assert.DoesNotContain(third.DefaultBoard.TrashedCards, t => t.Card.Id == "old");
     }
 
     // ===================== CardPermanentlyDeleted (Fase 10) =====================
@@ -158,7 +158,7 @@ public class KanbanServiceTests : IDisposable
             ColumnTitle = "Col",
             DeletedUtc = DateTime.UtcNow
         };
-        service.Board.TrashedCards.Add(trashed);
+        service.DefaultBoard.TrashedCards.Add(trashed);
         service.Save();
 
         string? deletedCardId = null;
@@ -166,20 +166,20 @@ public class KanbanServiceTests : IDisposable
 
         service.PermanentlyDeleteTrashedCard(trashed);
 
-        Assert.Empty(service.Board.TrashedCards);
+        Assert.Empty(service.DefaultBoard.TrashedCards);
         Assert.Equal("card-1", deletedCardId);
 
         var reloaded = new KanbanService(_storageDirectory);
-        Assert.Empty(reloaded.Board.TrashedCards);
+        Assert.Empty(reloaded.DefaultBoard.TrashedCards);
     }
 
     [Fact]
     public void PermanentlyDeleteAllTrashedCards_ClearsEverything_AndRaisesTheEventPerCard()
     {
         var service = new KanbanService(_storageDirectory);
-        service.Board.TrashedCards.Add(new KanbanTrashedCard
+        service.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         { Card = new KanbanCard { Id = "card-1", Title = "Uno" }, ColumnId = "c1", ColumnTitle = "Col", DeletedUtc = DateTime.UtcNow });
-        service.Board.TrashedCards.Add(new KanbanTrashedCard
+        service.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         { Card = new KanbanCard { Id = "card-2", Title = "Dos" }, ColumnId = "c1", ColumnTitle = "Col", DeletedUtc = DateTime.UtcNow });
         service.Save();
 
@@ -189,7 +189,7 @@ public class KanbanServiceTests : IDisposable
         var removedCount = service.PermanentlyDeleteAllTrashedCards();
 
         Assert.Equal(2, removedCount);
-        Assert.Empty(service.Board.TrashedCards);
+        Assert.Empty(service.DefaultBoard.TrashedCards);
         Assert.Equal(["card-1", "card-2"], deletedCardIds);
     }
 

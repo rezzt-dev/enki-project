@@ -56,6 +56,118 @@ public sealed class SettingsSearchUiTests : IDisposable
         control.GetLogicalAncestors().OfType<Control>().All(c => c.IsVisible);
 
     [Fact]
+    public void SidePanels_AreSearchable_AndEachSelectorChangesItsOwnPreference()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            vm.SearchText = "paneles laterales";
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            foreach (var section in new[] { "Notes", "Files", "Skills", "Assistant" })
+            {
+                var segments = view.GetVisualDescendants().OfType<RadioButton>()
+                    .Where(b => b.GroupName == section + "PanelPosition").ToArray();
+                Assert.Equal(2, segments.Length);
+                Assert.All(segments, segment => Assert.True(Shown(segment)));
+                Assert.True(segments[0].IsChecked);
+                segments[1].IsChecked = true;
+                Assert.True(segments[1].IsChecked);
+                Assert.False(segments[0].IsChecked);
+            }
+            Assert.True(vm.SidePanels.NotesOnRight);
+            Assert.True(vm.SidePanels.FilesOnRight);
+            Assert.True(vm.SidePanels.SkillsOnRight);
+            Assert.True(vm.SidePanels.AssistantOnRight);
+            var notes = view.GetVisualDescendants().OfType<RadioButton>()
+                .First(b => b.GroupName == "NotesPanelPosition");
+            notes.IsChecked = true;
+            Assert.False(vm.SidePanels.NotesOnRight);
+            Assert.True(vm.SidePanels.FilesOnRight);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void MotionMode_IsSearchableAndChangesFromBothSegments()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            vm.SearchText = "animaciones";
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var segments = view.GetVisualDescendants().OfType<RadioButton>()
+                .Where(b => b.GroupName == "MotionMode").ToArray();
+            Assert.Equal(2, segments.Length);
+            Assert.All(segments, segment => Assert.True(Shown(segment)));
+            segments[1].IsChecked = true;
+            Assert.True(vm.UseSubtleAnimations);
+            Assert.True(MotionService.UseSubtleAnimations);
+            segments[0].IsChecked = true;
+            Assert.False(vm.UseSubtleAnimations);
+            Assert.False(MotionService.UseSubtleAnimations);
+        }
+        finally { window.Close(); MotionService.Apply(false); }
+    }
+
+    [Fact]
+    public void Navigation_OpensEverySectionWithoutSearch_AndKeepsHeadingInSync()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            window.Width = 1000;
+            window.Height = 700;
+            foreach (var item in vm.Sections)
+            {
+                vm.SearchText = "previous search";
+                var button = view.GetVisualDescendants().OfType<Button>()
+                    .Single(b => Equals(b.CommandParameter, item.Section));
+                button.Command!.Execute(button.CommandParameter);
+                Dispatcher.UIThread.RunJobs();
+                window.UpdateLayout();
+                Assert.False(vm.IsSearching);
+                Assert.Equal(item.Label, vm.CurrentSectionTitle);
+                Assert.Equal(item.Description, vm.CurrentSectionDescription);
+                Assert.Same(item, Assert.Single(vm.Sections, section => section.IsActive));
+                var content = Assert.Single(view.GetLogicalDescendants().OfType<SettingsSearchOption>(),
+                    option => option.Section is not null && Shown(option));
+                Assert.Equal(item.Section, content.Section);
+                Assert.True(content.Bounds.Width > 0);
+                Assert.True(content.Bounds.Width <= 660);
+            }
+        }
+        finally { window.Close(); }
+    }
+
+    [Theory]
+    [InlineData(SettingsSection.Vault, "Settings_General_VaultFolder_Title")]
+    [InlineData(SettingsSection.Backups, "Settings_General_DangerZone_AutoBackup_Label")]
+    [InlineData(SettingsSection.Navigation, "Settings_General_Sidebar_Title")]
+    [InlineData(SettingsSection.Kanban, "Settings_Appearance_KanbanTags_Title")]
+    [InlineData(SettingsSection.Dashboard, "Settings_General_Dashboard_Title")]
+    [InlineData(SettingsSection.Maintenance, "Settings_Updates_Title")]
+    public void Navigation_ShowsRelocatedOptionsInTheirDestination(SettingsSection section, string key)
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            vm.SelectSectionCommand.Execute(section);
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var options = view.GetLogicalDescendants().OfType<SettingsSearchOption>()
+                .Where(o => o.Section is null && o.ResourceKeys.Split(' ', StringSplitOptions.RemoveEmptyEntries).Contains(key)).ToArray();
+            Assert.NotEmpty(options);
+            Assert.All(options, option => Assert.True(Shown(option)));
+            vm.SelectSectionCommand.Execute(SettingsSection.General);
+            Dispatcher.UIThread.RunJobs();
+            Assert.All(options, option => Assert.False(Shown(option)));
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
     public void Search_FindsDynamicShortcuts_AndFiltersTheirSiblings()
     {
         var (view, vm, window) = CreateView();
@@ -77,7 +189,7 @@ public sealed class SettingsSearchUiTests : IDisposable
     }
 
     [Theory]
-    [InlineData("Settings_Nav_General", "Nav_Statistics")]
+    [InlineData("Settings_Nav_Navigation", "Nav_Statistics")]
     [InlineData("Settings_Nav_Dashboard", "DashboardLayout_ModularGrid_Title")]
     public void Search_FindsDynamicOptions_FromAnySection(string sectionKey, string labelKey)
     {

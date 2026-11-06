@@ -38,6 +38,25 @@
     <Setter Property="ShouldUseOverlayLayer" Value="True" />
   </Style>
 
+  <!-- Los menús comparten las superficies y las esquinas del resto de la aplicación. -->
+  <Style Selector="MenuFlyoutPresenter, ContextMenu">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="6" />
+    <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.6" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
   <Style Selector="TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
@@ -86,6 +105,13 @@
     <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SelectionForegroundBrush}" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- El texto seleccionable también invierte ambos colores: conservar el primer plano normal
+       hace ilegible la selección en los mensajes Markdown, enlaces y bloques de código del asistente. -->
+  <Style Selector="SelectableTextBlock">
+    <Setter Property="SelectionBrush" Value="{DynamicResource SelectionBackgroundBrush}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SelectionForegroundBrush}" />
   </Style>
 
   <!-- ===================== Chrome de Fluent en botones: neutralizado (§7.2) =====================
@@ -147,7 +173,7 @@
   <Style Selector="Button.nav-item /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -195,10 +221,12 @@
 
   <!-- Collapsed rail: nav items shrink from a stretched, left-aligned row into a centered square
        matching the logo and the icon-only buttons (32x32 — see Button.icon-btn.sidebar-toggle below
-       and the logo Border in MainWindow.axaml), so every rail element — including the hover/active
-       highlight, which is painted on this same box — lines up and reads as the same shape. The
-       active-state left border only makes sense against a full-width row, so it's dropped here in
-       favor of the plain background fill. -->
+       and the logo Border in MainWindow.axaml), so every rail element lines up and reads as the same
+       shape. En el raíl no hay caja: con el texto oculto el icono es todo el botón, así que el hover y
+       el activo se resaltan sobre él (secundario → tinta plena), igual que en cualquier botón de icono
+       sin contorno. La barra desplegada conserva su relleno y su barra izquierda de 3px (§7.8), que
+       necesitan la fila completa con su etiqueta para leerse; por eso estas reglas van solo en
+       .collapsed y después de las de arriba, además de ser más específicas. -->
   <Style Selector="Button.nav-item.collapsed">
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -206,8 +234,23 @@
     <Setter Property="Height" Value="32" />
     <Setter Property="Padding" Value="0" />
   </Style>
+  <Style Selector="Button.nav-item.collapsed:pointerover /template/ ContentPresenter, Button.nav-item.collapsed:pressed /template/ ContentPresenter, Button.nav-item.collapsed.active /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
   <Style Selector="Button.nav-item.collapsed.active /template/ ContentPresenter">
     <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.nav-item.collapsed mi|MaterialIcon">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- El icono de Papelera ya es rojo en reposo (clase danger), así que se excluye: aclararlo a tinta
+       plena al pasar el cursor le quitaría justo lo que lo hace reconocible. -->
+  <Style Selector="Button.nav-item.collapsed:pointerover mi|MaterialIcon:not(.danger), Button.nav-item.collapsed:pressed mi|MaterialIcon:not(.danger)">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
   <!-- Brand header: centers on the logo alone once the sidebar text disappears (see MainWindow.axaml
@@ -217,6 +260,11 @@
   </Style>
 
   <!-- ===================== Fila de carpeta (árbol de Notas) ===================== -->
+  <!-- La fuente cortada conserva su posición hasta pegar o cancelar. -->
+  <Style Selector="Border.folder-row.cut, Button.note-card.cut, Button.file-card.cut">
+    <Setter Property="Opacity" Value="0.42" />
+  </Style>
+
   <Style Selector="Border.folder-row">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="3,0,0,0" />
@@ -224,7 +272,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -273,8 +321,8 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -299,7 +347,7 @@
   <Style Selector="Border.editor-tab mi|MaterialIcon">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -344,8 +392,8 @@
     </Setter>
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -380,7 +428,7 @@
   <Style Selector="Button.tab-add /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -388,7 +436,7 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -414,14 +462,14 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.pill /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -436,7 +484,7 @@
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -445,7 +493,7 @@
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -513,14 +561,14 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.pill-primary /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -533,7 +581,7 @@
     <Setter Property="LetterSpacing" Value="1.5" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -541,7 +589,7 @@
     <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -595,14 +643,14 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.pill-primary-danger /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -611,7 +659,7 @@
     <Setter Property="LetterSpacing" Value="1.5" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -641,7 +689,7 @@
     <Setter Property="Opacity" Value="1" />
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -689,7 +737,7 @@
     </Setter>
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -743,8 +791,8 @@
     </Setter>
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -791,14 +839,14 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="ToggleButton.tag-chip /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -837,7 +885,17 @@
     <Setter Property="Foreground" Value="{DynamicResource InkOnBrush}" />
   </Style>
 
-  <!-- ===================== Icon-only buttons ===================== -->
+  <!-- ===================== Icon-only buttons =====================
+       Un botón que es solo un icono y no dibuja contorno propio no tiene caja: toda su señal de uso vive
+       en el icono (secundario en reposo → tinta plena al pasar el cursor, al pulsarlo y mientras siga
+       activo). Es la variante ghost del sistema de diseño (§7.2: sin borde, el hover no añade fondo) y
+       el mismo trato que ya tenían las acciones integradas en filas, ahora aplicado a toda la familia en
+       vez de una clase por botón: en un cuadro de 34x34 con un icono de 14, el recuadro gris del
+       hover/pulsado leía como una caja ajena al botón, no como parte de él.
+
+       Se conservan el área de clic completa y el indicador de foco por teclado. Los botones CON contorno
+       (pill, titlebar-btn, code-copy-btn, tab-add, link-mode-toggle, side-panel-tab…) no se tocan: ahí el
+       recuadro sí es el botón, y su hover lo sigue pintando como siempre. -->
   <Style Selector="Button.icon-btn">
     <Setter Property="Width" Value="34" />
     <Setter Property="Height" Value="34" />
@@ -849,32 +907,29 @@
     <Setter Property="Padding" Value="0" />
     <Setter Property="Cursor" Value="Hand" />
   </Style>
-  <!-- Transitions have to sit on the exact element whose property the hover/danger states below
-       change — Background on the ContentPresenter template part, Foreground on the icon/text
-       children — otherwise the color snaps instead of fading. -->
+  <!-- Las transiciones van en el elemento exacto cuya propiedad cambia —el Foreground de los hijos
+       (icono y texto) en hover/pulsado/activo, el Background del ContentPresenter al deshabilitarse—
+       porque declaradas en el propio Button animan una propiedad que nadie lee y el cambio salta. -->
   <Style Selector="Button.icon-btn /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.icon-btn TextBlock">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.icon-btn mi|MaterialIcon">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
-  </Style>
-  <Style Selector="Button.icon-btn:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource Ink10}" />
   </Style>
   <Style Selector="Button.icon-btn:pointerover TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
@@ -882,17 +937,27 @@
   <Style Selector="Button.icon-btn:pointerover mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
-  <Style Selector="Button.icon-btn:pressed /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource Ink20}" />
-  </Style>
-  <!-- Toggle activo (p. ej. el botón de búsqueda de IA Skills mientras el cuadro está abierto) — mismo
-       tratamiento visual que :pointerover pero persistente mientras la clase esté presente. -->
-  <Style Selector="Button.icon-btn.active /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource Ink10}" />
-  </Style>
+  <!-- Toggle activo (p. ej. el conmutador Explorador/Árbol de Archivos, o el botón de búsqueda de IA
+       Skills mientras el cuadro está abierto): el mismo resalte que :pointerover, pero persistente
+       mientras la clase siga puesta. :pressed no necesita regla propia — al pulsar con el puntero
+       encima el botón sigue en :pointerover, que ya deja el icono en tinta plena. -->
   <Style Selector="Button.icon-btn.active mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
+  <!-- Check de exportar de las tarjetas de habilidades: dos iconos que se alternan con el estado. Su color
+       va por clase y no en el XAML de la vista porque un valor local en el icono le gana a cualquier
+       estilo, y este botón se quedaría sin ninguna señal al pasar el cursor: apagado se resalta a tinta
+       plena, marcado ya está en tinta plena y no cambia. -->
+  <Style Selector="Button.icon-btn mi|MaterialIcon.skill-export-on">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.icon-btn mi|MaterialIcon.skill-export-off">
+    <Setter Property="Foreground" Value="{DynamicResource Ink40}" />
+  </Style>
+  <Style Selector="Button.icon-btn:pointerover mi|MaterialIcon.skill-export-off">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
   <!-- Deshabilitado (p. ej. "archivo siguiente" en el último archivo, o subir un nivel en la raíz): sin el cuadro
        gris que el tema Fluent pone de fondo a un botón deshabilitado —el mismo fallo que ya se corrigió para
        :pointerover y :pressed—, solo el icono atenuado. -->
@@ -938,7 +1003,7 @@
   <Style Selector="Button.code-copy-btn /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -946,7 +1011,7 @@
     <Setter Property="Foreground" Value="{DynamicResource Ink30}" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -988,14 +1053,14 @@
     <Setter Property="Height" Value="40" />
   </Style>
 
+  <!-- Acción destructiva: el icono es neutro en reposo y solo se tiñe de danger al apuntarlo con el
+       cursor, que es todo el resalte que necesita (sin relleno DangerMuted: la familia de botones de
+       icono ya no pinta caja, ver el comentario de Button.icon-btn). -->
   <Style Selector="Button.icon-btn-danger:pointerover TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
   </Style>
   <Style Selector="Button.icon-btn-danger:pointerover mi|MaterialIcon">
     <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
-  </Style>
-  <Style Selector="Button.icon-btn-danger:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
   </Style>
 
   <!-- Collapsed rail: the sidebar toggle sits right-aligned next to the brand text when expanded,
@@ -1022,7 +1087,7 @@
   <Style Selector="Border.sidebar-toggle-box">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1033,6 +1098,16 @@
        only the sharp-cornered Border above paints the hover, instead of two overlapping fills of
        possibly-different sizes. -->
   <Style Selector="Button.icon-btn.sidebar-toggle:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <!-- Plegado, el botón vive en el raíl, donde ningún elemento pinta caja (ver Button.nav-item.collapsed):
+       esta regla garantiza que la caja de 32x32 no aparezca ahí, y el hover se queda en el icono, que el
+       :pointerover base ya aclara. Desplegado conserva su caja: ahí es chrome del encabezado, no una celda
+       del raíl. Ojo: los dos Borders de MainWindow.axaml llevan un Background local que hoy le gana a estas
+       reglas, así que en la ventana real esa caja no llega a verse en ninguno de los dos estados — se deja
+       como estaba a propósito, pero si algún día se quita ese valor local, el desplegado la recupera y el
+       raíl (gracias a esta regla) sigue sin ella. -->
+  <Style Selector="Button.icon-btn.sidebar-toggle.collapsed:pointerover Border.sidebar-toggle-box">
     <Setter Property="Background" Value="Transparent" />
   </Style>
 
@@ -1059,7 +1134,7 @@
   <Style Selector="Button.titlebar-btn /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1067,7 +1142,7 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1077,7 +1152,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1165,7 +1240,7 @@
   <Style Selector="Button.dropdown-item /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1284,8 +1359,8 @@
          (paneles estáticos de Ajustes). -->
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1358,16 +1433,36 @@
     <Setter Property="TextAlignment" Value="Center" />
   </Style>
 
-  <!-- Estado vacío de sección: una caja real de alto fijo en vez de una línea suelta de texto, para
-       que una sección vacía ocupe un bloque reconocible y las secciones llenas y vacías mantengan el
-       mismo ritmo vertical al recorrer la página. -->
-  <Style Selector="Border.trash-empty-state">
-    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  <!-- Estado vacío único de la página: un marco editorial, sin repetir las categorías sin contenido. -->
+  <Style Selector="Border.trash-overview-empty">
+    <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Height" Value="72" />
-    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="MinHeight" Value="300" />
+    <Setter Property="MaxWidth" Value="720" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.trash-overview-icon">
+    <Setter Property="Width" Value="76" />
+    <Setter Property="Height" Value="76" />
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="20" />
+  </Style>
+  <Style Selector="TextBlock.trash-overview-title">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="-0.5" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="TextBlock.trash-overview-description">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="LineHeight" Value="20" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
   </Style>
 
   <!-- Aviso de sección (Polar sin purgar, recordatorios sin borrado permanente): barra de acento a la
@@ -1400,7 +1495,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1422,15 +1517,15 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Border.note-card:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
-    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+    <Setter Property="RenderTransform" Value="{DynamicResource MotionCardLift}" />
   </Style>
 
   <Style Selector="Button.note-card">
@@ -1451,7 +1546,7 @@
     <Setter Property="VerticalAlignment" Value="Stretch" />
     <Setter Property="Transitions">
       <Transitions>
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1461,7 +1556,7 @@
   <Style Selector="Button.note-card /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1469,7 +1564,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
   </Style>
   <Style Selector="Button.note-card:pointerover">
-    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+    <Setter Property="RenderTransform" Value="{DynamicResource MotionCardLift}" />
   </Style>
 
   <!-- Estado "seleccionada" (IA Skills: tarjeta cuya skill se está previsualizando en el panel de
@@ -1480,6 +1575,19 @@
   </Style>
   <Style Selector="Button.note-card.active">
     <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+
+  <!-- Filas de actividad: separadores continuos y lectura estable al pasar el puntero. -->
+  <Style Selector="Button.note-card.activity-row">
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="18" />
+    <Setter Property="MinHeight" Value="88" />
+  </Style>
+  <Style Selector="Button.note-card.activity-row.unread">
+    <Setter Property="Background" Value="{DynamicResource Ink05}" />
+  </Style>
+  <Style Selector="Button.note-card.activity-row:pointerover">
+    <Setter Property="RenderTransform" Value="none" />
   </Style>
 
   <!-- Tarjeta de IA Skills: hermana de note-card pero con más aire, acciones más grandes y un estado
@@ -1494,7 +1602,7 @@
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="Transitions">
       <Transitions>
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1505,8 +1613,8 @@
     <Setter Property="Padding" Value="18" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1515,7 +1623,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
   </Style>
   <Style Selector="Button.skill-card:pointerover">
-    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+    <Setter Property="RenderTransform" Value="{DynamicResource MotionCardLift}" />
   </Style>
   <Style Selector="Button.skill-card.active /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Ink05}" />
@@ -1540,14 +1648,14 @@
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="Transitions">
       <Transitions>
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.file-card /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1555,7 +1663,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
   </Style>
   <Style Selector="Button.file-card:pointerover">
-    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+    <Setter Property="RenderTransform" Value="{DynamicResource MotionCardLift}" />
   </Style>
 
   <!-- Panel de la rejilla de Archivos mientras un arrastre de archivos del explorador del SO pasa por
@@ -1570,7 +1678,7 @@
   <Style Selector="Button.file-card:focus-visible /template/ ContentPresenter">
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
   </Style>
-  <Style Selector="Button.file-card.drag-over /template/ ContentPresenter">
+  <Style Selector="Button.file-card.drag-over /template/ ContentPresenter, Button.skill-card.drag-over /template/ ContentPresenter, Button.note-card.drag-over /template/ ContentPresenter">
     <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
     <Setter Property="Background" Value="{DynamicResource Ink05}" />
   </Style>
@@ -1599,7 +1707,7 @@
     <Setter Property="Opacity" Value="0" />
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1620,7 +1728,7 @@
   <Style Selector="Button.breadcrumb /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1662,7 +1770,7 @@
   <Style Selector="Button.pdf-page-thumb Border">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1677,7 +1785,7 @@
   <!-- Spinner de carga genérico: rotación infinita del icono al que se le aplique esta clase (usado hoy
        por el visor de PDF mientras renderiza, ver FilesView.axaml). -->
   <Style Selector="mi|MaterialIcon.spin">
-    <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
     <Setter Property="RenderTransform">
       <RotateTransform />
     </Setter>
@@ -1717,14 +1825,14 @@
     <Setter Property="VerticalAlignment" Value="Stretch" />
     <Setter Property="Transitions">
       <Transitions>
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.card /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1732,7 +1840,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
   </Style>
   <Style Selector="Button.card:pointerover">
-    <Setter Property="RenderTransform" Value="translateY(-4px)" />
+    <Setter Property="RenderTransform" Value="{DynamicResource MotionCardLift}" />
   </Style>
 
   <Style Selector="Button.ghost-card">
@@ -1750,7 +1858,7 @@
   <Style Selector="Button.ghost-card /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1782,7 +1890,7 @@
   <Style Selector="Button.section-header TextBlock.eyebrow">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Foreground" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1822,7 +1930,7 @@
     <Setter Property="Padding" Value="18,16" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1841,9 +1949,14 @@
     <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
+  </Style>
+  <!-- Centra texto y placeholder en inputs de una línea, incluso con altura fija.
+       Las descripciones multilínea conservan la alineación superior de Fluent. -->
+  <Style Selector="TextBox.search[AcceptsReturn=False]">
+    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="TextBox.search:focus /template/ Border#PART_BorderElement">
     <Setter Property="BorderBrush" Value="{DynamicResource Ink40}" />
@@ -1870,8 +1983,8 @@
     <Setter Property="Cursor" Value="IBeam" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1919,7 +2032,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -1953,7 +2066,7 @@
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -2064,12 +2177,12 @@
        de opacidad de blanco" que el resto del sistema (§1.2 del sistema de diseño). -->
   <Style Selector="Border.kanban-column">
     <Setter Property="Background" Value="{DynamicResource Ink05}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -2083,23 +2196,23 @@
        transitions. -->
   <Style Selector="Button.kanban-card">
     <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Padding" Value="14" />
+    <Setter Property="Padding" Value="16" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.kanban-card /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -2133,7 +2246,7 @@
     <Setter Property="Opacity" Value="0" />
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -2155,13 +2268,13 @@
        el sistema de separación). El pie es fijo: "añadir tarjeta" deja de ser la última loseta de la
        pila —inalcanzable sin bajar del todo en una columna larga— y pasa a estar siempre a la vista. -->
   <Style Selector="Border.kanban-column-header">
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="16,12" />
   </Style>
   <Style Selector="Border.kanban-column-footer">
-    <Setter Property="BorderBrush" Value="{DynamicResource Ink10}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink20}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="8" />
@@ -2188,15 +2301,15 @@
     <Setter Property="Cursor" Value="Hand" />
   </Style>
   <Style Selector="Button.kanban-add-card TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
   </Style>
   <Style Selector="Button.kanban-add-card mi|MaterialIcon">
-    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
   </Style>
   <Style Selector="Button.kanban-add-card /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -2217,7 +2330,7 @@
     <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="10.5" />
     <Setter Property="LetterSpacing" Value="1" />
-    <Setter Property="Foreground" Value="{DynamicResource Ink30}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="TextAlignment" Value="Center" />
     <Setter Property="TextWrapping" Value="Wrap" />
@@ -2292,7 +2405,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="BorderBrush" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -2421,7 +2534,7 @@
   <Style Selector="Button.calendar-day /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
@@ -2523,12 +2636,12 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="ToggleButton.calendar-chip:pointerover">
-    <Setter Property="RenderTransform" Value="translateY(-1px)" />
+    <Setter Property="RenderTransform" Value="{DynamicResource MotionSmallLift}" />
   </Style>
   <Style Selector="ToggleButton.calendar-chip.completed TextBlock">
     <Setter Property="TextDecorations" Value="Strikethrough" />
@@ -2606,15 +2719,15 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut" />
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="ToggleButton.calendar-agenda-card:pointerover">
     <Setter Property="Background" Value="{DynamicResource PanelBackgroundHoverBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
-    <Setter Property="RenderTransform" Value="translateY(-1px)" />
+    <Setter Property="RenderTransform" Value="{DynamicResource MotionSmallLift}" />
   </Style>
   <Style Selector="ToggleButton.calendar-agenda-card.completed TextBlock">
     <Setter Property="TextDecorations" Value="Strikethrough" />

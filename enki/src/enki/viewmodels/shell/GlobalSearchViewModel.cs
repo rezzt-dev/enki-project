@@ -281,7 +281,7 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
 
     private IEnumerable<GlobalSearchResultViewModel> SearchKanban(string query, CancellationToken token)
     {
-        foreach (var column in _kanbanService.Board.Columns)
+        foreach (var column in _kanbanService.AllColumns)
         {
             foreach (var card in column.Cards)
             {
@@ -298,7 +298,7 @@ public sealed partial class GlobalSearchViewModel : ObservableObject
                     GlobalSearchResultType.KanbanCard,
                     card.Id,
                     card.Title,
-                    column.Title,
+                    _kanbanService.ColumnLabel(column),
                     "ViewColumnOutline",
                     card,
                     _onResultSelected);

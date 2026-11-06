@@ -35,7 +35,8 @@ internal sealed class MarkdownTableRowVisual : Control
     private readonly double _height;
 
     public MarkdownTableRowVisual(string lineText, DocumentLine line, MdLine model, MdTableRow row,
-        MdTableGeometry geometry, MarkdownStyle style, LivePreviewState state, double defaultLineHeight)
+        MdTableGeometry geometry, MarkdownStyle style, LivePreviewState state, double defaultLineHeight,
+        double defaultBaseline)
     {
         // Un hueco menos que el ancho de la tabla: el objeto llena la columna de texto entera, y declarar
         // exactamente el ancho disponible haría que el formateador lo tomara por un elemento que no cabe y
@@ -45,6 +46,9 @@ internal sealed class MarkdownTableRowVisual : Control
         _width = Math.Max(0, geometry.TotalWidth - geometry.CellPadding);
         var content = geometry.RowHeight(line.LineNumber);
         _height = (content > 0 ? content : defaultLineHeight) + 2 * MarkdownTableLayout.RowVerticalPadding;
+        // Reserva el descenso normal del editor dentro del bloque, para que la línea visual y la
+        // rejilla no añadan espacio por debajo de la fila.
+        TextBlock.SetBaselineOffset(this, Math.Max(0, _height - (defaultLineHeight - defaultBaseline)));
 
         var header = row.Kind == MdTableRowKind.Header;
         foreach (var cell in MarkdownTableParser.SplitCells(lineText, line.Offset))
@@ -68,6 +72,7 @@ internal sealed class MarkdownTableRowVisual : Control
     public override void Render(DrawingContext context)
     {
         foreach (var (x, text) in _cells)
-            context.DrawText(text, new Point(x, MarkdownTableLayout.RowVerticalPadding));
+            context.DrawText(text, new Point(x, Math.Max(MarkdownTableLayout.RowVerticalPadding,
+                (_height - text.Height) / 2)));
     }
 }

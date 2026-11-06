@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
@@ -13,6 +14,7 @@ using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
+using enki.Services.Export;
 
 namespace enki.ViewModels;
 
@@ -34,6 +36,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     private readonly Action<NoteFile>? _onOpenNote;
     private readonly Action<string>? _onOpenLinkedCard;
     private readonly Action<NoteFile, string>? _onExportHtml;
+    private readonly Func<NoteFile, ExportFormat, Task>? _onExportDocument;
     private readonly DispatcherTimer _saveTimer;
     private string _lastSavedContent;
     private string? _pendingText;
@@ -152,10 +155,8 @@ public sealed partial class EditorViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSidePanelVisible = EditorPreferences.SidePanelVisible;
 
-    /// <summary>Drives the animated width of the side-panel host in EditorView (see
-    /// Border.Transitions there) — 0 collapses it and lets the editor column's "*" grid width claim the
-    /// freed space, instead of the panel merely toggling IsVisible while the layout keeps reserving its
-    /// fixed pixel width regardless.</summary>
+    /// <summary>Ancho reservado para el panel lateral. Se aplica de una vez para no recomponer
+    /// el editor y su Markdown en cada fotograma de una transición.</summary>
     public double SidePanelWidth => IsSidePanelVisible && !IsZenMode && !IsSimplifiedView ? 361 : 0;
 
     /// <summary>Vista simplificada de Notas (Ajustes › Editor › Vista del editor). Mirror de
@@ -368,7 +369,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         SettingsService? settingsService = null, NotificationService? notificationService = null,
         Action<NoteFile, string>? onExportHtml = null, SessionService? sessionService = null,
         DailyNoteService? dailyNoteService = null, Action<DateOnly>? onOpenDailyNoteFor = null,
-        VaultChangeWatcher? changeWatcher = null)
+        VaultChangeWatcher? changeWatcher = null, Func<NoteFile, ExportFormat, Task>? onExportDocument = null)
     {
         _vaultService = vaultService;
         _onBack = onBack;
@@ -380,6 +381,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         _settingsService = settingsService;
         _notificationService = notificationService;
         _onExportHtml = onExportHtml;
+        _onExportDocument = onExportDocument;
         _dailyNoteService = dailyNoteService;
         _onOpenDailyNoteFor = onOpenDailyNoteFor;
         _changeWatcher = changeWatcher;
@@ -393,6 +395,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         var content = fresh.Content;
         _diskStamp = fresh.Stamp;
         Document = new TextDocument(content);
+        RefreshProperties();
         _lastSavedContent = content;
         // Antes que nada derivado del contenido: la huella de lo que se acaba de leer es la referencia
         // contra la que se detecta cualquier cambio externo a partir de ahora (ver
@@ -428,7 +431,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         LinkedCards.Clear();
         if (_kanbanService is not null)
         {
-            var cards = _kanbanService.Board.Columns.SelectMany(c => c.Cards)
+            var cards = _kanbanService.AllColumns.SelectMany(c => c.Cards)
                 .Where(c => string.Equals(c.LinkedNotePath, Note.FullPath, StringComparison.OrdinalIgnoreCase));
             foreach (var card in cards) LinkedCards.Add(new LinkedCardItemViewModel(card.Id, card.Title));
         }
@@ -555,6 +558,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     {
         if (!TryPrepareClose()) return false;
         _saveTimer.Stop();
+        CloseAttachments();
         UnsubscribeFromExternalChanges();
         _changeWatcher?.Untrack(Note.FullPath);
         return true;
@@ -619,6 +623,7 @@ public sealed partial class EditorViewModel : ViewModelBase
 
         _lastSavedContent = currentText;
         IsDirty = false;
+        RefreshProperties();
         _lastSavedUtc = DateTime.UtcNow;
         SaveStatus = FormatSaveStatus(_lastSavedUtc);
         _onChanged();
@@ -645,6 +650,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         // escribí yo", y sin refrescarla el siguiente autoguardado se rechazaría a sí mismo.
         AdoptDiskStamp(NoteDiskStamps.TryRead(Note.FullPath));
         TagsInput = string.Join(", ", Note.Tags);
+        RefreshProperties();
         RefreshWikiLinkScopeNotes();
         Backlinks.Refresh(Note);
         Stats.Refresh();
@@ -746,6 +752,13 @@ public sealed partial class EditorViewModel : ViewModelBase
         if (_suppressTitleRename || string.IsNullOrWhiteSpace(value)) return;
         var oldPath = Note.FullPath;
         var oldTitle = Path.GetFileNameWithoutExtension(oldPath);
+        if (!PrepareFileTransfer())
+        {
+            _suppressTitleRename = true;
+            Title = oldTitle;
+            _suppressTitleRename = false;
+            return;
+        }
         // Mismo motivo que en Delete: el renombrado es de Enki, no de fuera.
         _changeWatcher?.Untrack(oldPath);
 
@@ -788,6 +801,7 @@ public sealed partial class EditorViewModel : ViewModelBase
                 NotificationSeverity.Info);
         }
 
+        ReloadAfterTagChange();
         TrackForExternalChanges();
         _kanbanService?.RelinkNotePath(oldPath, Note.FullPath);
         RefreshLinkedCards();
@@ -801,6 +815,26 @@ public sealed partial class EditorViewModel : ViewModelBase
         _onChanged();
     }
 
+    /// <summary>Guarda los cambios pendientes y rechaza transferencias con conflictos sin resolver.</summary>
+    public bool PrepareFileTransfer()
+    {
+        FlushPendingSave();
+        if (IsDirty || IsAutosavePaused) return false;
+        if (_diskStamp is { } stamp && NoteDiskStamps.Check(Note.FullPath, stamp, out _) != NoteDiskState.Unchanged)
+        {
+            HandleExternalChange(new VaultExternalChange(Note.FullPath, VaultExternalChangeKind.Modified), Document.Text);
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>Actualiza la pestaña y su huella después de trasladar la nota con sus adjuntos.</summary>
+    public void SyncTransferredNote(NoteFile note)
+    {
+        SyncRenamedNote(note);
+        ApplyRestoredContent(_vaultService.ReadContent(note));
+    }
+
     /// <summary>Reconciles this tab with a rename that already happened on disk elsewhere (the note grid's
     /// context menu, see NotesViewModel.CommitRenameNote) — suppresses <see cref="OnTitleChanged"/> so it
     /// doesn't attempt to rename the file a second time, which would fail since the old path is already gone.</summary>
@@ -808,6 +842,7 @@ public sealed partial class EditorViewModel : ViewModelBase
     {
         _changeWatcher?.Untrack(Note.FullPath);
         Note = note;
+        ReloadAfterTagChange();
         TrackForExternalChanges();
         _suppressTitleRename = true;
         Title = System.IO.Path.GetFileNameWithoutExtension(note.FullPath);
@@ -830,6 +865,38 @@ public sealed partial class EditorViewModel : ViewModelBase
     /// guardar. No-op en tests (sin callback).</summary>
     [RelayCommand]
     private void ExportAsHtml() => _onExportHtml?.Invoke(Note, Document.Text);
+
+    /// <summary>Si la exportación a PDF o PNG lanzada desde esta pestaña sigue en curso: el botón de
+    /// exportar enseña entonces que está trabajando y no admite otra.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportAsPdfCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ExportAsPngCommand))]
+    private bool _isExportingDocument;
+
+    private bool CanExportDocument() => !IsExportingDocument && _onExportDocument is not null;
+
+    /// <summary>"Exportar como PDF…" (menú de exportar de la cabecera del editor). Igual que
+    /// <see cref="ExportAsHtml"/>, delega en <see cref="NotesViewModel"/>, que exporta el texto en vivo
+    /// de esta pestaña.</summary>
+    [RelayCommand(CanExecute = nameof(CanExportDocument))]
+    private Task ExportAsPdf() => ExportDocumentAsync(ExportFormat.Pdf);
+
+    [RelayCommand(CanExecute = nameof(CanExportDocument))]
+    private Task ExportAsPng() => ExportDocumentAsync(ExportFormat.Png);
+
+    private async Task ExportDocumentAsync(ExportFormat format)
+    {
+        if (_onExportDocument is null) return;
+        IsExportingDocument = true;
+        try
+        {
+            await _onExportDocument(Note, format);
+        }
+        finally
+        {
+            IsExportingDocument = false;
+        }
+    }
 
     [RelayCommand]
     private void RequestDelete()

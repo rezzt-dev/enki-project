@@ -24,6 +24,10 @@ public sealed partial class SkillViewModel : ObservableObject
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
     public bool HasTags => Model.Tags.Count > 0;
 
+    /// <summary>Evita ofrecer un desplegable vacío cuando la skill solo define nombre y descripción.</summary>
+    public bool HasMetadata => HasTags || Model.Tools.Count > 0 || Model.Permissions.Count > 0
+        || !string.IsNullOrWhiteSpace(Model.Vibe);
+
     /// <summary>Identidad estable de la skill dentro de la biblioteca. Desde que hay carpetas,
     /// <see cref="Id"/> (el nombre de archivo) ya no es único —dos temas pueden tener su propio
     /// <c>redactor.md</c>— así que todo lo que compare skills entre recargas (restaurar la selección,
@@ -68,6 +72,7 @@ public sealed partial class SkillViewModel : ObservableObject
         OnPropertyChanged(nameof(Emoji));
         OnPropertyChanged(nameof(HasDescription));
         OnPropertyChanged(nameof(HasTags));
+        OnPropertyChanged(nameof(HasMetadata));
         OnPropertyChanged(nameof(TagChips));
         OnPropertyChanged(nameof(FilePath));
         OnPropertyChanged(nameof(RelativeFolderPath));

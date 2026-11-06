@@ -42,11 +42,20 @@ public class NoteTemplateServiceTests : IDisposable
         service.EnsureInitialized();
 
         var templates = service.LoadTemplates();
-        Assert.Equal(2, templates.Count);
+        Assert.Equal(4, templates.Count);
         Assert.Contains(templates, t => t.RelativePath == "daily.md");
         Assert.Contains(templates, t => t.RelativePath == "meeting.md");
+        Assert.Contains(templates, t => t.RelativePath == "project.md");
+        Assert.Contains(templates, t => t.RelativePath == "reading.md");
         Assert.All(templates, t => Assert.False(string.IsNullOrWhiteSpace(t.Name)));
         Assert.All(templates, t => Assert.False(string.IsNullOrWhiteSpace(t.Description)));
+        Assert.All(templates, t =>
+        {
+            var draft = NoteTemplateService.Prepare(t, t.Name, new DateTime(2026, 10, 15, 10, 30, 0));
+            Assert.Contains("# ", draft.Content);
+            Assert.DoesNotContain("{{cursor}}", draft.Content);
+            Assert.NotNull(draft.CaretOffset);
+        });
         Assert.Equal(1, changed);
     }
 
@@ -75,6 +84,21 @@ public class NoteTemplateServiceTests : IDisposable
         service.EnsureInitialized();
 
         Assert.Empty(service.LoadTemplates());
+    }
+
+    [Fact]
+    public void AddSuggestedTemplates_PreservesExistingFilesAndOnlyCreatesMissingExamples()
+    {
+        WriteTemplate("project.md", "# Mi proyecto personalizado\n");
+        var service = CreateService();
+        var changed = 0;
+        service.TemplatesChanged = () => changed++;
+
+        Assert.Equal(1, service.AddSuggestedTemplates());
+        Assert.Equal("# Mi proyecto personalizado\n", File.ReadAllText(Path.Combine(_directory, "project.md")));
+        Assert.NotNull(service.FindTemplate("reading.md"));
+        Assert.Equal(0, service.AddSuggestedTemplates());
+        Assert.Equal(1, changed);
     }
 
     [Fact]

@@ -8,6 +8,8 @@ namespace enki.ViewModels;
 
 public sealed partial class NoteFolderViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     public NoteFolder Folder { get; private set; }
     public int Depth { get; }
 

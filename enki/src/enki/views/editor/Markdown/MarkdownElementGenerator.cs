@@ -32,6 +32,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     /// <summary>Lado del icono de un aviso. Algo menor que el cuerpo de texto a propósito: el icono
     /// acompaña al título, no compite con él.</summary>
     private const double CalloutIconSize = 15;
+    private const double CalloutVerticalPadding = 4;
 
     private enum ZoneKind { Hide, Bullet, Checkbox, Callout, Align, JustifySpace, Image, Transclusion, Math, SpecialBlock, TableRule, TableRow }
 
@@ -192,7 +193,13 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 // El formateador reserva el ancho de cada nivel para todas las filas visuales; el
                 // marcador puede ocultarse sin alterar el documento ni falsear el hit testing.
                 if (model.MarkerStart < model.MarkerEnd)
-                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0));
+                    zones.Add(new Zone(model.MarkerStart, model.MarkerEnd, ZoneKind.Hide, model, 0)
+                    {
+                        // El fondo del aviso ocupa toda la línea. Este relleno desplaza la línea base
+                        // hacia el centro y deja el mismo aire por arriba y por abajo, también al editar.
+                        Metrics = _state.GetCallout(lineNumber) is not null
+                            ? new SpacerMetrics(0, CalloutVerticalPadding) : default
+                    });
                 // Cabecera de un aviso: el "[!warning]" se sustituye por el icono del tipo (y por su
                 // nombre, si el aviso no trae título propio). Con el cursor dentro se enseña en crudo,
                 // igual que cualquier otro marcador del live preview.
@@ -567,7 +574,8 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 ZoneKind.TableRow => zone is { TableRow: { } tableRow, TableGeometry: { } tableGeometry }
                     ? new InlineObjectElement(length, new MarkdownTableRowVisual(
                         CurrentContext.Document.GetText(line), line, zone.Line, tableRow, tableGeometry,
-                        _style, _state, _textArea.TextView.DefaultLineHeight))
+                        _style, _state, _textArea.TextView.DefaultLineHeight,
+                        _textArea.TextView.DefaultBaseline))
                     : null,
                 ZoneKind.Align => spacer > 0 ? new WhitespaceFormattedElement(string.Empty, 0, spacer) : null,
                 // The space keeps its own glyph and grows by its share of the row's leftover width.
@@ -764,7 +772,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
         if (span.ContentEnd > span.ContentStart)
         {
             var alt = CurrentContext.Document.GetText(span.ContentStart, span.ContentEnd - span.ContentStart);
-            if (!string.IsNullOrWhiteSpace(alt)) return alt;
+            if (!string.IsNullOrWhiteSpace(alt)) return NoteAttachmentService.UnescapeLabel(alt);
         }
         return MarkdownImageResolver.ShortLabel(span.LinkTarget ?? string.Empty);
     }
@@ -777,6 +785,33 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
     {
         var layout = MeasureImage(span, maxWidth);
         var margin = new Thickness(leadingWidth, 0, 0, 0);
+
+        if (NoteAttachmentService.IsAttachmentTarget(span.LinkTarget ?? string.Empty))
+        {
+            var button = new Button
+            {
+                Width = layout.Width, Height = layout.Height, Margin = margin,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal, Spacing = 10,
+                    Children =
+                    {
+                        new MaterialIcon { Kind = MaterialIconKind.Paperclip, Width = 18, Height = 18 },
+                        new TextBlock { Text = AltTextOf(span), MaxWidth = Math.Max(20, layout.Width - 70),
+                            TextTrimming = TextTrimming.CharacterEllipsis, FontFamily = _style.MonoFontFamily,
+                            FontSize = Math.Max(10, _style.BaseFontSize - 2) }
+                    }
+                }
+            };
+            button.Classes.Add("tag-chip");
+            var target = span.LinkTarget!;
+            button.Click += (_, _) => _state.Images.OpenAttachment?.Invoke(target);
+            ToolTip.SetTip(button, target);
+            AutomationProperties.SetName(button, AltTextOf(span));
+            SetImageBaseline(button, layout.Height);
+            return button;
+        }
 
         if (layout.Entry is { State: MarkdownImageState.Ready, Bitmap: { } bitmap })
         {
@@ -874,10 +909,13 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             Width = CalloutIconSize,
             Height = CalloutIconSize,
             Foreground = brush,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            // El espaciador de la cita amplía la franja unos píxeles más que la caja inline.
+            // Compensa la mitad de ese hueco sin alterar el alto de la línea ni el hit testing.
+            RenderTransform = new TranslateTransform(0, CalloutVerticalPadding / 2)
         };
 
-        Control content = icon;
+        Control content;
         if (model.CalloutTitleStart >= line.EndOffset)
         {
             var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = CheckboxSpacing };
@@ -893,12 +931,16 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
             });
             content = panel;
         }
+        else
+        {
+            // El contenedor inline se coloca arriba para respetar su línea base. Si el icono fuese ese
+            // contenedor, esa alineación sustituiría su Center y lo dejaría pegado arriba.
+            content = new Grid { Children = { icon } };
+        }
 
         content.IsHitTestVisible = false;
         content.Margin = new Thickness(leadingWidth, 0, CheckboxSpacing, 0);
         content.VerticalAlignment = VerticalAlignment.Top;
-        // Misma mecánica que la casilla de una tarea: se centra el distintivo contra el alto de línea y se
-        // fija su línea base a la del texto, para que la línea no crezca por llevar un icono.
         var height = Math.Max(CalloutIconSize, textView.DefaultLineHeight);
         content.Height = height;
         TextBlock.SetBaselineOffset(content, textView.DefaultBaseline);
@@ -924,7 +966,7 @@ public sealed class MarkdownElementGenerator : VisualLineElementGenerator
                 if (anchor.IsDeleted) return;
                 var doc = _textArea.Document;
                 var offset = anchor.Offset;
-                if (offset < 0 || offset >= doc.TextLength) return;
+                if (offset < 0 || offset >= doc.TextLength || !_textArea.ReadOnlySectionProvider.CanInsert(offset)) return;
                 var current = doc.GetCharAt(offset);
                 var next = current is 'x' or 'X' ? ' ' : 'x';
                 doc.Replace(offset, 1, next.ToString());

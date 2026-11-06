@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace enki.Models;
 
 public sealed class AppSettings
 {
-    /// <summary>Devuelve cada preferencia numérica al rango que su control de Ajustes permite elegir, y
-    /// reemplaza por el valor por defecto lo que quede fuera. Lo llama
+    /// <summary>Reduce los desplazamientos decorativos y acorta las transiciones de interfaz.</summary>
+    public bool UseSubtleAnimations { get; set; }
+
+    /// <summary>Acota las preferencias numéricas y migra las claves heredadas de sesión. Lo llama
     /// <see cref="Services.SettingsService"/> tras cada deserialización —carga, cambio de vault e
     /// importación— igual que <see cref="VaultSettings.Normalize"/> hace con las suyas.
     ///
@@ -25,6 +28,10 @@ public sealed class AppSettings
     /// rompe nada.</para></summary>
     public void Normalize()
     {
+        // Las versiones anteriores guardaban dos elecciones. Notas tiene prioridad si ambas existían.
+        WorkspaceSessionId ??= NotesSessionId ?? FilesSessionId;
+        NotesSessionId = null;
+        FilesSessionId = null;
         // Los rangos son los de los controles de Ajustes (views/settings/SettingsView.axaml); cambiar uno
         // allí sin cambiarlo aquí solo significa que el archivo admite algo que la UI no deja elegir.
         EditorFontSize = Clamp(EditorFontSize, 12, 20, 14);
@@ -39,6 +46,8 @@ public sealed class AppSettings
         SnoozeTomorrowHour = Clamp(SnoozeTomorrowHour, 0, 23, 9);
         AutoBackupIntervalDays = Clamp(AutoBackupIntervalDays, 1, 30, 1);
         AutoBackupRetentionCount = Clamp(AutoBackupRetentionCount, 1, 30, 5);
+        Ai ??= new AiSettings();
+        Ai.Normalize();
 
         // La franja horaria laboral necesita además que el final sea posterior al principio: dos valores
         // individualmente válidos pero cruzados dejan el calendario sin ninguna hora que pintar.
@@ -102,6 +111,12 @@ public sealed class AppSettings
 
     public bool SidebarExpanded { get; set; } = true;
 
+    /// <summary>Posición de los paneles de sección; false conserva la disposición izquierda original.</summary>
+    public bool NotesPanelOnRight { get; set; }
+    public bool FilesPanelOnRight { get; set; }
+    public bool SkillsPanelOnRight { get; set; }
+    public bool AssistantPanelOnRight { get; set; }
+
     /// <summary>Muestra/oculta la fila "Cambiar de vault" entre la cabecera de marca y la navegación
     /// (T4, .docs/project-info/multi-vault-en-caliente.md). Quien trabaja siempre sobre el mismo vault no
     /// necesita el selector ocupando una fila permanente del raíl; apagarlo no descarta los recientes,
@@ -132,6 +147,9 @@ public sealed class AppSettings
     /// of the OS window decorations.</summary>
     public bool UseCustomTitleBar { get; set; } = true;
 
+    /// <summary>Muestra los botones de minimizar, maximizar y cerrar en la barra propia.</summary>
+    public bool ShowWindowControls { get; set; } = true;
+
     /// <summary>Shows la barra de desplazamiento vertical del Dashboard — Ajustes › General. Por
     /// defecto activada (que es como se comportaba antes de existir el ajuste); apagarla solo oculta el
     /// raíl y el pulgar, el scroll con rueda/teclado sigue funcionando igual.</summary>
@@ -140,6 +158,32 @@ public sealed class AppSettings
     /// <summary>Muestra la fila de filtro por etiquetas del tablero; ocultarla no borra los filtros
     /// aplicados ni toca las etiquetas de las tarjetas.</summary>
     public bool KanbanShowTagFilter { get; set; } = true;
+
+    /// <summary>Habilita la gestión de varios tableros locales en este vault. Se enciende sola en cuanto
+    /// el almacén guarda más de un tablero (cualquier camino que cree uno lo activa), así que apagarla solo
+    /// tiene efecto mientras quede uno: <c>SettingsViewModel.KanbanMultipleBoardsEnabled</c> avisa en vez
+    /// de dejar tableros inalcanzables.</summary>
+    public bool KanbanMultipleBoardsEnabled { get; set; }
+
+    /// <summary>Último tablero abierto; una identidad obsoleta cae al predeterminado del almacén.</summary>
+    public string? KanbanLastSelectedBoardId { get; set; }
+
+    /// <summary>Muestra el botón de filtro rápido "Alta prioridad" en la barra de herramientas del
+    /// tablero Kanban. Apagado, el botón desaparece (sus tarjetas siguen existiendo y el filtro manual
+    /// sigue disponible en el desplegable de ordenación).</summary>
+    public bool KanbanShowHighPriorityButton { get; set; } = true;
+
+    /// <summary>Muestra el botón de filtro rápido "Vencidas" en la barra de herramientas del tablero
+    /// Kanban.</summary>
+    public bool KanbanShowOverdueButton { get; set; } = true;
+
+    /// <summary>Muestra el botón "Archivadas" (puerta a la ventana de tareas archivadas) en la barra de
+    /// herramientas del tablero Kanban.</summary>
+    public bool KanbanShowArchiveButton { get; set; } = true;
+
+    /// <summary>Muestra el botón de ordenación (desplegable de criterios) en la barra de herramientas del
+    /// tablero Kanban.</summary>
+    public bool KanbanShowSortButton { get; set; } = true;
 
     /// <summary>"Vertical" o "Horizontal" — Ajustes › Apariencia. Vertical apila las tarjetas dentro de
     /// columnas lado a lado (la disposición clásica de un tablero Kanban); Horizontal gira cada columna
@@ -186,6 +230,10 @@ public sealed class AppSettings
     public List<string> StatisticsCollapsedSections { get; set; } = [];
 
     // ===================== Notificaciones y recordatorios (Ajustes › Notificaciones) =====================
+
+    /// <summary>Permite crear avisos de cualquier categoría. Al desactivarlo se conservan los avisos
+    /// anteriores, pero no se añaden nuevos ni se disparan toasts o sonidos.</summary>
+    public bool NotificationsEnabled { get; set; } = true;
 
     /// <summary>Shows/hides the bell (system event log) button in the title bar entirely.</summary>
     public bool NotificationsPanelEnabled { get; set; } = true;
@@ -270,6 +318,11 @@ public sealed class AppSettings
     /// <summary>Shows/hides the tag-chip filter row in Kanban → "Gestión de tareas" (Ajustes › Cuenta).
     /// Defaults to hidden — the row starts collapsed behind the setting until the user opts in.</summary>
     public bool PolarShowTaskTags { get; set; }
+
+    /// <summary>Rotación automática de las esferas del grafo de Sesiones. Null mientras el usuario no la haya
+    /// cambiado: entonces decide el perfil de movimiento (<see cref="UseSubtleAnimations"/>) y, en el visor web,
+    /// la preferencia de movimiento reducido del sistema.</summary>
+    public bool? SessionsGraphRotationEnabled { get; set; }
 
     /// <summary>Estado de despliegue de cada bloque lateral del calendario, conservado entre arranques.</summary>
     public bool CalendarMiniCalendarExpanded { get; set; } = true;
@@ -376,6 +429,13 @@ public sealed class AppSettings
     /// <summary>Ancho en píxeles del panel lateral del modo árbol, arrastrable por su separador. Se acota
     /// al rango permitido al leerlo.</summary>
     public double SkillsTreeSidebarWidth { get; set; } = 272;
+
+    // ===================== Asistente de IA (.docs/project-info/asistente-ia.md) =====================
+
+    /// <summary>Preferencias del asistente de IA. Clave de instalación (ver
+    /// <see cref="Services.SettingsService"/>): describe este equipo —dónde está el CLI, qué aceptó el
+    /// usuario—, no el vault, así que no viaja con él.</summary>
+    public AiSettings Ai { get; set; } = new();
 
     // ===================== Secciones de la barra lateral (Ajustes › General) =====================
     // Same "hide the nav entry entirely" idea as CalendarPanelEnabled/SkillsPanelEnabled above, extended to
@@ -492,12 +552,11 @@ public sealed class AppSettings
     /// navegar en uno reorganizara el otro a la espalda del usuario.</summary>
     public List<string> NotesSimpleExpandedFolderPaths { get; set; } = [];
 
-    /// <summary>Id de la sesión elegida en el selector de espacio de trabajo de la página de Notas, o null
-    /// si lo elegido era el vault entero. Es estado de ventana como <see cref="NotesSimpleSidebarVisible"/>,
-    /// no una preferencia de Ajustes: se guarda al cambiar de sesión para que la app reabra en el mismo
-    /// espacio en el que se cerró, en vez de volver siempre al vault. Una sesión que ya no exista —borrada,
-    /// o de otro vault tras cambiar de vault— cae en silencio al vault, mismo criterio tolerante que
-    /// <see cref="OpenNotePaths"/>.</summary>
+    /// <summary>Sesión compartida por Notas y Archivos; null selecciona el vault entero.</summary>
+    public string? WorkspaceSessionId { get; set; }
+
+    /// <summary>Clave heredada de Notas, solo para migrar ajustes anteriores.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NotesSessionId { get; set; }
 
     // ===================== Notificaciones — horario "no molestar" y sonido =====================
@@ -636,11 +695,8 @@ public sealed class AppSettings
     /// separador. Se acota al rango permitido al leerlo.</summary>
     public double FilesTreeSidebarWidth { get; set; } = 272;
 
-    /// <summary>Id de la sesión elegida en el selector de espacio de trabajo de la página de Archivos, o
-    /// null si lo elegido era el vault entero. Gemelo de <see cref="NotesSessionId"/> y por los mismos
-    /// motivos —es estado de ventana, no una preferencia de Ajustes, y una sesión que ya no exista cae en
-    /// silencio al vault—, pero con clave propia: son dos selectores independientes, y compartir la clave
-    /// haría que cambiar de espacio en una sección moviera la otra a la espalda del usuario.</summary>
+    /// <summary>Clave heredada de Archivos, solo para migrar ajustes anteriores.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? FilesSessionId { get; set; }
 
     // ===================== Hábitos y Estadísticas (propuestas 13/15, docs/propuesta-nuevas-funcionalidades.md) =====================
@@ -669,4 +725,8 @@ public sealed class AppSettings
 
     /// <summary>Orden de las hasta 3 secciones fijadas en el grupo inferior del sidebar, junto a Ajustes.</summary>
     public List<string> SidebarBottomSectionOrder { get; set; } = [];
+
+    /// <summary>Nombres personalizados de las secciones del sidebar, por clave (<c>AppPage</c>). Una sección
+    /// sin entrada usa su nombre localizado por defecto.</summary>
+    public Dictionary<string, string> SidebarSectionNames { get; set; } = [];
 }

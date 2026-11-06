@@ -1,12 +1,14 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Linq;
 using enki.Localization;
 using enki.Models;
 
 namespace enki.Services;
 
-public sealed class KanbanService
+public sealed partial class KanbanService
 {
     private readonly string? _storageDirectory;
     private readonly VaultService? _vaultService;
@@ -14,13 +16,15 @@ public sealed class KanbanService
         ? VaultDataStorage.FilePath(_vaultService, "kanban.json")
         : Path.Combine(_storageDirectory!, "kanban.json");
     private bool _seedPending;
-    public KanbanBoard Board { get; private set; }
+    private KanbanStore _store = new();
+    public IReadOnlyList<KanbanBoard> Boards => _store.Boards;
+    public KanbanBoard DefaultBoard => Boards.First(b => b.Id == _store.DefaultBoardId);
+    public IEnumerable<KanbanColumn> AllColumns => Boards.SelectMany(b => b.Columns);
+    public IEnumerable<KanbanTrashedCard> AllTrashedCards => Boards.SelectMany(b => b.TrashedCards);
 
-    /// <summary>True cuando <see cref="Board"/> tuvo que reemplazarse por el tablero semilla porque
-    /// <c>kanban.json</c> existía pero no se pudo leer o deserializar (archivo dañado) — no se activa en
-    /// una instalación nueva donde el archivo simplemente no existe todavía. El compositor
-    /// (<see cref="ViewModels.MainWindowViewModel"/>) lo consulta justo después de construir este servicio
-    /// para avisar al usuario con <c>NotificationService.Push</c>.</summary>
+
+    /// <summary>El almacén no se pudo cargar o usa un formato desconocido. Se muestra un tablero vacío
+    /// de recuperación y se bloquean las escrituras para conservar el archivo original.</summary>
     public bool LoadedFromCorruptData { get; private set; }
 
     /// <summary>Raised after every successful <see cref="Save"/> — lets panels that only read the board
@@ -45,7 +49,7 @@ public sealed class KanbanService
         _storageDirectory = storageDirectory ?? AppDataDirectory.Resolve();
         Directory.CreateDirectory(_storageDirectory);
         _seedPending = deferSeedCreation;
-        Board = Load();
+        Load();
         PurgeOldTrashedCards();
     }
 
@@ -53,7 +57,7 @@ public sealed class KanbanService
     {
         _vaultService = vaultService;
         _seedPending = deferSeedCreation;
-        Board = Load();
+        Load();
         PurgeOldTrashedCards();
     }
 
@@ -61,7 +65,7 @@ public sealed class KanbanService
     public void Reload()
     {
         LoadedFromCorruptData = false;
-        Board = Load();
+        Load();
         PurgeOldTrashedCards();
         BoardChanged?.Invoke();
     }
@@ -76,13 +80,12 @@ public sealed class KanbanService
     private void PurgeOldTrashedCards()
     {
         var cutoff = DateTime.UtcNow.AddDays(-30);
-        var removed = Board.TrashedCards.Where(t => t.DeletedUtc < cutoff).ToList();
+        var removed = AllTrashedCards.Where(t => t.DeletedUtc < cutoff).ToList();
         if (removed.Count == 0) return;
 
-        foreach (var trashed in removed) Board.TrashedCards.Remove(trashed);
-        LogService.Debug($"KanbanService: purgadas {removed.Count} tarjetas de la papelera con más de 30 días.");
-        Save();
-        foreach (var trashed in removed) CardPermanentlyDeleted?.Invoke(trashed.Card.Id);
+        try { RemoveTrashedCards(removed); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+        { LogService.Warning("No se pudo purgar la papelera Kanban; se conservan las tarjetas.", ex); }
     }
 
     /// <summary>Borrado permanente individual desde la Papelera — la acción confirmada por
@@ -93,39 +96,154 @@ public sealed class KanbanService
     /// docs/analisis-proyecto/roadmap.md).</summary>
     public void PermanentlyDeleteTrashedCard(KanbanTrashedCard trashed)
     {
-        Board.TrashedCards.Remove(trashed);
-        Save();
-        CardPermanentlyDeleted?.Invoke(trashed.Card.Id);
+        if (FindTrashBoard(trashed) is not null) RemoveTrashedCards([trashed]);
     }
 
-    /// <summary>Borrado permanente masivo — la acción "vaciar papelera" (categoría Tareas o "todo") de
-    /// <c>TrashViewModel.ConfirmEmpty</c>. Devuelve cuántas se borraron para que el llamador siga pudiendo
-    /// componer su propio recuento agregado sin recontar <see cref="Models.KanbanBoard.TrashedCards"/> por su
-    /// cuenta.</summary>
+    /// <summary>Vacía todas las papeleras; los avisos solo se publican tras guardar.</summary>
     public int PermanentlyDeleteAllTrashedCards()
     {
-        var removed = Board.TrashedCards.Select(t => t.Card.Id).ToList();
-        if (removed.Count == 0) return 0;
-
-        Board.TrashedCards.Clear();
-        Save();
-        foreach (var cardId in removed) CardPermanentlyDeleted?.Invoke(cardId);
+        var removed = AllTrashedCards.ToList();
+        if (removed.Count > 0) RemoveTrashedCards(removed);
         return removed.Count;
     }
 
-    private KanbanBoard Load()
+    private void RemoveTrashedCards(List<KanbanTrashedCard> removed)
     {
-        if (JsonFileStore.TryLoad<KanbanBoard>(_boardPath, out var loaded) && loaded is not null)
+        var originals = Boards.Select(b => (Board: b, Cards: b.TrashedCards.ToList())).ToList();
+        foreach (var trashed in removed) FindTrashBoard(trashed)?.TrashedCards.Remove(trashed);
+        try { Save(); }
+        catch
         {
-            _seedPending = false;
-            MergeLegacyReviewColumn(loaded);
-            Board = loaded;
-            if (MigrateCoreColumnRoles(loaded)) Save();
-            return loaded;
+            foreach (var (board, cards) in originals) { board.TrashedCards.Clear(); board.TrashedCards.AddRange(cards); }
+            throw;
         }
+        foreach (var trashed in removed) CardPermanentlyDeleted?.Invoke(trashed.Card.Id);
+    }
 
-        if (File.Exists(_boardPath)) LoadedFromCorruptData = true;
-        return _seedPending ? new KanbanBoard { Name = string.Empty } : CreateSeedBoard();
+    /// <summary>Valida un archivo de respaldo sin migrarlo ni escribir sobre él.</summary>
+    internal static void ValidateBackupFile(string path)
+    {
+        var json = File.ReadAllText(path);
+        using var document = JsonDocument.Parse(json);
+        if (document.RootElement.TryGetProperty(nameof(KanbanStore.SchemaVersion), out _))
+        {
+            ValidateVersionedBoardIds(document.RootElement);
+            ValidateStore(JsonSerializer.Deserialize<KanbanStore>(json) ?? throw new InvalidDataException("Almacén vacío."));
+        }
+        else
+        {
+            if (!document.RootElement.TryGetProperty(nameof(KanbanBoard.Columns), out _)) throw new InvalidDataException("Formato Kanban desconocido.");
+            var board = JsonSerializer.Deserialize<KanbanBoard>(json) ?? throw new InvalidDataException("Tablero vacío.");
+            ValidateStore(new KanbanStore { Boards = [board], DefaultBoardId = board.Id });
+        }
+    }
+
+    private void Load()
+    {
+        LoadedFromCorruptData = false;
+        try
+        {
+            JsonFileStore.WithLock(_boardPath, () =>
+            {
+                if (!File.Exists(_boardPath))
+                {
+                    var board = _seedPending ? new KanbanBoard { Name = string.Empty } : CreateSeedBoard();
+                    _store = new KanbanStore { DefaultBoardId = board.Id, Boards = [board] };
+                    return;
+                }
+                var original = File.ReadAllText(_boardPath);
+                using var document = JsonDocument.Parse(original);
+                if (document.RootElement.TryGetProperty(nameof(KanbanStore.SchemaVersion), out _))
+                {
+                    ValidateVersionedBoardIds(document.RootElement);
+                    var store = JsonSerializer.Deserialize<KanbanStore>(original)
+                        ?? throw new InvalidDataException("Almacén Kanban vacío.");
+                    ValidateStore(store);
+                    _store = store;
+                }
+                else
+                {
+                    if (!document.RootElement.TryGetProperty(nameof(KanbanBoard.Columns), out _))
+                        throw new InvalidDataException("Formato Kanban desconocido.");
+                    var board = JsonSerializer.Deserialize<KanbanBoard>(original)
+                        ?? throw new InvalidDataException("Tablero Kanban vacío.");
+                    var store = new KanbanStore { DefaultBoardId = board.Id, Boards = [board] };
+                    ValidateStore(store);
+                    // No se migra si no puede conservarse el original exacto.
+                    var backup = _boardPath + ".pre-multiboard.bak";
+                    if (File.Exists(backup) && File.ReadAllText(backup) != original)
+                        backup += "." + Guid.NewGuid().ToString("N");
+                    if (!File.Exists(backup)) File.Copy(_boardPath, backup);
+                    MergeLegacyReviewColumn(board);
+                    MigrateCoreColumnRoles(board);
+                    JsonFileStore.Save(_boardPath, store);
+                    _store = store;
+                }
+                _seedPending = false;
+            });
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException
+                                       or InvalidOperationException or TimeoutException)
+        {
+            LogService.Warning("No se pudo cargar el almacén Kanban; se protege el archivo original.", ex);
+            LoadedFromCorruptData = true;
+            _seedPending = false;
+            var board = new KanbanBoard { Name = LocalizationService.Instance["Kanban_Seed_BoardTitle"] };
+            _store = new KanbanStore { DefaultBoardId = board.Id, Boards = [board] };
+        }
+    }
+
+    private static void ValidateVersionedBoardIds(JsonElement root)
+    {
+        if (!root.TryGetProperty(nameof(KanbanStore.Boards), out var boards) || boards.ValueKind != JsonValueKind.Array)
+            throw new InvalidDataException("Falta la colección de tableros.");
+        foreach (var board in boards.EnumerateArray())
+            if (board.ValueKind != JsonValueKind.Object || !board.TryGetProperty(nameof(KanbanBoard.Id), out var id)
+                || id.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(id.GetString()))
+                throw new InvalidDataException("Falta la identidad de un tablero.");
+    }
+
+    private static void ValidateStore(KanbanStore store)
+    {
+        if (store.SchemaVersion != 1 || store.Boards is not { Count: > 0 })
+            throw new InvalidDataException("Versión o colección de tableros no válida.");
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        void AddId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !ids.Add(id))
+                throw new InvalidDataException("Identificador Kanban vacío o duplicado.");
+        }
+        foreach (var board in store.Boards)
+        {
+            if (board is null || board.Name is null || board.Columns is null || board.TrashedCards is null)
+                throw new InvalidDataException("Tablero Kanban incompleto.");
+            AddId(board.Id);
+            foreach (var column in board.Columns)
+            {
+                if (column is null || column.Title is null || column.Cards is null) throw new InvalidDataException("Columna incompleta.");
+                AddId(column.Id);
+                foreach (var card in column.Cards)
+                {
+                    ValidateCard(card);
+                    AddId(card.Id);
+                }
+            }
+            foreach (var trash in board.TrashedCards)
+            {
+                if (trash?.Card is null) throw new InvalidDataException("Papelera incompleta.");
+                ValidateCard(trash.Card);
+                AddId(trash.Card.Id);
+            }
+        }
+        if (!store.Boards.Any(b => b.Id == store.DefaultBoardId))
+            store.DefaultBoardId = store.Boards[0].Id;
+    }
+
+    private static void ValidateCard(KanbanCard card)
+    {
+        if (card is null || card.Title is null || card.Description is null || card.Tags is null || card.Subtasks is null
+            || card.Tags.Any(t => t is null) || card.Subtasks.Any(t => t is null || t.Title is null || string.IsNullOrWhiteSpace(t.Id)))
+            throw new InvalidDataException("Tarjeta incompleta.");
     }
 
     /// <summary>Crea los datos de bienvenida cuando ya se conoce el idioma de primer arranque.
@@ -133,15 +251,18 @@ public sealed class KanbanService
     public void EnsureSeedBoard()
     {
         if (!_seedPending) return;
-        Board = CreateSeedBoard();
+        var board = CreateSeedBoard();
+        _store = new KanbanStore { DefaultBoardId = board.Id, Boards = [board] };
         Save();
         _seedPending = false;
     }
 
     public void Save()
     {
+        if (LoadedFromCorruptData) throw new InvalidOperationException("Kanban_Multi_LoadFailed");
+        ValidateStore(_store);
         Directory.CreateDirectory(Path.GetDirectoryName(_boardPath)!);
-        JsonFileStore.Save(_boardPath, Board);
+        JsonFileStore.Save(_boardPath, _store);
         BoardChanged?.Invoke();
     }
 
@@ -154,8 +275,8 @@ public sealed class KanbanService
     /// <paramref name="oldPath"/>.</summary>
     public void RelinkNotePath(string oldPath, string newPath)
     {
-        var cards = Board.Columns.SelectMany(c => c.Cards)
-            .Concat(Board.TrashedCards.Select(t => t.Card));
+        var cards = AllColumns.SelectMany(c => c.Cards)
+            .Concat(AllTrashedCards.Select(t => t.Card));
 
         var changed = false;
         foreach (var card in cards)
@@ -180,7 +301,8 @@ public sealed class KanbanService
 
         var inProgressColumn = board.Columns.FirstOrDefault(c =>
             NormalizeTitle(c.Title) == "EN PROGRESO");
-        if (inProgressColumn is not null) inProgressColumn.Cards.AddRange(reviewColumn.Cards);
+        if (inProgressColumn is null) return;
+        inProgressColumn.Cards.AddRange(reviewColumn.Cards);
 
         board.Columns.Remove(reviewColumn);
     }

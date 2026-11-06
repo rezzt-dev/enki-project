@@ -1,0 +1,88 @@
+<Project>
+  <!-- Solo exporta configuración pública; nunca copia el archivo local completo. -->
+  <UsingTask TaskName="GeneratePolarConfiguration" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourcePath ParameterType="System.String" Required="true" />
+      <OutputPath ParameterType="System.String" Required="true" />
+      <RequireConfiguration ParameterType="System.Boolean" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (File.Exists(SourcePath))
+        {
+            foreach (var rawLine in File.ReadAllLines(SourcePath))
+            {
+                var line = rawLine.Trim();
+                var separator = line.IndexOf('=');
+                if (line.StartsWith("#") || separator <= 0) continue;
+                values[line.Substring(0, separator).Trim()] = line.Substring(separator + 1).Trim();
+            }
+        }
+        var url = Environment.GetEnvironmentVariable("SUPABASE_URL");
+        var key = Environment.GetEnvironmentVariable("SUPABASE_ANON_KEY");
+        if (string.IsNullOrWhiteSpace(key)) key = Environment.GetEnvironmentVariable("SUPABASE_PUBLISHABLE_KEY");
+        // Una configuración de CI parcial no debe mezclarse con otro backend local.
+        if (string.IsNullOrWhiteSpace(url) && string.IsNullOrWhiteSpace(key))
+        {
+            values.TryGetValue("SUPABASE_URL", out url);
+            values.TryGetValue("SUPABASE_ANON_KEY", out key);
+            if (string.IsNullOrWhiteSpace(key)) values.TryGetValue("SUPABASE_PUBLISHABLE_KEY", out key);
+        }
+        url = (url ?? "").Trim().TrimEnd('/');
+        key = (key ?? "").Trim();
+        bool publicKey = Regex.IsMatch(key, @"^sb_publishable_[A-Za-z0-9_-]+$");
+        if (!publicKey && key.StartsWith("eyJ", StringComparison.Ordinal))
+        {
+            try
+            {
+                var parts = key.Split('.');
+                if (parts.Length == 3)
+                {
+                    var payload = parts[1].Replace('-', '+').Replace('_', '/');
+                    payload = payload.PadRight((payload.Length + 3) / 4 * 4, '=');
+                    var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+                    publicKey = Regex.IsMatch(json, "\"role\"\\s*:\\s*\"anon\"");
+                }
+            }
+            catch (FormatException) { }
+        }
+        Uri uri;
+        bool configured = Uri.TryCreate(url, UriKind.Absolute, out uri)
+            && uri.Scheme == "https" && !string.IsNullOrEmpty(uri.Host)
+            && string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query)
+            && string.IsNullOrEmpty(uri.Fragment) && publicKey;
+        // Sobrescribe incluso al faltar configuración: evita reutilizar valores de otro build.
+        Directory.CreateDirectory(Path.GetDirectoryName(OutputPath));
+        File.WriteAllText(OutputPath, configured
+            ? "SUPABASE_URL=" + url + "\nSUPABASE_ANON_KEY=" + key + "\n"
+            : "# Polar sin configurar en este build de desarrollo.\n");
+        if (!configured && (RequireConfiguration || url.Length > 0 || key.Length > 0))
+        {
+            Log.LogError("Polar necesita SUPABASE_URL (HTTPS) y SUPABASE_ANON_KEY o SUPABASE_PUBLISHABLE_KEY (clave pública sb_publishable_ o JWT anon). Configúralas en enki/local.properties o en el entorno de compilación. No se admiten claves secretas/service_role.");
+            return false;
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <PropertyGroup>
+    <PolarConfigurationSource Condition="'$(PolarConfigurationSource)' == ''">$(MSBuildThisFileDirectory)../local.properties</PolarConfigurationSource>
+  </PropertyGroup>
+  <Target Name="GeneratePolarConfigurationFile" BeforeTargets="PrepareForBuild;PrepareForPublish">
+    <GeneratePolarConfiguration SourcePath="$(PolarConfigurationSource)" OutputPath="$(IntermediateOutputPath)polar.properties" />
+    <ItemGroup>
+      <Content Include="$(IntermediateOutputPath)polar.properties" Link="polar.properties" TargetPath="polar.properties"
+               CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true" />
+      <FileWrites Include="$(IntermediateOutputPath)polar.properties" />
+    </ItemGroup>
+  </Target>
+  <Target Name="ValidatePolarPublishConfiguration" BeforeTargets="PrepareForPublish">
+    <GeneratePolarConfiguration SourcePath="$(PolarConfigurationSource)" OutputPath="$(IntermediateOutputPath)polar.properties" RequireConfiguration="true" />
+  </Target>
+</Project>

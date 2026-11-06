@@ -11,6 +11,8 @@ public sealed class KanbanCard
     public required string Title { get; set; }
     public string Description { get; set; } = string.Empty;
     public KanbanPriority Priority { get; set; } = KanbanPriority.Medium;
+    /// <summary>Fecha de apertura opcional; el cierre se conserva en DueDateUtc.</summary>
+    public DateTime? StartDateUtc { get; set; }
     public DateTime? DueDateUtc { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 
@@ -35,6 +37,12 @@ public sealed class KanbanCard
     /// es derivada: lo que se persiste es la fecha, no este booleano.</summary>
     [JsonIgnore]
     public bool IsArchived => ArchivedAtUtc is not null;
+
+    /// <summary>La tarjeta ya está terminada: tiene fecha de completado o está archivada (archivar solo es
+    /// posible desde "Hecho"). Una tarjeta terminada nunca cuenta como vencida. <see cref="JsonIgnoreAttribute"/>
+    /// porque es derivada.</summary>
+    [JsonIgnore]
+    public bool IsCompleted => CompletedAtUtc is not null || IsArchived;
 
     public List<KanbanSubtask> Subtasks { get; set; } = [];
 

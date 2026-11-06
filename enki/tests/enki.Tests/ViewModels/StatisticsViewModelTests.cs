@@ -58,7 +58,7 @@ public class StatisticsViewModelTests : IDisposable
     public void Reload_WithACompletedCardThisWeek_HasEnoughDataIsTrue()
     {
         var h = CreateViewModel();
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "Completada", CompletedAtUtc = DateTime.UtcNow });
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "Completada", CompletedAtUtc = DateTime.UtcNow });
 
         h.Vm.Reload();
 

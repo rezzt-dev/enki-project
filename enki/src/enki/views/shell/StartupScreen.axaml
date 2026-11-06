@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:loc="clr-namespace:enki.Localization"
+             mc:Ignorable="d" d:DesignWidth="1320" d:DesignHeight="820"
+             x:Class="enki.Views.StartupScreen"
+             x:DataType="vm:MainWindowViewModel"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <!-- Una sola presentación desde el primer fotograma: logo y barra temporal. La barra se
+       anima mediante una escala, sin recalcular el layout ni cambiar de modo al construir la shell. -->
+
+  <StackPanel Name="StartupContent" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Spacing="26" Width="260">
+
+    <StackPanel Spacing="16" HorizontalAlignment="Center">
+      <Image Name="StartupLogo" Width="56" Height="56" HorizontalAlignment="Center"
+             RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+      <StackPanel Spacing="7" HorizontalAlignment="Center">
+        <!-- "ENKI" es una de las cadenas exentas de recurso del proyecto (VisibleTextCoverageTests):
+             es la marca, no interfaz. -->
+        <TextBlock Text="ENKI" FontSize="20" FontWeight="Bold" LetterSpacing="9" Margin="9,0,0,0"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="{loc:Tr Shell_BrandTagline}" Classes="faint" FontSize="10"
+                   LetterSpacing="3" HorizontalAlignment="Center" />
+      </StackPanel>
+    </StackPanel>
+
+    <Border Height="2" Background="{DynamicResource Ink10}" ClipToBounds="True">
+      <Border Name="StartupProgress" Height="2" Width="260" HorizontalAlignment="Left"
+              Background="{DynamicResource InkBrush}" Opacity="0" />
+    </Border>
+  </StackPanel>
+</UserControl>

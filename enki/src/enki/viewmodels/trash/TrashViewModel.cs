@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -34,6 +35,8 @@ public sealed partial class TrashViewModel : ViewModelBase
     private readonly NotificationService _notificationService;
     private readonly SessionService _sessionService;
     private readonly Action? _onSessionsChanged;
+
+    public ObservableCollection<NoteFolder> Folders { get; } = [];
 
     public ObservableCollection<NoteCardViewModel> Notes { get; } = [];
     public ObservableCollection<TrashedTaskCardViewModel> Tasks { get; } = [];
@@ -76,7 +79,7 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     /// <summary>Drives the "VACIAR PAPELERA" button, which purges documentos, tareas, archivos, tareas de
     /// Polar, recordatorios y sesiones.</summary>
-    public bool IsFullyEmpty => IsEmpty && IsTasksEmpty && IsFilesEmpty && IsPolarTasksEmpty && IsRemindersEmpty && IsSessionsEmpty;
+    public bool IsFullyEmpty => Folders.Count == 0 && IsEmpty && IsTasksEmpty && IsFilesEmpty && IsPolarTasksEmpty && IsRemindersEmpty && IsSessionsEmpty;
 
     /// <summary>Combined item count across every section — drives the "Papelera" nav badge so the user
     /// can tell there's something to review without opening the page.</summary>
@@ -114,6 +117,7 @@ public sealed partial class TrashViewModel : ViewModelBase
 
     private static string Describe(object item) => item switch
     {
+        NoteFolder folder => folder.Name,
         NoteCardViewModel note => note.Title,
         FileCardViewModel file => file.FileName,
         TrashedTaskCardViewModel task => task.Title,
@@ -161,6 +165,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         _notificationService = notificationService;
         _sessionService = sessionService;
         _onSessionsChanged = onSessionsChanged;
+        _vaultService.FolderChanged += _ => Reload();
 
         Reload();
     }
@@ -203,7 +208,7 @@ public sealed partial class TrashViewModel : ViewModelBase
         IsEmpty = Notes.Count == 0;
 
         Tasks.Clear();
-        foreach (var trashed in _kanbanService.Board.TrashedCards) Tasks.Add(new TrashedTaskCardViewModel(trashed));
+        foreach (var trashed in _kanbanService.AllTrashedCards) Tasks.Add(new TrashedTaskCardViewModel(trashed, _kanbanService.FindTrashBoard(trashed)?.Name));
         IsTasksEmpty = Tasks.Count == 0;
 
         Files.Clear();
@@ -225,7 +230,10 @@ public sealed partial class TrashViewModel : ViewModelBase
         foreach (var session in _sessionService.ListTrashedSessions()) Sessions.Add(new TrashedSessionCardViewModel(session));
         IsSessionsEmpty = Sessions.Count == 0;
 
-        TotalCount = Notes.Count + Tasks.Count + Files.Count + PolarLists.Count + PolarTasks.Count + Reminders.Count + Sessions.Count;
+        Folders.Clear();
+        foreach (var folder in _vaultService.GetTrashedFolders()) Folders.Add(folder);
+        OnPropertyChanged(nameof(IsFullyEmpty));
+        TotalCount = Folders.Count + Notes.Count + Tasks.Count + Files.Count + PolarLists.Count + PolarTasks.Count + Reminders.Count + Sessions.Count;
     }
 
     [RelayCommand]
@@ -273,6 +281,9 @@ public sealed partial class TrashViewModel : ViewModelBase
     {
         switch (PendingPermanentDelete)
         {
+            case NoteFolder folder:
+                if (!TryFolderTrashOperation(() => _vaultService.PermanentlyDeleteFolder(folder))) return;
+                break;
             case NoteCardViewModel note:
                 _vaultService.PermanentlyDelete(note.Note);
                 break;
@@ -300,17 +311,36 @@ public sealed partial class TrashViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void RestoreFolder(NoteFolder folder)
+    {
+        if (!TryFolderTrashOperation(() => _vaultService.RestoreFolder(folder))) return;
+        _notificationService.Push(LocalizationService.Instance["Folders_Done"], folder.Name, NotificationSeverity.Success);
+        Reload();
+    }
+
+    [RelayCommand]
+    private void RequestDeleteFolderForever(NoteFolder folder) => PendingPermanentDelete = folder;
+
+    private bool TryFolderTrashOperation(Action action)
+    {
+        try { action(); return true; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
+        {
+            _notificationService.Push(LocalizationService.Instance["Folders_Error"], ex.Message, NotificationSeverity.Error);
+            return false;
+        }
+    }
+
+    [RelayCommand]
     private void RestoreTask(TrashedTaskCardViewModel task)
     {
         var trashed = task.TrashedCard;
 
-        // La columna destino se resuelve ANTES de sacar la tarjeta de la papelera (Fase 3 de
-        // docs/analisis-proyecto/roadmap.md): si el tablero no tiene ninguna columna válida, la tarjeta
-        // se queda en la papelera — recuperable — en vez de quedar fuera de ambas listas, perdida en
-        // silencio. La columna original pudo ser borrada desde entonces: se recurre a la primera.
-        var targetColumn = _kanbanService.Board.Columns.FirstOrDefault(c => c.Id == trashed.ColumnId)
-            ?? _kanbanService.Board.Columns.FirstOrDefault();
-        if (targetColumn is null)
+        // La columna destino se resuelve antes de sacar la tarjeta de la papelera (Fase 3 de
+        // docs/analisis-proyecto/roadmap.md, ver KanbanService.RestoreTrashedCard): si el tablero no tiene
+        // ninguna columna válida, la tarjeta se queda en la papelera, recuperable, en vez de perderse.
+        var board = _kanbanService.FindTrashBoard(trashed);
+        if (board is null || board.Columns.Count == 0)
         {
             _notificationService.PushLocalized(
                 LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Title"),
@@ -319,21 +349,14 @@ public sealed partial class TrashViewModel : ViewModelBase
             return;
         }
 
-        _kanbanService.Board.TrashedCards.Remove(trashed);
-
-        var insertIndex = trashed.CardIndex is { } idx
-            ? Math.Min(idx, targetColumn.Cards.Count)
-            : targetColumn.Cards.Count;
-        targetColumn.Cards.Insert(insertIndex, trashed.Card);
-
-        // Restaurar significa "vuelve al tablero", así que una tarjeta que estaba archivada cuando se
-        // borró (docs/agent-docs/kanban-tareas-archivadas.md) pierde aquí esa marca: si no, la
-        // restauración la dejaría en una columna que no la dibuja y habría que ir a buscarla a la ventana
-        // de archivadas para verla. Se decide en este único sitio y no en cada camino de borrado, que son
-        // varios (el tablero y el propio Calendario).
-        trashed.Card.ArchivedAtUtc = null;
-
-        _kanbanService.Save();
+        KanbanColumn targetColumn;
+        try { targetColumn = _kanbanService.RestoreTrashedCard(trashed); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+        {
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Trash_Notify_CardRestoreFailed_Title"),
+                LocalizedTextFormatter.Format("Kanban_Multi_SaveFailed"), NotificationSeverity.Error);
+            return;
+        }
         _notificationService.PushLocalized(
             LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Title"),
             LocalizedTextFormatter.Format("Trash_Notify_CardRestored_Message", trashed.Card.Title, targetColumn.Title),
@@ -437,6 +460,10 @@ public sealed partial class TrashViewModel : ViewModelBase
         var polarTasksDeleted = 0;
         var remindersDeleted = 0;
         var sessionsDeleted = 0;
+
+        if (PendingEmptyTarget is TrashEmptyTarget.All)
+            foreach (var folder in _vaultService.GetTrashedFolders())
+                if (!TryFolderTrashOperation(() => _vaultService.PermanentlyDeleteFolder(folder))) { Reload(); return; }
 
         if (PendingEmptyTarget is TrashEmptyTarget.Documents or TrashEmptyTarget.All)
         {

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, beta-version, beta-version-1.0.0]
   pull_request:
-    branches: [main]
+    branches: [main, beta-version, beta-version-1.0.0]
 
 # Cancela una ejecución en curso si llega un push nuevo a la misma rama/PR, en vez de acumular runs
 # redundantes.
@@ -29,9 +29,9 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
+          global-json-file: enki/global.json
 
-      # No hay .sln en el repo (ver README.md, "Cómo compilar y correr") — se restauran los tres
+      # No hay .sln en el repo (ver readme.md, "Cómo compilar y correr") — se restauran los tres
       # proyectos por separado, igual que se compilan/testean a continuación.
       - name: Restore
         run: |
@@ -56,6 +56,24 @@ jobs:
       # un proyecto de test separado de enki.Tests.
       - name: Run UI tests (enki.UITests)
         run: dotnet test enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
+
+  graph-compatibility:
+    name: Grafo sin navegador (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+          global-json-file: enki/global.json
+      # Linux ejecuta estos mismos casos en build-and-test. No se instala ningún runtime web.
+      - name: Verificar renderizado e interacción sin WebView
+        run: dotnet test enki/tests/enki.UITests/enki.UITests.csproj --configuration Release --filter "FullyQualifiedName~NativeSessionGraphUiTests|FullyQualifiedName~SessionsGraphFiltersUiTests"
 
   lint-packaging:
     name: Lint de scripts de empaquetado

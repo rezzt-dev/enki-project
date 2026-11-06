@@ -27,23 +27,29 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         _ => LocalizationService.Instance["Kanban_Priority_Medium"]
     };
 
-    /// <summary>La tarjeta solo escribe la palabra "alta" cuando de verdad lo es: repetir "MEDIA" en
-    /// veinte tarjetas seguidas es ruido, y baja/media ya se distinguen por la intensidad del punto
-    /// (docs/agent-docs/sistema-diseno-web.md §1.3, "más opaco = más prioridad"). Lo excepcional se
-    /// nombra, lo normal se insinúa.</summary>
+    /// <summary>Indica si la tarjeta tiene prioridad alta.</summary>
     public bool IsHighPriority => Card.Priority == KanbanPriority.High;
 
-    /// <summary>Contrapartida de esconder la etiqueta en baja/media: el tooltip del punto siempre dice la
-    /// prioridad actual además de qué hace el clic, así que la información sigue disponible sin abrir la
-    /// tarjeta y sin depender de distinguir dos grises.</summary>
+    /// <summary>El tooltip indica la prioridad actual y explica la acción al hacer clic.</summary>
     public string PriorityTooltip => string.Format(
         CultureInfo.CurrentCulture,
         LocalizationService.Instance["Kanban_Card_PriorityTooltip"],
         PriorityLabel);
 
-    public bool HasDueDate => Card.DueDateUtc is not null;
-    public bool IsOverdue => Card.DueDateUtc is { } due && KanbanCard.IsPastDue(due);
-    public string DueDateLabel => Card.DueDateUtc is { } due ? KanbanCard.FormatDueLabel(due) : string.Empty;
+    public bool HasDueDate => Card.DueDateUtc is not null || Card.StartDateUtc is not null;
+
+    /// <summary>Terminada: sellada como completada, archivada, o ubicada ahora mismo en la columna "Hecho".
+    /// Lo último cubre las tarjetas que están en "Hecho" sin fecha de completado (tablero semilla o
+    /// creadas directamente en esa columna desde el editor, que nunca pasaron por MoveCard).</summary>
+    public bool IsCompleted => IsInDoneColumn || Card.IsCompleted;
+
+    /// <summary>Una tarea terminada nunca está vencida, por mucho que su fecha límite quede atrás.</summary>
+    public bool IsOverdue => !IsCompleted && Card.DueDateUtc is { } due && KanbanCard.IsPastDue(due);
+    public string DueDateLabel => Card.StartDateUtc is { } start
+        ? (Card.DueDateUtc is { } end
+            ? $"{KanbanCard.FormatDueLabel(start)} → {KanbanCard.FormatDueLabel(end)}"
+            : $"{LocalizationService.Instance["Kanban_Field_StartDateLabel"]}: {KanbanCard.FormatDueLabel(start)}")
+        : Card.DueDateUtc is { } due ? KanbanCard.FormatDueLabel(due) : string.Empty;
 
     public bool HasSubtasks => Card.Subtasks.Count > 0;
     private int DoneSubtaskCount => Card.Subtasks.Count(s => s.IsDone);
@@ -113,6 +119,17 @@ public sealed partial class KanbanCardViewModel : ObservableObject
     [ObservableProperty]
     private bool _canArchive;
 
+    /// <summary>Sellada por <see cref="KanbanColumnViewModel"/> junto a <see cref="CanArchive"/>: la
+    /// tarjeta no conoce su columna. Alimenta <see cref="IsCompleted"/>.</summary>
+    [ObservableProperty]
+    private bool _isInDoneColumn;
+
+    partial void OnIsInDoneColumnChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsCompleted));
+        OnPropertyChanged(nameof(IsOverdue));
+    }
+
     [ObservableProperty]
     private bool _isDropTarget;
 
@@ -180,6 +197,7 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         OnPropertyChanged(nameof(IsHighPriority));
         OnPropertyChanged(nameof(PriorityTooltip));
         OnPropertyChanged(nameof(HasDueDate));
+        OnPropertyChanged(nameof(IsCompleted));
         OnPropertyChanged(nameof(IsOverdue));
         OnPropertyChanged(nameof(DueDateLabel));
         OnPropertyChanged(nameof(HasSubtasks));

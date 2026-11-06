@@ -429,7 +429,7 @@ public static class MarkdownLineParser
             }
             else if (c == '[')
             {
-                var closeBracket = text.IndexOf(']', i + 1);
+                var closeBracket = FindUnescapedBracket(text, i + 1, to);
                 if (closeBracket != -1 && closeBracket < to && closeBracket > i + 1 &&
                     closeBracket + 1 < to && text[closeBracket + 1] == '(')
                 {
@@ -550,12 +550,21 @@ public static class MarkdownLineParser
         return false;
     }
 
+    private static int FindUnescapedBracket(string text, int from, int to)
+    {
+        for (var index = from; index < to; index++)
+        {
+            if (text[index] == '\\') { index++; continue; }
+            if (text[index] == ']') return index;
+        }
+        return -1;
+    }
+
     /// <summary>Reconoce una imagen que empieza en <paramref name="start"/> (el <c>!</c>) en cualquiera de
     /// sus dos formas — <c>![alt](ruta)</c> y la incrustación de Obsidian <c>![[archivo.png]]</c> — y
     /// devuelve el índice justo tras ella, o <paramref name="start"/> si allí no hay ninguna. La forma
-    /// <c>![[…]]</c> solo cuenta como imagen si su destino tiene extensión de imagen: <c>![[Otra nota]]</c>
-    /// es una transclusión de nota, que este editor no renderiza, y degradarla a wikilink normal la deja
-    /// al menos navegable.</summary>
+    /// <c>![[…]]</c> reconoce imágenes y documentos adjuntos por extensión; <c>![[Otra nota]]</c>
+    /// conserva el tratamiento de transclusión de nota.</summary>
     private static int ScanImage(MdLine model, string text, int start, int to, int lineOffset)
     {
         var isEmbed = start + 2 < to && text[start + 2] == '[';
@@ -569,7 +578,7 @@ public static class MarkdownLineParser
             var inner = text[innerStart..close];
             var (target, size) = SplitImageSize(inner);
             target = target.Trim();
-            if (target.Length == 0 || !LooksLikeImage(target)) return start;
+            if (target.Length == 0 || (!LooksLikeImage(target) && !NoteAttachmentService.IsAttachmentTarget(target))) return start;
 
             model.Spans.Add(new MdSpan
             {
@@ -586,7 +595,7 @@ public static class MarkdownLineParser
         }
 
         var bracketStart = start + 1;
-        var closeBracket = text.IndexOf(']', bracketStart + 1);
+        var closeBracket = FindUnescapedBracket(text, bracketStart + 1, to);
         if (closeBracket == -1 || closeBracket >= to || closeBracket + 1 >= to || text[closeBracket + 1] != '(') return start;
 
         var closeParen = text.IndexOf(')', closeBracket + 2);

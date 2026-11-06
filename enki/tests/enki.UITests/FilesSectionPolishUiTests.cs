@@ -92,7 +92,7 @@ public class FilesSectionPolishUiTests : IDisposable
 
         var text = RenderedText(window);
         Assert.Contains(LocalizationService.Instance["Files_DeleteFolder_Title"], text, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(LocalizationService.Instance["Files_DeleteFolder_Hint"], text, StringComparison.Ordinal);
+        Assert.Contains(LocalizationService.Instance["Folders_DeleteHint"], text, StringComparison.Ordinal);
 
         window.Close();
     }

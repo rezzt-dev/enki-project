@@ -39,7 +39,7 @@ public class EditorViewModelLinkedCardsTests : IDisposable
         var note = vault.GetNotes().Single();
 
         var kanban = new KanbanService(Path.Combine(_tempDir, "kanban-storage"));
-        var linkedCard = kanban.Board.Columns[0].Cards[0];
+        var linkedCard = kanban.DefaultBoard.Columns[0].Cards[0];
         linkedCard.LinkedNotePath = note.FullPath;
 
         var editor = new EditorViewModel(vault, note, onBack: () => { }, onChanged: () => { },

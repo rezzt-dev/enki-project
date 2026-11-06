@@ -15,8 +15,8 @@ public sealed class QuickCaptureService(VaultService vaultService, KanbanService
     public const int MaximumTitleLength = 100;
 
     /// <summary>Crea la entidad definitiva. La carpeta <c>Inbox/</c> se crea dentro del vault cuando no
-    /// existe; al ir a Kanban, una columna guardada que ya no exista degrada a la primera disponible.</summary>
-    public QuickCaptureResult Capture(string text, QuickCaptureDestination destination, string? kanbanColumnId = null)
+    /// existe; al ir a Kanban, se rechaza un destino explícito que ya no exista.</summary>
+    public QuickCaptureResult Capture(string text, QuickCaptureDestination destination, string? kanbanColumnId = null, string? kanbanBoardId = null)
     {
         if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException("La captura no puede estar vacía.", nameof(text));
         if (!vaultService.IsVaultConfigured) throw new VaultUnavailableException(vaultService.VaultPath);
@@ -36,9 +36,12 @@ public sealed class QuickCaptureService(VaultService vaultService, KanbanService
             return new QuickCaptureResult(destination, note.Title, note.FullPath, null);
         }
 
-        var column = kanbanService.Board.Columns.FirstOrDefault(candidate => candidate.Id == kanbanColumnId)
-                     ?? kanbanService.Board.Columns.FirstOrDefault()
-                     ?? throw new InvalidOperationException("El tablero no tiene ninguna columna disponible.");
+        var board = kanbanBoardId is null ? kanbanService.DefaultBoard
+            : kanbanService.Boards.FirstOrDefault(b => b.Id == kanbanBoardId)
+                ?? throw new InvalidOperationException("El tablero destino ya no existe.");
+        var column = kanbanColumnId is null ? board.Columns.FirstOrDefault()
+            : board.Columns.FirstOrDefault(c => c.Id == kanbanColumnId);
+        if (column is null) throw new InvalidOperationException("La columna destino ya no existe.");
         var description = string.Join('\n', lines.Skip(firstContentLine + 1)).Trim();
         var card = new KanbanCard
         {
@@ -47,7 +50,8 @@ public sealed class QuickCaptureService(VaultService vaultService, KanbanService
             Description = description
         };
         column.Cards.Add(card);
-        kanbanService.Save();
+        try { kanbanService.Save(); }
+        catch { column.Cards.Remove(card); throw; }
         return new QuickCaptureResult(destination, title, null, card.Id);
     }
 

@@ -27,6 +27,17 @@ public class NoteExportRendererTests : IDisposable
 
     private static string Body(string markdown) => NoteExportRenderer.RenderBodyHtml(markdown, noteDirectory: null);
 
+    [Theory]
+    [InlineData("informe.pdf")]
+    [InlineData("reunion.mp3")]
+    [InlineData("demo.mp4")]
+    public void RenderBody_Attachment_ExportsAsLinkInsteadOfBrokenImage(string target)
+    {
+        var html = Body($"![Documento]({target})");
+        Assert.Contains($"<a href=\"{target}\"", html);
+        Assert.DoesNotContain("<img", html);
+    }
+
     [Fact]
     public void RenderBody_InlineFormula_IsEmbeddedAsAStaticImage()
     {

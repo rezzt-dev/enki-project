@@ -47,7 +47,7 @@ public class ReminderInboxViewModelTests : IDisposable
     private KanbanCard AddDueCard(string title = "Tarjeta")
     {
         var card = new KanbanCard { Id = Guid.NewGuid().ToString("N"), Title = title, DueDateUtc = DateTime.UtcNow.AddHours(-1) };
-        _kanbanService.Board.Columns[0].Cards.Add(card);
+        _kanbanService.DefaultBoard.Columns[0].Cards.Add(card);
         _kanbanService.Save();
         return card;
     }
@@ -104,7 +104,7 @@ public class ReminderInboxViewModelTests : IDisposable
             Id = Guid.NewGuid().ToString("N"), Title = "Ya hecha",
             DueDateUtc = DateTime.UtcNow.AddHours(-1), CompletedAtUtc = DateTime.UtcNow.AddMinutes(-30)
         };
-        _kanbanService.Board.Columns[0].Cards.Add(completed);
+        _kanbanService.DefaultBoard.Columns[0].Cards.Add(completed);
         _kanbanService.Save();
         var pending = AddDueCard("Pendiente");
 

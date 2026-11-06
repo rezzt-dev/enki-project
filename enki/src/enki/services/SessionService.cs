@@ -93,7 +93,11 @@ public sealed class SessionService
 
         try
         {
-            return Directory.EnumerateDirectories(root).ToList();
+            // No seguir enlaces fuera del vault, tampoco si se sustituyó el contenedor de sesiones.
+            if ((File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0) return [];
+            return new DirectoryInfo(root).EnumerateDirectories()
+                .Where(directory => (directory.Attributes & FileAttributes.ReparsePoint) == 0)
+                .Select(directory => directory.FullName).ToList();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

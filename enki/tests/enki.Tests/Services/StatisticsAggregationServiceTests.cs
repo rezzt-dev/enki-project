@@ -54,6 +54,17 @@ public class StatisticsAggregationServiceTests : IDisposable
         (DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddDays(1));
 
     [Fact]
+    public void BuildKanbanFlow_AggregatesRolesAcrossAllBoards_IncludingArchivedHistory()
+    {
+        var h = CreateHarness();
+        foreach (var column in h.Kanban.DefaultBoard.Columns) column.Cards.Clear();
+        var board = h.Kanban.CreateBoard("Histórico");
+        board.Columns[0].Cards.Add(new() { Id = "pending", Title = "Pendiente" });
+        board.Columns[2].Cards.Add(new() { Id = "archived", Title = "Hecha", ArchivedAtUtc = DateTime.UtcNow });
+        Assert.Equal(new KanbanFlowSnapshot(1, 0, 1), h.Service.BuildKanbanFlow());
+    }
+
+    [Fact]
     public void BuildWeeklySeries_EmptyVault_ReturnsZeroedWeeksWithNoHabitData()
     {
         var h = CreateHarness();
@@ -88,7 +99,7 @@ public class StatisticsAggregationServiceTests : IDisposable
     public void BuildWeeklySeries_KanbanCardsWithoutCompletedAt_AreNotCounted()
     {
         var h = CreateHarness();
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "Sin completar" });
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "Sin completar" });
         var (start, end) = LastWeekRange();
 
         var series = h.Service.BuildWeeklySeries(start, end);
@@ -100,8 +111,8 @@ public class StatisticsAggregationServiceTests : IDisposable
     public void BuildWeeklySeries_KanbanCardsCompletedInRange_AreCounted()
     {
         var h = CreateHarness();
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "Completada", CompletedAtUtc = DateTime.UtcNow });
-        h.Kanban.Board.Columns[0].Cards.Add(new KanbanCard { Id = "c2", Title = "Completada 2", CompletedAtUtc = DateTime.UtcNow });
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "c1", Title = "Completada", CompletedAtUtc = DateTime.UtcNow });
+        h.Kanban.DefaultBoard.Columns[0].Cards.Add(new KanbanCard { Id = "c2", Title = "Completada 2", CompletedAtUtc = DateTime.UtcNow });
         var (start, end) = LastWeekRange();
 
         var series = h.Service.BuildWeeklySeries(start, end);

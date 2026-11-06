@@ -11,8 +11,7 @@ este documento).
 
 Panel en el sidebar (ver `04-vistas-y-navegacion.md` §1), lista de interruptores, uno por capa:
 
-- **Kanban** — un único interruptor, cubre todas las columnas del tablero (el tablero no tiene concepto
-  de "sub-lista" filtrable de forma natural).
+- **Kanban** — un único interruptor, cubre las columnas de todos los tableros.
 - **Recordatorios** — un único interruptor.
 - **Una fila por cada `PolarTaskList`** (solo si `AppSettings.PolarLinked == true`), con su color de
   calendario como indicador (ver §1b).
@@ -33,9 +32,9 @@ sección añade el color como diferenciador: de un vistazo se ve **de dónde vie
 
 ### Qué color tiene cada cosa
 
-- **Columnas de Kanban** — una por columna, no una para todo el tablero. Las tres columnas core llevan
-  color fijo por su `CoreColumnRole`: `Backlog` rojo, `InProgress` ámbar, `Done` verde. Las columnas que
-  cree el usuario reciben un acento de `CalendarLayerPalette.AccentPool`.
+- **Estados de Kanban** — un color compartido por `CoreColumnRole` entre todos los tableros:
+  `Backlog` rojo, `InProgress` ámbar, `Done` verde por defecto. Las columnas personalizadas reciben
+  un acento independiente de `CalendarLayerPalette.AccentPool`.
 - **Listas de Polar** — un acento del mismo `AccentPool`, repartido de forma que dos listas nunca
   coincidan (ni una lista con una columna personalizada: comparten un único reparto).
 - **Recordatorios** — el índigo de siempre (`CalendarItemViewModel.ReminderLayerColorHex`).
@@ -72,14 +71,28 @@ tareas":
 ### El panel
 
 La fila **KANBAN** conserva su interruptor (sigue mostrando/ocultando todo Kanban a la vez) y pasa a ser
-la cabecera de un grupo: debajo cuelga una sub-fila indentada por columna, **solo color, sin interruptor
-propio**. El filtrado no cambia — las sub-filas existen para poder ver y tocar su color.
+la cabecera de un grupo: debajo aparecen **Por hacer, En proceso y Hecho una sola vez**, compartidos
+por todos los tableros, seguidos de sus columnas personalizadas. Estas últimas conservan una fila por
+columna, con el nombre del tablero cuando hay varios, incluso si coinciden sus títulos. Todas las
+sub-filas son **solo color, sin interruptor propio**.
+
+El calendario agrega las tarjetas de todos los tableros, tanto con fecha como sin programar,
+independientemente del tablero seleccionado en Kanban. Los tres estados se identifican por
+`CoreColumnRole`, no por su nombre ni posición. Cambiar su color repinta las tarjetas de ese estado en
+todos los tableros; las columnas personalizadas mantienen su color independiente.
+
+Los colores compartidos se guardan como `kanban:role:Backlog`, `kanban:role:InProgress` y
+`kanban:role:Done`. Si existen preferencias antiguas por columna, se usa la primera válida según el
+orden guardado de los tableros, salvo que ya haya una elección compartida. Restablecer el color elimina
+también esas preferencias heredadas del estado para que no reaparezcan al reiniciar.
 
 El punto de color de una fila editable es un botón: abre un emergente anclado (`Border.calendar-popover`)
-con una rejilla de los colores sugeridos, un campo hex libre y, si esa capa tiene color puesto a mano, un
-botón "automático" para devolverla al reparto. Un clic en un color lo aplica y cierra; no hay "guardar",
-porque es un ajuste de una sola propiedad reversible desde el mismo sitio. El emergente es anclado y no
-modal a propósito: el usuario quiere ver el calendario detrás mientras compara colores.
+de 340 px de ancho, con títulos que admiten varias líneas para evitar cortes. Incluye una rejilla de
+colores sugeridos, un selector visual y un campo hexadecimal sincronizados. Al abrirlo se carga el color
+actual. Las muestras de la rejilla se aplican con un clic; el color personalizado se confirma con
+"Guardar" o Intro. Un hexadecimal inválido no se guarda y recupera el color actual. Si la capa tiene
+color puesto a mano, "automático" permite devolverla al reparto. El emergente es anclado y no modal
+a propósito: el usuario puede seguir viendo el calendario detrás.
 
 `CalendarViewModel.RebuildLayers` actualiza las filas **en sitio** cuando la estructura no cambia (un
 renombrado, un color nuevo) y solo reconstruye la colección cuando cambia el conjunto de filas. Si

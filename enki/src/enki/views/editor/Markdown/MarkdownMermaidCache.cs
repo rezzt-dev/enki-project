@@ -64,6 +64,18 @@ internal sealed class MarkdownMermaidCache : IDisposable
             _host.Content = _webView;
             _webView.NavigateToString(HostDocument.Value, null);
         }
+        catch (EntryPointNotFoundException ex)
+        {
+            // La verificación de WebViewHost.IsEngineAvailable() puede no capturar todos los casos
+            // donde la librería nativa falta símbolos críticos. Si el constructor de NativeWebView
+            // falla con EntryPointNotFoundException, es que la librería WPE/WebKitGTK no tiene el
+            // símbolo webkit_web_view_backend_new requerido. Marcamos el WebView como no disponible
+            // para que los tests y la aplicación puedan continuar sin él.
+            LogService.Warning("La librería WebView nativa no tiene el símbolo requerido (webkit_web_view_backend_new). " +
+                "El renderizado de diagramas Mermaid no estará disponible.", ex);
+            DisposeWebView();
+            FailAll();
+        }
         catch (Exception ex)
         {
             LogService.Warning("No se pudo iniciar el motor local de Mermaid", ex);

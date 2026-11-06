@@ -21,6 +21,20 @@ public sealed partial class SidebarSectionConfigViewModel : ObservableObject
     /// <summary>Same glyph the real sidebar button uses for this section.</summary>
     public required MaterialIconKind Icon { get; init; }
 
+    /// <summary>Nombre personalizado editable; vacío = usar <see cref="Title"/> (el nombre por defecto).</summary>
+    [ObservableProperty]
+    private string _customName = "";
+
+    /// <summary>Notifica a <see cref="SettingsViewModel"/> para persistir y refrescar el sidebar.</summary>
+    public System.Action<SidebarSectionConfigViewModel>? CustomNameCommitted { get; init; }
+
+    partial void OnCustomNameChanged(string value)
+    {
+        var clean = SidebarSectionCatalog.Truncate(value);
+        if (clean != value) { CustomName = clean; return; }
+        CustomNameCommitted?.Invoke(this);
+    }
+
     [ObservableProperty]
     private bool _isVisible;
 

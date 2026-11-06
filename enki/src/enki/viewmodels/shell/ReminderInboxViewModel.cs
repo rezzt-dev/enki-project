@@ -110,7 +110,7 @@ public sealed partial class ReminderInboxViewModel : ViewModelBase
         var soonWindowDays = Math.Clamp(_settingsService.Settings.ReminderSoonWindowDays, 1, 90);
         var soonLimit = DateTime.UtcNow + TimeSpan.FromDays(soonWindowDays);
 
-        var kanbanItems = _kanbanService.Board.Columns
+        var kanbanItems = _kanbanService.AllColumns
             .SelectMany(column => column.Cards.Select(card => new { column.Title, Card = card }))
             .Where(x => x.Card.CompletedAtUtc is null)
             .Where(x => x.Card.DueDateUtc is { } due && due <= soonLimit)

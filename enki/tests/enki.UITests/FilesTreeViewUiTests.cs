@@ -1,9 +1,12 @@
 using System;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using enki.Localization;
+using enki.Controls;
 using enki.Services;
 using enki.ViewModels;
 using enki.Views;
@@ -51,6 +54,141 @@ public class FilesTreeViewUiTests : IDisposable
         window.GetLayoutManager()!.ExecuteLayoutPass();
 
         return (view, viewModel, vault, sessions, window);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CollapsedRail_SearchOverlaysPreview_AndPinningReservesSpace(bool onRight)
+    {
+        var (view, vm, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            view.GetVisualDescendants().OfType<SidePanelGrid>().Single().IsPanelOnRight = onRight;
+            vm.IsTreeSidebarVisible = false;
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            var preview = tree.GetVisualDescendants().OfType<FilePreviewView>().Single();
+            var previewColumn = (Grid)preview.Parent!;
+            var originalBounds = previewColumn.Bounds;
+            var search = tree.FindControl<Button>("RailSearchButton")!;
+            Assert.True(search.IsEffectivelyVisible);
+            search.Command!.Execute(search.CommandParameter);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.True(vm.IsTreeSearchMode);
+            Assert.True(tree.FindControl<Border>("TreeNavigator")!.IsEffectivelyVisible);
+            Assert.True(tree.FindControl<TextBox>("TreeSearchBox")!.IsEffectivelyVisible);
+            Assert.Equal(originalBounds, previewColumn.Bounds);
+            Assert.False(vm.IsTreeSidebarVisible);
+            var navigator = tree.FindControl<Border>("TreeNavigator")!;
+            var rail = tree.FindControl<Grid>("CollapsedRail")!;
+            var layout = view.GetVisualDescendants().OfType<SidePanelGrid>().Single();
+            Assert.Equal(onRight, layout.IsPanelOnRight);
+            Assert.Equal(Avalonia.Layout.HorizontalAlignment.Left, navigator.HorizontalAlignment);
+            var navigatorLeft = navigator.TranslatePoint(default, window)!.Value.X;
+            var railLeft = rail.TranslatePoint(default, window)!.Value.X;
+            if (onRight)
+                Assert.Equal(railLeft, navigatorLeft + navigator.Bounds.Width, 1);
+            else
+                Assert.Equal(railLeft + rail.Bounds.Width, navigatorLeft, 1);
+
+            vm.ToggleTreeSidebarCommand.Execute(null);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.False(vm.IsTreeNavigatorOpen);
+            Assert.True(vm.IsTreeSidebarVisible);
+            Assert.True(previewColumn.Bounds.X > originalBounds.X);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void CollapsedRail_NewFolderAsksForNameBeforeCreating_AndSessionMenuDismissesNavigator()
+    {
+        var (view, vm, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            vm.IsTreeSidebarVisible = false;
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            var create = tree.FindControl<Button>("RailNewFolderButton")!;
+            create.Command!.Execute(create.CommandParameter);
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.True(vm.FolderManager.IsOpen);
+            Assert.True(vm.FolderManager.IsCreate);
+            Assert.False(vm.IsTreeSidebarVisible);
+            Assert.Empty(vm.FileTreeRoots);
+            vm.FolderManager.Name = "Project";
+            vm.FolderManager.ApplyCommand.Execute(null);
+            Assert.False(vm.FolderManager.IsOpen);
+            Assert.Equal("Project", vm.FileTreeRoots.Single().Name);
+
+            var session = tree.FindControl<Button>("RailSessionButton")!;
+            session.Command!.Execute(session.CommandParameter);
+            Assert.False(vm.IsTreeNavigatorOpen);
+            Assert.True(vm.IsTreeSessionMenuOpen);
+            vm.SelectTreeSessionOptionCommand.Execute(vm.SessionOptions[0]);
+            Assert.False(vm.IsTreeSessionMenuOpen);
+        }
+        finally { window.Close(); }
+    }
+
+    /// <summary>El raíl y el panel desplegado de Archivos comparten el fondo de la app
+    /// (`AppBackgroundBrush`), igual que la vista simplificada de Notas: la sección se lee como un bloque
+    /// con el resto de la página y no como una franja más oscura, en los dos estados.</summary>
+    [Fact]
+    public void SidebarRailAndExpandedPanel_ShareTheAppBackground()
+    {
+        var (view, _, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            var rail = tree.FindControl<Grid>("CollapsedRail")!;
+            var panel = Assert.IsType<Grid>(tree.FindControl<Border>("TreeNavigator")!.Child);
+
+            var appBackground = ResourceColor(rail, "AppBackgroundBrush");
+            Assert.NotEqual(appBackground, ResourceColor(rail, "AppBackgroundAltBrush"));
+            Assert.Equal(appBackground, ColorOf(rail.Background));
+            Assert.Equal(appBackground, ColorOf(panel.Background));
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void TemporarySearch_EscapeAndOpeningResultCloseIt_WithoutPinning()
+    {
+        SeedVault();
+        var (view, vm, _, _, window) = CreateView(treeMode: true);
+        try
+        {
+            vm.ReloadFolders();
+            vm.Reload();
+            vm.IsTreeSidebarVisible = false;
+            vm.ToggleTreeSearchPeekCommand.Execute(null);
+            var tree = view.GetVisualDescendants().OfType<FilesTreeView>().Single();
+            tree.FindControl<TextBox>("TreeSearchBox")!.RaiseEvent(new Avalonia.Input.KeyEventArgs
+            {
+                RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+                Key = Avalonia.Input.Key.Escape
+            });
+            Assert.False(vm.IsTreeNavigatorOpen);
+
+            vm.ToggleTreeSearchPeekCommand.Execute(null);
+            vm.TreeSearchText = "suelto";
+            vm.OpenFirstTreeSearchResult();
+            Assert.NotNull(vm.ActivePreview);
+            Assert.False(vm.IsTreeNavigatorOpen);
+            Assert.False(vm.IsTreeSidebarVisible);
+        }
+        finally { window.Close(); }
+    }
+
+    private static Color? ColorOf(IBrush? brush) => (brush as ISolidColorBrush)?.Color;
+
+    private static Color ResourceColor(StyledElement host, string key)
+    {
+        Assert.True(host.TryFindResource(key, out var value), $"Recurso no encontrado: {key}");
+        return ColorOf(value as IBrush) ?? throw new Xunit.Sdk.XunitException($"{key} no es un brush sólido");
     }
 
     /// <summary>Una carpeta "diseno" con "logo.png" dentro y un "suelto.pdf" en la raíz del vault.</summary>

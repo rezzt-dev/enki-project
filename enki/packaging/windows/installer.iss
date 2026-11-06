@@ -55,7 +55,7 @@ WizardStyle=modern
 ; hay control sobre qué versión trae preinstalada el runner de CI en el momento de cada release.
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
-LicenseFile=..\..\..\LICENSE
+LicenseFile=..\..\..\license.md
 ; Enki guarda sus datos en %AppData%\Enki (ver services/AppDataDirectory.cs) — la desinstalación no
 ; toca esa carpeta a propósito, igual que un desinstalador de Windows normal no borra los documentos
 ; del usuario; se deja como rastro deliberado, no como fuga.

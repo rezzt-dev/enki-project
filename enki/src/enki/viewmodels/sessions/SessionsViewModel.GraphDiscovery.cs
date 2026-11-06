@@ -41,6 +41,93 @@ public sealed partial class SessionsViewModel
     [ObservableProperty]
     private GraphClusterFilterItemViewModel? _selectedGraphCluster;
 
+    [ObservableProperty]
+    private string _graphSearchText = string.Empty;
+
+    [ObservableProperty]
+    private bool _showGraphMesh = true;
+
+    [ObservableProperty]
+    private bool _showGraphLabels = true;
+
+    [ObservableProperty]
+    private double _graphNodeSize = 1;
+
+    [ObservableProperty]
+    private double _graphLinkThickness = 1;
+
+    /// <summary>Rotación automática de todas las esferas del grafo. Se inicializa en el constructor desde
+    /// <see cref="AppSettings.SessionsGraphRotationEnabled"/>; solo el botón del visor la guarda.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(GraphRotationTooltip))]
+    private bool _isGraphRotationEnabled;
+
+    public string GraphRotationTooltip => LocalizationService.Instance[IsGraphRotationEnabled
+        ? "Sessions_Graph_RotationPause" : "Sessions_Graph_RotationResume"];
+
+    public event Action? GraphDisplayChanged;
+    public event Action<string>? GraphCameraRequested;
+    public event Action? GraphRotationChanged;
+
+    partial void OnIsGraphRotationEnabledChanged(bool value) => GraphRotationChanged?.Invoke();
+
+    /// <summary>Elección explícita del usuario: se aplica a todas las esferas a la vez y se recuerda entre
+    /// ejecuciones mediante <see cref="SettingsService"/>.</summary>
+    [RelayCommand]
+    private void ToggleGraphRotation()
+    {
+        IsGraphRotationEnabled = !IsGraphRotationEnabled;
+        if (_settingsService is null) return;
+        _settingsService.Settings.SessionsGraphRotationEnabled = IsGraphRotationEnabled;
+        _settingsService.Save();
+    }
+
+    /// <summary>El sistema pide reducir el movimiento: sin una elección guardada, las esferas quedan quietas
+    /// durante esta ejecución. No se persiste, para no convertir el valor del sistema en una preferencia propia.</summary>
+    public void ApplySystemReducedMotion()
+    {
+        if (HasExplicitGraphRotationPreference) return;
+        IsGraphRotationEnabled = false;
+    }
+
+    public bool HasExplicitGraphRotationPreference => _settingsService?.Settings.SessionsGraphRotationEnabled is not null;
+
+    /// <summary>Clic sobre una esfera: selecciona su sesión en la lista, como un clic en su fila. El grupo de
+    /// notas de la raíz del vault no tiene fila y no cambia la selección.</summary>
+    public void SelectGraphSession(string sessionId)
+    {
+        if (Sessions.FirstOrDefault(s => s.Session.Id == sessionId) is { } item) SelectedSession = item;
+    }
+
+    partial void OnGraphSearchTextChanged(string value) => OnGraphFilterToggled();
+    partial void OnShowGraphMeshChanged(bool value) => GraphDisplayChanged?.Invoke();
+    partial void OnShowGraphLabelsChanged(bool value) => GraphDisplayChanged?.Invoke();
+    partial void OnGraphNodeSizeChanged(double value) => GraphDisplayChanged?.Invoke();
+    partial void OnGraphLinkThicknessChanged(double value) => GraphDisplayChanged?.Invoke();
+
+    [RelayCommand]
+    private void FitGraph() => GraphCameraRequested?.Invoke("fit");
+
+    [RelayCommand]
+    private void ZoomInGraph() => GraphCameraRequested?.Invoke("in");
+
+    [RelayCommand]
+    private void ZoomOutGraph() => GraphCameraRequested?.Invoke("out");
+
+    [RelayCommand]
+    private void IsolateGraphSession(GraphGroupFilterItemViewModel item)
+    {
+        if (!GraphGroupFilters.Contains(item)) return;
+        _updatingGraphFilters = true;
+        try
+        {
+            foreach (var group in GraphGroupFilters) group.IsActive = group == item;
+        }
+        finally { _updatingGraphFilters = false; }
+        OnGraphFilterToggled();
+        FitGraph();
+    }
+
     private bool _updatingGraphFilters;
 
     partial void OnGraphExplorationIndexChanged(int value) => OnGraphFilterToggled();
@@ -91,7 +178,12 @@ public sealed partial class SessionsViewModel
         var tags = GraphTagFilters.Where(f => f.IsActive).Select(f => f.GroupId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var clusterId = SelectedGraphCluster?.Id;
+        var terms = GraphSearchText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         var nodes = graph.Nodes.Where(n => groups.Contains(n.SessionId)
+            && terms.All(term => n.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || n.RelativePath.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || n.SessionName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || n.Tags.Any(tag => tag.Contains(term.TrimStart('#'), StringComparison.OrdinalIgnoreCase)))
             && (tags.Count == 0 || n.Tags.Any(tags.Contains))
             && (string.IsNullOrEmpty(clusterId) || n.ClusterId == clusterId)
             && (GraphExplorationIndex != 1 || n.ConnectionCount == 0)
@@ -116,6 +208,7 @@ public sealed partial class SessionsViewModel
         {
             foreach (var group in GraphGroupFilters) group.IsActive = true;
             foreach (var tag in GraphTagFilters) tag.IsActive = false;
+            GraphSearchText = string.Empty;
             GraphExplorationIndex = 0;
             SelectedGraphCluster = GraphClusters.FirstOrDefault();
         }

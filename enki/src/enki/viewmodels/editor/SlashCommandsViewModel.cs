@@ -39,6 +39,7 @@ public sealed partial class SlashCommandsViewModel : ObservableObject
         new SlashCommand { Key = "nota", Label = LocalizationService.Instance["Editor_SlashCommand_NoteLink_Label"], Icon = "FileLinkOutline", InsertTextLiteral = "[[", CursorOffset = 2 },
         // "imagen" no lleva texto que insertar: EditorView.OnSlashCommandSelected lo intercepta por su
         // clave y abre el diálogo de archivos, que es quien acaba escribiendo el ![](…) ya resuelto.
+        new SlashCommand { Key = "adjunto", Label = LocalizationService.Instance["Editor_Attachments_Add"], Icon = "Paperclip", InsertTextLiteral = "", CursorOffset = 0 },
         new SlashCommand { Key = "imagen", Label = LocalizationService.Instance["Editor_SlashCommand_Image_Label"], Icon = "ImageOutline", InsertTextLiteral = "", CursorOffset = 0 },
         new SlashCommand { Key = "codigo", Label = LocalizationService.Instance["Editor_SlashCommand_InlineCode_Label"], Icon = "CodeTags", InsertTextLiteral = "``", CursorOffset = 1 },
         new SlashCommand { Key = "bloque", Label = LocalizationService.Instance["Editor_SlashCommand_CodeBlock_Label"], Icon = "CodeTags", InsertTextLiteral = "```\n\n```", CursorOffset = 4 },

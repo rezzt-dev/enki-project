@@ -18,6 +18,42 @@ public class KanbanCardEditorViewModelTests : IDisposable
         if (Directory.Exists(_storageDirectory)) Directory.Delete(_storageDirectory, recursive: true);
     }
 
+    [Fact]
+    public void DateRange_RejectsClosingBeforeOpening_AndAllowsSameDay()
+    {
+        var editor = CreateEditor("");
+        editor.StartDate = new DateTime(2026, 10, 22);
+        editor.DueDate = new DateTime(2026, 10, 21);
+        Assert.True(editor.HasInvalidDateRange);
+        Assert.False(editor.CanSave);
+        editor.DueDate = editor.StartDate;
+        Assert.True(editor.CanSave);
+        editor.ClearStartDateCommand.Execute(null);
+        Assert.Null(editor.StartDate);
+        Assert.True(editor.CanSave);
+    }
+
+    [Fact]
+    public void OpeningPicker_ChangesOnlyOpening_AndRoundTripsThroughEditor()
+    {
+        var editor = CreateEditor("");
+        editor.DueDate = new DateTime(2026, 10, 29);
+        editor.ToggleStartCalendarCommand.Execute(null);
+        editor.SelectCalendarDayCommand.Execute(new KanbanCalendarDayViewModel(
+            new DateTime(2026, 10, 22), true, false, false));
+        Assert.Equal(new DateTime(2026, 10, 29), editor.DueDate);
+        Assert.False(editor.IsStartCalendarOpen);
+        var card = editor.BuildCard("range");
+        Assert.Equal(new DateTime(2026, 10, 22), card.StartDateUtc?.ToLocalTime());
+        var reopened = KanbanCardEditorViewModel.ForEdit(editor.TargetColumn,
+            new KanbanCardViewModel(card), editor.AvailableColumns);
+        Assert.Equal(editor.StartDate, reopened.StartDate);
+        reopened.ClearStartDateCommand.Execute(null);
+        reopened.ApplyTo(card);
+        Assert.Null(card.StartDateUtc);
+        Assert.NotNull(card.DueDateUtc);
+    }
+
     private static KanbanCardEditorViewModel CreateEditor(string tagsInput)
     {
         var column = new KanbanColumn { Id = "c1", Title = "Column" };

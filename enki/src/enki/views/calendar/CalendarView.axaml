@@ -7,7 +7,8 @@
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:models="clr-namespace:enki.Models"
              xmlns:baseconv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
-             xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:motion="clr-namespace:enki.Views"
+        xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
              x:Class="enki.Views.CalendarView"
              x:DataType="vm:CalendarViewModel"
@@ -63,6 +64,49 @@
   </UserControl.Styles>
 
   <UserControl.Resources>
+
+    <!-- Fila del resumen de hoy (diálogo "Hoy"): barra de color de la capa, casilla de completar (o el
+         icono de origen si el item no se puede completar, p. ej. una tarjeta de Kanban), título + origen
+         pulsable para abrir su editor, y la hora a la derecha. Sin popover de detalle anidado a propósito:
+         dentro de un modal, un segundo emergente encima es una capa de más. -->
+    <DataTemplate x:Key="CalendarTodayItemTemplate" x:DataType="vm:CalendarItemViewModel">
+      <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="0,8">
+        <Grid ColumnDefinitions="3,Auto,*,Auto">
+          <Rectangle Grid.Column="0" VerticalAlignment="Stretch"
+                     Fill="{Binding EffectiveBorderColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+          <Panel Grid.Column="1" Width="30" Margin="8,0,4,0" VerticalAlignment="Center">
+            <Button Classes="icon-btn" Width="26" Height="26" IsVisible="{Binding CanToggleComplete}"
+                    Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleCompleteItemCommand}"
+                    CommandParameter="{Binding}" ToolTip.Tip="{Binding CompletedToggleLabel}"
+                    AutomationProperties.Name="{Binding CompletedToggleLabel}">
+              <mi:MaterialIcon Kind="{Binding CompletedToggleIcon}" Width="16" Height="16" />
+            </Button>
+            <mi:MaterialIcon Kind="{Binding IconKind}" Width="14" Height="14" IsVisible="{Binding !CanToggleComplete}"
+                             Foreground="{Binding EffectiveBorderColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+          </Panel>
+          <Button Grid.Column="2" Classes="ghost" Padding="4,2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).OpenTodayItemCommand}"
+                  CommandParameter="{Binding}" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{loc:Tr Common_Edit}">
+            <StackPanel Spacing="3">
+              <TextBlock Text="{Binding Title}" Classes="calendar-detail-title" Classes.completed="{Binding IsCompleted}"
+                         FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding SourceLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" LetterSpacing="2" />
+                <TextBlock Text="{Binding ParentContextLabel}" Classes="faint" FontSize="10" IsVisible="{Binding HasParentContext}"
+                           TextTrimming="CharacterEllipsis" />
+                <mi:MaterialIcon Kind="Repeat" Width="9" Height="9" VerticalAlignment="Center"
+                                 IsVisible="{Binding IsGhostOccurrence}" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Calendar_Item_Overdue, Converter={StaticResource UpperCaseConverter}}" Classes="faint overdue" FontSize="9" IsVisible="{Binding IsPastDue}" />
+              </StackPanel>
+            </StackPanel>
+          </Button>
+          <Panel Grid.Column="3" Margin="10,0,4,0" VerticalAlignment="Center">
+            <TextBlock Text="{Binding TimeLabel}" Classes="faint" FontSize="11" IsVisible="{Binding !IsAllDay}" />
+            <TextBlock Text="{loc:Tr Calendar_WeekView_AllDayRowLabel}" Classes="faint" FontSize="10" IsVisible="{Binding IsAllDay}" />
+          </Panel>
+        </Grid>
+      </Border>
+    </DataTemplate>
     <!-- Fase 3 (docs/calendar-feature/05-interacciones-y-microinteracciones.md §4–7,
          06-creacion-y-edicion-de-items.md §3/§5): cuerpo del popover de detalle, compartido entre el chip
          de Mes/franja "todo el día"/Agenda (CalendarChipTemplate) y el chip posicionado por hora de
@@ -136,7 +180,7 @@
               <TextBlock Text="{Binding CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" FontSize="10.5" />
             </StackPanel>
           </Button>
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CanEdit}">
             <Button Grid.Column="0" Classes="ghost" Padding="0" HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Left"
                     Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
@@ -189,8 +233,8 @@
 
           <!-- Menú contextual — doc 05 §7: mismas acciones que el popover de detalle. -->
           <ToggleButton.ContextMenu>
-            <ContextMenu>
-              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+            <ContextMenu IsVisible="{Binding CanEdit}">
+              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanEdit}"
                         Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
                         CommandParameter="{Binding}" />
               <MenuItem Header="{Binding CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanToggleComplete}"
@@ -249,8 +293,8 @@
           </Panel>
 
           <ToggleButton.ContextMenu>
-            <ContextMenu>
-              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+            <ContextMenu IsVisible="{Binding CanEdit}">
+              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanEdit}"
                         Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
                         CommandParameter="{Binding}" />
               <MenuItem Header="{Binding CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding CanToggleComplete}"
@@ -317,8 +361,8 @@
           </Panel>
 
           <ToggleButton.ContextMenu>
-            <ContextMenu>
-              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}"
+            <ContextMenu IsVisible="{Binding Item.CanEdit}">
+              <MenuItem Header="{loc:Tr Common_Edit, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding Item.CanEdit}"
                         Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
                         CommandParameter="{Binding Item}" />
               <MenuItem Header="{Binding Item.CompletedToggleLabel, Converter={StaticResource UpperCaseConverter}}" IsVisible="{Binding Item.CanToggleComplete}"
@@ -354,20 +398,30 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto,*" Margin="36,30,36,26">
+  <Grid Margin="36,30,36,26">
 
-    <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,22">
-      <TextBlock Text="{loc:Tr Calendar_PageEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-      <TextBlock Text="{loc:Tr Calendar_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
-      <TextBlock Text="{loc:Tr Calendar_PageSubtitle}"
-                 Classes="page-subtitle" />
-    </StackPanel>
+    <!-- Misma presentación flotante que Kanban, por encima del contenido y sin interceptar destinos. -->
+    <Canvas x:Name="CalendarDragLayer" ZIndex="100" IsHitTestVisible="False" IsVisible="False" ClipToBounds="True">
+      <Border x:Name="CalendarDropIndicator" Background="{DynamicResource InkBrush}" IsVisible="False" />
+      <Border x:Name="CalendarDragPreview" Classes="dropdown-popover" Padding="0" BorderThickness="0"
+              MaxHeight="Infinity" Background="{DynamicResource AppBackgroundBrush}">
+        <Image x:Name="CalendarDragImage" Stretch="Fill" />
+      </Border>
+    </Canvas>
 
-    <!-- Sidebar (mini-calendario) + contenido — docs/calendar-feature/04-vistas-y-navegacion.md §1. -->
-    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+    <!-- La cabecera ocupa solo la columna lateral; el calendario aprovecha toda la altura. -->
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
+
+      <StackPanel Grid.Row="0" Grid.Column="0" Width="320" Spacing="6" Margin="0,0,0,22"
+                  IsVisible="{Binding !IsSidebarCollapsed}">
+        <TextBlock Text="{loc:Tr Calendar_PageEyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+        <TextBlock Text="{loc:Tr Calendar_PageTitle, Converter={StaticResource UpperCaseConverter}}" Classes="page-title" />
+        <TextBlock Text="{loc:Tr Calendar_PageSubtitle}"
+                   Classes="page-subtitle" />
+      </StackPanel>
 
       <!-- ===================== Sidebar: mini-calendario (§7) ===================== -->
-      <Border Grid.Column="0" Classes="calendar-sidebar" Width="320" VerticalAlignment="Stretch"
+      <Border Grid.Row="1" Grid.Column="0" Classes="calendar-sidebar" Width="320" VerticalAlignment="Stretch"
               IsVisible="{Binding !IsSidebarCollapsed}">
         <ScrollViewer VerticalScrollBarVisibility="{Binding SidebarScrollBarVisibility}" Margin="0,0,-14,0" Padding="0,0,14,0">
         <StackPanel Spacing="22">
@@ -492,13 +546,13 @@
                                HorizontalOffset="8" IsLightDismissEnabled="True"
                                OverlayInputPassThroughElement="{Binding #LayerColorToggle}"
                                IsOpen="{Binding IsColorPickerOpen, Mode=TwoWay}">
-                          <Border Classes="calendar-popover" Width="198" Padding="14">
+                          <Border Classes="calendar-popover" Width="340" Padding="18">
                             <StackPanel Spacing="10">
                               <StackPanel Spacing="3">
                                 <TextBlock Text="{loc:Tr Calendar_Layers_ColorTitle, Converter={StaticResource UpperCaseConverter}}"
-                                           Classes="eyebrow" FontSize="9" />
-                                <TextBlock Text="{Binding Label}" FontSize="11" FontWeight="Bold"
-                                           TextTrimming="CharacterEllipsis" />
+                                           Classes="eyebrow" FontSize="9" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="Bold"
+                                           TextWrapping="Wrap" />
                               </StackPanel>
 
                               <ItemsControl ItemsSource="{Binding PaletteSwatches}">
@@ -518,13 +572,27 @@
                                 </ItemsControl.ItemTemplate>
                               </ItemsControl>
 
-                              <TextBox Text="{Binding ColorDraftHex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                       Classes="search" FontFamily="{StaticResource MonoFontFamily}" FontSize="11"
-                                       AutomationProperties.Name="{loc:Tr ColorPicker_Hex}">
-                                <TextBox.KeyBindings>
-                                  <KeyBinding Gesture="Enter" Command="{Binding ApplyDraftColorCommand}" />
-                                </TextBox.KeyBindings>
-                              </TextBox>
+                              <StackPanel Spacing="6">
+                                <TextBlock Text="{loc:Tr ColorPicker_Hex, Converter={StaticResource UpperCaseConverter}}" Classes="muted" FontSize="11" />
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                  <controls:LocalizedColorPicker Color="{Binding ColorDraft, Mode=TwoWay}"
+                                                                 IsAlphaEnabled="False" CornerRadius="0"
+                                                                 AutomationProperties.Name="{loc:Tr ColorPicker_Spectrum}" />
+                                  <TextBox Grid.Column="1"
+                                           Text="{Binding ColorDraftHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Classes="search" FontFamily="{StaticResource MonoFontFamily}" FontSize="12"
+                                           PlaceholderText="#RRGGBB"
+                                           AutomationProperties.Name="{loc:Tr ColorPicker_Hex}">
+                                    <TextBox.KeyBindings>
+                                      <KeyBinding Gesture="Enter" Command="{Binding ApplyDraftColorCommand}" />
+                                    </TextBox.KeyBindings>
+                                  </TextBox>
+                                </Grid>
+                                <Button Classes="ghost" HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding ApplyDraftColorCommand}"
+                                        Content="{loc:Tr Common_Save, Converter={StaticResource UpperCaseConverter}}" />
+                              </StackPanel>
 
                               <!-- "Automático" solo aparece cuando hay un color elegido a mano que
                                    deshacer; si no, no hay nada que restablecer. -->
@@ -695,7 +763,7 @@
   </Border>
 
       <!-- ===================== Contenido: barra superior + vista activa ===================== -->
-      <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="20,0,0,0">
+      <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" RowDefinitions="Auto,*" Margin="20,0,0,0">
 
         <!-- Navegación temporal + selector de vista — docs/calendar-feature/04-vistas-y-navegacion.md
              §9 (◀/▶/Hoy comunes a las cuatro vistas) y §1/10-diseno-visual-y-componentes.md §6
@@ -723,7 +791,8 @@
                      VerticalAlignment="Center" Margin="16,0,0,0" />
 
           <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-            <Button Classes="pill calendar-toolbar-btn" Command="{Binding GoToTodayCommand}" Margin="0,0,14,0">
+            <!-- "Hoy": abre el resumen del día como diálogo modal (ver "Diálogo: resumen de hoy" al final). -->
+            <Button Classes="pill calendar-toolbar-btn" Command="{Binding OpenTodayPopoverCommand}" Margin="0,0,14,0">
               <TextBlock Text="{loc:Tr Calendar_Toolbar_TodayButton, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
             <RadioButton Classes="segment calendar-toolbar-btn" GroupName="CalendarViewMode" Content="{loc:Tr Calendar_ViewMode_Month, Converter={StaticResource UpperCaseConverter}}"
@@ -746,12 +815,12 @@
               <mi:MaterialIcon Kind="TrayArrowDown" Width="17" Height="17" />
               <Button.Flyout>
                 <MenuFlyout Placement="BottomEdgeAlignedRight">
-                  <MenuItem Header="{loc:Tr Export_ToPng}" Command="{Binding ExportViewAsPngCommand}">
+                  <MenuItem Header="{loc:Tr Export_ToPng, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportViewAsPngCommand}">
                     <MenuItem.Icon>
                       <mi:MaterialIcon Kind="ImageOutline" Width="14" Height="14" />
                     </MenuItem.Icon>
                   </MenuItem>
-                  <MenuItem Header="{loc:Tr Export_ToPdf}" Command="{Binding ExportViewAsPdfCommand}">
+                  <MenuItem Header="{loc:Tr Export_ToPdf, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportViewAsPdfCommand}">
                     <MenuItem.Icon>
                       <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
                     </MenuItem.Icon>
@@ -792,16 +861,11 @@
           <!-- ===================== Vista Mes ===================== -->
           <!-- Animación de "reveal" al navegar/cambiar de vista — docs/calendar-feature/
                10-diseno-visual-y-componentes.md §8. -->
-          <ScrollViewer Grid.Row="1" IsVisible="{Binding IsMonthView}"
-                        Opacity="{Binding RevealOpacity}"
-                        RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-            <ScrollViewer.Transitions>
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              </Transitions>
-            </ScrollViewer.Transitions>
-            <Border Classes="calendar-month-grid" MinHeight="480" Margin="5,0,5,5">
+          <!-- Las seis semanas se reparten el alto disponible sin desplazamiento vertical. -->
+          <Grid Grid.Row="1" IsVisible="{Binding IsMonthView}"
+                        motion:MotionReveal.AllowTranslation="False"
+                motion:MotionReveal.Revision="{Binding RevealRevision}">
+            <Border Classes="calendar-month-grid" Margin="5,0,5,5">
               <ItemsControl ItemsSource="{Binding Days}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -812,10 +876,7 @@
                   <DataTemplate x:DataType="vm:CalendarMonthDayViewModel">
                     <Border Classes="calendar-month-cell"
                             Classes.calendar-last-col="{Binding IsLastColumn}"
-                            Classes.calendar-last-row="{Binding IsLastRow}"
-                            DragDrop.AllowDrop="True"
-                            DragDrop.DragEnter="MonthCell_DragEnter" DragDrop.DragOver="MonthCell_DragOver"
-                            DragDrop.DragLeave="MonthCell_DragLeave" DragDrop.Drop="MonthCell_Drop">
+                            Classes.calendar-last-row="{Binding IsLastRow}">
                       <Grid>
                         <!-- Capa de clic vacío — doc 05 §3: crea un item con la fecha de esta celda. Se
                              sienta por debajo del contenido real en el z-order de este Grid. -->
@@ -859,7 +920,7 @@
                                    IsOpen="{Binding #OverflowToggle.IsChecked, Mode=TwoWay}">
                               <Border Classes="dropdown-popover" Width="260">
                                 <StackPanel Spacing="8">
-                                  <TextBlock Text="{Binding OverflowPopoverHeaderLabel}" Classes="eyebrow" FontSize="10" />
+                                  <TextBlock Text="{Binding OverflowPopoverHeaderLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="10" />
                                   <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
                                 </StackPanel>
                          </Border>
@@ -872,19 +933,13 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
        </Border>
-          </ScrollViewer>
+          </Grid>
 
           <!-- ===================== Vistas Semana/Día (comparten CalendarWeekColumnViewModel —
                Día es simplemente 1 columna, docs/calendar-feature/04-vistas-y-navegacion.md §4) ============ -->
           <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsHourGridView}"
-                Opacity="{Binding RevealOpacity}"
-                RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-            <Grid.Transitions>
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              </Transitions>
-            </Grid.Transitions>
+                motion:MotionReveal.AllowTranslation="False"
+                motion:MotionReveal.Revision="{Binding RevealRevision}">
 
             <!-- Cabeceras de columna -->
             <Grid Grid.Row="0" ColumnDefinitions="56,*">
@@ -919,9 +974,6 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
                     <Border Classes="calendar-week-column" Padding="4,0" MinHeight="20"
-                            DragDrop.AllowDrop="True"
-                            DragDrop.DragEnter="AllDayColumn_DragEnter" DragDrop.DragOver="AllDayColumn_DragOver"
-                            DragDrop.DragLeave="AllDayColumn_DragLeave" DragDrop.Drop="AllDayColumn_Drop"
                             PointerPressed="AllDayColumn_PointerPressed">
                       <Border.ContextMenu>
                         <ContextMenu>
@@ -971,7 +1023,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
-                      <Border Classes="calendar-week-column">
+                      <Border Classes="calendar-week-column calendar-time-column">
                         <Grid>
                           <ItemsControl ItemsSource="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).HourRows}">
                             <ItemsControl.ItemsPanel>
@@ -982,9 +1034,6 @@
                             <ItemsControl.ItemTemplate>
                               <DataTemplate x:DataType="vm:CalendarHourRowViewModel">
                                 <Border Classes="calendar-hour-row" Classes.working="{Binding IsWorkingHour}" Height="60"
-                                        DragDrop.AllowDrop="True"
-                                        DragDrop.DragEnter="HourCell_DragEnter" DragDrop.DragOver="HourCell_DragOver"
-                                        DragDrop.DragLeave="HourCell_DragLeave" DragDrop.Drop="HourCell_Drop"
                                         PointerPressed="HourCell_PointerPressed" Cursor="Hand" />
                               </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -1014,23 +1063,19 @@
           <!-- ===================== Vista Agenda — docs/calendar-feature/04-vistas-y-navegacion.md §6:
                lista agrupada por día, días sin items no se muestran. ===================== -->
           <Grid Grid.Row="1" IsVisible="{Binding IsAgendaView}"
-                Opacity="{Binding RevealOpacity}"
-                RenderTransform="{Binding RevealOffsetY, Converter={StaticResource DoubleToTranslateYConverter}}">
-            <Grid.Transitions>
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
-              </Transitions>
-            </Grid.Transitions>
+                motion:MotionReveal.AllowTranslation="False"
+                motion:MotionReveal.Revision="{Binding RevealRevision}">
             <ScrollViewer IsVisible="{Binding !IsAgendaEmpty}">
               <ItemsControl ItemsSource="{Binding AgendaGroups}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarAgendaGroupViewModel">
-                    <StackPanel Spacing="8" Margin="0,0,0,26">
+                    <Border Classes="calendar-agenda-day" Background="Transparent" Margin="0,0,0,26">
+                    <StackPanel Spacing="8">
                       <TextBlock Text="{Binding HeaderLabel}" Classes="eyebrow" />
                       <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,0,0,4" />
                       <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarAgendaItemTemplate}" />
                     </StackPanel>
+                    </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -1102,6 +1147,10 @@
               <!-- Destino: columna Kanban o lista Polar, según el tipo elegido — doc 06 §1, puntos 4–5. -->
               <StackPanel Spacing="6" IsVisible="{Binding IsKanbanType}">
                 <TextBlock Text="{loc:Tr Calendar_QuickCreate_ColumnLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <ComboBox ItemsSource="{Binding Boards}" SelectedItem="{Binding SelectedBoard}" IsVisible="{Binding HasMultipleBoards}"
+                          HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Tr Kanban_Multi_Boards}">
+                  <ComboBox.ItemTemplate><DataTemplate x:DataType="models:KanbanBoard"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
                 <ComboBox ItemsSource="{Binding Columns}" SelectedItem="{Binding SelectedColumn}"
                           HorizontalAlignment="Stretch">
                   <ComboBox.ItemTemplate>
@@ -1272,6 +1321,73 @@
                       Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SaveQuickCreateCommand}"
                       IsEnabled="{Binding CanSave}">
                 <TextBlock Text="{loc:Tr Common_Create, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: resumen de hoy (botón "Hoy" de la barra) =====================
+         Modal centrado sobre toda la ventana (ModalOverlayHost bloquea los clics en el resto de la app
+         mientras está abierto). Pendientes arriba y completadas abajo, cada grupo en orden alfabético
+         (CalendarViewModel.RebuildToday); ignora capas y filtros — es el día entero. Escape lo cierra
+         (CalendarView_KeyDown). -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsTodayPopoverOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center"
+              MaxWidth="520" Width="520" MaxHeight="640">
+        <Grid RowDefinitions="Auto,*,Auto">
+
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
+            <StackPanel Grid.Column="0" Spacing="6">
+              <TextBlock Text="{loc:Tr Calendar_Toolbar_TodayButton, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+              <TextBlock Text="{Binding TodayPopoverHeaderLabel}" FontSize="19" FontWeight="Bold" LetterSpacing="-0.3" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding TodayPendingCount}" FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="12" />
+                  <TextBlock Text="{loc:Tr Calendar_TodayPopover_Pending, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9.5" LetterSpacing="2" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding TodayCompletedCount}" FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="12" />
+                  <TextBlock Text="{loc:Tr Calendar_TodayPopover_Completed, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9.5" LetterSpacing="2" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="icon-btn" Width="30" Height="30" VerticalAlignment="Top"
+                    Command="{Binding CloseTodayPopoverCommand}"
+                    ToolTip.Tip="{loc:Tr Common_Close}" AutomationProperties.Name="{loc:Tr Common_Close}">
+              <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+            </Button>
+          </Grid>
+
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                        Margin="0,0,-14,0" Padding="0,0,14,0">
+            <StackPanel Spacing="20">
+              <StackPanel Spacing="10" IsVisible="{Binding HasNoTodayItems}" Margin="0,24" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="CalendarCheckOutline" Width="28" Height="28" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Calendar_TodayPopover_Empty}" Classes="muted" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" />
+              </StackPanel>
+
+              <StackPanel Spacing="4" IsVisible="{Binding HasTodayPendingItems}">
+                <TextBlock Text="{loc:Tr Calendar_TodayPopover_Pending, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding TodayPendingItems}" ItemTemplate="{StaticResource CalendarTodayItemTemplate}" />
+              </StackPanel>
+
+              <StackPanel Spacing="4" IsVisible="{Binding HasTodayCompletedItems}">
+                <TextBlock Text="{loc:Tr Calendar_TodayPopover_Completed, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding TodayCompletedItems}" ItemTemplate="{StaticResource CalendarTodayItemTemplate}" />
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="2" Spacing="16" Margin="0,16,0,0">
+            <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <Button Grid.Column="0" Classes="pill" Command="{Binding ShowTodayInCalendarCommand}">
+                <TextBlock Text="{loc:Tr Calendar_TodayPopover_ShowInCalendar, Converter={StaticResource UpperCaseConverter}}" />
+              </Button>
+              <Button Grid.Column="2" Classes="pill-primary" Command="{Binding CloseTodayPopoverCommand}">
+                <TextBlock Text="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
               </Button>
             </Grid>
           </StackPanel>

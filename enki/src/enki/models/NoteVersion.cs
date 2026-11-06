@@ -34,7 +34,12 @@ public enum NoteVersionTrigger
     /// de la versión que el usuario <em>descartó</em> — la suya si eligió cargar la de disco, la de disco
     /// si eligió conservar la suya. Es lo que hace que ninguna de las dos opciones del diálogo de
     /// conflicto sea destructiva. Ver <c>.docs/project-info/cambios-externos-en-el-vault.md</c>.</summary>
-    ExternalConflict
+    ExternalConflict,
+
+    /// <summary>Capturada del contenido de una nota justo antes de que el asistente de IA la modifique
+    /// (<see cref="Services.AiVaultToolbox"/>), sin el límite de una por cada cinco minutos del
+    /// autoguardado: cada cambio del asistente se puede deshacer desde el historial de la nota.</summary>
+    Assistant
 }
 
 /// <summary>Metadata for one saved snapshot of a note's content — see
@@ -69,6 +74,7 @@ public sealed class NoteVersion
         NoteVersionTrigger.PreRestore => LocalizationService.Instance["Editor_History_Trigger_PreRestore"],
         NoteVersionTrigger.PreBulkOperation => LocalizationService.Instance["Editor_History_Trigger_PreBulkOperation"],
         NoteVersionTrigger.ExternalConflict => LocalizationService.Instance["Editor_History_Trigger_ExternalConflict"],
+        NoteVersionTrigger.Assistant => LocalizationService.Instance["Editor_History_Trigger_Assistant"],
         _ => string.Empty
     };
 }

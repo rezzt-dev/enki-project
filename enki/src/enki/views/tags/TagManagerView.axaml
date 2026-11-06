@@ -93,8 +93,8 @@
           <TextBox Text="{Binding RenameInput, Mode=TwoWay}" AutomationProperties.Name="{loc:Tr TagManager_NewName}" />
           <TextBlock Classes="faint" Text="{loc:Tr TagManager_NameRules}" />
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Classes="ghost modal-cancel" Command="{Binding CancelRenameCommand}" Content="{loc:Tr Common_Cancel}" />
-            <Button Classes="pill-primary" Command="{Binding ConfirmRenameCommand}" IsEnabled="{Binding CanConfirmRename}" Content="{loc:Tr TagManager_Rename}" />
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelRenameCommand}" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="pill-primary" Command="{Binding ConfirmRenameCommand}" IsEnabled="{Binding CanConfirmRename}" Content="{loc:Tr TagManager_Rename, Converter={StaticResource UpperCaseConverter}}" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -108,8 +108,8 @@
           <TextBox Text="{Binding MergeTargetInput, Mode=TwoWay}" AutomationProperties.Name="{loc:Tr TagManager_TargetName}" />
           <TextBlock Classes="faint" Text="{loc:Tr TagManager_NameRules}" />
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Classes="ghost modal-cancel" Command="{Binding CancelMergeCommand}" Content="{loc:Tr Common_Cancel}" />
-            <Button Classes="pill-primary" Command="{Binding ConfirmMergeCommand}" IsEnabled="{Binding CanConfirmMerge}" Content="{loc:Tr TagManager_Merge}" />
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelMergeCommand}" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="pill-primary" Command="{Binding ConfirmMergeCommand}" IsEnabled="{Binding CanConfirmMerge}" Content="{loc:Tr TagManager_Merge, Converter={StaticResource UpperCaseConverter}}" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -121,8 +121,8 @@
           <TextBlock Classes="eyebrow" Foreground="{DynamicResource DangerBrush}" Text="{loc:Tr TagManager_Delete}" />
           <TextBlock Text="{Binding PendingDeleteMessage}" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Classes="ghost modal-cancel" Command="{Binding CancelDeleteCommand}" Content="{loc:Tr Common_Cancel}" />
-            <Button Classes="pill-primary-danger" Command="{Binding ConfirmDeleteCommand}" Content="{loc:Tr TagManager_Delete}" />
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelDeleteCommand}" Content="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="pill-primary-danger" Command="{Binding ConfirmDeleteCommand}" Content="{loc:Tr TagManager_Delete, Converter={StaticResource UpperCaseConverter}}" />
           </StackPanel>
         </StackPanel>
       </Border>

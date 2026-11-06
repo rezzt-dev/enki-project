@@ -20,7 +20,7 @@ public sealed partial class SkillEditorViewModel : ViewModelBase
     private static readonly TimeSpan SaveDebounceDelay = TimeSpan.FromMilliseconds(600);
 
     private readonly SkillService _skillService;
-    private readonly SkillFile _skill;
+    private SkillFile _skill;
     private readonly Action _onSaved;
     private readonly NotificationService? _notificationService;
     private readonly DispatcherTimer _saveTimer;
@@ -34,6 +34,42 @@ public sealed partial class SkillEditorViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _saveStatus = LocalizationService.Instance["Skills_Editor_SaveStatus_Saved"];
+
+    [ObservableProperty]
+    private string? _saveError;
+
+    [ObservableProperty]
+    private bool _isReloadConfirmationOpen;
+
+    [RelayCommand]
+    private void RequestReload() => IsReloadConfirmationOpen = true;
+
+    [RelayCommand]
+    private void CancelReload() => IsReloadConfirmationOpen = false;
+
+    [RelayCommand]
+    private void ConfirmReload()
+    {
+        _saveTimer.Stop();
+        try
+        {
+            // Leer primero: si el archivo desapareció, el borrador sigue intacto.
+            var reloaded = _skillService.ReadSkill(_skill.FilePath);
+            _skill = reloaded;
+            _lastSavedText = reloaded.Content;
+            Text = reloaded.Content;
+            IsDirty = false;
+            SaveError = null;
+            SaveStatus = LocalizationService.Instance["Skills_Editor_SaveStatus_Saved"];
+            OnPropertyChanged(nameof(Title));
+            _onSaved();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SaveError = ex.Message;
+        }
+        IsReloadConfirmationOpen = false;
+    }
 
     public string Title => _skill.Name;
     public SkillFile Skill => _skill;
@@ -78,18 +114,21 @@ public sealed partial class SkillEditorViewModel : ViewModelBase
         if (IsDirty) Save();
     }
 
-    /// <summary>Same failure handling as <c>EditorViewModel.Save</c> (docs/analisis-proyecto/roadmap.md,
-    /// Fase 1): on an I/O error the skill stays marked dirty and the save timer restarts to retry on the
-    /// next tick, instead of the exception escaping uncaught from the debounce timer.</summary>
+    /// <summary>Conserva el borrador ante un fallo y permite reintentar explícitamente o tras otra
+    /// edición, sin generar una notificación cada 600 ms.</summary>
     [RelayCommand]
     private void Save()
     {
+        _saveTimer.Stop();
+        if (!IsDirty) return;
+        SaveError = null;
         try
         {
             _skillService.SaveSkill(_skill, Text);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            SaveError = ex.Message;
             LogService.Error($"No se pudo guardar la skill '{_skill.FilePath}'", ex);
             _notificationService?.PushLocalized(
                 LocalizedTextFormatter.Format("Notification_SkillSaveFailed_Title"),
@@ -97,7 +136,7 @@ public sealed partial class SkillEditorViewModel : ViewModelBase
                 NotificationSeverity.Error);
 
             _saveTimer.Stop();
-            _saveTimer.Start();
+            SaveStatus = LocalizationService.Instance["Skills_Editor_SaveStatus_Unsaved"];
             return;
         }
 

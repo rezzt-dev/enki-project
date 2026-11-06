@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:views="clr-namespace:enki.Views"
              xmlns:vm="clr-namespace:enki.ViewModels"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
@@ -73,7 +74,7 @@
               <mi:MaterialIcon Kind="FolderOutline" Width="14" Height="14" Foreground="{DynamicResource Ink40}" />
               <TextBlock Text="{Binding Name}" Classes="muted" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" />
             </StackPanel>
-            <TextBlock Text="{loc:Tr Files_DeleteFolder_Hint}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Folders_DeleteHint}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
           </StackPanel>
 
           <Grid ColumnDefinitions="*,Auto,Auto">
@@ -91,5 +92,6 @@
       </Border>
     </controls:ModalOverlayHost>
 
+    <views:FolderManagerView DataContext="{Binding FolderManager}" />
   </Grid>
 </UserControl>

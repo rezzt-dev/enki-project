@@ -43,6 +43,10 @@ public sealed class Reminder
     /// the same reminder again on a later poll.</summary>
     public bool IsTriggered { get; set; }
 
+    /// <summary>Evento de calendario importado de ICS. Es local y no programa avisos, incluso
+    /// después de moverlo en el calendario. No forma parte del contrato Polar.</summary>
+    public bool IsImportedCalendarEvent { get; set; }
+
     // ===================== Polar-compatible sync fields (docs/supabase-sync/) =====================
     // Icon/IsRead/IsTriggered above are Enki-local UI concerns with no equivalent column in Supabase's
     // `reminders` table — they're simply never sent on the wire. Everything below maps 1:1 to that table

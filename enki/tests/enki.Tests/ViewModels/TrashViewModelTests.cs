@@ -44,6 +44,23 @@ public class TrashViewModelTests : IDisposable
     }
 
     [Fact]
+    public void RestoreTask_FromOtherBoardWithDeletedColumn_StaysInOwnerBoard()
+    {
+        var (trash, _, kanban, _, _, _) = CreateViewModel();
+        var board = kanban.CreateBoard("Histórico");
+        var card = new KanbanCard { Id = "other-trash", Title = "Restaurar" };
+        board.TrashedCards.Add(new() { Card = card, ColumnId = "removed", ColumnTitle = "Antigua" });
+        kanban.Save();
+        trash.Reload();
+        var row = Assert.Single(trash.Tasks);
+        Assert.Contains("Histórico", row.ColumnTitle);
+        trash.RestoreTaskCommand.Execute(row);
+        Assert.Same(card, board.Columns[0].Cards.Single());
+        Assert.Empty(board.TrashedCards);
+        Assert.DoesNotContain(kanban.DefaultBoard.Columns.SelectMany(c => c.Cards), c => c.Id == card.Id);
+    }
+
+    [Fact]
     public void Reload_StartsEmpty_ForFreshVault()
     {
         var (trash, _, _, _, _, _) = CreateViewModel();
@@ -162,9 +179,9 @@ public class TrashViewModelTests : IDisposable
     public void RestoreTaskCommand_MovesCardBackToItsOriginalColumn()
     {
         var (trash, _, kanban, _, _, _) = CreateViewModel();
-        var column = kanban.Board.Columns[0];
+        var column = kanban.DefaultBoard.Columns[0];
         var card = new KanbanCard { Id = "trashed-card", Title = "Tarjeta" };
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = card,
             ColumnId = column.Id,
@@ -186,7 +203,7 @@ public class TrashViewModelTests : IDisposable
     public void RestoreTaskCommand_ClearsTheArchivedMark()
     {
         var (trash, _, kanban, _, _, _) = CreateViewModel();
-        var column = kanban.Board.Columns[0];
+        var column = kanban.DefaultBoard.Columns[0];
         var card = new KanbanCard
         {
             Id = "archived-card",
@@ -194,7 +211,7 @@ public class TrashViewModelTests : IDisposable
             ArchivedAtUtc = DateTime.UtcNow.AddDays(-3),
             CompletedAtUtc = DateTime.UtcNow.AddDays(-3)
         };
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = card,
             ColumnId = column.Id,
@@ -213,11 +230,11 @@ public class TrashViewModelTests : IDisposable
     public void RestoreTaskCommand_InsertsCardAtOriginalIndex()
     {
         var (trash, _, kanban, _, _, _) = CreateViewModel();
-        var column = kanban.Board.Columns[0];
+        var column = kanban.DefaultBoard.Columns[0];
         column.Cards.Clear();
         column.Cards.Add(new KanbanCard { Id = "existing", Title = "Existente" });
         var card = new KanbanCard { Id = "trashed-card", Title = "Tarjeta" };
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = card,
             ColumnId = column.Id,
@@ -249,9 +266,9 @@ public class TrashViewModelTests : IDisposable
             vault, kanban, new PolarTaskService(_storageDirectory), new ReminderService(_storageDirectory),
             notifications, new SessionService(vault));
 
-        kanban.Board.Columns.Clear();
+        kanban.DefaultBoard.Columns.Clear();
         var card = new KanbanCard { Id = "stuck", Title = "Sin destino" };
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = card,
             ColumnId = "columna-que-ya-no-existe",
@@ -262,7 +279,7 @@ public class TrashViewModelTests : IDisposable
 
         trash.RestoreTaskCommand.Execute(trashedTask);
 
-        Assert.Contains(kanban.Board.TrashedCards, t => t.Card.Id == "stuck");
+        Assert.Contains(kanban.DefaultBoard.TrashedCards, t => t.Card.Id == "stuck");
         Assert.False(trash.IsTasksEmpty);
         Assert.Single(notifications.Notifications);
     }
@@ -271,8 +288,8 @@ public class TrashViewModelTests : IDisposable
     public void ConfirmPermanentDelete_ForTask_RemovesFromTrashedCards()
     {
         var (trash, _, kanban, _, _, _) = CreateViewModel();
-        var column = kanban.Board.Columns[0];
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        var column = kanban.DefaultBoard.Columns[0];
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "gone", Title = "Se pierde" },
             ColumnId = column.Id,
@@ -285,7 +302,7 @@ public class TrashViewModelTests : IDisposable
         trash.ConfirmPermanentDeleteCommand.Execute(null);
 
         Assert.True(trash.IsTasksEmpty);
-        Assert.Empty(kanban.Board.TrashedCards);
+        Assert.Empty(kanban.DefaultBoard.TrashedCards);
     }
 
     // ===================== Categoría Tareas Polar (análisis alfa-3 §4.3) =====================
@@ -397,8 +414,8 @@ public class TrashViewModelTests : IDisposable
         var (trash, vault, kanban, polar, _, _) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
-        var column = kanban.Board.Columns[0];
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        var column = kanban.DefaultBoard.Columns[0];
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "t1", Title = "T" },
             ColumnId = column.Id,
@@ -414,7 +431,7 @@ public class TrashViewModelTests : IDisposable
         Assert.True(trash.IsPolarTasksEmpty);
         Assert.DoesNotContain(polar.Store.Lists, l => l.Id == list.Id);
         Assert.Single(vault.GetTrashedNotes());
-        Assert.Single(kanban.Board.TrashedCards);
+        Assert.Single(kanban.DefaultBoard.TrashedCards);
         Assert.False(trash.IsFullyEmpty);
     }
 
@@ -530,8 +547,8 @@ public class TrashViewModelTests : IDisposable
         var (trash, vault, kanban, _, _, sessions) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
-        var column = kanban.Board.Columns[0];
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        var column = kanban.DefaultBoard.Columns[0];
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "t1", Title = "T" },
             ColumnId = column.Id,
@@ -547,7 +564,7 @@ public class TrashViewModelTests : IDisposable
         Assert.True(trash.IsSessionsEmpty);
         Assert.Empty(sessions.ListTrashedSessions());
         Assert.Single(vault.GetTrashedNotes());
-        Assert.Single(kanban.Board.TrashedCards);
+        Assert.Single(kanban.DefaultBoard.TrashedCards);
         Assert.False(trash.IsFullyEmpty);
     }
 
@@ -557,8 +574,8 @@ public class TrashViewModelTests : IDisposable
         var (trash, vault, kanban, _, reminders, _) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
-        var column = kanban.Board.Columns[0];
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        var column = kanban.DefaultBoard.Columns[0];
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "t1", Title = "T" },
             ColumnId = column.Id,
@@ -573,7 +590,7 @@ public class TrashViewModelTests : IDisposable
 
         Assert.True(trash.IsFullyEmpty);
         Assert.Empty(vault.GetTrashedNotes());
-        Assert.Empty(kanban.Board.TrashedCards);
+        Assert.Empty(kanban.DefaultBoard.TrashedCards);
         Assert.Empty(reminders.DeletedReminders);
     }
 
@@ -583,8 +600,8 @@ public class TrashViewModelTests : IDisposable
         var (trash, vault, kanban, _, reminders, _) = CreateViewModel();
         File.WriteAllText(Path.Combine(_vaultPath, "Nota.md"), "# Nota");
         vault.DeleteNote(vault.GetNotes().Single());
-        var column = kanban.Board.Columns[0];
-        kanban.Board.TrashedCards.Add(new KanbanTrashedCard
+        var column = kanban.DefaultBoard.Columns[0];
+        kanban.DefaultBoard.TrashedCards.Add(new KanbanTrashedCard
         {
             Card = new KanbanCard { Id = "t1", Title = "T" },
             ColumnId = column.Id,
@@ -600,7 +617,7 @@ public class TrashViewModelTests : IDisposable
         Assert.True(trash.IsRemindersEmpty);
         Assert.Empty(reminders.DeletedReminders);
         Assert.Single(vault.GetTrashedNotes());
-        Assert.Single(kanban.Board.TrashedCards);
+        Assert.Single(kanban.DefaultBoard.TrashedCards);
         Assert.False(trash.IsFullyEmpty);
     }
 

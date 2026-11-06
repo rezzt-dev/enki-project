@@ -6,7 +6,7 @@ using System.Text;
 namespace enki.Services;
 
 /// <summary>Contraseña genérica en el Keychain del usuario mediante la API SecItem.</summary>
-internal sealed class KeychainPolarCredentialStore(string installationId) : IPolarCredentialStore
+internal sealed class KeychainPolarCredentialStore(string installationId, string purpose = "polar") : IPolarCredentialStore
 {
     private const string Security = "/System/Library/Frameworks/Security.framework/Security";
     private const string CoreFoundation = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
@@ -60,7 +60,7 @@ internal sealed class KeychainPolarCredentialStore(string installationId) : IPol
     {
         var query = new Dictionary();
         query.SetConstant("kSecClass", SecurityConstant("kSecClassGenericPassword"));
-        query.SetString("kSecAttrService", "Enki.Polar.Session");
+        query.SetString("kSecAttrService", purpose == "polar" ? "Enki.Polar.Session" : "Enki." + purpose);
         query.SetString("kSecAttrAccount", _installationId);
         return query;
     }

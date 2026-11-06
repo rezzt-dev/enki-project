@@ -203,7 +203,7 @@
       <Grid RowDefinitions="Auto,*">
         <TextBlock Grid.Row="0" Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
         <Border Grid.Row="1" Classes="card" Padding="18" Margin="0,16,0,0">
-          <StackPanel Spacing="13" VerticalAlignment="Center">
+          <StackPanel Spacing="10" VerticalAlignment="Center" ToolTip.Tip="{loc:Tr Dashboard_Vault_InventoryHint}">
             <Grid ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Grid.Column="0" Kind="NoteTextOutline" Width="15" Height="15"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
@@ -211,12 +211,18 @@
               <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).TotalNoteCount}" FontSize="19" FontWeight="Bold" />
             </Grid>
             <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="15" Height="15"
+                                Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_FilesLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).TotalFileCount}" FontSize="19" FontWeight="Bold" Margin="10,0,0,0" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Grid.Column="0" Kind="SitemapOutline" Width="15" Height="15"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SessionsLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
               <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).SessionCount}" FontSize="19" FontWeight="Bold" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto" ToolTip.Tip="{loc:Tr Dashboard_Vault_SizeHint}">
               <mi:MaterialIcon Grid.Column="0" Kind="Harddisk" Width="15" Height="15"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SizeLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
@@ -313,7 +319,10 @@
 
     <DataTemplate DataType="vm:BoardTasksSectionViewModel">
       <Grid RowDefinitions="Auto,*">
-        <TextBlock Grid.Row="0" Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+        <StackPanel Grid.Row="0" Spacing="4">
+          <TextBlock Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+          <TextBlock Text="{loc:Tr Kanban_Multi_VaultScope}" Classes="faint" />
+        </StackPanel>
 
         <Border Grid.Row="1" Classes="card" Padding="22" Margin="0,16,0,0">
           <!-- Grid Auto,* en vez de StackPanel: así la franja Pendientes/En progreso/Hecho (fila "*")

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,6 +17,52 @@ public sealed partial class NotificationsViewModel : ViewModelBase
     private readonly NotificationService _service;
 
     public ObservableCollection<NotificationItemViewModel> Items { get; } = [];
+
+    /// <summary>Proyección filtrada de las entidades existentes; no mantiene otro almacén.</summary>
+    public ObservableCollection<NotificationItemViewModel> VisibleItems { get; } = [];
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private ActivityFilter _filter = ActivityFilter.All;
+
+    [ObservableProperty]
+    private bool _hasNoResults;
+
+    public string ResultsLabel => string.Format(System.Globalization.CultureInfo.CurrentCulture,
+        LocalizationService.Instance["Activity_Results"], VisibleItems.Count, Items.Count);
+
+    partial void OnSearchTextChanged(string value) => ApplyFilters();
+    partial void OnFilterChanged(ActivityFilter value) => ApplyFilters();
+
+    [RelayCommand]
+    private void SelectFilter(ActivityFilter filter) => Filter = filter;
+
+    [RelayCommand]
+    private void ResetFilters()
+    {
+        SearchText = string.Empty;
+        Filter = ActivityFilter.All;
+    }
+
+    private void ApplyFilters()
+    {
+        var query = SearchText.Trim();
+        var matches = Items.Where(i =>
+            (i.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+             || i.Message.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+            && (Filter switch
+            {
+                ActivityFilter.Unread => !i.IsRead,
+                _ => true
+            }));
+        VisibleItems.Clear();
+        foreach (var item in matches.OrderByDescending(i => i.Notification.CreatedUtc))
+            VisibleItems.Add(item);
+        HasNoResults = !IsEmpty && VisibleItems.Count == 0;
+        OnPropertyChanged(nameof(ResultsLabel));
+    }
 
     [ObservableProperty]
     private bool _isEmpty;
@@ -52,6 +99,7 @@ public sealed partial class NotificationsViewModel : ViewModelBase
         if (Detail is not null) Detail = Items.FirstOrDefault(i => i.Id == Detail.Id);
         IsEmpty = Items.Count == 0;
         UnreadCount = _service.Notifications.Count(n => !n.IsRead);
+        ApplyFilters();
     }
 
     [RelayCommand]

@@ -27,7 +27,7 @@ ninguna de las dos.
   recortado alrededor de la coincidencia.
 
 Se construye una sola vez en `MainWindowViewModel.Composition` y se reparte a las cuatro superficies, igual
-que el resto de servicios (composición manual, sin contenedor de DI — ver `AGENTS.md`).
+que el resto de servicios (composición manual, sin contenedor de DI — ver `agents.md`).
 
 ## Los tres alcances
 

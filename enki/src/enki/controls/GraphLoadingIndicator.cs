@@ -27,6 +27,15 @@ public sealed class GraphLoadingIndicator : Control
     public static readonly StyledProperty<bool> IsActiveProperty =
         AvaloniaProperty.Register<GraphLoadingIndicator, bool>(nameof(IsActive));
 
+    public static readonly StyledProperty<bool> UseSubtleAnimationsProperty =
+        AvaloniaProperty.Register<GraphLoadingIndicator, bool>(nameof(UseSubtleAnimations));
+
+    public bool UseSubtleAnimations
+    {
+        get => GetValue(UseSubtleAnimationsProperty);
+        set => SetValue(UseSubtleAnimationsProperty, value);
+    }
+
     private const double CycleSeconds = 3.6;
     private const double HairlineCycleSeconds = 1.8;
     private const double RotationDegreesPerSecond = 8;
@@ -79,9 +88,10 @@ public sealed class GraphLoadingIndicator : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property != IsActiveProperty) return;
+        if (change.Property != IsActiveProperty && change.Property != UseSubtleAnimationsProperty
+            && change.Property != IsVisibleProperty) return;
 
-        if (IsActive)
+        if (IsActive && IsVisible)
         {
             _clock.Restart();
             RequestFrame();
@@ -108,14 +118,14 @@ public sealed class GraphLoadingIndicator : Control
 
     private void RequestFrame()
     {
-        if (_frameRequested || !IsActive) return;
+        if (_frameRequested || !IsActive || !IsEffectivelyVisible) return;
         if (TopLevel.GetTopLevel(this) is not { } topLevel) return;
 
         _frameRequested = true;
         topLevel.RequestAnimationFrame(_ =>
         {
             _frameRequested = false;
-            if (!IsActive || TopLevel.GetTopLevel(this) is null) return;
+            if (!IsActive || !IsEffectivelyVisible || TopLevel.GetTopLevel(this) is null) return;
             InvalidateVisual();
             RequestFrame();
         });
@@ -130,7 +140,7 @@ public sealed class GraphLoadingIndicator : Control
         var seconds = _clock.Elapsed.TotalSeconds;
         var center = new Point(size.Width / 2, (size.Height - HairlineAreaHeight) / 2);
 
-        DrawConstellation(context, ink, center, seconds);
+        DrawConstellation(context, ink, center, UseSubtleAnimations ? CycleSeconds * 0.65 : seconds);
         DrawHairline(context, ink, new Rect(size.Width / 2 - HairlineWidth / 2, size.Height - 1, HairlineWidth, 1), seconds);
     }
 
@@ -150,7 +160,7 @@ public sealed class GraphLoadingIndicator : Control
         // Giro lento continuo (sobre el tiempo absoluto, no el del ciclo) + una deriva mínima por nodo, que
         // imita el asentamiento de la simulación de fuerzas del grafo real.
         var rotation = seconds * RotationDegreesPerSecond * Math.PI / 180;
-        var positions = new Point[Nodes.Length];
+        Span<Point> positions = stackalloc Point[Nodes.Length];
         for (var i = 0; i < Nodes.Length; i++)
         {
             var spec = Nodes[i];
@@ -237,7 +247,7 @@ public sealed class GraphLoadingIndicator : Control
 
     /// <summary>A la vez que las ondas, un punto de luz recorre cada radio desde el centro y, si la nota
     /// tiene una hoja colgando, continúa hasta ella.</summary>
-    private static void DrawSignalPulses(DrawingContext context, Color ink, Point[] positions, double t, double alpha)
+    private static void DrawSignalPulses(DrawingContext context, Color ink, ReadOnlySpan<Point> positions, double t, double alpha)
     {
         for (var i = 1; i < Nodes.Length; i++)
         {

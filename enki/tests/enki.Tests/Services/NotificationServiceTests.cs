@@ -98,6 +98,47 @@ public class NotificationServiceTests : IDisposable
     }
 
     [Fact]
+    public void NotificationsDisabled_SuppressesEverySeverity_AndKeepsExistingHistory()
+    {
+        var settings = new SettingsService(_storageDirectory);
+        var service = new NotificationService(settings, _storageDirectory);
+        service.Push("Anterior");
+        var added = 0;
+        var changed = 0;
+        service.NotificationAdded += _ => added++;
+        service.NotificationsChanged += () => changed++;
+
+        settings.Settings.NotificationsEnabled = false;
+        foreach (var severity in Enum.GetValues<NotificationSeverity>())
+            service.Push("Omitida", severity: severity);
+
+        Assert.Equal("Anterior", Assert.Single(service.Notifications).Title);
+        Assert.Equal(0, added);
+        Assert.Equal(0, changed);
+
+        settings.Settings.NotificationsEnabled = true;
+        service.Push("Nueva");
+        Assert.Equal(2, service.Notifications.Count);
+        Assert.Equal(1, added);
+        Assert.Equal(1, changed);
+    }
+
+    [Fact]
+    public void NotificationsDisabled_PersistsAcrossSettingsReload()
+    {
+        var settings = new SettingsService(_storageDirectory);
+        settings.Settings.NotificationsEnabled = false;
+        settings.Save();
+
+        var restored = new SettingsService(_storageDirectory);
+        var service = new NotificationService(restored, _storageDirectory);
+        service.Push("Omitida");
+
+        Assert.False(restored.Settings.NotificationsEnabled);
+        Assert.Empty(service.Notifications);
+    }
+
+    [Fact]
     public void ClearAll_RaisesNotificationsChanged()
     {
         var service = CreateService();

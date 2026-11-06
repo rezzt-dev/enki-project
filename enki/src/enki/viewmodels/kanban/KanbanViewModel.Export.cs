@@ -27,9 +27,9 @@ public sealed partial class KanbanViewModel
     {
         var request = new ViewExportRequest(
             ExportRootNames,
-            LocalizationService.Instance["Nav_Kanban"],
+            BoardName,
             LocalizedTextFormatter.Resolve(LocalizedTextFormatter.PluralFormat("Export_Kanban_Subtitle", TotalCards, TotalCards)),
-            ViewExportService.TimestampedFileName(LocalizationService.Instance["Nav_Kanban"]));
+            ViewExportService.TimestampedFileName(BoardName));
 
         return ViewExportService.ExportViewAsync(request, format, VisualSnapshotRenderer.ScaleHighResolution,
             App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null,

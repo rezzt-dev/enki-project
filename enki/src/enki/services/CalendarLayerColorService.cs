@@ -26,8 +26,31 @@ public sealed class CalendarLayerColorService(
 {
     /// <summary>Clave de color de una columna de Kanban. Deliberadamente distinta de
     /// <see cref="CalendarAggregationService.KanbanLayerKey"/>: la *capa* (mostrar/ocultar) sigue siendo
-    /// una sola para todo Kanban, mientras que el color sí es por columna.</summary>
+    /// una sola para todo Kanban. En columnas base es un alias del color compartido por rol.</summary>
     public static string KanbanColumnColorKey(string columnId) => $"kanban:{columnId}";
+
+    /// <summary>Los estados base comparten identidad entre todos los tableros.</summary>
+    public static string KanbanRoleColorKey(CoreColumnRole role) => $"kanban:role:{role}";
+
+    private string NormalizeColorKey(string key)
+    {
+        var column = kanbanService.AllColumns.FirstOrDefault(c => KanbanColumnColorKey(c.Id) == key);
+        return column is { Role: not CoreColumnRole.None } ? KanbanRoleColorKey(column.Role) : key;
+    }
+
+    /// <summary>Recupera colores anteriores por columna; prevalece el primer tablero guardado.
+    /// La elección explícita del estado compartido tiene prioridad sobre esos valores heredados.</summary>
+    private string? CustomColor(string key)
+    {
+        var overrides = settingsService.Settings.CalendarLayerColors;
+        if (overrides.TryGetValue(key, out var value) && HexColorUtility.NormalizeHex(value) is { } hex)
+            return hex;
+        if (!key.StartsWith("kanban:role:", StringComparison.Ordinal)) return null;
+        return kanbanService.AllColumns
+            .Where(c => c.Role != CoreColumnRole.None && KanbanRoleColorKey(c.Role) == key)
+            .Select(c => overrides.GetValueOrDefault(KanbanColumnColorKey(c.Id)))
+            .Select(HexColorUtility.NormalizeHex).FirstOrDefault(c => c is not null);
+    }
 
     /// <summary>Se dispara cuando el usuario cambia o restablece un color, para que el calendario se
     /// repinte. Mismo patrón <c>Action?</c> que <c>KanbanService.BoardChanged</c>.</summary>
@@ -39,7 +62,7 @@ public sealed class CalendarLayerColorService(
     public Dictionary<string, string> BuildMap()
     {
         var overrides = settingsService.Settings.CalendarLayerColors;
-        var columns = kanbanService.Board.Columns;
+        var columns = kanbanService.AllColumns;
         // Same gate the calendar itself uses before showing any Polar data.
         var lists = polarAuthService.IsLinked
             ? polarTaskService.Store.Lists.Where(l => !l.IsDeleted).OrderBy(l => l.OrderIndex).ToList()
@@ -55,7 +78,7 @@ public sealed class CalendarLayerColorService(
         foreach (var column in columns)
         {
             if (CalendarLayerPalette.DefaultForRole(column.Role) is { } roleColor)
-                map[KanbanColumnColorKey(column.Id)] = roleColor;
+                map[KanbanRoleColorKey(column.Role)] = roleColor;
         }
 
         // 2. Acentos automáticos para lo que no tiene color fijo. Columnas personalizadas y listas de
@@ -82,15 +105,19 @@ public sealed class CalendarLayerColorService(
         //    color identificativo").
         foreach (var key in map.Keys.ToList())
         {
-            if (overrides.TryGetValue(key, out var hex) && HexColorUtility.NormalizeHex(hex) is { } normalized)
+            if (CustomColor(key) is { } normalized)
                 map[key] = normalized;
         }
 
         foreach (var key in accentKeys)
         {
-            if (overrides.TryGetValue(key, out var hex) && HexColorUtility.NormalizeHex(hex) is { } normalized)
+            if (CustomColor(key) is { } normalized)
                 map[key] = normalized;
         }
+
+        // Alias por columna para los consumidores existentes de la agregación y creación rápida.
+        foreach (var column in columns.Where(c => c.Role != CoreColumnRole.None))
+            map[KanbanColumnColorKey(column.Id)] = map[KanbanRoleColorKey(column.Role)];
 
         return map;
     }
@@ -107,6 +134,7 @@ public sealed class CalendarLayerColorService(
     {
         if (string.IsNullOrEmpty(colorKey) || HexColorUtility.NormalizeHex(hex) is not { } normalized) return false;
 
+        colorKey = NormalizeColorKey(colorKey);
         var overrides = settingsService.Settings.CalendarLayerColors;
         if (overrides.TryGetValue(colorKey, out var current) && current == normalized) return true;
 
@@ -119,11 +147,17 @@ public sealed class CalendarLayerColorService(
     /// <summary>Vuelve al color automático de esa capa (quita el color elegido a mano).</summary>
     public void ResetColor(string colorKey)
     {
-        if (!settingsService.Settings.CalendarLayerColors.Remove(colorKey)) return;
+        colorKey = NormalizeColorKey(colorKey);
+        var overrides = settingsService.Settings.CalendarLayerColors;
+        var removed = overrides.Remove(colorKey);
+        foreach (var column in kanbanService.AllColumns.Where(c =>
+                     c.Role != CoreColumnRole.None && KanbanRoleColorKey(c.Role) == colorKey))
+            removed |= overrides.Remove(KanbanColumnColorKey(column.Id));
+        if (!removed) return;
 
         settingsService.Save();
         ColorsChanged?.Invoke();
     }
 
-    public bool HasCustomColor(string colorKey) => settingsService.Settings.CalendarLayerColors.ContainsKey(colorKey);
+    public bool HasCustomColor(string colorKey) => CustomColor(NormalizeColorKey(colorKey)) is not null;
 }

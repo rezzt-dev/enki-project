@@ -21,6 +21,12 @@ on:
           Solo afecta a esta ejecución de prueba, no crea ninguna release de GitHub.
         required: false
 
+# Configuración pública del mismo backend que usa Polar. La publicación valida que exista.
+env:
+  SUPABASE_URL: ${{ vars.SUPABASE_URL || secrets.SUPABASE_URL }}
+  SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_PUBLISHABLE_KEY }}
+
 jobs:
   linux:
     name: Linux (.deb + .tar.gz)
@@ -34,7 +40,7 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
+          global-json-file: enki/global.json
 
       - name: Resolver versión
         shell: bash
@@ -71,7 +77,7 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
+          global-json-file: enki/global.json
 
       - name: Resolver versión
         shell: bash
@@ -113,7 +119,7 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
+          global-json-file: enki/global.json
 
       - name: Resolver versión
         shell: bash
@@ -161,5 +167,5 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           gh release create "$GITHUB_REF_NAME" \
             --title "Enki $VERSION" \
-            --notes "Paquetes generados automáticamente por .github/workflows/release.yml. Ver CHANGELOG.md para el detalle de cambios de esta versión." \
+            --notes "Paquetes generados automáticamente por .github/workflows/release.yml. Ver changelog.md para el detalle de cambios de esta versión." \
             dist-artifacts/*/*

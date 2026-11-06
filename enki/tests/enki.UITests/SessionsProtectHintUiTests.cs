@@ -46,10 +46,11 @@ public class SessionsProtectHintUiTests
             // headless: se saca el contenido y se monta directo, que es lo que ya hace
             // SessionsGraphFiltersUiTests con el popover del grafo.
             var view = new SessionsView();
-            var card = view.GetLogicalDescendants().OfType<ModalOverlayHost>()
-                .Select(h => h.Content)
-                .OfType<Border>()
-                .First(b => b.Classes.Contains("modal-card"));
+            var host = view.GetLogicalDescendants().OfType<ModalOverlayHost>()
+                .Single(h => h.Content is Border border && border.GetLogicalDescendants().OfType<TextBlock>()
+                    .Any(t => t.Text == LocalizationService.Instance["Sessions_CreateDialog_ProtectHint"]));
+            var card = Assert.IsType<Border>(host.Content);
+            host.Content = null;
 
             window = new Window { Content = card, Width = 420, Height = 720 };
             window.Show();

@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="enki.Controls.LoadingSpinner" x:Name="Root"
+             Width="16" Height="16" IsHitTestVisible="False">
+  <UserControl.Styles>
+    <Style Selector="Grid.loading-ring">
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="RenderTransform"><RotateTransform /></Setter>
+      <Style.Animations>
+        <Animation Duration="0:0:1" IterationCount="INFINITE">
+          <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
+  <Viewbox Stretch="Uniform">
+    <Grid Width="24" Height="24" Classes="loading-ring">
+      <Ellipse Width="20" Height="20" Stroke="{Binding Foreground, ElementName=Root}" StrokeThickness="2" Opacity="0.2" />
+      <Path Data="M 12,2 A 10,10 0 1 1 2,12" Stroke="{Binding Foreground, ElementName=Root}"
+            StrokeThickness="2" StrokeLineCap="Round" />
+    </Grid>
+  </Viewbox>
+</UserControl>

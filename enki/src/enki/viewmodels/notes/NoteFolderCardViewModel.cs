@@ -7,11 +7,15 @@ namespace enki.ViewModels;
 /// depender exclusivamente del árbol lateral.</summary>
 public sealed partial class NoteFolderCardViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     public string Name { get; }
     public string FullPath { get; }
 
     /// <summary>True para la entrada especial ".." que permite subir al padre.</summary>
     public bool IsParent { get; }
+
+    [ObservableProperty] private bool _isDropTarget;
 
     public NoteFolderCardViewModel(string name, string fullPath, bool isParent = false)
     {

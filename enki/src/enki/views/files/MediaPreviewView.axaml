@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:enki.ViewModels" xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
+             x:Class="enki.Views.MediaPreviewView" x:DataType="vm:MediaPreviewViewModel">
+  <Grid RowDefinitions="*,Auto">
+    <Grid Margin="24">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="420">
+        <mi:MaterialIcon Kind="PlayCircleOutline" Width="72" Height="72" Foreground="{DynamicResource Ink40}" />
+        <TextBlock Text="{loc:Tr Files_MediaReady}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted" IsVisible="{Binding !IsFaulted}" />
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted" IsVisible="{Binding IsFaulted}" />
+      </StackPanel>
+      <ContentControl x:Name="VideoHost" IsVisible="{Binding IsVideo}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+    </Grid>
+    <Border Grid.Row="1" Background="{DynamicResource AppBackgroundBrush}" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,1,0,0" Padding="16,10">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+        <Slider Grid.ColumnSpan="5" Minimum="0" Maximum="1" Value="{Binding Position, Mode=TwoWay}" IsEnabled="{Binding CanSeek}" AutomationProperties.Name="{loc:Tr Files_MediaSeek}" />
+        <Button Grid.Row="1" Classes="icon-btn" Command="{Binding TogglePlaybackCommand}" ToolTip.Tip="{loc:Tr Files_MediaPlayPause}" AutomationProperties.Name="{loc:Tr Files_MediaPlayPause}">
+          <Panel><mi:MaterialIcon Kind="Play" Width="20" Height="20" IsVisible="{Binding !IsPlaying}" /><mi:MaterialIcon Kind="Pause" Width="20" Height="20" IsVisible="{Binding IsPlaying}" /></Panel>
+        </Button>
+        <Button Grid.Row="1" Grid.Column="1" Classes="icon-btn" Command="{Binding StopCommand}" ToolTip.Tip="{loc:Tr Files_MediaStop}" AutomationProperties.Name="{loc:Tr Files_MediaStop}"><mi:MaterialIcon Kind="Stop" Width="20" Height="20" /></Button>
+        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding TimeLabel}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" VerticalAlignment="Center" />
+        <Button Grid.Row="1" Grid.Column="3" Classes="icon-btn" Command="{Binding ToggleMuteCommand}" ToolTip.Tip="{loc:Tr Files_MediaMute}" AutomationProperties.Name="{loc:Tr Files_MediaMute}">
+          <Panel><mi:MaterialIcon Kind="VolumeHigh" Width="18" Height="18" IsVisible="{Binding !IsMuted}" /><mi:MaterialIcon Kind="VolumeOff" Width="18" Height="18" IsVisible="{Binding IsMuted}" /></Panel>
+        </Button>
+        <Slider Grid.Row="1" Grid.Column="4" Width="90" Minimum="0" Maximum="100" Value="{Binding Volume, Mode=TwoWay}" AutomationProperties.Name="{loc:Tr Files_MediaVolume}" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

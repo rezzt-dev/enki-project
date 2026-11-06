@@ -19,7 +19,7 @@ public static class SidebarSectionCatalog
     /// and order the sidebar always used before per-user reordering existed.</summary>
     public static readonly string[] DefaultMainSectionOrder =
     [
-        "Dashboard", "Calendar", "Kanban", "Notes", "Files", "Sessions", "Trash", "Habits", "Skills", "TagManager"
+        "Dashboard", "Calendar", "Kanban", "Notes", "Files", "Sessions", "Trash", "Habits", "Skills", "Assistant", "TagManager"
     ];
 
     /// <summary>Keys that start out pinned to the fixed bottom group, in their default order.</summary>
@@ -37,6 +37,22 @@ public static class SidebarSectionCatalog
     /// alternative to the scrollable main list.</summary>
     public const int MaxBottomSections = 3;
 
+    /// <summary>Longitud máxima de un nombre personalizado — limitada por el ancho del sidebar desplegado.</summary>
+    public const int MaxCustomNameLength = 16;
+
+    /// <summary>Nombre personalizado de <paramref name="key"/> si el usuario definió uno, o <c>null</c>.</summary>
+    public static string? CustomName(IReadOnlyDictionary<string, string>? names, string key) =>
+        names is not null && names.TryGetValue(key, out var n) && !string.IsNullOrWhiteSpace(n)
+            ? Truncate(n)
+            : null;
+
+    /// <summary>Recorta espacios y limita a <see cref="MaxCustomNameLength"/>; vacío devuelve cadena vacía.</summary>
+    public static string Truncate(string? name)
+    {
+        var t = name?.Trim() ?? "";
+        return t.Length > MaxCustomNameLength ? t[..MaxCustomNameLength] : t;
+    }
+
     public static readonly IReadOnlyDictionary<string, (MaterialIconKind Icon, string LabelKey)> Meta =
         new Dictionary<string, (MaterialIconKind, string)>
         {
@@ -50,6 +66,7 @@ public static class SidebarSectionCatalog
             ["TagManager"] = (MaterialIconKind.TagMultipleOutline, "Nav_TagManager"),
             ["Habits"] = (MaterialIconKind.ClipboardCheckOutline, "Nav_Habits"),
             ["Skills"] = (MaterialIconKind.Brain, "Nav_Skills"),
+            ["Assistant"] = (MaterialIconKind.Creation, "Nav_Assistant"),
             ["Reminders"] = (MaterialIconKind.CalendarClockOutline, "Nav_RemindersLabel"),
             ["Notifications"] = (MaterialIconKind.BellRingOutline, "Nav_NotificationsLabel"),
             ["Statistics"] = (MaterialIconKind.ChartBoxOutline, "Nav_Statistics")

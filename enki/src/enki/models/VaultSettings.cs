@@ -17,6 +17,7 @@ public sealed class VaultSettings
         // También por arriba: el editor no deja pasar de MaxGridDimension, pero un settings.json de otra
         // versión (o editado a mano) sí puede traer un número mayor, y una rejilla de 40 columnas no la
         // rechazaría nadie más — solo se vería un Dashboard de fichas ilegibles.
+        NoteQueries ??= [];
         DashboardGridRows = DashboardGridRows < 1
             ? Services.DashboardLayoutEngine.DefaultRows
             : Services.DashboardLayoutEngine.ClampDimension(DashboardGridRows);
@@ -47,6 +48,12 @@ public sealed class VaultSettings
     /// already shipped at.</summary>
     public int UiZoomPercent { get; set; } = 100;
 
+    /// <summary>Identidad estable del vault, generada la primera vez que hace falta (ver
+    /// <see cref="Services.VaultSettingsService.EnsureVaultId"/>). La usa el historial del asistente para
+    /// separar las conversaciones de cada vault: vive dentro del vault, así que renombrar o mover su carpeta
+    /// no lo separa de sus chats.</summary>
+    public string? VaultId { get; set; }
+
     /// <summary>Plantilla que se aplica al crear la nota diaria, como
     /// <see cref="NoteTemplate.RelativePath"/> dentro de <c>&lt;vault&gt;/.enki/templates/</c>
     /// (p. ej. <c>daily.md</c>). Null o vacío —el valor de salida— mantiene el comportamiento de siempre:
@@ -67,9 +74,15 @@ public sealed class VaultSettings
     /// espacio puede ser distinta y la columna Kanban asociada solo existe dentro de ese vault.</summary>
     public QuickCaptureDestination QuickCaptureDestination { get; set; } = QuickCaptureDestination.InboxNote;
 
-    /// <summary>Columna preferida para nuevas tarjetas de captura rápida. Si desaparece, el servicio usa
-    /// la primera columna disponible y el selector actualiza este valor en la siguiente elección.</summary>
+    /// <summary>Tablero preferido para captura rápida, independiente del tablero abierto.</summary>
+    public string? QuickCaptureKanbanBoardId { get; set; }
+
+    /// <summary>Columna preferida. Si desaparece, el formulario presenta un destino válido antes
+    /// del siguiente envío; el servicio nunca redirige una selección obsoleta al guardar.</summary>
     public string? QuickCaptureKanbanColumnId { get; set; }
+
+    /// <summary>Consultas guardadas del vault. Solo criterios, nunca copias de notas ni resultados.</summary>
+    public List<NoteQuery> NoteQueries { get; set; } = [];
 
     // ===================== Dashboard configurable (propuesta 27) =====================
 

@@ -64,7 +64,7 @@ internal static class RemoteImagePolicy
         var resolved = await Dns.GetHostAddressesAsync(host, ct).ConfigureAwait(false);
         var allowed = Array.FindAll(resolved, IsPubliclyRoutable);
         if (allowed.Length == 0)
-            throw new HttpRequestException($"El destino remoto '{host}' no resuelve a ninguna dirección pública.");
+            throw new NonPublicDestinationException(host);
 
         var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
         try
@@ -173,4 +173,13 @@ internal static class RemoteImagePolicy
             if (b[i] != 0) return false;
         return true;
     }
+}
+
+/// <summary>El nombre resuelve solo a direcciones que no salen de la máquina o de la red del usuario. Sigue
+/// siendo un <see cref="HttpRequestException"/> para quien solo necesita saber que la petición falló; quien
+/// tiene que explicar el motivo (el acceso a internet del asistente) lo distingue por el tipo.</summary>
+public sealed class NonPublicDestinationException(string host)
+    : HttpRequestException($"El destino remoto '{host}' no resuelve a ninguna dirección pública.")
+{
+    public string Host { get; } = host;
 }

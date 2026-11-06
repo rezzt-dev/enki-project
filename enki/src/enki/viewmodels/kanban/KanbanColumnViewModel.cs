@@ -105,7 +105,11 @@ public sealed partial class KanbanColumnViewModel : ObservableObject
     /// crearla o desarchivarla acaban todos ahí—, así que ningún camino puede olvidarse de actualizarla.</summary>
     private void SyncCardArchivability()
     {
-        foreach (var card in Cards) card.CanArchive = IsDoneColumn;
+        foreach (var card in Cards)
+        {
+            card.CanArchive = IsDoneColumn;
+            card.IsInDoneColumn = IsDoneColumn;
+        }
     }
 
     /// <summary>Vuelve a meter en el tablero una tarjeta que estaba archivada, en el sitio que le

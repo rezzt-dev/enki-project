@@ -21,6 +21,8 @@ public sealed class ReminderListItemViewModel(Reminder reminder)
     public bool IsRead => Reminder.IsRead;
     public bool IsCompleted => Reminder.IsCompleted;
     public MaterialIconKind CompletedToggleIcon => IsCompleted ? MaterialIconKind.CheckCircle : MaterialIconKind.CheckCircleOutline;
+    public string CompletedToggleLabel => LocalizationService.Instance[IsCompleted
+        ? "Activity_MarkPending" : "Calendar_Item_MarkCompleted"];
     public DateTime NotifyAtUtc => Reminder.NotifyAtUtc;
     public DateTime CreatedUtc => Reminder.CreatedUtc;
 
@@ -29,7 +31,9 @@ public sealed class ReminderListItemViewModel(Reminder reminder)
 
     public bool IsOverdue => !IsCompleted && KanbanCard.IsPastDue(Reminder.NotifyAtUtc);
 
-    public string StatusLabel => IsOverdue
+    public string StatusLabel => IsCompleted
+        ? LocalizationService.Instance["Calendar_Item_Completed"]
+        : IsOverdue
         ? LocalizationService.Instance["Reminders_Status_Overdue"]
         : LocalizationService.Instance["Reminders_Status_Scheduled"];
 

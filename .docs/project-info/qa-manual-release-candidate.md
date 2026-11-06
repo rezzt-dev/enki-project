@@ -442,12 +442,32 @@ exportable existe y está maquetada, pero que la imagen se vea bien solo se ve m
 
 - [ ] Kanban con más columnas de las que caben en pantalla: el PNG incluye **todas**, no solo las visibles,
       y las tarjetas se leen sin recortes.
-- [ ] Lo mismo con el tablero en disposición horizontal (Ajustes › Apariencia).
+- [ ] Kanban con una columna con más tarjetas de las que caben en alto: salen **todas** las tarjetas, no
+      solo las que se ven sin desplazar la columna.
+- [ ] Lo mismo con el tablero en disposición horizontal (Ajustes › Apariencia): cada franja sale entera.
 - [ ] Calendario en Mes, Semana, Día y Agenda: la imagen lleva la cabecera de días de la semana y **no**
       lleva la barra de navegación (◀ ▶ Hoy, selector de vista).
+- [ ] Mes con las seis filas y Semana/Día con las 24 horas, aunque en pantalla haga falta desplazarse.
+- [ ] Exportando a 1× y a 2×, la imagen tiene la misma composición que la pantalla (no sale ampliada ni
+      cortada por la derecha o por abajo); a 2× solo gana nitidez. Tras exportar, la vista sigue con el
+      mismo desplazamiento que tenía.
 - [ ] El PDF abre correctamente en el visor del sistema, en Evince/Preview/Adobe y en un navegador.
-- [ ] Una nota larga da un PDF de varias páginas A4, con encabezados, listas, citas y bloques de código
-      reconocibles.
+- [ ] Una nota larga da un PDF de varias páginas (A4 con la app en español; Carta en inglés de EE. UU.),
+      con márgenes de Word, número de página en el pie y **ninguna línea partida** entre dos páginas.
+- [ ] En el PDF de una nota el texto se puede seleccionar, copiar y buscar (Ctrl+F encuentra «fichero»,
+      con ligaduras incluidas) y los enlaces externos se abren al pulsarlos.
+- [ ] Con el tema oscuro activo, el PDF de una nota sale igualmente en papel blanco y tinta negra.
+- [ ] Una nota con todo lo que dibuja el editor sale igual que en pantalla: texto centrado/justificado con
+      `<div align>`, `<u>`/`<mark>`/`<br>`, listas anidadas y tareas, citas anidadas, avisos con icono,
+      código coloreado, tabla con alineaciones, imagen adjunta centrada y con `|300`, fórmulas en línea y en
+      bloque, y una `![[nota]]` embebida. Ver `exportar-notas-pdf.md`.
+- [ ] Una tabla que no cabe en una página repite su fila de encabezados en la siguiente; un encabezado no
+      queda solo al pie de una página; un párrafo de tres líneas no se parte 1 + 2.
+- [ ] Una nota con una foto grande da un PDF de pocos megas con la foto nítida al ampliar; una imagen rota
+      sale como un hueco con su nombre y no impide exportar.
+- [ ] Mientras se exporta una nota con muchas imágenes, el icono de exportar del editor gira y no se puede
+      lanzar otra exportación; al terminar se avisa y se abre la carpeta.
+- [ ] Abrir el PDF de una nota en Evince, Preview, Adobe Reader, Chrome y Firefox.
 - [ ] En tema claro y en tema oscuro, el fondo de la lámina y el contenido son coherentes entre sí.
 - [ ] Con el idioma cambiado, la cabecera y el nombre propuesto respetan el idioma y el formato de fecha.
 - [ ] Cancelar el diálogo de guardado no deja ningún archivo ni ningún aviso.
@@ -468,6 +488,115 @@ exportable existe y está maquetada, pero que la imagen se vea bien solo se ve m
 - [ ] Con "Buscar al iniciar" activo, dos arranques seguidos en menos de 24 h generan una sola petición.
 - [ ] El aviso de la campana lleva el botón "Abrir" y abre la misma página.
 
+## 8.9 Asistente de IA con Claude Code
+
+Requiere una máquina con Claude Code instalado y otra (o una cuenta de usuario) sin él. Ver
+`.docs/project-info/asistente-ia.md`.
+
+- [ ] Recién instalado, la sección Asistente no aparece en la barra lateral, `Ctrl+9` no hace nada y Enki
+      no lanza ningún proceso `claude` (comprobar con `ps`/el administrador de tareas).
+- [ ] Encender "Activar el asistente" en Ajustes › Inteligencia artificial —o la fila "Asistente" de
+      Ajustes › Navegación— abre el aviso de privacidad y términos; cancelar lo deja todo apagado; aceptar
+      añade la sección y no vuelve a preguntar al apagar y encender.
+- [ ] Sin Claude Code instalado, el asistente muestra la orden de instalación de la plataforma, el botón
+      copia la orden exacta y "Comprobar de nuevo" detecta el CLI tras instalarlo sin reiniciar Enki.
+- [ ] Lanzado desde el Dock (macOS) o el menú del escritorio (Linux), es decir, sin el `PATH` de la
+      terminal, el CLI instalado con el instalador nativo se detecta igualmente.
+- [ ] Con `claude auth logout`, el asistente muestra "Inicia sesión" con `claude auth login`; tras iniciar
+      sesión en una terminal, volver a la sección lo detecta solo. Enki no abre ningún inicio de sesión propio.
+- [ ] Una respuesta llega en streaming, "Detener" la corta al instante sin dejar procesos `claude` vivos, y
+      el chat se puede seguir después.
+- [ ] Cerrar y reabrir Enki restaura el último chat; un mensaje nuevo continúa la misma conversación (el
+      modelo recuerda lo anterior).
+- [ ] Borrar las conversaciones del CLI (`~/.claude/projects/...enki...`) y escribir en un chat antiguo: la
+      respuesta sigue teniendo el contexto anterior y no aparece ningún error.
+- [ ] Adjuntar una nota con cambios sin guardar envía lo que se ve en el editor; el diálogo de confirmación
+      enumera las notas y su tamaño, y "No volver a preguntar" se refleja en Ajustes.
+- [ ] Una nota de una sesión cifrada bloqueada no aparece en el selector de notas.
+- [ ] Agotar el límite del plan (o simularlo) muestra el mensaje de límite con la hora de reinicio y un solo
+      aviso en la campana, aunque se reintente varias veces.
+- [ ] Apagar la IA con una respuesta en curso la cancela y la sección desaparece.
+- [ ] "Guardar como nota" crea una nota nueva en la raíz del vault y la abre; ninguna nota existente cambia.
+- [ ] En tema claro, oscuro y uno personalizado, las respuestas (código, tablas, listas, citas) y el
+      compositor respetan los colores del tema.
+
+## 8.10 Asistente: panel lateral, permisos, borradores e historial por vault
+
+Ver `.docs/project-info/asistente-ia.md`, secciones "Dos superficies" y siguientes.
+
+- [ ] Con un chat respondiendo, abrir el panel desde la barra de título en Documentos: la respuesta sigue
+      llegando, la nota abierta no cambia y "Ampliar" lleva a la sección con el mismo chat, borrador y punto
+      de lectura; "Ver como panel" en la sección vuelve a la sección anterior con el panel abierto.
+- [ ] Cerrar el panel durante una respuesta: el botón del asistente gira; al terminar muestra la marca de
+      "respuesta lista", que desaparece al volver a abrir el panel.
+- [ ] Un chat con herramientas pide permiso la primera vez que busca: la tarjeta nombra el ámbito y el
+      proveedor; "Ahora no" deja seguir sin repetir la pregunta en ese turno; "Permitir en este chat" no
+      vuelve a preguntar al reabrirlo. Activar el acceso a sesiones vuelve a pedirlo. Revocar desde el menú
+      de ámbito impide la lectura siguiente.
+- [ ] Con el panel cerrado y una decisión pendiente, el botón muestra "!" y llega una notificación.
+- [ ] Escribir un borrador con un adjunto, cambiar de chat, de sección y cerrar Enki: al volver el borrador
+      sigue en su chat. Borrar la nota adjunta y volver: el borrador avisa de que se retiró un adjunto.
+- [ ] Abrir otro vault: el historial solo enseña sus chats; al volver, el último chat del primer vault se
+      restaura. Las conversaciones antiguas aparecen en "Sin vault asignado", se leen, no dejan escribir y se
+      asocian con "Asociar a este vault".
+- [ ] Adjuntar un `.json` o `.csv` del vault y preguntar por su contenido; una imagen o un PDF aparecen
+      deshabilitados en el selector con el motivo.
+- [ ] "Añadir a la nota activa" enseña las líneas que se añaden; editar la nota antes de confirmar hace que
+      no se escriba nada y se avise. Tras confirmar, la versión anterior está en el historial de la nota.
+- [ ] Claude con clave de API propia: sin clave, el asistente lleva a Ajustes; guardarla (Keychain, Secret
+      Service o DPAPI) permite conversar; la clave no aparece en `settings.json` ni en la lista de procesos;
+      una clave revocada muestra el aviso de clave rechazada con acceso a Ajustes.
+- [ ] Escape cierra los popovers de ámbito, capacidad, adjuntos y skills y devuelve el foco a su botón; con
+      lector de pantalla, el botón del asistente anuncia su estado.
+- [ ] Gemini con una clave real de Google AI Studio (nivel gratuito): sin clave, el asistente enseña "Añade
+      tu clave de API de Gemini" con "Abrir ajustes" y "Consigue una clave gratis en Google AI Studio", sin
+      ninguna orden de terminal. Guardarla conecta, carga los modelos en ambos selectores y la cuenta muestra
+      solo sus últimos caracteres; la clave no aparece en `settings.json` ni en el log. Un chat responde con
+      streaming, cambia la capacidad y crea una nota con herramientas (actividad visible, versión «Asistente»
+      en el historial). Una clave borrada en AI Studio muestra "clave rechazada" con acceso a Ajustes; agotar la
+      cuota diaria muestra el límite de uso con su hora de reinicio; sin red, "No se pudo conectar".
+
+## 8.11 Grafo de sesiones en esferas 3D
+
+Ver `.docs/project-info/grafo-sesiones-3d.md`. Hacerlo en Linux con WPE disponible (renderizador web por
+software), en Linux sin WPE (visor nativo) y en Windows o macOS.
+
+- [ ] Con un vault de varias sesiones (al menos una con más de 200 notas), Sesiones abre con esferas que
+      giran despacio y de forma continua, sin tirones visibles; las notas interiores se distinguen de la
+      corteza al girar y los nombres de sesión no se mueven.
+- [ ] El botón de rotación de la barra inferior detiene todas las esferas al instante en la orientación en
+      la que estaban y las reanuda sin salto; su tooltip cambia entre «Desactivar rotación» y «Activar
+      rotación». Tras reiniciar Enki se conserva la elección.
+- [ ] Con el perfil Sutiles y sin elección previa, las esferas empiezan quietas. En Windows/macOS con
+      «reducir movimiento» del sistema activo, también, y el botón lo refleja.
+- [ ] Clic, doble clic (abrir), modo enlace, arrastre de una nota, giro manual de una esfera, clic sobre
+      una esfera (selecciona su sesión en la lista), zoom, encuadre, filtros y color de sesión funcionan
+      igual mientras las esferas giran y con la rotación detenida.
+- [ ] Arrastrar una nota, cerrar y volver a Sesiones: la nota sigue donde se dejó.
+- [ ] Minimizar la ventana con la rotación activa no consume CPU de forma apreciable; al restaurarla la
+      rotación continúa sin saltar.
+- [ ] Con lector de pantalla, el botón de rotación anuncia su acción y se activa con teclado.
+
+## 8.12 Asistente: acceso a internet
+
+Ver `.docs/project-info/asistente-ia.md`, sección "Acceso a internet". Hacerlo con red real y con al menos
+dos proveedores (uno por CLI y Gemini u Ollama).
+
+- [ ] Un chat nuevo nace con el globo apagado; preguntar por algo de actualidad: el asistente explica que puede
+      encenderse con el globo. Encenderlo y repetir: la actividad muestra "Buscar en internet" y "Leer página
+      web"; la respuesta cita las páginas con enlaces y el botón de la fila abre la página en el navegador.
+- [ ] Una página larga (artículo de Wikipedia) se lee por tramos sin volver a descargarse.
+- [ ] Pedir "abre https://ejemplo.org/x" en el mensaje: se abre sin preguntar. Pedir que abra una dirección que
+      no salió del mensaje ni de resultados: aparece la tarjeta de confirmación con la dirección completa;
+      "Denegar" no descarga nada.
+- [ ] Pedir que abra `http://localhost:11434`, `http://192.168.1.1` o `http://169.254.169.254`: se rechaza sin
+      conexión (comprobar con un servidor local escuchando que no recibe la petición).
+- [ ] Apagar el globo durante una respuesta: la búsqueda siguiente se rechaza. El chat recuerda el estado al
+      reabrirlo; "Internet en los chats nuevos" en Ajustes cambia el valor de los chats nuevos.
+- [ ] Brave Search: sin clave, la búsqueda avisa de añadirla en Ajustes; con una clave real busca; una clave
+      revocada muestra "Brave Search rechazó la clave". La clave no aparece en `settings.json` ni en el log.
+- [ ] Sin red: "No se pudo conectar con el sitio", sin cortar la respuesta.
+
 ---
 
 ## 9. Criterio de salida antes de `0.2.0`
@@ -478,3 +607,24 @@ exportable existe y está maquetada, pero que la imagen se vea bien solo se ve m
   entrada de `changelog.md` si ya se corrige en la misma sesión) antes de cerrar esta pasada.
 - Esta checklist se ejecuta al menos una vez completa contra un build de release (no contra `dotnet run`
   en modo debug) antes de la primera versión que se distribuya fuera del equipo de desarrollo.
+
+### Herramientas del asistente sobre el vault
+
+- [ ] Probar un chat del vault y otro abierto desde Sesiones: el historial los agrupa y el chip muestra
+  el ámbito. Un chat de sesión nunca accede a la raíz ni a otras sesiones, incluso con acceso ampliado
+  heredado en su JSON; solo los chats del vault pueden activar acceso a sesiones sin protección.
+- [ ] Sin preferencias previas, un chat nuevo usa Sonnet 5.5 y capacidad media. Mover el slider a ligera
+  o alta, enviar y reabrir: conserva el nivel por chat. Otro chat empieza en media. Con CLI sin
+  `--effort`, el control está deshabilitado y explica cómo actualizar; durante una respuesta no cambia.
+- [ ] Revisar el popover de capacidad con teclado, ambos temas y zoom; comprobar su cierre con Escape.
+- [ ] Una sesión protegida, bloqueada o desbloqueada, queda fuera del acceso ampliado de otro chat.
+  Su chat propio funciona al desbloquearla y deja de leerla al bloquearla.
+- [ ] Crear/editar/mover una nota abierta: la pestaña y los wikilinks se actualizan; un cambio externo
+  o conflicto pendiente no se sobrescribe; el historial permite recuperar el contenido anterior.
+- [ ] Crear y completar tarjetas Kanban y tareas Polar; reprogramar recordatorios; comprobar la agenda,
+  la actualización de sus pantallas y la sincronización de las entidades originales con Polar.
+- [ ] Restaurar elementos de la papelera; denegar y aceptar un borrado definitivo. Mientras se espera,
+  detener la respuesta o desactivar las escrituras impide ejecutar la acción pendiente.
+- [ ] Activar solo lectura, apagar la IA y cambiar de vault durante una respuesta: no se aplican llamadas
+  pendientes sobre el nuevo estado; la actividad realizada se conserva en el historial.
+- [ ] Revisar el selector, las acciones y las confirmaciones con teclado, lector de pantalla y ambos temas.

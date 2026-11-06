@@ -13,6 +13,8 @@ namespace enki.ViewModels;
 /// not because the folder concept itself differs.</summary>
 public sealed partial class FileFolderViewModel : ObservableObject
 {
+    [ObservableProperty] private bool _isCut;
+
     public NoteFolder Folder { get; private set; }
     public int Depth { get; }
 

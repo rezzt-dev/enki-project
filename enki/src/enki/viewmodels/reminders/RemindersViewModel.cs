@@ -34,6 +34,55 @@ public sealed partial class RemindersViewModel : ViewModelBase
 
     public ObservableCollection<ReminderListItemViewModel> Items { get; } = [];
 
+    /// <summary>Proyección filtrada de las entidades existentes; no mantiene otro almacén.</summary>
+    public ObservableCollection<ReminderListItemViewModel> VisibleItems { get; } = [];
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private ActivityFilter _filter = ActivityFilter.All;
+
+    [ObservableProperty]
+    private bool _hasNoResults;
+
+    public string ResultsLabel => string.Format(System.Globalization.CultureInfo.CurrentCulture,
+        LocalizationService.Instance["Activity_Results"], VisibleItems.Count, Items.Count);
+
+    partial void OnSearchTextChanged(string value) => ApplyFilters();
+    partial void OnFilterChanged(ActivityFilter value) => ApplyFilters();
+
+    [RelayCommand]
+    private void SelectFilter(ActivityFilter filter) => Filter = filter;
+
+    [RelayCommand]
+    private void ResetFilters()
+    {
+        SearchText = string.Empty;
+        Filter = ActivityFilter.All;
+    }
+
+    private void ApplyFilters()
+    {
+        var query = SearchText.Trim();
+        var matches = Items.Where(i =>
+            (i.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+             || i.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+            && (Filter switch
+            {
+                ActivityFilter.Unread => !i.IsRead,
+                ActivityFilter.Pending => !i.IsCompleted,
+                ActivityFilter.Overdue => i.IsOverdue,
+                ActivityFilter.Completed => i.IsCompleted,
+                _ => true
+            }));
+        VisibleItems.Clear();
+        foreach (var item in matches.OrderBy(i => i.IsCompleted).ThenBy(i => i.NotifyAtUtc))
+            VisibleItems.Add(item);
+        HasNoResults = !IsEmpty && VisibleItems.Count == 0;
+        OnPropertyChanged(nameof(ResultsLabel));
+    }
+
     /// <summary>2-letter (or culture-equivalent) weekday header for the "nuevo recordatorio" popover's
     /// inline calendar grid (<see cref="ReminderEditorViewModel"/>'s <c>DataContext</c>, cross-referenced
     /// from RemindersView.axaml the same way its Cancelar/Crear buttons already reach this view model) —
@@ -114,6 +163,7 @@ public sealed partial class RemindersViewModel : ViewModelBase
     public RemindersViewModel(ReminderService reminderService, PolarAuthService polarAuthService, PolarSyncService polarSyncService)
     {
         _reminderService = reminderService;
+        _reminderService.RemindersChanged += Reload;
         _polarAuthService = polarAuthService;
         _polarSyncService = polarSyncService;
 
@@ -179,8 +229,10 @@ public sealed partial class RemindersViewModel : ViewModelBase
         foreach (var reminder in _reminderService.ActiveReminders)
             Items.Add(new ReminderListItemViewModel(reminder));
 
+        if (Detail is not null) Detail = Items.FirstOrDefault(i => i.Id == Detail.Id);
         IsEmpty = Items.Count == 0;
         UnreadCount = Items.Count(i => !i.IsRead);
+        ApplyFilters();
     }
 
     // ===================== Crear recordatorio =====================
@@ -219,7 +271,6 @@ public sealed partial class RemindersViewModel : ViewModelBase
             recurrence: editor.Recurrence);
 
         Editor = null;
-        Reload();
     }
 
     // ===================== Detalle =====================
@@ -234,8 +285,7 @@ public sealed partial class RemindersViewModel : ViewModelBase
         var item = Items.FirstOrDefault(i => i.Id == id);
         if (item is null)
         {
-            // Items is only rebuilt on Reload(), never live-synced to ReminderService — a reminder just
-            // created elsewhere (e.g. the calendar's "más opciones" quick-create) won't be in it yet.
+            // Refresca también tras un cambio de vault antes de resolver la navegación externa.
             Reload();
             item = Items.FirstOrDefault(i => i.Id == id);
         }
@@ -246,8 +296,6 @@ public sealed partial class RemindersViewModel : ViewModelBase
     private void OpenDetail(ReminderListItemViewModel item)
     {
         _reminderService.MarkAsRead(item.Id);
-        Detail = item;
-        Reload();
         Detail = Items.FirstOrDefault(i => i.Id == item.Id);
     }
 
@@ -259,7 +307,6 @@ public sealed partial class RemindersViewModel : ViewModelBase
     {
         _reminderService.Delete(item.Id);
         Detail = null;
-        Reload();
     }
 
     /// <summary>Parity with Polar's <c>is_completed</c> (docs/supabase-sync/05) — Enki previously only had
@@ -267,20 +314,13 @@ public sealed partial class RemindersViewModel : ViewModelBase
     /// Polar's own UI, so completing a reminder needed an explicit toggle of its own.</summary>
     [RelayCommand]
     private void ToggleCompleted(ReminderListItemViewModel item)
-    {
-        _reminderService.ToggleCompleted(item.Id);
-        Reload();
-        if (Detail is not null) Detail = Items.FirstOrDefault(i => i.Id == item.Id);
-    }
+        => _reminderService.ToggleCompleted(item.Id);
 
     // ===================== Acciones masivas =====================
 
     [RelayCommand]
     private void MarkAllRead()
-    {
-        _reminderService.MarkAllAsRead();
-        Reload();
-    }
+        => _reminderService.MarkAllAsRead();
 
     [RelayCommand]
     private void RequestClearAll() => PendingClearAll = true;
@@ -293,6 +333,5 @@ public sealed partial class RemindersViewModel : ViewModelBase
     {
         _reminderService.ClearAll();
         PendingClearAll = false;
-        Reload();
     }
 }

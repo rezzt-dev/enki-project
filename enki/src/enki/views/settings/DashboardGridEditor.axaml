@@ -39,8 +39,8 @@
       <Setter Property="Cursor" Value="SizeAll" />
       <Setter Property="Transitions">
         <Transitions>
-          <BrushTransition Property="BorderBrush" Duration="0:0:0.18" Easing="CubicEaseOut" />
-          <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
         </Transitions>
       </Setter>
     </Style>

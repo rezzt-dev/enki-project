@@ -17,6 +17,9 @@ public sealed class NoteFile
     /// plano de la nota.</summary>
     public List<string> Tags { get; set; } = [];
 
+    /// <summary>Propiedades de primer nivel del frontmatter YAML; la nota Markdown es la fuente real.</summary>
+    public Dictionary<string, string> Properties { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     public string FileName => System.IO.Path.GetFileName(FullPath);
 
     public string FileNameWithoutExtension => System.IO.Path.GetFileNameWithoutExtension(FullPath);
@@ -36,6 +39,7 @@ public sealed class NoteFile
         Preview = Preview,
         ModifiedUtc = ModifiedUtc,
         WordCount = WordCount,
-        Tags = [..Tags]
+        Tags = [..Tags],
+        Properties = new Dictionary<string, string>(Properties, StringComparer.OrdinalIgnoreCase)
     };
 }

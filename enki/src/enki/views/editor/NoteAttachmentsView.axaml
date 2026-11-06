@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:enki.ViewModels" xmlns:loc="clr-namespace:enki.Localization"
+             xmlns:views="clr-namespace:enki.Views"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="enki.Views.NoteAttachmentsView" x:DataType="vm:EditorViewModel" Focusable="True">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14" MinHeight="300">
+    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+      <TextBlock Text="{loc:Tr Editor_Attachments_Title}" Classes="eyebrow" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Classes="ghost" Command="{Binding RequestAttachmentPickerCommand}" Content="{loc:Tr Editor_Attachments_Add, Converter={StaticResource UpperCaseConverter}}" />
+      <Button Grid.Column="2" Classes="icon-btn" Command="{Binding CloseAttachmentsCommand}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Close}" ToolTip.Tip="{loc:Tr Editor_Attachments_Close}">
+        <mi:MaterialIcon Kind="Close" Width="18" Height="18" />
+      </Button>
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="180,*" ColumnSpacing="14">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="10">
+          <TextBlock Text="{loc:Tr Editor_Attachments_Empty}" IsVisible="{Binding !Attachments.Count}" TextWrapping="Wrap" Classes="muted" />
+          <ItemsControl ItemsSource="{Binding Attachments}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NoteAttachmentItemViewModel">
+                <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="0,5">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <ToggleButton Classes="tag-chip" IsChecked="{Binding IsSelected, Mode=OneWay}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                            Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).PreviewAttachmentCommand}" CommandParameter="{Binding}" ToolTip.Tip="{Binding Target}">
+                      <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" MaxWidth="122" FontSize="12" />
+                    </ToggleButton>
+                    <Button Grid.Column="1" Classes="icon-btn" Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).RemoveAttachmentReferenceCommand}" CommandParameter="{Binding}"
+                            ToolTip.Tip="{loc:Tr Editor_Attachments_Remove}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Remove}">
+                      <mi:MaterialIcon Kind="LinkVariantOff" Width="14" Height="14" />
+                    </Button>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+      <Border Grid.Column="1" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Background="{DynamicResource AppBackgroundBrush}" Padding="12">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+          <TextBlock x:Name="SelectAttachmentHint" Text="{loc:Tr Editor_Attachments_Select}" IsVisible="{Binding !HasAttachmentPreview}" TextWrapping="Wrap" Classes="muted" />
+          <Grid IsVisible="{Binding HasAttachmentPreview}" ColumnDefinitions="*,Auto">
+            <StackPanel>
+              <TextBlock Text="{Binding AttachmentPreview.FileName}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding AttachmentPreview.KindMetaLabel}" Classes="muted" FontSize="11" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="icon-btn" Command="{Binding OpenAttachmentExternallyCommand}"
+                    ToolTip.Tip="{loc:Tr Editor_Attachments_Open}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Open}">
+              <mi:MaterialIcon Kind="OpenInNew" Width="18" Height="18" />
+            </Button>
+          </Grid>
+          <Grid Grid.Row="1" x:Name="PreviewHost" ClipToBounds="True">
+            <ScrollViewer IsVisible="{Binding AttachmentPreview.IsImageViewer, FallbackValue=False, TargetNullValue=False}">
+              <Image Source="{Binding AttachmentPreview.DisplayImage}" Stretch="Uniform" MaxWidth="640" />
+            </ScrollViewer>
+            <Grid IsVisible="{Binding AttachmentPreview.IsPdf, FallbackValue=False, TargetNullValue=False}">
+              <Grid DataContext="{Binding AttachmentPreview.PdfDocument}" x:DataType="vm:PdfDocumentViewModel" IsVisible="{Binding !IsFaulted, FallbackValue=False, TargetNullValue=False}" RowDefinitions="Auto,*" RowSpacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                  <Button Classes="icon-btn" Command="{Binding PreviousPageCommand}" IsEnabled="{Binding CanGoPrevious}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Previous}"><mi:MaterialIcon Kind="ChevronLeft" Width="18" Height="18" /></Button>
+                  <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" FontFamily="{DynamicResource CodeFontFamily}" />
+                  <Button Classes="icon-btn" Command="{Binding NextPageCommand}" IsEnabled="{Binding CanGoNext}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Next}"><mi:MaterialIcon Kind="ChevronRight" Width="18" Height="18" /></Button>
+                  <Button Classes="icon-btn" Command="{Binding ZoomOutCommand}" AutomationProperties.Name="{loc:Tr Editor_Attachments_ZoomOut}"><mi:MaterialIcon Kind="MagnifyMinusOutline" Width="18" Height="18" /></Button>
+                  <Button Classes="icon-btn" Command="{Binding ZoomInCommand}" AutomationProperties.Name="{loc:Tr Editor_Attachments_ZoomIn}"><mi:MaterialIcon Kind="MagnifyPlusOutline" Width="18" Height="18" /></Button>
+                </StackPanel>
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto">
+                  <Image Source="{Binding CurrentPageImage}" Width="{Binding CurrentPageDisplayWidth}" Height="{Binding CurrentPageDisplayHeight}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                </ScrollViewer>
+              </Grid>
+            </Grid>
+            <TextBlock x:Name="PdfLoadingHint" Text="{loc:Tr Editor_Attachments_Loading}" IsVisible="{Binding AttachmentPreview.PdfDocument.IsLoading, FallbackValue=False, TargetNullValue=False}" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="muted" />
+            <TextBlock x:Name="PdfErrorHint" Text="{loc:Tr Editor_Attachments_PreviewError}" IsVisible="{Binding AttachmentPreview.PdfDocument.IsFaulted, FallbackValue=False, TargetNullValue=False}" TextWrapping="Wrap" Classes="muted" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding AttachmentPreview.PreviewHint}" IsVisible="{Binding AttachmentPreview.ShowsInfoPanel, FallbackValue=False, TargetNullValue=False}" TextWrapping="Wrap" Classes="muted" VerticalAlignment="Center" />
+            <ae:TextEditor Document="{Binding AttachmentPreview.CodeDocument}" IsReadOnly="True" ShowLineNumbers="True"
+                           FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" Background="Transparent"
+                           Foreground="{DynamicResource TextPrimaryBrush}" IsVisible="{Binding AttachmentPreview.IsCodeViewer, FallbackValue=False, TargetNullValue=False}"
+                           AutomationProperties.Name="{Binding AttachmentPreview.FileName}" />
+            <Grid IsVisible="{Binding AttachmentPreview.IsPlayable, FallbackValue=False, TargetNullValue=False}"><views:MediaPreviewView DataContext="{Binding AttachmentPreview.MediaPreview}" /></Grid>
+          </Grid>
+          <StackPanel Grid.Row="2" Spacing="8" IsVisible="{Binding HasAttachmentPreview}">
+            <TextBox Text="{Binding AttachmentAnnotation, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="120"
+                     PlaceholderText="{loc:Tr Editor_Attachments_Annotation}" AutomationProperties.Name="{loc:Tr Editor_Attachments_Annotation}" />
+            <Button Classes="pill-primary" HorizontalAlignment="Right" Command="{Binding AddAttachmentAnnotationCommand}" Content="{loc:Tr Editor_Attachments_Annotate, Converter={StaticResource UpperCaseConverter}}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+    <TextBlock Grid.Row="2" Text="{loc:Tr Editor_Attachments_Hint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+  </Grid>
+</UserControl>

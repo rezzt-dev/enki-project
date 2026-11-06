@@ -23,6 +23,18 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void MotionMode_OldSettingsDefaultToNormal_AndSubtleChoicePersists()
+    {
+        Directory.CreateDirectory(_storageDirectory);
+        File.WriteAllText(Path.Combine(_storageDirectory, "settings.json"), "{}");
+        var service = new SettingsService(_storageDirectory, _credentialStore);
+        Assert.False(service.Settings.UseSubtleAnimations);
+        service.Settings.UseSubtleAnimations = true;
+        service.Save();
+        Assert.True(new SettingsService(_storageDirectory, _credentialStore).Settings.UseSubtleAnimations);
+    }
+
+    [Fact]
     public void Save_PersistsChangesAcrossInstances()
     {
         var first = new SettingsService(_storageDirectory, _credentialStore);

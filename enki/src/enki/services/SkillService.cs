@@ -78,7 +78,7 @@ public sealed class SkillService
     {
         if (!Directory.Exists(SkillsDirectory)) return [];
 
-        return Directory.EnumerateFiles(SkillsDirectory, "*.md", SearchOption.AllDirectories)
+        return EnumerateMarkdownFiles(SkillsDirectory, SearchOption.AllDirectories)
             .Select(TryReadSkill)
             .OfType<SkillFile>()
             .OrderBy(s => s.RelativeFolderPath, StringComparer.OrdinalIgnoreCase)
@@ -92,7 +92,7 @@ public sealed class SkillService
     {
         if (!Directory.Exists(folderPath)) return [];
 
-        return Directory.EnumerateFiles(folderPath, "*.md", SearchOption.TopDirectoryOnly)
+        return EnumerateMarkdownFiles(folderPath, SearchOption.TopDirectoryOnly)
             .Select(TryReadSkill)
             .OfType<SkillFile>()
             .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
@@ -114,7 +114,7 @@ public sealed class SkillService
     private static List<SkillFolder> BuildFolderChildren(string path)
     {
         var folders = new List<SkillFolder>();
-        foreach (var directory in Directory.EnumerateDirectories(path).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+        foreach (var directory in Directory.EnumerateDirectories(path, "*", new EnumerationOptions { AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = true }).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
         {
             var folder = new SkillFolder { FullPath = directory };
             folder.Children = BuildFolderChildren(directory);
@@ -125,9 +125,19 @@ public sealed class SkillService
         return folders;
     }
 
+    /// <summary>Incluye .MD en Linux y evita ciclos de enlaces simbólicos en bibliotecas sincronizadas.</summary>
+    private static IEnumerable<string> EnumerateMarkdownFiles(string directory, SearchOption option) =>
+        Directory.EnumerateFiles(directory, "*.md", new EnumerationOptions
+        {
+            RecurseSubdirectories = option == SearchOption.AllDirectories,
+            MatchCasing = MatchCasing.CaseInsensitive,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true
+        });
+
     private static int CountMarkdown(string directory, SearchOption option)
     {
-        try { return Directory.EnumerateFiles(directory, "*.md", option).Count(); }
+        try { return EnumerateMarkdownFiles(directory, option).Count(); }
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
         {
             LogService.Debug($"No se pudieron contar las skills de '{directory}': {ex}");
@@ -206,12 +216,14 @@ public sealed class SkillService
     /// (<c>SkillEditorViewModel.Save</c>) pueda reaccionar en vez de perder el cambio en silencio.</summary>
     public void SaveSkill(SkillFile skill, string content)
     {
+        if (File.ReadAllText(skill.FilePath) != skill.Content)
+            throw new IOException(LocalizationService.Instance["Skills_ExternalChange"]);
         var (_, _, hasFrontMatter) = SplitFrontMatter(content);
         var finalContent = hasFrontMatter ? content : PrependMinimalFrontMatter(content, skill);
 
+        var tempPath = $"{skill.FilePath}.tmp-{Guid.NewGuid():N}";
         try
         {
-            var tempPath = $"{skill.FilePath}.tmp-{Guid.NewGuid():N}";
             File.WriteAllText(tempPath, finalContent);
             File.Move(tempPath, skill.FilePath, overwrite: true);
         }
@@ -219,6 +231,16 @@ public sealed class SkillService
         {
             LogService.Error($"No se pudo guardar la skill '{skill.FilePath}'", ex);
             throw;
+        }
+
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                try { File.Delete(tempPath); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                { LogService.Error("No se pudo eliminar el temporal de la skill", ex); }
+            }
         }
 
         var reloaded = ParseSkill(skill.Id, skill.FilePath, finalContent, skill.IsDefault, skill.RelativeFolderPath);
@@ -233,6 +255,18 @@ public sealed class SkillService
         skill.Content = finalContent;
 
         SkillsChanged?.Invoke();
+    }
+
+    /// <summary>Crea una skill editable sin sobrescribir archivos existentes.</summary>
+    public SkillFile CreateSkill(string folderPath, string name)
+    {
+        Directory.CreateDirectory(folderPath);
+        var destination = MakeUniqueDestination(Path.Combine(folderPath, $"{SanitizeId(name)}.md"));
+        var content = PrependMinimalFrontMatter("# " + name + "\n\n" +
+            LocalizationService.Instance["Skills_TemplateBody"], new SkillFile { Name = name });
+        File.WriteAllText(destination, content);
+        SkillsChanged?.Invoke();
+        return ReadSkill(destination);
     }
 
     private static string PrependMinimalFrontMatter(string content, SkillFile skill)
@@ -303,7 +337,7 @@ public sealed class SkillService
         var safeName = SanitizeId(desiredName ?? LocalizationService.Instance["Skills_DefaultFolderName"]);
         var path = Path.Combine(parentPath, safeName);
         var suffix = 2;
-        while (Directory.Exists(path))
+        while (Directory.Exists(path) || File.Exists(path))
         {
             path = Path.Combine(parentPath, $"{safeName} {suffix}");
             suffix++;
@@ -327,7 +361,7 @@ public sealed class SkillService
         if (PathsEqual(newPath, folder.FullPath)) return folder;
 
         var suffix = 2;
-        while (Directory.Exists(newPath))
+        while (Directory.Exists(newPath) || File.Exists(newPath))
         {
             newPath = Path.Combine(parent, $"{safeName} {suffix}");
             suffix++;
@@ -348,7 +382,7 @@ public sealed class SkillService
     {
         if (!Directory.Exists(folder.FullPath)) return;
 
-        var blocking = Directory.EnumerateFiles(folder.FullPath, "*.md", SearchOption.AllDirectories)
+        var blocking = EnumerateMarkdownFiles(folder.FullPath, SearchOption.AllDirectories)
             .FirstOrDefault(file => IsDefaultFileName(Path.GetFileName(file)));
         if (blocking is not null)
             throw LocalizedValidationErrors.Create("Skills_Error_FolderHasDefault", Path.GetFileName(blocking));
@@ -372,7 +406,7 @@ public sealed class SkillService
         Directory.CreateDirectory(destinationParent);
         var newPath = Path.Combine(destinationParent, Path.GetFileName(source));
         var suffix = 2;
-        while (Directory.Exists(newPath))
+        while (Directory.Exists(newPath) || File.Exists(newPath))
         {
             newPath = Path.Combine(destinationParent, $"{Path.GetFileName(source)} {suffix}");
             suffix++;
@@ -400,10 +434,15 @@ public sealed class SkillService
         Directory.CreateDirectory(target);
 
         var result = new SkillImportResult();
-        foreach (var (sourcePath, relativeDestination) in ExpandMarkdownFiles(paths))
+        foreach (var (sourcePath, relativeDestination) in ExpandMarkdownFiles(paths).ToList())
         {
             var destination = Path.Combine(target, relativeDestination);
 
+            if (PathsEqual(sourcePath, destination))
+            {
+                result.Skipped.Add(relativeDestination);
+                continue;
+            }
             if (File.Exists(destination))
             {
                 if (defaultResolution == ConflictResolution.Cancel)
@@ -437,7 +476,7 @@ public sealed class SkillService
         {
             if (Directory.Exists(path))
             {
-                foreach (var file in Directory.EnumerateFiles(path, "*.md", SearchOption.AllDirectories))
+                foreach (var file in EnumerateMarkdownFiles(path, SearchOption.AllDirectories))
                     yield return (file, Path.GetRelativePath(path, file));
             }
             else if (File.Exists(path) && path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
@@ -457,7 +496,7 @@ public sealed class SkillService
         var extension = Path.GetExtension(destination);
         var suffix = 2;
         var candidate = destination;
-        while (File.Exists(candidate))
+        while (File.Exists(candidate) || Directory.Exists(candidate))
         {
             candidate = Path.Combine(directory, $"{baseName} {suffix}{extension}");
             suffix++;
@@ -491,7 +530,7 @@ public sealed class SkillService
         if (!Directory.Exists(_defaultSkillsSourceDirectory)) return;
 
         var alreadyHasSkills = Directory.Exists(SkillsDirectory) &&
-            Directory.EnumerateFiles(SkillsDirectory, "*.md", SearchOption.AllDirectories).Any();
+            EnumerateMarkdownFiles(SkillsDirectory, SearchOption.AllDirectories).Any();
         if (alreadyHasSkills) return;
 
         Directory.CreateDirectory(SkillsDirectory);
@@ -528,8 +567,10 @@ public sealed class SkillService
         Directory.Exists(_defaultSkillsSourceDirectory) &&
         File.Exists(Path.Combine(_defaultSkillsSourceDirectory, fileName));
 
-    /// <summary>Separa el frontmatter YAML (entre delimitadores <c>---</c>) del cuerpo Markdown. Devuelve
-    /// <c>HasFrontMatter = false</c> si el contenido no empieza con un delimitador o no tiene cierre.</summary>
+    /// <summary>Cuerpo para el lector; el modo código conserva el documento íntegro.</summary>
+    public static string GetMarkdownBody(string content) => SplitFrontMatter(content).Body.TrimStart();
+
+    /// <summary>Separa el frontmatter YAML del cuerpo; sin cierre conserva todo el documento.</summary>
     private static (string? Yaml, string Body, bool HasFrontMatter) SplitFrontMatter(string content)
     {
         var lines = content.Replace("\r\n", "\n").Split('\n');
@@ -558,7 +599,7 @@ public sealed class SkillService
     {
         var invalid = Path.GetInvalidFileNameChars();
         var cleaned = new string(name.Where(c => !invalid.Contains(c)).ToArray()).Trim();
-        return string.IsNullOrWhiteSpace(cleaned) ? Guid.NewGuid().ToString("N") : cleaned;
+        return string.IsNullOrWhiteSpace(cleaned) || cleaned is "." or ".." ? Guid.NewGuid().ToString("N") : cleaned;
     }
 
     /// <summary>Forma tipada del frontmatter YAML, usada solo para (de)serializar — los campos

@@ -10,7 +10,7 @@ namespace enki.Models;
 /// Es deliberadamente un POCO en <c>models/</c> y no un tipo de la capa de vista: lo produce
 /// <see cref="Services.StatisticsAggregationService"/> tal cual y lo consumen los controles de
 /// <c>controls/charts/</c> sin ninguna capa de mapeo intermedia — mismo criterio que el resto del
-/// proyecto (ver AGENTS.md, "Unificar sin duplicar").</summary>
+/// proyecto (ver agents.md, "Unificar sin duplicar").</summary>
 public sealed record ChartDatum(string Label, double Value, string Detail = "")
 {
     /// <summary>Etiqueta corta para el eje cuando la larga no cabe (p. ej. "L" para "lunes").</summary>

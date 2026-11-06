@@ -18,17 +18,19 @@ mantiene su propio estado persistente de "dónde está cada cosa": siempre pregu
 
 - **Gesto**: arrastrar un chip de `CalendarItem` desde su celda/franja actual y soltarlo sobre otra celda
   (vista Mes) u otra franja horaria (vista Semana/Día).
-- **Reutilización técnica obligatoria**: Enki ya implementa drag & drop en dos sitios
-  (`views/kanban/KanbanView.axaml(.cs)` para mover tarjetas entre columnas, `views/notes/NotesView.axaml(.cs)`
-  para mover notas entre carpetas). El calendario debe seguir el mismo mecanismo de Avalonia
-  (`DragDrop`/adjuntos de comportamiento), no introducir una librería de terceros ni un patrón distinto.
+- **Implementación**: `CalendarItemDragController` utiliza captura local del puntero e instantáneas de
+  Avalonia, igual que `KanbanCardDragController`, sin librerías adicionales. El chip flotante conserva
+  su tamaño, contenido, colores y el punto de agarre, y el origen queda atenuado mientras dura el gesto.
+  La instantánea respeta el zoom y la densidad de pantalla y se libera al terminar o cancelar.
 - **Efecto**:
   - Soltar sobre una celda de día (vista Mes, o franja "todo el día" de Semana): actualiza
     `DueDateUtc`/`NotifyAtUtc` al nuevo día, **conservando la hora original** si la tenía (mismo criterio
     que ya aplica `KanbanCardEditorViewModel` al combinar fecha+hora — no combinar por casualidad al
     revés y perder la hora).
   - Soltar sobre una franja horaria concreta (vista Semana/Día): actualiza fecha **y** hora al punto
-    exacto soltado (redondeado al intervalo de franja, p. ej. 15 o 30 minutos).
+    exacto soltado, redondeado a 15 minutos y limitado a las 23:45 del día de destino. Se reconoce la
+    rejilla también al pasar por encima de otro chip.
+  - En Agenda, soltar sobre otro grupo de día cambia la fecha conservando la hora.
 - **Restricciones**:
   - Un item con `IsGhostOccurrence == true` (ver `03-glosario-y-modelo-de-datos.md` §4) **no es
     arrastrable** — no tiene una fila real donde escribir el cambio.
@@ -36,7 +38,15 @@ mantiene su propio estado persistente de "dónde está cada cosa": siempre pregu
     (esos items ni siquiera se generan, ver `07-filtros-busqueda-y-capas.md`).
 - **Feedback visual durante el arrastre**: la celda/franja de destino se resalta (borde blanco sólido,
   patrón de "inversión" del sistema de diseño) mientras el cursor está encima — mismo lenguaje que ya usa
-  el hover de tarjetas Kanban.
+  el hover de tarjetas Kanban. En Semana/Día una línea marca la hora exacta de destino; en Agenda marca
+  el grupo receptor. La rejilla se desplaza automáticamente al mantener el puntero junto a sus bordes.
+- **Orígenes**: tarjetas Kanban, tareas y subtareas Polar, recordatorios y filas sin programar. Los chips
+  de «+N más» usan el mismo gesto: el desplegable se cierra al iniciar el arrastre para dejar visible
+  el destino.
+- **Confirmación y cancelación**: solo se llama a `CalendarViewModel.MoveItem` al soltar en un destino
+  válido. `Escape`, soltar fuera, perder la captura o el foco de ventana, cambiar de vista/periodo o
+  desmontar la página limpian la instantánea y el resaltado sin escribir. El clic normal abre el detalle
+  y el asa de duración conserva su gesto independiente.
 
 ## 2b. Redimensionar — ajustar la franja horaria (addendum post-Fase 5, solo Kanban)
 

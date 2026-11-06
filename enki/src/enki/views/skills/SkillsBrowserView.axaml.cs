@@ -170,8 +170,9 @@ public partial class SkillsBrowserView : UserControl
     {
         if (sender is not Border { DataContext: SkillFolderViewModel folder }) return;
 
-        var valid = e.DataTransfer.Contains(SkillDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
+        var valid = e.DataTransfer.Contains(SkillDragFormat) || e.DataTransfer.Contains(DataFormat.File);
+        e.DragEffects = valid ? (e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move : DragDropEffects.Copy) : DragDropEffects.None;
+        e.Handled = true;
         folder.IsDropTarget = isOver && valid;
     }
 
@@ -184,15 +185,23 @@ public partial class SkillsBrowserView : UserControl
 
     // ===================== Destino del arrastre: tarjetas de carpeta de la rejilla =====================
 
-    private void FolderCard_DragEnter(object? sender, DragEventArgs e) => UpdateCardDragOver(e);
-    private void FolderCard_DragOver(object? sender, DragEventArgs e) => UpdateCardDragOver(e);
+    private void FolderCard_DragEnter(object? sender, DragEventArgs e) => UpdateCardDragOver(sender, e, true);
+    private void FolderCard_DragOver(object? sender, DragEventArgs e) => UpdateCardDragOver(sender, e, true);
 
-    private static void UpdateCardDragOver(DragEventArgs e) =>
-        e.DragEffects = e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+    private static void UpdateCardDragOver(object? sender, DragEventArgs e, bool isOver)
+    {
+        e.DragEffects = e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move :
+            e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
+        if (sender is Control { DataContext: SkillFolderCardViewModel card }) card.IsDropTarget = isOver && e.DragEffects != DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void FolderCard_DragLeave(object? sender, DragEventArgs e) => UpdateCardDragOver(sender, e, false);
 
     private void FolderCard_Drop(object? sender, DragEventArgs e)
     {
         if (sender is not Control { DataContext: SkillFolderCardViewModel card }) return;
+        card.IsDropTarget = false;
         if (string.IsNullOrEmpty(card.FullPath)) return;
         MoveDraggedSkill(e, card.FullPath);
     }
@@ -205,8 +214,9 @@ public partial class SkillsBrowserView : UserControl
 
     private void UpdateRootDragOver(DragEventArgs e, bool isOver)
     {
-        var valid = e.DataTransfer.Contains(SkillDragFormat);
-        e.DragEffects = valid ? DragDropEffects.Move : DragDropEffects.None;
+        var valid = e.DataTransfer.Contains(SkillDragFormat) || e.DataTransfer.Contains(DataFormat.File);
+        e.DragEffects = valid ? (e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move : DragDropEffects.Copy) : DragDropEffects.None;
+        e.Handled = true;
         if (Vm is { } vm) vm.IsRootDropTarget = isOver && valid;
     }
 
@@ -222,7 +232,14 @@ public partial class SkillsBrowserView : UserControl
         if (Vm is not { } vm) return;
 
         var sourcePath = e.DataTransfer.TryGetValue(SkillDragFormat);
-        if (sourcePath is null) return;
+        e.Handled = true;
+        vm.IsGridDropTarget = false;
+        if (sourcePath is null)
+        {
+            var paths = e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+            if (paths is { Count: > 0 }) vm.BeginImport(paths, destinationFolderPath);
+            return;
+        }
 
         var skill = vm.FindSkillByPath(sourcePath);
         if (skill is not null) vm.MoveSkillToFolder(skill, destinationFolderPath);
@@ -240,8 +257,8 @@ public partial class SkillsBrowserView : UserControl
 
     private void UpdateGridDragOver(DragEventArgs e, bool isOver)
     {
-        var valid = e.DataTransfer.Contains(DataFormat.File);
-        e.DragEffects = valid ? DragDropEffects.Copy : DragDropEffects.None;
+        var valid = e.DataTransfer.Contains(DataFormat.File) || e.DataTransfer.Contains(SkillDragFormat);
+        e.DragEffects = valid ? (e.DataTransfer.Contains(SkillDragFormat) ? DragDropEffects.Move : DragDropEffects.Copy) : DragDropEffects.None;
         if (Vm is { } vm) vm.IsGridDropTarget = isOver && valid;
     }
 
@@ -250,10 +267,6 @@ public partial class SkillsBrowserView : UserControl
         if (Vm is not { } vm) return;
         vm.IsGridDropTarget = false;
 
-        var files = e.DataTransfer.TryGetFiles();
-        if (files is null) return;
-
-        var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Select(p => p!).ToList();
-        if (paths.Count > 0) vm.BeginImport(paths);
+        MoveDraggedSkill(e, vm.CurrentFolderPath);
     }
 }

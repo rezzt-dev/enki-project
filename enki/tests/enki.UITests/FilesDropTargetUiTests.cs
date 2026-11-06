@@ -124,6 +124,47 @@ public class FilesDropTargetUiTests : IDisposable
             _ => false,
         });
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InternalFolderDrag_ShowsFloatingName_AndMovesTheWholeFolder(bool treeMode)
+    {
+        SeedFolder();
+        var source = Path.Combine(_vaultPath, "origen");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "archivo.txt"), "contenido");
+        var (_, _, window) = CreateView(treeMode);
+        var destination = FolderRow(window, "diseno");
+        using var transfer = InternalDrag(source);
+
+        Assert.Equal(DragDropEffects.Move, RaiseDragOver(destination, transfer));
+        Assert.Contains(window.GetVisualDescendants().OfType<Border>(), border =>
+            border.Classes.Contains("dropdown-popover") && border.IsVisible &&
+            border.Child is StackPanel panel && panel.Children.OfType<TextBlock>().Any(text => text.Text == "origen"));
+
+        RaiseDrop(destination, transfer);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Border>(), border =>
+            border.Classes.Contains("dropdown-popover") && border.IsVisible &&
+            border.Child is StackPanel panel && panel.Children.OfType<TextBlock>().Any(text => text.Text == "origen"));
+        Assert.True(File.Exists(Path.Combine(_vaultPath, "diseno", "origen", "archivo.txt")));
+        Assert.False(Directory.Exists(source));
+        window.Close();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InternalFolderDrag_RejectsItsOwnFolder(bool treeMode)
+    {
+        var source = SeedFolder();
+        var (_, _, window) = CreateView(treeMode);
+        var row = FolderRow(window, "diseno");
+        using var transfer = InternalDrag(source);
+
+        Assert.Equal(DragDropEffects.None, RaiseDragOver(row, transfer));
+        window.Close();
+    }
+
     // ===================== Modo explorador =====================
 
     [Fact]

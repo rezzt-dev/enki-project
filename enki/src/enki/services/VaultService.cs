@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -37,6 +38,10 @@ public sealed partial class VaultService
     public string VaultPath { get; private set; }
 
     public bool IsVaultConfigured => !string.IsNullOrWhiteSpace(VaultPath) && Directory.Exists(VaultPath);
+
+    /// <summary>Una escritura ha cambiado el contenido o la estructura del vault. Permite invalidar
+    /// las proyecciones de otras secciones sin volver a enumerarlas en cada navegación.</summary>
+    public event Action? ContentChanged;
 
     /// <summary>The comparison to use when deciding whether two paths identify the same file or folder on
     /// disk. Windows and macOS' default filesystems are case-insensitive, but Linux (ext4, btrfs, ...) is
@@ -394,6 +399,7 @@ public sealed partial class VaultService
     private void InvalidateVaultSizeCache()
     {
         lock (_vaultSizeLock) { _vaultSizeCacheValid = false; }
+        ContentChanged?.Invoke();
     }
 
     /// <summary>Drops every note cached under <paramref name="rootPath"/> from <see cref="_noteCache"/> —
@@ -565,6 +571,17 @@ public sealed partial class VaultService
             .ToList();
     }
 
+    /// <summary>Cuenta las notas visibles bajo una carpeta sin leer su contenido. Comparte las reglas de
+    /// exclusión de <see cref="GetAllNotesRecursive"/>; al aplicarse a la raíz del vault no incluye las
+    /// sesiones ni la papelera, que viven en carpetas ocultas.</summary>
+    public static int CountNotesRecursive(string root)
+    {
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return 0;
+
+        return ReadableMarkdownFiles(root, SearchOption.AllDirectories)
+            .Count(info => !IsUnderHiddenDirectory(root, info.FullName));
+    }
+
     /// <summary>Same file set as <see cref="GetAllNotesRecursive"/>, but also hands back each note's raw
     /// content alongside its metadata — callers that need both (session graphs need title for the node
     /// label and content to extract <c>[[wikilinks]]</c>, the backlinks panel needs content to find
@@ -632,8 +649,32 @@ public sealed partial class VaultService
     /// <see cref="FileInfo.LastWriteTimeUtc"/> for free, which <see cref="_noteCache"/> needs to validate a
     /// cached entry without an extra per-file stat call.</summary>
     private static IEnumerable<FileInfo> EnumerateMarkdownFiles(string root, SearchOption option) =>
-        new DirectoryInfo(root).EnumerateFiles("*.md", option)
-            .Where(info => !info.Name.StartsWith('.'));
+        EnumerateVisibleFileInfos(root, option == SearchOption.AllDirectories, markdownOnly: true);
+
+    /// <summary>Poda las carpetas internas antes de descender a ellas. Filtrar rutas al terminar
+    /// el recorrido ya habría enumerado todo el historial, papelera y sesiones. No sigue enlaces de
+    /// directorio y conserva lo accesible si una subcarpeta desaparece durante el recorrido.</summary>
+    internal static IEnumerable<FileInfo> EnumerateVisibleFileInfos(string root, bool recursive = true,
+        bool markdownOnly = false, bool includeNoteAttachments = false)
+    {
+        var options = new EnumerationOptions
+        {
+            RecurseSubdirectories = recursive,
+            IgnoreInaccessible = true,
+            AttributesToSkip = 0
+        };
+        return new FileSystemEnumerable<FileInfo>(root, (ref FileSystemEntry entry) =>
+            (FileInfo)entry.ToFileSystemInfo(), options)
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory
+                && !entry.FileName.StartsWith(".", StringComparison.Ordinal)
+                && (!markdownOnly || entry.FileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)),
+            ShouldRecursePredicate = (ref FileSystemEntry entry) =>
+                (entry.Attributes & FileAttributes.ReparsePoint) == 0
+                && !entry.FileName.StartsWith(".", StringComparison.Ordinal)
+                && (includeNoteAttachments || !entry.FileName.EndsWith(NoteImageAttachments.FolderSuffix, StringComparison.OrdinalIgnoreCase))
+        };
+    }
 
     /// <summary>Los ficheros que <see cref="EnumerateMarkdownFiles"/> llega a leer, ya materializados y sin
     /// dejar escapar un fallo de disco. El <c>Directory.Exists</c> que cada recorrido hace justo antes no
@@ -670,8 +711,12 @@ public sealed partial class VaultService
     {
         var relative = Path.GetRelativePath(root, fullPath);
         var segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        return segments.Take(segments.Length - 1).Any(s => s.StartsWith('.'));
+        return segments.Take(segments.Length - 1).Any(IsHiddenDirectoryName);
     }
+
+    /// <summary>Oculta carpetas internas y adjuntos de notas en la navegación y sus recuentos.</summary>
+    private static bool IsHiddenDirectoryName(string name) =>
+        name.StartsWith('.') || name.EndsWith(NoteImageAttachments.FolderSuffix, StringComparison.OrdinalIgnoreCase);
 
     private static List<NoteFolder> BuildFolderChildren(string parentPath)
     {
@@ -680,7 +725,8 @@ public sealed partial class VaultService
                      .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
         {
             var name = Path.GetFileName(dir);
-            if (string.IsNullOrEmpty(name) || name.StartsWith('.')) continue;
+            if (string.IsNullOrEmpty(name) || IsHiddenDirectoryName(name) ||
+                (File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0) continue;
             result.Add(new NoteFolder { FullPath = dir, Children = BuildFolderChildren(dir) });
         }
         return result;
@@ -691,7 +737,7 @@ public sealed partial class VaultService
         var safeName = SanitizeFileName(desiredName ?? LocalizationService.Instance["Vault_DefaultFolderName"]);
         var path = Path.Combine(parentPath, safeName);
         var suffix = 2;
-        while (Directory.Exists(path))
+        while (Directory.Exists(path) || File.Exists(path))
         {
             path = Path.Combine(parentPath, $"{safeName} {suffix}");
             suffix++;
@@ -716,7 +762,7 @@ public sealed partial class VaultService
         var newPath = Path.Combine(parent, safeName);
         if (PathsEqual(newPath, folder.FullPath)) return folder;
 
-        if (Directory.Exists(newPath)) newPath = ResolveCollision(parent, safeName, extension: null);
+        if (Directory.Exists(newPath) || File.Exists(newPath)) newPath = ResolveCollision(parent, safeName, extension: null);
 
         Directory.Move(folder.FullPath, newPath);
         folder.FullPath = newPath;
@@ -725,18 +771,18 @@ public sealed partial class VaultService
 
     public void DeleteFolder(NoteFolder folder)
     {
-        if (!Directory.Exists(folder.FullPath)) return;
-
+        ValidateFolderPath(folder.FullPath);
+        var change = new FolderMutation(folder.FullPath, null);
+        FolderChanging?.Invoke(change);
+        if (change.Cancel) throw new IOException(LocalizationService.Instance["Folders_Error_PendingChanges"]);
         Directory.CreateDirectory(TrashPath);
-        var destination = Path.Combine(TrashPath, Path.GetFileName(folder.FullPath));
-        var suffix = 2;
-        while (Directory.Exists(destination))
-        {
-            destination = Path.Combine(TrashPath, $"{Path.GetFileName(folder.FullPath)} {suffix}");
-            suffix++;
-        }
-
-        Directory.Move(folder.FullPath, destination);
+        var destination = UniqueFolderPath(TrashPath, string.Equals(folder.Name, "sessions", StringComparison.OrdinalIgnoreCase) ? folder.Name + " 2" : folder.Name);
+        // Guardar el origen antes del traslado conserva la asociación de cifrado incluso ante un cierre.
+        RecordTrashOrigin(destination, folder.FullPath);
+        try { Directory.Move(folder.FullPath, destination); }
+        catch { RemoveTrashOrigin(destination); throw; }
+        InvalidateVaultSizeCache();
+        FolderChanged?.Invoke(change);
     }
 
     public NoteFile MoveNote(NoteFile note, string destinationFolderPath)
@@ -779,6 +825,15 @@ public sealed partial class VaultService
                 Directory.Move(subfolder, Path.Combine(destination, Path.GetFileName(subfolder)));
 
             if (!Directory.EnumerateFileSystemEntries(source).Any()) Directory.Delete(source);
+            // La carpeta cambia de nombre junto a la nota: sus referencias Markdown también deben cambiar.
+            var oldReference = NoteImageAttachments.MarkdownReference(oldNotePath, source) + "/";
+            var newReference = NoteImageAttachments.MarkdownReference(newNotePath, destination) + "/";
+            if (oldReference != newReference && ReadFromDisk(newNotePath) is { } fresh)
+            {
+                var rewritten = fresh.Content.Replace(oldReference, newReference, StringComparison.Ordinal);
+                if (rewritten != fresh.Content)
+                    WriteContentChecked(new NoteFile { FullPath = newNotePath, Title = Path.GetFileNameWithoutExtension(newNotePath) }, rewritten, fresh.Stamp);
+            }
             InvalidateVaultSizeCache();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException)
@@ -813,26 +868,38 @@ public sealed partial class VaultService
         var sourceRoot = ResolveEncryptedSessionRoot(sourcePath);
         var destinationRoot = ResolveEncryptedSessionRoot(destination);
 
+        if (sourceRoot is not null && IsPathInLockedSession(sourcePath)) throw new SessionLockedException(sourcePath);
+        if (destinationRoot is not null && IsPathInLockedSession(destination)) throw new SessionLockedException(destination);
         var sameScope = sourceRoot is null
             ? destinationRoot is null
             : destinationRoot is not null && PathsEqual(sourceRoot, destinationRoot);
         if (sameScope) return MoveWithUniqueSuffix(sourcePath, destinationFolder);
 
+        var stamp = NoteDiskStamps.Read(new FileInfo(sourcePath));
         var raw = File.ReadAllBytes(sourcePath);
         var plaintext = sourceRoot is null ? raw : _encryptionService.Decrypt(sourceRoot, raw);
         var payload = destinationRoot is null ? plaintext : _encryptionService.Encrypt(destinationRoot, plaintext);
 
+        var tempPath = $"{destination}.tmp-{Guid.NewGuid():N}";
         try
         {
-            var tempPath = $"{destination}.tmp-{Guid.NewGuid():N}";
             File.WriteAllBytes(tempPath, payload);
-            File.Move(tempPath, destination, overwrite: true);
-            File.Delete(sourcePath);
+            File.Move(tempPath, destination, overwrite: false);
+            try
+            {
+                if (NoteDiskStamps.Check(sourcePath, stamp, out _) != NoteDiskState.Unchanged)
+                    throw new IOException("El archivo ha cambiado durante la transferencia.");
+                File.Delete(sourcePath);
+            }
+            catch
+            {
+                File.Delete(destination);
+                throw;
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        finally
         {
-            LogService.Error($"No se pudo mover '{sourcePath}' a '{destination}' re-cifrando su contenido", ex);
-            throw;
+            if (File.Exists(tempPath)) File.Delete(tempPath);
         }
 
         return destination;
@@ -846,7 +913,7 @@ public sealed partial class VaultService
     {
         var destination = Path.Combine(destinationFolder, Path.GetFileName(sourcePath));
         var suffix = 2;
-        while (File.Exists(destination))
+        while (File.Exists(destination) || Directory.Exists(destination))
         {
             destination = Path.Combine(destinationFolder,
                 $"{Path.GetFileNameWithoutExtension(sourcePath)} {suffix}{Path.GetExtension(sourcePath)}");
@@ -893,7 +960,7 @@ public sealed partial class VaultService
         {
             candidate = Path.Combine(dir, $"{safeName} {suffix}{extension}");
             suffix++;
-        } while (extension is null ? Directory.Exists(candidate) : File.Exists(candidate));
+        } while (Directory.Exists(candidate) || File.Exists(candidate));
 
         return candidate;
     }
@@ -912,9 +979,24 @@ public sealed partial class VaultService
             Title = title,
             Preview = preview,
             Tags = tags,
+            Properties = NotePropertyHelper.Extract(content),
             ModifiedUtc = info.LastWriteTimeUtc,
             WordCount = CountWords(content)
         };
+    }
+
+    /// <summary>Indica si la ruta pertenece a una sesión protegida, esté desbloqueada o no. Un manifiesto
+    /// ilegible se considera protegido, igual que en <see cref="ResolveEncryptedSessionRoot"/>.</summary>
+    public bool IsPathInEncryptedSession(string fullPath)
+    {
+        try
+        {
+            return ResolveEncryptedSessionRoot(fullPath) is not null;
+        }
+        catch (SessionLockedException)
+        {
+            return true;
+        }
     }
 
     /// <summary>True when <paramref name="fullPath"/> falls under an encrypted session that isn't
@@ -1147,7 +1229,7 @@ public sealed partial class VaultService
         var fileName = Path.GetFileName(sourcePath);
         var destination = Path.Combine(folderPath, fileName);
         var suffix = 2;
-        while (File.Exists(destination))
+        while (File.Exists(destination) || Directory.Exists(destination))
         {
             destination = Path.Combine(folderPath,
                 $"{Path.GetFileNameWithoutExtension(fileName)} {suffix}{Path.GetExtension(fileName)}");
@@ -1283,6 +1365,21 @@ public sealed partial class VaultService
     {
         if (!ReadTrashOrigins().TryGetValue(trashPath, out var originalPath)) return false;
         return IsPathInLockedSession(originalPath);
+    }
+
+    /// <summary>Indica si un elemento de la papelera procede de una sesión protegida. El asistente no lo
+    /// lista ni modifica: el contenido protegido solo es accesible desde el chat propio de esa sesión.</summary>
+    public bool IsTrashedItemFromEncryptedSession(string trashPath)
+    {
+        if (!ReadTrashOrigins().TryGetValue(trashPath, out var originalPath)) return false;
+        try
+        {
+            return ResolveEncryptedSessionRoot(originalPath) is not null;
+        }
+        catch (SessionLockedException)
+        {
+            return true;
+        }
     }
 
     public void DeleteNote(NoteFile note)
@@ -1488,7 +1585,8 @@ public sealed partial class VaultService
     /// búsqueda de la rejilla de Archivos para encontrar un archivo aunque viva en una subcarpeta. Se compone de
     /// <see cref="GetFiles"/> carpeta a carpeta sobre el mismo recorrido de <see cref="GetFolderTree"/> en vez de
     /// un <c>SearchOption.AllDirectories</c> propio, así que excluye exactamente lo mismo que la navegación:
-    /// notas, archivos ocultos y carpetas que empiezan por punto (<c>.trash</c>, <c>.sessions</c>).</summary>
+    /// notas, archivos ocultos, carpetas que empiezan por punto (<c>.trash</c>, <c>.sessions</c>)
+    /// y carpetas de adjuntos (<c>*.attachments</c>).</summary>
     public List<VaultFile> GetFilesRecursive(string root)
     {
         var result = GetFiles(root);
@@ -1502,6 +1600,32 @@ public sealed partial class VaultService
         foreach (var child in folder.Children) CollectFilesRecursive(child, result);
     }
 
+    /// <summary>Cuenta archivos visibles sin cargar contenido ni metadatos. Excluye Markdown y
+    /// carpetas internas; las sesiones se cuentan pasando su raíz explícitamente. Omite enlaces de
+    /// directorio para evitar ciclos y conserva el recuento accesible si una carpeta desaparece.</summary>
+    public static int CountFilesRecursive(string root)
+    {
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return 0;
+
+        var count = 0;
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(root))
+                if (!Path.GetFileName(file).StartsWith('.') &&
+                    !file.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) count++;
+
+            foreach (var directory in new DirectoryInfo(root).EnumerateDirectories())
+                if (!IsHiddenDirectoryName(directory.Name) &&
+                    !directory.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    count += CountFilesRecursive(directory.FullName);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // El siguiente refresco volverá a intentar acceder a la carpeta.
+        }
+        return count;
+    }
+
     /// <summary>Cuántos elementos enseña Archivos al entrar en <paramref name="folderPath"/>: sus subcarpetas
     /// visibles más sus archivos que no son notas. Cuenta entradas del directorio sin leer los metadatos de
     /// ninguna, que es todo lo que necesita el contador de una tarjeta de carpeta; una carpeta que desaparece o
@@ -1513,7 +1637,7 @@ public sealed partial class VaultService
             if (!Directory.Exists(folderPath)) return 0;
 
             var folders = Directory.EnumerateDirectories(folderPath)
-                .Count(path => !Path.GetFileName(path).StartsWith('.'));
+                .Count(path => !IsHiddenDirectoryName(Path.GetFileName(path)));
             var files = Directory.EnumerateFiles(folderPath)
                 .Count(path => !Path.GetFileName(path).StartsWith('.') &&
                                !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase));
@@ -1533,7 +1657,7 @@ public sealed partial class VaultService
             FullPath = fullPath,
             ModifiedUtc = info.LastWriteTimeUtc,
             SizeBytes = info.Length,
-            Kind = VaultFile.KindFromExtension(info.Extension)
+            Kind = VaultFile.KindFromPath(info.FullName)
         };
     }
 
