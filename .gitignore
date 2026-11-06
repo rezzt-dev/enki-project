@@ -3,6 +3,7 @@ bin/
 obj/
 out/
 publish/
+publish-*/
 dist/
 
 # Datos de Enki en builds de Debug compilados desde el código fuente (ver services/AppDataDirectory.cs) —
