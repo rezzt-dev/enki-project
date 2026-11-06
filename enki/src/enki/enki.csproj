@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RollForward>LatestMajor</RollForward>
-    <!-- Usar la plataforma local al compilar; los scripts de empaquetado fijan su RID con --runtime. -->
+    <!-- Usar la plataforma local al compilar; los scripts de empaquetado fijan su RID explicitamente. -->
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <!-- Fase 10 (docs/analisis-proyecto/roadmap.md — "añadir un icono de aplicación real"): embebe
