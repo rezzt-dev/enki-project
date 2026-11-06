@@ -22,6 +22,7 @@ public sealed partial class SettingsViewModel
         _editorColumnWidth = _settingsService.Settings.EditorColumnWidth;
         _isColumnLeftAligned = _settingsService.Settings.EditorColumnPosition == "Left";
         _editorShowScrollbar = _settingsService.Settings.EditorShowScrollbar;
+        _editorSpellCheckEnabled = _settingsService.Settings.EditorSpellCheckEnabled;
         _editorTabSize = _settingsService.Settings.EditorTabSize;
         _editorLineNumbers = _settingsService.Settings.EditorLineNumbers;
         _editorWordWrap = _settingsService.Settings.EditorWordWrap;
@@ -100,6 +101,7 @@ public sealed partial class SettingsViewModel
         EditorPreferences.ColumnWidth = _editorColumnWidth;
         EditorPreferences.ColumnPosition = _settingsService.Settings.EditorColumnPosition;
         EditorPreferences.ShowScrollbar = _editorShowScrollbar;
+        EditorPreferences.SpellCheckEnabled = _editorSpellCheckEnabled;
         EditorPreferences.FontFamily = _settingsService.Settings.EditorFontFamily;
         EditorPreferences.CodeFontFamily = _settingsService.Settings.CodeFontFamily;
         EditorPreferences.TabSize = _settingsService.Settings.EditorTabSize;

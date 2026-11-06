@@ -106,6 +106,38 @@ public static class HtmlReadability
         return meta with { Markdown = markdown };
     }
 
+    /// <summary>Convierte un fragmento HTML en Markdown sin elegir contenido: no puntúa bloques ni exige un
+    /// mínimo de texto, porque lo que llega aquí ya es el cuerpo de una nota (las exportaciones de Evernote,
+    /// por ejemplo) y no una página con menús alrededor. Descarta <c>script</c>, <c>style</c> y el resto de
+    /// elementos de <see cref="DroppedElements"/> igual que <see cref="Extract"/>.</summary>
+    public static string ToMarkdown(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+
+        var root = Parse(html);
+        Drop(root);
+        PromoteInlineDivs(root);
+        return MarkdownRenderer.Render(root);
+    }
+
+    /// <summary>Un <c>div</c> que solo contiene texto y elementos en línea es un párrafo (así escribe Evernote
+    /// cada línea): sin esto el render lo recorrería como un contenedor y partiría «Hola <c>**mundo**</c>» en
+    /// dos párrafos.</summary>
+    private static void PromoteInlineDivs(Node node)
+    {
+        for (var i = 0; i < node.Children.Count; i++)
+        {
+            var child = node.Children[i];
+            PromoteInlineDivs(child);
+            if (child.Name != "div" || child.Children.Count == 0
+                || !child.Children.All(c => c.IsText || c.Name is "br" or "img" || MarkdownRenderer.IsInline(c.Name))) continue;
+
+            var paragraph = new Node { Name = "p", Attributes = child.Attributes, Parent = node };
+            paragraph.Children.AddRange(child.Children);
+            node.Children[i] = paragraph;
+        }
+    }
+
     /// <summary>Variante para leer una página entera, no para recortar un artículo: la usa el acceso a internet
     /// del asistente (<see cref="AiWebService"/>). Resuelve los enlaces relativos contra
     /// <paramref name="pageUrl"/> (o contra el <c>&lt;base href&gt;</c> del documento) para que se puedan seguir,
@@ -712,7 +744,7 @@ public static class HtmlReadability
             return $"![{alt}]({source})";
         }
 
-        private static bool IsInline(string name) => name is "a" or "b" or "strong" or "i" or "em" or "u"
+        internal static bool IsInline(string name) => name is "a" or "b" or "strong" or "i" or "em" or "u"
             or "code" or "span" or "small" or "mark" or "del" or "s" or "sub" or "sup" or "abbr" or "cite"
             or "q" or "time" or "label";
 

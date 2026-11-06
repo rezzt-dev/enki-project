@@ -32,6 +32,7 @@ public partial class EditorView : UserControl, IDisposable
     private readonly LivePreviewState _livePreviewState = new();
     private readonly MarkdownStyle _style;
     private readonly MarkdownLivePreviewColorizer _colorizer;
+    private readonly SpellCheckController _spellCheck;
 
     /// <summary>Quien colorea el interior de los bloques de código. Carga sus gramáticas la primera vez
     /// que hace falta y avisa por <c>Changed</c> cuando ya puede colorear, que es cuando se repinta.</summary>
@@ -120,6 +121,8 @@ public partial class EditorView : UserControl, IDisposable
         textView.LineTransformers.Add(_colorizer);
         textView.ElementGenerators.Add(new MarkdownElementGenerator(_livePreviewState, textArea, _style));
         textView.BackgroundRenderers.Add(new MarkdownBackgroundRenderer(_livePreviewState, _style));
+        _spellCheck = new SpellCheckController(textView, SpellCheckService.Shared);
+        textView.BackgroundRenderers.Add(_spellCheck);
         // El botón de copiar de cada bloque de código va en un lienzo superpuesto al editor, no dentro de
         // él — ver CodeBlockCopyOverlay.
         _codeBlockCopyOverlay = new CodeBlockCopyOverlay(
@@ -207,6 +210,7 @@ public partial class EditorView : UserControl, IDisposable
         EditorPreferences.Changed -= OnEditorPreferencesChanged;
         if (_boundVm is { } vm) vm.AttachmentPickerRequested -= OnAttachmentPickerRequested;
         _transclusionRefreshTimer.Stop();
+        _spellCheck.Dispose();
         _formulaCache.Dispose();
         _mermaidCache.Dispose();
         GC.SuppressFinalize(this);
@@ -417,6 +421,7 @@ public partial class EditorView : UserControl, IDisposable
         _livePreviewState.TableFolding?.Reset();
         _livePreviewState.SpecialBlockFolding?.Reset();
         Editor.Document = vm.Document;
+        _spellCheck.Attach(vm.Document);
         Editor.CaretOffset = Math.Clamp(vm.LastCaretOffset, 0, vm.Document.TextLength);
         Editor.FontSize = EditorPreferences.FontSize;
         _colorizer.WikiLinkNotesProvider = () => vm.WikiLinkScopeNotes;

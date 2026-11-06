@@ -43,7 +43,10 @@ public sealed class CalendarAggregationService(
     /// "has items" dot and every view stay in sync with a single filtering pass instead of two.</summary>
     /// <param name="includeGhostOccurrences">Doc §4's "ocultar ocurrencias fantasma" toggle — when false,
     /// only each recurring task's real occurrence is returned, matching a plain non-recurring calendar.</param>
-    public List<CalendarItemViewModel> BuildItems(DateTime rangeStartUtc, DateTime rangeEndUtc, bool includeGhostOccurrences = true)
+    /// <param name="includeExternalEvents">Eventos de los calendarios suscritos. La exportación a <c>.ics</c>
+    /// los deja fuera —ya viven en otro calendario— y así tampoco expande sus recurrencias.</param>
+    public List<CalendarItemViewModel> BuildItems(DateTime rangeStartUtc, DateTime rangeEndUtc, bool includeGhostOccurrences = true,
+        bool includeExternalEvents = true)
     {
         var items = new List<CalendarItemViewModel>();
         // Un solo mapa por reconstrucción (ver CalendarLayerColorService) — resolver el color item a item
@@ -181,7 +184,7 @@ public sealed class CalendarAggregationService(
                 items.AddRange(BuildGhostOccurrences(reminder, rangeStartUtc, rangeEndUtc, Resolve(colors, ReminderLayerKey)));
         }
 
-        if (externalCalendarService is not null)
+        if (includeExternalEvents && externalCalendarService is not null)
         {
             var externalColors = externalCalendarService.Subscriptions
                 .Select((feed, index) => (feed.Id, Color: CalendarLayerPalette.PickerSwatches[index % CalendarLayerPalette.PickerSwatches.Count]))

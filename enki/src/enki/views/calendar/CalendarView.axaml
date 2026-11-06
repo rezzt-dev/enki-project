@@ -825,6 +825,11 @@
                       <mi:MaterialIcon Kind="FilePdfBox" Width="14" Height="14" />
                     </MenuItem.Icon>
                   </MenuItem>
+                  <MenuItem Header="{loc:Tr Export_ToIcs, Converter={StaticResource UpperCaseConverter}}" Command="{Binding ExportIcsCommand}">
+                    <MenuItem.Icon>
+                      <mi:MaterialIcon Kind="CalendarExportOutline" Width="14" Height="14" />
+                    </MenuItem.Icon>
+                  </MenuItem>
                 </MenuFlyout>
               </Button.Flyout>
             </Button>

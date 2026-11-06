@@ -844,4 +844,226 @@ public class KanbanViewModelTests : IDisposable
         column.Cards.Add(new KanbanCardViewModel(card));
         _ = vm;
     }
+
+    // ===================== MED-07: dependencias y vista de lista =====================
+
+    private static KanbanCard AddCard(KanbanService service, int column, string id, string title, string? blocks = null)
+    {
+        var card = new KanbanCard { Id = id, Title = title };
+        if (blocks is not null) card.Blocks.Add(blocks);
+        service.DefaultBoard.Columns[column].Cards.Add(card);
+        return card;
+    }
+
+    [Fact]
+    public void ABlockedCard_IsFlagged_AndFinishingTheBlockerReleasesIt()
+    {
+        var vm = CreateViewModel(out var service);
+        AddCard(service, 0, "blocker", "Diseño", blocks: "blocked");
+        AddCard(service, 0, "blocked", "Maquetación");
+        vm.Reload();
+        var blocker = vm.Columns[0].Cards.Single(c => c.Id == "blocker");
+        var blocked = vm.Columns[0].Cards.Single(c => c.Id == "blocked");
+
+        Assert.True(blocked.IsBlocked);
+        Assert.Equal(["Diseño"], blocked.BlockedByTitles);
+        Assert.Contains("Diseño", blocked.BlockedByLabel);
+        Assert.True(blocker.BlocksOthers);
+        Assert.False(blocker.IsBlocked);
+        Assert.True(blocked.HasStatusMetadata);
+
+        var done = vm.Columns.Single(c => c.Column.Role == CoreColumnRole.Done);
+        vm.MoveCard(blocker, done, null);
+
+        Assert.False(blocked.IsBlocked);
+        Assert.False(blocker.BlocksOthers);
+    }
+
+    [Fact]
+    public void CompletingABlockedCard_AsksForConfirmation_AndDoesNothingUntilConfirmed()
+    {
+        var vm = CreateViewModel(out var service);
+        AddCard(service, 0, "blocker", "Diseño", blocks: "blocked");
+        AddCard(service, 0, "blocked", "Maquetación");
+        vm.Reload();
+        var blocked = vm.Columns[0].Cards.Single(c => c.Id == "blocked");
+        var done = vm.Columns.Single(c => c.Column.Role == CoreColumnRole.Done);
+
+        vm.MoveCard(blocked, done, null);
+
+        Assert.NotNull(vm.PendingBlockedMove);
+        Assert.Contains("Maquetación", vm.PendingBlockedMoveMessage);
+        Assert.Contains("Diseño", vm.PendingBlockedMoveMessage);
+        Assert.Contains(blocked, vm.Columns[0].Cards);
+        Assert.Null(blocked.Card.CompletedAtUtc);
+
+        vm.CancelBlockedMoveCommand.Execute(null);
+        Assert.Null(vm.PendingBlockedMove);
+        Assert.Contains(blocked, vm.Columns[0].Cards);
+
+        vm.MoveCard(blocked, done, null);
+        vm.ConfirmBlockedMoveCommand.Execute(null);
+
+        Assert.Null(vm.PendingBlockedMove);
+        Assert.Contains(blocked, done.Cards);
+        Assert.NotNull(blocked.Card.CompletedAtUtc);
+        Assert.Contains(service.DefaultBoard.Columns.Single(c => c.Role == CoreColumnRole.Done).Cards, c => c.Id == "blocked");
+    }
+
+    [Fact]
+    public void StartingABlockedCard_MovesItButWarns_AndFreeCardsMoveSilently()
+    {
+        var vm = CreateViewModel(out var service, out var notifications);
+        AddCard(service, 0, "blocker", "Diseño", blocks: "blocked");
+        AddCard(service, 0, "blocked", "Maquetación");
+        vm.Reload();
+        var blocker = vm.Columns[0].Cards.Single(c => c.Id == "blocker");
+        var blocked = vm.Columns[0].Cards.Single(c => c.Id == "blocked");
+        var doing = vm.Columns.Single(c => c.Column.Role == CoreColumnRole.InProgress);
+        var before = notifications.Notifications.Count;
+
+        vm.MoveCard(blocker, doing, null);
+        Assert.Equal(before, notifications.Notifications.Count);
+
+        vm.MoveCard(blocked, doing, null);
+
+        Assert.Null(vm.PendingBlockedMove);
+        Assert.Contains(blocked, doing.Cards);
+        Assert.Equal(before + 1, notifications.Notifications.Count);
+    }
+
+    [Fact]
+    public void MovingWithinTheSameColumn_NeverAsks()
+    {
+        var vm = CreateViewModel(out var service);
+        AddCard(service, 2, "blocker", "Diseño", blocks: "blocked");
+        AddCard(service, 2, "blocked", "Maquetación");
+        vm.Reload();
+        var done = vm.Columns.Single(c => c.Column.Role == CoreColumnRole.Done);
+        var blocked = done.Cards.Single(c => c.Id == "blocked");
+
+        vm.MoveCard(blocked, done, null);
+
+        Assert.Null(vm.PendingBlockedMove);
+    }
+
+    [Fact]
+    public void TheEditor_AddsAndRemovesBlocks_WithoutOfferingCycles_AndPersistsThem()
+    {
+        var vm = CreateViewModel(out var service);
+        foreach (var seeded in service.DefaultBoard.Columns) seeded.Cards.Clear();
+        AddCard(service, 0, "a", "A");
+        AddCard(service, 0, "b", "B", blocks: "a");
+        AddCard(service, 0, "c", "C");
+        vm.Reload();
+        var a = vm.Columns[0].Cards.Single(card => card.Id == "a");
+
+        vm.OpenEditCardCommand.Execute(a);
+        var editor = vm.CardEditor!;
+
+        // B ya bloquea a A, así que A no puede bloquear a B (ciclo); sí a C.
+        Assert.Equal(["C"], editor.BlockCandidates.Select(i => i.Title));
+        Assert.Equal(["B"], editor.BlockedByTitles);
+        editor.SelectedBlockCandidate = editor.BlockCandidates.Single();
+        editor.AddBlockCommand.Execute(null);
+        Assert.Equal(["C"], editor.BlockTargets.Select(i => i.Title));
+        Assert.Empty(editor.BlockCandidates);
+
+        vm.SaveCardEditorCommand.Execute(null);
+
+        Assert.Equal(["c"], service.DefaultBoard.Columns[0].Cards.Single(card => card.Id == "a").Blocks);
+        Assert.True(vm.Columns[0].Cards.Single(card => card.Id == "c").IsBlocked);
+
+        vm.OpenEditCardCommand.Execute(vm.Columns[0].Cards.Single(card => card.Id == "a"));
+        vm.CardEditor!.RemoveBlockCommand.Execute(vm.CardEditor.BlockTargets.Single());
+        vm.SaveCardEditorCommand.Execute(null);
+
+        Assert.Empty(service.DefaultBoard.Columns[0].Cards.Single(card => card.Id == "a").Blocks);
+        Assert.False(vm.Columns[0].Cards.Single(card => card.Id == "c").IsBlocked);
+    }
+
+    [Fact]
+    public void EditingACard_KeepsRelationsToCardsInTheTrash()
+    {
+        var vm = CreateViewModel(out var service);
+        var a = AddCard(service, 0, "a", "A");
+        a.Blocks.Add("en-la-papelera");
+        vm.Reload();
+
+        vm.OpenEditCardCommand.Execute(vm.Columns[0].Cards.Single(card => card.Id == "a"));
+        vm.CardEditor!.Title = "A editada";
+        vm.SaveCardEditorCommand.Execute(null);
+
+        Assert.Contains("en-la-papelera", service.DefaultBoard.Columns[0].Cards.Single(card => card.Id == "a").Blocks);
+    }
+
+    [Fact]
+    public void ListLayout_ShowsTheSameCards_WithTheActiveFilters_AndSorts()
+    {
+        var vm = CreateViewModel(out var service);
+        service.DefaultBoard.Columns[0].Cards.Clear();
+        service.DefaultBoard.Columns[1].Cards.Clear();
+        service.DefaultBoard.Columns[2].Cards.Clear();
+        AddCard(service, 0, "x", "Zeta").Priority = KanbanPriority.Low;
+        var alpha = AddCard(service, 1, "y", "alfa");
+        alpha.Priority = KanbanPriority.High;
+        alpha.DueDateUtc = new System.DateTime(2026, 12, 1, 8, 0, 0, System.DateTimeKind.Utc);
+        var mid = AddCard(service, 2, "z", "Media");
+        mid.DueDateUtc = new System.DateTime(2026, 11, 1, 8, 0, 0, System.DateTimeKind.Utc);
+        vm.Reload();
+
+        Assert.Empty(vm.ListRows);
+        vm.ToggleListLayoutCommand.Execute(null);
+
+        Assert.True(vm.IsListLayout);
+        Assert.False(vm.IsVerticalBoardVisible);
+        Assert.False(vm.IsHorizontalBoardVisible);
+        Assert.Equal(["Zeta", "alfa", "Media"], vm.ListRows.Select(r => r.Card.Title));
+        // Son las mismas tarjetas del tablero, no copias.
+        Assert.Same(vm.Columns[1].Cards.Single(), vm.ListRows.Single(r => r.Card.Title == "alfa").Card);
+
+        vm.SortListCommand.Execute(KanbanListSortColumn.Title);
+        Assert.Equal(["alfa", "Media", "Zeta"], vm.ListRows.Select(r => r.Card.Title));
+        vm.SortListCommand.Execute(KanbanListSortColumn.Title);
+        Assert.Equal(["Zeta", "Media", "alfa"], vm.ListRows.Select(r => r.Card.Title));
+
+        vm.SortListCommand.Execute(KanbanListSortColumn.Priority);
+        Assert.Equal("alfa", vm.ListRows[0].Card.Title);
+        Assert.Equal("Zeta", vm.ListRows[^1].Card.Title);
+
+        vm.SortListCommand.Execute(KanbanListSortColumn.DueDate);
+        Assert.Equal(["Media", "alfa", "Zeta"], vm.ListRows.Select(r => r.Card.Title));
+        vm.SortListCommand.Execute(KanbanListSortColumn.DueDate);
+        Assert.Equal(["alfa", "Media", "Zeta"], vm.ListRows.Select(r => r.Card.Title));
+
+        vm.SearchText = "med";
+        Assert.Equal(["Media"], vm.ListRows.Select(r => r.Card.Title));
+        vm.SearchText = string.Empty;
+
+        vm.ToggleListLayoutCommand.Execute(null);
+        Assert.True(vm.IsVerticalBoardVisible);
+        Assert.Empty(vm.ListRows);
+    }
+
+    [Fact]
+    public void ListLayout_FollowsEditsAndBlockedState()
+    {
+        var vm = CreateViewModel(out var service);
+        service.DefaultBoard.Columns[0].Cards.Clear();
+        service.DefaultBoard.Columns[1].Cards.Clear();
+        service.DefaultBoard.Columns[2].Cards.Clear();
+        AddCard(service, 0, "a", "A", blocks: "b");
+        AddCard(service, 0, "b", "B");
+        vm.Reload();
+        vm.ToggleListLayoutCommand.Execute(null);
+
+        vm.SortListCommand.Execute(KanbanListSortColumn.Blocked);
+        Assert.Equal(["B", "A"], vm.ListRows.Select(r => r.Card.Title));
+        Assert.True(vm.ListRows[0].Card.IsBlocked);
+
+        vm.MoveCard(vm.Columns[0].Cards.Single(c => c.Id == "a"), vm.Columns.Single(c => c.Column.Role == CoreColumnRole.Done), null);
+
+        Assert.False(vm.ListRows.Single(r => r.Card.Title == "B").Card.IsBlocked);
+        Assert.Equal("Hecho", vm.ListRows.Single(r => r.Card.Title == "A").ColumnLabel.Length > 0 ? "Hecho" : "");
+    }
 }

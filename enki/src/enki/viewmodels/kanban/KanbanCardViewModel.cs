@@ -70,9 +70,9 @@ public sealed partial class KanbanCardViewModel : ObservableObject
 
     /// <summary>La tarjeta tiene algo que enseñar en la línea de metadatos del pie. Sin esta comprobación,
     /// una tarjeta que solo tiene título arrastraba el margen de una fila vacía debajo del texto.</summary>
-    public bool HasStatusMetadata => HasSubtasks || HasDueDate || HasLinkedNote;
+    public bool HasStatusMetadata => HasSubtasks || HasDueDate || HasLinkedNote || HasDependencies;
 
-    public bool HasMeta => HasSubtasks || HasDueDate || HasTags || HasLinkedNote;
+    public bool HasMeta => HasSubtasks || HasDueDate || HasTags || HasLinkedNote || HasDependencies;
 
     /// <summary>Enlace nota↔tarea, "Capa 1". El label es el nombre de archivo derivado de la ruta, no el
     /// título real de la nota: resolverlo
@@ -128,6 +128,57 @@ public sealed partial class KanbanCardViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsCompleted));
         OnPropertyChanged(nameof(IsOverdue));
+    }
+
+    // ===================== Dependencias «bloquea a» (MED-07) =====================
+    // La tarjeta no conoce el tablero: KanbanViewModel.RefreshDependencies le entrega los títulos ya
+    // resueltos cada vez que algo cambia (guardar, mover, recargar), igual que sella CanArchive.
+
+    /// <summary>Títulos de las tarjetas sin terminar que bloquean a esta.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsBlocked))]
+    [NotifyPropertyChangedFor(nameof(BlockedByLabel))]
+    [NotifyPropertyChangedFor(nameof(HasDependencies))]
+    [NotifyPropertyChangedFor(nameof(HasStatusMetadata))]
+    private IReadOnlyList<string> _blockedByTitles = [];
+
+    /// <summary>Títulos de las tarjetas sin terminar a las que esta bloquea.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BlocksOthers))]
+    [NotifyPropertyChangedFor(nameof(BlocksLabel))]
+    [NotifyPropertyChangedFor(nameof(HasDependencies))]
+    [NotifyPropertyChangedFor(nameof(HasStatusMetadata))]
+    private IReadOnlyList<string> _blockingTitles = [];
+
+    /// <summary>Hay algo sin terminar que impide cerrar esta tarjeta.</summary>
+    public bool IsBlocked => BlockedByTitles.Count > 0;
+
+    public bool BlocksOthers => BlockingTitles.Count > 0;
+
+    public bool HasDependencies => IsBlocked || BlocksOthers;
+
+    public string BlockedByLabel => IsBlocked
+        ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Kanban_Card_BlockedBy"], string.Join(", ", BlockedByTitles))
+        : string.Empty;
+
+    public string BlocksLabel => BlocksOthers
+        ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Kanban_Card_Blocks"], string.Join(", ", BlockingTitles))
+        : string.Empty;
+
+    /// <summary>Texto del indicador de la tarjeta: lo que la bloquea si está bloqueada, y si no, lo que
+    /// bloquea ella.</summary>
+    public string DependencyTooltip => IsBlocked ? BlockedByLabel : BlocksLabel;
+
+    /// <summary>Candado cerrado si está bloqueada, abierto si solo bloquea a otras.</summary>
+    public MaterialIconKind DependencyIcon => IsBlocked ? MaterialIconKind.LockOutline : MaterialIconKind.LockOpenVariantOutline;
+
+    /// <summary>Sella las dependencias resueltas por el tablero.</summary>
+    public void SetDependencies(IReadOnlyList<string> blockedBy, IReadOnlyList<string> blocking)
+    {
+        BlockedByTitles = blockedBy;
+        BlockingTitles = blocking;
+        OnPropertyChanged(nameof(DependencyTooltip));
+        OnPropertyChanged(nameof(DependencyIcon));
     }
 
     [ObservableProperty]

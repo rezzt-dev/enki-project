@@ -681,7 +681,7 @@
                 </StackPanel>
 
                 <!-- Backlinks -->
-                <StackPanel IsVisible="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Backlinks}">
+                <StackPanel IsVisible="{Binding ActiveSidePanelTab, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Backlinks}" Spacing="16">
                   <ItemsControl ItemsSource="{Binding Backlinks.Items}">
                     <ItemsControl.ItemsPanel>
                       <ItemsPanelTemplate>
@@ -709,6 +709,75 @@
                       <TextBlock Text="{loc:Tr Editor_Backlinks_Empty}" Classes="muted" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" FontSize="11" />
                     </StackPanel>
                   </Border>
+
+                  <!-- Notas relacionadas: etiquetas y enlaces compartidos, enlazables en un clic -->
+                  <StackPanel IsVisible="{Binding Backlinks.HasRelated}" Spacing="6">
+                    <TextBlock Text="{loc:Tr Editor_Related_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
+                    <ItemsControl ItemsSource="{Binding Backlinks.Related}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="1" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="models:RelatedNote">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <Button Grid.Column="0" Classes="nav-item" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                    Padding="10,9"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).Backlinks.OpenRelatedCommand}"
+                                    CommandParameter="{Binding .}">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Reason}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+                            </Button>
+                            <Button Grid.Column="1" Classes="icon-btn" Width="28" Height="28" VerticalAlignment="Center"
+                                    IsVisible="{Binding CanLink}"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).Backlinks.LinkRelatedCommand}"
+                                    CommandParameter="{Binding .}"
+                                    ToolTip.Tip="{loc:Tr Editor_Related_Link_Tooltip}"
+                                    AutomationProperties.Name="{loc:Tr Editor_Related_Link_Tooltip}">
+                              <mi:MaterialIcon Kind="LinkPlus" Width="14" Height="14" />
+                            </Button>
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+
+                  <!-- Menciones sin enlazar: otras notas que nombran a esta en texto plano -->
+                  <StackPanel IsVisible="{Binding Backlinks.HasMentions}" Spacing="6">
+                    <TextBlock Text="{loc:Tr Editor_Mentions_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9" />
+                    <ItemsControl ItemsSource="{Binding Backlinks.Mentions}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="1" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="models:UnlinkedMention">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <Button Grid.Column="0" Classes="nav-item" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                    Padding="10,9"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).Backlinks.OpenMentionCommand}"
+                                    CommandParameter="{Binding .}">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Context}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                              </StackPanel>
+                            </Button>
+                            <Button Grid.Column="1" Classes="icon-btn" Width="28" Height="28" VerticalAlignment="Center"
+                                    Command="{Binding $parent[UserControl].((vm:EditorViewModel)DataContext).Backlinks.LinkMentionCommand}"
+                                    CommandParameter="{Binding .}"
+                                    ToolTip.Tip="{loc:Tr Editor_Mentions_Link_Tooltip}"
+                                    AutomationProperties.Name="{loc:Tr Editor_Mentions_Link_Tooltip}">
+                              <mi:MaterialIcon Kind="LinkVariantPlus" Width="14" Height="14" />
+                            </Button>
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
                 </StackPanel>
 
                 <!-- Stats -->

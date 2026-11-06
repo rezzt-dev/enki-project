@@ -11,7 +11,7 @@ namespace enki.Services;
 
 /// <summary>Lee exportaciones locales antes de escribir en las entidades reales de Enki. Los límites
 /// evitan que un ZIP o un archivo accidentalmente enorme bloquee la interfaz o agote el disco.</summary>
-public sealed class ExternalImportService(VaultService vault, KanbanService kanban, ReminderService reminders)
+public sealed partial class ExternalImportService(VaultService vault, KanbanService kanban, ReminderService reminders)
 {
     private const long MaxInputBytes = 100L * 1024 * 1024;
     private const int MaxEntries = 10000;
@@ -26,6 +26,13 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
     public sealed record Plan(string Source, IReadOnlyList<Note> Notes, IReadOnlyList<Task> Tasks, IReadOnlyList<CalendarEvent> Events, IReadOnlyList<Asset> Assets)
     {
         public int RecurringSeries { get; init; }
+
+        /// <summary>Lo que el lector no pudo importar, o importó con pérdidas, y por qué. Alimenta el informe
+        /// final (<see cref="ExternalImportService.BuildReport"/>).</summary>
+        public IReadOnlyList<ImportIssue> Issues { get; init; } = [];
+
+        /// <summary>Incidencias que no caben en <see cref="Issues"/> por superar el tope del informe.</summary>
+        public int IssuesOmitted { get; init; }
     }
     public sealed record Result(int Notes, int Tasks, int Events, int Assets);
 
@@ -41,6 +48,7 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
         if (!Directory.Exists(directory)) throw new DirectoryNotFoundException(directory);
         var notes = new List<Note>();
         var assets = new List<Asset>();
+        var issues = new IssueLog();
         var root = Path.GetFullPath(directory);
         long total = 0;
         var pending = new Stack<string>();
@@ -67,25 +75,34 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
                     if (assets.Count >= MaxEntries) throw new InvalidDataException("Hay demasiados adjuntos.");
                     assets.Add(new Asset(relative, path, null));
                 }
+                else if (!Path.GetFileName(path).StartsWith('.')) issues.Add(relative, ImportIssueKind.UnsupportedItem);
             }
         }
-        return new Plan("Obsidian", notes, [], [], assets);
+        return new Plan("Obsidian", notes, [], [], assets) { Issues = issues.Items, IssuesOmitted = issues.Overflow };
     }
 
     public static Plan ReadNotion(string zipPath)
     {
         var notes = new List<Note>();
         var assets = new List<Asset>();
+        var issues = new IssueLog();
         if (new FileInfo(zipPath).Length > MaxInputBytes) throw new InvalidDataException("El archivo supera 100 MB.");
         using var archive = ZipFile.OpenRead(zipPath);
         if (archive.Entries.Count > MaxEntries) throw new InvalidDataException("El archivo contiene demasiadas entradas.");
         long total = 0;
         foreach (var entry in archive.Entries)
         {
-            if (!SafeRelativePath(entry.FullName)) continue;
+            if (entry.Name.Length == 0) continue;
+            if (!SafeRelativePath(entry.FullName))
+            {
+                // Rutas ocultas (.git, .DS_Store) no son contenido; las que escapan de la carpeta sí se anotan.
+                if (entry.FullName.Replace('\\', '/').Split('/').Any(p => p == ".." ) || Path.IsPathRooted(entry.FullName))
+                    issues.Add(entry.FullName, ImportIssueKind.UnsafePath);
+                continue;
+            }
             var markdown = entry.FullName.EndsWith(".md", StringComparison.OrdinalIgnoreCase);
             var csv = entry.FullName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
-            if (!markdown && !csv && !IsAsset(entry.FullName)) continue;
+            if (!markdown && !csv && !IsAsset(entry.FullName)) { issues.Add(entry.FullName, ImportIssueKind.UnsupportedItem); continue; }
             total += entry.Length;
             if (entry.Length > MaxInputBytes || total > MaxInputBytes) throw new InvalidDataException("El contenido supera 100 MB.");
             using var stream = entry.Open();
@@ -106,7 +123,7 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
                 assets.Add(new Asset(relative, null, buffer.ToArray()));
             }
         }
-        return new Plan("Notion", notes, [], [], assets);
+        return new Plan("Notion", notes, [], [], assets) { Issues = issues.Items, IssuesOmitted = issues.Overflow };
     }
 
     public static Plan ReadTodoist(string csvPath)
@@ -122,11 +139,17 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
         int checkedIndex = headers.FindIndex(h => h is "CHECKED" or "COMPLETED");
         int typeIndex = headers.FindIndex(h => h == "TYPE");
         var tasks = new List<Task>();
+        var issues = new IssueLog();
         foreach (var row in rows.Skip(1))
         {
-            if (typeIndex >= 0 && Get(row, typeIndex) is { Length: > 0 } type && !type.Equals("task", StringComparison.OrdinalIgnoreCase)) continue;
             var title = Get(row, titleIndex).Trim();
-            if (title.Length == 0) continue;
+            if (typeIndex >= 0 && Get(row, typeIndex) is { Length: > 0 } type && !type.Equals("task", StringComparison.OrdinalIgnoreCase))
+            {
+                // Secciones y notas de proyecto no son tareas: se anotan con su nombre y no se pierden en silencio.
+                if (title.Length > 0) issues.Add(title, ImportIssueKind.UnsupportedItem);
+                continue;
+            }
+            if (title.Length == 0) { issues.Add("(" + (tasks.Count + 1).ToString(CultureInfo.InvariantCulture) + ")", ImportIssueKind.Empty); continue; }
             DateTime? due = null;
             var dueText = Get(row, dueIndex);
             if (DateTimeOffset.TryParse(dueText, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsed)) due = parsed.UtcDateTime;
@@ -134,7 +157,7 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
             if (tasks.Count >= MaxEntries) throw new InvalidDataException("Hay demasiadas tareas.");
             tasks.Add(new Task(title, Get(row, descriptionIndex), due, Get(row, checkedIndex) is "1" or "true" or "TRUE", priority));
         }
-        return new Plan("Todoist", [], tasks, [], []);
+        return new Plan("Todoist", [], tasks, [], []) { Issues = issues.Items, IssuesOmitted = issues.Overflow };
     }
 
     public static Plan ReadGoogleCalendar(string icsPath)
@@ -150,6 +173,7 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
             else unfolded.Add(line.TrimEnd('\r'));
         }
         var events = new List<CalendarEvent>();
+        var issues = new IssueLog();
         var recurringSeries = 0;
         Dictionary<string, string>? fields = null;
         foreach (var line in unfolded)
@@ -157,14 +181,21 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
             if (line == "BEGIN:VEVENT") { fields = new(StringComparer.OrdinalIgnoreCase); continue; }
             if (line == "END:VEVENT")
             {
-                if (fields is not null && !string.Equals(fields.GetValueOrDefault("STATUS"), "CANCELLED", StringComparison.OrdinalIgnoreCase) && fields.TryGetValue("DTSTART", out var startText) && TryDate(startText, fields.GetValueOrDefault("DTSTART_TZID"), out var start))
+                if (fields is not null)
                 {
                     var title = fields.GetValueOrDefault("SUMMARY", "Evento");
-                    var end = fields.TryGetValue("DTEND", out var endText) && TryDate(endText, fields.GetValueOrDefault("DTEND_TZID"), out var parsedEnd) ? parsedEnd : start;
-                    var minutes = end > start ? (int)Math.Min((end - start).TotalMinutes, 1440) : (int?)null;
-                    if (fields.ContainsKey("RRULE")) recurringSeries++;
-                    if (events.Count >= MaxEntries) throw new InvalidDataException("Hay demasiados eventos.");
-                    events.Add(new CalendarEvent(UnescapeIcs(title), UnescapeIcs(fields.GetValueOrDefault("DESCRIPTION", "")), start, minutes));
+                    if (string.Equals(fields.GetValueOrDefault("STATUS"), "CANCELLED", StringComparison.OrdinalIgnoreCase))
+                        issues.Add(UnescapeIcs(title), ImportIssueKind.Cancelled);
+                    else if (!fields.TryGetValue("DTSTART", out var startText) || !TryDate(startText, fields.GetValueOrDefault("DTSTART_TZID"), out var start))
+                        issues.Add(UnescapeIcs(title), ImportIssueKind.NoDate);
+                    else
+                    {
+                        var end = fields.TryGetValue("DTEND", out var endText) && TryDate(endText, fields.GetValueOrDefault("DTEND_TZID"), out var parsedEnd) ? parsedEnd : start;
+                        var minutes = end > start ? (int)Math.Min((end - start).TotalMinutes, 1440) : (int?)null;
+                        if (fields.ContainsKey("RRULE")) recurringSeries++;
+                        if (events.Count >= MaxEntries) throw new InvalidDataException("Hay demasiados eventos.");
+                        events.Add(new CalendarEvent(UnescapeIcs(title), UnescapeIcs(fields.GetValueOrDefault("DESCRIPTION", "")), start, minutes));
+                    }
                 }
                 fields = null;
                 continue;
@@ -179,13 +210,14 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
                 if (parameter.StartsWith("TZID=", StringComparison.OrdinalIgnoreCase))
                     fields[key + "_TZID"] = parameter[5..].Trim('"');
         }
-        return new Plan("Google Calendar", [], [], events, []) { RecurringSeries = recurringSeries };
+        return new Plan("Google Calendar", [], [], events, []) { RecurringSeries = recurringSeries, Issues = issues.Items, IssuesOmitted = issues.Overflow };
     }
 
     /// <summary>Crea elementos en los servicios existentes; cada servicio persiste y anuncia su cambio.
     /// Se conserva lo ya importado si una operación posterior falla y se comunica el recuento.</summary>
     public Result Apply(Plan plan)
     {
+        _lastImportFolder = null;
         var importedNotes = 0;
         var importedTasks = 0;
         var importedEvents = 0;
@@ -195,7 +227,7 @@ public sealed class ExternalImportService(VaultService vault, KanbanService kanb
             if (plan.Notes.Count + plan.Assets.Count > 0)
             {
                 if (!_vault.IsVaultConfigured) throw new InvalidOperationException("No hay un vault abierto.");
-                var root = VaultService.CreateFolder(_vault.VaultPath, "Importado de " + plan.Source).FullPath;
+                var root = _lastImportFolder = VaultService.CreateFolder(_vault.VaultPath, "Importado de " + plan.Source).FullPath;
                 var folders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [""] = root };
                 string ParentFor(string relative)
                 {

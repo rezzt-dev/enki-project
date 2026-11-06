@@ -178,14 +178,7 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
                 SelectedKanbanColumn?.Id,
                 SelectedKanbanBoard?.Id);
             Draft = string.Empty;
-            _notificationService.PushLocalized(
-                LocalizedTextFormatter.Format("Notification_QuickCaptureSaved_Title"),
-                LocalizedTextFormatter.Format(
-                    result.Destination == QuickCaptureDestination.InboxNote
-                        ? "Notification_QuickCaptureSaved_Note"
-                        : "Notification_QuickCaptureSaved_Card",
-                    result.Title), NotificationSeverity.Success);
-            _onCaptured?.Invoke(result);
+            Announce(result);
             IsOpen = false;
             CloseRequested?.Invoke();
         }
@@ -205,6 +198,57 @@ public sealed partial class QuickCaptureViewModel : ViewModelBase
             }
         }
     }
+
+    private void Announce(QuickCaptureResult result)
+    {
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_QuickCaptureSaved_Title"),
+            LocalizedTextFormatter.Format(
+                result.Destination == QuickCaptureDestination.InboxNote
+                    ? "Notification_QuickCaptureSaved_Note"
+                    : "Notification_QuickCaptureSaved_Card",
+                result.Title), NotificationSeverity.Success);
+        _onCaptured?.Invoke(result);
+    }
+
+    /// <summary>Guarda una captura que llega de fuera de la interfaz —<c>enki --capture "texto"</c>, ver
+    /// <see cref="CommandLineOptions"/>— en el destino que el usuario eligió la última vez (nota de la
+    /// bandeja o tarjeta). No toca el borrador ni abre ninguna superficie: el borrador del popup sigue donde
+    /// estaba. Si la columna recordada ya no existe, usa el tablero y la columna por defecto en vez de
+    /// perder la idea. Devuelve si quedó guardada; el motivo de un fallo se registra y se avisa.</summary>
+    public bool TryCaptureExternal(string text)
+    {
+        if (!_vaultService.IsVaultConfigured)
+        {
+            PushExternalFailure("QuickCapture_Error_NoVault");
+            return false;
+        }
+
+        try
+        {
+            var settings = _vaultSettingsService.Settings;
+            var destination = settings.QuickCaptureDestination;
+            var board = _kanbanService.Boards.FirstOrDefault(b => b.Id == settings.QuickCaptureKanbanBoardId);
+            var column = board?.Columns.FirstOrDefault(c => c.Id == settings.QuickCaptureKanbanColumnId);
+            var result = column is null
+                ? _captureService.Capture(text, destination)
+                : _captureService.Capture(text, destination, column.Id, board!.Id);
+            Announce(result);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or VaultUnavailableException
+                                       or SessionLockedException or InvalidOperationException or ArgumentException)
+        {
+            LogService.Warning("No se pudo guardar la captura recibida por la línea de comandos", ex);
+            PushExternalFailure("Notification_CommandLineCaptureFailed_Message");
+            return false;
+        }
+    }
+
+    private void PushExternalFailure(string messageKey) =>
+        _notificationService.PushLocalized(
+            LocalizedTextFormatter.Format("Notification_CommandLineCaptureFailed_Title"),
+            LocalizedTextFormatter.Format(messageKey), NotificationSeverity.Error);
 
     [RelayCommand]
     private void Cancel()

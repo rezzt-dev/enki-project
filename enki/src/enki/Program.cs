@@ -74,6 +74,36 @@ class Program
             Environment.Exit(1);
         }
 
+        // MED-06: «enki --capture "texto"». Se resuelve antes de levantar la interfaz: si ya hay otra instancia
+        // abierta el texto se le entrega y este proceso termina enseguida, sin ventana; si no la hay, esta es
+        // la primera, abre con normalidad y guarda la captura en cuanto el vault esté listo.
+        var options = CommandLineOptions.Parse(args, CommandLineOptions.ReadStandardInput);
+        if (options.CaptureRequested)
+        {
+            if (options.Error is not null)
+            {
+                Console.Error.WriteLine(options.Error == "too-long"
+                    ? $"enki --capture: el texto supera {CommandLineOptions.MaxCaptureLength} caracteres."
+                    : "enki --capture: falta el texto. Uso: enki --capture \"idea\"  o  texto | enki --capture -");
+                Environment.Exit(2);
+            }
+            if (!SingleInstanceGuard.IsFirstInstance)
+            {
+                var delivery = CommandLineChannel.SendCaptureAsync(options.CaptureText!, TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+                if (delivery != CommandLineDelivery.Delivered)
+                    Console.Error.WriteLine(delivery == CommandLineDelivery.Unreachable
+                        ? "enki --capture: la instancia abierta no responde."
+                        : "enki --capture: Enki no pudo guardar la captura (¿hay un vault abierto?).");
+                Environment.Exit(delivery == CommandLineDelivery.Delivered ? 0 : 1);
+            }
+            CommandLineChannel.StartupCapture = options.CaptureText;
+        }
+        if (SingleInstanceGuard.IsFirstInstance)
+        {
+            CommandLineChannel.Server = new CommandLineServer();
+            CommandLineChannel.Server.Start();
+        }
+
         StartupTrace.Mark("listo para inicializar Avalonia");
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }

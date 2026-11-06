@@ -219,6 +219,9 @@ public sealed partial class MainWindowViewModel
                 else Kanban?.Reload();
                 InvalidatePages(AppPage.Dashboard, AppPage.Statistics);
             });
+        // Capturas que llegan de «enki --capture» (otra instancia, o los argumentos de esta): el canal las
+        // entrega en un hilo de fondo y aquí pasan al de interfaz, que es el que toca el vault y el tablero.
+        CommandLineChannel.Server?.SetHandler(text => Dispatcher.UIThread.InvokeAsync(() => HandleCommandLineCapture(text)).GetTask());
         _globalHotkeyService = new GlobalHotkeyService();
         _shortcutChangedHandler = () => ApplyQuickCaptureHotkey(notifyOnFailure: true);
         ShortcutRegistry.Changed += _shortcutChangedHandler;
@@ -650,6 +653,29 @@ public sealed partial class MainWindowViewModel
         UpdateCalendarBadge();
         UpdateRemindersBadge();
         UpdateNotificationsBadge();
+
+        // Una captura que venía en los argumentos de este arranque («enki --capture "texto"» sin otra
+        // instancia abierta): el vault ya está listo, así que se guarda ahora, una sola vez.
+        if (CommandLineChannel.StartupCapture is { } startupCapture)
+        {
+            CommandLineChannel.StartupCapture = null;
+            HandleCommandLineCapture(startupCapture);
+        }
+    }
+
+    /// <summary>Guarda una captura de la línea de comandos. Sin shell lista (pantalla de vault o de idioma)
+    /// no hay dónde guardarla: se avisa y se devuelve <see langword="false"/> para que el comando termine con
+    /// error en vez de dar la idea por guardada.</summary>
+    private bool HandleCommandLineCapture(string text)
+    {
+        if (!IsVaultReady)
+        {
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("Notification_CommandLineCaptureFailed_Title"),
+                LocalizedTextFormatter.Format("QuickCapture_Error_NoVault"), Models.NotificationSeverity.Error);
+            return false;
+        }
+        return QuickCapture.TryCaptureExternal(text);
     }
 
     /// <summary>Reads <c>AppSettings.StartupPage</c> (Ajustes › General) and falls back to

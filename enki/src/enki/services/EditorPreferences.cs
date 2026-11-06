@@ -73,6 +73,20 @@ public static class EditorPreferences
         }
     }
 
+    /// <summary>Subrayado de palabras desconocidas en el editor (MED-05). Activo de fábrica; sin diccionario
+    /// para el idioma de la aplicación no subraya nada aunque esté activo.</summary>
+    private static bool _spellCheckEnabled = true;
+    public static bool SpellCheckEnabled
+    {
+        get => _spellCheckEnabled;
+        set
+        {
+            if (_spellCheckEnabled == value) return;
+            _spellCheckEnabled = value;
+            Changed?.Invoke();
+        }
+    }
+
     /// <summary>Whether the editor's (and preview's) scrollbar is visible.</summary>
     private static bool _showScrollbar = true;
     public static bool ShowScrollbar

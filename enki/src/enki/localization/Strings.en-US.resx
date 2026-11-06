@@ -6402,7 +6402,7 @@ Happy writing.</value>
   <data name="Editor_Attachments_Loading" xml:space="preserve"><value>Loading document…</value></data>
   <data name="Editor_Attachments_PreviewError" xml:space="preserve"><value>Could not preview the PDF. You can open it with the system application.</value></data>
   <data name="ExternalImport_Title" xml:space="preserve"><value>Import data</value></data>
-  <data name="ExternalImport_Hint" xml:space="preserve"><value>Choose a local export. Obsidian: Markdown folder; Notion: ZIP with Markdown; Todoist: CSV; Google Calendar: ICS. Notes go into a new folder, tasks into Kanban, and calendar events become reminders without alerts. Importing again creates copies. Recurring series import only their first date.</value></data>
+  <data name="ExternalImport_Hint" xml:space="preserve"><value>Choose a local export. Obsidian and Logseq: Markdown folder; Notion and Google Keep: ZIP; Evernote: ENEX; Todoist and TickTick: CSV; Google Calendar: ICS. Notes go into a new folder, tasks into Kanban, and calendar events become reminders without alerts. A report note with what was imported and skipped is saved in that folder. Importing again creates copies. Recurring series import only their first date.</value></data>
   <data name="ExternalImport_Obsidian" xml:space="preserve"><value>Obsidian (folder)…</value></data>
   <data name="ExternalImport_Notion" xml:space="preserve"><value>Notion (ZIP)…</value></data>
   <data name="ExternalImport_Todoist" xml:space="preserve"><value>Todoist (CSV)…</value></data>
@@ -7974,5 +7974,263 @@ Happy writing.</value>
   </data>
   <data name="ModuleProfile_Active_Label" xml:space="preserve">
     <value>Active profile:</value>
+  </data>
+  <data name="Editor_Related_Title" xml:space="preserve">
+    <value>Related notes</value>
+  </data>
+  <data name="Editor_Related_Link_Tooltip" xml:space="preserve">
+    <value>Add a link to this note at the end</value>
+  </data>
+  <data name="Editor_Mentions_Title" xml:space="preserve">
+    <value>Unlinked mentions</value>
+  </data>
+  <data name="Editor_Mentions_Link_Tooltip" xml:space="preserve">
+    <value>Turn the mention into a link</value>
+  </data>
+  <data name="Notification_MentionLink_Title" xml:space="preserve">
+    <value>Link added</value>
+  </data>
+  <data name="Notification_MentionLinked_Message" xml:space="preserve">
+    <value>The mention in “{0}” is now a link.</value>
+  </data>
+  <data name="Notification_MentionLinkOutdated_Message" xml:space="preserve">
+    <value>“{0}” changed and no longer has that mention; nothing was modified.</value>
+  </data>
+  <data name="Notification_MentionLinkConflict_Message" xml:space="preserve">
+    <value>“{0}” was changed outside Enki; the link was not written to avoid overwriting it.</value>
+  </data>
+  <data name="Notification_MentionLinkFailed_Message" xml:space="preserve">
+    <value>Could not link the mention in “{0}”.</value>
+  </data>
+  <data name="ExternalImport_Logseq" xml:space="preserve">
+    <value>Logseq (folder)…</value>
+  </data>
+  <data name="ExternalImport_Evernote" xml:space="preserve">
+    <value>Evernote (ENEX)…</value>
+  </data>
+  <data name="ExternalImport_Keep" xml:space="preserve">
+    <value>Google Keep (ZIP)…</value>
+  </data>
+  <data name="ExternalImport_TickTick" xml:space="preserve">
+    <value>TickTick (CSV)…</value>
+  </data>
+  <data name="ExternalImport_ReportTitle" xml:space="preserve">
+    <value>Import report</value>
+  </data>
+  <data name="ExternalImport_ReportMessage" xml:space="preserve">
+    <value>{0} items were skipped or imported with changes. The report is in the “{1}” folder.</value>
+  </data>
+  <data name="ExternalImport_Report_NoteName" xml:space="preserve">
+    <value>Import report</value>
+  </data>
+  <data name="ExternalImport_Report_Title" xml:space="preserve">
+    <value>Import report: {0}</value>
+  </data>
+  <data name="ExternalImport_Report_Interrupted" xml:space="preserve">
+    <value>The import was interrupted: what follows was imported before the failure and the rest was not.</value>
+  </data>
+  <data name="ExternalImport_Report_Imported" xml:space="preserve">
+    <value>Imported</value>
+  </data>
+  <data name="ExternalImport_Report_Notes" xml:space="preserve">
+    <value>Notes: {0} of {1}</value>
+  </data>
+  <data name="ExternalImport_Report_Tasks" xml:space="preserve">
+    <value>Tasks: {0} of {1}</value>
+  </data>
+  <data name="ExternalImport_Report_Events" xml:space="preserve">
+    <value>Events: {0} of {1}</value>
+  </data>
+  <data name="ExternalImport_Report_Assets" xml:space="preserve">
+    <value>Attachments: {0} of {1}</value>
+  </data>
+  <data name="ExternalImport_Report_Skipped" xml:space="preserve">
+    <value>Skipped or changed ({0})</value>
+  </data>
+  <data name="ExternalImport_Report_NothingSkipped" xml:space="preserve">
+    <value>Nothing was skipped.</value>
+  </data>
+  <data name="ExternalImport_Report_More" xml:space="preserve">
+    <value>…and {0} more not listed.</value>
+  </data>
+  <data name="ExternalImport_Issue_UnsupportedItem" xml:space="preserve">
+    <value>{0} items of a type Enki does not import</value>
+  </data>
+  <data name="ExternalImport_Issue_UnsupportedAttachment" xml:space="preserve">
+    <value>{0} attachments of a type Enki does not import (the note was imported)</value>
+  </data>
+  <data name="ExternalImport_Issue_MissingAttachment" xml:space="preserve">
+    <value>{0} attachments missing from the export (the note was imported)</value>
+  </data>
+  <data name="ExternalImport_Issue_Empty" xml:space="preserve">
+    <value>{0} empty items</value>
+  </data>
+  <data name="ExternalImport_Issue_Trashed" xml:space="preserve">
+    <value>{0} items in the trash</value>
+  </data>
+  <data name="ExternalImport_Issue_Cancelled" xml:space="preserve">
+    <value>{0} cancelled events</value>
+  </data>
+  <data name="ExternalImport_Issue_NoDate" xml:space="preserve">
+    <value>{0} events without a usable start date</value>
+  </data>
+  <data name="ExternalImport_Issue_TooLarge" xml:space="preserve">
+    <value>{0} items over the size limit</value>
+  </data>
+  <data name="ExternalImport_Issue_InvalidFormat" xml:space="preserve">
+    <value>{0} items with an unreadable format</value>
+  </data>
+  <data name="ExternalImport_Issue_UnsafePath" xml:space="preserve">
+    <value>{0} items with an unsafe path</value>
+  </data>
+  <data name="ExternalImport_Issue_EncryptedContent" xml:space="preserve">
+    <value>{0} notes with encrypted text that cannot be imported (the rest of the note was imported)</value>
+  </data>
+  <data name="ExternalImport_Issue_RecurrenceDropped" xml:space="preserve">
+    <value>{0} tasks imported without their repetition</value>
+  </data>
+  <data name="Export_ToIcs" xml:space="preserve">
+    <value>Calendar (ICS)</value>
+  </data>
+  <data name="Export_IcsDialogTitle" xml:space="preserve">
+    <value>Export calendar to ICS</value>
+  </data>
+  <data name="Export_IcsFileType" xml:space="preserve">
+    <value>iCalendar file</value>
+  </data>
+  <data name="Export_IcsSuccessTitle" xml:space="preserve">
+    <value>Calendar exported</value>
+  </data>
+  <data name="Export_IcsSuccessMessage" xml:space="preserve">
+    <value>{0} pending items were saved to “{1}”, with their repetitions.</value>
+  </data>
+  <data name="Export_IcsEmptyTitle" xml:space="preserve">
+    <value>Nothing to export</value>
+  </data>
+  <data name="Export_IcsEmptyMessage" xml:space="preserve">
+    <value>There are no pending cards, tasks or reminders with a date.</value>
+  </data>
+  <data name="Export_IcsFailedTitle" xml:space="preserve">
+    <value>Could not export the calendar</value>
+  </data>
+  <data name="Settings_Editor_SpellCheck_Label" xml:space="preserve">
+    <value>Spell checker</value>
+  </data>
+  <data name="Settings_Editor_SpellCheck_Description" xml:space="preserve">
+    <value>Underlines unknown words using a local dictionary for the app language. It ignores code, links, formulas and properties, works offline and sends nothing anywhere.</value>
+  </data>
+  <data name="Settings_Editor_SpellCheck_Active" xml:space="preserve">
+    <value>Dictionary in use: {0}.</value>
+  </data>
+  <data name="Settings_Editor_SpellCheck_Missing" xml:space="preserve">
+    <value>No dictionary found for {0}, so nothing is underlined. Copy a Hunspell dictionary (.dic and .aff files) into: {1}</value>
+  </data>
+  <data name="Settings_Editor_SpellCheck_OpenFolder" xml:space="preserve">
+    <value>Open dictionaries folder</value>
+  </data>
+  <data name="Notification_CommandLineCaptureFailed_Title" xml:space="preserve">
+    <value>Capture from the command line failed</value>
+  </data>
+  <data name="Notification_CommandLineCaptureFailed_Message" xml:space="preserve">
+    <value>The idea could not be saved. Check the vault and the capture destination.</value>
+  </data>
+  <data name="Kanban_Card_BlockedBy" xml:space="preserve">
+    <value>Blocked by: {0}</value>
+  </data>
+  <data name="Kanban_Card_Blocks" xml:space="preserve">
+    <value>Blocks: {0}</value>
+  </data>
+  <data name="Kanban_Field_BlocksLabel" xml:space="preserve">
+    <value>Blocks</value>
+  </data>
+  <data name="Kanban_Field_DependenciesLabel" xml:space="preserve">
+    <value>Dependencies</value>
+  </data>
+  <data name="Kanban_Blocks_Placeholder" xml:space="preserve">
+    <value>Choose a card…</value>
+  </data>
+  <data name="Kanban_Blocks_AddTooltip" xml:space="preserve">
+    <value>Add this card as blocked</value>
+  </data>
+  <data name="Kanban_Blocks_RemoveTooltip" xml:space="preserve">
+    <value>Stop blocking this card</value>
+  </data>
+  <data name="Kanban_BlockedMove_Title" xml:space="preserve">
+    <value>Blocked card</value>
+  </data>
+  <data name="Kanban_BlockedMove_Message" xml:space="preserve">
+    <value>“{0}” is still blocked by: {1}. Complete it anyway?</value>
+  </data>
+  <data name="Kanban_BlockedMove_Confirm" xml:space="preserve">
+    <value>Complete anyway</value>
+  </data>
+  <data name="Kanban_BlockedStart_Title" xml:space="preserve">
+    <value>Blocked card</value>
+  </data>
+  <data name="Kanban_BlockedStart_Message" xml:space="preserve">
+    <value>“{0}” was started but is still blocked by: {1}.</value>
+  </data>
+  <data name="Kanban_List_ShowList" xml:space="preserve">
+    <value>List</value>
+  </data>
+  <data name="Kanban_List_ShowBoard" xml:space="preserve">
+    <value>Board</value>
+  </data>
+  <data name="Kanban_List_ColumnTitle" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Kanban_List_ColumnStatus" xml:space="preserve">
+    <value>Column</value>
+  </data>
+  <data name="Kanban_List_ColumnPriority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Kanban_List_ColumnDue" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Kanban_List_ColumnBlockedTooltip" xml:space="preserve">
+    <value>Sort by blocked cards</value>
+  </data>
+  <data name="Kanban_List_Empty" xml:space="preserve">
+    <value>No cards to show.</value>
+  </data>
+  <data name="Settings_Diagnostics_Export_Description" xml:space="preserve">
+    <value>Creates a ZIP with the version, system, settings without credentials and trimmed logs to attach to a bug report. It never includes notes, vault paths or keys. You review everything before it is saved; nothing is sent anywhere.</value>
+  </data>
+  <data name="Settings_Diagnostics_Export_Button" xml:space="preserve">
+    <value>Export diagnostic package</value>
+  </data>
+  <data name="Settings_Diagnostics_Preview_Title" xml:space="preserve">
+    <value>Diagnostic package</value>
+  </data>
+  <data name="Settings_Diagnostics_Preview_Message" xml:space="preserve">
+    <value>This is exactly what will be saved. Check it before sharing; it contains no notes, vault paths or keys.</value>
+  </data>
+  <data name="Settings_Diagnostics_Preview_Summary" xml:space="preserve">
+    <value>{0} files · {1}</value>
+  </data>
+  <data name="Settings_Diagnostics_Preview_Files" xml:space="preserve">
+    <value>Package files</value>
+  </data>
+  <data name="Settings_Diagnostics_Preview_Content" xml:space="preserve">
+    <value>File contents</value>
+  </data>
+  <data name="Settings_Diagnostics_Preview_Save" xml:space="preserve">
+    <value>Save ZIP…</value>
+  </data>
+  <data name="Settings_Diagnostics_SaveDialogTitle" xml:space="preserve">
+    <value>Save diagnostic package</value>
+  </data>
+  <data name="Settings_Diagnostics_SavedTitle" xml:space="preserve">
+    <value>Diagnostic package saved</value>
+  </data>
+  <data name="Settings_Diagnostics_SavedMessage" xml:space="preserve">
+    <value>Saved as “{0}”. Review it once more before sharing.</value>
+  </data>
+  <data name="Settings_Diagnostics_FailedTitle" xml:space="preserve">
+    <value>Diagnostic package failed</value>
+  </data>
+  <data name="Settings_Diagnostics_BuildFailedMessage" xml:space="preserve">
+    <value>The package could not be generated. Check the logs folder permissions.</value>
   </data>
 </root>

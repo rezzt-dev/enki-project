@@ -405,7 +405,7 @@ public sealed partial class EditorViewModel : ViewModelBase
         _saveStatus = FormatSaveStatus(_lastSavedUtc);
 
         Outline = new EditorOutlineViewModel(Document);
-        Backlinks = new EditorBacklinksViewModel(note, vaultService, onOpenNote ?? (_ => { }));
+        Backlinks = new EditorBacklinksViewModel(note, vaultService, onOpenNote ?? (_ => { }), AppendWikiLink, notificationService);
         Stats = new EditorStatsViewModel(Document, note.FullPath);
         History = new EditorVersionHistoryViewModel(vaultService, note, notificationService, () => Document.Text,
             ApplyRestoredContent, TryRestoreVersion);
@@ -503,6 +503,18 @@ public sealed partial class EditorViewModel : ViewModelBase
     public NoteTransclusionResult ResolveTransclusion(string reference, IReadOnlyList<string>? ancestry = null) =>
         _transclusionService.Resolve(reference, WikiLinkScopeNotes,
             ancestry ?? [Note.FullPath]);
+
+    /// <summary>Añade <c>[[nombre]]</c> en una línea propia al final de la nota — lo usa el bloque de notas
+    /// relacionadas del panel de enlaces. Escribe en el documento del editor y no en disco, de modo que el
+    /// autoguardado, el historial y los conflictos externos siguen el camino de cualquier otra edición.</summary>
+    private void AppendWikiLink(string linkName)
+    {
+        var text = Document.Text;
+        var separator = text.Length == 0 || text.EndsWith("\n\n", StringComparison.Ordinal) ? string.Empty
+            : text.EndsWith('\n') ? "\n" : "\n\n";
+        Document.Insert(Document.TextLength, separator + "[[" + linkName + "]]\n");
+        OnTextChanged(Document.Text);
+    }
 
     private void RefreshWikiLinkScopeNotes()
     {

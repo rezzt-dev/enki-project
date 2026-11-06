@@ -59,6 +59,13 @@ public sealed partial class KanbanCardDetailViewModel : ObservableObject
     public Material.Icons.MaterialIconKind LinkedNoteIcon => SourceCard.LinkedNoteIcon;
     public string? LinkedNoteTooltip => SourceCard.LinkedNoteTooltip;
 
+    /// <summary>Dependencias «bloquea a» (MED-07), de solo lectura: se editan desde el formulario de la
+    /// tarjeta. Se leen al abrir el detalle; el tablero las vuelve a sellar en la tarjeta si cambian.</summary>
+    public bool IsBlocked => SourceCard.IsBlocked;
+    public string BlockedByLabel => SourceCard.BlockedByLabel;
+    public bool BlocksOthers => SourceCard.BlocksOthers;
+    public string BlocksLabel => SourceCard.BlocksLabel;
+
     public ObservableCollection<KanbanSubtaskItemViewModel> Subtasks { get; } = [];
 
     public KanbanCardDetailViewModel(KanbanCardViewModel sourceCard, Action persist,

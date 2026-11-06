@@ -225,6 +225,102 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(CalendarMonthLabel));
     }
 
+    // ===================== Dependencias «bloquea a» (MED-07) =====================
+
+    /// <summary>Tarjetas a las que esta bloqueará al guardar.</summary>
+    public ObservableCollection<KanbanBlockTargetItem> BlockTargets { get; } = [];
+
+    /// <summary>Tarjetas del tablero que se pueden añadir: todas menos esta, las ya elegidas, las
+    /// archivadas y las que (directa o indirectamente) ya bloquean a esta, porque añadirlas cerraría un
+    /// ciclo y ninguna de las dos podría terminarse.</summary>
+    public ObservableCollection<KanbanBlockTargetItem> BlockCandidates { get; } = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddBlockCommand))]
+    private KanbanBlockTargetItem? _selectedBlockCandidate;
+
+    /// <summary>Títulos de las tarjetas que bloquean a esta ahora mismo (solo al editar): de solo lectura,
+    /// porque la relación se guarda en la tarjeta que bloquea, no en la bloqueada.</summary>
+    public IReadOnlyList<string> BlockedByTitles { get; private set; } = [];
+
+    public bool HasBlockedBy => BlockedByTitles.Count > 0;
+    public string BlockedByText => string.Join(", ", BlockedByTitles);
+    public bool HasBlockTargets => BlockTargets.Count > 0;
+    public bool HasBlockCandidates => BlockCandidates.Count > 0;
+
+    /// <summary>Identificadores de <see cref="KanbanCard.Blocks"/> que ya no apuntan a una tarjeta del
+    /// tablero (borrada o en la papelera). El formulario no los muestra pero tampoco los pierde al guardar:
+    /// si la tarjeta se restaura, la relación sigue ahí.</summary>
+    private List<string> _danglingBlocks = [];
+
+    private void InitializeBlocks(KanbanCard? source)
+    {
+        var cards = AvailableColumns.SelectMany(c => c.Column.Cards).Where(c => !c.IsArchived).ToList();
+        var allIds = AvailableColumns.SelectMany(c => c.Column.Cards).Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+
+        // Quien ya bloquea a esta, directa o indirectamente: no puede ser bloqueado por ella.
+        var ancestors = new HashSet<string>(StringComparer.Ordinal);
+        if (source is not null)
+        {
+            ancestors.Add(source.Id);
+            bool grew;
+            do
+            {
+                grew = false;
+                foreach (var card in cards)
+                    if (!ancestors.Contains(card.Id) && card.Blocks.Any(ancestors.Contains))
+                        grew = ancestors.Add(card.Id) || grew;
+            } while (grew);
+
+            BlockedByTitles = AvailableColumns
+                .SelectMany(c => c.Column.Cards.Select(card => (card, c.Column)))
+                .Where(t => t.card.Blocks.Contains(source.Id, StringComparer.Ordinal) && !KanbanDependencies.IsFinished(t.card, t.Column))
+                .Select(t => t.card.Title).ToList();
+
+            foreach (var id in source.Blocks)
+            {
+                if (cards.FirstOrDefault(c => c.Id == id) is { } target) BlockTargets.Add(new KanbanBlockTargetItem(target.Id, target.Title));
+                else if (!allIds.Contains(id)) _danglingBlocks.Add(id);
+            }
+        }
+
+        var chosen = BlockTargets.Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var card in cards.Where(c => !ancestors.Contains(c.Id) && !chosen.Contains(c.Id)))
+            BlockCandidates.Add(new KanbanBlockTargetItem(card.Id, card.Title));
+
+        RefreshBlockState();
+    }
+
+    private void RefreshBlockState()
+    {
+        OnPropertyChanged(nameof(HasBlockTargets));
+        OnPropertyChanged(nameof(HasBlockCandidates));
+        OnPropertyChanged(nameof(HasBlockedBy));
+        OnPropertyChanged(nameof(BlockedByText));
+    }
+
+    private bool CanAddBlock() => SelectedBlockCandidate is not null;
+
+    [RelayCommand(CanExecute = nameof(CanAddBlock))]
+    private void AddBlock()
+    {
+        if (SelectedBlockCandidate is not { } item) return;
+        BlockCandidates.Remove(item);
+        BlockTargets.Add(item);
+        SelectedBlockCandidate = null;
+        RefreshBlockState();
+    }
+
+    [RelayCommand]
+    private void RemoveBlock(KanbanBlockTargetItem item)
+    {
+        if (!BlockTargets.Remove(item)) return;
+        BlockCandidates.Add(item);
+        RefreshBlockState();
+    }
+
+    private List<string> BuildBlocks() => [.. BlockTargets.Select(t => t.Id), .. _danglingBlocks];
+
     private KanbanCardEditorViewModel(CardEditorMode mode, KanbanColumnViewModel targetColumn,
         IReadOnlyList<KanbanColumnViewModel> availableColumns, KanbanCardViewModel? sourceCard,
         VaultService? vaultService, SessionService? sessionService, Action<string>? onOpenNote)
@@ -239,6 +335,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         _onOpenNote = onOpenNote;
 
         RebuildCalendarDays();
+        InitializeBlocks(sourceCard?.Card);
     }
 
     public static KanbanCardEditorViewModel ForCreate(KanbanColumnViewModel column,
@@ -557,7 +654,8 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         DurationMinutes = EffectiveDurationMinutes,
         Subtasks = Subtasks.Select(ToModel).ToList(),
         Tags = BuildTags().ToList(),
-        LinkedNotePath = LinkedNotePath
+        LinkedNotePath = LinkedNotePath,
+        Blocks = BuildBlocks()
     };
 
     public void ApplyTo(KanbanCard card)
@@ -571,6 +669,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         card.Subtasks = Subtasks.Select(ToModel).ToList();
         card.Tags = BuildTags().ToList();
         card.LinkedNotePath = LinkedNotePath;
+        card.Blocks = BuildBlocks();
     }
 
     private static KanbanSubtask ToModel(KanbanSubtaskItemViewModel item) =>
@@ -579,3 +678,6 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
     private static DateTime? ToUtc(DateTime? localDate) =>
         localDate is { } date ? DateTime.SpecifyKind(date, DateTimeKind.Local).ToUniversalTime() : null;
 }
+
+/// <summary>Una tarjeta elegible (o elegida) en el selector «bloquea a» del formulario.</summary>
+public sealed record KanbanBlockTargetItem(string Id, string Title);

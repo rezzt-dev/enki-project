@@ -23,6 +23,12 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 
 ## MED-02 · NOTAS RELACIONADAS Y MENCIONES SIN ENLAZAR
 
+> **ESTADO (2026-11-07): implementado, pendiente de comprobación manual.** Pestaña «Enlaces» del editor con
+> dos bloques nuevos bajo los enlaces entrantes: **notas relacionadas** (etiquetas y enlaces compartidos,
+> con botón para añadir `[[enlace]]` al final de la nota abierta) y **menciones sin enlazar** (convierte la
+> primera mención en `[[enlace]]` con `VaultService.LinkMention`, comprobado, con snapshot en el historial).
+> Detalle y decisiones en [`notas-relacionadas-y-menciones.md`](../../../project-info/notas-relacionadas-y-menciones.md).
+
 - **tipo:** nuevo
 - **usuario afectado:** quien construye un segundo cerebro y olvida enlazar.
 - **evidencia:** el editor ya muestra backlinks (`EditorBacklink`) pero no aparecen menciones sin
@@ -32,6 +38,14 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 - **criterio de cierre:** convertir una mencion en `[[enlace]]` actualiza la nota sin perder cambios.
 
 ## MED-03 · MIGRACION DESDE MAS HERRAMIENTAS CON INFORME
+
+> **ESTADO (2026-11-07): implementado, pendiente de comprobación manual con exportaciones reales.** La
+> evidencia estaba desfasada en un punto: **Todoist (CSV) ya existía** (`ReadTodoist`). Se han añadido
+> Logseq (carpeta), Evernote (`.enex`), Google Keep (ZIP de Takeout o carpeta) y TickTick (copia CSV), y un
+> informe final que se guarda como nota en la carpeta «Importado de …». Detalle en
+> [`migracion-desde-otras-herramientas.md`](../../../project-info/migracion-desde-otras-herramientas.md).
+> Las pruebas usan exportaciones sintéticas escritas a mano; no se han probado con exportaciones reales de
+> cada aplicación.
 
 - **tipo:** mejora
 - **usuario afectado:** quien llega desde otra aplicacion y no quiere empezar de cero.
@@ -44,6 +58,11 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 
 ## MED-04 · EXPORTAR EL CALENDARIO Y LOS RECORDATORIOS A ICS
 
+> **ESTADO (2026-11-07): implementado, pendiente de comprobación con calendarios externos.** Calendario ›
+> menú de exportar › «Calendario (ICS)». Verificado con `Ical.Net` y con el propio lector de importación de
+> Enki (mismas horas, duraciones y recurrencias); **no** se ha importado en Google Calendar, Thunderbird ni
+> en el móvil. Detalle en [`exportar-calendario-ics.md`](../../../project-info/exportar-calendario-ics.md).
+
 - **tipo:** nuevo
 - **usuario afectado:** quien quiere ver sus fechas en el movil o en otro calendario sin cuenta.
 - **evidencia:** `ExternalCalendarService` se suscribe a calendarios `.ics` y `webcal://` de solo lectura;
@@ -55,6 +74,12 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 
 ## MED-05 · CORRECTOR ORTOGRAFICO DEL EDITOR
 
+> **ESTADO (2026-11-07): motor e interfaz hechos; diccionarios sin incluir.** Subrayado en segundo plano con
+> WeCantSpell.Hunspell, desactivable en Ajustes › Editor. **No se distribuye ningún diccionario** porque la
+> mayoría tienen licencias (GPL, LGPL, MPL) que hay que revisar frente a `license.md`: decisión pendiente del
+> titular. Sin diccionario para el idioma activo el corrector no subraya nada; cada usuario puede copiar los
+> suyos. Detalle en [`corrector-ortografico.md`](../../../project-info/corrector-ortografico.md).
+
 - **tipo:** nuevo
 - **usuario afectado:** estudiante y escritor; casi todo el que redacta texto largo.
 - **evidencia:** no aparece ningun servicio de correccion ortografica; `Spell` solo coincide con una
@@ -64,6 +89,13 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 - **criterio de cierre:** funciona sin red y no ralentiza notas largas.
 
 ## MED-06 · CAPTURA DESDE LA LINEA DE COMANDOS Y EN WAYLAND
+
+> **ESTADO (2026-11-07): implementado; no probado con una sesión Wayland real.** `enki --capture "texto"`
+> (también `--capture=texto` y `--capture -` para leer la entrada estándar) entrega la idea a la instancia
+> abierta por una tubería con nombre restringida al usuario, y la guarda en el destino de captura rápida
+> elegido por última vez. La primera instancia atiende la entrega a través de `SingleInstanceGuard`: el canal
+> es nuevo, el guardián solo decide quién es la primera. Detalle y ejemplos para compositores en
+> [`captura-desde-linea-de-comandos.md`](../../../project-info/captura-desde-linea-de-comandos.md).
 
 - **tipo:** mejora
 - **usuario afectado:** usuarios de linux con wayland y quien automatiza con scripts.
@@ -76,6 +108,11 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 
 ## MED-07 · KANBAN CON DEPENDENCIAS Y VISTAS ALTERNATIVAS
 
+> **ESTADO (2026-11-07): implementado, pendiente de comprobación manual.** Relación «bloquea a»
+> (`KanbanCard.Blocks`) editable en el formulario de tarjeta, con indicador en la tarjeta y en el detalle;
+> terminar una tarjeta bloqueada pide confirmación y empezarla avisa; botón «Lista» con una vista ordenable
+> sobre las mismas tarjetas. Detalle en [`kanban-dependencias-y-lista.md`](../../../project-info/kanban-dependencias-y-lista.md).
+
 - **tipo:** mejora
 - **usuario afectado:** autonomo y estudiante con proyectos de varios pasos.
 - **evidencia:** la cadena de dependencias aparece solo en las listas polar (`isDependencyChain` en
@@ -85,6 +122,10 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 - **criterio de cierre:** una tarjeta bloqueada lo indica y no se completa sin confirmar.
 
 ## MED-08 · PAQUETE DE DIAGNOSTICO EXPORTABLE
+
+> **ESTADO (2026-11-07): implementado, pendiente de comprobación manual.** Ajustes › Mantenimiento ›
+> Diagnóstico › «Exportar paquete de diagnóstico»: genera el `.zip`, enseña cada archivo y solo lo escribe
+> si se confirma. Detalle en [`paquete-de-diagnostico.md`](../../../project-info/paquete-de-diagnostico.md).
 
 - **tipo:** nuevo
 - **usuario afectado:** quien sufre un fallo y quiere reportarlo sin mostrar sus notas.

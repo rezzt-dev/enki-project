@@ -1,9 +1,13 @@
 using System;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
+using enki.Services;
 using enki.Services.Export;
 
 namespace enki.ViewModels;
@@ -38,5 +42,51 @@ public sealed partial class CalendarViewModel
         return ViewExportService.ExportViewAsync(request, format, VisualSnapshotRenderer.ScaleHighResolution,
             App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null,
             (title, message, severity) => _notificationService.PushLocalized(title, message, severity));
+    }
+
+    /// <summary>Calendario › «Exportar a ICS» (MED-04): escribe en un archivo <c>.ics</c> lo pendiente de la
+    /// agenda —tarjetas, tareas y recordatorios con fecha, con su repetición— para abrirlo en otro
+    /// calendario. A diferencia de PNG y PDF no depende de la vista: exporta toda la agenda, no solo el
+    /// rango que se ve. Es manual y local; no hay servidor ni suscripción.</summary>
+    [RelayCommand]
+    private async Task ExportIcs()
+    {
+        var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
+        if (topLevel?.StorageProvider is null) return;
+        var loc = LocalizationService.Instance;
+
+        var exporter = new CalendarIcsExportService(_aggregationService, _reminderService, _polarTaskService);
+        var entries = exporter.CollectEntries();
+        if (entries.Count == 0)
+        {
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Export_IcsEmptyTitle"),
+                LocalizedTextFormatter.Format("Export_IcsEmptyMessage"), NotificationSeverity.Info);
+            return;
+        }
+
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = loc["Export_IcsDialogTitle"],
+            SuggestedFileName = ViewExportService.TimestampedFileName(loc["Nav_Calendar"]) + ".ics",
+            DefaultExtension = "ics",
+            FileTypeChoices = [new FilePickerFileType(loc["Export_IcsFileType"]) { Patterns = ["*.ics"] }]
+        });
+        var path = file?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            File.WriteAllText(path, CalendarIcsExportService.Write(entries, TimeZoneInfo.Local, DateTime.UtcNow), new UTF8Encoding(false));
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Export_IcsSuccessTitle"),
+                LocalizedTextFormatter.Format("Export_IcsSuccessMessage", entries.Count, Path.GetFileName(path)),
+                NotificationSeverity.Success);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Error("No se pudo exportar el calendario a ICS", ex);
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Export_IcsFailedTitle"),
+                LocalizedTextFormatter.Format(ex is UnauthorizedAccessException ? "Common_Error_AccessDenied" : "Common_Error_IOFailure"),
+                NotificationSeverity.Error);
+        }
     }
 }

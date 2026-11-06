@@ -188,6 +188,10 @@
                               IsVisible="{Binding HasLinkedNote}"
                               ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
 
+            <mi:MaterialIcon Grid.Column="3" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="0,1,0,0"
+                              VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
+                              IsVisible="{Binding HasDependencies}"
+                              ToolTip.Tip="{Binding DependencyTooltip}" AutomationProperties.Name="{Binding DependencyTooltip}" />
           </Grid>
           <controls:KanbanTags Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
 
@@ -752,7 +756,7 @@
               <!-- Las etiquetas ocupan una fila independiente y pueden desplegarse completas. -->
               <controls:KanbanTags Grid.Row="3" Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
 
-              <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
+              <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                             VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
                   <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
@@ -770,6 +774,10 @@
                                   VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
                                   IsVisible="{Binding HasLinkedNote}"
                                   ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
+                <mi:MaterialIcon Grid.Column="3" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="12,1,0,0"
+                              VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
+                              IsVisible="{Binding HasDependencies}"
+                              ToolTip.Tip="{Binding DependencyTooltip}" AutomationProperties.Name="{Binding DependencyTooltip}" />
               </Grid>
 
         </Grid>
@@ -1141,6 +1149,18 @@
           </StackPanel>
         </Button>
 
+        <!-- Vista de lista (MED-07): alterna entre las columnas del tablero y una lista ordenable de las mismas
+             tarjetas. -->
+        <Button Classes="pill" Height="34" Padding="12,0" Margin="0,0,12,8" VerticalAlignment="Center"
+                Command="{Binding ToggleListLayoutCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="FormatListBulleted" Width="14" Height="14" VerticalAlignment="Center" IsVisible="{Binding !IsListLayout}" />
+            <mi:MaterialIcon Kind="ViewColumnOutline" Width="14" Height="14" VerticalAlignment="Center" IsVisible="{Binding IsListLayout}" />
+            <TextBlock Text="{loc:Tr Kanban_List_ShowList, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" IsVisible="{Binding !IsListLayout}" />
+            <TextBlock Text="{loc:Tr Kanban_List_ShowBoard, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" IsVisible="{Binding IsListLayout}" />
+          </StackPanel>
+        </Button>
+
         <!-- Ordenación: desplegable que enseña el orden activo en el propio botón, en vez de cuatro
              segmentos permanentes ocupando media barra. Mismo Popup con luz de descarte y misma
              Border.dropdown-popover que el resto de desplegables de la app. -->
@@ -1289,7 +1309,7 @@
            por IsVisible" que Board/TaskManagement más abajo en este mismo archivo. -->
       <ScrollViewer x:Name="BoardVerticalScroll" Grid.Row="5" Margin="-8,0" VerticalScrollBarVisibility="Disabled"
                     HorizontalScrollBarVisibility="{Binding BoardHorizontalScrollBarVisibility}"
-                    IsVisible="{Binding BoardOrientation, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Vertical}">
+                    IsVisible="{Binding IsVerticalBoardVisible}">
         <!-- x:Name: región exportable a PNG/PDF (T8). Se rasteriza el contenido del ScrollViewer, no el
              ScrollViewer, porque el contenido está dispuesto a su ancho completo y es el visor quien lo
              recorta — así la imagen sale con todas las columnas aunque no quepan en pantalla. Ver
@@ -1306,7 +1326,7 @@
       <!-- Tablero horizontal: franjas de ancho completo (una por columna/estado), apiladas verticalmente,
            cada una con su propia scrollbar horizontal para las tarjetas. -->
       <ScrollViewer x:Name="BoardHorizontalScroll" Grid.Row="5" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                    IsVisible="{Binding BoardOrientation, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Horizontal}">
+                    IsVisible="{Binding IsHorizontalBoardVisible}">
         <ItemsControl x:Name="KanbanExportRootHorizontal" ItemsSource="{Binding Columns}" ItemTemplate="{StaticResource KanbanColumnTemplateHorizontal}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -1315,6 +1335,76 @@
           </ItemsControl.ItemsPanel>
         </ItemsControl>
       </ScrollViewer>
+
+      <!-- Vista de lista (MED-07): las mismas tarjetas del tablero, una por fila y ordenables. Comparte
+           filtros, buscador y etiquetas con las columnas; pulsar una fila abre el mismo detalle. -->
+      <Grid x:Name="KanbanListView" Grid.Row="5" RowDefinitions="Auto,*" IsVisible="{Binding IsListLayout}">
+        <Border Grid.Row="0" Classes="kanban-column-header">
+          <Grid ColumnDefinitions="3*,*,*,*,Auto" ColumnSpacing="12">
+            <Button Grid.Column="0" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                    Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Title}">
+              <TextBlock Text="{loc:Tr Kanban_List_ColumnTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            </Button>
+            <Button Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                    Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Column}">
+              <TextBlock Text="{loc:Tr Kanban_List_ColumnStatus, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            </Button>
+            <Button Grid.Column="2" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                    Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Priority}">
+              <TextBlock Text="{loc:Tr Kanban_List_ColumnPriority, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            </Button>
+            <Button Grid.Column="3" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                    Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.DueDate}">
+              <TextBlock Text="{loc:Tr Kanban_List_ColumnDue, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+            </Button>
+            <Button Grid.Column="4" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                    Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Blocked}"
+                    ToolTip.Tip="{loc:Tr Kanban_List_ColumnBlockedTooltip}" AutomationProperties.Name="{loc:Tr Kanban_List_ColumnBlockedTooltip}">
+              <mi:MaterialIcon Kind="LockOutline" Width="14" Height="14" />
+            </Button>
+          </Grid>
+        </Border>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <Panel>
+            <ItemsControl ItemsSource="{Binding ListRows}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:KanbanListRowViewModel">
+                  <Button Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,10"
+                          Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).OpenCardDetailCommand}"
+                          CommandParameter="{Binding Card}">
+                    <Grid ColumnDefinitions="3*,*,*,*,Auto" ColumnSpacing="12">
+                      <TextBlock Grid.Column="0" Text="{Binding Card.Title}" FontWeight="SemiBold" FontSize="13.5"
+                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding ColumnLabel}" Classes="muted" FontSize="12.5"
+                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                        <Ellipse Classes="priority-dot"
+                                 Classes.low="{Binding Card.Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Low}"
+                                 Classes.medium="{Binding Card.Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Medium}"
+                                 Classes.high="{Binding Card.Priority, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=High}" />
+                        <TextBlock Text="{Binding Card.PriorityLabel}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="3" Text="{Binding Card.DueDateLabel}" Classes="muted" FontSize="12.5"
+                                 Classes.overdue="{Binding Card.IsOverdue}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <mi:MaterialIcon Grid.Column="4" Kind="{Binding Card.DependencyIcon}" Width="14" Height="14"
+                                       Foreground="{DynamicResource Ink40}" VerticalAlignment="Center"
+                                       IsVisible="{Binding Card.HasDependencies}"
+                                       ToolTip.Tip="{Binding Card.DependencyTooltip}" AutomationProperties.Name="{Binding Card.DependencyTooltip}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{loc:Tr Kanban_List_Empty}" Classes="muted" HorizontalAlignment="Center" Margin="0,40"
+                       IsVisible="{Binding !HasListRows}" />
+          </Panel>
+        </ScrollViewer>
+      </Grid>
       </Grid>
   </Border>
 
@@ -2337,6 +2427,52 @@
                 </Grid>
               </StackPanel>
 
+              <!-- Dependencias «bloquea a» (MED-07): la relación se guarda en la tarjeta que bloquea. -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Tr Kanban_Field_BlocksLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <ItemsControl ItemsSource="{Binding BlockTargets}" IsVisible="{Binding HasBlockTargets}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="4" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:KanbanBlockTargetItem">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <mi:MaterialIcon Grid.Column="0" Kind="LockOpenVariantOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="8,0" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Classes="icon-btn icon-btn-danger" Width="26" Height="26"
+                                Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).CardEditor.RemoveBlockCommand}"
+                                CommandParameter="{Binding}"
+                                ToolTip.Tip="{loc:Tr Kanban_Blocks_RemoveTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Blocks_RemoveTooltip}">
+                          <mi:MaterialIcon Kind="Close" Width="13" Height="13" />
+                        </Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasBlockCandidates}">
+                  <ComboBox Grid.Column="0" ItemsSource="{Binding BlockCandidates}" SelectedItem="{Binding SelectedBlockCandidate}"
+                            HorizontalAlignment="Stretch" PlaceholderText="{loc:Tr Kanban_Blocks_Placeholder}"
+                            AutomationProperties.Name="{loc:Tr Kanban_Field_BlocksLabel}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate DataType="vm:KanbanBlockTargetItem">
+                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Grid.Column="1" Classes="icon-btn" Width="34" Height="34" Margin="6,0,0,0"
+                          Command="{Binding AddBlockCommand}"
+                          ToolTip.Tip="{loc:Tr Kanban_Blocks_AddTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Blocks_AddTooltip}">
+                    <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
+                  </Button>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasBlockedBy}">
+                  <mi:MaterialIcon Kind="LockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <TextBlock Text="{Binding BlockedByText}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                </StackPanel>
+              </StackPanel>
+
               <!-- Nota vinculada (enlace nota↔tarea, "Capa 1") -->
               <StackPanel Spacing="6">
                 <TextBlock Text="{loc:Tr Kanban_Field_LinkedNoteLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
@@ -2493,6 +2629,23 @@
                     <TextBlock Text="{Binding LinkedNoteLabel}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </Button>
+              </StackPanel>
+
+              <!-- Dependencias «bloquea a» (MED-07): de solo lectura, se editan desde el formulario. -->
+              <StackPanel Spacing="6" IsVisible="{Binding IsBlocked}">
+                <TextBlock Text="{loc:Tr Kanban_Field_DependenciesLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="LockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <TextBlock Text="{Binding BlockedByLabel}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Spacing="6" IsVisible="{Binding BlocksOthers}">
+                <TextBlock Text="{loc:Tr Kanban_Field_DependenciesLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5"
+                           IsVisible="{Binding !IsBlocked}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <TextBlock Text="{Binding BlocksLabel}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
+                </StackPanel>
               </StackPanel>
 
               <!-- Subtareas: la única parte interactiva del diálogo — solo se pueden marcar/desmarcar. -->
@@ -2855,6 +3008,27 @@
         </StackPanel>
     </Border>
   </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: terminar una tarjeta bloqueada (MED-07) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding PendingBlockedMove, Converter={x:Static baseconv:ObjectConverters.IsNotNull}}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18" MaxWidth="420">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="LockOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Kanban_BlockedMove_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{Binding PendingBlockedMoveMessage}" FontSize="14" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelBlockedMoveCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmBlockedMoveCommand}">
+              <TextBlock Text="{loc:Tr Kanban_BlockedMove_Confirm, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: eliminar columna (Fase 3, docs/analisis-proyecto/roadmap.md) =====================
          Misma estructura que el de tarjeta; el mensaje (con el recuento de tarjetas pluralizado) viene

@@ -145,6 +145,9 @@ public sealed class AppSettings
     public string EditorColumnPosition { get; set; } = "Center";
     public bool EditorShowScrollbar { get; set; } = true;
 
+    /// <summary>Subrayar en el editor las palabras que el diccionario local del idioma no conoce.</summary>
+    public bool EditorSpellCheckEnabled { get; set; } = true;
+
     /// <summary>When true, Enki draws its own title bar (drag region + minimize/maximize/close) instead
     /// of the OS window decorations.</summary>
     public bool UseCustomTitleBar { get; set; } = true;

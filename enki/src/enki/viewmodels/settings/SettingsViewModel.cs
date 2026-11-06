@@ -280,6 +280,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _editorColumnWidth = settingsService.Settings.EditorColumnWidth;
         _isColumnLeftAligned = settingsService.Settings.EditorColumnPosition == "Left";
         _editorShowScrollbar = settingsService.Settings.EditorShowScrollbar;
+        _editorSpellCheckEnabled = settingsService.Settings.EditorSpellCheckEnabled;
         _editorTabSize = settingsService.Settings.EditorTabSize;
         _editorLineNumbers = settingsService.Settings.EditorLineNumbers;
         _editorWordWrap = settingsService.Settings.EditorWordWrap;
@@ -366,6 +367,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         EditorPreferences.ColumnWidth = _editorColumnWidth;
         EditorPreferences.ColumnPosition = settingsService.Settings.EditorColumnPosition;
         EditorPreferences.ShowScrollbar = _editorShowScrollbar;
+        EditorPreferences.SpellCheckEnabled = _editorSpellCheckEnabled;
         EditorPreferences.FontFamily = settingsService.Settings.EditorFontFamily;
         EditorPreferences.CodeFontFamily = settingsService.Settings.CodeFontFamily;
         EditorPreferences.TabSize = settingsService.Settings.EditorTabSize;
@@ -635,6 +637,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(EditorFontSizeLabel));
         OnPropertyChanged(nameof(EditorColumnWidthLabel));
         OnPropertyChanged(nameof(EditorTabSizeLabel));
+        OnPropertyChanged(nameof(SpellCheckStatus));
         OnPropertyChanged(nameof(UiZoomPercentLabel));
         OnPropertyChanged(nameof(ReminderSoonWindowDaysLabel));
         OnPropertyChanged(nameof(ReminderAdvanceNoticeLabel));

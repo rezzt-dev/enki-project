@@ -397,6 +397,7 @@ public sealed partial class KanbanViewModel : ViewModelBase
             .SelectMany(card => card.Tags)
             .Distinct(StringComparer.OrdinalIgnoreCase);
         TagFilter.Reload(allTags);
+        RefreshDependencies();
         ApplyFilters();
         ReloadArchive();
     }
@@ -422,6 +423,8 @@ public sealed partial class KanbanViewModel : ViewModelBase
         IsArchiveSortMenuOpen = IsSortMenuOpen = IsArchiveAllPending = false;
         CardPendingDelete = null;
         ColumnPendingDelete = null;
+        PendingBlockedMove = null;
+        IsListLayout = false;
         _returnToArchive = false;
         BoardHorizontalOffset = BoardVerticalOffset = 0;
         SortMode = KanbanCardSortMode.Manual;
@@ -435,6 +438,7 @@ public sealed partial class KanbanViewModel : ViewModelBase
 
         HasNoFilterMatches = TotalCards > 0 && Columns.All(c => c.VisibleCardCount == 0);
         OnPropertyChanged(nameof(HasActiveFilters));
+        RebuildListRows();
     }
 
     private KanbanColumnViewModel AddColumnViewModel(KanbanColumn column)
@@ -501,7 +505,14 @@ public sealed partial class KanbanViewModel : ViewModelBase
     public ScrollBarVisibility BoardHorizontalScrollBarVisibility =>
         ColumnsShareAvailableWidth ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
 
-    private void Persist() => _kanbanService.Save();
+    private void Persist()
+    {
+        _kanbanService.Save();
+        // Guardar es el único punto por el que pasa todo cambio del tablero (mover, completar, editar,
+        // borrar): terminar una tarjeta libera las que bloqueaba, así que las dependencias se vuelven a
+        // resolver aquí y no en cada sitio que pueda cambiarlas.
+        RefreshDependencies();
+    }
 
     [RelayCommand]
     private void AddColumn()
@@ -1216,6 +1227,16 @@ public sealed partial class KanbanViewModel : ViewModelBase
     {
         var sourceColumn = Columns.FirstOrDefault(c => c.Cards.Contains(card));
         if (sourceColumn is null || beforeCard == card) return;
+
+        // MED-07: terminar una tarjeta que sigue bloqueada pide confirmación; empezarla solo avisa.
+        if (!ReferenceEquals(sourceColumn, targetColumn) && GuardBlockedMove(card, targetColumn, beforeCard)) return;
+
+        MoveCardCore(card, sourceColumn, targetColumn, beforeCard);
+    }
+
+    private void MoveCardCore(KanbanCardViewModel card, KanbanColumnViewModel sourceColumn,
+        KanbanColumnViewModel targetColumn, KanbanCardViewModel? beforeCard)
+    {
 
         var sameColumn = ReferenceEquals(sourceColumn, targetColumn);
         var insertIndex = beforeCard is null ? targetColumn.Cards.Count : targetColumn.Cards.IndexOf(beforeCard);

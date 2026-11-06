@@ -91,6 +91,12 @@
     <PackageReference Include="LibVLCSharp.Avalonia" Version="3.10.1" />
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" Condition="$(RuntimeIdentifier.StartsWith('win')) Or ('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows')))" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.17.2" />
+    <PackageReference Include="WeCantSpell.Hunspell" Version="7.0.1" />
     <PackageReference Include="YamlDotNet" Version="16.1.3" />
+  </ItemGroup>
+  <!-- Diccionarios Hunspell del corrector ortográfico: se copian junto a la aplicación tal cual
+       (dictionaries/es_ES.dic + es_ES.aff…). La carpeta no trae ninguno; ver dictionaries/README.md. -->
+  <ItemGroup>
+    <None Include="dictionaries/**" Exclude="dictionaries/README.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

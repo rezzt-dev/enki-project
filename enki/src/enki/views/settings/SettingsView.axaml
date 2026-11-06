@@ -620,7 +620,7 @@
               </Border>
             </controls:SettingsSearchOption>
 
-            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="ExternalImport_Title ExternalImport_Hint ExternalImport_Obsidian ExternalImport_Notion ExternalImport_Todoist ExternalImport_GoogleCalendar">
+            <controls:SettingsSearchOption MatchDescendants="True" ResourceKeys="ExternalImport_Title ExternalImport_Hint ExternalImport_Obsidian ExternalImport_Notion ExternalImport_Todoist ExternalImport_GoogleCalendar ExternalImport_Logseq ExternalImport_Evernote ExternalImport_Keep ExternalImport_TickTick">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <TextBlock Classes="section-title" Text="{loc:Tr ExternalImport_Title, Converter={StaticResource UpperCaseConverter}}" />
@@ -630,6 +630,10 @@
                     <Button Classes="pill" Command="{Binding ImportNotionCommand}" Content="{loc:Tr ExternalImport_Notion, Converter={StaticResource UpperCaseConverter}}" />
                     <Button Classes="pill" Command="{Binding ImportTodoistCommand}" Content="{loc:Tr ExternalImport_Todoist, Converter={StaticResource UpperCaseConverter}}" />
                     <Button Classes="pill" Command="{Binding ImportGoogleCalendarCommand}" Content="{loc:Tr ExternalImport_GoogleCalendar, Converter={StaticResource UpperCaseConverter}}" />
+                    <Button Classes="pill" Command="{Binding ImportLogseqCommand}" Content="{loc:Tr ExternalImport_Logseq, Converter={StaticResource UpperCaseConverter}}" />
+                    <Button Classes="pill" Command="{Binding ImportEvernoteCommand}" Content="{loc:Tr ExternalImport_Evernote, Converter={StaticResource UpperCaseConverter}}" />
+                    <Button Classes="pill" Command="{Binding ImportKeepCommand}" Content="{loc:Tr ExternalImport_Keep, Converter={StaticResource UpperCaseConverter}}" />
+                    <Button Classes="pill" Command="{Binding ImportTickTickCommand}" Content="{loc:Tr ExternalImport_TickTick, Converter={StaticResource UpperCaseConverter}}" />
                   </WrapPanel>
                 </StackPanel>
               </Border>
@@ -815,7 +819,8 @@
                 ResourceKeys="Settings_Nav_Maintenance Settings_General_Diagnostics_Title
                               Settings_General_Diagnostics_DebugLogging_Label
                               Settings_General_Diagnostics_DebugLogging_Description
-                              Settings_General_Diagnostics_OpenLogsFolderButton">
+                              Settings_General_Diagnostics_OpenLogsFolderButton
+                              Settings_Diagnostics_Export_Description Settings_Diagnostics_Export_Button">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -838,6 +843,18 @@
                       <TextBlock Text="{loc:Tr Settings_General_Diagnostics_OpenLogsFolderButton, Converter={StaticResource UpperCaseConverter}}" />
                     </StackPanel>
                   </Button>
+
+                  <!-- Paquete de diagnóstico (MED-08): se genera a mano, se revisa entero y solo se guarda si se confirma. -->
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{loc:Tr Settings_Diagnostics_Export_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    <Button Classes="pill" Command="{Binding PrepareDiagnosticsCommand}" HorizontalAlignment="Left"
+                            IsEnabled="{Binding !IsBuildingDiagnostics}">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="PackageVariantClosed" Width="14" Height="14" />
+                        <TextBlock Text="{loc:Tr Settings_Diagnostics_Export_Button, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                  </StackPanel>
                 </StackPanel>
          </Border>
             </controls:SettingsSearchOption>
@@ -1665,6 +1682,23 @@
                       </StackPanel>
                       <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorAutoPairs}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_AutoPairs_Label}" />
                     </Grid></StackPanel>
+                  </controls:SettingsSearchOption>
+
+                  <controls:SettingsSearchOption
+                      ResourceKeys="Settings_Nav_Editor Settings_Editor_SpellCheck_Label Settings_Editor_SpellCheck_Description
+                                    Settings_Editor_SpellCheck_OpenFolder">
+                    <StackPanel Spacing="10"><Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="{loc:Tr Settings_Editor_SpellCheck_Label}" FontSize="13" />
+                        <TextBlock Text="{loc:Tr Settings_Editor_SpellCheck_Description}"
+                                   Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding EditorSpellCheckEnabled}" OnContent="" OffContent="" AutomationProperties.Name="{loc:Tr Settings_Editor_SpellCheck_Label}" />
+                    </Grid>
+                    <TextBlock Text="{Binding SpellCheckStatus}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    <Button Classes="pill" HorizontalAlignment="Left" Command="{Binding OpenSpellCheckFolderCommand}"
+                            Content="{loc:Tr Settings_Editor_SpellCheck_OpenFolder, Converter={StaticResource UpperCaseConverter}}" /></StackPanel>
                   </controls:SettingsSearchOption>
 
                   <controls:SettingsSearchOption
@@ -3724,6 +3758,46 @@
             </Button>
             <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmExternalCalendarRemovalCommand}">
               <TextBlock Text="{loc:Tr Calendar_External_Remove, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Diálogo: paquete de diagnóstico (MED-08) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsDiagnosticsPreviewOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center" Width="760">
+        <StackPanel Spacing="14">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="PackageVariantClosed" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+            <TextBlock Text="{loc:Tr Settings_Diagnostics_Preview_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr Settings_Diagnostics_Preview_Message}" FontSize="13" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="200,*" ColumnSpacing="12" DataContext="{Binding DiagnosticsPreview}" x:DataType="vm:DiagnosticsPreviewViewModel">
+            <StackPanel Grid.Column="0" Spacing="8">
+              <TextBlock Text="{Binding SummaryLabel}" Classes="muted" FontSize="11.5" />
+              <ListBox ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" MaxHeight="340"
+                       AutomationProperties.Name="{loc:Tr Settings_Diagnostics_Preview_Files}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate DataType="vm:DiagnosticsFileItem">
+                    <StackPanel Spacing="1">
+                      <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding SizeLabel}" Classes="muted" FontSize="11" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+            <TextBox Grid.Column="1" Text="{Binding SelectedContent, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True"
+                     TextWrapping="NoWrap" FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" Height="360"
+                     AutomationProperties.Name="{loc:Tr Settings_Diagnostics_Preview_Content}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelDiagnosticsCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding SaveDiagnosticsCommand}">
+              <TextBlock Text="{loc:Tr Settings_Diagnostics_Preview_Save, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
         </StackPanel>

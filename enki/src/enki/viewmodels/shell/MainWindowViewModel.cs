@@ -600,6 +600,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         _aiVaultTools?.Stop();
         _aiWebService.Dispose();
         _globalHotkeyService.Dispose();
+        CommandLineChannel.Server?.Dispose();
         _vaultChangeWatcher.Dispose();
         _webClipService.Dispose();
         _updateCheckService.Dispose();

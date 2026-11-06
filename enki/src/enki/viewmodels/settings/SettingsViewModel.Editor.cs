@@ -1,5 +1,8 @@
+using System;
 using System.Globalization;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Services;
 
@@ -30,6 +33,51 @@ public sealed partial class SettingsViewModel
 
     [ObservableProperty]
     private bool _editorShowScrollbar;
+
+    /// <summary>Corrector ortográfico del editor (MED-05).</summary>
+    [ObservableProperty]
+    private bool _editorSpellCheckEnabled;
+
+    /// <summary>Qué diccionario usa el corrector para el idioma actual, o cómo añadir uno.</summary>
+#pragma warning disable CA1822 // Se enlaza desde XAML: tiene que ser un miembro de instancia.
+    public string SpellCheckStatus
+    {
+        get
+        {
+            var culture = LocalizationService.Instance.CurrentCulture;
+            var path = SpellCheckService.Shared.FindDictionary(culture);
+            return path is null
+                ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Editor_SpellCheck_Missing"],
+                    culture.Name, SpellCheckService.UserDirectory)
+                : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Settings_Editor_SpellCheck_Active"],
+                    Path.GetFileNameWithoutExtension(path));
+        }
+    }
+
+#pragma warning restore CA1822
+
+    [RelayCommand]
+#pragma warning disable CA1822
+    private void OpenSpellCheckFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(SpellCheckService.UserDirectory);
+            FolderOpener.Open(SpellCheckService.UserDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogService.Warning("No se pudo abrir la carpeta de diccionarios", ex);
+        }
+    }
+#pragma warning restore CA1822
+
+    partial void OnEditorSpellCheckEnabledChanged(bool value)
+    {
+        _settingsService.Settings.EditorSpellCheckEnabled = value;
+        _settingsService.Save();
+        EditorPreferences.SpellCheckEnabled = value;
+    }
 
     /// <summary>Tamaño de tabulación (docs/ajustes-docs/04-editor-y-notificaciones.md §1) — cuántos
     /// espacios inserta una pulsación de Tab en el editor de notas.</summary>

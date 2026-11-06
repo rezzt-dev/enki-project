@@ -163,4 +163,47 @@ public sealed class QuickCaptureViewModelTests : IDisposable
         Assert.Equal(0, closes);
         Assert.False(string.IsNullOrWhiteSpace(viewModel.ErrorMessage));
     }
+
+    [Fact]
+    public void TryCaptureExternal_UsesTheRememberedDestination_AndKeepsTheDraftUntouched()
+    {
+        var (vm, vault, kanban, settings, notifications) = CreateViewModel();
+        vm.Draft = "Borrador a medias";
+        settings.Settings.QuickCaptureDestination = QuickCaptureDestination.InboxNote;
+
+        var saved = vm.TryCaptureExternal("Llamar a Marta\ncon el presupuesto");
+
+        Assert.True(saved);
+        Assert.Equal("Borrador a medias", vm.Draft);
+        var note = Assert.Single(vault.GetAllNotesRecursive(Path.Combine(vault.VaultPath, "Inbox")));
+        Assert.Equal("Llamar a Marta", note.Title);
+        Assert.Contains("con el presupuesto", File.ReadAllText(note.FullPath));
+        Assert.NotEmpty(notifications.Notifications);
+
+        settings.Settings.QuickCaptureDestination = QuickCaptureDestination.KanbanCard;
+        Assert.True(vm.TryCaptureExternal("Tarjeta desde el terminal"));
+        Assert.Contains(kanban.AllColumns.SelectMany(c => c.Cards), c => c.Title == "Tarjeta desde el terminal");
+    }
+
+    [Fact]
+    public void TryCaptureExternal_WithAStaleKanbanColumn_FallsBackToTheDefaultBoard()
+    {
+        var (vm, _, kanban, settings, _) = CreateViewModel();
+        settings.Settings.QuickCaptureDestination = QuickCaptureDestination.KanbanCard;
+        settings.Settings.QuickCaptureKanbanBoardId = "tablero-borrado";
+        settings.Settings.QuickCaptureKanbanColumnId = "columna-borrada";
+
+        Assert.True(vm.TryCaptureExternal("Idea que no se pierde"));
+
+        Assert.Contains(kanban.DefaultBoard.Columns.SelectMany(c => c.Cards), c => c.Title == "Idea que no se pierde");
+    }
+
+    [Fact]
+    public void TryCaptureExternal_WithoutAVault_FailsAndNotifies()
+    {
+        var (vm, _, _, _, notifications) = CreateViewModel(withVault: false);
+
+        Assert.False(vm.TryCaptureExternal("Sin dónde guardar"));
+        Assert.NotEmpty(notifications.Notifications);
+    }
 }

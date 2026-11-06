@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using enki.Services;
 using enki.ViewModels;
@@ -157,6 +158,89 @@ public class KanbanViewUiTests : IDisposable
         Assert.False(card.IsArchived);
         Assert.Contains(card, doneColumn.Cards);
 
+        window.Close();
+    }
+
+    // ===================== MED-07: dependencias y vista de lista =====================
+
+    private static void SeedBlockedPair(KanbanViewModel viewModel, KanbanService service)
+    {
+        foreach (var column in service.DefaultBoard.Columns) column.Cards.Clear();
+        service.DefaultBoard.Columns[0].Cards.Add(new enki.Models.KanbanCard { Id = "a", Title = "Redactar informe", Blocks = ["b"] });
+        service.DefaultBoard.Columns[0].Cards.Add(new enki.Models.KanbanCard { Id = "b", Title = "Enviar informe" });
+        viewModel.Reload();
+    }
+
+    [Fact]
+    public void ABlockedCard_ShowsItsLockIndicator_WithTheBlockerInTheTooltip()
+    {
+        var (view, viewModel, window) = CreateView();
+        var service = (KanbanService)typeof(KanbanViewModel)
+            .GetField("_kanbanService", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(viewModel)!;
+        SeedBlockedPair(viewModel, service);
+        window.UpdateLayout();
+
+        var tooltips = view.GetVisualDescendants().OfType<Control>()
+            .Select(c => ToolTip.GetTip(c) as string)
+            .Where(t => t is not null)
+            .ToList();
+
+        Assert.Contains(tooltips, t => t!.Contains("Redactar informe", StringComparison.Ordinal));
+        window.Close();
+    }
+
+    [Fact]
+    public void ListLayout_SwapsTheColumnsForARowPerCard_AndBackAgain()
+    {
+        var (view, viewModel, window) = CreateView();
+        var service = (KanbanService)typeof(KanbanViewModel)
+            .GetField("_kanbanService", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(viewModel)!;
+        SeedBlockedPair(viewModel, service);
+        var list = view.GetVisualDescendants().OfType<Grid>().Single(g => g.Name == "KanbanListView");
+        var board = view.GetVisualDescendants().OfType<ScrollViewer>().Single(s => s.Name == "BoardVerticalScroll");
+        window.UpdateLayout();
+        Assert.False(list.IsVisible);
+        Assert.True(board.IsVisible);
+
+        viewModel.ToggleListLayoutCommand.Execute(null);
+        window.UpdateLayout();
+
+        Assert.True(list.IsVisible);
+        Assert.False(board.IsVisible);
+        var titles = list.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Contains("Redactar informe", titles);
+        Assert.Contains("Enviar informe", titles);
+
+        viewModel.ToggleListLayoutCommand.Execute(null);
+        window.UpdateLayout();
+        Assert.False(list.IsVisible);
+        Assert.True(board.IsVisible);
+        window.Close();
+    }
+
+    [Fact]
+    public void CompletingABlockedCard_OpensTheConfirmationDialog_WithTheBlockerName()
+    {
+        var (view, viewModel, window) = CreateView();
+        var service = (KanbanService)typeof(KanbanViewModel)
+            .GetField("_kanbanService", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(viewModel)!;
+        SeedBlockedPair(viewModel, service);
+        var blocked = viewModel.Columns[0].Cards.Single(c => c.Id == "b");
+        var done = viewModel.Columns.Single(c => c.Column.Role == enki.Models.CoreColumnRole.Done);
+
+        viewModel.MoveCard(blocked, done, null);
+        window.UpdateLayout();
+
+        // El contenido del diálogo vive en el Popup de un ModalOverlayHost, que headless no abre: se
+        // comprueba que el host está abierto y qué dice su tarjeta.
+        var title = enki.Localization.LocalizationService.Instance["Kanban_BlockedMove_Title"];
+        var host = view.GetLogicalDescendants().OfType<enki.Controls.ModalOverlayHost>()
+            .Single(h => h.Content is Border card && card.GetLogicalDescendants().OfType<TextBlock>()
+                .Any(t => string.Equals(t.Text, title, StringComparison.OrdinalIgnoreCase)));
+        Assert.True(host.IsOpen);
+        var message = ((Border)host.Content!).GetLogicalDescendants().OfType<TextBlock>()
+            .Single(t => t.Text is not null && t.Text.Contains("Redactar informe", StringComparison.Ordinal));
+        Assert.Contains("Enviar informe", message.Text, StringComparison.Ordinal);
         window.Close();
     }
 }

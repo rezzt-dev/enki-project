@@ -46,6 +46,14 @@ public sealed class KanbanCard
 
     public List<KanbanSubtask> Subtasks { get; set; } = [];
 
+    /// <summary>Identificadores de las tarjetas del mismo tablero a las que esta tarjeta «bloquea»: no
+    /// deberían empezar ni terminarse hasta que esta esté terminada (MED-07). Es la única mitad de la
+    /// relación que se guarda; «bloqueada por» se deriva buscando este campo en las demás tarjetas
+    /// (<see cref="Services.KanbanDependencies"/>), igual que las tareas vinculadas de una nota, así que
+    /// nunca hay dos copias que puedan discrepar. Un identificador que ya no existe en el tablero (la
+    /// tarjeta se borró o cambió de tablero) simplemente no cuenta.</summary>
+    public List<string> Blocks { get; set; } = [];
+
     /// <summary>Etiquetas de texto libre compartidas con el resto del sistema (Notas, Polar). La
     /// serialización JSON del tablero las persiste automáticamente.</summary>
     public List<string> Tags { get; set; } = [];
