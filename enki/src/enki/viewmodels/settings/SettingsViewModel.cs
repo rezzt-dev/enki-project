@@ -199,8 +199,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ClaudeCliStatusViewModel? aiCliStatus = null,
         AiChatService? aiChatService = null,
         SidePanelLayoutViewModel? sidePanels = null,
-        AiWebService? aiWebService = null)
+        AiWebService? aiWebService = null,
+        Action? onPersonalizationImported = null)
     {
+        _onPersonalizationImported = onPersonalizationImported;
         _reminderImportService = reminderService;
         _onExternalImportCompleted = onExternalImportCompleted;
         _externalCalendarService = externalCalendarService;

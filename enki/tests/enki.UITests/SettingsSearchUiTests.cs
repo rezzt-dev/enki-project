@@ -89,6 +89,44 @@ public sealed class SettingsSearchUiTests : IDisposable
     }
 
     [Fact]
+    public void Personalization_IsSearchable_AndPreviewCanBeCancelledFromTheDialog()
+    {
+        var (view, vm, window) = CreateView();
+        try
+        {
+            vm.SearchText = "perfil de personalización";
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var import = view.GetVisualDescendants().OfType<Button>()
+                .Single(b => ReferenceEquals(b.Command, vm.ImportPersonalizationCommand));
+            var export = view.GetVisualDescendants().OfType<Button>()
+                .Single(b => ReferenceEquals(b.Command, vm.ExportPersonalizationCommand));
+            Assert.True(Shown(import));
+            Assert.True(Shown(export));
+            var settings = new SettingsService(Path.Combine(_directory, "profile-source"));
+            var vault = new VaultService(settings);
+            vault.InitializeVault(Path.Combine(_directory, "profile-source", "vault"), seedWelcomeNote: false);
+            var panel = new VaultSettingsService(vault);
+            vm.PreparePersonalizationImport(new PersonalizationProfileService(settings, panel, new CustomThemeService(settings)).Export());
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            // El Popup del modal no se abre en headless; se comprueban el host y su contenido lógico.
+            var host = view.GetLogicalDescendants().OfType<ModalOverlayHost>().Single(h => h.IsOpen);
+            var card = Assert.IsType<Border>(host.Content);
+            var content = card.GetLogicalDescendants().OfType<TextBox>()
+                .Single(b => b.IsReadOnly && b.Text == vm.PersonalizationPreviewText);
+            Assert.DoesNotContain("DashboardSection_", content.Text);
+            var cancel = card.GetLogicalDescendants().OfType<Button>()
+                .Single(b => ReferenceEquals(b.Command, vm.CancelPersonalizationImportCommand));
+            cancel.Command!.Execute(null);
+            Assert.False(vm.IsPersonalizationPreviewOpen);
+            Assert.Empty(vm.PersonalizationPreviewText);
+            Assert.False(host.IsOpen);
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
     public void MotionMode_IsSearchableAndChangesFromBothSegments()
     {
         var (view, vm, window) = CreateView();

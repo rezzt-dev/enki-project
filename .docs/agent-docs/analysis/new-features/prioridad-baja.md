@@ -30,6 +30,10 @@ coincidencias en el codigo" y se comprueba antes de empezar cada tarea.
 - **propuesta:** un unico fichero de perfil que reuna esas piezas sin datos personales, con vista previa
   antes de aplicarlo.
 - **criterio de cierre:** importar el perfil en otro equipo reproduce la interfaz sin tocar el vault.
+- **estado:** implementado. Perfil único en `ajustes > apariencia`, vista previa y confirmación, temas
+  con colores, atajos, barra lateral y diseño del panel. Excluye datos del usuario y solo escribe
+  metadatos de personalización en `.enki/`; las notas y adjuntos no cambian. Reiniciar completa la
+  aplicación de las preferencias. Ver [perfil de personalización](../../../project-info/perfil-de-personalizacion.md).
 
 ## BAJ-03 · PUBLICAR NOTAS COMO SITIO ESTATICO
 

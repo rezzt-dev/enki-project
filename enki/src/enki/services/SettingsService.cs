@@ -375,6 +375,27 @@ public sealed class SettingsService
         Save();
     }
 
+    /// <summary>Confirma un perfil validado y el diseño del panel en una única escritura atómica.
+    /// Conserva las claves ajenas y no toca ajustes de instalación ni credenciales.</summary>
+    internal void ImportPersonalization(JsonObject preferences, JsonObject dashboard)
+    {
+        if (_vaultSettingsPath is null)
+            throw new InvalidOperationException("Selecciona un vault antes de importar un perfil.");
+        var current = JsonSerializer.SerializeToNode(Settings)!.AsObject();
+        foreach (var entry in preferences) current[entry.Key] = entry.Value?.DeepClone();
+        var updated = current.Deserialize<AppSettings>()!;
+        updated.Normalize();
+        JsonFileStore.WithLock(_vaultSettingsPath, () =>
+        {
+            var merged = ReadVaultObject(_vaultSettingsPath, ReportCorruptVaultSettings);
+            foreach (var entry in preferences) merged[entry.Key] = entry.Value?.DeepClone();
+            foreach (var entry in dashboard) merged[entry.Key] = entry.Value?.DeepClone();
+            JsonFileStore.Save(_vaultSettingsPath, merged);
+        });
+        Settings = updated;
+        SettingsChanged?.Invoke();
+    }
+
     internal static JsonObject ReadVaultObject(string path, Action<string>? recovered = null)
     {
         if (!File.Exists(path)) return new JsonObject();

@@ -68,6 +68,49 @@ public class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void PersonalizationPreview_CancelDoesNotWrite_AndConfirmUsesThePreviewSnapshot()
+    {
+        var (vm, settings, _, panel) = CreateViewModel();
+        var profiles = new PersonalizationProfileService(settings, panel, new CustomThemeService(settings));
+        var profile = System.Text.Json.Nodes.JsonNode.Parse(profiles.Export())!;
+        profile["Preferences"]!["Theme"] = "Light";
+        profile["Preferences"]!["NotesPanelOnRight"] = true;
+        var settingsPath = Path.Combine(_vaultPath, ".enki", "settings.json");
+        var before = File.ReadAllText(settingsPath);
+        vm.PreparePersonalizationImport(profile.ToJsonString());
+        Assert.True(vm.IsPersonalizationPreviewOpen);
+        Assert.NotEmpty(vm.PersonalizationPreviewText);
+        Assert.Equal(before, File.ReadAllText(settingsPath));
+        vm.CancelPersonalizationImportCommand.Execute(null);
+        Assert.False(vm.IsPersonalizationPreviewOpen);
+        vm.ConfirmPersonalizationImportCommand.Execute(null);
+        Assert.Equal(before, File.ReadAllText(settingsPath));
+        var overrides = ShortcutRegistry.ExportOverrides();
+        try
+        {
+            vm.PreparePersonalizationImport(profile.ToJsonString());
+            profile["Preferences"]!["Theme"] = "Dark";
+            vm.ConfirmPersonalizationImportCommand.Execute(null);
+            Assert.False(vm.IsPersonalizationPreviewOpen);
+            Assert.Equal("Light", settings.Settings.Theme);
+            Assert.True(settings.Settings.NotesPanelOnRight);
+            Assert.True(vm.SidePanels.NotesOnRight);
+        }
+        finally { ShortcutRegistry.Initialize(overrides); }
+    }
+
+    [Fact]
+    public void PersonalizationPreview_ReloadForAnotherVaultCancelsPendingImport()
+    {
+        var (vm, settings, _, panel) = CreateViewModel();
+        vm.PreparePersonalizationImport(new PersonalizationProfileService(settings, panel, new CustomThemeService(settings)).Export());
+        Assert.True(vm.IsPersonalizationPreviewOpen);
+        vm.ReloadForVault();
+        Assert.False(vm.IsPersonalizationPreviewOpen);
+        Assert.Empty(vm.PersonalizationPreviewText);
+    }
+
+    [Fact]
     public void MotionMode_PersistsAndReloadsWithoutOverwritingStoredChoice()
     {
         var (vm, settings, _, _) = CreateViewModel();

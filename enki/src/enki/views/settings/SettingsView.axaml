@@ -1038,6 +1038,23 @@
               </Border>
             </controls:SettingsSearchOption>
 
+            <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Appearance Settings_Profile_Title Settings_Profile_Description Settings_Profile_Export Settings_Profile_Import">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Text="{loc:Tr Settings_Profile_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  <TextBlock Text="{loc:Tr Settings_Profile_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+                  <WrapPanel Orientation="Horizontal">
+                    <Button Classes="pill" Command="{Binding ExportPersonalizationCommand}" Margin="0,0,12,0">
+                      <TextBlock Text="{loc:Tr Settings_Profile_Export}" />
+                    </Button>
+                    <Button Classes="pill" Command="{Binding ImportPersonalizationCommand}">
+                      <TextBlock Text="{loc:Tr Settings_Profile_Import}" />
+                    </Button>
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Appearance Settings_Appearance_Motion_Title Settings_Appearance_Motion_Description Settings_Appearance_Motion_Subtle Settings_Appearance_Motion_Normal">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
@@ -3758,6 +3775,27 @@
             </Button>
             <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmExternalCalendarRemovalCommand}">
               <TextBlock Text="{loc:Tr Calendar_External_Remove, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
+
+    <!-- ===================== Vista previa: perfil de personalización (BAJ-02) ===================== -->
+    <controls:ModalOverlayHost IsOpen="{Binding IsPersonalizationPreviewOpen}">
+      <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center" Width="720" MaxWidth="900">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{loc:Tr Settings_Profile_PreviewTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <TextBlock Text="{loc:Tr Settings_Profile_PreviewDescription}" FontSize="13" TextWrapping="Wrap" />
+          <TextBox Text="{Binding PersonalizationPreviewText, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True"
+                   TextWrapping="Wrap" FontSize="12.5" Height="340"
+                   AutomationProperties.Name="{loc:Tr Settings_Profile_PreviewTitle}" />
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Button Grid.Column="1" Classes="ghost modal-cancel" Command="{Binding CancelPersonalizationImportCommand}" Margin="0,0,18,0">
+              <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
+            </Button>
+            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding ConfirmPersonalizationImportCommand}">
+              <TextBlock Text="{loc:Tr Settings_Profile_Apply, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
           </Grid>
         </StackPanel>

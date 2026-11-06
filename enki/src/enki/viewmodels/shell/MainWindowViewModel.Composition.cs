@@ -610,7 +610,7 @@ public sealed partial class MainWindowViewModel
             OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
             () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; },
             _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService,
-            AiCliStatus, _aiChatService, SidePanels, _aiWebService);
+            AiCliStatus, _aiChatService, SidePanels, _aiWebService, ApplyVaultPreferences);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

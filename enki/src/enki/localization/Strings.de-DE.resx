@@ -8233,4 +8233,73 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Diagnostics_BuildFailedMessage" xml:space="preserve">
     <value>Das Paket konnte nicht erstellt werden. Prüfen Sie die Berechtigungen des Protokollordners.</value>
   </data>
+  <data name="Settings_Profile_Title" xml:space="preserve">
+    <value>Personalisierungsprofil</value>
+  </data>
+  <data name="Settings_Profile_Description" xml:space="preserve">
+    <value>Themen, Tastenkürzel, Seitenleiste und Dashboard-Anordnung in einer Datei auf einen anderen Computer übertragen. Ohne Notizen, Pfade, Konten oder Zugangsdaten. Eigene Themen- und Abschnittsnamen werden geteilt.</value>
+  </data>
+  <data name="Settings_Profile_Export" xml:space="preserve">
+    <value>Profil exportieren…</value>
+  </data>
+  <data name="Settings_Profile_Import" xml:space="preserve">
+    <value>Profil importieren…</value>
+  </data>
+  <data name="Settings_Profile_PreviewTitle" xml:space="preserve">
+    <value>Profilvorschau</value>
+  </data>
+  <data name="Settings_Profile_PreviewDescription" xml:space="preserve">
+    <value>Prüfe das Profil vor dem Anwenden. Es ersetzt deine Personalisierungseinstellungen und behält vorhandene Themen. Deine Notizen bleiben erhalten. Starte Enki danach neu, um alle Einstellungen vollständig anzuwenden. Fehlende Schriftarten werden durch verfügbare Alternativen ersetzt.</value>
+  </data>
+  <data name="Settings_Profile_Apply" xml:space="preserve">
+    <value>Profil anwenden</value>
+  </data>
+  <data name="Settings_Profile_Exported" xml:space="preserve">
+    <value>Profil exportiert.</value>
+  </data>
+  <data name="Settings_Profile_Imported" xml:space="preserve">
+    <value>Profil importiert. Starte Enki neu, um alle Einstellungen vollständig anzuwenden.</value>
+  </data>
+  <data name="Settings_Profile_Invalid" xml:space="preserve">
+    <value>Diese Datei ist kein kompatibles Profil oder enthält ungültige Einstellungen. Es wurde nicht angewendet.</value>
+  </data>
+  <data name="Settings_Profile_Failed" xml:space="preserve">
+    <value>Das Profil konnte nicht verarbeitet werden. Prüfe den Zugriff auf die Datei und den Vault.</value>
+  </data>
+  <data name="Settings_Profile_ThemeSummary" xml:space="preserve">
+    <value>Aktives Thema: {0} · Enthaltene Themen: {1}</value>
+  </data>
+  <data name="Settings_Profile_FontSummary" xml:space="preserve">
+    <value>Schriften (Oberfläche / Editor / Code): {0} / {1} / {2} · Zoom: {3} %</value>
+  </data>
+  <data name="Settings_Profile_ShortcutSummary" xml:space="preserve">
+    <value>Eigene Tastenkürzel: {0} (die übrigen werden zurückgesetzt)</value>
+  </data>
+  <data name="Settings_Profile_MainSummary" xml:space="preserve">
+    <value>Seitenleiste — Hauptgruppe: {0}</value>
+  </data>
+  <data name="Settings_Profile_BottomSummary" xml:space="preserve">
+    <value>Seitenleiste — untere Gruppe: {0}</value>
+  </data>
+  <data name="Settings_Profile_HiddenSummary" xml:space="preserve">
+    <value>Ausgeblendete Abschnitte: {0}</value>
+  </data>
+  <data name="Settings_Profile_PanelSummary" xml:space="preserve">
+    <value>Dashboard: {0} · Raster: {1} Zeilen × {2} Spalten</value>
+  </data>
+  <data name="Settings_Profile_TileSummary" xml:space="preserve">
+    <value>  • {0}: Zeile {1}, Spalte {2}, Größe {3} × {4}</value>
+  </data>
+  <data name="Settings_Profile_HiddenTile" xml:space="preserve">
+    <value>  • {0}: ausgeblendet</value>
+  </data>
+  <data name="Settings_Profile_Light" xml:space="preserve">
+    <value>Hell</value>
+  </data>
+  <data name="Settings_Profile_Dark" xml:space="preserve">
+    <value>Dunkel</value>
+  </data>
+  <data name="Settings_Profile_Bundled" xml:space="preserve">
+    <value>In Enki enthalten</value>
+  </data>
 </root>

@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- añadir un perfil unico de personalizacion en `ajustes > apariencia` para trasladar temas con sus colores, atajos, barra lateral y diseño del panel entre equipos, con vista previa y confirmacion; conservar los temas locales y excluir notas, rutas, cuentas y credenciales.
 - bloques «notas relacionadas» y «menciones sin enlazar» en la pestaña «enlaces» del panel del editor: las primeras salen de etiquetas y enlaces compartidos y se enlazan con un clic a la nota abierta; las segundas detectan el título o el nombre de archivo de la nota fuera de código, enlaces y propiedades y los convierten en `[[enlace]]` con `VaultService.LinkMention` (relee la nota, guarda un snapshot y escribe con `WriteContentChecked`, sin pisar cambios externos).
 - importación desde Logseq (carpeta), Evernote (`.enex`), Google Keep (ZIP de Takeout o carpeta) y TickTick (CSV) en `ajustes > mantenimiento`, e informe final guardado como nota en la carpeta «Importado de …» con lo importado, lo omitido y el motivo, también cuando la importación se interrumpe; los lectores existentes de Obsidian, Notion, Todoist y Google Calendar anotan ahora lo que omiten.
 - exportación del calendario a `.ics` desde el menú de exportar del calendario: tarjetas con fecha, tareas y subtareas de Polar y recordatorios pendientes, con su recurrencia como `RRULE` y la hora de pared de la zona del sistema (`VTIMEZONE`) para que un cambio de horario no mueva las repeticiones; sin servidor ni suscripción.
@@ -264,6 +265,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- add a single personalisation profile in `settings > appearance` to transfer themes with their colours, shortcuts, sidebar and dashboard layout between computers, with preview and confirmation; keep local themes and exclude notes, paths, accounts and credentials.
 - "related notes" and "unlinked mentions" blocks in the editor panel's links tab: the former come from shared tags and links and add a link to the open note in one click; the latter find the note's title or file name outside code, links and properties and turn it into `[[link]]` with `VaultService.LinkMention` (re-reads the note, takes a snapshot and writes with `WriteContentChecked`, never overwriting external changes).
 - import from Logseq (folder), Evernote (`.enex`), Google Keep (Takeout ZIP or folder) and TickTick (CSV) in `settings > maintenance`, and a final report saved as a note in the "Importado de …" folder with what was imported, what was skipped and why, also when the import is interrupted; the existing Obsidian, Notion, Todoist and Google Calendar readers now record what they skip.
 - calendar export to `.ics` from the calendar's export menu: dated cards, Polar tasks and subtasks and pending reminders, with their recurrence as `RRULE` and wall-clock time in the system zone (`VTIMEZONE`) so a daylight-saving change does not move repetitions; no server or subscription.

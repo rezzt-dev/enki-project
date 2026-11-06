@@ -8233,4 +8233,73 @@ Happy writing.</value>
   <data name="Settings_Diagnostics_BuildFailedMessage" xml:space="preserve">
     <value>The package could not be generated. Check the logs folder permissions.</value>
   </data>
+  <data name="Settings_Profile_Title" xml:space="preserve">
+    <value>Personalisation profile</value>
+  </data>
+  <data name="Settings_Profile_Description" xml:space="preserve">
+    <value>Take your themes, shortcuts, sidebar and dashboard layout to another computer in one file. Notes, paths, accounts and credentials are excluded. Your custom theme and section names are shared.</value>
+  </data>
+  <data name="Settings_Profile_Export" xml:space="preserve">
+    <value>Export profile…</value>
+  </data>
+  <data name="Settings_Profile_Import" xml:space="preserve">
+    <value>Import profile…</value>
+  </data>
+  <data name="Settings_Profile_PreviewTitle" xml:space="preserve">
+    <value>Profile preview</value>
+  </data>
+  <data name="Settings_Profile_PreviewDescription" xml:space="preserve">
+    <value>Review the profile before applying it. It will replace your personalisation preferences and keep existing themes. Your notes will remain untouched. Restart Enki afterwards to finish applying all preferences. Missing fonts will use an available fallback on this computer.</value>
+  </data>
+  <data name="Settings_Profile_Apply" xml:space="preserve">
+    <value>Apply profile</value>
+  </data>
+  <data name="Settings_Profile_Exported" xml:space="preserve">
+    <value>Profile exported.</value>
+  </data>
+  <data name="Settings_Profile_Imported" xml:space="preserve">
+    <value>Profile imported. Restart Enki to finish applying all preferences.</value>
+  </data>
+  <data name="Settings_Profile_Invalid" xml:space="preserve">
+    <value>This file is not a compatible profile or contains invalid preferences. It has not been applied.</value>
+  </data>
+  <data name="Settings_Profile_Failed" xml:space="preserve">
+    <value>The profile could not be processed. Check access to the file and vault.</value>
+  </data>
+  <data name="Settings_Profile_ThemeSummary" xml:space="preserve">
+    <value>Active theme: {0} · Included themes: {1}</value>
+  </data>
+  <data name="Settings_Profile_FontSummary" xml:space="preserve">
+    <value>Fonts (interface / editor / code): {0} / {1} / {2} · Zoom: {3} %</value>
+  </data>
+  <data name="Settings_Profile_ShortcutSummary" xml:space="preserve">
+    <value>Custom shortcuts: {0} (the rest return to their defaults)</value>
+  </data>
+  <data name="Settings_Profile_MainSummary" xml:space="preserve">
+    <value>Sidebar — main group: {0}</value>
+  </data>
+  <data name="Settings_Profile_BottomSummary" xml:space="preserve">
+    <value>Sidebar — bottom group: {0}</value>
+  </data>
+  <data name="Settings_Profile_HiddenSummary" xml:space="preserve">
+    <value>Hidden sections: {0}</value>
+  </data>
+  <data name="Settings_Profile_PanelSummary" xml:space="preserve">
+    <value>Dashboard: {0} · Grid: {1} rows × {2} columns</value>
+  </data>
+  <data name="Settings_Profile_TileSummary" xml:space="preserve">
+    <value>  • {0}: row {1}, column {2}, size {3} × {4}</value>
+  </data>
+  <data name="Settings_Profile_HiddenTile" xml:space="preserve">
+    <value>  • {0}: hidden</value>
+  </data>
+  <data name="Settings_Profile_Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Settings_Profile_Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings_Profile_Bundled" xml:space="preserve">
+    <value>Bundled with Enki</value>
+  </data>
 </root>

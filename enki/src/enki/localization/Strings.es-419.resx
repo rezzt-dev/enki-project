@@ -8233,4 +8233,73 @@ Feliz escritura.</value>
   <data name="Settings_Diagnostics_BuildFailedMessage" xml:space="preserve">
     <value>No se ha podido generar el paquete. Comprueba los permisos de la carpeta de registros.</value>
   </data>
+  <data name="Settings_Profile_Title" xml:space="preserve">
+    <value>Perfil de personalización</value>
+  </data>
+  <data name="Settings_Profile_Description" xml:space="preserve">
+    <value>Lleva a otro equipo tus temas, atajos, barra lateral y diseño del panel en un único fichero. No incluye notas, rutas, cuentas ni credenciales. Los nombres que hayas dado a temas y secciones sí se comparten.</value>
+  </data>
+  <data name="Settings_Profile_Export" xml:space="preserve">
+    <value>Exportar perfil…</value>
+  </data>
+  <data name="Settings_Profile_Import" xml:space="preserve">
+    <value>Importar perfil…</value>
+  </data>
+  <data name="Settings_Profile_PreviewTitle" xml:space="preserve">
+    <value>Vista previa del perfil</value>
+  </data>
+  <data name="Settings_Profile_PreviewDescription" xml:space="preserve">
+    <value>Revisa el perfil antes de aplicarlo. Sustituirá tus preferencias de personalización y conservará los temas existentes. No modificará tus notas. Reinicia Enki después para completar la aplicación de todas las preferencias. Las fuentes que falten usarán la alternativa disponible en este equipo.</value>
+  </data>
+  <data name="Settings_Profile_Apply" xml:space="preserve">
+    <value>Aplicar perfil</value>
+  </data>
+  <data name="Settings_Profile_Exported" xml:space="preserve">
+    <value>Perfil exportado.</value>
+  </data>
+  <data name="Settings_Profile_Imported" xml:space="preserve">
+    <value>Perfil importado. Reinicia Enki para completar la aplicación de todas las preferencias.</value>
+  </data>
+  <data name="Settings_Profile_Invalid" xml:space="preserve">
+    <value>El fichero no es un perfil compatible o contiene preferencias inválidas. No se ha aplicado.</value>
+  </data>
+  <data name="Settings_Profile_Failed" xml:space="preserve">
+    <value>No se ha podido procesar el perfil. Comprueba el acceso al fichero y al vault.</value>
+  </data>
+  <data name="Settings_Profile_ThemeSummary" xml:space="preserve">
+    <value>Tema activo: {0} · Temas incluidos: {1}</value>
+  </data>
+  <data name="Settings_Profile_FontSummary" xml:space="preserve">
+    <value>Fuentes (interfaz / editor / código): {0} / {1} / {2} · Zoom: {3} %</value>
+  </data>
+  <data name="Settings_Profile_ShortcutSummary" xml:space="preserve">
+    <value>Atajos personalizados: {0} (el resto vuelve a los valores predeterminados)</value>
+  </data>
+  <data name="Settings_Profile_MainSummary" xml:space="preserve">
+    <value>Barra lateral — grupo principal: {0}</value>
+  </data>
+  <data name="Settings_Profile_BottomSummary" xml:space="preserve">
+    <value>Barra lateral — grupo inferior: {0}</value>
+  </data>
+  <data name="Settings_Profile_HiddenSummary" xml:space="preserve">
+    <value>Secciones ocultas: {0}</value>
+  </data>
+  <data name="Settings_Profile_PanelSummary" xml:space="preserve">
+    <value>Panel: {0} · Rejilla: {1} filas × {2} columnas</value>
+  </data>
+  <data name="Settings_Profile_TileSummary" xml:space="preserve">
+    <value>  • {0}: fila {1}, columna {2}, tamaño {3} × {4}</value>
+  </data>
+  <data name="Settings_Profile_HiddenTile" xml:space="preserve">
+    <value>  • {0}: oculto</value>
+  </data>
+  <data name="Settings_Profile_Light" xml:space="preserve">
+    <value>Claro</value>
+  </data>
+  <data name="Settings_Profile_Dark" xml:space="preserve">
+    <value>Oscuro</value>
+  </data>
+  <data name="Settings_Profile_Bundled" xml:space="preserve">
+    <value>Incluida en Enki</value>
+  </data>
 </root>

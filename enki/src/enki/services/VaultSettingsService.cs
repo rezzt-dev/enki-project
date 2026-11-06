@@ -43,6 +43,13 @@ public sealed class VaultSettingsService
     /// the rest of the vault-scoped state (Dashboard, Notes, Sessions…) already reloads.</summary>
     public void Reload() => Settings = Load();
 
+    /// <summary>Recarga un perfil confirmado y avisa al panel para que actualice su diseño.</summary>
+    internal void ReloadPersonalization()
+    {
+        Reload();
+        SettingsChanged?.Invoke();
+    }
+
     public void Save()
     {
         if (!_vaultService.IsVaultConfigured) return;

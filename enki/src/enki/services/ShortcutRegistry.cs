@@ -34,6 +34,13 @@ public static class ShortcutRegistry
         }
     }
 
+    /// <summary>Recarga un perfil y actualiza los enlaces de teclado de las vistas abiertas.</summary>
+    public static void Reload(IReadOnlyDictionary<string, string> overrides)
+    {
+        Initialize(overrides);
+        Changed?.Invoke();
+    }
+
     public static KeyGesture GetGesture(string id)
     {
         if (Overrides.TryGetValue(id, out var overridden)) return overridden;
