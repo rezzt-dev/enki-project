@@ -8302,4 +8302,100 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Profile_Bundled" xml:space="preserve">
     <value>In Enki enthalten</value>
   </data>
+  <data name="Assistant_Welcome_TitleNamed" xml:space="preserve">
+    <value>Ich bin {0}. Wobei kann ich helfen?</value>
+  </data>
+  <data name="Assistant_Composer_PlaceholderNamed" xml:space="preserve">
+    <value>An {0} schreiben …</value>
+  </data>
+  <data name="Assistant_Persona_Title" xml:space="preserve">
+    <value>Persönlichkeit</value>
+  </data>
+  <data name="Assistant_Persona_Intro" xml:space="preserve">
+    <value>Der Assistent kombiniert deinen allgemeinen Kontext mit dem der Sitzung und dieses Chats. Bei Widersprüchen gilt der spezifischste. Änderungen gelten ab der nächsten Nachricht.</value>
+  </data>
+  <data name="Assistant_Persona_Tooltip" xml:space="preserve">
+    <value>Persönlichkeit: {0} · {1}</value>
+  </data>
+  <data name="Assistant_Persona_Layer_General" xml:space="preserve">
+    <value>Allgemein</value>
+  </data>
+  <data name="Assistant_Persona_Layer_Session" xml:space="preserve">
+    <value>Sitzung</value>
+  </data>
+  <data name="Assistant_Persona_Layer_Chat" xml:space="preserve">
+    <value>Chat</value>
+  </data>
+  <data name="Assistant_Persona_NoLayers" xml:space="preserve">
+    <value>Kein Kontext</value>
+  </data>
+  <data name="Assistant_Persona_General_Empty" xml:space="preserve">
+    <value>Noch kein allgemeiner Kontext. Füge ihn in den Einstellungen hinzu, damit der Assistent dich in jedem Chat kennt.</value>
+  </data>
+  <data name="Assistant_Persona_EditGeneral" xml:space="preserve">
+    <value>Name und allgemeinen Kontext bearbeiten</value>
+  </data>
+  <data name="Assistant_Persona_Session_Title" xml:space="preserve">
+    <value>Kontext der Sitzung „{0}“</value>
+  </data>
+  <data name="Assistant_Persona_Session_Placeholder" xml:space="preserve">
+    <value>Worum es in dieser Sitzung geht, ihr Ziel, ihr Vokabular …</value>
+  </data>
+  <data name="Assistant_Persona_Session_Help" xml:space="preserve">
+    <value>Gilt für alle Chats dieser Sitzung.</value>
+  </data>
+  <data name="Assistant_Persona_Session_Unavailable" xml:space="preserve">
+    <value>Die Sitzung ist nicht mehr im geöffneten Vault, daher kann ihr Kontext nicht bearbeitet werden.</value>
+  </data>
+  <data name="Assistant_Persona_Chat_Title" xml:space="preserve">
+    <value>Kontext dieses Chats</value>
+  </data>
+  <data name="Assistant_Persona_Chat_Placeholder" xml:space="preserve">
+    <value>Was du von diesem Gespräch erwartest, Ton, Format …</value>
+  </data>
+  <data name="Assistant_Persona_Chat_Help" xml:space="preserve">
+    <value>Nur für dieses Gespräch. Wird mit ihm gespeichert.</value>
+  </data>
+  <data name="Assistant_Persona_Cancel" xml:space="preserve">
+    <value>Verwerfen</value>
+  </data>
+  <data name="Assistant_Persona_Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="Assistant_Persona_SaveFailed" xml:space="preserve">
+    <value>Der Kontext konnte nicht gespeichert werden. Prüfe die Berechtigungen des Enki-Datenordners und versuche es erneut.</value>
+  </data>
+  <data name="Settings_Ai_Persona_Title" xml:space="preserve">
+    <value>Persönlichkeit des Assistenten</value>
+  </data>
+  <data name="Settings_Ai_Persona_Intro" xml:space="preserve">
+    <value>Gib ihm einen Namen und erzähl ihm, wer du bist, woran du arbeitest und wie er dir helfen soll. Dieser Kontext begleitet jeden Chat; jede Sitzung und jeder Chat kann ihn über die Kopfzeile des Assistenten verfeinern.</value>
+  </data>
+  <data name="Settings_Ai_Persona_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Settings_Ai_Persona_NamePlaceholder" xml:space="preserve">
+    <value>KI-Assistent</value>
+  </data>
+  <data name="Settings_Ai_Persona_Context" xml:space="preserve">
+    <value>Allgemeiner Kontext</value>
+  </data>
+  <data name="Settings_Ai_Persona_ContextPlaceholder" xml:space="preserve">
+    <value>Zum Beispiel: Ich forsche in der Biologie, nutze Enki als zweites Gehirn und bevorzuge kurze Antworten mit Listen.</value>
+  </data>
+  <data name="Settings_Ai_Persona_ContextHelp" xml:space="preserve">
+    <value>Wird mit jeder Nachricht an den gewählten Anbieter gesendet und nur auf diesem Computer gespeichert, außerhalb des Vaults, des Diagnosepakets und des Personalisierungsprofils. Schreib keine Passwörter oder etwas, das du nicht mit dem Anbieter teilen würdest.</value>
+  </data>
+  <data name="Settings_Ai_Persona_Discard" xml:space="preserve">
+    <value>Verwerfen</value>
+  </data>
+  <data name="Settings_Ai_Persona_Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="Settings_Ai_Persona_Saved" xml:space="preserve">
+    <value>Gespeichert. Gilt ab der nächsten Nachricht.</value>
+  </data>
+  <data name="Settings_Ai_Persona_SaveFailed" xml:space="preserve">
+    <value>Speichern nicht möglich. Prüfe die Berechtigungen des Enki-Datenordners und versuche es erneut.</value>
+  </data>
 </root>

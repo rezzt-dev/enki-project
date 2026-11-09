@@ -173,6 +173,7 @@ public sealed partial class AssistantViewModel
         IsSkillPickerOpen = false;
         IsConfirmSendOpen = false;
         IsScopePickerOpen = false;
+        IsPersonaEditorOpen = false;
         IsEffortPickerOpen = false;
         IsPanelHistoryOpen = false;
         CancelAppendToNote();
@@ -475,9 +476,11 @@ public sealed partial class AssistantViewModel
                 FullVaultAccess = _draftFullAccess,
                 ReadAccessRevoked = _draftReadAccessRevoked,
                 ReadAccess = _draftReadAccess,
-                WebAccess = WebAccessEnabled
+                WebAccess = WebAccessEnabled,
+                Context = string.IsNullOrWhiteSpace(_draftChatContext) ? null : _draftChatContext
             };
             _activeSession = session;
+            _draftChatContext = null;
             ClearNewChatDraft(draftKey);
             ResetDraftScope();
             RefreshScope();
@@ -623,6 +626,8 @@ public sealed partial class AssistantViewModel
             if (vaultTools) _flushPendingEdits();
             toolAccess = vaultTools ? RegisterTurnTools(session, bubble, activitySignal, cancellation.Token) : null;
             var turnPrompt = toolAccess is null ? prompt : AiPromptBuilder.WithScope(BuildScopeNotice(session), prompt);
+            // La personalidad va delante del ámbito y se lee ahora: lo que el usuario cambie entre turnos se aplica ya.
+            turnPrompt = AiPromptBuilder.WithPersona(BuildPersonaNotice(session), turnPrompt);
             if (session.Provider != AiProvider.Claude)
             {
                 var lastUser = session.Messages.FindLastIndex(m => m.Role == AiChatRole.User);

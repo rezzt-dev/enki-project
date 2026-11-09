@@ -90,7 +90,7 @@
         <mi:MaterialIcon Kind="Creation" Width="20" Height="20" Foreground="{DynamicResource Ink70}" />
       </Border>
       <TextBlock x:Name="WelcomeEyebrow" Text="{loc:Tr Assistant_Welcome_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-      <TextBlock Text="{loc:Tr Assistant_Welcome_Title}" Classes="page-title" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding WelcomeTitle}" Classes="page-title" TextWrapping="Wrap" />
       <TextBlock Text="{loc:Tr Assistant_Welcome_Message}" Classes="muted" FontSize="13.5" TextWrapping="Wrap" MaxWidth="600"
                  IsVisible="{Binding !VaultToolsAvailable}" />
       <TextBlock Text="{loc:Tr Assistant_Welcome_MessageTools}" Classes="muted" FontSize="13.5" TextWrapping="Wrap" MaxWidth="600"

@@ -34,7 +34,13 @@ public sealed class AiChatService
         var root = Path.Combine(storageDirectory ?? AppDataDirectory.Resolve(), "ai");
         _directory = Path.Combine(root, "chats");
         _draftsPath = Path.Combine(root, "drafts.json");
+        Persona = new AiPersonaService(storageDirectory);
     }
+
+    /// <summary>Nombre y contextos que el usuario ha dado al asistente. Vive junto al historial, en la misma
+    /// carpeta privada, y lo comparten la sección Asistente y Ajustes. <see cref="DeleteAll"/> no lo toca: borrar
+    /// el historial no borra la personalidad.</summary>
+    public AiPersonaService Persona { get; }
 
     /// <summary>Todas las conversaciones, la más reciente primero. Se leen de disco la primera vez que se
     /// piden, no al arrancar la app: con la IA apagada nadie paga ese coste.</summary>

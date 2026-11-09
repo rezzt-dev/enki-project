@@ -62,6 +62,7 @@
       <Border Grid.Row="1" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="10,8"
               IsVisible="{Binding Cli.IsReady}">
         <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+          <views:AssistantPersonaButton />
           <views:AssistantScopeButton />
           <views:AssistantModelControls />
         </WrapPanel>

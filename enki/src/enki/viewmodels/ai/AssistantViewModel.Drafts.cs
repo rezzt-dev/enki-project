@@ -102,13 +102,16 @@ public sealed partial class AssistantViewModel
         // La skill y la capacidad de un chat empezado ya viven en el propio chat.
         SkillName = _activeSession is null ? DraftSkillName : null,
         SkillInstructions = _activeSession is null ? DraftSkillInstructions : null,
-        Effort = _activeSession is null && SelectedEffort != "medium" ? SelectedEffort : null
+        Effort = _activeSession is null && SelectedEffort != "medium" ? SelectedEffort : null,
+        // El contexto de un chat empezado vive en el chat; el de uno nuevo, en su borrador.
+        Context = _activeSession is null && !string.IsNullOrWhiteSpace(_draftChatContext) ? _draftChatContext : null
     };
 
     private static bool SameDraft(AiChatDraft? saved, AiChatDraft current) =>
         saved is null
             ? current.IsEmpty
             : saved.Text == current.Text && saved.SkillName == current.SkillName && saved.Effort == current.Effort
+              && saved.Context == current.Context
               && saved.Attachments.Select(a => (a.Kind, a.RelativePath)).SequenceEqual(current.Attachments.Select(a => (a.Kind, a.RelativePath)));
 
     /// <summary>Carga en el compositor el borrador de la conversación abierta o del chat nuevo del ámbito.</summary>
@@ -136,6 +139,7 @@ public sealed partial class AssistantViewModel
                     DraftSkillInstructions = draft.SkillInstructions;
                 }
                 if (draft.Effort is not null) RestoreEffort(draft.Effort);
+                if (draft.Context is not null) _draftChatContext = draft.Context;
             }
         }
         finally

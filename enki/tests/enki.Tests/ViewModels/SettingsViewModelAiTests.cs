@@ -355,4 +355,71 @@ public sealed class SettingsViewModelAiTests : IDisposable
         vm.UseDuckDuckGoSearchCommand.Execute(null);
         Assert.Equal(AiWebSearchEngine.DuckDuckGo, settings.Settings.Ai.WebSearchEngine);
     }
+
+    // ===================== Personalidad =====================
+
+    [Fact]
+    public void Persona_IsSavedWithTheButton_OutsideSettingsJson()
+    {
+        var (vm, _, chats, vaultPath) = Create();
+        Assert.True(vm.CanEditAiPersona);
+        Assert.False(vm.SaveAiPersonaCommand.CanExecute(null));
+
+        vm.AiPersonaNameDraft = "  Ada  ";
+        vm.AiPersonaContextDraft = "Investigo en biología.";
+        Assert.True(vm.HasAiPersonaChanges);
+        Assert.Equal("7/40", vm.AiPersonaNameCounter);
+        // Nada se guarda mientras se escribe.
+        Assert.Null(chats.Persona.Name);
+
+        vm.SaveAiPersonaCommand.Execute(null);
+
+        Assert.False(vm.HasAiPersonaChanges);
+        Assert.False(vm.AiPersonaStatusIsError);
+        Assert.True(vm.HasAiPersonaStatus);
+        Assert.Equal("Ada", vm.AiPersonaNameDraft);
+        var reloaded = new AiPersonaService(_storageDirectory);
+        Assert.Equal("Ada", reloaded.Name);
+        Assert.Equal("Investigo en biología.", reloaded.Persona.Context);
+        Assert.DoesNotContain("Investigo", File.ReadAllText(Path.Combine(_storageDirectory, "settings.json")));
+        Assert.DoesNotContain("Investigo", File.ReadAllText(Path.Combine(vaultPath, ".enki", "settings.json")));
+
+        // Editar de nuevo borra el aviso de guardado; descartar vuelve a lo guardado.
+        vm.AiPersonaContextDraft = "Otra cosa";
+        Assert.False(vm.HasAiPersonaStatus);
+        vm.DiscardAiPersonaChangesCommand.Execute(null);
+        Assert.Equal("Investigo en biología.", vm.AiPersonaContextDraft);
+        Assert.False(vm.HasAiPersonaChanges);
+    }
+
+    [Fact]
+    public void Persona_ChangedElsewhere_ReloadsUnlessThereAreUnsavedEdits()
+    {
+        var (vm, _, chats, _) = Create();
+
+        chats.Persona.SetIdentity("Ada", "Uno");
+        Assert.Equal("Ada", vm.AiPersonaNameDraft);
+
+        vm.AiPersonaContextDraft = "A medias";
+        chats.Persona.SetIdentity("Grace", "Dos");
+        Assert.Equal("A medias", vm.AiPersonaContextDraft);
+        Assert.Equal("Ada", vm.AiPersonaNameDraft);
+    }
+
+    [Fact]
+    public void Persona_SaveFailure_IsShownAndKeepsTheDraft()
+    {
+        var (vm, _, chats, _) = Create();
+        chats.Persona.SetIdentity("Ada", "Uno");
+        AiPersonaServiceTests.BlockPersonaFile(_storageDirectory);
+
+        vm.AiPersonaNameDraft = "Grace";
+        vm.SaveAiPersonaCommand.Execute(null);
+
+        Assert.True(vm.AiPersonaStatusIsError);
+        Assert.True(vm.HasAiPersonaStatus);
+        Assert.Equal("Grace", vm.AiPersonaNameDraft);
+        Assert.True(vm.HasAiPersonaChanges);
+        Assert.Equal("Ada", chats.Persona.Name);
+    }
 }

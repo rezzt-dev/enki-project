@@ -273,6 +273,8 @@ public sealed partial class SettingsViewModel
                 OnPropertyChanged(nameof(AiHistoryCountLabel));
                 OnPropertyChanged(nameof(HasAiHistory));
             };
+        InitializeAiPersona();
+        OnPropertyChanged(nameof(CanEditAiPersona));
         LoadAiSettings();
     }
 

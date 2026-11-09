@@ -438,16 +438,15 @@ internal sealed class NativeSessionGraph : Control
 
     private static string ColorToCss(Color color) => $"rgba({color.R},{color.G},{color.B},1.00)";
 
-    /// <summary>Contorno circular discreto de la esfera señalada y, algo más marcado, de la sesión seleccionada.</summary>
+    /// <summary>Contorno circular discreto de la esfera señalada; la sesión seleccionada en la lista no lleva contorno.</summary>
     private void DrawFocusRings(DrawingContext context, Color ink)
     {
         foreach (var (sessionId, state) in _spheres)
         {
-            var selected = sessionId == _selectedSession;
             var hovered = sessionId == _hoveredSphere && _hovered is null;
-            if (!selected && !hovered) continue;
+            if (!hovered) continue;
             var radius = state.Sphere.Radius * _scale * Silhouette + 6;
-            context.DrawEllipse(null, new ImmutablePen(new ImmutableSolidColorBrush(ink, selected ? 0.28 : 0.14), 1),
+            context.DrawEllipse(null, new ImmutablePen(new ImmutableSolidColorBrush(ink, 0.14), 1),
                 ToScreen(state.Sphere.Center), radius, radius);
         }
     }

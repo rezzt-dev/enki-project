@@ -231,6 +231,7 @@ public sealed partial class AssistantViewModel
         RefreshWebAccessState();
         RefreshActiveNote();
         RebuildSessionList();
+        RefreshPersona();
     }
 
     /// <summary>Si una nota cae dentro del ámbito del chat: la raíz del vault solo con un chat del vault; una sesión, si es la del chat o —sin contraseña— con acceso ampliado del vault,

@@ -265,8 +265,8 @@
                      Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="Normal"
                      VerticalContentAlignment="Top" IsEnabled="{Binding !IsUnassignedChat}"
                      PlaceholderForeground="{DynamicResource Ink40}"
-                     PlaceholderText="{loc:Tr Assistant_Composer_Placeholder}"
-                     AutomationProperties.Name="{loc:Tr Assistant_Composer_Placeholder}" />
+                     PlaceholderText="{Binding ComposerPlaceholder}"
+                     AutomationProperties.Name="{Binding ComposerPlaceholder}" />
 
             <Grid x:Name="ComposerToolbar" ColumnDefinitions="*,Auto,Auto,Auto" Margin="8,2,8,8" Cursor="Arrow">
               <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" ItemSpacing="2" LineSpacing="4" Margin="0,0,8,0">

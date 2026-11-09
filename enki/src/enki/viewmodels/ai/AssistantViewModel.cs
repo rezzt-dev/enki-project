@@ -109,6 +109,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
             if (_settingsService.Settings.Ai.Enabled) _ = Cli.RefreshAsync();
         };
         _chats.ChatsChanged += () => _dispatch(OnChatsChanged);
+        _chats.Persona.PersonaChanged += () => _dispatch(RefreshPersona);
         _settingsService.SettingsChanged += () => _dispatch(RefreshScope);
 
         Messages.CollectionChanged += (_, _) => RefreshConversationState();
@@ -322,6 +323,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         Messages.Clear();
         DraftSkillName = null;
         DraftSkillInstructions = null;
+        _draftChatContext = null;
         _restoringDraft = true;
         DraftText = string.Empty;
         _restoringDraft = false;
@@ -600,6 +602,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasActiveSkill));
         OnPropertyChanged(nameof(CanPickSkill));
         OnPropertyChanged(nameof(CanChangeWorkspace));
+        RefreshPersona();
     }
 
     private void RefreshConversationState()

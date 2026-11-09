@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -174,6 +175,42 @@ public sealed class AssistantViewUiTests : IDisposable
             }
         }
         finally { window.Close(); Application.Current!.RequestedThemeVariant = previousTheme; }
+    }
+
+    [Fact]
+    public void Persona_NameShowsInTheHeaderAndWelcome_AndTheMenuEditsTheChatContext()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, chats) = Create(FakeCli(loggedIn: true),
+            (chats, _) => chats.Persona.SetIdentity("Ada", "Uso Enki como segundo cerebro."));
+        try
+        {
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            var trigger = Find<Button>(view, "PersonaTrigger");
+            Assert.True(trigger.IsEffectivelyVisible);
+            var text = RenderedText(view);
+            Assert.Contains(vm.WelcomeTitle, text, StringComparison.Ordinal);
+            Assert.Contains("Ada", vm.WelcomeTitle, StringComparison.Ordinal);
+            Assert.Equal(vm.ComposerPlaceholder, Find<TextBox>(view, "ComposerBox").PlaceholderText);
+            SavePreview(view, "assistant-persona");
+
+            trigger.Command!.Execute(null);
+            Pump(() => Find<Popup>(view, "PersonaPopup").IsOpen);
+            Assert.True(Find<Popup>(view, "PersonaPopup").IsOpen);
+            var chatBox = Find<TextBox>(view, "PersonaChatContextBox");
+            Assert.True(chatBox.IsEnabled);
+            // Un chat del vault no enseña el campo de la sesión.
+            Assert.False(Find<TextBox>(view, "PersonaSessionContextBox").IsEffectivelyVisible);
+
+            chatBox.Text = "Responde en tono cercano.";
+            Assert.True(vm.SavePersonaCommand.CanExecute(null));
+            vm.SavePersonaCommand.Execute(null);
+            Pump(() => !Find<Popup>(view, "PersonaPopup").IsOpen);
+            Assert.False(vm.IsPersonaEditorOpen);
+            Assert.True(vm.HasPersonaContext);
+            Assert.Equal("Ada", chats.Persona.Name);
+        }
+        finally { window.Close(); }
     }
 
     [Fact]

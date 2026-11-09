@@ -141,7 +141,11 @@
             </Border>
           </StackPanel>
 
-          <views:AssistantScopeButton Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" IsVisible="{Binding Cli.IsReady}" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0" VerticalAlignment="Center"
+                      IsVisible="{Binding Cli.IsReady}">
+            <views:AssistantPersonaButton />
+            <views:AssistantScopeButton />
+          </StackPanel>
 
           <TextBlock Grid.Column="2" Text="{loc:Tr Assistant_Model_Label, Converter={StaticResource UpperCaseConverter}}"
                      Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center" Margin="16,0,10,0"

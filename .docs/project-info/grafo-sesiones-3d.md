@@ -135,7 +135,7 @@ rotación»), y el botón es accesible con el teclado.
 | Doble clic en una nota | `nodeDoubleClick`, que abre la nota |
 | Arrastrar una nota | La mueve en el plano de la pantalla a su profundidad, dentro de su esfera, y guarda las posiciones |
 | Arrastrar el volumen de una esfera | La gira a mano (horizontal y vertical, con la inclinación acotada) |
-| Clic en el volumen de una esfera | `sessionClick`, que selecciona la sesión en la lista (marcada con un contorno circular) |
+| Clic en el volumen de una esfera | `sessionClick`, que selecciona la sesión en la lista (sin contorno circular en la esfera; solo el hover lo lleva) |
 | Arrastrar el fondo / rueda | Desplaza / zoom alrededor del puntero |
 | `+` `−` `Inicio` y flechas | Zoom, encuadre y desplazamiento |
 

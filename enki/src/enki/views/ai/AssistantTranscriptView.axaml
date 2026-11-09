@@ -208,7 +208,7 @@
                 <StackPanel IsVisible="{Binding IsAssistant}" Spacing="10">
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <mi:MaterialIcon Kind="Creation" Width="13" Height="13" Foreground="{DynamicResource Ink50}" />
-                    <TextBlock Text="{loc:Tr Assistant_Message_Author, Converter={StaticResource UpperCaseConverter}}"
+                    <TextBlock Text="{Binding #Root.((vm:AssistantViewModel)DataContext).AssistantName, Converter={StaticResource UpperCaseConverter}, FallbackValue={x:Null}}"
                                Classes="eyebrow" FontSize="9.5" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding TimeLabel}" Classes="faint" FontSize="10" VerticalAlignment="Center" />
                   </StackPanel>

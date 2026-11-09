@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- personalidad del asistente: nombre y contexto general en `ajustes > inteligencia artificial > personalidad del asistente`, guardados con botón en `ai/persona.json` fuera de `settings.json`, del paquete de diagnóstico y del perfil portable; con nombre, la bienvenida, el compositor y cada respuesta lo usan.
+- contexto por sesión y por chat desde el nuevo botón de personalidad de la cabecera del asistente (sección y panel lateral): el de sesión lo comparten todos sus chats, el de chat se guarda con la conversación o con el borrador del chat nuevo, y ambos se pueden cambiar entre turnos.
+- bloque `<enki_persona>` en cada turno (`AiPromptBuilder.WithPersona`) con las capas general, de sesión y de chat, donde prevalece la más concreta y nunca pasa por encima del ámbito ni de las reglas de Enki; sin personalidad definida el turno se envía igual que antes.
+- `AiPersonaService` con límites de 40, 4000 y 2000 caracteres y reversión ante fallos de disco, sección «personalidad» en `.docs/project-info/asistente-ia.md`, textos en los siete recursos de idioma y pruebas `AiPersonaServiceTests`, `AssistantViewModelPersonaTests`, `AiPromptBuilderTests` y `SettingsViewModelAiTests`.
 - añadir un perfil unico de personalizacion en `ajustes > apariencia` para trasladar temas con sus colores, atajos, barra lateral y diseño del panel entre equipos, con vista previa y confirmacion; conservar los temas locales y excluir notas, rutas, cuentas y credenciales.
 - bloques «notas relacionadas» y «menciones sin enlazar» en la pestaña «enlaces» del panel del editor: las primeras salen de etiquetas y enlaces compartidos y se enlazan con un clic a la nota abierta; las segundas detectan el título o el nombre de archivo de la nota fuera de código, enlaces y propiedades y los convierten en `[[enlace]]` con `VaultService.LinkMention` (relee la nota, guarda un snapshot y escribe con `WriteContentChecked`, sin pisar cambios externos).
 - importación desde Logseq (carpeta), Evernote (`.enex`), Google Keep (ZIP de Takeout o carpeta) y TickTick (CSV) en `ajustes > mantenimiento`, e informe final guardado como nota en la carpeta «Importado de …» con lo importado, lo omitido y el motivo, también cuando la importación se interrumpe; los lectores existentes de Obsidian, Notion, Todoist y Google Calendar anotan ahora lo que omiten.
@@ -220,6 +224,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### CORREGIDO
 - corregir que la insignia de `recordatorios` contara cualquier recordatorio sin leer aunque fuera para la semana o el año siguiente: ahora solo cuenta los que han entrado en su ventana de aviso previo o han vencido y no se han visto; abrir uno antes de tiempo o `marcar todos como leidos` ya no silencia el aviso del dia antes, y reprogramarlo lo vuelve a contar.
+- eliminar el contorno circular que aparecía alrededor de la esfera de la sesión seleccionada en el grafo de sesiones (visor web y nativo); se mantiene el contorno tenue del hover.
 - corregir que un recordatorio completado antes de su hora siguiera avisando al llegar esta, y que vincular la cuenta de Polar soltara un aviso y sumara en la insignia por cada recordatorio antiguo descargado.
 - refrescar cada 30 segundos la insignia de recordatorios, el estado de cada fila y el recuento de vencidas de la bandeja, que no cambiaban con el paso del tiempo hasta editar algo.
 - aislar las pruebas de busqueda global de la configuracion y el llavero locales, y esperar las escrituras del grafo antes de borrar los vaults temporales de las pruebas del dashboard.
@@ -265,6 +270,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- assistant personality: name and general context in `settings > artificial intelligence > assistant personality`, saved with a button to `ai/persona.json`, outside `settings.json`, the diagnostics package and the portable profile; once named, the welcome screen, composer and every reply use it.
+- per-session and per-chat context from the new personality button in the assistant header (section and side panel): the session context is shared by all its chats, the chat context is saved with the conversation or the new-chat draft, and both can change between turns.
+- `<enki_persona>` block on every turn (`AiPromptBuilder.WithPersona`) with the general, session and chat layers, where the most specific wins and never overrides the scope or Enki's rules; without a personality the turn is sent exactly as before.
+- `AiPersonaService` with 40, 4000 and 2000 character limits and rollback on disk failures, a «personality» section in `.docs/project-info/asistente-ia.md`, strings in the seven language resources and `AiPersonaServiceTests`, `AssistantViewModelPersonaTests`, `AiPromptBuilderTests` and `SettingsViewModelAiTests` tests.
 - add a single personalisation profile in `settings > appearance` to transfer themes with their colours, shortcuts, sidebar and dashboard layout between computers, with preview and confirmation; keep local themes and exclude notes, paths, accounts and credentials.
 - "related notes" and "unlinked mentions" blocks in the editor panel's links tab: the former come from shared tags and links and add a link to the open note in one click; the latter find the note's title or file name outside code, links and properties and turn it into `[[link]]` with `VaultService.LinkMention` (re-reads the note, takes a snapshot and writes with `WriteContentChecked`, never overwriting external changes).
 - import from Logseq (folder), Evernote (`.enex`), Google Keep (Takeout ZIP or folder) and TickTick (CSV) in `settings > maintenance`, and a final report saved as a note in the "Importado de …" folder with what was imported, what was skipped and why, also when the import is interrupted; the existing Obsidian, Notion, Todoist and Google Calendar readers now record what they skip.
@@ -474,6 +483,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 
 #### FIXED
 - fix the `reminders` badge counting every unread reminder even when it was due next week or next year: it now only counts reminders that have entered their advance-notice window or are overdue and unseen; opening one early or `mark all as read` no longer silences the day-before notice, and rescheduling makes it count again.
+- remove the circular outline drawn around the selected session sphere in the sessions graph (web and native viewers); the faint hover outline is kept.
 - fix reminders completed before their time still firing when it arrived, and linking a Polar account sending a notice and adding to the badge for every old reminder downloaded.
 - refresh the reminders badge, each row's status and the inbox overdue count every 30 seconds, as they did not change with the passing of time until something was edited.
 - isolate global search tests from local configuration and credential stores, and wait for graph writes before deleting temporary dashboard test vaults.

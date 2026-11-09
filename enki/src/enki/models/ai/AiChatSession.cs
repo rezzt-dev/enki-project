@@ -84,6 +84,11 @@ public sealed class AiChatSession
     /// en chats del vault se puede modificar entre turnos.</summary>
     public bool FullVaultAccess { get; set; }
 
+    /// <summary>Contexto propio de esta conversación, escrito por el usuario desde el menú de personalidad de
+    /// la cabecera. Matiza el contexto general y el de la sesión (ver <see cref="AiPersona"/>) y se puede cambiar
+    /// entre turnos: viaja en cada mensaje, no en el prompt de sistema. <see langword="null"/> sin contexto.</summary>
+    public string? Context { get; set; }
+
     public List<AiChatMessage> Messages { get; set; } = [];
 }
 
@@ -163,7 +168,12 @@ public sealed class AiChatDraft
     /// <summary>Capacidad elegida para un chat que aún no se ha empezado.</summary>
     public string? Effort { get; set; }
 
-    public bool IsEmpty => string.IsNullOrWhiteSpace(Text) && Attachments.Count == 0 && SkillName is null && Effort is null;
+    /// <summary>Contexto del chat escrito antes de empezarlo (en uno empezado vive en
+    /// <see cref="AiChatSession.Context"/>).</summary>
+    public string? Context { get; set; }
+
+    public bool IsEmpty => string.IsNullOrWhiteSpace(Text) && Attachments.Count == 0 && SkillName is null && Effort is null
+        && string.IsNullOrWhiteSpace(Context);
 }
 
 public sealed class AiDraftAttachment

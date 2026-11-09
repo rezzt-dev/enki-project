@@ -433,14 +433,13 @@ public static class SessionGraphRenderer
                     ctx.stroke();
                   }
 
-                  // A faint circular outline marks the hovered sphere and, a little stronger, the session
-                  // selected in the list — circular indicators are the one exception to square corners.
+                  // A faint circular outline marks the hovered sphere only; the session selected in the list
+                  // gets no outline — circular indicators are the one exception to square corners.
                   function drawSphereFocus() {
                     sphereScreen.forEach(function (p) {
-                      const selected = p.sphere.id === state.selectedSession;
                       const hovered = p.sphere === state.hoverSphere && state.hoverNode < 0;
-                      if (!selected && !hovered) return;
-                      ctx.globalAlpha = selected ? 0.28 : 0.14;
+                      if (!hovered) return;
+                      ctx.globalAlpha = 0.14;
                       ctx.strokeStyle = THEME.ink;
                       ctx.lineWidth = 1;
                       ctx.beginPath();

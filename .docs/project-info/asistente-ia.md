@@ -232,6 +232,46 @@ línea bajo el compositor del chat. **Decisión pendiente del responsable del pr
 distribuir una versión, volver a leer esos términos; si cambian, el backend se puede retirar sin tocar el
 resto (ver "Arquitectura").
 
+## Personalidad: nombre y contexto por capas
+
+El usuario puede dar al asistente un nombre y un contexto que lo acompaña en todas las conversaciones, y
+matizarlo después para cada sesión y para cada chat. Así el asistente se adapta a dónde se está trabajando
+sin tener que repetirle en cada mensaje quién es el usuario o qué se busca.
+
+| capa | dónde se edita | dónde se guarda | alcance |
+| --- | --- | --- | --- |
+| nombre y contexto general | `ajustes > inteligencia artificial > personalidad del asistente` | `ai/persona.json` (`AiPersona.Name`, `AiPersona.Context`) | todos los chats |
+| contexto de la sesión | menú de personalidad de la cabecera, en un chat de sesión | `ai/persona.json` (`AiPersona.SessionContexts`, clave `<vaultId>/<sessionId>`) | todos los chats de esa sesión |
+| contexto del chat | menú de personalidad de la cabecera | `AiChatSession.Context` (o `AiChatDraft.Context` en un chat sin empezar) | esa conversación |
+
+- **Cada turno.** `AssistantViewModel.BuildPersonaNotice` lee las tres capas al enviar y
+  `AiPromptBuilder.WithPersona` antepone un bloque `<enki_persona>` (nombre, `<general_context>`,
+  `<session_context session="…">` y `<chat_context>`) delante de `<enki_scope>`. Sin nada definido el turno se
+  envía igual que antes. Va en cada turno y no en el prompt de sistema porque el CLI conserva el prompt con que
+  empezó la conversación: así un cambio a mitad de chat se aplica en el mensaje siguiente.
+- **Prompt de sistema.** Un párrafo fijo (`PersonaSystemPrompt`) explica el bloque: adoptar el nombre, que lo
+  más concreto prevalece (chat, después sesión, después general), que el último bloque sustituye a los
+  anteriores y que nunca pasa por encima de las instrucciones de Enki, del ámbito, de las reglas sobre datos ni
+  de lo que se pide en el mensaje actual. Las etiquetas del bloque se neutralizan dentro del texto como las de
+  `<enki_context>`, para que un contexto no pueda cerrarlas.
+- **Historial.** Los mensajes guardados son lo que escribió el usuario, sin el bloque; la recuperación de una
+  sesión perdida del CLI vuelve a añadir la personalidad vigente.
+- **Interfaz.** Con nombre, la bienvenida («Soy Ada. ¿En qué te ayudo?»), el texto del compositor, la etiqueta
+  de cada respuesta y el botón de personalidad lo usan; sin él se mantiene «Asistente». El botón de la cabecera
+  (sección y panel lateral, `AssistantPersonaButton`) muestra un punto cuando hay algún contexto activo y su
+  menú enseña la capa general en solo lectura —se edita en Ajustes, para no tener dos editores del mismo
+  texto— y edita las de sesión y chat con contador, guardar y descartar. El contexto de sesión no se puede
+  editar si la sesión ya no está en el vault abierto, ni el de chat en un chat sin vault asociado.
+- **Límites.** Nombre de 40 caracteres en una línea, contexto general de 4000 y contextos de sesión y chat de
+  2000 cada uno (`AiPersona.Max*`), recortados sin partir un emoji.
+- **Privacidad y persistencia.** `AiPersonaService` (expuesto como `AiChatService.Persona`) guarda en la misma
+  carpeta privada que el historial y revierte el estado en memoria si el disco falla, para que la interfaz no
+  enseñe algo que no se guardó; Ajustes y el menú muestran el error. El contexto de sesión vive en la
+  instalación y no en el manifiesto de la sesión porque ese manifiesto se lee sin desbloquear las sesiones
+  protegidas. La personalidad no está en `settings.json`, así que no entra en el paquete de diagnóstico ni en
+  el perfil de personalización portable, y vaciar el historial no la borra. El texto se envía al proveedor
+  elegido en cada mensaje, y así lo indica Ajustes.
+
 ## Arquitectura
 
 ```
@@ -409,6 +449,12 @@ mismo CLI oficial, no un backend aparte: solo cambia la credencial con la que se
   consentimiento, persistencia fuera del vault).
 - `enki.UITests/AssistantViewUiTests`: cada estado sobre el XAML real; con `ENKI_GRAPH_PREVIEW=<carpeta>`
   guarda capturas.
+- Personalidad: `Services/AiPersonaServiceTests` (limpieza, límites, capas por vault y sesión, archivo
+  dañado, reversión ante fallo de disco, vaciar historial), `AiPromptBuilderTests` (orden de capas, bloque
+  ausente sin datos, etiquetas neutralizadas, párrafo del prompt de sistema), `ViewModels/AssistantViewModelPersonaTests`
+  (nombre en la interfaz, capas que llegan al CLI falso y cambian entre turnos, borrador del chat nuevo,
+  contexto compartido por los chats de una sesión) y `SettingsViewModelAiTests` (guardar con botón, fuera de
+  `settings.json`, recarga desde otro sitio y error de guardado).
 - `ViewModels/AssistantViewModelWorkspaceTests`: historial por vault y asociación de chats antiguos, cambio
   de vault, borradores por chat y por ámbito, adjuntos de archivos, "Añadir a la nota activa", indicador de
   actividad y permiso de consulta. `AiVaultToolboxTests` cubre la puerta de lectura (pregunta única,

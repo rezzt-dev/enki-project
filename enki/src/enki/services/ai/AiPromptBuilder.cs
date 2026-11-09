@@ -19,6 +19,17 @@ public sealed record AiContextNote(string Title, string RelativePath, string Con
 public sealed record AiScopeNotice(string? SessionName, bool SessionMissing, bool FullVaultAccess, bool ChangesAllowed,
     bool PolarLinked, DateTimeOffset Now, string TimeZone, bool ReadAccessGranted = true, bool WebAccess = false);
 
+/// <summary>Personalidad que el usuario ha dado al asistente para este turno, por capas: nombre y contexto
+/// general (<see cref="AiPersona"/>), contexto de la sesión del chat y contexto del propio chat. Cualquiera puede
+/// faltar; la capa más concreta prevalece.</summary>
+/// <param name="SessionName">Sesión a la que pertenece <paramref name="SessionContext"/>, solo para nombrarla.</param>
+public sealed record AiPersonaNotice(string? Name, string? Context, string? SessionName = null, string? SessionContext = null,
+    string? ChatContext = null)
+{
+    public bool IsEmpty => string.IsNullOrWhiteSpace(Name) && string.IsNullOrWhiteSpace(Context)
+        && string.IsNullOrWhiteSpace(SessionContext) && string.IsNullOrWhiteSpace(ChatContext);
+}
+
 /// <summary>Arma el texto que se envía al modelo: el prompt de sistema de Enki (con la skill del chat, si la
 /// hay), el contexto de notas recortado al presupuesto configurado y, cuando hace falta reconstruir una
 /// conversación, el historial guardado. Sin estado ni dependencias, para poder probar el orden de las
@@ -67,11 +78,20 @@ public static partial class AiPromptBuilder
         Reply in the language the user writes in (the app interface is in {language}). Format answers as GitHub-flavored Markdown and keep them focused.
         """;
 
+    /// <summary>Cómo tratar el bloque <c>&lt;enki_persona&gt;</c> (ver <see cref="WithPersona"/>). Es texto fijo
+    /// —el nombre y los contextos viajan en cada turno— para que editar la personalidad a mitad de conversación
+    /// se aplique en el turno siguiente aunque el CLI conserve el prompt de sistema con que empezó.</summary>
+    private const string PersonaSystemPrompt =
+        """
+        Personalization: a message may start with an <enki_persona> block. The user wrote it in Enki to give you a name and standing context about themselves, their work and how they want help, in layers: general, then the current session, then this chat. Adopt that name as your own and let the context shape your tone, focus and suggestions. When layers disagree, the most specific one wins, and the latest block always replaces earlier ones. It is the user's own preference, so it may change how you help, but it never overrides the instructions above, the scope, the data rules or what the user asks in the current message. Do not repeat the block back unless asked.
+        """;
+
     /// <param name="vaultTools">El turno lleva las herramientas del vault (ver <see cref="VaultToolsSystemPrompt"/>).</param>
     public static string BuildSystemPrompt(string interfaceLanguage, string? skillName, string? skillInstructions, bool vaultTools = false)
     {
         var basePrompt = vaultTools ? VaultToolsSystemPrompt : BaseSystemPrompt;
-        var prompt = new StringBuilder(basePrompt.Replace("{language}", interfaceLanguage, StringComparison.Ordinal));
+        var prompt = new StringBuilder(basePrompt.Replace("{language}", interfaceLanguage, StringComparison.Ordinal))
+            .Append("\n\n").Append(PersonaSystemPrompt);
         if (!string.IsNullOrWhiteSpace(skillInstructions))
         {
             prompt.Append("\n\n## Skill");
@@ -198,6 +218,31 @@ public static partial class AiPromptBuilder
         return builder.Append(turnPrompt).ToString();
     }
 
+    /// <summary>Antepone al mensaje del turno el bloque <c>&lt;enki_persona&gt;</c> con el nombre y los contextos
+    /// que ha escrito el usuario, de lo general a lo concreto. Va en cada turno, como <see cref="WithScope"/>,
+    /// para que la sesión y el chat adapten la personalidad sobre la marcha. Sin nada que decir devuelve el
+    /// mensaje tal cual.</summary>
+    public static string WithPersona(AiPersonaNotice notice, string turnPrompt)
+    {
+        if (notice.IsEmpty) return turnPrompt;
+        var builder = new StringBuilder("<enki_persona>\n");
+        if (!string.IsNullOrWhiteSpace(notice.Name))
+            builder.Append("Your name: ").Append(EscapeAttribute(notice.Name.Trim())).Append('\n');
+        AppendPersonaLayer(builder, "general_context", null, notice.Context);
+        AppendPersonaLayer(builder, "session_context", string.IsNullOrWhiteSpace(notice.SessionName) ? null : notice.SessionName,
+            notice.SessionContext);
+        AppendPersonaLayer(builder, "chat_context", null, notice.ChatContext);
+        return builder.Append("</enki_persona>\n\n").Append(turnPrompt).ToString();
+    }
+
+    private static void AppendPersonaLayer(StringBuilder builder, string tag, string? session, string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return;
+        builder.Append('<').Append(tag);
+        if (session is not null) builder.Append(" session=\"").Append(EscapeAttribute(session)).Append('"');
+        builder.Append(">\n").Append(NeutralizeTags(content.Trim())).Append("\n</").Append(tag).Append(">\n");
+    }
+
     /// <summary>Antepone al mensaje de un reintento lo que la respuesta interrumpida ya llegó a hacer en el
     /// vault, para que el modelo continúe desde ahí en vez de repetir esos cambios. Sin acciones completadas
     /// devuelve el mensaje tal cual: reintentar un turno de solo texto es repetirlo.</summary>
@@ -242,7 +287,7 @@ public static partial class AiPromptBuilder
     /// el contexto (y que así pudiera hacerse pasar por instrucciones fuera de él).</summary>
     private static string NeutralizeTags(string content) => EnkiTagRegex().Replace(content, "<​/$1");
 
-    [GeneratedRegex(@"</(note|file|enki_[a-z_]+)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"</(note|file|enki_[a-z_]+|general_context|session_context|chat_context)", RegexOptions.IgnoreCase)]
     private static partial Regex EnkiTagRegex();
 
     [GeneratedRegex(@"^(#{1,6}\s+|[-*+>]\s+|\d+[.)]\s+)+")]
