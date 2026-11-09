@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using enki.Models;
 using enki.Services;
 using enki.ViewModels;
@@ -52,6 +53,73 @@ public class KanbanCardEditorViewModelTests : IDisposable
         reopened.ApplyTo(card);
         Assert.Null(card.StartDateUtc);
         Assert.NotNull(card.DueDateUtc);
+    }
+
+    [Fact]
+    public void AddLink_NormalizesAndKeepsAsManyLinksAsTheUserAdds()
+    {
+        var editor = CreateEditor("");
+        Assert.False(editor.AddLinkCommand.CanExecute(null));
+
+        foreach (var input in new[] { "example.com", "https://github.com/enki", "http://www.ejemplo.es/doc" })
+        {
+            editor.NewLinkUrl = input;
+            editor.AddLinkCommand.Execute(null);
+        }
+
+        Assert.True(editor.HasLinks);
+        Assert.Equal(["https://example.com/", "https://github.com/enki", "http://www.ejemplo.es/doc"],
+            editor.Links.Select(l => l.Url));
+        Assert.Equal(string.Empty, editor.NewLinkUrl);
+        Assert.False(editor.HasNewLinkError);
+    }
+
+    [Fact]
+    public void AddLink_RejectsInvalidAndDuplicateLinks_KeepingTheTextToFix()
+    {
+        var editor = CreateEditor("");
+        editor.NewLinkUrl = "javascript:alert(1)";
+        editor.AddLinkCommand.Execute(null);
+        Assert.Equal(KanbanLinkInputError.Invalid, editor.NewLinkError);
+        Assert.True(editor.HasNewLinkError);
+        Assert.NotEmpty(editor.NewLinkErrorLabel);
+        Assert.Equal("javascript:alert(1)", editor.NewLinkUrl);
+        Assert.Empty(editor.Links);
+
+        editor.NewLinkUrl = "example.com";
+        Assert.False(editor.HasNewLinkError);
+        editor.AddLinkCommand.Execute(null);
+        editor.NewLinkUrl = "HTTPS://EXAMPLE.COM";
+        editor.AddLinkCommand.Execute(null);
+        Assert.Equal(KanbanLinkInputError.Duplicate, editor.NewLinkError);
+        Assert.Single(editor.Links);
+    }
+
+    [Fact]
+    public void Links_RoundTripThroughBuildCardForEditAndApplyTo()
+    {
+        var editor = CreateEditor("");
+        editor.NewLinkUrl = "example.com";
+        editor.AddLinkCommand.Execute(null);
+        editor.NewLinkUrl = "example.org";
+        editor.AddLinkCommand.Execute(null);
+        var card = editor.BuildCard("links");
+        Assert.Equal(["https://example.com/", "https://example.org/"], card.Links);
+
+        var cardVm = new KanbanCardViewModel(card);
+        Assert.True(cardVm.HasLinks);
+        Assert.True(cardVm.HasStatusMetadata);
+        Assert.Equal("2", cardVm.LinksCountLabel);
+
+        var reopened = KanbanCardEditorViewModel.ForEdit(editor.TargetColumn, cardVm, editor.AvailableColumns);
+        Assert.True(reopened.HasLinks);
+        reopened.RemoveLinkCommand.Execute(reopened.Links[0]);
+        reopened.ApplyTo(card);
+        Assert.Equal(["https://example.org/"], card.Links);
+
+        var detail = new KanbanCardDetailViewModel(new KanbanCardViewModel(card), () => { });
+        Assert.True(detail.HasLinks);
+        Assert.Equal("example.org", detail.Links[0].Label);
     }
 
     private static KanbanCardEditorViewModel CreateEditor(string tagsInput)

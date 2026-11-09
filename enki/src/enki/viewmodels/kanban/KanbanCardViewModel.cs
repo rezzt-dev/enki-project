@@ -70,9 +70,14 @@ public sealed partial class KanbanCardViewModel : ObservableObject
 
     /// <summary>La tarjeta tiene algo que enseñar en la línea de metadatos del pie. Sin esta comprobación,
     /// una tarjeta que solo tiene título arrastraba el margen de una fila vacía debajo del texto.</summary>
-    public bool HasStatusMetadata => HasSubtasks || HasDueDate || HasLinkedNote || HasDependencies;
+    public bool HasStatusMetadata => HasSubtasks || HasDueDate || HasLinkedNote || HasLinks || HasDependencies;
 
-    public bool HasMeta => HasSubtasks || HasDueDate || HasTags || HasLinkedNote || HasDependencies;
+    public bool HasMeta => HasSubtasks || HasDueDate || HasTags || HasLinkedNote || HasLinks || HasDependencies;
+
+    /// <summary>La tarjeta tiene enlaces web: el pie enseña un icono con cuántos, y el detalle los lista
+    /// para abrirlos.</summary>
+    public bool HasLinks => Card.Links.Count > 0;
+    public string LinksCountLabel => Card.Links.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
     /// <summary>Enlace nota↔tarea, "Capa 1". El label es el nombre de archivo derivado de la ruta, no el
     /// título real de la nota: resolverlo
@@ -261,6 +266,8 @@ public sealed partial class KanbanCardViewModel : ObservableObject
         OnPropertyChanged(nameof(HasMeta));
         OnPropertyChanged(nameof(HasStatusMetadata));
         OnPropertyChanged(nameof(HasLinkedNote));
+        OnPropertyChanged(nameof(HasLinks));
+        OnPropertyChanged(nameof(LinksCountLabel));
         OnPropertyChanged(nameof(LinkedNoteLabel));
         OnPropertyChanged(nameof(IsLinkedNoteMissing));
         OnPropertyChanged(nameof(LinkedNoteIcon));

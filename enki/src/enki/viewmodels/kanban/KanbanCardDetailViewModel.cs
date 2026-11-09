@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -68,6 +69,11 @@ public sealed partial class KanbanCardDetailViewModel : ObservableObject
 
     public ObservableCollection<KanbanSubtaskItemViewModel> Subtasks { get; } = [];
 
+    /// <summary>Enlaces web de la tarjeta: un clic los abre en el navegador predeterminado del sistema.
+    /// Se editan desde el formulario de la tarjeta, como el resto de campos del detalle.</summary>
+    public IReadOnlyList<KanbanLinkItemViewModel> Links { get; }
+    public bool HasLinks => Links.Count > 0;
+
     public KanbanCardDetailViewModel(KanbanCardViewModel sourceCard, Action persist,
         Action<string>? onOpenLinkedNote = null, string columnTitle = "")
     {
@@ -75,6 +81,7 @@ public sealed partial class KanbanCardDetailViewModel : ObservableObject
         ColumnTitle = columnTitle;
         _persist = persist;
         _onOpenLinkedNote = onOpenLinkedNote;
+        Links = sourceCard.Card.Links.Select(url => new KanbanLinkItemViewModel(url)).ToList();
 
         foreach (var subtask in sourceCard.Card.Subtasks)
         {

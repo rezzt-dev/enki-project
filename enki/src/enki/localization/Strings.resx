@@ -8399,4 +8399,25 @@ Happy writing.</value>
   <data name="Settings_Ai_Persona_SaveFailed" xml:space="preserve">
     <value>It could not be saved. Check the permissions of Enki's data folder and try again.</value>
   </data>
+  <data name="Kanban_Field_LinksLabel" xml:space="preserve">
+    <value>LINKS</value>
+  </data>
+  <data name="Kanban_Links_AddPlaceholder" xml:space="preserve">
+    <value>Paste or type a web link…</value>
+  </data>
+  <data name="Kanban_Links_AddTooltip" xml:space="preserve">
+    <value>Add link</value>
+  </data>
+  <data name="Kanban_Links_RemoveTooltip" xml:space="preserve">
+    <value>Remove link</value>
+  </data>
+  <data name="Kanban_Links_OpenTooltip" xml:space="preserve">
+    <value>Open in browser</value>
+  </data>
+  <data name="Kanban_Links_InvalidUrl" xml:space="preserve">
+    <value>Enter a valid web address (http or https).</value>
+  </data>
+  <data name="Kanban_Links_Duplicate" xml:space="preserve">
+    <value>This task already has that link.</value>
+  </data>
 </root>

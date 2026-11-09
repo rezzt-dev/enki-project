@@ -69,6 +69,24 @@ public class KanbanServiceTests : IDisposable
     }
 
     [Fact]
+    public void Save_PersistsCardLinks_SoTheySurviveReload()
+    {
+        var first = new KanbanService(_storageDirectory);
+        first.DefaultBoard.Columns[0].Cards.Add(new KanbanCard
+        {
+            Id = "con-enlaces",
+            Title = "Tarjeta con enlaces",
+            Links = ["https://example.com/", "https://example.org/docs"]
+        });
+        first.Save();
+
+        var second = new KanbanService(_storageDirectory);
+        var card = second.DefaultBoard.Columns.SelectMany(c => c.Cards).Single(c => c.Id == "con-enlaces");
+
+        Assert.Equal(["https://example.com/", "https://example.org/docs"], card.Links);
+    }
+
+    [Fact]
     public void RelinkNotePath_UpdatesMatchingCards_OnBoardAndInTrash()
     {
         var service = new KanbanService(_storageDirectory);

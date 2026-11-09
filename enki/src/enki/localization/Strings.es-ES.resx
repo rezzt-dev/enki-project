@@ -8398,4 +8398,25 @@ A disfrutar escribiendo.</value>
   <data name="Settings_Ai_Persona_SaveFailed" xml:space="preserve">
     <value>No se pudo guardar. Comprueba los permisos de la carpeta de datos de Enki e inténtalo de nuevo.</value>
   </data>
+  <data name="Kanban_Field_LinksLabel" xml:space="preserve">
+    <value>ENLACES</value>
+  </data>
+  <data name="Kanban_Links_AddPlaceholder" xml:space="preserve">
+    <value>Pega o escribe un enlace web…</value>
+  </data>
+  <data name="Kanban_Links_AddTooltip" xml:space="preserve">
+    <value>Añadir enlace</value>
+  </data>
+  <data name="Kanban_Links_RemoveTooltip" xml:space="preserve">
+    <value>Quitar enlace</value>
+  </data>
+  <data name="Kanban_Links_OpenTooltip" xml:space="preserve">
+    <value>Abrir en el navegador</value>
+  </data>
+  <data name="Kanban_Links_InvalidUrl" xml:space="preserve">
+    <value>Escribe una dirección web válida (http o https).</value>
+  </data>
+  <data name="Kanban_Links_Duplicate" xml:space="preserve">
+    <value>Esta tarea ya tiene ese enlace.</value>
+  </data>
 </root>

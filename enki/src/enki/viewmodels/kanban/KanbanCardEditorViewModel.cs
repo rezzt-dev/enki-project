@@ -46,6 +46,10 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
 
     public ObservableCollection<KanbanSubtaskItemViewModel> Subtasks { get; } = [];
 
+    /// <summary>Enlaces web de la tarjeta, en el orden en que se añadieron — ver
+    /// <see cref="AddLink"/>.</summary>
+    public ObservableCollection<KanbanLinkItemViewModel> Links { get; } = [];
+
     /// <summary>Notas que calzan con <see cref="NotePickerSearchText"/> en el picker de "vincular nota" —
     /// ver <see cref="ToggleNotePicker"/>.</summary>
     public ObservableCollection<NotePickerItemViewModel> NotePickerResults { get; } = [];
@@ -223,6 +227,7 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(LinkedNoteDisplayLabel));
         OnPropertyChanged(nameof(DueDateDisplayLabel));
         OnPropertyChanged(nameof(CalendarMonthLabel));
+        OnPropertyChanged(nameof(NewLinkErrorLabel));
     }
 
     // ===================== Dependencias «bloquea a» (MED-07) =====================
@@ -371,6 +376,10 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
 
         foreach (var subtask in card.Card.Subtasks)
             editor.Subtasks.Add(new KanbanSubtaskItemViewModel(subtask.Id, subtask.Title, subtask.IsDone));
+
+        foreach (var link in card.Card.Links)
+            editor.Links.Add(new KanbanLinkItemViewModel(link));
+        editor.OnPropertyChanged(nameof(HasLinks));
 
         return editor;
     }
@@ -655,7 +664,8 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         Subtasks = Subtasks.Select(ToModel).ToList(),
         Tags = BuildTags().ToList(),
         LinkedNotePath = LinkedNotePath,
-        Blocks = BuildBlocks()
+        Blocks = BuildBlocks(),
+        Links = BuildLinks()
     };
 
     public void ApplyTo(KanbanCard card)
@@ -670,13 +680,88 @@ public sealed partial class KanbanCardEditorViewModel : ObservableObject
         card.Tags = BuildTags().ToList();
         card.LinkedNotePath = LinkedNotePath;
         card.Blocks = BuildBlocks();
+        card.Links = BuildLinks();
     }
+
+    // ===================== Enlaces web =====================
+
+    [ObservableProperty]
+    private string _newLinkUrl = string.Empty;
+
+    /// <summary>Motivo por el que el último intento de <see cref="AddLink"/> no se aceptó. Se guarda el
+    /// motivo y no el texto para que <see cref="NewLinkErrorLabel"/> siga el idioma activo; se limpia en
+    /// cuanto el usuario vuelve a escribir.</summary>
+    [ObservableProperty]
+    private KanbanLinkInputError _newLinkError;
+
+    public bool HasLinks => Links.Count > 0;
+    public bool HasNewLinkError => NewLinkError != KanbanLinkInputError.None;
+
+    public string NewLinkErrorLabel => NewLinkError switch
+    {
+        KanbanLinkInputError.Invalid => LocalizationService.Instance["Kanban_Links_InvalidUrl"],
+        KanbanLinkInputError.Duplicate => LocalizationService.Instance["Kanban_Links_Duplicate"],
+        _ => string.Empty
+    };
+
+    partial void OnNewLinkUrlChanged(string value)
+    {
+        NewLinkError = KanbanLinkInputError.None;
+        AddLinkCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnNewLinkErrorChanged(KanbanLinkInputError value)
+    {
+        OnPropertyChanged(nameof(HasNewLinkError));
+        OnPropertyChanged(nameof(NewLinkErrorLabel));
+    }
+
+    private bool CanAddLink() => !string.IsNullOrWhiteSpace(NewLinkUrl);
+
+    /// <summary>Añade <see cref="NewLinkUrl"/> normalizada por <see cref="WebLinkNormalizer"/>. Un texto que
+    /// no es una dirección web, o un enlace que la tarjeta ya tiene, no se añade y deja el texto en el
+    /// campo con el motivo debajo, para que el usuario lo corrija en vez de reescribirlo.</summary>
+    [RelayCommand(CanExecute = nameof(CanAddLink))]
+    private void AddLink()
+    {
+        if (WebLinkNormalizer.TryNormalize(NewLinkUrl, out var url) != WebLinkError.None)
+        {
+            NewLinkError = KanbanLinkInputError.Invalid;
+            return;
+        }
+
+        if (Links.Any(l => string.Equals(l.Url, url, StringComparison.OrdinalIgnoreCase)))
+        {
+            NewLinkError = KanbanLinkInputError.Duplicate;
+            return;
+        }
+
+        Links.Add(new KanbanLinkItemViewModel(url));
+        NewLinkUrl = string.Empty;
+        OnPropertyChanged(nameof(HasLinks));
+    }
+
+    [RelayCommand]
+    private void RemoveLink(KanbanLinkItemViewModel item)
+    {
+        if (Links.Remove(item)) OnPropertyChanged(nameof(HasLinks));
+    }
+
+    private List<string> BuildLinks() => Links.Select(l => l.Url).ToList();
 
     private static KanbanSubtask ToModel(KanbanSubtaskItemViewModel item) =>
         new() { Id = item.Id, Title = item.Title, IsDone = item.IsDone };
 
     private static DateTime? ToUtc(DateTime? localDate) =>
         localDate is { } date ? DateTime.SpecifyKind(date, DateTimeKind.Local).ToUniversalTime() : null;
+}
+
+/// <summary>Motivo por el que el campo «añadir enlace» del formulario rechazó lo escrito.</summary>
+public enum KanbanLinkInputError
+{
+    None,
+    Invalid,
+    Duplicate
 }
 
 /// <summary>Una tarjeta elegible (o elegida) en el selector «bloquea a» del formulario.</summary>

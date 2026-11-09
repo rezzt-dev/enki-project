@@ -92,7 +92,7 @@ public sealed partial class KanbanService
         {
             Id = card.Id, Title = card.Title, Description = card.Description, Priority = card.Priority,
             StartDateUtc = card.StartDateUtc, DueDateUtc = card.DueDateUtc, DurationMinutes = card.DurationMinutes, LinkedNotePath = card.LinkedNotePath,
-            Tags = card.Tags, Subtasks = card.Subtasks
+            Tags = card.Tags, Subtasks = card.Subtasks, Links = card.Links
         };
         var next = location.Column.Id == columnId
             ? location.Column.Cards.SkipWhile(c => c != card).Skip(1).FirstOrDefault()?.Id : null;
@@ -112,6 +112,7 @@ public sealed partial class KanbanService
         card.LinkedNotePath = draft.LinkedNotePath;
         card.Tags = draft.Tags;
         card.Subtasks = draft.Subtasks;
+        card.Links = draft.Links;
     }
 
     /// <summary>Inserta una tarjeta solo en un destino vigente y revierte un fallo de persistencia.</summary>

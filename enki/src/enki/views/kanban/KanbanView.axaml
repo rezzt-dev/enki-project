@@ -169,7 +169,7 @@
 
           <!-- Metadatos compactos; las etiquetas usan el ancho completo en su propia fila
                para poder desplegarse sin estrechar la fecha ni el progreso de las subtareas. -->
-          <Grid ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
+          <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                         VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
               <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
@@ -188,7 +188,14 @@
                               IsVisible="{Binding HasLinkedNote}"
                               ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
 
-            <mi:MaterialIcon Grid.Column="3" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="0,1,0,0"
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" Margin="0,0,12,0"
+                        VerticalAlignment="Center" IsVisible="{Binding HasLinks}"
+                        ToolTip.Tip="{loc:Tr Kanban_Field_LinksLabel}">
+              <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+              <TextBlock Text="{Binding LinksCountLabel}" Classes="faint" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <mi:MaterialIcon Grid.Column="4" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="0,1,0,0"
                               VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
                               IsVisible="{Binding HasDependencies}"
                               ToolTip.Tip="{Binding DependencyTooltip}" AutomationProperties.Name="{Binding DependencyTooltip}" />
@@ -643,6 +650,12 @@
                                 IsVisible="{Binding HasLinkedNote}"
                                 ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
 
+              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Left"
+                          VerticalAlignment="Center" IsVisible="{Binding HasLinks}"
+                          ToolTip.Tip="{loc:Tr Kanban_Field_LinksLabel}">
+                <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{Binding LinksCountLabel}" Classes="faint" VerticalAlignment="Center" />
+              </StackPanel>
             </Grid>
             <controls:KanbanTags Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
           </StackPanel>
@@ -756,7 +769,7 @@
               <!-- Las etiquetas ocupan una fila independiente y pueden desplegarse completas. -->
               <controls:KanbanTags Grid.Row="3" Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
 
-              <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
+              <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                             VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
                   <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
@@ -774,7 +787,13 @@
                                   VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
                                   IsVisible="{Binding HasLinkedNote}"
                                   ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
-                <mi:MaterialIcon Grid.Column="3" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="12,1,0,0"
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0"
+                            VerticalAlignment="Center" IsVisible="{Binding HasLinks}"
+                            ToolTip.Tip="{loc:Tr Kanban_Field_LinksLabel}">
+                  <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                  <TextBlock Text="{Binding LinksCountLabel}" Classes="faint" VerticalAlignment="Center" />
+                </StackPanel>
+                <mi:MaterialIcon Grid.Column="4" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="12,1,0,0"
                               VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
                               IsVisible="{Binding HasDependencies}"
                               ToolTip.Tip="{Binding DependencyTooltip}" AutomationProperties.Name="{Binding DependencyTooltip}" />
@@ -2427,6 +2446,51 @@
                 </Grid>
               </StackPanel>
 
+              <!-- Enlaces web: tantos como el usuario quiera. Se validan y normalizan al añadirlos
+                   (WebLinkNormalizer) y se abren en el navegador predeterminado del sistema. -->
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Tr Kanban_Field_LinksLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <ItemsControl ItemsSource="{Binding Links}" IsVisible="{Binding HasLinks}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="4" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:KanbanLinkItemViewModel">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <Button Grid.Column="0" Classes="ghost" Padding="0" HorizontalAlignment="Left"
+                                Command="{Binding OpenCommand}"
+                                ToolTip.Tip="{Binding Url}" AutomationProperties.Name="{loc:Tr Kanban_Links_OpenTooltip}">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="LinkVariant" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Label}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1" Classes="icon-btn icon-btn-danger" Width="26" Height="26" Margin="6,0,0,0"
+                                Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).CardEditor.RemoveLinkCommand}"
+                                CommandParameter="{Binding}"
+                                ToolTip.Tip="{loc:Tr Kanban_Links_RemoveTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Links_RemoveTooltip}">
+                          <mi:MaterialIcon Kind="Close" Width="13" Height="13" />
+                        </Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox Grid.Column="0" Classes="search" Text="{Binding NewLinkUrl}"
+                            Name="NewLinkBox" PlaceholderText="{loc:Tr Kanban_Links_AddPlaceholder}"
+                            AutomationProperties.Name="{loc:Tr Kanban_Field_LinksLabel}"
+                            KeyDown="NewLinkBox_KeyDown" />
+                  <Button Grid.Column="1" Classes="icon-btn" Width="34" Height="34" Margin="8,0,0,0"
+                          Command="{Binding AddLinkCommand}" ToolTip.Tip="{loc:Tr Kanban_Links_AddTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Links_AddTooltip}">
+                    <mi:MaterialIcon Kind="Plus" Width="16" Height="16" />
+                  </Button>
+                </Grid>
+                <TextBlock Text="{Binding NewLinkErrorLabel}" IsVisible="{Binding HasNewLinkError}"
+                           Foreground="{DynamicResource DangerBrush}" FontSize="12.5" TextWrapping="Wrap" />
+              </StackPanel>
+
               <!-- Dependencias «bloquea a» (MED-07): la relación se guarda en la tarjeta que bloquea. -->
               <StackPanel Spacing="6">
                 <TextBlock Text="{loc:Tr Kanban_Field_BlocksLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
@@ -2629,6 +2693,30 @@
                     <TextBlock Text="{Binding LinkedNoteLabel}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </Button>
+              </StackPanel>
+
+              <!-- Enlaces web: un clic abre cada uno en el navegador predeterminado del sistema. -->
+              <StackPanel Spacing="6" IsVisible="{Binding HasLinks}">
+                <TextBlock Text="{loc:Tr Kanban_Field_LinksLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
+                <ItemsControl ItemsSource="{Binding Links}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="4" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:KanbanLinkItemViewModel">
+                      <Button Classes="ghost" HorizontalAlignment="Left" Padding="0" Command="{Binding OpenCommand}"
+                              ToolTip.Tip="{Binding Url}" AutomationProperties.Name="{loc:Tr Kanban_Links_OpenTooltip}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <mi:MaterialIcon Kind="LinkVariant" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
+                          <TextBlock Text="{Binding Label}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" />
+                          <mi:MaterialIcon Kind="OpenInNew" Width="11" Height="11" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
 
               <!-- Dependencias «bloquea a» (MED-07): de solo lectura, se editan desde el formulario. -->

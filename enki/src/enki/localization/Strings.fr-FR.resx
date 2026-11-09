@@ -8398,4 +8398,25 @@ Bonne rédaction.</value>
   <data name="Settings_Ai_Persona_SaveFailed" xml:space="preserve">
     <value>Impossible d’enregistrer. Vérifiez les autorisations du dossier de données d’Enki et réessayez.</value>
   </data>
+  <data name="Kanban_Field_LinksLabel" xml:space="preserve">
+    <value>LIENS</value>
+  </data>
+  <data name="Kanban_Links_AddPlaceholder" xml:space="preserve">
+    <value>Collez ou saisissez un lien web…</value>
+  </data>
+  <data name="Kanban_Links_AddTooltip" xml:space="preserve">
+    <value>Ajouter un lien</value>
+  </data>
+  <data name="Kanban_Links_RemoveTooltip" xml:space="preserve">
+    <value>Retirer le lien</value>
+  </data>
+  <data name="Kanban_Links_OpenTooltip" xml:space="preserve">
+    <value>Ouvrir dans le navigateur</value>
+  </data>
+  <data name="Kanban_Links_InvalidUrl" xml:space="preserve">
+    <value>Saisissez une adresse web valide (http ou https).</value>
+  </data>
+  <data name="Kanban_Links_Duplicate" xml:space="preserve">
+    <value>Cette tâche contient déjà ce lien.</value>
+  </data>
 </root>

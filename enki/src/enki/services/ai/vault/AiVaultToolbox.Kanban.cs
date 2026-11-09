@@ -139,7 +139,8 @@ public sealed partial class AiVaultToolbox
                     DurationMinutes = call.Has("duration_minutes") ? call.GetInteger("duration_minutes", 0, 24 * 60) : card.DurationMinutes,
                     Tags = call.Has("tags") ? NormalizedTags(call.GetTextList("tags")) : [.. card.Tags],
                     Subtasks = call.Has("subtasks") ? Subtasks(call, card) : card.Subtasks.Select(CopySubtask).ToList(),
-                    LinkedNotePath = call.Has("linked_note") ? LinkedNote(call) : card.LinkedNotePath
+                    LinkedNotePath = call.Has("linked_note") ? LinkedNote(call) : card.LinkedNotePath,
+                    Links = [.. card.Links]
                 };
                 ValidateCardDates(draft);
                 _kanban.SaveCardEdits(card.Id, location.Column.Id, draft);

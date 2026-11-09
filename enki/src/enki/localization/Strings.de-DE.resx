@@ -8398,4 +8398,25 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Settings_Ai_Persona_SaveFailed" xml:space="preserve">
     <value>Speichern nicht möglich. Prüfe die Berechtigungen des Enki-Datenordners und versuche es erneut.</value>
   </data>
+  <data name="Kanban_Field_LinksLabel" xml:space="preserve">
+    <value>WEBLINKS</value>
+  </data>
+  <data name="Kanban_Links_AddPlaceholder" xml:space="preserve">
+    <value>Weblink einfügen oder eingeben…</value>
+  </data>
+  <data name="Kanban_Links_AddTooltip" xml:space="preserve">
+    <value>Link hinzufügen</value>
+  </data>
+  <data name="Kanban_Links_RemoveTooltip" xml:space="preserve">
+    <value>Link entfernen</value>
+  </data>
+  <data name="Kanban_Links_OpenTooltip" xml:space="preserve">
+    <value>Im Browser öffnen</value>
+  </data>
+  <data name="Kanban_Links_InvalidUrl" xml:space="preserve">
+    <value>Gib eine gültige Webadresse ein (http oder https).</value>
+  </data>
+  <data name="Kanban_Links_Duplicate" xml:space="preserve">
+    <value>Diese Aufgabe hat diesen Link bereits.</value>
+  </data>
 </root>

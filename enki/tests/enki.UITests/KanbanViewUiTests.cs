@@ -97,6 +97,38 @@ public class KanbanViewUiTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Enlaces web de una tarjeta: se añaden desde el formulario, quedan guardados en la tarjeta,
+    /// el pie enseña cuántos hay y el detalle los lista con su etiqueta corta para abrirlos.</summary>
+    [Fact]
+    public void CardLinks_AddedInTheEditor_RenderOnTheCardAndInTheDetail()
+    {
+        var (view, viewModel, window) = CreateView();
+        var card = viewModel.Columns.First(c => c.Cards.Count > 0).Cards[0];
+
+        viewModel.OpenEditCardCommand.Execute(card);
+        var editor = viewModel.CardEditor!;
+        editor.NewLinkUrl = "www.example.com/docs/";
+        editor.AddLinkCommand.Execute(null);
+        editor.NewLinkUrl = "https://example.org";
+        editor.AddLinkCommand.Execute(null);
+        view.Measure(new Size(1400, 900));
+        view.Arrange(new Rect(0, 0, 1400, 900));
+        Assert.Contains("example.com/docs", view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+
+        viewModel.SaveCardEditorCommand.Execute(null);
+        Assert.Equal(["https://www.example.com/docs/", "https://example.org/"], card.Card.Links);
+        Assert.True(card.HasLinks);
+
+        viewModel.OpenCardDetailCommand.Execute(card);
+        view.Measure(new Size(1400, 900));
+        view.Arrange(new Rect(0, 0, 1400, 900));
+        var texts = view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Contains("example.org", texts);
+        Assert.Contains("2", texts);
+
+        window.Close();
+    }
+
     /// <summary>Simulates the real drop: takes the first card of the first column and moves it to the last
     /// column via <see cref="KanbanViewModel.MoveCard"/> — the same call
     /// <c>KanbanView.axaml.cs</c>'s <c>ColumnBody_Drop</c> makes — then asserts both the viewmodel state

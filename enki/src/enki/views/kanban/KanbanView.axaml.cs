@@ -254,6 +254,16 @@ public partial class KanbanView : UserControl
         if (editor.AddSubtaskCommand.CanExecute(null)) editor.AddSubtaskCommand.Execute(null);
     }
 
+    /// <summary>Enter en el campo de enlace añade el enlace, igual que en el de subtareas.</summary>
+    private void NewLinkBox_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox { DataContext: KanbanCardEditorViewModel editor }) return;
+        if (e.Key != Key.Enter) return;
+
+        e.Handled = true;
+        if (editor.AddLinkCommand.CanExecute(null)) editor.AddLinkCommand.Execute(null);
+    }
+
     // ===================== "Gestión de tareas" task editor popup: new subtask field =====================
 
     private void PolarNewSubtaskBox_KeyDown(object? sender, KeyEventArgs e)

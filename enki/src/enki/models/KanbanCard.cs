@@ -58,6 +58,12 @@ public sealed class KanbanCard
     /// serialización JSON del tablero las persiste automáticamente.</summary>
     public List<string> Tags { get; set; } = [];
 
+    /// <summary>Enlaces web (<c>http</c>/<c>https</c>) adjuntos a la tarjeta, en el orden en que el usuario
+    /// los añadió. Se guardan ya normalizados por <see cref="Services.WebLinkNormalizer"/>, así que cada
+    /// entrada es una URL absoluta lista para entregar al navegador del sistema vía
+    /// <see cref="Services.UrlOpener"/>, que vuelve a filtrarla antes de abrirla.</summary>
+    public List<string> Links { get; set; } = [];
+
     /// <summary>Ruta completa (<see cref="Models.NoteFile.FullPath"/>) de la nota vinculada a esta tarjeta,
     /// o <c>null</c> si no tiene ninguna — enlace nota↔tarea, "Capa 1". Es la mitad "tarea" del enlace
     /// nota↔tarea; la nota no guarda ningún campo recíproco, la

@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- enlaces web en las tareas de Kanban (`KanbanCard.Links`): el formulario de la tarjeta admite tantos enlaces como se quieran, los valida y completa con `https://` (`WebLinkNormalizer`), rechaza duplicados y esquemas que no son `http`/`https`, y el detalle los abre con un clic en el navegador predeterminado del sistema a través de `UrlOpener`; el pie de la tarjeta indica cuántos tiene.
 - personalidad del asistente: nombre y contexto general en `ajustes > inteligencia artificial > personalidad del asistente`, guardados con botón en `ai/persona.json` fuera de `settings.json`, del paquete de diagnóstico y del perfil portable; con nombre, la bienvenida, el compositor y cada respuesta lo usan.
 - contexto por sesión y por chat desde el nuevo botón de personalidad de la cabecera del asistente (sección y panel lateral): el de sesión lo comparten todos sus chats, el de chat se guarda con la conversación o con el borrador del chat nuevo, y ambos se pueden cambiar entre turnos.
 - bloque `<enki_persona>` en cada turno (`AiPromptBuilder.WithPersona`) con las capas general, de sesión y de chat, donde prevalece la más concreta y nunca pasa por encima del ámbito ni de las reglas de Enki; sin personalidad definida el turno se envía igual que antes.
@@ -270,6 +271,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- web links in Kanban tasks (`KanbanCard.Links`): the card form accepts as many links as wanted, validates them and completes them with `https://` (`WebLinkNormalizer`), rejects duplicates and non-`http`/`https` schemes, and the detail opens them in the system default browser with one click through `UrlOpener`; the card footer shows how many it has.
 - assistant personality: name and general context in `settings > artificial intelligence > assistant personality`, saved with a button to `ai/persona.json`, outside `settings.json`, the diagnostics package and the portable profile; once named, the welcome screen, composer and every reply use it.
 - per-session and per-chat context from the new personality button in the assistant header (section and side panel): the session context is shared by all its chats, the chat context is saved with the conversation or the new-chat draft, and both can change between turns.
 - `<enki_persona>` block on every turn (`AiPromptBuilder.WithPersona`) with the general, session and chat layers, where the most specific wins and never overrides the scope or Enki's rules; without a personality the turn is sent exactly as before.
