@@ -5,6 +5,7 @@ using System.Linq;
 using Avalonia.Media.Imaging;
 using PDFtoImage;
 using SkiaSharp;
+using enki.Services;
 
 namespace enki.ViewModels;
 
@@ -20,7 +21,11 @@ namespace enki.ViewModels;
 /// Each call opens its own short-lived <see cref="FileStream"/> instead of caching the PDF's bytes in
 /// memory: PDFium calls are internally lock-serialized by the library regardless (see its own docs on "no
 /// parallelization support"), so nothing is gained by holding the file open or its bytes resident, and a
-/// large scanned PDF never has to sit fully loaded in memory just to render one page.</summary>
+/// large scanned PDF never has to sit fully loaded in memory just to render one page.
+///
+/// Cada llamada a PDFium se hace dentro de <see cref="PdfiumGate.Sync"/>, el mismo candado que usa la lectura de
+/// texto del asistente (<see cref="PdfTextExtractor"/>): la biblioteca nativa no admite llamadas simultáneas.
+/// La conversión a <see cref="Bitmap"/> queda fuera del candado.</summary>
 // PDFtoImage's Conversion methods are annotated as unsupported on browser/wasm — Enki never targets that
 // (it's a desktop WinExe shipping only Windows/Linux/macOS builds, all of which the analyzer already
 // lists as supported), so CA1416 here is a known non-issue rather than something to design around.
@@ -29,16 +34,22 @@ internal static class PdfRenderHelper
 {
     public static int GetPageCount(string fullPath)
     {
-        using var stream = File.OpenRead(fullPath);
-        return Conversion.GetPageCount(stream);
+        lock (PdfiumGate.Sync)
+        {
+            using var stream = File.OpenRead(fullPath);
+            return Conversion.GetPageCount(stream);
+        }
     }
 
     /// <summary>Tamaño de cada página en puntos PDF (1/72 de pulgada), en orden — lo que necesita el visor para
     /// ajustar una página al ancho del panel antes de haberla renderizado.</summary>
     public static IReadOnlyList<(double Width, double Height)> GetPageSizes(string fullPath)
     {
-        using var stream = File.OpenRead(fullPath);
-        return Conversion.GetPageSizes(stream).Select(size => ((double)size.Width, (double)size.Height)).ToList();
+        lock (PdfiumGate.Sync)
+        {
+            using var stream = File.OpenRead(fullPath);
+            return Conversion.GetPageSizes(stream).Select(size => ((double)size.Width, (double)size.Height)).ToList();
+        }
     }
 
     /// <summary>Renders <paramref name="pageIndex"/> (0-based) at a fixed pixel width, height following
@@ -46,19 +57,26 @@ internal static class PdfRenderHelper
     /// specific DPI.</summary>
     public static Bitmap RenderPageByWidth(string fullPath, int pageIndex, int width)
     {
-        using var stream = File.OpenRead(fullPath);
-        using var skBitmap = Conversion.ToImage(stream, page: pageIndex,
-            options: new RenderOptions(Width: width, WithAspectRatio: true));
-        return ToAvaloniaBitmap(skBitmap);
+        SKBitmap skBitmap;
+        lock (PdfiumGate.Sync)
+        {
+            using var stream = File.OpenRead(fullPath);
+            skBitmap = Conversion.ToImage(stream, page: pageIndex, options: new RenderOptions(Width: width, WithAspectRatio: true));
+        }
+        using (skBitmap) return ToAvaloniaBitmap(skBitmap);
     }
 
     /// <summary>Renders <paramref name="pageIndex"/> (0-based) at a given DPI — used for the full-size
     /// preview page, where DPI (not a fixed pixel width) is what "zoom" actually means.</summary>
     public static Bitmap RenderPageByDpi(string fullPath, int pageIndex, int dpi)
     {
-        using var stream = File.OpenRead(fullPath);
-        using var skBitmap = Conversion.ToImage(stream, page: pageIndex, options: new RenderOptions(Dpi: dpi));
-        return ToAvaloniaBitmap(skBitmap);
+        SKBitmap skBitmap;
+        lock (PdfiumGate.Sync)
+        {
+            using var stream = File.OpenRead(fullPath);
+            skBitmap = Conversion.ToImage(stream, page: pageIndex, options: new RenderOptions(Dpi: dpi));
+        }
+        using (skBitmap) return ToAvaloniaBitmap(skBitmap);
     }
 
     private static Bitmap ToAvaloniaBitmap(SKBitmap skBitmap)

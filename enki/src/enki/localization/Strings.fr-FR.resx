@@ -7084,6 +7084,9 @@ Bonne rédaction.</value>
   <data name="Assistant_Tool_read_text_file" xml:space="preserve">
     <value>Lire un fichier texte</value>
   </data>
+  <data name="Assistant_Tool_read_file" xml:space="preserve">
+    <value>Lire un fichier</value>
+  </data>
   <data name="Assistant_Tool_rename_file" xml:space="preserve">
     <value>Renommer un fichier</value>
   </data>
@@ -7328,10 +7331,13 @@ Bonne rédaction.</value>
     <value>Ajouter</value>
   </data>
   <data name="Assistant_Attachment_NotText" xml:space="preserve">
-    <value>Pas un fichier texte</value>
+    <value>Format non pris en charge</value>
   </data>
   <data name="Assistant_Attachment_TooLarge" xml:space="preserve">
-    <value>Trop volumineux (plus de 1 Mo)</value>
+    <value>Trop volumineux pour être lu</value>
+  </data>
+  <data name="Assistant_Attachment_Unreadable" xml:space="preserve">
+    <value>Impossible de lire son contenu</value>
   </data>
   <data name="Assistant_Composer_SkillFixedHint" xml:space="preserve">
     <value>La compétence guide toute la conversation : elle se choisit avant le premier message.</value>

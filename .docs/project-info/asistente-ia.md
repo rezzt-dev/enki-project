@@ -293,7 +293,9 @@ services/ai/AiChatService.cs         historial: un JSON por chat en %AppData%/En
 services/ai/AiApiKeyStore.cs         claves de API (Anthropic, Gemini, Brave Search) en el almacén seguro del sistema
 services/ai/AiWebService.cs          acceso a internet: búsqueda (DuckDuckGo, Brave Search) y lectura de páginas
 services/WebFetch.cs                 descarga acotada de páginas públicas, compartida con el web clipper
-services/ai/AiTextFiles.cs           reglas comunes para leer archivos de texto (adjuntos y read_text_file)
+services/ai/AiFileReader.cs          lectura de archivos por formato, común a adjuntos y read_file (ver "Lectura de archivos")
+services/PdfTextExtractor.cs         texto por página y páginas renderizadas de un PDF con PDFium (candado PdfiumGate)
+services/SpreadsheetTextExtractor.cs XLSX y ODS como filas separadas por tabuladores, hoja a hoja
 services/ai/ChatMarkdownParser.cs    subconjunto de Markdown para pintar las respuestas
 controls/ChatMarkdownView.cs         render de esos bloques con los recursos del tema
 viewmodels/ai/                       AssistantViewModel (+ .Composer, .Scope, .Effort, .Drafts, .Vault,
@@ -367,16 +369,88 @@ stdout → líneas JSON (init, fragmentos de texto, límite de uso, resultado)
   por vault y borradores"). "Borrar historial" en Ajustes elimina la copia de Enki y los borradores, no la
   del CLI.
 
+## Lectura de archivos
+
+El asistente lee cualquier archivo que acepta la sección Archivos y del que se puede sacar contenido, con una sola
+herramienta, `read_file`, y la misma lógica para los adjuntos (`AiFileReader`). Reutiliza los lectores que ya
+usa el visor de Archivos y nunca interpreta ni ejecuta el contenido; los archivos de una sesión protegida se
+leen descifrados en memoria con `VaultService.ReadFileBytes`, sin copias en disco.
+
+| formato (`AiFileFormat`) | extensiones | qué recibe el modelo | límite |
+| --- | --- | --- | --- |
+| texto | código y texto plano (`VaultFileKind.Code`) | el contenido tal cual (sin BOM) | 1 MB |
+| PDF | `.pdf` | texto por página con marcas `[page N]` (PDFium) y, si hace falta, páginas renderizadas | 64 MB |
+| Word | `.docx`, `.docm`, `.dotx`, `.dotm` | texto con títulos `#`, listas, tablas `\| a \| b \|`, cuadros de texto, cabecera y pie, notas y comentarios (`OfficeTextExtractor`) | 32 MB |
+| PowerPoint | `.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm` | `## Slide N: título` en el orden de la presentación, texto por nivel, tablas y notas del orador; las ocultas, marcadas | 32 MB |
+| OpenDocument de texto o presentación | `.odt`, `.odp` | texto de párrafos (`ContainerPreviewService`) | 32 MB |
+| hoja de cálculo | `.xlsx`, `.xlsm`, `.xltx`, `.xltm`, `.ods` | una sección por hoja con su rango y filas separadas por tabuladores | 32 MB |
+| archivo comprimido | `.zip`, `.jar`, `.nupkg` | listado de rutas y tamaños, sin extraer nada | 32 MB |
+| imagen | las raster del visor y `.svg` | la imagen reducida, en JPEG | 40 MB |
+| desconocido | cualquier otra | texto, solo si su contenido es UTF-8 válido sin bytes nulos | 1 MB |
+| audio y vídeo | las del visor | nada: no hay transcripción local; la herramienta lo explica | — |
+
+**Gastar los tokens justos.**
+
+- El texto se extrae compacto: en un PDF se quitan los caracteres de control y los espacios repetidos y queda
+  como mucho una línea en blanco seguida; en un documento, igual. Una hoja de cálculo no repite la referencia de
+  cada celda: cada fila empieza por su número y sigue con sus valores alineados por tabuladores desde la primera
+  columna con datos (`## Ventas · A1:D120 · row number, then columns A-D`). Las filas vacías se omiten, las
+  repetidas de ODS se escriben una vez, las fechas guardadas como número se escriben como fecha según el estilo
+  de la celda (también en libros de 1904), las fórmulas aportan su último valor calculado, sin recalcular (o
+  su texto, `=A1*2`, si el libro se guardó sin calcularla) y las hojas ocultas se marcan. En Word se omiten el
+  texto borrado con control de cambios, los códigos de campo y las ramas `mc:Fallback`, que repetirían los cuadros
+  de texto; la cabecera y el pie se escriben una vez aunque varias secciones los repitan.
+- `read_file` devuelve tramos de `max_chars` (20 000 por defecto, hasta 60 000) con `total_chars` y, si queda
+  más, `next_offset`; el corte cae en un salto de línea del último quinto del tramo para no partir una fila ni un
+  párrafo. Un PDF se puede pedir por páginas (`pages`: `"3"`, `"2-5"`, `"1,4,7-9"`). El prompt de sistema le
+  pide al modelo leer solo lo que la tarea necesita.
+- La extracción completa (hasta 1 000 000 de caracteres) se guarda en una caché en memoria de cuatro entradas,
+  con la ruta, el tamaño, la fecha y las páginas como clave: pedir el tramo siguiente no vuelve a procesar el
+  archivo. Se vacía al cambiar de vault.
+- Una imagen se envía con su lado mayor en 1024 px (`detail`: `low` 512, `high` 1568), orientada según EXIF, sin
+  metadatos, con las transparencias sobre blanco y en JPEG: su coste en tokens depende de esos píxeles, no del
+  tamaño del original. El resultado JSON lleva las dimensiones originales y las enviadas, y la fecha de captura
+  EXIF si la hay. Un adjunto de imagen no se decodifica: solo se leen sus dimensiones.
+- Una página de PDF sin capa de texto (escaneada o solo imagen) aparece como `[page N: no text layer]` y en
+  `pages_without_text`. Si ninguna página pedida tiene texto se renderizan sin pedirlo, y con `as_images=true` se
+  renderizan las pedidas, para ver gráficos o tablas; como mucho 3 por llamada.
+
+**Cómo llegan las imágenes a cada proveedor.** `AiToolCall.Images` → `AiToolOutcome.Images` → el servidor MCP
+añade un contenido `image` (base64) detrás del texto del resultado:
+
+- Claude Code y Codex reciben el resultado MCP tal cual.
+- Gemini: `EnkiMcpClient` devuelve las imágenes aparte y `GeminiApiService` las añade como partes `inlineData`
+  del mismo turno, detrás de las respuestas de función.
+- Ollama: se adjuntan en `images` del mensaje `tool` solo si `/api/show` anuncia la capacidad `vision`; si no,
+  el modelo recibe los datos y una línea que dice que no puede ver imágenes.
+
+**Permiso.** `read_file` es una lectura: necesita el permiso de consulta del chat, salvo para los archivos que
+el usuario adjuntó al mensaje del turno (`AiToolContext.AttachedFiles`), que ya compartió él. Así el modelo
+puede ver una imagen adjunta sin otra pregunta, y cualquier otro archivo sigue pidiéndolo.
+
+**PDFium.** PDFium no admite llamadas concurrentes: el visor (`PdfRenderHelper`, a través de PDFtoImage) y la
+lectura de texto (`PdfTextExtractor`, con llamadas directas a la misma biblioteca nativa) comparten el candado
+`PdfiumGate.Sync`. Un PDF protegido con contraseña o dañado se rechaza con su motivo.
+
+**Límites conocidos.** No hay OCR local: el texto de un escaneado solo lo lee un modelo con visión a partir de
+la página renderizada. Los formatos antiguos de Office (`.doc`, `.xls`, `.ppt`), RAR y 7z no se leen. Las
+hojas de cálculo no calculan fórmulas ni aplican formatos numéricos distintos de fecha. Que el modelo vea una
+imagen depende de que el proveedor y el modelo elegidos tengan visión.
+
 ## Contexto, skills y salida
 
 - **Adjuntos** (clip, "Adjuntar «nota activa»", o "Preguntar al asistente sobre esta nota" en la
-  paleta): notas o archivos de texto, hasta 5 por mensaje. El selector tiene dos pestañas, Notas y Archivos;
-  los archivos que no son texto (imágenes, PDF, multimedia) o pasan de 1 MB se listan deshabilitados con el
-  motivo. Un archivo viaja como `<file>` dentro de `<enki_context>` con las mismas reglas que
-  `read_text_file` (`AiTextFiles`). Si al enviar un adjunto ya no se puede leer, su chip enseña el motivo y
+  paleta): notas o cualquier archivo que el asistente sepa leer, hasta 5 por mensaje. El selector tiene dos
+  pestañas, Notas y Archivos; el audio, el vídeo, los formatos binarios desconocidos y los que pasan del límite
+  de su formato se listan deshabilitados con el motivo. Un archivo viaja como `<file>` dentro de
+  `<enki_context>` con las mismas reglas que `read_file` (`AiFileReader`, ver "Lectura de archivos"): texto,
+  PDF, documentos y hojas de cálculo como texto extraído; una imagen, como sus datos y los argumentos exactos
+  de `read_file` para verla. Si al enviar un adjunto ya no se puede leer, su chip enseña el motivo y
   no se envía nada hasta retirarlo. Antes de leerlas se vuelcan los editores con cambios sin guardar. El
   presupuesto `MaxContextChars` (24 000 por defecto) se reparte a partes iguales y lo que una nota corta no
-  usa pasa a las demás; lo recortado se marca en el chip. Se envía la ruta relativa al vault, nunca la
+  usa pasa a las demás; lo recortado se marca en el chip. De un archivo solo se extrae su parte del
+  presupuesto, y si no cabe entero el bloque termina con cuánto falta y con qué `offset` seguir. Se envía la
+  ruta relativa al vault, nunca la
   absoluta. Las sesiones cifradas bloqueadas no aparecen en el selector.
 - **Confirmación**: con notas adjuntas y `ConfirmBeforeSendingContext` (activo por defecto), un diálogo
   enseña qué notas y cuánto se enviará; el contenido que se aprueba es exactamente el que se envía.

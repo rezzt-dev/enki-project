@@ -101,6 +101,7 @@ public sealed class OllamaService
             var info = await show.Content.ReadFromJsonAsync<JsonObject>(idle.Token).ConfigureAwait(false);
             if (IsRemote(info)) return new(string.Empty, null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_LocalOnly"]);
             var supportsTools = info?["capabilities"]?.AsArray().Any(c => c?.GetValue<string>() == "tools") == true;
+            var supportsVision = info?["capabilities"]?.AsArray().Any(c => c?.GetValue<string>() == "vision") == true;
             idle.CancelAfter(Timeout.InfiniteTimeSpan);
             var tools = supportsTools && request.Tools is { } access
                 ? await LoadToolsAsync(access, cancellation).ConfigureAwait(false) : null;
@@ -155,9 +156,15 @@ public sealed class OllamaService
                     var name = function["name"]?.GetValue<string>() ?? throw new JsonException();
                     if (request.Tools is null || tools is null || !tools.Any(t => t?["function"]?["name"]?.GetValue<string>() == name))
                         throw new JsonException();
-                    var (output, _) = await EnkiMcpClient.CallToolAsync(_http, request.Tools, name, function["arguments"], cancellation)
+                    var outcome = await EnkiMcpClient.CallToolAsync(_http, request.Tools, name, function["arguments"], cancellation)
                         .ConfigureAwait(false);
-                    messages.Add(new JsonObject { ["role"] = "tool", ["tool_name"] = name, ["content"] = output });
+                    var toolMessage = new JsonObject { ["role"] = "tool", ["tool_name"] = name, ["content"] = outcome.Text };
+                    // Un modelo local sin visión no puede recibir imágenes: se le dice en vez de enviarlas.
+                    if (outcome.Images.Count > 0 && supportsVision)
+                        toolMessage["images"] = new JsonArray(outcome.Images.Select(i => (JsonNode)JsonValue.Create(i.Base64)).ToArray());
+                    else if (outcome.Images.Count > 0)
+                        toolMessage["content"] = outcome.Text + "\n(This local model cannot view images, so the image was not sent; only the details above are available.)";
+                    messages.Add(toolMessage);
                 }
             }
             return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]);

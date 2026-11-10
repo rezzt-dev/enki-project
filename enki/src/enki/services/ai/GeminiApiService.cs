@@ -222,22 +222,28 @@ public sealed class GeminiApiService
                 // La espera de aprobación pertenece al MCP y tiene su propio límite; no es inactividad del modelo.
                 idle.CancelAfter(Timeout.InfiniteTimeSpan);
                 var results = new JsonArray();
+                var images = new List<McpImage>();
                 foreach (var call in turn.Calls)
                 {
                     cancellation.ThrowIfCancellationRequested();
                     var name = call["name"]?.GetValue<string>() ?? string.Empty;
                     // Un nombre inventado se le devuelve como error para que se corrija, sin llegar al servidor.
-                    var (output, isError) = toolNames.Contains(name)
+                    var outcome = toolNames.Contains(name)
                         ? await EnkiMcpClient.CallToolAsync(_mcpHttp, request.Tools, name, call["args"], cancellation).ConfigureAwait(false)
-                        : ("Unknown tool: " + name, true);
+                        : new McpToolResult("Unknown tool: " + name, true, []);
                     var functionResponse = new JsonObject
                     {
                         ["name"] = name,
-                        ["response"] = new JsonObject { [isError ? "error" : "output"] = output }
+                        ["response"] = new JsonObject { [outcome.IsError ? "error" : "output"] = outcome.Text }
                     };
                     if (call["id"] is { } id) functionResponse["id"] = id.DeepClone();
                     results.Add(new JsonObject { ["functionResponse"] = functionResponse });
+                    images.AddRange(outcome.Images);
                 }
+                // Las imágenes de una lectura (una foto, páginas de un PDF) van como partes inlineData del mismo turno,
+                // detrás de las respuestas de función: así las ve cualquier modelo Gemini con visión.
+                foreach (var image in images)
+                    results.Add(new JsonObject { ["inlineData"] = new JsonObject { ["mimeType"] = image.MimeType, ["data"] = image.Base64 } });
                 contents.Add(UserContent(results));
             }
             return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]);

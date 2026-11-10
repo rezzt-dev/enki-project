@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- añadir la herramienta `read_file` del asistente (`AiFileReader`) para leer texto, codigo, pdf por paginas, word (`.docx`), powerpoint (`.pptx`), excel (`.xlsx`), opendocument, listados zip e imagenes de la seccion `archivos`, y rechazar audio y video con su motivo
+- reducir el consumo de tokens con texto compacto, hojas como filas separadas por tabuladores con numero de fila y fechas resueltas, tramos con `offset` y `next_offset`, paginas de pdf a elegir, imagenes jpeg de 512 a 1568 px y cache en memoria de la extraccion
+- permitir adjuntar pdf, documentos, hojas de calculo e imagenes al mensaje, enviarlos como texto extraido y dejar que `read_file` abra los adjuntos del turno sin el permiso de consulta del chat
+- añadir `PdfTextExtractor`, `OfficeTextExtractor` y `SpreadsheetTextExtractor` para leer titulos, listas, tablas, notas y comentarios de word, diapositivas en orden con notas del orador de powerpoint, y formulas y hojas ocultas de excel, tambien en `.docm`, `.dotx`, `.pptm`, `.potx`, `.ppsx`, `.xlsm` y `.xltx`
 - enlaces web en las tareas de Kanban (`KanbanCard.Links`): el formulario de la tarjeta admite tantos enlaces como se quieran, los valida y completa con `https://` (`WebLinkNormalizer`), rechaza duplicados y esquemas que no son `http`/`https`, y el detalle los abre con un clic en el navegador predeterminado del sistema a través de `UrlOpener`; el pie de la tarjeta indica cuántos tiene.
 - personalidad del asistente: nombre y contexto general en `ajustes > inteligencia artificial > personalidad del asistente`, guardados con botón en `ai/persona.json` fuera de `settings.json`, del paquete de diagnóstico y del perfil portable; con nombre, la bienvenida, el compositor y cada respuesta lo usan.
 - contexto por sesión y por chat desde el nuevo botón de personalidad de la cabecera del asistente (sección y panel lateral): el de sesión lo comparten todos sus chats, el de chat se guarda con la conversación o con el borrador del chat nuevo, y ambos se pueden cambiar entre turnos.
@@ -124,6 +128,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - pruebas `ModuleProfileCatalogTests` y `HighContrastThemeTests`, guía `.docs/project-info/accesibilidad-y-alto-contraste.md` con el procedimiento de prueba con Orca, NVDA y VoiceOver (aún sin ejecutar) y `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` con la política de firma y notarización.
 
 #### CAMBIOS
+- sustituir `read_text_file` y `AiTextFiles` por `read_file` y `AiFileReader`, enviar las imagenes como contenido mcp a cada proveedor y mostrar en el selector de adjuntos un icono por formato y motivos traducidos
+- compartir el candado `PdfiumGate` entre `PdfRenderHelper` y la lectura del asistente, reutilizar la rasterizacion svg de `ImagePreviewService` y documentar la lectura en `.docs/project-info/asistente-ia.md`
 - exigir español de españa y conservar `ñ` y `Ñ`, incluso en formatos que pidan escribir sin acentos
 
 - completar las guías de gestión y el contexto específico del proyecto; conservar las reglas técnicas y verificar las rutas
@@ -271,6 +277,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- add the assistant `read_file` tool (`AiFileReader`) to read text, code, pdfs by page, word (`.docx`), powerpoint (`.pptx`), excel (`.xlsx`), opendocument, zip listings and images from the `files` section, and refuse audio and video with a reason
+- reduce token usage with compact text, sheets as tab-separated rows with row numbers and resolved dates, chunks with `offset` and `next_offset`, selectable pdf pages, 512 to 1568 px jpeg images and an in-memory extraction cache
+- allow attaching pdfs, documents, spreadsheets and images to a message, send them as extracted text and let `read_file` open the turn attachments without the chat read permission
+- add `PdfTextExtractor`, `OfficeTextExtractor` and `SpreadsheetTextExtractor` to read word headings, lists, tables, notes and comments, powerpoint slides in order with speaker notes, and excel formulas and hidden sheets, also in `.docm`, `.dotx`, `.pptm`, `.potx`, `.ppsx`, `.xlsm` and `.xltx`
 - web links in Kanban tasks (`KanbanCard.Links`): the card form accepts as many links as wanted, validates them and completes them with `https://` (`WebLinkNormalizer`), rejects duplicates and non-`http`/`https` schemes, and the detail opens them in the system default browser with one click through `UrlOpener`; the card footer shows how many it has.
 - assistant personality: name and general context in `settings > artificial intelligence > assistant personality`, saved with a button to `ai/persona.json`, outside `settings.json`, the diagnostics package and the portable profile; once named, the welcome screen, composer and every reply use it.
 - per-session and per-chat context from the new personality button in the assistant header (section and side panel): the session context is shared by all its chats, the chat context is saved with the conversation or the new-chat draft, and both can change between turns.
@@ -385,6 +395,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - `ModuleProfileCatalogTests` and `HighContrastThemeTests`, the `.docs/project-info/accesibilidad-y-alto-contraste.md` guide with the Orca, NVDA and VoiceOver test procedure (not yet run) and `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` with the signing and notarization policy.
 
 #### CHANGED
+- replace `read_text_file` and `AiTextFiles` with `read_file` and `AiFileReader`, send images as mcp content to each provider and show a per-format icon and translated reasons in the attachment picker
+- share the `PdfiumGate` lock between `PdfRenderHelper` and the assistant reader, reuse the `ImagePreviewService` svg rasterisation and document reading in `.docs/project-info/asistente-ia.md`
 - require spanish from spain and preserve `ñ` and `Ñ`, including formats that omit vowel accents
 
 - complete repository management guides and project-specific context; preserve technical rules and verify paths

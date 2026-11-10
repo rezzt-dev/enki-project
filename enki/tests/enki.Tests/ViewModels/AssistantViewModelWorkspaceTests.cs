@@ -207,27 +207,34 @@ public sealed class AssistantViewModelWorkspaceTests : IDisposable
     // ===================== Adjuntos de archivos =====================
 
     [Fact]
-    public async Task TextFiles_AreSentAsFileBlocks_AndBinaryFilesCannotBePicked()
+    public async Task Files_AreSentAsFileBlocks_ImagesAsTheirDetails_AndMediaCannotBePicked()
     {
         if (OperatingSystem.IsWindows()) return;
         var vm = await CreateAsync();
         var json = Path.Combine(_vault.VaultPath, "datos.json");
         File.WriteAllText(json, "{\"total\": 42}");
+        var song = Path.Combine(_vault.VaultPath, "cancion.mp3");
+        File.WriteAllBytes(song, [0x49, 0x44, 0x33]);
         var image = Path.Combine(_vault.VaultPath, "foto.png");
-        File.WriteAllBytes(image, [0x89, 0x50, 0x4E, 0x47]);
+        using (var png = new ImageMagick.MagickImage(ImageMagick.MagickColors.Red, 3, 2))
+            File.WriteAllBytes(image, png.ToByteArray(ImageMagick.MagickFormat.Png));
 
-        var imageItem = new AiAttachmentPickerItemViewModel(AiTextFiles.Describe(image), "Vault");
-        Assert.False(imageItem.IsEnabled);
-        vm.PickNoteCommand.Execute(imageItem);
+        var songItem = new AiAttachmentPickerItemViewModel(AiFileReader.Describe(song), "Vault");
+        Assert.False(songItem.IsEnabled);
+        vm.PickNoteCommand.Execute(songItem);
         Assert.Empty(vm.PendingAttachments);
 
-        vm.PickNoteCommand.Execute(new AiAttachmentPickerItemViewModel(AiTextFiles.Describe(json), "Vault"));
-        Assert.True(Assert.Single(vm.PendingAttachments).IsFile);
+        vm.PickNoteCommand.Execute(new AiAttachmentPickerItemViewModel(AiFileReader.Describe(json), "Vault"));
+        var imageItem = new AiAttachmentPickerItemViewModel(AiFileReader.Describe(image), "Vault");
+        Assert.True(imageItem.IsEnabled);
+        vm.PickNoteCommand.Execute(imageItem);
+        Assert.All(vm.PendingAttachments, a => Assert.True(a.IsFile));
         await SendAsync(vm, "¿Cuál es el total?");
 
         Assert.Contains("<file title=\"datos.json\" path=\"datos.json\">", _fake.Stdin(0), StringComparison.Ordinal);
         Assert.Contains("\"total\": 42", _fake.Stdin(0), StringComparison.Ordinal);
-        Assert.Equal(AiAttachmentKind.File, vm.Messages[0].Model.Attachments.Single().Kind);
+        Assert.Contains("[Image, 3×2 px", _fake.Stdin(0), StringComparison.Ordinal);
+        Assert.Equal(2, vm.Messages[0].Model.Attachments.Count(a => a.Kind == AiAttachmentKind.File));
     }
 
     [Fact]
@@ -237,7 +244,7 @@ public sealed class AssistantViewModelWorkspaceTests : IDisposable
         var vm = await CreateAsync();
         var path = Path.Combine(_vault.VaultPath, "datos.json");
         File.WriteAllText(path, "{}");
-        vm.PickNoteCommand.Execute(new AiAttachmentPickerItemViewModel(AiTextFiles.Describe(path), "Vault"));
+        vm.PickNoteCommand.Execute(new AiAttachmentPickerItemViewModel(AiFileReader.Describe(path), "Vault"));
         File.WriteAllBytes(path, [0x7B, 0x00, 0x7D]);
 
         await SendAsync(vm, "Lee esto");

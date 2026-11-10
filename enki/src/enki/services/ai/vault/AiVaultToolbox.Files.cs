@@ -87,7 +87,7 @@ public sealed partial class AiVaultToolbox
             });
 
         Register("list_files", AiToolScope.Content, AiToolEffect.Read,
-            "Lists the non-note files of a workspace (images, PDFs, audio, video, code, documents…) with kind, size and date.",
+            "Lists the non-note files of a workspace (images, PDFs, audio, video, code, documents…) with kind, size and date. Read them with read_file.",
             Schema(WorkspaceParam(), Opt("folder", Text("Folder relative to the workspace (omit for the root).")),
                 Opt("recursive", Flag("Include subfolders (default true).")),
                 Opt("kind", Choice("Only files of this kind.", "image", "pdf", "audio", "video", "code", "other")), LimitParam()),
@@ -110,36 +110,76 @@ public sealed partial class AiVaultToolbox
                 };
             });
 
-        Register("read_text_file", AiToolScope.Content, AiToolEffect.Read,
-            $"Reads a text file that is not a note (code, CSV, JSON, plain text…), up to {MaxNoteChars} characters. "
-            + "Binary files (images, PDFs, media) cannot be read.",
-            Schema(WorkspaceParam(), Req("path", Text("File path relative to the workspace."))),
+        Register(ReadFileTool, AiToolScope.Content, AiToolEffect.Read,
+            "Reads a non-note file. Text and code come back as is; PDFs as text per page ([page N] markers); Word, PowerPoint "
+            + "and OpenDocument as plain text; Excel/ODS as one section per sheet with tab-separated rows (first field = row number); "
+            + "ZIP archives as a file listing; images as the image itself (downscaled) for you to look at. Audio and video cannot be read. "
+            + $"Long text is returned in chunks of max_chars (default {AiFileReader.DefaultMaxChars}): if next_offset is present, call again "
+            + "with that offset only if you need the rest. For long PDFs, read only the pages you need with 'pages'. Pages without a text "
+            + $"layer (scans) are rendered as images automatically when none of the requested pages has text, or with as_images=true (max {AiFileReader.MaxRenderedPages} pages per call).",
+            Schema(WorkspaceParam(), Req("path", Text("File path relative to the workspace.")),
+                Opt("offset", Number("Character offset to continue from (the next_offset of a previous call).")),
+                Opt("max_chars", Number($"Maximum characters of text to return (default {AiFileReader.DefaultMaxChars}, max {AiFileReader.MaxCharsLimit}).")),
+                Opt("pages", Text("PDF only: pages to read, e.g. \"3\", \"2-5\" or \"1,4,7-9\" (default: all).")),
+                Opt("as_images", Flag($"PDF only: also render the requested pages as images, to see charts, tables or scans (max {AiFileReader.MaxRenderedPages}).")),
+                Opt("detail", Choice("Image resolution: low (512 px), standard (1024 px, default) or high (1568 px). Use high only for small print.",
+                    "low", "standard", "high"))),
             call =>
             {
                 var (workspace, file) = ExistingFile(call);
                 call.Target(AiToolTargetKind.File, file.FileName, file.FullPath);
-                switch (AiTextFiles.Check(file))
+                var format = AiFileReader.FormatOf(file);
+                switch (AiFileReader.Check(file, allowSniffing: true))
                 {
-                    case AiTextFileProblem.NotText:
-                        throw AiToolCall.Invalid($"\"{file.FileName}\" is a {file.Kind.ToString().ToLowerInvariant()} file; only text files can be read.");
-                    case AiTextFileProblem.TooLarge:
-                        throw AiToolCall.Invalid($"\"{file.FileName}\" is too large to read ({file.SizeBytes} bytes).");
+                    case AiFileProblem.Unsupported:
+                        throw AiToolCall.Invalid(format == AiFileFormat.Media
+                            ? $"\"{file.FileName}\" is {file.Kind.ToString().ToLowerInvariant()}: its content cannot be read (there is no transcription). Use its name, size and date."
+                            : $"\"{file.FileName}\" is a binary file in a format Enki cannot read.");
+                    case AiFileProblem.TooLarge:
+                        throw AiToolCall.Invalid($"\"{file.FileName}\" is too large to read ({file.SizeBytes} bytes; the limit for {AiFileReader.Describe(format)} is {AiFileReader.MaxBytes(format)}).");
                 }
-                string text;
+                var options = new AiFileReadOptions
+                {
+                    Offset = call.GetInteger("offset", 0) ?? 0,
+                    MaxChars = call.GetInteger("max_chars", 500, AiFileReader.MaxCharsLimit) ?? AiFileReader.DefaultMaxChars,
+                    Pages = call.GetText("pages"),
+                    PagesAsImages = call.GetFlag("as_images") == true,
+                    ImageSide = call.GetText("detail") switch
+                    {
+                        "low" => AiFileReader.LowImageSide,
+                        "high" => AiFileReader.HighImageSide,
+                        _ => AiFileReader.StandardImageSide
+                    }
+                };
+                if (format != AiFileFormat.Pdf && (options.Pages is not null || options.PagesAsImages))
+                    throw AiToolCall.Invalid("'pages' and 'as_images' only apply to PDF files.");
+                AiFileExtract extract;
                 try
                 {
-                    text = AiTextFiles.Read(_vault, file.FullPath);
+                    extract = AiFileReader.Read(_vault, file, options);
                 }
-                catch (InvalidDataException ex)
+                catch (Exception ex) when (ex is InvalidDataException or ArgumentException)
                 {
                     throw AiToolCall.Invalid(ex.Message);
                 }
+                call.Images.AddRange(extract.Images);
                 return new
                 {
                     Workspace = WorkspaceKey(workspace),
                     Path = RelativePath(workspace, file.FullPath),
-                    Truncated = text.Length > MaxNoteChars,
-                    Content = Truncate(text, MaxNoteChars)
+                    Format = extract.Format.ToString().ToLowerInvariant(),
+                    file.SizeBytes,
+                    extract.PageCount,
+                    PagesWithoutText = extract.PagesWithoutText.Count > 0 ? AiFileReader.FormatPages(extract.PagesWithoutText) : null,
+                    RenderedPages = extract.RenderedPages.Count > 0 ? AiFileReader.FormatPages(extract.RenderedPages) : null,
+                    Image = extract.Format == AiFileFormat.Image
+                        ? new { Width = extract.OriginalWidth, Height = extract.OriginalHeight, SentWidth = extract.ImageWidth, SentHeight = extract.ImageHeight, extract.Taken }
+                        : null,
+                    TotalChars = extract.Format == AiFileFormat.Image ? (int?)null : extract.TotalChars,
+                    Offset = extract.Offset > 0 ? extract.Offset : (int?)null,
+                    extract.NextOffset,
+                    ExtractionLimited = extract.ExtractionLimited ? true : (bool?)null,
+                    Content = extract.Format == AiFileFormat.Image ? null : extract.Text
                 };
             });
 
@@ -212,7 +252,26 @@ public sealed partial class AiVaultToolbox
             throw AiToolCall.Invalid($"\"{requested}\" is a note: use the note tools (read_note, move_note…).");
         if (!File.Exists(path))
             throw new AiToolException(AiToolErrorKind.NotFound, $"There is no file \"{requested}\". Use list_files.");
-        return (workspace, AiTextFiles.Describe(path));
+        return (workspace, AiFileReader.Describe(path));
+    }
+
+    private const string ReadFileTool = "read_file";
+
+    /// <summary><c>read_file</c> sobre uno de los archivos que el usuario adjuntó a este turno
+    /// (<see cref="AiToolContext.AttachedFiles"/>). Cualquier argumento que no se pueda resolver cuenta como
+    /// "no": la herramienta pedirá entonces el permiso de consulta como siempre.</summary>
+    private bool IsAttachedFileRead(string tool, System.Text.Json.JsonElement arguments, AiToolContext context)
+    {
+        if (tool != ReadFileTool || context.AttachedFiles.Count == 0) return false;
+        try
+        {
+            var call = new AiToolCall(context, arguments, new AiToolActivity { Tool = tool });
+            return context.AttachedFiles.Contains(ResolvePath(Workspace(call), call.RequireText("path")));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return false;
+        }
     }
 
     private static object FileSummary(AiWorkspace workspace, VaultFile file) => new

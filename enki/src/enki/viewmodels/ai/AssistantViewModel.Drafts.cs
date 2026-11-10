@@ -165,8 +165,8 @@ public sealed partial class AssistantViewModel
                     ? new AiAttachmentChipViewModel(note, WorkspaceLabelFor(fullPath))
                     : null;
             if (!File.Exists(fullPath)) return null;
-            var file = AiTextFiles.Describe(fullPath);
-            return AiTextFiles.Check(file) == AiTextFileProblem.None
+            var file = AiFileReader.Describe(fullPath);
+            return AiFileReader.Check(file) == AiFileProblem.None
                 ? new AiAttachmentChipViewModel(file, WorkspaceLabelFor(fullPath))
                 : null;
         }

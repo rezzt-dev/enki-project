@@ -7084,6 +7084,9 @@ Feliz escritura.</value>
   <data name="Assistant_Tool_read_text_file" xml:space="preserve">
     <value>Leer archivo de texto</value>
   </data>
+  <data name="Assistant_Tool_read_file" xml:space="preserve">
+    <value>Leer archivo</value>
+  </data>
   <data name="Assistant_Tool_rename_file" xml:space="preserve">
     <value>Renombrar archivo</value>
   </data>
@@ -7328,10 +7331,13 @@ Feliz escritura.</value>
     <value>Agregar</value>
   </data>
   <data name="Assistant_Attachment_NotText" xml:space="preserve">
-    <value>No es un archivo de texto</value>
+    <value>Formato no compatible</value>
   </data>
   <data name="Assistant_Attachment_TooLarge" xml:space="preserve">
-    <value>Demasiado grande (más de 1 MB)</value>
+    <value>Demasiado grande para leerlo</value>
+  </data>
+  <data name="Assistant_Attachment_Unreadable" xml:space="preserve">
+    <value>No se pudo leer su contenido</value>
   </data>
   <data name="Assistant_Composer_SkillFixedHint" xml:space="preserve">
     <value>La skill guía toda la conversación, por eso se elige antes del primer mensaje.</value>

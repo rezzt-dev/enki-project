@@ -79,6 +79,9 @@ public sealed class AiToolCall(AiToolContext context, JsonElement arguments, AiT
     public AiToolContext Context { get; } = context;
     public AiToolActivity Activity { get; } = activity;
 
+    /// <summary>Imágenes que acompañan al resultado (ver <see cref="AiToolOutcome.Images"/>).</summary>
+    public List<AiFileImage> Images { get; } = [];
+
     /// <summary>Lo que se muestra en la fila de actividad del chat. Se llama en cuanto se sabe qué elemento se
     /// toca, también antes de fallar, para que el usuario vea sobre qué se intentó.</summary>
     public void Target(AiToolTargetKind kind, string label, string? id = null)

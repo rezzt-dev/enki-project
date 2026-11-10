@@ -155,7 +155,7 @@ public sealed partial class AssistantViewModel
 
     private void Attach(VaultFile file, string workspaceLabel)
     {
-        if (!CanAttachMore || AiTextFiles.Check(file) != AiTextFileProblem.None || !IsPathInScope(file.FullPath)
+        if (!CanAttachMore || AiFileReader.Check(file) != AiFileProblem.None || !IsPathInScope(file.FullPath)
             || PendingAttachments.Any(a => SamePath(a.FullPath, file.FullPath))) return;
         PendingAttachments.Add(new AiAttachmentChipViewModel(file, workspaceLabel));
     }
@@ -169,6 +169,7 @@ public sealed partial class AssistantViewModel
     {
         CancelScheduledDraftSave();
         _turnCancellation?.Cancel();
+        AiFileReader.ClearCache();
         IsNotePickerOpen = false;
         IsSkillPickerOpen = false;
         IsConfirmSendOpen = false;
@@ -527,10 +528,11 @@ public sealed partial class AssistantViewModel
                     continue;
                 }
                 if (!File.Exists(path)) throw new FileNotFoundException(null, path);
-                chip.Problem = AiTextFiles.Check(AiTextFiles.Describe(path)) switch
+                var file = AiFileReader.Describe(path);
+                chip.Problem = AiFileReader.Check(file) switch
                 {
-                    AiTextFileProblem.NotText => LocalizationService.Instance["Assistant_Attachment_NotText"],
-                    AiTextFileProblem.TooLarge => LocalizationService.Instance["Assistant_Attachment_TooLarge"],
+                    AiFileProblem.Unsupported => LocalizationService.Instance["Assistant_Attachment_NotText"],
+                    AiFileProblem.TooLarge => LocalizationService.Instance["Assistant_Attachment_TooLarge"],
                     _ => null
                 };
                 if (chip.HasProblem)
@@ -538,11 +540,19 @@ public sealed partial class AssistantViewModel
                     failed = true;
                     continue;
                 }
-                notes.Add(new AiContextNote(chip.Title, relative, AiTextFiles.Read(_vaultService, path), AiAttachmentKind.File));
+                // Se extrae como mucho lo que cabe en el contexto del mensaje; una imagen viaja como sus datos y el
+                // modelo la ve con read_file, que puede abrir los adjuntos del turno sin el permiso de consulta.
+                var extract = AiFileReader.Read(_vaultService, file, new AiFileReadOptions
+                {
+                    MaxChars = AttachmentShare(),
+                    IncludeImages = false
+                });
+                notes.Add(new AiContextNote(chip.Title, relative, AiFileReader.ToAttachmentText(extract, VaultToolsAvailable ? ReadFileArguments(path) : null),
+                    AiAttachmentKind.File));
             }
             catch (InvalidDataException)
             {
-                chip.Problem = LocalizationService.Instance["Assistant_Attachment_NotText"];
+                chip.Problem = LocalizationService.Instance["Assistant_Attachment_Unreadable"];
                 failed = true;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SessionLockedException or VaultUnavailableException)
@@ -748,8 +758,38 @@ public sealed partial class AssistantViewModel
             WebAccess = () => session.WebAccess,
             KnownWebUrls = KnownWebUrls(session),
             Activity = activity,
-            Cancellation = cancellation
+            Cancellation = cancellation,
+            AttachedFiles = AttachedFilesOfLastMessage(session)
         });
+
+    /// <summary>Texto que se extrae de cada archivo adjunto: su parte del presupuesto del mensaje
+    /// (<see cref="AiPromptBuilder.DistributeBudget"/> garantiza al menos esa parte a cada adjunto), menos un margen
+    /// para la línea que dice cómo seguir leyendo, que así nunca queda recortada.</summary>
+    private int AttachmentShare() =>
+        Math.Max(1_000, _settingsService.Settings.Ai.MaxContextChars / Math.Max(1, PendingAttachments.Count) - 400);
+
+    /// <summary>Argumentos de <c>read_file</c> para un archivo adjunto: su espacio (la sesión que lo contiene, o el
+    /// vault) y la ruta relativa a él, para que el modelo no tenga que adivinarlos.</summary>
+    private string ReadFileArguments(string fullPath)
+    {
+        var session = _sessionService?.List().FirstOrDefault(s => VaultService.IsWithinFolder(fullPath, s.RootPath));
+        var path = Path.GetRelativePath(session?.RootPath ?? _vaultService.VaultPath, fullPath).Replace('\\', '/');
+        return $"workspace=\"{session?.Id ?? AiWorkspace.VaultId}\" path=\"{path}\"";
+    }
+
+    /// <summary>Rutas absolutas de los archivos adjuntos al último mensaje del usuario (el de este turno o el que
+    /// se reintenta).</summary>
+    private HashSet<string> AttachedFilesOfLastMessage(AiChatSession session)
+    {
+        var files = new HashSet<string>(VaultService.PathComparison == StringComparison.OrdinalIgnoreCase
+            ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        if (!_vaultService.IsVaultConfigured || session.Messages.LastOrDefault(m => m.Role == AiChatRole.User) is not { } message)
+            return files;
+        foreach (var attachment in message.Attachments)
+            if (attachment.Kind == AiAttachmentKind.File && attachment.RelativePath.Length > 0)
+                files.Add(Path.GetFullPath(Path.Combine(_vaultService.VaultPath, attachment.RelativePath)));
+        return files;
+    }
 
     /// <summary>Enseña la tarjeta de confirmación en la respuesta en curso y espera a que el usuario decida. Si
     /// no está mirando el asistente, se le avisa: el turno queda parado hasta entonces.</summary>

@@ -16,7 +16,9 @@ namespace enki.Services;
 
 /// <summary>Resultado de una herramienta tal como se devuelve al modelo: JSON con los datos, o un mensaje de
 /// error que el modelo puede leer y corregir.</summary>
-public sealed record AiToolOutcome(string Text, bool IsError);
+/// <summary>Resultado de una herramienta para el modelo: JSON (o el error) y, en una lectura de imagen o de páginas
+/// de PDF, las imágenes que la acompañan, que el servidor MCP envía como contenido de imagen.</summary>
+public sealed record AiToolOutcome(string Text, bool IsError, IReadOnlyList<AiFileImage>? Images = null);
 
 /// <summary>Todo lo que el asistente puede hacer en el vault, como herramientas que se le sirven por MCP
 /// (<see cref="EnkiMcpServer"/>): leer, buscar, crear y organizar notas, carpetas y archivos; gestionar
@@ -149,17 +151,19 @@ public sealed partial class AiVaultToolbox
         try
         {
             // El permiso de consulta es sobre el contenido del vault; la web tiene su propio interruptor.
-            if (tool.Effect == AiToolEffect.Read && tool.Scope != AiToolScope.Web
+            // Un archivo que el usuario adjuntó a su mensaje ya está compartido: verlo no exige el permiso de consulta.
+            if (tool.Effect == AiToolEffect.Read && tool.Scope != AiToolScope.Web && !IsAttachedFileRead(name, arguments, context)
                 && !await context.ReadAccess.EnsureAsync(request => WaitForUserAsync(context, request)))
                 throw new AiToolException(AiToolErrorKind.ReadDenied,
                     "The user has not allowed this chat to search or read content on its own. Work with what they wrote and attached, "
                     + "and tell them they can allow it from the scope menu in the chat header if they want you to look things up. Do not retry.");
-            var result = await tool.Handler(new AiToolCall(context, arguments, activity));
+            var call = new AiToolCall(context, arguments, activity);
+            var result = await tool.Handler(call);
             // Dentro del try: los resultados llevan secuencias perezosas que se recorren al serializar.
             var json = JsonSerializer.Serialize(result ?? new { Ok = true }, JsonOptions);
             activity.State = AiToolActivityState.Succeeded;
             if (tool.Effect != AiToolEffect.Read) _host.VaultChanged();
-            return new AiToolOutcome(json, IsError: false);
+            return new AiToolOutcome(json, IsError: false, call.Images.Count > 0 ? call.Images : null);
         }
         catch (Exception ex) when (Describe(ex) is { } failure)
         {

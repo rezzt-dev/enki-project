@@ -274,13 +274,26 @@ public sealed class EnkiMcpServer : IDisposable
                 }).ConfigureAwait(false);
                 return RpcResult(id, new JsonObject
                 {
-                    ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = outcome!.Text }),
-                    ["isError"] = outcome.IsError
+                    ["content"] = ToolContent(outcome!),
+                    ["isError"] = outcome!.IsError
                 });
 
             default:
                 return RpcError(id, -32601, "Method not found");
         }
+    }
+
+    /// <summary>El texto del resultado y, detrás, cada imagen como contenido <c>image</c> de MCP (base64), que los
+    /// clientes con visión entregan al modelo como imagen y no como texto.</summary>
+    private static JsonArray ToolContent(AiToolOutcome outcome)
+    {
+        var content = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = outcome.Text });
+        foreach (var image in outcome.Images ?? [])
+            content.Add(new JsonObject
+            {
+                ["type"] = "image", ["data"] = Convert.ToBase64String(image.Data), ["mimeType"] = image.MimeType
+            });
+        return content;
     }
 
     private static JsonNode ToolNode(AiToolDefinition tool) => new JsonObject

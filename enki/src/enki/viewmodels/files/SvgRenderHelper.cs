@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using Avalonia.Media.Imaging;
-using Svg.Skia;
 
 namespace enki.ViewModels;
 
@@ -22,27 +21,7 @@ public static class SvgRenderHelper
     /// exactamente lo contrario de lo que el usuario escribió.</para></summary>
     public static Bitmap RenderSvg(byte[] svgData, int maxWidth, bool allowUpscale = true)
     {
-        using var svg = new SKSvg();
-        using var stream = new MemoryStream(svgData);
-        svg.Load(stream);
-
-        if (svg.Picture is null)
-            throw new InvalidOperationException("SVG no contiene un Picture válido.");
-
-        var picture = svg.Picture;
-        var scale = maxWidth / picture.CullRect.Width;
-        if (!allowUpscale && scale > 1) scale = 1;
-        var width = (int)(picture.CullRect.Width * scale);
-        var height = (int)(picture.CullRect.Height * scale);
-
-        if (width <= 0) width = maxWidth;
-        if (height <= 0) height = maxWidth;
-
-        using var skBitmap = new SkiaSharp.SKBitmap(width, height);
-        using var canvas = new SkiaSharp.SKCanvas(skBitmap);
-        canvas.Clear(SkiaSharp.SKColors.Transparent);
-        canvas.Scale(scale);
-        canvas.DrawPicture(picture);
+        using var skBitmap = enki.Services.ImagePreviewService.RasterizeSvg(svgData, maxWidth, allowUpscale);
 
         // SkiaSharp.SKBitmap → PNG byte stream → Avalonia Bitmap
         using var image = SkiaSharp.SKImage.FromBitmap(skBitmap);

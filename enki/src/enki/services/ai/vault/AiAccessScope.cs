@@ -80,6 +80,11 @@ public sealed class AiToolContext
     /// una instrucción escondida en una página no pueda sacar datos del vault metiéndolos en una URL inventada.</summary>
     public AiWebUrlSet KnownWebUrls { get; init; } = new();
 
+    /// <summary>Rutas absolutas de los archivos que el usuario adjuntó al mensaje de este turno. Ya los compartió
+    /// él, así que <c>read_file</c> los puede abrir (por ejemplo, para ver una imagen adjunta) sin el permiso de
+    /// consulta del chat; cualquier otro archivo sigue necesitándolo.</summary>
+    public IReadOnlySet<string> AttachedFiles { get; init; } = new HashSet<string>();
+
     /// <summary>Skills leídas completas en este turno: su contenido original permite detectar conflictos.</summary>
     internal Dictionary<string, SkillFile> SkillReads { get; } = new(StringComparer.Ordinal);
 

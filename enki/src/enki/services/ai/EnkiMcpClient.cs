@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -29,14 +30,22 @@ internal static class EnkiMcpClient
     }
 
     /// <summary>Ejecuta una herramienta. Un fallo de la herramienta (ruta fuera del ámbito, permiso denegado…)
-    /// no es una excepción: vuelve como texto con <c>IsError</c> para que el modelo pueda corregirse.</summary>
-    public static async Task<(string Text, bool IsError)> CallToolAsync(HttpClient http, ClaudeToolAccess access, string name,
+    /// no es una excepción: vuelve como texto con <c>IsError</c> para que el modelo pueda corregirse. Las imágenes
+    /// del resultado (una foto o una página de PDF leída con <c>read_file</c>) vuelven aparte, en base64, para que
+    /// cada proveedor las entregue al modelo en su propio formato.</summary>
+    public static async Task<McpToolResult> CallToolAsync(HttpClient http, ClaudeToolAccess access, string name,
         JsonNode? arguments, CancellationToken cancellation)
     {
         var result = await RpcAsync(http, access, "tools/call", new JsonObject
             { ["name"] = name, ["arguments"] = arguments?.DeepClone() ?? new JsonObject() }, cancellation).ConfigureAwait(false);
-        var text = string.Join("\n", (result["content"]?.AsArray() ?? []).Select(c => c?["text"]?.GetValue<string>()));
-        return (text, result["isError"]?.GetValue<bool>() == true);
+        var content = result["content"]?.AsArray() ?? [];
+        var text = string.Join("\n", content.Where(c => c?["type"]?.GetValue<string>() is null or "text")
+            .Select(c => c?["text"]?.GetValue<string>()));
+        var images = content.Where(c => c?["type"]?.GetValue<string>() == "image")
+            .Select(c => new McpImage(c!["mimeType"]?.GetValue<string>() ?? "image/jpeg", c["data"]?.GetValue<string>() ?? string.Empty))
+            .Where(i => i.Base64.Length > 0)
+            .ToList();
+        return new McpToolResult(text, result["isError"]?.GetValue<bool>() == true, images);
     }
 
     private static async Task<JsonObject> RpcAsync(HttpClient http, ClaudeToolAccess access, string method, JsonObject parameters,
@@ -53,3 +62,9 @@ internal static class EnkiMcpClient
         return data?["result"]?.AsObject() ?? throw new JsonException();
     }
 }
+
+/// <summary>Imagen de un resultado MCP, en base64.</summary>
+internal sealed record McpImage(string MimeType, string Base64);
+
+/// <summary>Resultado de una herramienta tal como lo devuelve el servidor MCP del vault.</summary>
+internal sealed record McpToolResult(string Text, bool IsError, IReadOnlyList<McpImage> Images);
