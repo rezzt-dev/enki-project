@@ -37,7 +37,7 @@ preview (`MarkdownLineParser`, `MarkdownTableParser`, `MarkdownHtmlParser`, `Mar
 | Citas anidadas (`>>`) | Una barra por nivel, continuas |
 | Avisos `> [!warning] Título` | Caja con barra y velo del tono, icono y título |
 | Bloques de código con lenguaje | Coloreados con las mismas gramáticas TextMate (tema claro) |
-| Tablas con alineación por columna | Rejilla del editor, anchos como un navegador, encabezado repetido |
+| Tablas con alineación por columna | Rejilla del editor, anchos como un navegador, encabezado repetido; cifras a la derecha y fila de total resaltada (ver «Tablas de informe») |
 | `![alt|300](img.png)`, `![[img.png]]`, `data:`, URL | Mismo tamaño (px del editor → pt), misma resolución de rutas |
 | Fórmulas `$…$` y `$$…$$` | Compuestas con CSharpMath, a resolución de impresión |
 | `![[Otra nota]]` solo en su línea | El contenido de la nota embebida, tras una barra y su nombre |
@@ -56,6 +56,7 @@ que en HTML: necesitan el WebView del editor.
 | `NoteDocumentAssets.cs` | `NoteExportSource` y la precarga en segundo plano de imágenes (a ~300 ppp), fórmulas y resaltado de código. |
 | `NoteDocumentComposer.cs` | Markdown → bloques de controles de Avalonia maquetados al ancho de la caja de texto; `DocumentBreaks` (dónde se puede cortar cada bloque) y `DocumentLinks`. |
 | `DocumentPaginator.cs` | Reparto en páginas con las reglas de composición. Lógica pura, sin Avalonia. |
+| `DocumentTableRules.cs` | Qué columna de una tabla es de cifras y qué fila es la de total. Lógica pura sobre el texto de las celdas. |
 | `NoteDocumentExporter.cs` | Orquesta y dibuja: PDF con el backend PDF de Skia, PNG con `VisualSnapshotRenderer`. |
 
 Fuera de `services/export/`, dos extracciones para no duplicar lógica del editor:
@@ -73,13 +74,38 @@ el principio de cada unidad. `DocumentPaginator` aplica después:
 - nunca corta dentro de una unidad;
 - viudas y huérfanas: al partir un bloque deja al menos dos unidades a cada lado;
 - un encabezado no se queda al pie sin el arranque del bloque siguiente;
+- un apartado corto —un encabezado con todo lo que le sigue hasta el encabezado siguiente: entrada, tabla,
+  lista, imagen y cierre— no se reparte entre dos páginas: si no cabe en lo que queda, pasa entero a la
+  siguiente;
+- una tabla corta tampoco se parte (`PaginationBlock.KeepWhole`), tenga o no encabezado encima;
 - la fila de encabezados de una tabla se repite en cada página por la que continúa;
 - el aire de encima de un bloque desaparece en lo alto de una página;
 - una imagen nunca supera el alto de la caja de texto (se reduce), así que nunca se parte.
 
+«Corto» es hasta media hoja (`DocumentPaginator.KeepTogetherMaxFraction`). El tope es deliberado: mover
+entero algo más alto dejaría la página anterior medio vacía, que es peor que partirlo bien; así el hueco al
+pie por mantener algo unido nunca pasa de media página. Un apartado o una tabla más largos empiezan donde
+toca y se parten con el resto de reglas (entre líneas o filas, con viudas y huérfanas, repitiendo el
+encabezado de la tabla).
+
 Las reglas solo se relajan si un bloque no cabe ni en una página vacía (una fila más alta que la hoja):
 primero viudas y huérfanas, luego se corta entre las líneas de dentro de la fila y, como último recurso, a
 la altura de la página.
+
+## Tablas de informe
+
+Dos convenciones que solo aplica el PDF (`NoteDocumentStyle.ReportTables`; el PNG enseña la tabla como el
+editor) y que no cambian ni un carácter del contenido:
+
+- **Cifras a la derecha.** Una columna se alinea a la derecha si la nota no le escribe alineación
+  (`---`, sin dos puntos) y todas sus celdas con contenido son cifras: signo, separadores de miles y
+  decimales y, como mucho, `%`, `€`, `$` o `£` delante o detrás. Fechas, horas, códigos (`A-12`) y cifras
+  con unidad escrita (`12 kg`) no cuentan. Una alineación escrita en la nota siempre manda.
+- **Fila de total.** Si la tabla tiene al menos dos filas de datos y la primera celda de la última empieza
+  por «Total», «Totales», «Totals» o «Subtotal» como palabra completa, esa fila va en negrita sobre el gris
+  de la cabecera.
+
+Son conservadoras a propósito: ante la duda, la tabla sale como en el editor.
 
 ## Cómo se dibuja
 
@@ -111,10 +137,13 @@ Detalles de calidad:
 
 ## Pruebas
 
-- `tests/enki.Tests/Services/DocumentPaginatorTests.cs` — reglas de paginación sobre geometría pura y
-  la hoja/márgenes por cultura.
+- `tests/enki.Tests/Services/DocumentPaginatorTests.cs` — reglas de paginación sobre geometría pura
+  (apartados y tablas cortos que pasan enteros, los largos que se parten) y la hoja/márgenes por cultura.
+- `tests/enki.Tests/Services/DocumentTableRulesTests.cs` — qué es una cifra y qué una fila de total.
 - `tests/enki.UITests/ViewExportUiTests.cs` — composición con los bloques del editor, marcadores ocultos,
-  título no repetido, transclusión, cortes solo entre líneas, encabezado de tabla repetido y nota vacía.
+  título no repetido, transclusión, cortes solo entre líneas, encabezado de tabla repetido, nota vacía,
+  cifras a la derecha y fila de total sin alterar el texto de las celdas, y apartados cortos que nunca
+  quedan repartidos entre dos páginas.
   Con `ENKI_GRAPH_PREVIEW=<carpeta>` (Skia real) genera además un PDF y un PNG con todo lo anterior,
   imagen adjunta incluida, y los deja en esa carpeta para revisarlos a ojo.
 

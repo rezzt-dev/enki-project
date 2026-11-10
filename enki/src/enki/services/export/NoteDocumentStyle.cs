@@ -94,6 +94,11 @@ public sealed class NoteDocumentStyle
     /// <summary>Tema TextMate de los bloques de código: claro sobre papel, el del editor en pantalla.</summary>
     public required ThemeName CodeTheme { get; init; }
 
+    /// <summary>Convenciones de informe en las tablas (<see cref="DocumentTableRules"/>): las columnas de
+    /// cifras que la nota no alinea se alinean a la derecha y la fila final de total va en negrita sobre
+    /// gris. Solo en el PDF; el PNG enseña la tabla tal y como la dibuja el editor.</summary>
+    public bool ReportTables { get; init; }
+
     /// <summary>Interlineado del texto corrido: algo más abierto que el 1,15 de Word, porque una nota es
     /// texto de lectura con listas y código intercalados, no un formulario.</summary>
     public double LineHeight => Math.Round(FontSize * 1.45, 2);
@@ -132,7 +137,8 @@ public sealed class NoteDocumentStyle
         MonoFont = EditorMonoFont(),
         FontSize = PrintFontSize(EditorPreferences.FontSize),
         Justify = EditorPreferences.JustifyParagraphs,
-        CodeTheme = ThemeName.LightPlus
+        CodeTheme = ThemeName.LightPlus,
+        ReportTables = true
     };
 
     /// <summary>Estilo del PNG: la paleta del editor tal y como la resuelve <see cref="MarkdownStyle"/>

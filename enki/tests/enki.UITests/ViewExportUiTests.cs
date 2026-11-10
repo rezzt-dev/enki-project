@@ -374,6 +374,67 @@ public class ViewExportUiTests : IDisposable
         Assert.All(pages.Skip(1), page => Assert.Equal(new PageFragment(0, 0, header, 0), page[0]));
     }
 
+    private static string RunText(TextBlock text) =>
+        string.Concat(text.Inlines!.OfType<Avalonia.Controls.Documents.Run>().Select(r => r.Text));
+
+    /// <summary>En el PDF, una columna de cifras que la nota no alinea va a la derecha y la fila final de
+    /// total, en negrita sobre el gris de la cabecera; el texto de las celdas no cambia y una alineación
+    /// escrita en la nota se respeta.</summary>
+    [Fact]
+    public void NoteDocument_Table_AlignsFiguresRight_AndHighlightsTheTotalRow()
+    {
+        const string table = """
+            | Concepto | Importe | Año |
+            | --- | --- | :--- |
+            | Diseño | 1.200,50 € | 2024 |
+            | Señalización | 350 € | 2025 |
+            | **Total** | 1.550,50 € | |
+            """;
+        var document = Compose(Source(table, title: string.Empty));
+        var block = Assert.Single(document.Blocks);
+        Assert.True(block.KeepWhole, "Una tabla corta no se reparte entre dos páginas.");
+
+        var cells = block.Visual.GetVisualDescendants().OfType<TextBlock>().ToList();
+        Assert.Equal(["Concepto", "Importe", "Año", "Diseño", "1.200,50 €", "2024", "Señalización", "350 €", "2025",
+            "Total", "1.550,50 €", ""], cells.Select(RunText));
+
+        Assert.All(new[] { 1, 4, 7, 10 }, i => Assert.Equal(TextAlignment.Right, cells[i].TextAlignment));
+        Assert.All(new[] { 0, 3, 6, 9 }, i => Assert.Equal(TextAlignment.Left, cells[i].TextAlignment));
+        Assert.All(new[] { 2, 5, 8 }, i => Assert.Equal(TextAlignment.Left, cells[i].TextAlignment));
+
+        Assert.Equal(FontWeight.Bold, cells[10].FontWeight);
+        Assert.Equal(FontWeight.Normal, cells[7].FontWeight);
+        var rows = block.Visual.GetVisualDescendants().OfType<Grid>().ToList();
+        Assert.All(rows[^1].Children.OfType<Border>(), b => Assert.NotNull(b.Background));
+        Assert.All(rows[1].Children.OfType<Border>(), b => Assert.Null(b.Background));
+    }
+
+    /// <summary>Un apartado corto al pie de una página pasa entero a la siguiente: su encabezado, su
+    /// párrafo, su tabla y su cierre acaban todos en la misma página.</summary>
+    [Fact]
+    public void NoteDocument_ShortSection_IsNeverSplitAcrossPages()
+    {
+        const string section = "## Apartado {0}\nEntrada del apartado.\n\n| Dato | Valor |\n| --- | --- |\n| a | 1 |\n| b | 2 |\n| c | 3 |\n\nCierre del apartado.";
+        var markdown = string.Join("\n\n", Enumerable.Range(1, 30).Select(i => string.Format(section, i)));
+        var document = Compose(Source(markdown, title: string.Empty));
+        var pages = Paginate(document);
+
+        Assert.True(pages.Count > 1);
+        var pageOf = new Dictionary<int, int>();
+        for (var page = 0; page < pages.Count; page++)
+        {
+            foreach (var fragment in pages[page])
+            {
+                Assert.True(pageOf.TryAdd(fragment.Block, page) || pageOf[fragment.Block] == page,
+                    $"El bloque {fragment.Block} está repartido entre dos páginas.");
+            }
+        }
+        // Cada apartado son cuatro bloques seguidos: encabezado, entrada, tabla y cierre.
+        Assert.Equal(120, document.Blocks.Count);
+        for (var start = 0; start < document.Blocks.Count; start += 4)
+            Assert.All(Enumerable.Range(start, 4), i => Assert.Equal(pageOf[start], pageOf[i]));
+    }
+
     /// <summary>Solo con Skia real (<c>ENKI_GRAPH_PREVIEW=&lt;carpeta&gt;</c>): genera el PDF de una nota con
     /// todo lo que el editor sabe dibujar —una imagen adjunta de verdad, centrada y con tamaño, una tabla y
     /// un bloque de código que no caben en una página, fórmulas, citas anidadas…—, comprueba que es un PDF
@@ -422,6 +483,17 @@ public class ViewExportUiTests : IDisposable
                - Detalle con una frase bastante larga para comprobar que la sangría colgante se mantiene al partir la línea.
 
             {{filler}}
+
+            ## Resumen de costes
+            Un apartado corto: encabezado, entrada, tabla y cierre van siempre en la misma página.
+
+            | Concepto | Importe |
+            | --- | --- |
+            | Diseño | 1.200,50 € |
+            | Señalización | 350 € |
+            | **Total** | 1.550,50 € |
+
+            Cierre del apartado, con ñ, tildes y símbolos: · × ± €.
 
             ## Tabla larga
             | Concepto | Importe | Estado |

@@ -127,6 +127,70 @@ public class DocumentPaginatorTests
         }
     }
 
+    /// <summary>Un apartado corto (encabezado, entrada, tabla y cierre) que no cabe en lo que queda de
+    /// página pasa entero a la siguiente, aunque el encabezado y el arranque del párrafo sí cupieran.</summary>
+    [Fact]
+    public void Paginate_ShortSectionThatDoesNotFit_MovesWholeToTheNextPage()
+    {
+        var heading = Paragraph(1, keepWithNext: true);
+        var blocks = new[] { Picture(120), heading, Paragraph(2), Picture(30), Paragraph(1) };   // apartado: 94 de 200
+        var pages = DocumentPaginator.Paginate(blocks, 200);
+
+        Assert.Equal(2, pages.Count);
+        Assert.Single(pages[0]);
+        Assert.Equal([1, 2, 3, 4], pages[1].Select(f => f.Block));
+        Assert.Equal(0, pages[1][0].Top);
+    }
+
+    /// <summary>El apartado acaba en el encabezado siguiente: lo que va detrás no cuenta para decidir si
+    /// cabe.</summary>
+    [Fact]
+    public void Paginate_ShortSection_EndsAtTheNextHeading()
+    {
+        var heading = Paragraph(1, keepWithNext: true);
+        var blocks = new[] { Picture(120), heading, Paragraph(2), heading, Paragraph(4) };
+        var pages = DocumentPaginator.Paginate(blocks, 200);
+
+        Assert.Contains(pages[0], f => f.Block == 1);
+        Assert.Contains(pages[0], f => f.Block == 2);
+    }
+
+    /// <summary>Un apartado más alto que media hoja no se mueve entero —dejaría la página anterior medio
+    /// vacía—: empieza donde toca y se parte con las reglas de siempre.</summary>
+    [Fact]
+    public void Paginate_LongSection_StartsWhereItFalls_InsteadOfLeavingAHalfEmptyPage()
+    {
+        var heading = Paragraph(1, keepWithNext: true);
+        var pages = DocumentPaginator.Paginate([Picture(60), heading, Paragraph(12)], 200);
+
+        Assert.Equal(2, pages.Count);
+        Assert.Contains(pages[0], f => f.Block == 1);
+        Assert.Equal(2, Fragments(pages, 2).Count());
+    }
+
+    [Fact]
+    public void Paginate_ShortTable_IsNotSplit()
+    {
+        const double row = 20;
+        var table = new PaginationBlock(row * 4, [row, row * 2, row * 3], [], RepeatHeight: row, KeepWhole: true);
+        var pages = DocumentPaginator.Paginate([Picture(150), table], 200);
+
+        Assert.Equal(2, pages.Count);
+        Assert.Equal(new PageFragment(1, 0, row * 4, 0), Assert.Single(pages[1]));
+    }
+
+    [Fact]
+    public void Paginate_TableTallerThanHalfAPage_IsStillSplitBetweenRows()
+    {
+        const double row = 20;
+        var table = new PaginationBlock(row * 8, Enumerable.Range(1, 7).Select(i => i * row).ToList(), [],
+            RepeatHeight: row, KeepWhole: true);
+        var pages = DocumentPaginator.Paginate([Picture(100), table], 200);
+
+        Assert.Equal(2, pages.Count);
+        Assert.Contains(pages[0], f => f.Block == 1);
+    }
+
     [Fact]
     public void Paginate_ImageTallerThanAPage_IsCutRatherThanLoopingForever()
     {

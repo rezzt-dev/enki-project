@@ -22,8 +22,10 @@ namespace enki.Services.Export;
 /// tabla, una imagen… La unidad con la que razona la paginación.</summary>
 public sealed class DocumentBlock
 {
-    internal DocumentBlock(Control visual, double spaceBefore, bool keepWithNext, Control? repeatedHeader = null)
+    internal DocumentBlock(Control visual, double spaceBefore, bool keepWithNext, Control? repeatedHeader = null,
+        bool keepWhole = false)
     {
+        KeepWhole = keepWhole;
         Visual = visual;
         SpaceBefore = spaceBefore;
         KeepWithNext = keepWithNext;
@@ -34,6 +36,10 @@ public sealed class DocumentBlock
     public double SpaceBefore { get; }
     public bool KeepWithNext { get; }
 
+    /// <summary>Una tabla: mientras sea corta no se reparte entre dos páginas
+    /// (<see cref="PaginationBlock.KeepWhole"/>).</summary>
+    public bool KeepWhole { get; }
+
     /// <summary>En una tabla, su fila de encabezados: se repite en lo alto de cada página por la que
     /// continúe la tabla.</summary>
     internal Control? RepeatedHeader { get; }
@@ -43,7 +49,7 @@ public sealed class DocumentBlock
     {
         var (breaks, fallback) = DocumentBreaks.Find(Visual);
         return new PaginationBlock(Visual.Bounds.Height, breaks, fallback, SpaceBefore, KeepWithNext,
-            RepeatedHeader?.Bounds.Height ?? 0);
+            RepeatedHeader?.Bounds.Height ?? 0, KeepWhole);
     }
 }
 
@@ -162,7 +168,8 @@ internal sealed class NoteDocumentComposer
                 gap += Math.Min(Math.Max(0, _blankLines - 1), MaxExtraBlankLines) * style.LineHeight;
             }
 
-            Blocks.Add(new DocumentBlock(visual, gap, kind == BlockKind.Heading, repeatedHeader));
+            Blocks.Add(new DocumentBlock(visual, gap, kind == BlockKind.Heading, repeatedHeader,
+                kind == BlockKind.Table));
             _previous = kind;
             _blankLines = 0;
         }
@@ -749,6 +756,25 @@ internal sealed class NoteDocumentComposer
         var rowLines = new List<int> { table.StartLine - 1 };
         for (var line = table.DelimiterLine + 1; line <= table.EndLine; line++) rowLines.Add(line - 1);
 
+        // Convenciones de informe, solo en el PDF: cifras a la derecha y fila de total resaltada.
+        var splits = rowLines.Select(index => MarkdownTableParser.SplitCells(lines[index], 0)).ToList();
+        string CellText(int row, int column) => column < splits[row].Count
+            ? DocumentTableRules.PlainText(lines[rowLines[row]][splits[row][column].Start..splits[row][column].End])
+            : string.Empty;
+        var numeric = new bool[columns];
+        var totalRow = -1;
+        if (_s.ReportTables)
+        {
+            for (var column = 0; column < columns; column++)
+            {
+                var c = column;
+                numeric[column] = table.Alignments[column] == MdTableAlign.Default
+                    && DocumentTableRules.IsNumericColumn(Enumerable.Range(1, rowLines.Count - 1).Select(r => CellText(r, c)));
+            }
+            if (rowLines.Count >= 3 && DocumentTableRules.IsTotalLabel(CellText(rowLines.Count - 1, 0)))
+                totalRow = rowLines.Count - 1;
+        }
+
         var cells = new TextBlock[rowLines.Count, columns];
         var natural = new double[columns];
         var minimum = new double[columns];
@@ -757,13 +783,14 @@ internal sealed class NoteDocumentComposer
             var index = rowLines[row];
             var raw = lines[index];
             var model = parse(index);
-            var split = MarkdownTableParser.SplitCells(raw, 0);
+            var split = splits[row];
             var header = row == 0;
 
             for (var column = 0; column < columns; column++)
             {
-                var cell = Text(s, _s.Ink, _s.LineHeight, header ? FontWeight.Bold : FontWeight.Normal,
-                    CellAlignment(table.Alignments[column]));
+                var cell = Text(s, _s.Ink, _s.LineHeight,
+                    header || row == totalRow ? FontWeight.Bold : FontWeight.Normal,
+                    numeric[column] ? TextAlignment.Right : CellAlignment(table.Alignments[column]));
                 if (column < split.Count)
                     AppendInlines(cell, raw, model, split[column].Start, split[column].End,
                         html(index).OpenInlineTags, scope, cellImageMax);
@@ -791,7 +818,7 @@ internal sealed class NoteDocumentComposer
                 {
                     BorderBrush = _s.TableBorder,
                     BorderThickness = new Thickness(column == 0 ? border : 0, row == 0 ? border : 0, border, border),
-                    Background = row == 0 ? _s.TableHeaderBackground : null,
+                    Background = row == 0 || row == totalRow ? _s.TableHeaderBackground : null,
                     Padding = new Thickness(paddingX, paddingY),
                     Child = cells[row, column]
                 };

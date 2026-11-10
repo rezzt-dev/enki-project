@@ -17,13 +17,17 @@ namespace enki.Services.Export;
 /// detrás no cabe al menos el arranque del siguiente, pasa con él a la página siguiente. Tampoco se parte.</param>
 /// <param name="RepeatHeight">Alto de la primera unidad que hay que repetir en lo alto de cada página en la
 /// que continúe el bloque (la fila de encabezados de una tabla), o 0.</param>
+/// <param name="KeepWhole">El bloque no se parte mientras sea corto (una tabla pequeña o mediana): si no cabe
+/// en lo que queda de página y mide como mucho <see cref="DocumentPaginator.KeepTogetherMaxFraction"/> de
+/// la hoja, pasa entero a la página siguiente. Uno más alto se parte por sus cortes, como siempre.</param>
 public sealed record PaginationBlock(
     double Height,
     IReadOnlyList<double> Breaks,
     IReadOnlyList<double> FallbackBreaks,
     double SpaceBefore = 0,
     bool KeepWithNext = false,
-    double RepeatHeight = 0);
+    double RepeatHeight = 0,
+    bool KeepWhole = false);
 
 /// <summary>Un trozo de un bloque colocado en una página: la franja [<paramref name="From"/>,
 /// <paramref name="To"/>) del bloque, dibujada con su borde superior en <paramref name="Top"/> (medido
@@ -42,6 +46,11 @@ public readonly record struct PageFragment(int Block, double From, double To, do
 /// <item>Control de viudas y huérfanas: un bloque que se parte deja al menos dos unidades a cada lado (un
 /// párrafo de tres líneas no se parte 1 + 2; pasa entero a la página siguiente).</item>
 /// <item>Los encabezados no se quedan huérfanos al pie (<see cref="PaginationBlock.KeepWithNext"/>).</item>
+/// <item>Un apartado corto —un encabezado con todo lo que le sigue hasta el encabezado siguiente: su
+/// párrafo de entrada, su tabla, su lista, su imagen y su cierre— no se reparte entre dos páginas: si no
+/// cabe en lo que queda, pasa entero a la siguiente. Lo mismo una tabla corta
+/// (<see cref="PaginationBlock.KeepWhole"/>). «Corto» es hasta <see cref="KeepTogetherMaxFraction"/> de la
+/// hoja: mover algo más alto dejaría la página anterior medio vacía, que es peor que partirlo bien.</item>
 /// <item>La fila de encabezados de una tabla se repite en cada página por la que continúe la tabla.</item>
 /// <item>El aire de encima de un bloque desaparece cuando el bloque abre página.</item>
 /// </list>
@@ -56,6 +65,10 @@ public static class DocumentPaginator
 
     /// <summary>Unidades mínimas a cada lado de un corte (control de viudas y huérfanas).</summary>
     private const int MinUnitsPerSide = 2;
+
+    /// <summary>Fracción del alto de la hoja hasta la que un apartado o una tabla se consideran cortos y
+    /// se mantienen enteros. Es también el tope del hueco que puede quedar al pie por moverlos.</summary>
+    public const double KeepTogetherMaxFraction = 0.5;
 
     /// <summary>Páginas resultantes, cada una con sus trozos en orden de dibujo. Siempre hay al menos una
     /// página, aunque no haya bloques: un PDF sin hojas no es un documento válido.</summary>
@@ -90,6 +103,12 @@ public static class DocumentPaginator
                     : 0;
                 var available = pageHeight - y - space - header;
                 var remaining = block.Height - from;
+
+                if (from == 0 && !atTop && MustMoveWhole(blocks, index, y + space, pageHeight))
+                {
+                    NewPage();
+                    continue;
+                }
 
                 if (remaining <= available + Epsilon)
                 {
@@ -147,6 +166,34 @@ public static class DocumentPaginator
             current.Add(new PageFragment(index, from, to, y));
             y += to - from;
         }
+    }
+
+    /// <summary>Si el bloque que empezaría en <paramref name="top"/> abre algo corto que hay que mantener
+    /// entero —su apartado, si es un encabezado, o él mismo, si es <see cref="PaginationBlock.KeepWhole"/>—
+    /// y eso no cabe en lo que queda de página.</summary>
+    private static bool MustMoveWhole(IReadOnlyList<PaginationBlock> blocks, int index, double top,
+        double pageHeight)
+    {
+        var block = blocks[index];
+        var limit = pageHeight * KeepTogetherMaxFraction;
+        var room = pageHeight - top + Epsilon;
+
+        if (block.KeepWhole && block.Height <= limit && block.Height > room) return true;
+        if (!block.KeepWithNext) return false;
+
+        // El apartado: los encabezados seguidos que lo abren y los bloques que van detrás hasta el
+        // encabezado siguiente. En cuanto pasa del límite ya no es corto y no hace falta seguir sumando.
+        var height = block.Height;
+        var next = index + 1;
+        var inBody = false;
+        for (; next < blocks.Count && height <= limit; next++)
+        {
+            var following = blocks[next];
+            if (following.KeepWithNext && inBody) break;
+            if (!following.KeepWithNext) inBody = true;
+            height += following.SpaceBefore + following.Height;
+        }
+        return height <= limit && height > room;
     }
 
     /// <summary>Si detrás de un bloque que acaba en <paramref name="bottom"/> cabe al menos el arranque del
