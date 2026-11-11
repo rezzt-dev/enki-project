@@ -8551,4 +8551,280 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Assistant_Undo_Notify_Nothing" xml:space="preserve">
     <value>Es gab nichts mehr rückgängig zu machen.</value>
   </data>
+  <data name="Assistant_Tool_list_tags" xml:space="preserve">
+    <value>Tags auflisten</value>
+  </data>
+  <data name="Assistant_Tool_rename_tag" xml:space="preserve">
+    <value>Tag umbenennen</value>
+  </data>
+  <data name="Assistant_Tool_merge_tags" xml:space="preserve">
+    <value>Tags zusammenführen</value>
+  </data>
+  <data name="Assistant_Tool_get_statistics" xml:space="preserve">
+    <value>Statistiken abrufen</value>
+  </data>
+  <data name="Assistant_Tool_get_briefing" xml:space="preserve">
+    <value>Zusammenfassung vorbereiten</value>
+  </data>
+  <data name="Assistant_Tool_suggest_links" xml:space="preserve">
+    <value>Links vorschlagen</value>
+  </data>
+  <data name="Assistant_Tool_semantic_search" xml:space="preserve">
+    <value>Nach Bedeutung suchen</value>
+  </data>
+  <data name="Assistant_Approval_RenameTag" xml:space="preserve">
+    <value>Diesen Tag im gesamten Bereich des Chats umbenennen?</value>
+  </data>
+  <data name="Assistant_Approval_MergeTags" xml:space="preserve">
+    <value>Diese Tags im gesamten Bereich des Chats zusammenführen?</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Hint" xml:space="preserve">
+    <value>Jede Notiz behält ihre vorherige Version im Verlauf. Karten und Aufgaben lassen sich im Chat nicht zurücksetzen.</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Notes_one" xml:space="preserve">
+    <value>{0} Notiz</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Notes_other" xml:space="preserve">
+    <value>{0} Notizen</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Cards_one" xml:space="preserve">
+    <value>{0} Karte</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Cards_other" xml:space="preserve">
+    <value>{0} Karten</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Tasks_one" xml:space="preserve">
+    <value>{0} Aufgabe</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Tasks_other" xml:space="preserve">
+    <value>{0} Aufgaben</value>
+  </data>
+  <data name="Assistant_Review_Summary_one" xml:space="preserve">
+    <value>{0} Änderung wartet auf deine Prüfung</value>
+  </data>
+  <data name="Assistant_Review_Summary_other" xml:space="preserve">
+    <value>{0} Änderungen warten auf deine Prüfung</value>
+  </data>
+  <data name="Assistant_Review_Apply_one" xml:space="preserve">
+    <value>{0} ausgewählte anwenden</value>
+  </data>
+  <data name="Assistant_Review_Apply_other" xml:space="preserve">
+    <value>{0} ausgewählte anwenden</value>
+  </data>
+  <data name="Assistant_Review_ToggleAll" xml:space="preserve">
+    <value>Alle auswählen</value>
+  </data>
+  <data name="Assistant_Review_ShowDiff" xml:space="preserve">
+    <value>Änderungen anzeigen</value>
+  </data>
+  <data name="Assistant_Review_HideDiff" xml:space="preserve">
+    <value>Änderungen ausblenden</value>
+  </data>
+  <data name="Assistant_Review_Hint" xml:space="preserve">
+    <value>Noch wurde nichts geschrieben. Eine Änderung wird nur angewendet, wenn die Notiz unverändert ist, und jede Notiz behält ihre vorherige Version im Verlauf.</value>
+  </data>
+  <data name="Assistant_Review_Discard" xml:space="preserve">
+    <value>Alle verwerfen</value>
+  </data>
+  <data name="Assistant_Review_State_Pending" xml:space="preserve">
+    <value>wartet auf Prüfung</value>
+  </data>
+  <data name="Assistant_Review_State_Discarded" xml:space="preserve">
+    <value>verworfen</value>
+  </data>
+  <data name="Assistant_Review_Problem_ChangedSince" xml:space="preserve">
+    <value>Nicht angewendet: Die Notiz hat sich geändert, nachdem der Assistent die Änderung vorbereitet hat.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Missing" xml:space="preserve">
+    <value>Nicht angewendet: Die Notiz oder ihr Ordner existiert nicht mehr.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Locked" xml:space="preserve">
+    <value>Nicht angewendet: Sie gehört zu einer gesperrten, passwortgeschützten Sitzung.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Busy" xml:space="preserve">
+    <value>Nicht angewendet: Die Notiz ist mit ungespeicherten Änderungen oder einem offenen Konflikt geöffnet.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Dependency" xml:space="preserve">
+    <value>Nicht angewendet: Sie baut auf einer anderen Änderung derselben Notiz auf, die nicht angewendet wurde.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Failed" xml:space="preserve">
+    <value>Nicht angewendet: Die Änderung konnte nicht geschrieben werden.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Title" xml:space="preserve">
+    <value>Änderungsprüfung</value>
+  </data>
+  <data name="Assistant_Review_Notify_Applied_one" xml:space="preserve">
+    <value>{0} Änderung angewendet.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Applied_other" xml:space="preserve">
+    <value>{0} Änderungen angewendet.</value>
+  </data>
+  <data name="Assistant_Review_Notify_NotApplied_one" xml:space="preserve">
+    <value>{0} konnte nicht angewendet werden, ohne etwas zu überschreiben.</value>
+  </data>
+  <data name="Assistant_Review_Notify_NotApplied_other" xml:space="preserve">
+    <value>{0} konnten nicht angewendet werden, ohne etwas zu überschreiben.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Discarded_one" xml:space="preserve">
+    <value>{0} verworfen.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Discarded_other" xml:space="preserve">
+    <value>{0} verworfen.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Failed_Title" xml:space="preserve">
+    <value>Die Änderungen konnten nicht angewendet werden</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Title" xml:space="preserve">
+    <value>Änderungen warten auf Prüfung</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Message_one" xml:space="preserve">
+    <value>Der Assistent hat {0} Änderung vorbereitet, die auf deine Freigabe wartet.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Message_other" xml:space="preserve">
+    <value>Der Assistent hat {0} Änderungen vorbereitet, die auf deine Freigabe warten.</value>
+  </data>
+  <data name="Assistant_Export_Tooltip" xml:space="preserve">
+    <value>Unterhaltung als Notiz exportieren</value>
+  </data>
+  <data name="Assistant_Export_NoteTitle" xml:space="preserve">
+    <value>Unterhaltung · {0}</value>
+  </data>
+  <data name="Assistant_Export_User" xml:space="preserve">
+    <value>Du</value>
+  </data>
+  <data name="Assistant_Export_Attachments" xml:space="preserve">
+    <value>Anhänge</value>
+  </data>
+  <data name="Assistant_Export_Actions" xml:space="preserve">
+    <value>Aktionen im Vault</value>
+  </data>
+  <data name="Assistant_Export_State_Failed" xml:space="preserve">
+    <value>fehlgeschlagen</value>
+  </data>
+  <data name="Assistant_Export_State_Denied" xml:space="preserve">
+    <value>nicht erlaubt</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_Title" xml:space="preserve">
+    <value>Unterhaltung exportiert</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_Message" xml:space="preserve">
+    <value>In der Notiz „{0}“ gespeichert.</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_SessionMessage" xml:space="preserve">
+    <value>In der Notiz „{0}“ der Sitzung „{1}“ gespeichert.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice" xml:space="preserve">
+    <value>Das Bild wird an {0} gesendet, damit das Modell es sehen kann.</value>
+  </data>
+  <data name="Assistant_Attachment_PdfNotice" xml:space="preserve">
+    <value>Hat das PDF Seiten ohne Text, werden sie als Bild an {0} gesendet.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice_NoVision" xml:space="preserve">
+    <value>{0} kann keine Bilder sehen: Es erhält die Bilddaten, aber nicht das Bild. Wähle ein Modell mit Bildverständnis, damit es das Bild sieht.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice_TextOnly" xml:space="preserve">
+    <value>Dieser Anbieter arbeitet hier nur mit Text: Er erhält Name und Größe des Bildes, nicht das Bild.</value>
+  </data>
+  <data name="Assistant_Suggestion_Briefing" xml:space="preserve">
+    <value>Gib mir die Zusammenfassung von heute: Termine, überfällige Aufgaben und Erinnerungen, offene Gewohnheiten und die Notizen, an denen ich gearbeitet habe.</value>
+  </data>
+  <data name="Assistant_Suggestion_Briefing_Label" xml:space="preserve">
+    <value>Zusammenfassung meines Tages</value>
+  </data>
+  <data name="Assistant_Suggestion_BriefingWeek" xml:space="preserve">
+    <value>Gib mir die Wochenzusammenfassung: Termine der nächsten sieben Tage, Überfälliges und die Notizen, an denen ich gearbeitet habe, mit Prioritäten.</value>
+  </data>
+  <data name="Assistant_Suggestion_LinksNote" xml:space="preserve">
+    <value>Schlage Links und verwandte Notizen für diese Notiz vor und erkläre warum. Ändere noch nichts.</value>
+  </data>
+  <data name="Assistant_Suggestion_LinksNote_Label" xml:space="preserve">
+    <value>Links für diese Notiz vorschlagen</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantBriefingDay" xml:space="preserve">
+    <value>Assistent: Zusammenfassung meines Tages</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantBriefingWeek" xml:space="preserve">
+    <value>Assistent: Zusammenfassung meiner Woche</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantSuggestLinks" xml:space="preserve">
+    <value>Assistent: Links für diese Notiz vorschlagen</value>
+  </data>
+  <data name="CommandPalette_Action_ExportAssistantChat" xml:space="preserve">
+    <value>Assistent: Unterhaltung als Notiz exportieren</value>
+  </data>
+  <data name="Settings_Ai_Vault_Review_Label" xml:space="preserve">
+    <value>Änderungen vor dem Anwenden prüfen</value>
+  </data>
+  <data name="Settings_Ai_Vault_Review_Description" xml:space="preserve">
+    <value>Was der Assistent am Inhalt deiner Notizen ändert, wartet mit den Unterschieden unter seiner Antwort, damit du alles auf einmal freigeben oder verwerfen kannst. Andere Aktionen werden sofort angewendet und lassen sich zurücksetzen.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Title" xml:space="preserve">
+    <value>Lokale semantische Suche</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Enable_Label" xml:space="preserve">
+    <value>Notizen nach Bedeutung finden</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Enable_Description" xml:space="preserve">
+    <value>Erstellt auf diesem Computer einen Index deiner Notizen mit einem Embedding-Modell von Ollama, damit der Assistent Notizen nach ihrem Inhalt und nicht nur nach Wörtern findet. Ollama muss laufen.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Label" xml:space="preserve">
+    <value>Embedding-Modell von Ollama</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Apply" xml:space="preserve">
+    <value>Verwenden</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Help" xml:space="preserve">
+    <value>Zum Beispiel nomic-embed-text oder mxbai-embed-large. Ein Modellwechsel baut den Index neu auf.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Counts" xml:space="preserve">
+    <value>{0} Notizen · {1} Abschnitte</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Off" xml:space="preserve">
+    <value>Aus. Ein vorhandener Index bleibt erhalten, bis du ihn löschst.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Empty" xml:space="preserve">
+    <value>Noch kein Index: Er wird im Hintergrund erstellt.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Indexing" xml:space="preserve">
+    <value>Indizierung… noch {0} Notizen.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Ready" xml:space="preserve">
+    <value>Index aktuell · {0} · aktualisiert {1}</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_OllamaUnavailable" xml:space="preserve">
+    <value>Ollama antwortet nicht unter der eingestellten Adresse.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_ModelMissing" xml:space="preserve">
+    <value>Das Modell ist in Ollama nicht installiert. Installiere es mit:</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_NotEmbeddingModel" xml:space="preserve">
+    <value>Dieses Modell erzeugt keine Embeddings. Wähle ein Embedding-Modell.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_RemoteModel" xml:space="preserve">
+    <value>Dieses Modell wird von einem anderen Computer bereitgestellt; die semantische Suche nutzt nur lokale Modelle.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_InvalidEndpoint" xml:space="preserve">
+    <value>Die Ollama-Adresse ist nicht lokal.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_Failed" xml:space="preserve">
+    <value>Der Index konnte nicht aktualisiert werden.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Rebuild" xml:space="preserve">
+    <value>Index neu aufbauen</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Delete" xml:space="preserve">
+    <value>Index löschen</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Deleted_Title" xml:space="preserve">
+    <value>Semantischer Index gelöscht</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Deleted_Message" xml:space="preserve">
+    <value>Deine Notizen wurden nicht verändert.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Privacy" xml:space="preserve">
+    <value>Der Index wird im Enki-Ordner auf diesem Computer gespeichert, ohne den Text deiner Notizen, und verlässt ihn nie. Passwortgeschützte Sitzungen werden nie indiziert.</value>
+  </data>
+  <data name="Assistant_Review_DeselectAll" xml:space="preserve">
+    <value>Alle abwählen</value>
+  </data>
 </root>

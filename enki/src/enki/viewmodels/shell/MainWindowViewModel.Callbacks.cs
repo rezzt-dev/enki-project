@@ -632,6 +632,15 @@ public sealed partial class MainWindowViewModel
         ShowAssistant();
     }
 
+    /// <summary>Petición concreta al asistente desde la paleta (resumen, enlaces sugeridos): abre el chat donde el
+    /// usuario lo tenga —panel o sección— y la envía.</summary>
+    private void StartAssistantRequest(string promptKey, NoteFile? note = null)
+    {
+        if (!AssistantPanelEnabled || Assistant is null) return;
+        ShowAssistant();
+        Assistant.StartRequest(promptKey, note);
+    }
+
     private void OpenAiSettings()
     {
         OpenSettings();

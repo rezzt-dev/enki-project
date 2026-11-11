@@ -718,6 +718,110 @@ solo se conserva con una clave de API propia (Claude con clave o Gemini cuando e
 suscripción el CLI lo estima, pero nadie lo paga por respuesta. `AiSettings.ShowUsage` (Ajustes › Inteligencia
 artificial › Conversación) oculta las cifras sin dejar de guardarlas.
 
+### Revisión de cambios por lotes (AIA-07)
+
+**Ajustes › Inteligencia artificial › Herramientas del vault › Revisar los cambios antes de aplicarlos**
+(`AiSettings.ReviewChangesBeforeApplying`, apagado por defecto). Se lee al empezar cada turno: si está encendido,
+`AssistantViewModel.BeginReview` abre una cola (`AiChangeReview`) que viaja en `AiToolContext.Review`.
+
+- **Qué se encola.** Lo que cambia el contenido de una nota: `create_note`, `create_note_from_template`,
+  `write_note`, `edit_note`, `append_to_note`, `update_note_metadata` y el texto de `append_to_daily_note`.
+  `ChangeNote` y la creación preparan el cambio (`AiReviewChange`: contenido de partida, contenido propuesto y
+  huella del disco) en vez de escribir; la acción queda en `AiToolActivityState.Pending` y el modelo recibe
+  `status: queued_for_review` para no darlo por hecho. Renombrar, mover, enviar a la papelera y los demás
+  módulos se aplican al momento como siempre (se revierten desde la respuesta); renombrar o fusionar etiquetas
+  ya pide su propia confirmación.
+- **Varios cambios de la misma nota.** El segundo parte de lo que propuso el primero (`DependsOn`) y `read_note`
+  devuelve la nota con lo pendiente (`pending_review: true`), así que el modelo trabaja sobre lo que quedaría.
+- **Tarjeta bajo la respuesta.** `AiChangeReviewViewModel` enseña cada cambio con su acción, espacio y ruta,
+  `+añadidas −quitadas` y, al desplegarlo, el diff con dos líneas de contexto (`TextDiffService.Excerpt`, pintado
+  por `AssistantDiffView`, el mismo control que la vista previa de «Añadir a la nota activa»). Cada cambio tiene
+  su casilla; «Aplicar seleccionados» y «Descartar todo» solo se habilitan cuando la respuesta terminó.
+- **Aplicar.** `AiVaultToolbox.ResolveReview` aplica en orden los marcados por `CommitNoteChange` (versión
+  «Asistente» en el historial y `WriteContentChecked`) y deja en cada acción su `AiToolUndo`, así que «Revertir
+  esta respuesta» funciona igual. Un cambio solo se aplica si la nota sigue con la huella con la que se preparó
+  (o, si depende de otro, si el anterior se aplicó y la nota quedó como él la dejó); si no, se deja como está y la
+  fila dice por qué (`AiReviewProblem`: cambió, ya no existe, sesión bloqueada, pestaña con cambios, depende de
+  otro no aplicado). Lo no marcado pasa a `Discarded`. Con «Permitir cambios en el vault» apagado solo se descarta.
+- **Persistencia.** La cola vive en memoria (guarda contenido de notas, quizá de una sesión) y nunca en el
+  historial del chat. Se conserva al cambiar de chat; al cambiar de vault, o al reabrir un chat cuya cola se perdió
+  al cerrar Enki, lo pendiente se marca como descartado. Si el usuario no está mirando cuando termina el turno,
+  una notificación avisa de los cambios que esperan.
+
+### Etiquetas globales y estadísticas (AIA-08)
+
+- `list_tags` (lectura): etiquetas del ámbito con recuento de notas y, si el chat llega al vault, de tarjetas y
+  tareas de Polar. Reutiliza `TagManagerService.BuildEntries`, ahora también sobre un conjunto de notas.
+- `rename_tag` y `merge_tags` (cambio): `TagManagerService.ReplaceTag` con filtro de ámbito
+  (`VaultService.ReplaceTagAcrossVault(..., includePath)`): solo notas de los espacios desbloqueados del chat, y
+  Kanban y Polar solo en un chat del vault. Piden confirmación con el recuento exacto; antes se guardan las pestañas
+  (`AiVaultHost.PrepareBulkNoteChange`) y después se recargan las pantallas (`BulkNotesChanged`), las mismas
+  funciones que usa el Gestor de etiquetas. Las notas guardan su versión anterior (`PreBulkOperation`); tarjetas y
+  tareas no se pueden revertir desde el chat.
+- `get_statistics` (lectura, ámbito del vault): el informe de la sección Estadísticas
+  (`StatisticsAggregationService.BuildReport`) del periodo (`this_week`, `last_week`, `this_month`, `last_month`,
+  `last_7_days`, `last_30_days`) y del mismo tramo del periodo anterior, con desglose diario, rachas, salud de
+  tareas y recordatorios y etiquetas principales. Responde «¿cómo voy esta semana?».
+
+### Exportar la conversación (AIA-09)
+
+Botón «Exportar conversación a una nota» en la cabecera de la sección y del panel, y entrada en la paleta.
+`AiChatExporter` arma el Markdown con un apartado por mensaje (autor, hora, texto, adjuntos, acciones con su
+estado y respuestas interrumpidas) y propiedades de origen en el frontmatter (`source: enki-assistant`, `chat`,
+`provider`, `model`, `created`, `exported`). La nota se crea como «Guardar como nota nueva»: en la raíz del espacio
+del chat, nunca sobre otra existente, y se abre. Solo usa el historial: no vuelve a leer notas ni adjuntos.
+
+### Resumen del día y de la semana (AIA-12)
+
+`get_briefing` (lectura, `period`: `day` o `week`) reúne en una llamada la agenda del periodo (la misma
+proyección que `get_agenda`), las tarjetas, tareas de Polar y recordatorios vencidos, los hábitos de hoy, si existe
+la nota diaria y las notas editadas desde ayer o en la última semana. En un chat de sesión solo incluye las notas
+de la sesión. Se pide desde la bienvenida («Resumen de mi día») o desde la paleta («Asistente: resumen de mi día» y
+«… de mi semana», que abren un chat nuevo y envían la petición; si ya había borrador, no se pisa ni se envía).
+No guarda nada: es la base de las rutinas futuras (AIA-21).
+
+### Enlaces sugeridos y notas relacionadas (AIA-13)
+
+`suggest_links` (lectura) devuelve, para una nota, las candidatas a enlazarse con sus motivos: notas que ella
+nombra sin enlazar (`NoteRelationsService.FindMentionedNotes`, nuevo), notas que la nombran sin enlazarla
+(`FindUnlinkedMentions`), notas con etiquetas o enlaces en común (`FindRelated`) y, con la búsqueda semántica
+lista, notas parecidas por significado (`AiSemanticIndexService.SimilarTo`, sin llamar a Ollama). Excluye las ya
+enlazadas en cualquier sentido y da el `[[enlace]]` exacto que hay que escribir y dónde. No escribe: el modelo
+explica las propuestas y las aplica con `edit_note` solo si el usuario acepta (con la revisión por lotes, quedan
+pendientes de aprobar). Se pide desde la bienvenida («Sugerir enlaces para esta nota», que adjunta la nota
+abierta) o desde la paleta.
+
+### Imágenes y PDF: aviso del proveedor (AIA-15)
+
+La lectura de imágenes y PDF ya estaba (ver «Lectura de archivos»). Ahora, con una imagen o un PDF adjunto, el
+compositor y la confirmación de envío dicen antes de enviar a qué proveedor llegará y si el modelo podrá verla:
+«La imagen se enviará a Claude…», «Si el PDF tiene páginas sin texto, se enviarán como imagen…», o el aviso de que
+el modelo no tiene visión (Ollama sin la capacidad `vision`, `ClaudeCliStatus.SupportsVision`) o de que el chat
+trabaja solo con texto y recibirá únicamente el nombre y el tamaño.
+
+### Búsqueda semántica local (AIA-16)
+
+**Ajustes › Inteligencia artificial › Búsqueda semántica local**: interruptor (`SemanticSearchEnabled`, apagado),
+modelo de embeddings de Ollama (`EmbeddingModel`, `nomic-embed-text` por defecto), estado del índice,
+«Reconstruir índice» y «Borrar índice». `AiSemanticIndexService`:
+
+- **Local.** Los vectores los calcula Ollama por `localhost` (`/api/embed`, misma validación de dirección que el
+  chat local). `/api/show` comprueba que el modelo existe, es de embeddings y no se sirve desde otro equipo
+  (`remote_host`); si falla, el estado lo explica (y, si falta el modelo, enseña `ollama pull …`).
+- **Qué se indexa.** La raíz del vault y las sesiones sin contraseña; una sesión protegida nunca, ni desbloqueada.
+  `AiSemanticChunker` trocea cada nota por secciones y párrafos (máximo 1 500 caracteres, 64 fragmentos, sin
+  frontmatter) y el texto que se envía lleva título y sección.
+- **Dónde.** En la instalación (`ai/semantic/<vault>.bin`, carpeta privada), nunca en el vault, y sin texto de
+  notas: ruta relativa, huella, y por fragmento posición, sección y vector. El fragmento que se enseña se relee de
+  la nota. Borrar el índice no toca ninguna nota.
+- **Al día.** Incremental por fecha y tamaño, con hash del texto para no recalcular lo que solo cambió de fecha;
+  tras las escrituras de Enki (`VaultService.ContentChanged`, con 20 s de margen), cada 10 minutos para recoger
+  sincronizadores y antes de cada búsqueda (espera como mucho 3 s y sigue en segundo plano). Otro modelo
+  reconstruye el índice.
+- **Herramienta.** `semantic_search` (lectura) solo se ofrece con la búsqueda encendida (`AiToolDefinition.Condition`).
+  Aplica el ámbito del chat a cada resultado y devuelve espacio, ruta, título, sección, similitud y fragmento. Sin
+  índice o sin Ollama falla con un mensaje que manda al modelo a `search_notes`.
+
 ### Transporte y aislamiento
 
 `EnkiMcpServer` expone el catálogo por MCP sobre HTTP en `127.0.0.1`, con puerto efímero y un token
@@ -740,7 +844,9 @@ se guardan antes de actuar y se actualizan después, sin resolver conflictos por
 
 Pruebas específicas: `Services/AiVaultToolboxTests` (servicios reales aislados, permisos, conflictos,
 papelera, cancelación y autenticación MCP), `AiVaultToolboxAppTests` (navegación, manual, hábitos, nota
-diaria y plantillas), `AiVaultToolboxUndoTests` (revertir sin pisar ediciones posteriores), `ClaudeCliServiceTests` (restricción de herramientas y
+diaria y plantillas), `AiVaultToolboxUndoTests` (revertir sin pisar ediciones posteriores), `AiVaultToolboxReviewTests` (revisión por
+lotes), `AiVaultToolboxInsightTests` (etiquetas, estadísticas, resumen y enlaces), `AiSemanticIndexServiceTests` (índice
+semántico con un Ollama simulado), `AiChatExporterTests`, `ClaudeCliServiceTests` (restricción de herramientas y
 texto entre acciones) y `AssistantViewUiTests` (actividad y confirmación sobre el XAML real).
 
 

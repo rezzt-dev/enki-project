@@ -99,6 +99,13 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
         Activities.Add(new AiToolActivityViewModel(activity));
     }
 
+    /// <summary>Cambios que esta respuesta preparó y esperan la revisión del usuario (AIA-07), si los hay.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasReview))]
+    private AiChangeReviewViewModel? _review;
+
+    public bool HasReview => Review is not null;
+
     // ===================== Revertir y consumo =====================
 
     /// <summary>Cuántas acciones de esta respuesta se pueden intentar deshacer todavía.</summary>
@@ -158,5 +165,6 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
         foreach (var activity in Activities) activity.RefreshLocalizedLabels();
         PendingApproval?.RefreshLocalizedLabels();
         PendingReadAccess?.RefreshLocalizedLabels();
+        Review?.RefreshLocalizedLabels();
     }
 }

@@ -262,7 +262,8 @@ public sealed partial class AssistantViewModel
         DateTimeOffset.Now,
         TimeZoneInfo.Local.Id,
         HasReadAccess(session),
-        session.WebAccess);
+        session.WebAccess,
+        _settingsService.Settings.Ai.ReviewChangesBeforeApplying);
 
     private void ResetDraftScope()
     {

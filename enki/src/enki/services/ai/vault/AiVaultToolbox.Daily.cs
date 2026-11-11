@@ -41,8 +41,9 @@ public sealed partial class AiVaultToolbox
                 var path = opening.Note.FullPath;
                 call.Target(AiToolTargetKind.Note, opening.Note.Title, path);
                 var note = ChangeNote(call, path, content => AppendAtEnd(content, text), requireCompleteRead: false);
-                // Una nota que nació en esta misma llamada se deshace entera, no solo lo añadido.
-                if (opening.Created) call.Undoable(UndoCreatedNote(path));
+                // Una nota que nació en esta misma llamada se deshace entera, no solo lo añadido. Con la revisión de
+                // cambios, lo añadido queda pendiente y la forma de deshacerlo la pone la aprobación.
+                if (opening.Created && !call.IsQueued) call.Undoable(UndoCreatedNote(path));
                 return new { Date = FormatDay(date), Created = opening.Created, Note = NoteSummary(VaultWorkspace, note) };
             });
 
@@ -79,6 +80,11 @@ public sealed partial class AiVaultToolbox
                 var title = call.GetText("title")?.Trim() is { Length: > 0 } requested ? requested : template.Name;
                 var draft = NoteTemplateService.Prepare(template, title);
                 call.Target(AiToolTargetKind.Note, draft.Title);
+                if (call.Context.Review is { } review)
+                {
+                    StageCreation(call, review, workspace, folder, draft.Title, draft.Content);
+                    return new { Workspace = WorkspaceKey(workspace), Folder = RelativePath(workspace, folder), draft.Title };
+                }
 
                 var note = _vault.CreateNote(draft.Title, folder, draft.Content);
                 call.Target(AiToolTargetKind.Note, note.Title, note.FullPath);

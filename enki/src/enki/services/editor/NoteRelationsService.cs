@@ -108,6 +108,50 @@ public static class NoteRelationsService
         return result;
     }
 
+    /// <summary>El sentido contrario de <see cref="FindUnlinkedMentions"/>: las notas cuyo título (o nombre de
+    /// archivo) aparece escrito en texto plano dentro de <paramref name="targetNote"/> sin enlazarlas. Cada
+    /// resultado lleva el nombre con que habría que enlazarla y el fragmento donde se la nombra; una nota que ya está
+    /// enlazada desde la activa no se ofrece. Mismas reglas de enmascarado que el resto del servicio.</summary>
+    public static IReadOnlyList<UnlinkedMention> FindMentionedNotes(
+        IReadOnlyList<(NoteFile Note, string Content)> allNotesWithContent, NoteFile targetNote, int maxResults = 20)
+    {
+        var target = allNotesWithContent.FirstOrDefault(t => VaultService.PathsEqual(t.Note.FullPath, targetNote.FullPath));
+        if (target.Note is null || string.IsNullOrWhiteSpace(target.Content)) return [];
+
+        var index = new NoteIndex(allNotesWithContent.Select(t => t.Note));
+        var linked = OutgoingPaths(index, target.Content, targetNote.FullPath);
+        var masked = MaskNonProse(target.Content);
+        var result = new List<UnlinkedMention>();
+        // Primero los nombres largos: «Plan de viaje» es una mención más fiable que «Plan».
+        foreach (var (note, _) in allNotesWithContent.OrderByDescending(t => t.Note.Title.Length))
+        {
+            if (VaultService.PathsEqual(note.FullPath, targetNote.FullPath) || linked.Contains(Normalize(note.FullPath))) continue;
+            if (!ContainsAnyName(target.Content, note) || index.LinkNameFor(note) is not { } linkName) continue;
+            if (BuildMentionPattern(note) is not { } pattern) continue;
+            Match match;
+            try
+            {
+                match = pattern.Match(masked);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                continue;
+            }
+            if (!match.Success) continue;
+
+            result.Add(new UnlinkedMention
+            {
+                FullPath = note.FullPath,
+                Title = note.Title,
+                Context = ExtractContext(target.Content, match.Index, match.Length),
+                MatchedText = target.Content.Substring(match.Index, match.Length),
+                LinkName = linkName
+            });
+            if (result.Count >= maxResults) break;
+        }
+        return result;
+    }
+
     /// <summary>Sustituye la primera mención sin enlazar de <paramref name="targetNote"/> en
     /// <paramref name="content"/> por un wikilink: <c>[[Nombre]]</c> si el texto coincide con el nombre, o
     /// <c>[[Nombre|texto]]</c> si solo difiere en mayúsculas o es el título frente al archivo, de modo que

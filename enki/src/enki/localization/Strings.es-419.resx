@@ -8551,4 +8551,280 @@ Feliz escritura.</value>
   <data name="Assistant_Undo_Notify_Nothing" xml:space="preserve">
     <value>No quedaba nada que revertir.</value>
   </data>
+  <data name="Assistant_Tool_list_tags" xml:space="preserve">
+    <value>Listar etiquetas</value>
+  </data>
+  <data name="Assistant_Tool_rename_tag" xml:space="preserve">
+    <value>Renombrar etiqueta</value>
+  </data>
+  <data name="Assistant_Tool_merge_tags" xml:space="preserve">
+    <value>Fusionar etiquetas</value>
+  </data>
+  <data name="Assistant_Tool_get_statistics" xml:space="preserve">
+    <value>Consultar estadísticas</value>
+  </data>
+  <data name="Assistant_Tool_get_briefing" xml:space="preserve">
+    <value>Preparar resumen</value>
+  </data>
+  <data name="Assistant_Tool_suggest_links" xml:space="preserve">
+    <value>Sugerir enlaces</value>
+  </data>
+  <data name="Assistant_Tool_semantic_search" xml:space="preserve">
+    <value>Buscar por significado</value>
+  </data>
+  <data name="Assistant_Approval_RenameTag" xml:space="preserve">
+    <value>¿Renombrar esta etiqueta en todo el ámbito del chat?</value>
+  </data>
+  <data name="Assistant_Approval_MergeTags" xml:space="preserve">
+    <value>¿Fusionar estas etiquetas en todo el ámbito del chat?</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Hint" xml:space="preserve">
+    <value>Cada nota guarda su versión anterior en el historial. Las tarjetas y las tareas no se pueden revertir desde el chat.</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Notes_one" xml:space="preserve">
+    <value>{0} nota</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Notes_other" xml:space="preserve">
+    <value>{0} notas</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Cards_one" xml:space="preserve">
+    <value>{0} tarjeta</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Cards_other" xml:space="preserve">
+    <value>{0} tarjetas</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Tasks_one" xml:space="preserve">
+    <value>{0} tarea</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Tasks_other" xml:space="preserve">
+    <value>{0} tareas</value>
+  </data>
+  <data name="Assistant_Review_Summary_one" xml:space="preserve">
+    <value>{0} cambio espera tu revisión</value>
+  </data>
+  <data name="Assistant_Review_Summary_other" xml:space="preserve">
+    <value>{0} cambios esperan tu revisión</value>
+  </data>
+  <data name="Assistant_Review_Apply_one" xml:space="preserve">
+    <value>Aplicar {0} seleccionado</value>
+  </data>
+  <data name="Assistant_Review_Apply_other" xml:space="preserve">
+    <value>Aplicar {0} seleccionados</value>
+  </data>
+  <data name="Assistant_Review_ToggleAll" xml:space="preserve">
+    <value>Marcar todos</value>
+  </data>
+  <data name="Assistant_Review_ShowDiff" xml:space="preserve">
+    <value>Ver cambios</value>
+  </data>
+  <data name="Assistant_Review_HideDiff" xml:space="preserve">
+    <value>Ocultar cambios</value>
+  </data>
+  <data name="Assistant_Review_Hint" xml:space="preserve">
+    <value>Todavía no se ha escrito nada. Un cambio solo se aplica si la nota sigue como estaba, y cada nota guarda su versión anterior en el historial.</value>
+  </data>
+  <data name="Assistant_Review_Discard" xml:space="preserve">
+    <value>Descartar todo</value>
+  </data>
+  <data name="Assistant_Review_State_Pending" xml:space="preserve">
+    <value>pendiente de revisión</value>
+  </data>
+  <data name="Assistant_Review_State_Discarded" xml:space="preserve">
+    <value>descartado</value>
+  </data>
+  <data name="Assistant_Review_Problem_ChangedSince" xml:space="preserve">
+    <value>No se aplicó: la nota cambió después de que el asistente lo preparara.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Missing" xml:space="preserve">
+    <value>No se aplicó: la nota o su carpeta ya no existe.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Locked" xml:space="preserve">
+    <value>No se aplicó: pertenece a una sesión protegida que está bloqueada.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Busy" xml:space="preserve">
+    <value>No se aplicó: la nota está abierta con cambios sin guardar o un conflicto pendiente.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Dependency" xml:space="preserve">
+    <value>No se aplicó: parte de otro cambio de la misma nota que no se aplicó.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Failed" xml:space="preserve">
+    <value>No se aplicó: no se pudo escribir el cambio.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Title" xml:space="preserve">
+    <value>Revisión de cambios</value>
+  </data>
+  <data name="Assistant_Review_Notify_Applied_one" xml:space="preserve">
+    <value>Se ha aplicado {0} cambio.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Applied_other" xml:space="preserve">
+    <value>Se han aplicado {0} cambios.</value>
+  </data>
+  <data name="Assistant_Review_Notify_NotApplied_one" xml:space="preserve">
+    <value>{0} no se pudo aplicar sin pisar nada.</value>
+  </data>
+  <data name="Assistant_Review_Notify_NotApplied_other" xml:space="preserve">
+    <value>{0} no se pudieron aplicar sin pisar nada.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Discarded_one" xml:space="preserve">
+    <value>{0} descartado.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Discarded_other" xml:space="preserve">
+    <value>{0} descartados.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Failed_Title" xml:space="preserve">
+    <value>No se pudieron aplicar los cambios</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Title" xml:space="preserve">
+    <value>Cambios pendientes de revisión</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Message_one" xml:space="preserve">
+    <value>El asistente ha preparado {0} cambio que espera tu aprobación.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Message_other" xml:space="preserve">
+    <value>El asistente ha preparado {0} cambios que esperan tu aprobación.</value>
+  </data>
+  <data name="Assistant_Export_Tooltip" xml:space="preserve">
+    <value>Exportar conversación a una nota</value>
+  </data>
+  <data name="Assistant_Export_NoteTitle" xml:space="preserve">
+    <value>Conversación · {0}</value>
+  </data>
+  <data name="Assistant_Export_User" xml:space="preserve">
+    <value>Tú</value>
+  </data>
+  <data name="Assistant_Export_Attachments" xml:space="preserve">
+    <value>Adjuntos</value>
+  </data>
+  <data name="Assistant_Export_Actions" xml:space="preserve">
+    <value>Acciones en el vault</value>
+  </data>
+  <data name="Assistant_Export_State_Failed" xml:space="preserve">
+    <value>falló</value>
+  </data>
+  <data name="Assistant_Export_State_Denied" xml:space="preserve">
+    <value>no autorizada</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_Title" xml:space="preserve">
+    <value>Conversación exportada</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_Message" xml:space="preserve">
+    <value>Se ha guardado en la nota «{0}».</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_SessionMessage" xml:space="preserve">
+    <value>Se ha guardado en la nota «{0}» de la sesión «{1}».</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice" xml:space="preserve">
+    <value>La imagen se enviará a {0} para que el modelo la vea.</value>
+  </data>
+  <data name="Assistant_Attachment_PdfNotice" xml:space="preserve">
+    <value>Si el PDF tiene páginas sin texto, se enviarán como imagen a {0}.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice_NoVision" xml:space="preserve">
+    <value>{0} no puede ver imágenes: recibirá los datos de la imagen, pero no la imagen. Elige un modelo con visión para que la vea.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice_TextOnly" xml:space="preserve">
+    <value>Este proveedor solo trabaja con texto aquí: recibirá el nombre y el tamaño de la imagen, no la imagen.</value>
+  </data>
+  <data name="Assistant_Suggestion_Briefing" xml:space="preserve">
+    <value>Prepárame el resumen de hoy: agenda, tareas y recordatorios vencidos, hábitos pendientes y las notas que he tocado.</value>
+  </data>
+  <data name="Assistant_Suggestion_Briefing_Label" xml:space="preserve">
+    <value>Resumen de mi día</value>
+  </data>
+  <data name="Assistant_Suggestion_BriefingWeek" xml:space="preserve">
+    <value>Prepárame el resumen de la semana: agenda de los próximos siete días, lo que está vencido y las notas que he tocado, con prioridades.</value>
+  </data>
+  <data name="Assistant_Suggestion_LinksNote" xml:space="preserve">
+    <value>Sugiere enlaces y notas relacionadas para esta nota y explica por qué. No cambies nada todavía.</value>
+  </data>
+  <data name="Assistant_Suggestion_LinksNote_Label" xml:space="preserve">
+    <value>Sugerir enlaces para esta nota</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantBriefingDay" xml:space="preserve">
+    <value>Asistente: resumen de mi día</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantBriefingWeek" xml:space="preserve">
+    <value>Asistente: resumen de mi semana</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantSuggestLinks" xml:space="preserve">
+    <value>Asistente: sugerir enlaces para esta nota</value>
+  </data>
+  <data name="CommandPalette_Action_ExportAssistantChat" xml:space="preserve">
+    <value>Asistente: exportar conversación a una nota</value>
+  </data>
+  <data name="Settings_Ai_Vault_Review_Label" xml:space="preserve">
+    <value>Revisar los cambios antes de aplicarlos</value>
+  </data>
+  <data name="Settings_Ai_Vault_Review_Description" xml:space="preserve">
+    <value>Lo que el asistente cambie en el contenido de tus notas espera bajo su respuesta con las diferencias, para aprobarlo o descartarlo de una vez. Las demás acciones se aplican al momento y se pueden revertir.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Title" xml:space="preserve">
+    <value>Búsqueda semántica local</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Enable_Label" xml:space="preserve">
+    <value>Buscar notas por significado</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Enable_Description" xml:space="preserve">
+    <value>Crea en esta computadora un índice de tus notas con un modelo de embeddings de Ollama, para que el asistente encuentre notas por lo que dicen y no solo por sus palabras. Necesita Ollama en ejecución.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Label" xml:space="preserve">
+    <value>Modelo de embeddings de Ollama</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Apply" xml:space="preserve">
+    <value>Usar</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Help" xml:space="preserve">
+    <value>Por ejemplo, nomic-embed-text o mxbai-embed-large. Cambiar de modelo reconstruye el índice.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Counts" xml:space="preserve">
+    <value>{0} notas · {1} fragmentos</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Off" xml:space="preserve">
+    <value>Apagada. El índice que hubiera se conserva hasta que lo borres.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Empty" xml:space="preserve">
+    <value>Todavía no hay índice: se construirá en segundo plano.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Indexing" xml:space="preserve">
+    <value>Indexando… quedan {0} notas.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Ready" xml:space="preserve">
+    <value>Índice al día · {0} · actualizado {1}</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_OllamaUnavailable" xml:space="preserve">
+    <value>Ollama no responde en la dirección configurada.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_ModelMissing" xml:space="preserve">
+    <value>El modelo no está instalado en Ollama. Instálalo con:</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_NotEmbeddingModel" xml:space="preserve">
+    <value>Ese modelo no genera embeddings. Elige un modelo de embeddings.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_RemoteModel" xml:space="preserve">
+    <value>Ese modelo se sirve desde otra computadora; la búsqueda semántica solo usa modelos locales.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_InvalidEndpoint" xml:space="preserve">
+    <value>La dirección de Ollama no es local.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_Failed" xml:space="preserve">
+    <value>No se pudo actualizar el índice.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Rebuild" xml:space="preserve">
+    <value>Reconstruir índice</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Delete" xml:space="preserve">
+    <value>Borrar índice</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Deleted_Title" xml:space="preserve">
+    <value>Índice semántico borrado</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Deleted_Message" xml:space="preserve">
+    <value>Tus notas no se han tocado.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Privacy" xml:space="preserve">
+    <value>El índice se guarda en la carpeta de Enki de esta computadora, sin el texto de tus notas, y nunca sale de ella. Las sesiones protegidas con contraseña no se indexan nunca.</value>
+  </data>
+  <data name="Assistant_Review_DeselectAll" xml:space="preserve">
+    <value>Desmarcar todos</value>
+  </data>
 </root>

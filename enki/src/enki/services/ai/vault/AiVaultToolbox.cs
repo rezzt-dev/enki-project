@@ -23,8 +23,9 @@ public sealed record AiToolOutcome(string Text, bool IsError, IReadOnlyList<AiFi
 /// <summary>Todo lo que el asistente puede hacer en el vault, como herramientas que se le sirven por MCP
 /// (<see cref="EnkiMcpServer"/>): leer, buscar, crear y organizar notas, carpetas y archivos; gestionar
 /// sesiones, tarjetas de Kanban, tareas de Polar y recordatorios; consultar la agenda; marcar hábitos, usar la
-/// nota diaria y las plantillas; recuperar o vaciar la papelera; abrir en la interfaz lo que el usuario pide ver
-/// y consultar el manual de Enki. Cada herramienta trabaja directamente sobre la entidad real a través de su servicio de
+/// nota diaria y las plantillas; recuperar o vaciar la papelera; abrir en la interfaz lo que el usuario pide ver;
+/// consultar el manual de Enki; renombrar o fusionar etiquetas y consultar estadísticas; preparar el resumen del día o
+/// de la semana; sugerir enlaces entre notas y buscar por significado con el índice semántico local. Cada herramienta trabaja directamente sobre la entidad real a través de su servicio de
 /// siempre (<see cref="VaultService"/>, <see cref="KanbanService"/>, <see cref="PolarTaskService"/>…), con las
 /// mismas reglas que la interfaz: no hay un segundo almacén ni copia de datos para la IA.
 ///
@@ -71,6 +72,9 @@ public sealed partial class AiVaultToolbox
     private readonly HabitService _habits;
     private readonly NoteTemplateService _templates;
     private readonly DailyNoteService _dailyNotes;
+    private readonly TagManagerService _tagManager;
+    private readonly StatisticsAggregationService _statistics;
+    private readonly AiSemanticIndexService? _semantic;
     private readonly Dictionary<string, AiToolDefinition> _tools = new(StringComparer.Ordinal);
 
     public AiVaultToolbox(
@@ -87,7 +91,10 @@ public sealed partial class AiVaultToolbox
         AiWebService? webService = null,
         HabitService? habitService = null,
         NoteTemplateService? noteTemplateService = null,
-        VaultSettingsService? vaultSettingsService = null)
+        VaultSettingsService? vaultSettingsService = null,
+        TagManagerService? tagManagerService = null,
+        StatisticsAggregationService? statisticsService = null,
+        AiSemanticIndexService? semanticIndex = null)
     {
         _vault = vaultService;
         _sessions = sessionService;
@@ -105,6 +112,10 @@ public sealed partial class AiVaultToolbox
         _habits = habitService ?? new HabitService(vaultService);
         _templates = noteTemplateService ?? new NoteTemplateService(vaultService);
         _dailyNotes = new DailyNoteService(vaultService, _templates, vaultSettingsService);
+        _tagManager = tagManagerService ?? new TagManagerService(vaultService, kanbanService, polarTaskService);
+        _statistics = statisticsService ?? new StatisticsAggregationService(vaultService, kanbanService, polarTaskService,
+            polarAuthService, _habits, reminderService, sessionService);
+        _semantic = semanticIndex;
 
         RegisterOverviewTools();
         RegisterNoteTools();
@@ -120,6 +131,10 @@ public sealed partial class AiVaultToolbox
         RegisterDailyNoteAndTemplateTools();
         RegisterNavigationTools();
         RegisterHelpTools();
+        RegisterTagAndStatisticsTools();
+        RegisterBriefingTools();
+        RegisterLinkSuggestionTools();
+        if (_semantic is not null) RegisterSemanticSearchTools();
     }
 
     /// <summary>Todas las herramientas que existen, se ofrezcan o no en un chat concreto.</summary>
@@ -134,6 +149,7 @@ public sealed partial class AiVaultToolbox
     private bool IsAvailable(AiToolDefinition tool, AiToolContext context)
     {
         if (tool.Effect != AiToolEffect.Read && !ChangesAllowed) return false;
+        if (tool.Condition is { } condition && !condition()) return false;
         var scope = context.Scope;
         return tool.Scope switch
         {
@@ -178,9 +194,12 @@ public sealed partial class AiVaultToolbox
             var call = new AiToolCall(context, arguments, activity);
             var result = await tool.Handler(call);
             // Dentro del try: los resultados llevan secuencias perezosas que se recorren al serializar.
+            // Lo preparado para revisión no está hecho: el modelo tiene que saberlo para no darlo por aplicado.
+            if (call.IsQueued) result = new { Status = "queued_for_review", Note = QueuedForReviewNote, Result = result };
             var json = JsonSerializer.Serialize(result ?? new { Ok = true }, JsonOptions);
-            activity.State = AiToolActivityState.Succeeded;
-            if (tool.Effect != AiToolEffect.Read) _host.VaultChanged();
+            // Un cambio que quedó en la cola de revisión no ha tocado nada todavía: no hay pantallas que refrescar.
+            activity.State = call.IsQueued ? AiToolActivityState.Pending : AiToolActivityState.Succeeded;
+            if (tool.Effect != AiToolEffect.Read && !call.IsQueued) _host.VaultChanged();
             return new AiToolOutcome(json, IsError: false, call.Images.Count > 0 ? call.Images : null);
         }
         catch (Exception ex) when (Describe(ex) is { } failure)
@@ -242,12 +261,13 @@ public sealed partial class AiVaultToolbox
     }
 
     private void Register(string name, AiToolScope scope, AiToolEffect effect, string description, JsonObject schema,
-        Func<AiToolCall, object?> handler) =>
-        _tools.Add(name, new AiToolDefinition(name, scope, effect, description, schema, call => Task.FromResult(handler(call))));
+        Func<AiToolCall, object?> handler, Func<bool>? condition = null) =>
+        _tools.Add(name, new AiToolDefinition(name, scope, effect, description, schema, call => Task.FromResult(handler(call)))
+            { Condition = condition });
 
     private void RegisterAsync(string name, AiToolScope scope, AiToolEffect effect, string description, JsonObject schema,
-        Func<AiToolCall, Task<object?>> handler) =>
-        _tools.Add(name, new AiToolDefinition(name, scope, effect, description, schema, handler));
+        Func<AiToolCall, Task<object?>> handler, Func<bool>? condition = null) =>
+        _tools.Add(name, new AiToolDefinition(name, scope, effect, description, schema, handler) { Condition = condition });
 
     // ===================== Confirmación =====================
 

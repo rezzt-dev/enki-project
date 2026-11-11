@@ -116,7 +116,7 @@
 
       <!-- Cabecera: título (renombrable), skill del chat, ámbito, modelo, capacidad y paso al panel lateral. -->
       <Border Grid.Row="0" Height="58" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="24,0,16,0">
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
           <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" ClipToBounds="True">
             <TextBlock Text="{Binding ChatTitle}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis" MaxWidth="420" IsVisible="{Binding !IsRenamingTitle}"
@@ -152,12 +152,17 @@
                      IsVisible="{Binding Cli.IsReady}" />
           <views:AssistantModelControls Grid.Column="3" IsVisible="{Binding Cli.IsReady}" />
 
-          <Button Grid.Column="4" Classes="icon-btn" Width="32" Height="32" Margin="8,0,0,0"
+          <Button Grid.Column="4" x:Name="ExportChatButton" Classes="icon-btn" Width="32" Height="32" Margin="8,0,0,0"
+                  Command="{Binding ExportConversationCommand}" IsVisible="{Binding !IsDraft}" IsEnabled="{Binding CanExportConversation}"
+                  ToolTip.Tip="{loc:Tr Assistant_Export_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Export_Tooltip}">
+            <mi:MaterialIcon Kind="FileExportOutline" Width="16" Height="16" />
+          </Button>
+          <Button Grid.Column="5" Classes="icon-btn" Width="32" Height="32" Margin="2,0,0,0"
                   Command="{Binding NewChatCommand}" IsEnabled="{Binding CanStartNewChat}"
                   ToolTip.Tip="{loc:Tr Assistant_NewChat_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_NewChat_Tooltip}">
             <mi:MaterialIcon Kind="MessagePlusOutline" Width="16" Height="16" />
           </Button>
-          <Button Grid.Column="5" x:Name="ShowAsPanelButton" Classes="icon-btn" Width="32" Height="32" Margin="2,0,0,0"
+          <Button Grid.Column="6" x:Name="ShowAsPanelButton" Classes="icon-btn" Width="32" Height="32" Margin="2,0,0,0"
                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ShowAssistantAsPanelCommand, FallbackValue={x:Null}}"
                   ToolTip.Tip="{loc:Tr Assistant_Panel_ShowAsPanel}" AutomationProperties.Name="{loc:Tr Assistant_Panel_ShowAsPanel}">
             <mi:MaterialIcon Kind="DockRight" Width="16" Height="16" />

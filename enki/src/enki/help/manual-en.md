@@ -207,6 +207,14 @@ Notes are plain Markdown files inside that folder, so you can open, copy or sync
 - When the provider reports them, the tokens of each reply and the chat total are shown; hide them in Settings ›
   Artificial intelligence.
 - Turning off "Allow changes to the vault" (Settings › Artificial intelligence) leaves the assistant read-only.
+- "Review changes before applying them" (Settings › Artificial intelligence) keeps what the assistant changes in your
+  notes under its reply, with the differences, so you apply what you tick or discard it all.
+- The export button in the chat header saves the whole conversation as a new note.
+- When you attach an image or a PDF, the message box says which provider will receive it and whether the model can see it.
+- Ask it for a summary of your day or week, how you are doing this week, to rename or merge tags or to suggest links
+  for a note; also from the command palette ("Assistant: …").
+- "Local semantic search" (Settings › Artificial intelligence) builds an index with Ollama, on this computer, so the
+  assistant finds notes by meaning. Rebuild or delete it from the same place.
 
 ## Skills
 

@@ -85,6 +85,11 @@ public sealed class AiToolContext
     /// consulta del chat; cualquier otro archivo sigue necesitándolo.</summary>
     public IReadOnlySet<string> AttachedFiles { get; init; } = new HashSet<string>();
 
+    /// <summary>Cola de revisión del turno cuando el usuario quiere aprobar los cambios antes de aplicarlos
+    /// (<see cref="AiSettings.ReviewChangesBeforeApplying"/>): los cambios de contenido de notas se preparan en
+    /// ella en vez de escribirse. <see langword="null"/>, se aplican al momento.</summary>
+    public AiChangeReview? Review { get; init; }
+
     /// <summary>Skills leídas completas en este turno: su contenido original permite detectar conflictos.</summary>
     internal Dictionary<string, SkillFile> SkillReads { get; } = new(StringComparer.Ordinal);
 
@@ -152,6 +157,16 @@ public sealed class AiVaultHost
     /// <summary>Se creó, renombró, borró o restauró una sesión: los selectores de sesión de Notas y Archivos
     /// tienen que volver a leerlas.</summary>
     public Action SessionsChanged { get; init; } = () => { };
+
+    /// <summary>Antes de un cambio que reescribe muchas notas a la vez (renombrar o fusionar una etiqueta en todo
+    /// el ámbito): vuelca lo que las pestañas tengan sin guardar y devuelve <see langword="false"/> si alguna
+    /// sigue con cambios que no se pudieron guardar, en cuyo caso no se toca nada. Mismo criterio que el Gestor
+    /// de etiquetas.</summary>
+    public Func<bool> PrepareBulkNoteChange { get; init; } = () => true;
+
+    /// <summary>Después de ese cambio masivo: las pestañas abiertas releen sus etiquetas y las pantallas que las
+    /// enseñan (Notas, Kanban, Polar) se recargan.</summary>
+    public Action BulkNotesChanged { get; init; } = () => { };
 
     /// <summary>Tras cualquier acción que cambie algo, para refrescar las pantallas afectadas.</summary>
     public Action VaultChanged { get; init; } = () => { };

@@ -26,6 +26,7 @@ public sealed partial class AiAttachmentChipViewModel : ObservableObject
         FullPath = file.FullPath;
         Title = file.FileName;
         WorkspaceLabel = workspaceLabel;
+        Format = Services.AiFileReader.FormatOf(file);
     }
 
     public AiAttachmentChipViewModel(AiContextAttachment sent)
@@ -51,7 +52,17 @@ public sealed partial class AiAttachmentChipViewModel : ObservableObject
 
     public bool IsFile => Kind == AiAttachmentKind.File;
 
-    public MaterialIconKind Icon => IsFile ? MaterialIconKind.FileDocumentOutline : MaterialIconKind.NoteTextOutline;
+    /// <summary>Formato de un archivo pendiente; <see langword="null"/> en una nota o en un adjunto ya enviado.</summary>
+    public Services.AiFileFormat? Format { get; }
+
+    /// <summary>Una imagen pendiente: su contenido llega al proveedor del chat para que el modelo la vea.</summary>
+    public bool IsImage => Format == Services.AiFileFormat.Image;
+
+    /// <summary>Un PDF pendiente: sus páginas sin texto se envían como imagen al proveedor.</summary>
+    public bool IsPdf => Format == Services.AiFileFormat.Pdf;
+
+    public MaterialIconKind Icon => IsImage ? MaterialIconKind.FileImageOutline
+        : IsFile ? MaterialIconKind.FileDocumentOutline : MaterialIconKind.NoteTextOutline;
 
     public bool WasTruncated => _sent?.WasTruncated == true;
 

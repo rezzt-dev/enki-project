@@ -25,14 +25,17 @@ public sealed partial class VaultService
     /// <param name="targetTag">Nombre destino (renombrar/fusionar), o <see langword="null"/> para eliminar
     /// la etiqueta sin sustituirla por otra. Se pasa tal cual a <see cref="NoteTagHelper.SetTags"/>, que ya
     /// lo normaliza a minúsculas — mismo comportamiento que el resto de ediciones de etiquetas de notas.</param>
+    /// <param name="includePath">Si se indica, solo se tocan las notas cuya ruta acepta (el ámbito de un chat del
+    /// asistente).</param>
     /// <returns>Número de notas cuyo contenido se reescribió.</returns>
-    public int ReplaceTagAcrossVault(IReadOnlySet<string> sourceTags, string? targetTag)
+    public int ReplaceTagAcrossVault(IReadOnlySet<string> sourceTags, string? targetTag, System.Func<string, bool>? includePath = null)
     {
         EnsureVaultAvailable();
 
         var touched = 0;
         foreach (var (cachedNote, _) in GetAllNotesAcrossVaultWithContent())
         {
+            if (includePath is not null && !includePath(cachedNote.FullPath)) continue;
             var disk = ReadFromDisk(cachedNote.FullPath);
             if (disk is not { } fresh) continue;
             var note = fresh.Note;

@@ -26,6 +26,11 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
     public bool IsFailed => Model.State == AiToolActivityState.Failed;
     public bool IsDenied => Model.State == AiToolActivityState.Denied;
 
+    /// <summary>Preparado y a la espera de la revisión del usuario: todavía no se ha escrito nada.</summary>
+    public bool IsPending => Model.State == AiToolActivityState.Pending;
+
+    public bool IsDiscarded => Model.State == AiToolActivityState.Discarded;
+
     public string? Error => Model.Error;
     public bool HasError => !string.IsNullOrEmpty(Model.Error);
 
@@ -44,14 +49,20 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
     /// <summary>Se intentó revertir y se dejó como estaba.</summary>
     public bool IsRevertSkipped => Model.Undo is { State: AiUndoState.Skipped };
 
-    public bool HasRevertNote => IsReverted || IsRevertSkipped;
+    public bool HasRevertNote => IsReverted || IsRevertSkipped || IsPending || IsDiscarded;
 
-    /// <summary>"Revertida", o por qué no se revirtió, en el idioma vigente.</summary>
-    public string RevertNote => Model.Undo switch
+    /// <summary>"Revertida", o por qué no se revirtió; o, con la revisión de cambios, "Pendiente de revisión" o
+    /// "Descartado". En el idioma vigente.</summary>
+    public string RevertNote => Model.State switch
     {
-        { State: AiUndoState.Reverted } => LocalizationService.Instance["Assistant_Undo_Reverted"],
-        { State: AiUndoState.Skipped, Reason: { } reason } => LocalizationService.Instance["Assistant_Undo_Reason_" + reason],
-        _ => string.Empty
+        AiToolActivityState.Pending => LocalizationService.Instance["Assistant_Review_State_Pending"],
+        AiToolActivityState.Discarded => LocalizationService.Instance["Assistant_Review_State_Discarded"],
+        _ => Model.Undo switch
+        {
+            { State: AiUndoState.Reverted } => LocalizationService.Instance["Assistant_Undo_Reverted"],
+            { State: AiUndoState.Skipped, Reason: { } reason } => LocalizationService.Instance["Assistant_Undo_Reason_" + reason],
+            _ => string.Empty
+        }
     };
 
     public MaterialIconKind Icon => Model.TargetKind switch
@@ -69,6 +80,8 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
         AiToolTargetKind.Habit => MaterialIconKind.ClipboardCheckOutline,
         AiToolTargetKind.Section => MaterialIconKind.OpenInApp,
         AiToolTargetKind.Help => MaterialIconKind.HelpCircleOutline,
+        AiToolTargetKind.Tag => MaterialIconKind.TagOutline,
+        AiToolTargetKind.Insight => MaterialIconKind.ChartBoxOutline,
         _ => Model.Tool.StartsWith("search", System.StringComparison.Ordinal) ? MaterialIconKind.Magnify : MaterialIconKind.Creation
     };
 
@@ -81,6 +94,8 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
         OnPropertyChanged(nameof(IsSucceeded));
         OnPropertyChanged(nameof(IsFailed));
         OnPropertyChanged(nameof(IsDenied));
+        OnPropertyChanged(nameof(IsPending));
+        OnPropertyChanged(nameof(IsDiscarded));
         OnPropertyChanged(nameof(Error));
         OnPropertyChanged(nameof(HasError));
         OnPropertyChanged(nameof(CanOpen));

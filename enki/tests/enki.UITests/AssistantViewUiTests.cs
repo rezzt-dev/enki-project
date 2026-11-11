@@ -66,7 +66,8 @@ public sealed class AssistantViewUiTests : IDisposable
 
     private (AssistantView View, AssistantViewModel Vm, Window Window, AiChatService Chats) Create(string cliPath,
         Action<AiChatService, SettingsService>? seed = null, Func<SettingsService, VaultService, EnkiMcpServer>? vaultTools = null,
-        Func<IReadOnlyList<AiToolActivity>, AiRevertReport>? revertActivities = null)
+        Func<IReadOnlyList<AiToolActivity>, AiRevertReport>? revertActivities = null,
+        Func<AiChangeReview, IReadOnlyCollection<AiReviewChange>, AiReviewReport>? resolveReview = null)
     {
         var settings = new SettingsService(_directory);
         settings.Settings.Ai.ClaudeCliPath = cliPath;
@@ -78,7 +79,7 @@ public sealed class AssistantViewUiTests : IDisposable
         seed?.Invoke(chats, settings);
         var cli = new ClaudeCliService(settings, _directory);
         var vm = new AssistantViewModel(cli, chats, settings, vault, new NotificationService(settings, _directory),
-            vaultTools: vaultTools?.Invoke(settings, vault), revertActivities: revertActivities);
+            vaultTools: vaultTools?.Invoke(settings, vault), revertActivities: revertActivities, resolveReview: resolveReview);
         var view = new AssistantView { DataContext = vm };
         var window = new Window { Content = view, Width = 1280, Height = 860, Background = new SolidColorBrush(Color.Parse("#121212")) };
         window.Show();
@@ -762,6 +763,68 @@ public sealed class AssistantViewUiTests : IDisposable
             Dispatcher.UIThread.RunJobs();
             window.GetLayoutManager()!.ExecuteLayoutPass();
             Assert.DoesNotContain(reply.UsageLabel, RenderedText(view));
+        }
+        finally { window.Close(); }
+    }
+
+    [Fact]
+    public void ReviewCard_ShowsTheQueuedChanges_WithTheirDiff_AndAppliesTheSelected()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var queued = new AiToolActivity { Tool = "edit_note", Target = "Diario", State = AiToolActivityState.Pending };
+        IReadOnlyCollection<AiReviewChange>? approved = null;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, settings) =>
+        {
+            var chat = new AiChatSession { Title = "Diario", VaultId = VaultId };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Ordena mi diario" });
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.Assistant, Text = "Preparado.", Activities = [queued] });
+            chats.Save(chat);
+            settings.Settings.Ai.LastChatByVault[VaultId] = chat.Id;
+        }, resolveReview: (review, selected) =>
+        {
+            approved = selected;
+            foreach (var change in review.Changes) change.State = AiReviewChangeState.Applied;
+            queued.State = AiToolActivityState.Succeeded;
+            return new AiReviewReport(selected.Count, 0, 0);
+        });
+        try
+        {
+            var reply = vm.Messages.Last();
+            var review = new AiChangeReview();
+            review.Stage(new AiReviewChange
+            {
+                Kind = AiReviewChangeKind.Edit, Activity = queued, FullPath = Path.Combine(_directory, "vault", "Diario.md"),
+                Title = "Diario", WorkspaceName = "Vault", RelativePath = "Diario.md",
+                OriginalContent = "# Diario\n\nLunes\n", ProposedContent = "# Diario\n\nLunes\nMartes\n", BaselineHash = "x"
+            });
+            queued.State = AiToolActivityState.Pending;
+            reply.Review = new AiChangeReviewViewModel(review);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            var card = view.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "ReviewCard" && ReferenceEquals(b.DataContext, reply));
+            Assert.True(card.IsEffectivelyVisible);
+            var text = RenderedText(card);
+            Assert.Contains("1 CHANGE AWAITS YOUR REVIEW", text);
+            Assert.Contains("+1 −0", text);
+            Assert.Contains("Diario.md", text);
+            Assert.True(Find<Button>(view, "ExportChatButton").IsEffectivelyVisible);
+
+            reply.Review.Items.Single().ToggleExpandedCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.Contains("Martes", RenderedText(card));
+            SavePreview(view, "assistant-review-card");
+
+            var apply = view.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "ApplyReviewButton" && ReferenceEquals(b.DataContext, reply));
+            Assert.True(apply.IsEffectivelyEnabled);
+            apply.Command!.Execute(reply);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+
+            Assert.Single(approved!);
+            Assert.False(card.IsEffectivelyVisible);
+            Assert.Null(reply.Review);
         }
         finally { window.Close(); }
     }

@@ -107,6 +107,8 @@ public sealed partial class MainWindowViewModel
         // lee una página.
         _aiWebService = new AiWebService(_settingsService, new AiApiKeyStore(aiKeysDirectory, AiApiKeyKind.BraveSearch));
         _aiChatService = new AiChatService();
+        // Búsqueda semántica: solo habla con el Ollama local y no indexa nada hasta que el usuario la enciende.
+        _aiSemanticIndex = new AiSemanticIndexService(_settingsService, _vaultService, _sessionService);
         AiCliStatus = new ClaudeCliStatusViewModel(_claudeCliService, backend: new AiBackendService(_claudeCliService, _settingsService,
             gemini: new GeminiApiService(_settingsService, new AiApiKeyStore(aiKeysDirectory, AiApiKeyKind.Gemini))));
         InitializePageRefresh();
@@ -527,6 +529,28 @@ public sealed partial class MainWindowViewModel
         // avisan a Notas antes y después de tocar una nota, igual que sus propias acciones. El servidor MCP no
         // escucha hasta el primer turno con la IA encendida.
         _aiVaultTools?.Stop();
+        var tagManagerService = new TagManagerService(_vaultService, _kanbanService, _polarTaskService);
+        var statisticsAggregationService = new StatisticsAggregationService(_vaultService, _kanbanService, _polarTaskService, _polarAuthService, _habitService, _reminderService, _sessionService);
+        // El Gestor de etiquetas y el asistente renombran etiquetas igual: antes, se guardan las pestañas; después,
+        // se releen y se recargan las pantallas que las enseñan.
+        bool PrepareBulkTagChange()
+        {
+            foreach (var editor in Notes.OpenEditors) editor.FlushPendingSave();
+            if (Notes.OpenEditors.All(editor => !editor.IsDirty)) return true;
+            _notificationService.PushLocalized(
+                LocalizedTextFormatter.Format("TagManager_Error_Title"),
+                LocalizedTextFormatter.Format("TagManager_SaveBlocked"), Models.NotificationSeverity.Error);
+            return false;
+        }
+        void ReloadAfterBulkTagChange()
+        {
+            foreach (var editor in Notes.OpenEditors) editor.ReloadAfterTagChange();
+            Notes.Reload();
+            // Kanban se compone después del asistente; cuando se usa esto, ya existe.
+            Kanban?.Reload();
+            Kanban?.TaskManagement.Reload();
+            InvalidatePages(AppPage.Dashboard, AppPage.Statistics, AppPage.TagManager);
+        }
         var aiVaultToolbox = new AiVaultToolbox(_vaultService, _sessionService, _kanbanService, _polarTaskService, _polarAuthService,
             _reminderService, _settingsService, calendarAggregationService, new AiVaultHost
             {
@@ -537,8 +561,13 @@ public sealed partial class MainWindowViewModel
                 VaultChanged = OnAssistantChangedVault,
                 OpenNote = OpenNoteForAssistant,
                 OpenKanbanBoard = OpenKanbanForAssistant,
-                OpenSection = OpenSectionForAssistant
-            }, skillService, _aiWebService, _habitService, _noteTemplateService, _vaultSettingsService);
+                OpenSection = OpenSectionForAssistant,
+                PrepareBulkNoteChange = PrepareBulkTagChange,
+                BulkNotesChanged = ReloadAfterBulkTagChange
+            }, skillService, _aiWebService, _habitService, _noteTemplateService, _vaultSettingsService,
+            tagManagerService, statisticsAggregationService, _aiSemanticIndex);
+        // El índice semántico sigue al vault recién abierto (carga el suyo y lo pone al día, si está encendido).
+        _aiSemanticIndex.SettingsChanged();
         _aiVaultTools = new EnkiMcpServer(aiVaultToolbox, work => Dispatcher.UIThread.InvokeAsync(work));
         Assistant = new AssistantViewModel(_claudeCliService, _aiChatService, _settingsService, _vaultService,
             _notificationService, AiCliStatus, _sessionService,
@@ -552,7 +581,8 @@ public sealed partial class MainWindowViewModel
             isPolarLinked: () => _polarAuthService.IsLinked,
             vaultIdentity: create => create ? _vaultSettingsService.EnsureVaultId() : _vaultSettingsService.Settings.VaultId,
             appendToNote: aiVaultToolbox.AppendToNote,
-            revertActivities: aiVaultToolbox.RevertActivities);
+            revertActivities: aiVaultToolbox.RevertActivities,
+            resolveReview: aiVaultToolbox.ResolveReview);
         // El botón del asistente de la barra de título y el panel lateral pueden enlazarse antes de que
         // exista (primer arranque, con la configuración del vault delante): se les avisa de que ya está.
         OnPropertyChanged(nameof(Assistant));
@@ -562,7 +592,6 @@ public sealed partial class MainWindowViewModel
         };
         Kanban = new KanbanViewModel(_kanbanService, _polarAuthService, taskManagement, _vaultService, _sessionService, OpenLinkedNoteFromKanban, _settingsService, _notificationService);
         Habits = new HabitsViewModel(_habitService, _settingsService);
-        var statisticsAggregationService = new StatisticsAggregationService(_vaultService, _kanbanService, _polarTaskService, _polarAuthService, _habitService, _reminderService, _sessionService);
         Statistics = new StatisticsViewModel(statisticsAggregationService, _polarAuthService, _settingsService,
             loadOnCreate: false, loadInBackground: true, notificationService: _notificationService);
         Dashboard = new DashboardViewModel(_vaultService, _sessionService, _kanbanService, _polarTaskService,
@@ -586,25 +615,7 @@ public sealed partial class MainWindowViewModel
         {
             if (e.PropertyName == nameof(TrashViewModel.TotalCount)) UpdateTrashBadge();
         };
-        var tagManagerService = new TagManagerService(_vaultService, _kanbanService, _polarTaskService);
-        TagManager = new TagManagerViewModel(tagManagerService, _notificationService,
-            () =>
-            {
-                foreach (var editor in Notes.OpenEditors) editor.FlushPendingSave();
-                if (Notes.OpenEditors.All(editor => !editor.IsDirty)) return true;
-                _notificationService.PushLocalized(
-                    LocalizedTextFormatter.Format("TagManager_Error_Title"),
-                    LocalizedTextFormatter.Format("TagManager_SaveBlocked"), Models.NotificationSeverity.Error);
-                return false;
-            },
-            () =>
-            {
-                foreach (var editor in Notes.OpenEditors) editor.ReloadAfterTagChange();
-                Notes.Reload();
-                Kanban.Reload();
-                Kanban.TaskManagement.Reload();
-                InvalidatePages(AppPage.Dashboard, AppPage.Statistics);
-            });
+        TagManager = new TagManagerViewModel(tagManagerService, _notificationService, PrepareBulkTagChange, ReloadAfterBulkTagChange);
         Settings = new SettingsViewModel(_settingsService, _customThemeService, _brandLogoService, _vaultSettingsService, _vaultService, _vaultBackupService, _polarAuthService,
             _polarSyncService, _notificationService, SwitchToVaultAsync, OnTitleBarModeChanged,
             OnNotificationsPanelModeChanged, OnRemindersPanelModeChanged, OnCalendarShowSidebarScrollbarModeChanged,
@@ -614,7 +625,7 @@ public sealed partial class MainWindowViewModel
             OnInboxPanelModeChanged, OnVaultSwitcherModeChanged, _updateCheckService, _kanbanService,
             () => { Navigate(AppPage.Kanban); Kanban.DisplayMode = KanbanDisplayMode.Board; Kanban.IsBoardSelectorOpen = true; },
             _reminderService, () => { Notes.Reload(); Kanban.Reload(); }, externalCalendarService,
-            AiCliStatus, _aiChatService, SidePanels, _aiWebService, ApplyVaultPreferences);
+            AiCliStatus, _aiChatService, SidePanels, _aiWebService, ApplyVaultPreferences, _aiSemanticIndex);
         Reminders = new RemindersViewModel(_reminderService, _polarAuthService, _polarSyncService);
         Notifications = new NotificationsViewModel(_notificationService);
         Reminders.PropertyChanged += (_, e) =>

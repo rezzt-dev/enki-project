@@ -84,6 +84,20 @@ public sealed partial class MainWindowViewModel
             if (NotesPanelEnabled && Notes?.ActiveEditor is not null)
                 items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AskAssistantAboutNote"],
                     MaterialIconKind.MessageTextOutline, StartAssistantChatAboutActiveNote));
+            // Peticiones que necesitan las herramientas del vault: con un proveedor de solo texto no se ofrecen.
+            if (Assistant.VaultToolsAvailable)
+            {
+                items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AssistantBriefingDay"],
+                    MaterialIconKind.WeatherSunny, () => StartAssistantRequest("Assistant_Suggestion_Briefing")));
+                items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AssistantBriefingWeek"],
+                    MaterialIconKind.CalendarWeekOutline, () => StartAssistantRequest("Assistant_Suggestion_BriefingWeek")));
+                if (NotesPanelEnabled && Notes?.ActiveEditor?.Note is { } activeNote)
+                    items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_AssistantSuggestLinks"],
+                        MaterialIconKind.LinkVariantPlus, () => StartAssistantRequest("Assistant_Suggestion_LinksNote", activeNote)));
+            }
+            if (Assistant.CanExportConversation)
+                items.Add(new CommandPaletteItem(LocalizationService.Instance["CommandPalette_Action_ExportAssistantChat"],
+                    MaterialIconKind.FileExportOutline, () => Assistant.ExportConversationCommand.Execute(null)));
         }
 
         if (KanbanPanelEnabled && Kanban is not null)

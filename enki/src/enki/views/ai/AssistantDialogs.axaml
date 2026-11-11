@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:enki.ViewModels"
-             xmlns:services="clr-namespace:enki.Services"
+             xmlns:views="clr-namespace:enki.Views"
              xmlns:controls="clr-namespace:enki.Controls"
              xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:loc="clr-namespace:enki.Localization"
@@ -94,6 +94,8 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <TextBlock Text="{Binding ConfirmSendSummary}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding AttachmentImageNotice}" Classes="muted" FontSize="12" TextWrapping="Wrap"
+                     IsVisible="{Binding HasAttachmentImageNotice}" />
           <CheckBox IsChecked="{Binding SkipFutureConfirmations}">
             <TextBlock Text="{loc:Tr Assistant_Confirm_DontAskAgain}" FontSize="12.5" TextWrapping="Wrap" />
           </CheckBox>
@@ -123,29 +125,7 @@
           </StackPanel>
           <Border Classes="card" Padding="2" MaxHeight="320">
             <ScrollViewer>
-              <ItemsControl ItemsSource="{Binding AppendPreviewLines}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <StackPanel Spacing="0" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="services:DiffLine">
-                    <Border Classes="diff-line"
-                            Classes.diff-added="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}"
-                            Classes.diff-removed="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}">
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Classes="diff-marker" Text="+"
-                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}" />
-                        <TextBlock Classes="diff-marker" Text="−"
-                                   IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}" />
-                        <TextBlock Classes="diff-text" Text="{Binding Text}"
-                                   FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
+              <views:AssistantDiffView Lines="{Binding AppendPreviewLines}" />
             </ScrollViewer>
           </Border>
           <TextBlock Text="{loc:Tr Assistant_Append_Hint}" Classes="faint" FontSize="11" TextWrapping="Wrap" />

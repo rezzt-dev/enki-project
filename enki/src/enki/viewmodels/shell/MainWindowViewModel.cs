@@ -71,6 +71,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly AiChatService _aiChatService;
     private readonly AiWebService _aiWebService;
 
+    /// <summary>Índice semántico local del asistente (AIA-16). Uno para toda la app: sigue al vault abierto y no
+    /// hace nada mientras la búsqueda semántica está apagada en Ajustes.</summary>
+    private readonly AiSemanticIndexService _aiSemanticIndex;
+
     /// <summary>Servidor MCP con el que el asistente trabaja dentro del vault (<see cref="AiVaultToolbox"/>).
     /// Se construye en <c>InitializeShell</c> porque sus herramientas necesitan a Notas, y solo escucha
     /// mientras hay un turno en curso o reciente; se para al apagar la IA, al cambiar de vault y al salir.</summary>
@@ -599,6 +603,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         Assistant?.CancelAll();
         _aiVaultTools?.Stop();
         _aiWebService.Dispose();
+        _aiSemanticIndex.Dispose();
         _globalHotkeyService.Dispose();
         CommandLineChannel.Server?.Dispose();
         _vaultChangeWatcher.Dispose();

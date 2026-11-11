@@ -25,7 +25,7 @@
 
       <!-- Fila 1: historial, título y acciones de la superficie. -->
       <Border Grid.Row="0" Height="48" BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="8,0,6,0">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
           <Button x:Name="PanelHistoryToggle" Grid.Column="0" Classes="icon-btn" Width="32" Height="32"
                   Command="{Binding TogglePanelHistoryCommand}"
                   ToolTip.Tip="{loc:Tr Assistant_Panel_History}" AutomationProperties.Name="{loc:Tr Assistant_Panel_History}">
@@ -40,17 +40,22 @@
             <TextBlock Text="{Binding ActivityLabel}" Classes="faint" FontSize="10" IsVisible="{Binding HasActivity}"
                        TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <Button Grid.Column="2" Classes="icon-btn" Width="32" Height="32"
+          <Button Grid.Column="2" x:Name="PanelExportChatButton" Classes="icon-btn" Width="32" Height="32"
+                  Command="{Binding ExportConversationCommand}" IsVisible="{Binding !IsDraft}" IsEnabled="{Binding CanExportConversation}"
+                  ToolTip.Tip="{loc:Tr Assistant_Export_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Export_Tooltip}">
+            <mi:MaterialIcon Kind="FileExportOutline" Width="15" Height="15" />
+          </Button>
+          <Button Grid.Column="3" Classes="icon-btn" Width="32" Height="32"
                   Command="{Binding NewChatCommand}" IsEnabled="{Binding CanStartNewChat}"
                   ToolTip.Tip="{loc:Tr Assistant_NewChat_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_NewChat_Tooltip}">
             <mi:MaterialIcon Kind="MessagePlusOutline" Width="16" Height="16" />
           </Button>
-          <Button x:Name="ExpandPanelButton" Grid.Column="3" Classes="icon-btn" Width="32" Height="32"
+          <Button x:Name="ExpandPanelButton" Grid.Column="4" Classes="icon-btn" Width="32" Height="32"
                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ExpandAssistantPanelCommand, FallbackValue={x:Null}}"
                   ToolTip.Tip="{loc:Tr Assistant_Panel_Expand}" AutomationProperties.Name="{loc:Tr Assistant_Panel_Expand}">
             <mi:MaterialIcon Kind="ArrowExpand" Width="15" Height="15" />
           </Button>
-          <Button x:Name="ClosePanelButton" Grid.Column="4" Classes="icon-btn" Width="32" Height="32"
+          <Button x:Name="ClosePanelButton" Grid.Column="5" Classes="icon-btn" Width="32" Height="32"
                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CloseAssistantPanelCommand, FallbackValue={x:Null}}"
                   ToolTip.Tip="{loc:Tr Assistant_Panel_Close}" AutomationProperties.Name="{loc:Tr Assistant_Panel_Close}">
             <mi:MaterialIcon Kind="Close" Width="15" Height="15" />

@@ -22,7 +22,8 @@ namespace enki.ViewModels;
 /// lateral que se abre junto a cualquier otra sección—, así que cambiar de una a otra conserva chat, borrador,
 /// adjuntos, permisos y respuesta en curso. Este archivo lleva el estado del CLI, el historial y la
 /// conversación abierta; el resto vive en sus parciales (<c>.Composer</c>, <c>.Scope</c>, <c>.Drafts</c>,
-/// <c>.Vault</c>, <c>.Activity</c>, <c>.NoteInsert</c>, <c>.Effort</c>, <c>.Undo</c>, <c>.Usage</c>). Ver
+/// <c>.Vault</c>, <c>.Activity</c>, <c>.NoteInsert</c>, <c>.Effort</c>, <c>.Undo</c>, <c>.Usage</c>, <c>.Review</c>,
+/// <c>.Export</c>). Ver
 /// <c>.docs/project-info/asistente-ia.md</c>.</summary>
 public sealed partial class AssistantViewModel : ViewModelBase
 {
@@ -77,9 +78,11 @@ public sealed partial class AssistantViewModel : ViewModelBase
         Func<bool>? isPolarLinked = null,
         Func<bool, string?>? vaultIdentity = null,
         Func<string, string, NoteDiskStamp, NoteFile>? appendToNote = null,
-        Func<IReadOnlyList<AiToolActivity>, AiRevertReport>? revertActivities = null)
+        Func<IReadOnlyList<AiToolActivity>, AiRevertReport>? revertActivities = null,
+        Func<AiChangeReview, IReadOnlyCollection<AiReviewChange>, AiReviewReport>? resolveReview = null)
     {
         _revertActivities = revertActivities;
+        _resolveReview = resolveReview;
         _vaultIdentity = vaultIdentity ?? (_ => VaultSettingsService.PathIdentity(vaultService.VaultPath));
         _appendToNote = appendToNote;
         _vaultTools = vaultTools;
@@ -363,6 +366,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         RefreshModels();
         Messages.Clear();
         foreach (var message in session.Messages) Messages.Add(new AiChatMessageViewModel(message));
+        AttachReviews(session);
         PendingAttachments.Clear();
         ClearError();
         _retryTurn = null;
@@ -543,6 +547,14 @@ public sealed partial class AssistantViewModel : ViewModelBase
         var title = _activeSession is { Title.Length: > 0 } session
             ? session.Title
             : LocalizationService.Instance["Assistant_Note_DefaultTitle"];
+        CreateNoteInChatSpace(title, $"# {title}\n\n{message.Text.Trim()}\n", "Assistant_Notify_NoteSaved");
+    }
+
+    /// <summary>Crea una nota nueva en la raíz del espacio del chat (el vault o su sesión), avisa y la abre. Común a
+    /// "Guardar como nota" y "Exportar conversación". <paramref name="notifyKey"/> es el prefijo de los textos del
+    /// aviso: <c>_Title</c>, <c>_Message</c> y <c>_SessionMessage</c>.</summary>
+    private NoteFile? CreateNoteInChatSpace(string title, string content, string notifyKey)
+    {
         RefreshScope();
         var targetSession = IsSessionChat ? _scopeSession : null;
         try
@@ -550,19 +562,20 @@ public sealed partial class AssistantViewModel : ViewModelBase
             if (IsSessionChat && targetSession is null) throw new DirectoryNotFoundException();
             if (targetSession is not null && !_sessionService!.IsUnlocked(targetSession))
                 throw new SessionLockedException(targetSession.RootPath);
-            var note = _vaultService.CreateNote(title, folderPath: targetSession?.RootPath,
-                initialContent: $"# {title}\n\n{message.Text.Trim()}\n");
-            _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_NoteSaved_Title"),
+            var note = _vaultService.CreateNote(title, folderPath: targetSession?.RootPath, initialContent: content);
+            _notificationService.PushLocalized(LocalizedTextFormatter.Format(notifyKey + "_Title"),
                 targetSession is null
-                    ? LocalizedTextFormatter.Format("Assistant_Notify_NoteSaved_Message", note.Title)
-                    : LocalizedTextFormatter.Format("Assistant_Notify_NoteSaved_SessionMessage", note.Title, targetSession.Name),
+                    ? LocalizedTextFormatter.Format(notifyKey + "_Message", note.Title)
+                    : LocalizedTextFormatter.Format(notifyKey + "_SessionMessage", note.Title, targetSession.Name),
                 NotificationSeverity.Success);
             _openNote(note);
+            return note;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or VaultUnavailableException or SessionLockedException)
         {
             _notificationService.PushLocalized(LocalizedTextFormatter.Format("Assistant_Notify_NoteSaveFailed_Title"),
                 VaultFailureReasons.DescribeLocalized(ex), NotificationSeverity.Error);
+            return null;
         }
     }
 
@@ -611,6 +624,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
 
     private void RefreshConversationState()
     {
+        RefreshExportState();
         OnPropertyChanged(nameof(HasMessages));
         OnPropertyChanged(nameof(ShowWelcome));
         OnPropertyChanged(nameof(ShowTranscript));
@@ -671,6 +685,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(RetryLabel));
         OnPropertyChanged(nameof(DraftNotice));
         OnPropertyChanged(nameof(PendingRevertSummary));
+        RefreshAttachmentImageNotice();
         RefreshUsage();
         foreach (var session in Sessions) session.RefreshLocalizedLabels();
         foreach (var message in Messages) message.RefreshLocalizedLabels();

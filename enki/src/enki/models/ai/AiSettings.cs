@@ -101,6 +101,23 @@ public sealed class AiSettings
     /// proveedor los informa. Las cifras se guardan igual con el ajuste apagado: solo deja de mostrarlas.</summary>
     public bool ShowUsage { get; set; } = true;
 
+    /// <summary>Revisión de cambios por lotes: los cambios de contenido de notas que pide el asistente (crear,
+    /// reescribir, editar, añadir, etiquetas y propiedades) no se escriben al momento, sino que quedan en una
+    /// cola con su diff bajo la respuesta para aprobarlos juntos. Apagado por defecto: el asistente aplica lo
+    /// que hace y cada respuesta se puede revertir. Se lee al empezar cada turno.</summary>
+    public bool ReviewChangesBeforeApplying { get; set; }
+
+    /// <summary>Búsqueda semántica local: un índice de embeddings de las notas, generado con un modelo de
+    /// Ollama en este equipo y guardado en la instalación (nunca en el vault ni en la nube). Apagado por defecto;
+    /// las sesiones protegidas con contraseña no se indexan nunca. Ver <c>AiSemanticIndexService</c>.</summary>
+    public bool SemanticSearchEnabled { get; set; }
+
+    public const string DefaultEmbeddingModel = "nomic-embed-text";
+
+    /// <summary>Modelo de embeddings de Ollama con el que se construye el índice semántico. Cambiarlo obliga a
+    /// reconstruir el índice: los vectores de modelos distintos no se pueden comparar.</summary>
+    public string EmbeddingModel { get; set; } = DefaultEmbeddingModel;
+
     /// <summary>Autoriza las consultas del asistente por defecto dentro del ámbito de cada chat, sin pedir
     /// permiso en la primera lectura. Una revocación explícita en un chat prevalece sobre este ajuste.</summary>
     public bool AllowReadAccessByDefault { get; set; }
@@ -130,6 +147,7 @@ public sealed class AiSettings
         OpenAiModel = (OpenAiModel ?? string.Empty).Trim();
         LocalModel = (LocalModel ?? string.Empty).Trim();
         GeminiModel = (GeminiModel ?? string.Empty).Trim();
+        EmbeddingModel = string.IsNullOrWhiteSpace(EmbeddingModel) ? DefaultEmbeddingModel : EmbeddingModel.Trim();
         OllamaEndpoint = (OllamaEndpoint ?? string.Empty).Trim().TrimEnd('/');
         ClaudeCliPath = (ClaudeCliPath ?? string.Empty).Trim();
         DefaultModel = (DefaultModel ?? string.Empty).Trim();

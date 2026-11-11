@@ -260,6 +260,17 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- Imágenes y PDF adjuntos: a qué proveedor llegan y si el modelo podrá verlos, antes de enviar nada. -->
+            <Grid x:Name="AttachmentImageNotice" ColumnDefinitions="Auto,*" Margin="14,0,14,4" Cursor="Arrow"
+                  IsVisible="{Binding HasAttachmentImageNotice}">
+              <Panel Grid.Column="0" Margin="0,1,8,0" VerticalAlignment="Top">
+                <mi:MaterialIcon Kind="EyeOutline" Width="12" Height="12" Foreground="{DynamicResource Ink50}"
+                                 IsVisible="{Binding !AttachmentImageNoticeIsWarning}" />
+                <mi:MaterialIcon Kind="EyeOffOutline" Width="12" Height="12" Foreground="{DynamicResource DangerBrush}"
+                                 IsVisible="{Binding AttachmentImageNoticeIsWarning}" />
+              </Panel>
+              <TextBlock Grid.Column="1" Text="{Binding AttachmentImageNotice}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+            </Grid>
 
             <TextBox x:Name="ComposerBox" Text="{Binding DraftText}" AcceptsReturn="True" TextWrapping="Wrap"
                      Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="Normal"

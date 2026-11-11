@@ -76,6 +76,32 @@ public sealed partial class AssistantViewModel
         ComposerFocusRequested?.Invoke();
     }
 
+    /// <summary>Accesos de la paleta de comandos que piden algo concreto al asistente —el resumen del día o de la
+    /// semana, enlaces sugeridos para una nota—: abren un chat nuevo (en el espacio de la nota, con ella adjunta, si
+    /// se da) y envían la petición. Si el chat nuevo ya tenía un borrador, no se pisa ni se envía: la petición se
+    /// pone delante y el usuario decide.</summary>
+    public void StartRequest(string promptKey, NoteFile? note = null)
+    {
+        if (IsSending) return;
+        if (note is not null) StartChatAboutNote(note);
+        else
+        {
+            SaveDraft();
+            StartNewChat();
+            RestoreDraft();
+        }
+        var prompt = LocalizationService.Instance[promptKey];
+        if (DraftText.Trim().Length > 0)
+        {
+            DraftText = prompt + "\n\n" + DraftText;
+            ComposerFocusRequested?.Invoke();
+            return;
+        }
+        DraftText = prompt;
+        if (CanSend) SendCommand.Execute(null);
+        else ComposerFocusRequested?.Invoke();
+    }
+
     // ===================== Adjuntos =====================
 
     public ObservableCollection<AiAttachmentChipViewModel> PendingAttachments { get; } = [];
@@ -101,6 +127,8 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(CanChangeEffort));
         OnPropertyChanged(nameof(CanRevertResponses));
         if (value) PendingRevertMessage = null;
+        RefreshReviewState();
+        RefreshExportState();
         RefreshActivityState();
     }
 
@@ -113,8 +141,43 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(AppendToActiveNoteLabel));
     }
 
+    // ===================== Aviso de imágenes =====================
+
+    /// <summary>Qué pasa con las imágenes adjuntas (y las páginas escaneadas de un PDF): a qué proveedor llegan y
+    /// si el modelo podrá verlas. Vacío sin imágenes ni PDF pendientes. Se enseña en el compositor y en la
+    /// confirmación de envío, antes de que salga nada del equipo.</summary>
+    public string AttachmentImageNotice
+    {
+        get
+        {
+            var images = PendingAttachments.Any(a => a.IsImage);
+            var pdfs = PendingAttachments.Any(a => a.IsPdf);
+            if (!images && !pdfs) return string.Empty;
+            var text = LocalizationService.Instance;
+            var culture = text.CurrentCulture;
+            if (!VaultToolsAvailable)
+                return images ? text["Assistant_Attachment_ImageNotice_TextOnly"] : string.Empty;
+            if (!Cli.SupportsVision)
+                return string.Format(culture, text["Assistant_Attachment_ImageNotice_NoVision"], SelectedModel?.Label ?? Cli.ProviderLabel);
+            return string.Format(culture, text[images ? "Assistant_Attachment_ImageNotice" : "Assistant_Attachment_PdfNotice"], Cli.ProviderLabel);
+        }
+    }
+
+    public bool HasAttachmentImageNotice => AttachmentImageNotice.Length > 0;
+
+    /// <summary>El aviso es de que el modelo no podrá ver la imagen, no solo de a quién llega.</summary>
+    public bool AttachmentImageNoticeIsWarning => HasAttachmentImageNotice && (!VaultToolsAvailable || !Cli.SupportsVision);
+
+    private void RefreshAttachmentImageNotice()
+    {
+        OnPropertyChanged(nameof(AttachmentImageNotice));
+        OnPropertyChanged(nameof(HasAttachmentImageNotice));
+        OnPropertyChanged(nameof(AttachmentImageNoticeIsWarning));
+    }
+
     private void RefreshComposerState()
     {
+        RefreshAttachmentImageNotice();
         OnPropertyChanged(nameof(HasPendingAttachments));
         OnPropertyChanged(nameof(CanAttachMore));
         OnPropertyChanged(nameof(CanAttachActiveNote));
@@ -171,6 +234,7 @@ public sealed partial class AssistantViewModel
     {
         CancelScheduledDraftSave();
         _turnCancellation?.Cancel();
+        DiscardAllReviews();
         AiFileReader.ClearCache();
         IsNotePickerOpen = false;
         IsSkillPickerOpen = false;
@@ -687,6 +751,7 @@ public sealed partial class AssistantViewModel
             bubble.PendingReadAccess = null;
             _turnCancellation = null;
             bubble.IsStreaming = false;
+            EndReview(bubble);
             _runningSession = null;
             _pendingDecisions = 0;
             IsSending = false;
@@ -755,6 +820,7 @@ public sealed partial class AssistantViewModel
         CancellationToken cancellation) =>
         _vaultTools!.Register(new AiToolContext
         {
+            Review = BeginReview(bubble),
             Scope = new AiAccessScope(session.SessionId, session.FullVaultAccess),
             ActivityReported = reported => _dispatch(() =>
             {

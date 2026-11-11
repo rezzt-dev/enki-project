@@ -309,4 +309,26 @@ public sealed class NoteRelationsServiceTests : IDisposable
         Assert.Single(result);
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(2), $"tardó {watch.Elapsed}");
     }
+
+    [Fact]
+    public void FindMentionedNotes_ListsNotesNamedInTheTarget_ButNotAlreadyLinkedOnes()
+    {
+        var target = Note("Viaje");
+        var budget = Note("Presupuesto anual");
+        var hotel = Note("Hotel");
+        var linked = Note("Vuelos");
+        var notes = Vault(
+            (target, "# Viaje\n\nRevisar el presupuesto anual y reservar [[Vuelos]]. Los vuelos ya están.\n`Hotel` en código no cuenta."),
+            (budget, "# Presupuesto anual"),
+            (hotel, "# Hotel"),
+            (linked, "# Vuelos"));
+
+        var result = NoteRelationsService.FindMentionedNotes(notes, target);
+
+        var mention = Assert.Single(result);
+        Assert.Equal("Presupuesto anual", mention.Title);
+        Assert.Equal("presupuesto anual", mention.MatchedText);
+        Assert.Equal("Presupuesto anual", mention.LinkName);
+        Assert.Contains("Revisar el presupuesto anual", mention.Context);
+    }
 }

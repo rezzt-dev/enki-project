@@ -96,12 +96,15 @@ public sealed partial class ClaudeCliStatusViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsReady), nameof(IsNotInstalled), nameof(IsSignedOut), nameof(IsUnsupported),
         nameof(IsKnown), nameof(ShowChecking), nameof(StateLabel), nameof(AccountLabel), nameof(HasAccount),
         nameof(VersionLabel), nameof(ExecutablePathLabel), nameof(UnsupportedMessage), nameof(SupportsVaultTools),
-        nameof(NeedsApiKey), nameof(NeedsLogin), nameof(ApiKeySetupMessage))]
+        nameof(SupportsVision), nameof(NeedsApiKey), nameof(NeedsLogin), nameof(ApiKeySetupMessage))]
     private ClaudeCliStatus _status;
 
     /// <summary>El CLI deja trabajar al asistente dentro del vault (ver
     /// <see cref="ClaudeCliStatus.SupportsVaultTools"/>); si no, el asistente solo responde con texto.</summary>
     public bool SupportsVaultTools => Status.SupportsVaultTools;
+
+    /// <summary>El modelo elegido puede ver imágenes (ver <see cref="ClaudeCliStatus.SupportsVision"/>).</summary>
+    public bool SupportsVision => Status.SupportsVision;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowChecking))]

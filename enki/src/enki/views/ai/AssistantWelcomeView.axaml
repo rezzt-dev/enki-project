@@ -146,6 +146,23 @@
             <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_Organize_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
           </Grid>
         </Button>
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_Briefing"
+                IsVisible="{Binding VaultToolsAvailable}">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="WeatherSunny" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_Briefing_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <!-- Termina en "Note": adjunta la nota abierta en Documentos, si la hay. -->
+        <Button Classes="ghost-card suggestion" HorizontalContentAlignment="Stretch"
+                Command="{Binding UseSuggestionCommand}" CommandParameter="Assistant_Suggestion_LinksNote"
+                IsVisible="{Binding VaultToolsAvailable}">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Kind="LinkVariantPlus" Width="16" Height="16" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Suggestion_LinksNote_Label}" FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
       </UniformGrid>
       <!-- Rejilla y no StackPanel horizontal: este da ancho infinito al texto, que no llegaba a partirse en el
            ancho del panel. -->

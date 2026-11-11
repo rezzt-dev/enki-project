@@ -19,6 +19,39 @@ public static class TextDiffService
     /// every line the two versions share in between marked unchanged. Quadratic in line count, which is fine
     /// for a single note's history (thousands of lines at most) but would need a smarter algorithm (Myers)
     /// for anything larger.</summary>
+    /// <summary>Marca de los tramos sin cambios que <see cref="Excerpt"/> omite.</summary>
+    public const string GapMarker = "⋯";
+
+    /// <summary>Solo lo que cambia de un diff, con <paramref name="context"/> líneas iguales antes y después de cada
+    /// tramo cambiado; cada tramo omitido queda como una línea sin cambios con <see cref="GapMarker"/>. Para enseñar
+    /// el cambio de una nota larga sin obligar a recorrerla entera (revisión de cambios del asistente).</summary>
+    public static List<DiffLine> Excerpt(IReadOnlyList<DiffLine> diff, int context)
+    {
+        var keep = new bool[diff.Count];
+        for (var i = 0; i < diff.Count; i++)
+        {
+            if (diff[i].Kind == DiffLineKind.Unchanged) continue;
+            for (var k = Math.Max(0, i - context); k <= Math.Min(diff.Count - 1, i + context); k++) keep[k] = true;
+        }
+        var result = new List<DiffLine>();
+        var skipped = false;
+        for (var i = 0; i < diff.Count; i++)
+        {
+            if (keep[i])
+            {
+                if (skipped) result.Add(new DiffLine(DiffLineKind.Unchanged, GapMarker));
+                skipped = false;
+                result.Add(diff[i]);
+            }
+            else
+            {
+                skipped = true;
+            }
+        }
+        if (skipped && result.Count > 0) result.Add(new DiffLine(DiffLineKind.Unchanged, GapMarker));
+        return result;
+    }
+
     public static List<DiffLine> Compare(string oldText, string newText)
     {
         var oldLines = SplitLines(oldText);

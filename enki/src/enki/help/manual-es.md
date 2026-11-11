@@ -218,6 +218,14 @@ herramientas.
 - Si el proveedor los informa, se muestran los tokens de cada respuesta y el total del chat; se oculta en Ajustes ›
   Inteligencia artificial.
 - «Permitir cambios en el vault» apagado (Ajustes › Inteligencia artificial) deja al asistente en modo solo lectura.
+- «Revisar los cambios antes de aplicarlos» (Ajustes › Inteligencia artificial) deja lo que el asistente cambia en tus
+  notas bajo su respuesta, con las diferencias, para aplicar lo que marques o descartarlo todo.
+- El botón de exportar de la cabecera del chat guarda la conversación entera como una nota nueva.
+- Al adjuntar una imagen o un PDF, el cuadro de mensaje dice a qué proveedor se enviará y si el modelo podrá verla.
+- Pídele el resumen de tu día o de tu semana, cómo vas esta semana, que renombre o fusione etiquetas o que sugiera
+  enlaces para una nota; también desde la paleta de comandos («Asistente: …»).
+- «Búsqueda semántica local» (Ajustes › Inteligencia artificial) crea con Ollama, en este equipo, un índice para que el
+  asistente encuentre notas por su significado. Se reconstruye o se borra desde el mismo sitio.
 
 ## Skills
 

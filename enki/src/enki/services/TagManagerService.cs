@@ -32,7 +32,11 @@ public sealed class TagManagerService(VaultService vaultService, KanbanService k
     /// dominio, ordenadas alfabéticamente — no por frecuencia: para una herramienta de limpieza, ver
     /// variantes de ortografía una al lado de la otra ("reunion"/"reunión") es más útil que verlas
     /// dispersas por frecuencia de uso.</summary>
-    public List<TagManagerEntry> BuildEntries()
+    public List<TagManagerEntry> BuildEntries() => BuildEntries(vaultService.GetAllNotesAcrossVault(), includeTasks: true);
+
+    /// <summary>Lo mismo sobre un conjunto concreto de notas (las del ámbito de un chat del asistente) y, si
+    /// <paramref name="includeTasks"/> es <see langword="false"/>, sin Kanban ni Polar, que cuelgan del vault.</summary>
+    public List<TagManagerEntry> BuildEntries(IEnumerable<NoteFile> notes, bool includeTasks)
     {
         var noteCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var kanbanCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -48,9 +52,12 @@ public sealed class TagManagerService(VaultService vaultService, KanbanService k
             }
         }
 
-        foreach (var note in vaultService.GetAllNotesAcrossVault()) Count(noteCounts, note.Tags);
-        foreach (var card in kanbanService.AllColumns.SelectMany(c => c.Cards)) Count(kanbanCounts, card.Tags);
-        foreach (var task in polarTaskService.Store.Tasks.Where(t => !t.IsDeleted)) Count(polarCounts, task.Tags);
+        foreach (var note in notes) Count(noteCounts, note.Tags);
+        if (includeTasks)
+        {
+            foreach (var card in kanbanService.AllColumns.SelectMany(c => c.Cards)) Count(kanbanCounts, card.Tags);
+            foreach (var task in polarTaskService.Store.Tasks.Where(t => !t.IsDeleted)) Count(polarCounts, task.Tags);
+        }
 
         return names.Values
             .Select(name => new TagManagerEntry
@@ -70,7 +77,11 @@ public sealed class TagManagerService(VaultService vaultService, KanbanService k
     /// diferencia de Polar, <see cref="KanbanCard"/> no lleva marca de sincronización que preservar) y
     /// tareas Polar (<see cref="PolarTaskService.ReplaceTagAcrossTasks"/>). Renombrar es esta misma llamada
     /// con un único elemento en <paramref name="sourceNames"/>; fusionar, con varios.</summary>
-    public TagChangeSummary ReplaceTag(IEnumerable<string> sourceNames, string? targetName)
+    /// <param name="notePathFilter">Si se indica, solo se tocan las notas cuya ruta acepta (el ámbito de un chat
+    /// del asistente); el resto del vault queda como está.</param>
+    /// <param name="includeTasks">Con <see langword="false"/> no se tocan Kanban ni Polar.</param>
+    public TagChangeSummary ReplaceTag(IEnumerable<string> sourceNames, string? targetName,
+        Func<string, bool>? notePathFilter = null, bool includeTasks = true)
     {
         ArgumentNullException.ThrowIfNull(sourceNames);
         var sourceTags = new HashSet<string>(sourceNames.Where(name => !string.IsNullOrWhiteSpace(name)), StringComparer.OrdinalIgnoreCase);
@@ -84,7 +95,8 @@ public sealed class TagManagerService(VaultService vaultService, KanbanService k
             targetName = targetName.ToLowerInvariant();
         }
 
-        var notesTouched = vaultService.ReplaceTagAcrossVault(sourceTags, targetName);
+        var notesTouched = vaultService.ReplaceTagAcrossVault(sourceTags, targetName, notePathFilter);
+        if (!includeTasks) return new TagChangeSummary(notesTouched, 0, 0);
 
         var kanbanTouched = 0;
         foreach (var card in kanbanService.AllColumns.SelectMany(c => c.Cards))

@@ -292,4 +292,20 @@ public class AiPromptBuilderTests
         Assert.Contains("open_section", prompt);
         Assert.Contains("<enki_reverted>", prompt);
     }
+
+    [Fact]
+    public void WithScope_InReviewMode_TellsTheModelThatNoteChangesAreQueued()
+    {
+        var notice = new AiScopeNotice(null, false, false, ChangesAllowed: true, PolarLinked: false, DateTimeOffset.Now, "UTC");
+
+        var direct = AiPromptBuilder.WithScope(notice, "hola");
+        var review = AiPromptBuilder.WithScope(notice with { ReviewChanges = true }, "hola");
+        var readOnly = AiPromptBuilder.WithScope(notice with { ChangesAllowed = false, ReviewChanges = true }, "hola");
+
+        Assert.Contains("Changes: allowed.\n", direct);
+        Assert.Contains("review mode", review);
+        Assert.Contains("edit_note", review);
+        Assert.Contains("Changes: not allowed", readOnly);
+        Assert.DoesNotContain("review mode", readOnly);
+    }
 }

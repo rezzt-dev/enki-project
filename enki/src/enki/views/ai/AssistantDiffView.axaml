@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:services="clr-namespace:enki.Services"
+             x:Class="enki.Views.AssistantDiffView"
+             x:Name="Root">
+
+  <!-- Líneas de un diff (TextDiffService) con las clases diff-* del sistema de diseño: la vista previa de "Añadir a
+       la nota activa" y la revisión de cambios del asistente las pintan igual. -->
+  <ItemsControl ItemsSource="{Binding #Root.Lines}">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <StackPanel Spacing="0" />
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate DataType="services:DiffLine">
+        <Border Classes="diff-line"
+                Classes.diff-added="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}"
+                Classes.diff-removed="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Classes="diff-marker" Text="+"
+                       IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Added}" />
+            <TextBlock Classes="diff-marker" Text="−"
+                       IsVisible="{Binding Kind, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Removed}" />
+            <TextBlock Classes="diff-text" Text="{Binding Text}"
+                       FontFamily="{DynamicResource MonoFontFamily}" FontSize="11.5" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

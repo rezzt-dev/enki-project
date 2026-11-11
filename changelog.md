@@ -10,6 +10,14 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- añadir la revision de cambios por lotes del asistente (`ReviewChangesBeforeApplying`): los cambios de contenido de notas quedan bajo la respuesta con su diff para aplicar los marcados o descartarlos, sin pisar notas que cambiaron y con «revertir esta respuesta» tras aplicarlos
+- añadir `list_tags`, `rename_tag` y `merge_tags` sobre el gestor de etiquetas recortado al ambito del chat, con confirmacion y recuento, y `get_statistics` con el periodo, el tramo anterior y el desglose diario
+- añadir «exportar conversacion a una nota» en la cabecera del asistente y en la paleta, con mensajes, adjuntos, acciones y propiedades de origen (`AiChatExporter`)
+- añadir `get_briefing` para el resumen del dia o de la semana (agenda, vencidos, habitos, nota diaria y notas recientes) y sus accesos en la bienvenida y la paleta de comandos
+- añadir `suggest_links`, que propone wikilinks y notas relacionadas con su motivo (menciones en ambos sentidos, etiquetas y enlaces comunes y parecido semantico) sin escribir nada, y `NoteRelationsService.FindMentionedNotes`
+- avisar al adjuntar una imagen o un pdf de que proveedor la recibira y de si el modelo puede verla (`ClaudeCliStatus.SupportsVision`, capacidad `vision` de ollama)
+- añadir la busqueda semantica local (`AiSemanticIndexService`, `semantic_search`): indice incremental de embeddings con ollama en la instalacion, sin texto de notas ni sesiones protegidas, con ajustes para activarlo, elegir modelo, reconstruirlo y borrarlo
+- pruebas `AiVaultToolboxReviewTests`, `AiVaultToolboxInsightTests`, `AiSemanticIndexServiceTests`, `AiChatExporterTests`, `AssistantViewModelAiFeaturesTests` y de interfaz, textos en los siete recursos de idioma, manual integrado y secciones nuevas en `.docs/project-info/asistente-ia.md`
 - añadir herramientas de navegacion al asistente (`open_note`, `open_kanban_board`, `open_section`) que abren notas, tableros o secciones en la interfaz sin cambiar datos ni pedir confirmacion, respetan el ambito del chat y avisan si la seccion esta desactivada
 - añadir `search_help` y el manual integrado (`help/manual-es.md`, `help/manual-en.md`) para que el asistente conteste «¿como hago x?» con los atajos que el usuario tiene configurados, sin red ni vault
 - añadir herramientas de habitos, nota diaria y plantillas (`list_habits`, `set_habit_done`, `get_daily_note`, `append_to_daily_note`, `list_note_templates`, `create_note_from_template`) que escriben por las rutas comprobadas de siempre
@@ -285,6 +293,14 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- add batch change review for the assistant (`ReviewChangesBeforeApplying`): note content changes wait under the reply with their diff to apply the ticked ones or discard them, never overwriting notes that changed, and «revert this reply» still works after applying
+- add `list_tags`, `rename_tag` and `merge_tags` on top of the tag manager limited to the chat scope, with confirmation and counts, and `get_statistics` with the period, the previous stretch and a daily breakdown
+- add «export conversation to a note» in the assistant header and the command palette, with messages, attachments, actions and source properties (`AiChatExporter`)
+- add `get_briefing` for a daily or weekly summary (agenda, overdue items, habits, daily note and recent notes) and its shortcuts in the welcome screen and the command palette
+- add `suggest_links`, which proposes wikilinks and related notes with their reasons (mentions both ways, shared tags and links and semantic similarity) without writing anything, and `NoteRelationsService.FindMentionedNotes`
+- tell which provider will receive an attached image or pdf and whether the model can see it (`ClaudeCliStatus.SupportsVision`, ollama's `vision` capability)
+- add local semantic search (`AiSemanticIndexService`, `semantic_search`): an incremental ollama embeddings index stored in the installation, without note text or protected sessions, with settings to enable it, pick the model, rebuild and delete it
+- tests `AiVaultToolboxReviewTests`, `AiVaultToolboxInsightTests`, `AiSemanticIndexServiceTests`, `AiChatExporterTests`, `AssistantViewModelAiFeaturesTests` and ui tests, strings in the seven language resources, built-in manual and new sections in `.docs/project-info/asistente-ia.md`
 - add assistant navigation tools (`open_note`, `open_kanban_board`, `open_section`) that open notes, boards or sections in the interface without changing data or asking for confirmation, respect the chat scope and report disabled sections
 - add `search_help` and the built-in manual (`help/manual-es.md`, `help/manual-en.md`) so the assistant answers «how do i…?» with the user's configured shortcuts, without network or vault access
 - add habit, daily note and template tools (`list_habits`, `set_habit_done`, `get_daily_note`, `append_to_daily_note`, `list_note_templates`, `create_note_from_template`) that write through the existing checked paths

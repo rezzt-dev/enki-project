@@ -153,6 +153,11 @@ public sealed partial class AiVaultToolbox
                 if (call.GetTextList("tags") is { Count: > 0 } tags) content = NoteTagHelper.SetTags(content, tags);
                 if (!content.EndsWith('\n')) content += "\n";
 
+                if (call.Context.Review is { } review)
+                {
+                    StageCreation(call, review, workspace, folder, title, content);
+                    return new { Workspace = WorkspaceKey(workspace), Folder = RelativePath(workspace, folder), Title = title };
+                }
                 var note = _vault.CreateNote(title, folder, content);
                 call.Target(AiToolTargetKind.Note, note.Title, note.FullPath);
                 // El modelo acaba de escribir la nota entera: la conoce igual que si la hubiera leído.
@@ -319,19 +324,23 @@ public sealed partial class AiVaultToolbox
     {
         var disk = _vault.ReadFromDisk(path) ?? throw NoteNotFound(Path.GetFileNameWithoutExtension(path));
         call.Target(AiToolTargetKind.Note, disk.Note.Title, path);
-        var truncated = disk.Content.Length > MaxNoteChars;
+        // Con la revisión activada, el modelo ve la nota como quedaría con lo que ya preparó en este turno.
+        var pending = call.Context.Review?.LatestFor(path);
+        var content = pending?.ProposedContent ?? disk.Content;
+        var truncated = content.Length > MaxNoteChars;
         if (!truncated) call.Context.CompleteReads[path] = disk.Stamp;
         return new
         {
             Workspace = WorkspaceKey(workspace),
             Path = RelativePath(workspace, path),
             disk.Note.Title,
-            disk.Note.Tags,
-            Properties = NotePropertyHelper.Extract(disk.Content),
+            Tags = pending is null ? disk.Note.Tags : NoteTagHelper.ExtractTags(content),
+            Properties = NotePropertyHelper.Extract(content),
             Modified = FormatInstant(disk.Note.ModifiedUtc),
             disk.Note.WordCount,
+            PendingReview = pending is not null ? true : (bool?)null,
             Truncated = truncated,
-            Content = truncated ? Truncate(disk.Content, MaxNoteChars) : disk.Content
+            Content = truncated ? Truncate(content, MaxNoteChars) : content
         };
     }
 
@@ -345,6 +354,7 @@ public sealed partial class AiVaultToolbox
         var reads = call.Context.CompleteReads;
         if (requireCompleteRead && !reads.ContainsKey(path))
             throw AiToolCall.Invalid("Read the complete note with read_note in this turn before replacing its whole content, or use edit_note.");
+        if (call.Context.Review is { } review) return StageEditForSummary(call, review, path, transform, requireCompleteRead);
 
         PrepareNoteChange(path);
         var fresh = _vault.ReadFromDisk(path) ?? throw NoteNotFound(Path.GetFileNameWithoutExtension(path));

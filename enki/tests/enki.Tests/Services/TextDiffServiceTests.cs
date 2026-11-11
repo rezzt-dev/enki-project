@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using enki.Services;
 using Xunit;
@@ -53,5 +54,27 @@ public class TextDiffServiceTests
 
         Assert.All(result, line => Assert.Equal(DiffLineKind.Added, line.Kind));
         Assert.Equal(["a", "b"], result.Select(l => l.Text));
+    }
+
+    [Fact]
+    public void Excerpt_KeepsChangesWithContext_AndMarksSkippedStretches()
+    {
+        var old = string.Join('\n', Enumerable.Range(1, 20).Select(i => $"línea {i}"));
+        var changed = old.Replace("línea 10", "línea diez", StringComparison.Ordinal);
+
+        var excerpt = TextDiffService.Excerpt(TextDiffService.Compare(old, changed), context: 2);
+
+        Assert.Equal(TextDiffService.GapMarker, excerpt.First().Text);
+        Assert.Equal(TextDiffService.GapMarker, excerpt.Last().Text);
+        Assert.Contains(excerpt, l => l.Kind == DiffLineKind.Removed && l.Text == "línea 10");
+        Assert.Contains(excerpt, l => l.Kind == DiffLineKind.Added && l.Text == "línea diez");
+        Assert.Contains(excerpt, l => l.Text == "línea 8");
+        Assert.DoesNotContain(excerpt, l => l.Text == "línea 7");
+    }
+
+    [Fact]
+    public void Excerpt_OfIdenticalTexts_IsEmpty()
+    {
+        Assert.Empty(TextDiffService.Excerpt(TextDiffService.Compare("a\nb", "a\nb"), context: 2));
     }
 }

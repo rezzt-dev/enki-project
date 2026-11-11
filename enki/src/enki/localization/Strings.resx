@@ -8552,4 +8552,280 @@ Happy writing.</value>
   <data name="Assistant_Undo_Notify_Nothing" xml:space="preserve">
     <value>There was nothing left to revert.</value>
   </data>
+  <data name="Assistant_Tool_list_tags" xml:space="preserve">
+    <value>List tags</value>
+  </data>
+  <data name="Assistant_Tool_rename_tag" xml:space="preserve">
+    <value>Rename tag</value>
+  </data>
+  <data name="Assistant_Tool_merge_tags" xml:space="preserve">
+    <value>Merge tags</value>
+  </data>
+  <data name="Assistant_Tool_get_statistics" xml:space="preserve">
+    <value>Check statistics</value>
+  </data>
+  <data name="Assistant_Tool_get_briefing" xml:space="preserve">
+    <value>Prepare summary</value>
+  </data>
+  <data name="Assistant_Tool_suggest_links" xml:space="preserve">
+    <value>Suggest links</value>
+  </data>
+  <data name="Assistant_Tool_semantic_search" xml:space="preserve">
+    <value>Search by meaning</value>
+  </data>
+  <data name="Assistant_Approval_RenameTag" xml:space="preserve">
+    <value>Rename this tag everywhere in this chat's scope?</value>
+  </data>
+  <data name="Assistant_Approval_MergeTags" xml:space="preserve">
+    <value>Merge these tags everywhere in this chat's scope?</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Hint" xml:space="preserve">
+    <value>Each note keeps its previous version in its history. Cards and tasks cannot be reverted from the chat.</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Notes_one" xml:space="preserve">
+    <value>{0} note</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Notes_other" xml:space="preserve">
+    <value>{0} notes</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Cards_one" xml:space="preserve">
+    <value>{0} card</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Cards_other" xml:space="preserve">
+    <value>{0} cards</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Tasks_one" xml:space="preserve">
+    <value>{0} task</value>
+  </data>
+  <data name="Assistant_Approval_Tag_Tasks_other" xml:space="preserve">
+    <value>{0} tasks</value>
+  </data>
+  <data name="Assistant_Review_Summary_one" xml:space="preserve">
+    <value>{0} change awaits your review</value>
+  </data>
+  <data name="Assistant_Review_Summary_other" xml:space="preserve">
+    <value>{0} changes await your review</value>
+  </data>
+  <data name="Assistant_Review_Apply_one" xml:space="preserve">
+    <value>Apply {0} selected</value>
+  </data>
+  <data name="Assistant_Review_Apply_other" xml:space="preserve">
+    <value>Apply {0} selected</value>
+  </data>
+  <data name="Assistant_Review_ToggleAll" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="Assistant_Review_ShowDiff" xml:space="preserve">
+    <value>Show changes</value>
+  </data>
+  <data name="Assistant_Review_HideDiff" xml:space="preserve">
+    <value>Hide changes</value>
+  </data>
+  <data name="Assistant_Review_Hint" xml:space="preserve">
+    <value>Nothing has been written yet. A change is only applied if the note is still as it was, and each note keeps its previous version in its history.</value>
+  </data>
+  <data name="Assistant_Review_Discard" xml:space="preserve">
+    <value>Discard all</value>
+  </data>
+  <data name="Assistant_Review_State_Pending" xml:space="preserve">
+    <value>awaiting review</value>
+  </data>
+  <data name="Assistant_Review_State_Discarded" xml:space="preserve">
+    <value>discarded</value>
+  </data>
+  <data name="Assistant_Review_Problem_ChangedSince" xml:space="preserve">
+    <value>Not applied: the note changed after the assistant prepared it.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Missing" xml:space="preserve">
+    <value>Not applied: the note or its folder no longer exists.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Locked" xml:space="preserve">
+    <value>Not applied: it belongs to a locked password-protected session.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Busy" xml:space="preserve">
+    <value>Not applied: the note is open with unsaved changes or a pending conflict.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Dependency" xml:space="preserve">
+    <value>Not applied: it builds on another change to the same note that was not applied.</value>
+  </data>
+  <data name="Assistant_Review_Problem_Failed" xml:space="preserve">
+    <value>Not applied: the change could not be written.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Title" xml:space="preserve">
+    <value>Change review</value>
+  </data>
+  <data name="Assistant_Review_Notify_Applied_one" xml:space="preserve">
+    <value>{0} change applied.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Applied_other" xml:space="preserve">
+    <value>{0} changes applied.</value>
+  </data>
+  <data name="Assistant_Review_Notify_NotApplied_one" xml:space="preserve">
+    <value>{0} could not be applied without overwriting anything.</value>
+  </data>
+  <data name="Assistant_Review_Notify_NotApplied_other" xml:space="preserve">
+    <value>{0} could not be applied without overwriting anything.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Discarded_one" xml:space="preserve">
+    <value>{0} discarded.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Discarded_other" xml:space="preserve">
+    <value>{0} discarded.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Failed_Title" xml:space="preserve">
+    <value>The changes could not be applied</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Title" xml:space="preserve">
+    <value>Changes awaiting review</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Message_one" xml:space="preserve">
+    <value>The assistant prepared {0} change that awaits your approval.</value>
+  </data>
+  <data name="Assistant_Review_Notify_Pending_Message_other" xml:space="preserve">
+    <value>The assistant prepared {0} changes that await your approval.</value>
+  </data>
+  <data name="Assistant_Export_Tooltip" xml:space="preserve">
+    <value>Export conversation to a note</value>
+  </data>
+  <data name="Assistant_Export_NoteTitle" xml:space="preserve">
+    <value>Conversation · {0}</value>
+  </data>
+  <data name="Assistant_Export_User" xml:space="preserve">
+    <value>You</value>
+  </data>
+  <data name="Assistant_Export_Attachments" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
+  <data name="Assistant_Export_Actions" xml:space="preserve">
+    <value>Actions in the vault</value>
+  </data>
+  <data name="Assistant_Export_State_Failed" xml:space="preserve">
+    <value>failed</value>
+  </data>
+  <data name="Assistant_Export_State_Denied" xml:space="preserve">
+    <value>not allowed</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_Title" xml:space="preserve">
+    <value>Conversation exported</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_Message" xml:space="preserve">
+    <value>Saved in the note “{0}”.</value>
+  </data>
+  <data name="Assistant_Notify_ChatExported_SessionMessage" xml:space="preserve">
+    <value>Saved in the note “{0}” of the session “{1}”.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice" xml:space="preserve">
+    <value>The image will be sent to {0} so the model can see it.</value>
+  </data>
+  <data name="Assistant_Attachment_PdfNotice" xml:space="preserve">
+    <value>If the PDF has pages without text, they will be sent to {0} as images.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice_NoVision" xml:space="preserve">
+    <value>{0} cannot see images: it will get the image details, but not the image. Choose a model with vision so it can see it.</value>
+  </data>
+  <data name="Assistant_Attachment_ImageNotice_TextOnly" xml:space="preserve">
+    <value>This provider only works with text here: it will get the image's name and size, not the image.</value>
+  </data>
+  <data name="Assistant_Suggestion_Briefing" xml:space="preserve">
+    <value>Give me today's summary: agenda, overdue tasks and reminders, pending habits and the notes I've worked on.</value>
+  </data>
+  <data name="Assistant_Suggestion_Briefing_Label" xml:space="preserve">
+    <value>Summary of my day</value>
+  </data>
+  <data name="Assistant_Suggestion_BriefingWeek" xml:space="preserve">
+    <value>Give me this week's summary: agenda for the next seven days, what is overdue and the notes I've worked on, with priorities.</value>
+  </data>
+  <data name="Assistant_Suggestion_LinksNote" xml:space="preserve">
+    <value>Suggest links and related notes for this note and explain why. Don't change anything yet.</value>
+  </data>
+  <data name="Assistant_Suggestion_LinksNote_Label" xml:space="preserve">
+    <value>Suggest links for this note</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantBriefingDay" xml:space="preserve">
+    <value>Assistant: summary of my day</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantBriefingWeek" xml:space="preserve">
+    <value>Assistant: summary of my week</value>
+  </data>
+  <data name="CommandPalette_Action_AssistantSuggestLinks" xml:space="preserve">
+    <value>Assistant: suggest links for this note</value>
+  </data>
+  <data name="CommandPalette_Action_ExportAssistantChat" xml:space="preserve">
+    <value>Assistant: export conversation to a note</value>
+  </data>
+  <data name="Settings_Ai_Vault_Review_Label" xml:space="preserve">
+    <value>Review changes before applying them</value>
+  </data>
+  <data name="Settings_Ai_Vault_Review_Description" xml:space="preserve">
+    <value>What the assistant changes in the content of your notes waits under its reply with the differences, so you can approve or discard it all at once. Other actions apply at once and can be reverted.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Title" xml:space="preserve">
+    <value>Local semantic search</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Enable_Label" xml:space="preserve">
+    <value>Find notes by meaning</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Enable_Description" xml:space="preserve">
+    <value>Builds an index of your notes on this computer with an Ollama embedding model, so the assistant finds notes by what they say and not only by their words. Needs Ollama running.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Label" xml:space="preserve">
+    <value>Ollama embedding model</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Apply" xml:space="preserve">
+    <value>Use</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Model_Help" xml:space="preserve">
+    <value>For example nomic-embed-text or mxbai-embed-large. Changing the model rebuilds the index.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Counts" xml:space="preserve">
+    <value>{0} notes · {1} fragments</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Off" xml:space="preserve">
+    <value>Off. The existing index, if any, is kept until you delete it.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Empty" xml:space="preserve">
+    <value>No index yet: it will be built in the background.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Indexing" xml:space="preserve">
+    <value>Indexing… {0} notes left.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Status_Ready" xml:space="preserve">
+    <value>Index up to date · {0} · updated {1}</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_OllamaUnavailable" xml:space="preserve">
+    <value>Ollama is not responding at the configured address.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_ModelMissing" xml:space="preserve">
+    <value>The model is not installed in Ollama. Install it with:</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_NotEmbeddingModel" xml:space="preserve">
+    <value>That model does not create embeddings. Choose an embedding model.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_RemoteModel" xml:space="preserve">
+    <value>That model is served from another computer; semantic search only uses local models.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_InvalidEndpoint" xml:space="preserve">
+    <value>The Ollama address is not local.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Problem_Failed" xml:space="preserve">
+    <value>The index could not be updated.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Rebuild" xml:space="preserve">
+    <value>Rebuild index</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Delete" xml:space="preserve">
+    <value>Delete index</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Deleted_Title" xml:space="preserve">
+    <value>Semantic index deleted</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Deleted_Message" xml:space="preserve">
+    <value>Your notes were not touched.</value>
+  </data>
+  <data name="Settings_Ai_Semantic_Privacy" xml:space="preserve">
+    <value>The index is stored in Enki's folder on this computer, without the text of your notes, and never leaves it. Password-protected sessions are never indexed.</value>
+  </data>
+  <data name="Assistant_Review_DeselectAll" xml:space="preserve">
+    <value>Deselect all</value>
+  </data>
 </root>

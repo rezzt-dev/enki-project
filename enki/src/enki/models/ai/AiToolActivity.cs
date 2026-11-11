@@ -9,7 +9,14 @@ public enum AiToolActivityState
     Failed,
     /// <summary>La acción necesitaba la confirmación del usuario y no la obtuvo (la denegó, detuvo la
     /// respuesta o dejó pasar el tiempo de espera).</summary>
-    Denied
+    Denied,
+    // Los valores nuevos van siempre al final: el historial guarda el número, no el nombre.
+    /// <summary>Con la revisión de cambios activada: el cambio está preparado y espera a que el usuario lo
+    /// apruebe (ver <see cref="Services.AiChangeReview"/>). Nada se ha escrito todavía.</summary>
+    Pending,
+    /// <summary>El usuario descartó el cambio preparado, o se perdió sin aprobarse (se cerró Enki o se cambió
+    /// de vault con la revisión pendiente). No se escribió nada.</summary>
+    Discarded
 }
 
 /// <summary>Qué clase de elemento tocó una acción, para elegir icono y —en notas y tarjetas— poder abrirlo
@@ -37,7 +44,11 @@ public enum AiToolTargetKind
     /// <summary>Una sección de la interfaz abierta por el asistente (<c>open_section</c>).</summary>
     Section,
     /// <summary>Una consulta al manual integrado: <see cref="AiToolActivity.Target"/> es lo que se buscó.</summary>
-    Help
+    Help,
+    /// <summary>Una etiqueta global (renombrar o fusionar en notas, Kanban y Polar).</summary>
+    Tag,
+    /// <summary>Estadísticas o resumen del día y de la semana.</summary>
+    Insight
 }
 
 /// <summary>Una llamada del asistente a una herramienta del vault (ver <see cref="Services.AiVaultToolbox"/>):

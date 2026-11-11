@@ -49,6 +49,11 @@ public sealed record ClaudeCliStatus(
 
     public bool SupportsEffort => EffortSupported ?? Capabilities.Contains("--effort");
 
+    /// <summary>El modelo puede ver imágenes. Los modelos de Claude, Codex y Gemini las ven; en Ollama depende
+    /// de que <c>/api/show</c> anuncie la capacidad <c>vision</c>. Sirve para avisar, al adjuntar una imagen, de
+    /// qué proveedor la recibe y de si podrá verla.</summary>
+    public bool SupportsVision { get; init; } = true;
+
     /// <summary>Claude está configurado para usar la clave de API del usuario y no hay ninguna guardada: el
     /// estado es <see cref="ClaudeCliState.SignedOut"/>, pero lo que falta es la clave, no iniciar sesión.</summary>
     public bool NeedsApiKey { get; init; }

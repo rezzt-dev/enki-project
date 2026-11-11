@@ -94,28 +94,31 @@ public sealed partial class AiVaultToolbox
                 {
                     From = FormatDate(from),
                     To = FormatDate(to),
-                    Items = _calendar.BuildItems(from, to).Select(item => new
-                    {
-                        Type = item.SourceType switch
-                        {
-                            CalendarItemSourceType.Kanban => "kanban_card",
-                            CalendarItemSourceType.PolarTask => "polar_task",
-                            CalendarItemSourceType.PolarSubtask => "polar_subtask",
-                            CalendarItemSourceType.Reminder => "reminder",
-                            _ => "external_event"
-                        },
-                        Id = item.SourceId,
-                        item.Title,
-                        When = item.IsAllDay ? FormatDate(item.MomentUtc.ToLocalTime().Date.ToUniversalTime()) : FormatInstant(item.MomentUtc),
-                        AllDay = item.IsAllDay,
-                        item.DurationMinutes,
-                        Start = item.IsOpeningMilestone ? true : (bool?)null,
-                        item.IsCompleted,
-                        UpcomingOccurrence = item.IsGhostOccurrence ? true : (bool?)null
-                    }).ToList()
+                    Items = _calendar.BuildItems(from, to).Select(AgendaItem).ToList()
                 };
             });
     }
+
+    /// <summary>Un elemento de la agenda tal como lo recibe el modelo. Común a <c>get_agenda</c> y <c>get_briefing</c>.</summary>
+    private static object AgendaItem(CalendarItemViewModel item) => new
+    {
+        Type = item.SourceType switch
+        {
+            CalendarItemSourceType.Kanban => "kanban_card",
+            CalendarItemSourceType.PolarTask => "polar_task",
+            CalendarItemSourceType.PolarSubtask => "polar_subtask",
+            CalendarItemSourceType.Reminder => "reminder",
+            _ => "external_event"
+        },
+        Id = item.SourceId,
+        item.Title,
+        When = item.IsAllDay ? FormatDate(item.MomentUtc.ToLocalTime().Date.ToUniversalTime()) : FormatInstant(item.MomentUtc),
+        AllDay = item.IsAllDay,
+        item.DurationMinutes,
+        Start = item.IsOpeningMilestone ? true : (bool?)null,
+        item.IsCompleted,
+        UpcomingOccurrence = item.IsGhostOccurrence ? true : (bool?)null
+    };
 
     private Reminder Reminder(AiToolCall call)
     {

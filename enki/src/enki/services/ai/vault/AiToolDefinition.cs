@@ -73,7 +73,12 @@ public sealed record AiToolDefinition(
     AiToolEffect Effect,
     string Description,
     JsonObject InputSchema,
-    Func<AiToolCall, Task<object?>> Handler);
+    Func<AiToolCall, Task<object?>> Handler)
+{
+    /// <summary>Condición propia de la herramienta, además de su ámbito y efecto: por ejemplo,
+    /// <c>semantic_search</c> solo se ofrece con el índice semántico activado. <see langword="null"/>, siempre.</summary>
+    public Func<bool>? Condition { get; init; }
+}
 
 /// <summary>Una invocación concreta: argumentos ya parseados, el turno al que pertenece y la actividad que la
 /// representa en el chat.</summary>
@@ -97,6 +102,12 @@ public sealed class AiToolCall(AiToolContext context, JsonElement arguments, AiT
     /// <summary>Deja apuntado cómo deshacer lo que esta llamada acaba de cambiar, para "Revertir esta
     /// respuesta". Se llama una vez, con el cambio ya hecho.</summary>
     public void Undoable(AiToolUndo undo) => Activity.Undo = undo;
+
+    /// <summary>El cambio no se aplicó: quedó en la cola de revisión del turno (<see cref="AiChangeReview"/>) y
+    /// se aplicará cuando el usuario lo apruebe. La actividad queda como <see cref="AiToolActivityState.Pending"/>.</summary>
+    public bool IsQueued { get; private set; }
+
+    public void Queued() => IsQueued = true;
 
     public bool Has(string name) =>
         arguments.ValueKind == JsonValueKind.Object && arguments.TryGetProperty(name, out _);

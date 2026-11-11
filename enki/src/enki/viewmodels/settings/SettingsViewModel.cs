@@ -200,7 +200,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         AiChatService? aiChatService = null,
         SidePanelLayoutViewModel? sidePanels = null,
         AiWebService? aiWebService = null,
-        Action? onPersonalizationImported = null)
+        Action? onPersonalizationImported = null,
+        AiSemanticIndexService? aiSemanticIndex = null)
     {
         _onPersonalizationImported = onPersonalizationImported;
         _reminderImportService = reminderService;
@@ -446,6 +447,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         InitializeExternalCalendars();
         InitializeAi(aiCliStatus, aiChatService);
         InitializeAiWeb(aiWebService);
+        InitializeAiSemantic(aiSemanticIndex);
     }
 
     private void DebouncedSave()

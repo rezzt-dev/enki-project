@@ -2905,7 +2905,7 @@
             <!-- Qué puede hacer el asistente dentro del vault y hasta dónde llega cada chat
                  (.docs/project-info/asistente-ia.md, "Ámbitos"). -->
             <controls:SettingsSearchOption
-                ResourceKeys="Settings_Ai_Vault_DefaultAccess_Label Settings_Ai_Vault_DefaultAccess_Description Settings_Nav_Ai Settings_Ai_Vault_Title Settings_Ai_Vault_AllowChanges_Label Settings_Ai_Vault_AllowChanges_Description Settings_Ai_Vault_Scopes Settings_Ai_Vault_Protected Settings_Ai_Vault_Confirmations">
+                ResourceKeys="Settings_Ai_Vault_DefaultAccess_Label Settings_Ai_Vault_DefaultAccess_Description Settings_Nav_Ai Settings_Ai_Vault_Title Settings_Ai_Vault_AllowChanges_Label Settings_Ai_Vault_AllowChanges_Description Settings_Ai_Vault_Review_Label Settings_Ai_Vault_Review_Description Settings_Ai_Vault_Scopes Settings_Ai_Vault_Protected Settings_Ai_Vault_Confirmations">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2927,6 +2927,14 @@
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding AiAllowVaultChanges}" OnContent="" OffContent=""
                                   AutomationProperties.Name="{loc:Tr Settings_Ai_Vault_AllowChanges_Label}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding AiAllowVaultChanges}">
+                    <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Ai_Vault_Review_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Ai_Vault_Review_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AiReviewChangesBeforeApplying}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Ai_Vault_Review_Label}" />
                   </Grid>
                   <Rectangle Classes="section-rule" />
                   <StackPanel Spacing="10">
@@ -3022,6 +3030,80 @@
                       <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Web_Safety}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     </Grid>
                   </StackPanel>
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
+            <!-- Búsqueda semántica local: índice de embeddings con Ollama, en la instalación y nunca en la nube
+                 (.docs/project-info/asistente-ia.md, "Búsqueda semántica"). -->
+            <controls:SettingsSearchOption IsVisible="{Binding ShowAiSemanticSettings}"
+                ResourceKeys="Settings_Nav_Ai Settings_Ai_Semantic_Title Settings_Ai_Semantic_Enable_Label Settings_Ai_Semantic_Enable_Description Settings_Ai_Semantic_Model_Label Settings_Ai_Semantic_Privacy">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="VectorTriangle" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Enable_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Enable_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AiSemanticSearchEnabled}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Ai_Semantic_Enable_Label}" />
+                  </Grid>
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Model_Label}" FontSize="13" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBox Grid.Column="0" Classes="search" Text="{Binding AiEmbeddingModel}" Height="36"
+                               PlaceholderText="nomic-embed-text"
+                               AutomationProperties.Name="{loc:Tr Settings_Ai_Semantic_Model_Label}" />
+                      <Button Grid.Column="1" Classes="pill" Margin="8,0,0,0" Command="{Binding ApplyAiEmbeddingModelCommand}">
+                        <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Model_Apply, Converter={StaticResource UpperCaseConverter}}" />
+                      </Button>
+                    </Grid>
+                    <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Model_Help}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <!-- Estado del índice: al día, indexando o por qué no se pudo actualizar. -->
+                  <Grid ColumnDefinitions="Auto,*">
+                    <Panel Grid.Column="0" Width="14" Margin="0,1,8,0" VerticalAlignment="Top">
+                      <controls:LoadingSpinner Width="12" Height="12" Foreground="{DynamicResource Ink40}" IsVisible="{Binding IsAiSemanticIndexing}" />
+                      <mi:MaterialIcon Kind="AlertCircleOutline" Width="13" Height="13" Foreground="{DynamicResource DangerBrush}"
+                                       IsVisible="{Binding HasAiSemanticProblem}" />
+                      <mi:MaterialIcon Kind="DatabaseOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}">
+                        <mi:MaterialIcon.IsVisible>
+                          <MultiBinding Converter="{x:Static baseconv:BoolConverters.And}">
+                            <Binding Path="!IsAiSemanticIndexing" />
+                            <Binding Path="!HasAiSemanticProblem" />
+                          </MultiBinding>
+                        </mi:MaterialIcon.IsVisible>
+                      </mi:MaterialIcon>
+                    </Panel>
+                    <TextBlock Grid.Column="1" Text="{Binding AiSemanticStatusLabel}" FontSize="12.5" TextWrapping="Wrap" />
+                  </Grid>
+                  <!-- Falta el modelo: la orden para instalarlo, seleccionable para copiarla en una terminal. -->
+                  <SelectableTextBlock Text="{Binding AiEmbeddingInstallCommand}" FontFamily="{DynamicResource MonoFontFamily}"
+                                       FontSize="12" IsVisible="{Binding ShowAiEmbeddingInstallCommand}" />
+                  <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="8">
+                    <Button Classes="pill" Command="{Binding RebuildAiSemanticIndexCommand}" IsEnabled="{Binding AiSemanticSearchEnabled}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <mi:MaterialIcon Kind="Refresh" Width="13" Height="13" />
+                        <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Rebuild, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                    <Button Classes="ghost" Command="{Binding DeleteAiSemanticIndexCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <mi:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
+                        <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Delete, Converter={StaticResource UpperCaseConverter}}" />
+                      </StackPanel>
+                    </Button>
+                  </WrapPanel>
+                  <Rectangle Classes="section-rule" />
+                  <Grid ColumnDefinitions="Auto,*">
+                    <mi:MaterialIcon Grid.Column="0" Kind="ShieldLockOutline" Width="13" Height="13" Margin="0,2,10,0"
+                                     VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Semantic_Privacy}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                  </Grid>
                 </StackPanel>
               </Border>
             </controls:SettingsSearchOption>

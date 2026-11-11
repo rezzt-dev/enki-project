@@ -63,7 +63,11 @@ public sealed class OllamaService
             if (IsRemote(info)) return new(ClaudeCliState.Unsupported, Detail: LocalizationService.Instance["Ai_LocalOnly"]);
             var capabilities = info?["capabilities"]?.AsArray();
             return new(ClaudeCliState.Ready, AuthMethod: "Ollama")
-                { VaultToolsSupported = capabilities?.Any(c => c?.GetValue<string>() == "tools") == true, EffortSupported = false };
+            {
+                VaultToolsSupported = capabilities?.Any(c => c?.GetValue<string>() == "tools") == true,
+                EffortSupported = false,
+                SupportsVision = capabilities?.Any(c => c?.GetValue<string>() == "vision") == true
+            };
         }
         catch (ArgumentException)
         {
@@ -75,7 +79,7 @@ public sealed class OllamaService
         }
     }
 
-    private static bool IsRemote(JsonNode? model) =>
+    internal static bool IsRemote(JsonNode? model) =>
         !string.IsNullOrEmpty(model?["remote_host"]?.GetValue<string>())
         || !string.IsNullOrEmpty(model?["remote_model"]?.GetValue<string>())
         || (model?["name"]?.GetValue<string>()?.EndsWith(":cloud", StringComparison.OrdinalIgnoreCase) ?? false);
