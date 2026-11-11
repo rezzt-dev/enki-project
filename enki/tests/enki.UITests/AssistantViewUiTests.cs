@@ -1110,4 +1110,35 @@ public sealed class AssistantViewUiTests : IDisposable
         }
         finally { window.Close(); }
     }
+    [Fact]
+    public void EvaluationDialog_ShowsLocalOnlyNotice_AndDisablesUnavailableActions()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true));
+        try
+        {
+            var dialogs = new AssistantDialogs { DataContext = vm };
+            window.Content = null;
+            window.Content = new Grid { Children = { view, dialogs } };
+            vm.OpenEvaluationCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(dialogs.FindControl<ModalOverlayHost>("EvaluationModal")!.IsOpen);
+            Assert.False(dialogs.FindControl<Button>("EvaluationRunButton")!.IsEffectivelyEnabled);
+            Assert.False(dialogs.FindControl<Button>("EvaluationClearButton")!.IsEffectivelyEnabled);
+            Assert.Empty(vm.EvaluationResults);
+            Assert.False(vm.IsEvaluating);
+            var card = (Border)dialogs.FindControl<ModalOverlayHost>("EvaluationModal")!.Content!;
+            card.Measure(new Size(640, 720));
+            card.Arrange(new Rect(0, 0, 640, 720));
+            Assert.Contains(LocalizationService.Instance["Assistant_Evaluation_Help"],
+                card.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+            SavePreview(card, "assistant-evaluation", 640, 720);
+            vm.CloseEvaluationCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(dialogs.FindControl<ModalOverlayHost>("EvaluationModal")!.IsOpen);
+        }
+        finally { vm.CancelAll(); window.Close(); }
+    }
+
 }

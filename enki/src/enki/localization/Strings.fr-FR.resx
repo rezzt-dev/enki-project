@@ -8827,4 +8827,61 @@ Bonne rédaction.</value>
   <data name="Assistant_Review_DeselectAll" xml:space="preserve">
     <value>Tout désélectionner</value>
   </data>
+  <data name="Assistant_Settings_Confirm" xml:space="preserve">
+    <value>Appliquer ce réglage visuel ?</value>
+  </data>
+  <data name="Assistant_Settings_Changed_Title" xml:space="preserve">
+    <value>Réglage mis à jour</value>
+  </data>
+  <data name="Assistant_Settings_Changed" xml:space="preserve">
+    <value>{0} modifié. Vous pouvez annuler cette réponse.</value>
+  </data>
+  <data name="Assistant_Calendar_Confirm" xml:space="preserve">
+    <value>Modifier la visibilité de cette couche ?</value>
+  </data>
+  <data name="Assistant_Tool_list_safe_settings" xml:space="preserve">
+    <value>Consulter les réglages sûrs</value>
+  </data>
+  <data name="Assistant_Tool_change_safe_setting" xml:space="preserve">
+    <value>Modifier un réglage visuel</value>
+  </data>
+  <data name="Assistant_Tool_list_calendar_layers" xml:space="preserve">
+    <value>Consulter les couches du calendrier</value>
+  </data>
+  <data name="Assistant_Tool_set_calendar_layer" xml:space="preserve">
+    <value>Modifier une couche du calendrier</value>
+  </data>
+  <data name="Assistant_Tool_export_calendar_ics" xml:space="preserve">
+    <value>Exporter le calendrier en ICS</value>
+  </data>
+  <data name="Assistant_Evaluation_Title" xml:space="preserve">
+    <value>Évaluation des modèles</value>
+  </data>
+  <data name="Assistant_Evaluation_Help" xml:space="preserve">
+    <value>Exécute deux tâches synthétiques (modifier une note et créer une carte) avec le fournisseur et le modèle sélectionnés dans un coffre temporaire. Peut consommer des jetons de votre compte. Les résultats restent sur cet appareil, sans télémétrie. Fermer annule l’évaluation. Nécessite un fournisseur prêt avec des outils et une conversation inactive.</value>
+  </data>
+  <data name="Assistant_Evaluation_Metrics" xml:space="preserve">
+    <value>Score sur 100 · appels réussis/total · durée · jetons entrants/sortants. Seules les données réelles sont notées ; du texte sans action obtient zéro.</value>
+  </data>
+  <data name="Assistant_Evaluation_Empty" xml:space="preserve">
+    <value>Aucune évaluation locale.</value>
+  </data>
+  <data name="Assistant_Evaluation_Run" xml:space="preserve">
+    <value>Évaluer le modèle</value>
+  </data>
+  <data name="Assistant_Evaluation_Clear" xml:space="preserve">
+    <value>Supprimer les résultats locaux</value>
+  </data>
+  <data name="Assistant_Evaluation_DefaultModel" xml:space="preserve">
+    <value>Par défaut</value>
+  </data>
+  <data name="Assistant_Evaluation_Progress" xml:space="preserve">
+    <value>Évaluation de la tâche {0} sur {1}…</value>
+  </data>
+  <data name="Assistant_Evaluation_Success" xml:space="preserve">
+    <value>Évaluation terminée et enregistrée sur cet appareil.</value>
+  </data>
+  <data name="Assistant_Evaluation_Cancelled" xml:space="preserve">
+    <value>Évaluation annulée. Aucun résultat partiel enregistré.</value>
+  </data>
 </root>

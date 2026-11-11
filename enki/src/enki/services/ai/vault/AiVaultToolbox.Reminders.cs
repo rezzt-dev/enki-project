@@ -82,7 +82,12 @@ public sealed partial class AiVaultToolbox
         Register("get_agenda", AiToolScope.Vault, AiToolEffect.Read,
             "Everything with a date between 'from' and 'to', as in the Calendar section: Kanban cards, Polar tasks and subtasks, "
             + $"reminders and subscribed external calendars, including upcoming occurrences of recurring tasks. Up to {MaxAgendaDays} days.",
-            Schema(Req("from", Text("Start date. " + DateDescription)), Opt("to", Text("End date (default: 7 days after 'from'). " + DateDescription))),
+            Schema(Req("from", Text("Start date. " + DateDescription)), Opt("to", Text("End date (default: 7 days after 'from'). " + DateDescription)),
+                Opt("layer_keys", new System.Text.Json.Nodes.JsonObject { ["type"] = "array", ["items"] = Text("Layer key from list_calendar_layers.") }),
+                Opt("visible_only", Flag("Only visible layers (default false).")),
+                Opt("include_completed", Flag("Include completed items (default true).")),
+                Opt("include_occurrences", Flag("Include recurrence previews (default true).")),
+                Opt("include_external", Flag("Include cached external events (default true)."))),
             call =>
             {
                 if (_calendar is null) throw new AiToolException(AiToolErrorKind.Unavailable, "The agenda is not available.");
@@ -94,7 +99,7 @@ public sealed partial class AiVaultToolbox
                 {
                     From = FormatDate(from),
                     To = FormatDate(to),
-                    Items = _calendar.BuildItems(from, to).Select(AgendaItem).ToList()
+                    Items = FilterAgenda(call, from, to).Select(AgendaItem).ToList()
                 };
             });
     }
@@ -111,6 +116,9 @@ public sealed partial class AiVaultToolbox
             _ => "external_event"
         },
         Id = item.SourceId,
+        item.LayerKey,
+        Calendar = item.ParentContextLabel,
+        ReadOnly = item.SourceType == CalendarItemSourceType.ExternalCalendar,
         item.Title,
         When = item.IsAllDay ? FormatDate(item.MomentUtc.ToLocalTime().Date.ToUniversalTime()) : FormatInstant(item.MomentUtc),
         AllDay = item.IsAllDay,

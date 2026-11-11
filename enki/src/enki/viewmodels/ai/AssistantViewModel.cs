@@ -18,7 +18,7 @@ namespace enki.ViewModels;
 
 /// <summary>Asistente: chat con Claude, OpenAI o modelos locales (ver <see cref="AiBackendService"/>), con
 /// historial de conversaciones separado por vault, notas y archivos del vault como contexto y skills como
-/// instrucciones de partida. Una sola instancia sirve a las dos superficies —la sección Asistente y el panel
+/// instrucciones de partida. La instancia seleccionada sirve a las dos superficies —la sección Asistente y el panel
 /// lateral que se abre junto a cualquier otra sección—, así que cambiar de una a otra conserva chat, borrador,
 /// adjuntos, permisos y respuesta en curso. Este archivo lleva el estado del CLI, el historial y la
 /// conversación abierta; el resto vive en sus parciales (<c>.Composer</c>, <c>.Scope</c>, <c>.Drafts</c>,
@@ -79,15 +79,19 @@ public sealed partial class AssistantViewModel : ViewModelBase
         Func<bool, string?>? vaultIdentity = null,
         Func<string, string, NoteDiskStamp, NoteFile>? appendToNote = null,
         Func<IReadOnlyList<AiToolActivity>, AiRevertReport>? revertActivities = null,
-        Func<AiChangeReview, IReadOnlyCollection<AiReviewChange>, AiReviewReport>? resolveReview = null)
+        Func<AiChangeReview, IReadOnlyCollection<AiReviewChange>, AiReviewReport>? resolveReview = null,
+        AssistantChatWorkspace? workspace = null)
     {
+        Workspace = workspace ?? new AssistantChatWorkspace();
+        Workspace.Chats.Add(this);
+        Workspace.Current ??= this;
         _revertActivities = revertActivities;
         _resolveReview = resolveReview;
         _vaultIdentity = vaultIdentity ?? (_ => VaultSettingsService.PathIdentity(vaultService.VaultPath));
         _appendToNote = appendToNote;
         _vaultTools = vaultTools;
         _openKanbanCard = openKanbanCard ?? (_ => { });
-        _isVisible = isVisible ?? (() => true);
+        _isVisible = () => Workspace.Current == this && (isVisible?.Invoke() ?? true);
         _isPolarLinked = isPolarLinked ?? (() => false);
         _cli = cliStatus?.Backend ?? new AiBackendService(cli, settingsService);
         _chats = chats;
@@ -100,23 +104,44 @@ public sealed partial class AssistantViewModel : ViewModelBase
         _openNote = openNote ?? (_ => { });
         _openSettings = openSettings ?? (() => { });
         _dispatch = dispatch ?? (action => Dispatcher.UIThread.Post(action));
+        _createChat = () => new AssistantViewModel(cli, chats, settingsService, vaultService, notificationService,
+            new ClaudeCliStatusViewModel(cli, _dispatch, _cli.Fork()), sessionService, activeNoteProvider,
+            flushPendingEdits, openNote, openSettings, dispatch, vaultTools, openKanbanCard,
+            isVisible, isPolarLinked, vaultIdentity, appendToNote, revertActivities, resolveReview, Workspace);
 
         ModelOptions = new ObservableCollection<AiModelOption>(AiModelOption.Build(_cli.Provider, _cli.Models));
         _selectedModel = FindModel(_settingsService.Settings.Ai.ModelFor(_cli.Provider));
         Cli = cliStatus ?? new ClaudeCliStatusViewModel(cli, _dispatch, _cli);
         Cli.PropertyChanged += OnCliPropertyChanged;
-        _cli.ProviderChanged += () =>
+        Action providerChanged = () =>
         {
-            CancelAll();
+            _turnCancellation?.Cancel();
             StartNewChat();
             RestoreDraft();
             OnPropertyChanged(nameof(SelectedProvider));
             if (_settingsService.Settings.Ai.Enabled) _ = Cli.RefreshAsync();
         };
-        _chats.ChatsChanged += () => _dispatch(OnChatsChanged);
-        _chats.Persona.PersonaChanged += () => _dispatch(RefreshPersona);
-        _settingsService.SettingsChanged += () => _dispatch(RefreshScope);
-        _settingsService.SettingsChanged += () => _dispatch(RefreshUsage);
+        _cli.ProviderChanged += providerChanged;
+        Action chatsChanged = () => _dispatch(() => { if (!_isRetired) OnChatsChanged(); });
+        Action personaChanged = () => _dispatch(() => { if (!_isRetired) RefreshPersona(); });
+        Action settingsChanged = () => _dispatch(() =>
+        {
+            if (_isRetired) return;
+            RefreshScope();
+            RefreshUsage();
+        });
+        _chats.ChatsChanged += chatsChanged;
+        _chats.Persona.PersonaChanged += personaChanged;
+        _settingsService.SettingsChanged += settingsChanged;
+        _releaseSubscriptions = () =>
+        {
+            _isRetired = true;
+            Cli.PropertyChanged -= OnCliPropertyChanged;
+            _cli.ProviderChanged -= providerChanged;
+            _chats.ChatsChanged -= chatsChanged;
+            _chats.Persona.PersonaChanged -= personaChanged;
+            _settingsService.SettingsChanged -= settingsChanged;
+        };
 
         Messages.CollectionChanged += (_, _) => RefreshConversationState();
         PendingAttachments.CollectionChanged += (_, _) => RefreshComposerState();
@@ -306,14 +331,23 @@ public sealed partial class AssistantViewModel : ViewModelBase
     private void OnChatsChanged()
     {
         // "Borrar historial" desde Ajustes puede llevarse por delante el chat abierto.
-        if (_activeSession is not null && _chats.Find(_activeSession.Id) is null && !IsSending) StartNewChat();
+        if (_activeSession is { } session && _chats.Find(session.Id) is null)
+        {
+            Workspace.RemovedSessions.Add(session);
+            _turnCancellation?.Cancel();
+            if (!IsSending) StartNewChat();
+        }
         RebuildSessionList();
     }
 
     [RelayCommand]
     private void NewChat()
     {
-        if (IsSending) return;
+        if (IsSending)
+        {
+            SwitchChat(null);
+            return;
+        }
         SaveDraft();
         StartNewChat();
         RestoreDraft();
@@ -352,7 +386,12 @@ public sealed partial class AssistantViewModel : ViewModelBase
     [RelayCommand]
     private void SelectSession(AiChatSessionItemViewModel? item)
     {
-        if (item is null || IsSending || item.Session == _activeSession) return;
+        if (item is null || item.Session == _activeSession) return;
+        if (IsSending || Workspace.Chats.Any(chat => chat != this && chat._activeSession == item.Session))
+        {
+            SwitchChat(item.Session);
+            return;
+        }
         SaveDraft();
         OpenSession(item.Session);
         IsPanelHistoryOpen = false;
@@ -398,7 +437,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
     [RelayCommand]
     private void RequestDeleteSession(AiChatSessionItemViewModel? item)
     {
-        if (item is null || (IsSending && item.Session == _activeSession)) return;
+        if (item is null || Workspace.Chats.Any(chat => chat.IsSending && chat._activeSession == item.Session)) return;
         PendingDeleteSession = item;
     }
 
@@ -636,6 +675,8 @@ public sealed partial class AssistantViewModel : ViewModelBase
     /// memoria y se volverá a intentar guardar en el siguiente turno.</summary>
     private bool TrySaveSession(AiChatSession session, bool touch = true)
     {
+        // Vaciar el historial durante un turno lo cancela; su finalización no puede recrear el chat borrado.
+        if (Workspace.RemovedSessions.Contains(session)) return false;
         if (touch) session.UpdatedUtc = DateTime.UtcNow;
         try
         {
@@ -667,7 +708,12 @@ public sealed partial class AssistantViewModel : ViewModelBase
     public void CancelAll()
     {
         SaveDraft();
-        _turnCancellation?.Cancel();
+        foreach (var chat in Workspace.Chats.ToArray())
+        {
+            if (chat._activeSession is not null || Workspace.Current == chat) chat.SaveDraft();
+            chat._turnCancellation?.Cancel();
+            chat._evaluationCancellation?.Cancel();
+        }
     }
 
     public void RefreshLocalizedLabels()

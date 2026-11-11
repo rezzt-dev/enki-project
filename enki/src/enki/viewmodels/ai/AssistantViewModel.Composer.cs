@@ -53,7 +53,7 @@ public sealed partial class AssistantViewModel
     public bool CanSend => Cli.IsReady && !Cli.IsChecking && !IsSending && !IsUnassignedChat
         && !string.IsNullOrWhiteSpace(DraftText);
 
-    public bool CanStartNewChat => !IsSending;
+    public bool CanStartNewChat => Workspace.Current is not null;
 
     /// <summary>Pide a la vista que lleve el foco al cuadro de texto (al abrir un chat nuevo o elegir una
     /// sugerencia), para poder escribir sin tocar el ratón.</summary>
@@ -82,7 +82,7 @@ public sealed partial class AssistantViewModel
     /// pone delante y el usuario decide.</summary>
     public void StartRequest(string promptKey, NoteFile? note = null)
     {
-        if (IsSending) return;
+        if (IsSending) { SwitchChat(null).StartRequest(promptKey, note); return; }
         if (note is not null) StartChatAboutNote(note);
         else
         {
@@ -122,6 +122,8 @@ public sealed partial class AssistantViewModel
 
     partial void OnIsSendingChanged(bool value)
     {
+        OnPropertyChanged(nameof(CanRunEvaluation));
+        RunEvaluationCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(CanChangeWorkspace));
         OnPropertyChanged(nameof(CanChangeAccess));
         OnPropertyChanged(nameof(CanChangeEffort));
@@ -198,7 +200,7 @@ public sealed partial class AssistantViewModel
     /// sesión, para que el asistente pueda trabajar con ella y con lo que la rodea.</summary>
     public void StartChatAboutNote(NoteFile note)
     {
-        if (IsSending) return;
+        if (IsSending) { SwitchChat(null).StartChatAboutNote(note); return; }
         SaveDraft();
         StartNewChat();
         if (_sessionService?.List().FirstOrDefault(s => VaultService.IsWithinFolder(note.FullPath, s.RootPath)) is { } session)
@@ -232,7 +234,21 @@ public sealed partial class AssistantViewModel
     /// del vault nuevo la carga <see cref="ReloadForVault"/>, cuando sus ajustes ya están leídos.</summary>
     public void CloseForVaultChange()
     {
+        foreach (var chat in Workspace.Chats.ToArray())
+        {
+            chat.CloseChatForVaultChange();
+            if (chat == this) continue;
+            chat._releaseSubscriptions();
+            Workspace.Chats.Remove(chat);
+        }
+        Workspace.Current = this;
+    }
+
+    private void CloseChatForVaultChange()
+    {
         CancelScheduledDraftSave();
+        _evaluationCancellation?.Cancel();
+        IsEvaluationOpen = false;
         _turnCancellation?.Cancel();
         DiscardAllReviews();
         AiFileReader.ClearCache();
@@ -441,7 +457,7 @@ public sealed partial class AssistantViewModel
     /// <summary>"Usar en el asistente" desde el detalle de una skill.</summary>
     public void StartChatWithSkill(SkillFile skill)
     {
-        if (IsSending) return;
+        if (IsSending) { SwitchChat(null).StartChatWithSkill(skill); return; }
         SaveDraft();
         StartNewChat();
         RestoreDraft();
@@ -755,6 +771,7 @@ public sealed partial class AssistantViewModel
             _runningSession = null;
             _pendingDecisions = 0;
             IsSending = false;
+            if (Workspace.RemovedSessions.Contains(session) && _activeSession == session) StartNewChat();
         }
 
         string partial;

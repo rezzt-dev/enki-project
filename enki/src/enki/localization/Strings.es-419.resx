@@ -8827,4 +8827,61 @@ Feliz escritura.</value>
   <data name="Assistant_Review_DeselectAll" xml:space="preserve">
     <value>Desmarcar todos</value>
   </data>
+  <data name="Assistant_Settings_Confirm" xml:space="preserve">
+    <value>¿Aplicar este ajuste visual?</value>
+  </data>
+  <data name="Assistant_Settings_Changed_Title" xml:space="preserve">
+    <value>Ajuste actualizado</value>
+  </data>
+  <data name="Assistant_Settings_Changed" xml:space="preserve">
+    <value>Se ha cambiado {0}. Puedes revertir esta respuesta.</value>
+  </data>
+  <data name="Assistant_Calendar_Confirm" xml:space="preserve">
+    <value>¿Cambiar la visibilidad de esta capa?</value>
+  </data>
+  <data name="Assistant_Tool_list_safe_settings" xml:space="preserve">
+    <value>Consultar ajustes seguros</value>
+  </data>
+  <data name="Assistant_Tool_change_safe_setting" xml:space="preserve">
+    <value>Cambiar ajuste visual</value>
+  </data>
+  <data name="Assistant_Tool_list_calendar_layers" xml:space="preserve">
+    <value>Consultar capas del calendario</value>
+  </data>
+  <data name="Assistant_Tool_set_calendar_layer" xml:space="preserve">
+    <value>Cambiar capa del calendario</value>
+  </data>
+  <data name="Assistant_Tool_export_calendar_ics" xml:space="preserve">
+    <value>Exportar calendario a ICS</value>
+  </data>
+  <data name="Assistant_Evaluation_Title" xml:space="preserve">
+    <value>Evaluación de modelos</value>
+  </data>
+  <data name="Assistant_Evaluation_Help" xml:space="preserve">
+    <value>Ejecuta dos tareas sintéticas (editar una nota y crear una tarjeta) con el proveedor y modelo seleccionados. Usa un vault temporal. Puede consumir tokens de tu cuenta. Los resultados se guardan solo en este equipo, sin telemetría. Cerrar cancela la evaluación. Requiere un proveedor preparado con herramientas y un chat sin respuesta en curso.</value>
+  </data>
+  <data name="Assistant_Evaluation_Metrics" xml:space="preserve">
+    <value>Puntuación sobre 100 · llamadas correctas/total · duración · tokens de entrada/salida. Solo se puntúa el resultado real; una respuesta de texto sin acciones obtiene cero.</value>
+  </data>
+  <data name="Assistant_Evaluation_Empty" xml:space="preserve">
+    <value>Aún no hay evaluaciones locales.</value>
+  </data>
+  <data name="Assistant_Evaluation_Run" xml:space="preserve">
+    <value>Evaluar modelo</value>
+  </data>
+  <data name="Assistant_Evaluation_Clear" xml:space="preserve">
+    <value>Borrar resultados locales</value>
+  </data>
+  <data name="Assistant_Evaluation_DefaultModel" xml:space="preserve">
+    <value>Predeterminado</value>
+  </data>
+  <data name="Assistant_Evaluation_Progress" xml:space="preserve">
+    <value>Evaluando tarea {0} de {1}…</value>
+  </data>
+  <data name="Assistant_Evaluation_Success" xml:space="preserve">
+    <value>Evaluación terminada y guardada en este equipo.</value>
+  </data>
+  <data name="Assistant_Evaluation_Cancelled" xml:space="preserve">
+    <value>Evaluación cancelada. No se ha guardado un resultado parcial.</value>
+  </data>
 </root>

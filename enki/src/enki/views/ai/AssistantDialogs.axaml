@@ -15,6 +15,32 @@
   <!-- Diálogos del asistente, compartidos por la sección y el panel. ModalOverlayHost los ancla a la ventana,
        así que cubren toda la aplicación aunque los abra el panel estrecho. -->
   <Panel>
+    <controls:ModalOverlayHost x:Name="EvaluationModal" IsOpen="{Binding IsEvaluationOpen}">
+      <Border Classes="modal-card" MaxWidth="640" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Tr Assistant_Evaluation_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
+          <TextBlock Text="{loc:Tr Assistant_Evaluation_Help}" TextWrapping="Wrap" />
+          <TextBlock Text="{loc:Tr Assistant_Evaluation_Metrics}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding EvaluationStatus}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsEvaluating}" Height="3" />
+          <TextBlock Text="{loc:Tr Assistant_Evaluation_Empty}" IsVisible="{Binding !HasEvaluationResults}" Classes="muted" />
+          <ScrollViewer MaxHeight="280">
+            <ItemsControl ItemsSource="{Binding EvaluationResults}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,8" FontSize="12" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <WrapPanel ItemSpacing="12" LineSpacing="8">
+            <Button x:Name="EvaluationRunButton" Classes="pill-primary" Command="{Binding RunEvaluationCommand}" Content="{loc:Tr Assistant_Evaluation_Run, Converter={StaticResource UpperCaseConverter}}" />
+            <Button x:Name="EvaluationClearButton" Classes="ghost" Command="{Binding ClearEvaluationsCommand}" Content="{loc:Tr Assistant_Evaluation_Clear, Converter={StaticResource UpperCaseConverter}}" />
+            <Button Classes="ghost modal-cancel" Command="{Binding CloseEvaluationCommand}" Content="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+    </controls:ModalOverlayHost>
     <!-- · Borrar una conversación · -->
     <controls:ModalOverlayHost IsOpen="{Binding PendingDeleteSession, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">

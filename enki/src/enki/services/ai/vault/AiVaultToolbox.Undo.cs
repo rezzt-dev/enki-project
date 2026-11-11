@@ -68,6 +68,7 @@ public sealed partial class AiVaultToolbox
     private static AiUndoSkipReason? RevertFailure(Exception ex) => ex switch
     {
         SessionLockedException => AiUndoSkipReason.Locked,
+        AiToolException => AiUndoSkipReason.ChangedSince,
         ExternalModificationException => AiUndoSkipReason.ChangedSince,
         FileNotFoundException or DirectoryNotFoundException => AiUndoSkipReason.Missing,
         IOException or UnauthorizedAccessException or VaultUnavailableException or InvalidOperationException or ArgumentException
@@ -89,6 +90,8 @@ public sealed partial class AiVaultToolbox
         AiUndoKind.ReminderChanged => RevertReminderChange(undo),
         AiUndoKind.ReminderTrashed => RevertReminderTrash(undo),
         AiUndoKind.HabitMarked => RevertHabitMark(undo),
+        AiUndoKind.SafeSettingChanged => RevertSetting(undo),
+        AiUndoKind.CalendarLayerChanged => RevertCalendarLayer(undo),
         _ => AiUndoSkipReason.Failed
     };
 

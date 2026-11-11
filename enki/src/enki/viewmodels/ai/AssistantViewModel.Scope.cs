@@ -164,7 +164,7 @@ public sealed partial class AssistantViewModel
     /// <summary>Abre un chat nuevo dentro de <paramref name="session"/> — "Preguntar al asistente" de Sesiones.</summary>
     public void StartChatInSession(Session session)
     {
-        if (IsSending) return;
+        if (IsSending) { SwitchChat(null).StartChatInSession(session); return; }
         SaveDraft();
         StartNewChat();
         _draftSessionId = session.Id;

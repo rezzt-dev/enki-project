@@ -1,3 +1,4 @@
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
@@ -23,7 +24,7 @@ public enum AssistantActivityState
 /// anuncia además con <c>NotificationService</c>.</summary>
 public sealed partial class AssistantViewModel
 {
-    /// <summary>Conversación cuya respuesta está en curso (solo hay una a la vez).</summary>
+    /// <summary>Conversación que responde en este viewmodel; el workspace agrega las demás.</summary>
     private AiChatSession? _runningSession;
 
     /// <summary>Terminó una respuesta con el asistente fuera de la vista y aún no se ha mirado.</summary>
@@ -33,9 +34,9 @@ public sealed partial class AssistantViewModel
     private int _pendingDecisions;
 
     public AssistantActivityState ActivityState =>
-        _pendingDecisions > 0 ? AssistantActivityState.NeedsDecision
-        : IsSending ? AssistantActivityState.Working
-        : _responseReady ? AssistantActivityState.ResponseReady
+        Workspace.Chats.Any(chat => chat._pendingDecisions > 0) ? AssistantActivityState.NeedsDecision
+        : Workspace.Chats.Any(chat => chat.IsSending) ? AssistantActivityState.Working
+        : Workspace.Chats.Any(chat => chat._responseReady) ? AssistantActivityState.ResponseReady
         : AssistantActivityState.Idle;
 
     public bool HasActivity => ActivityState != AssistantActivityState.Idle;
@@ -61,10 +62,15 @@ public sealed partial class AssistantViewModel
 
     /// <summary>Texto del botón del asistente en la barra de título: el estado y qué hacer con él.</summary>
     public string ActivityTooltip => HasActivity
-        ? $"{ActivityLabel} · {ChatTitle}"
+        ? $"{ActivityLabel} · {string.Join(", ", Workspace.Chats.Where(chat => chat.IsSending || chat._responseReady).Select(chat => chat.ChatTitle).DefaultIfEmpty(ChatTitle))}"
         : LocalizationService.Instance["Assistant_Panel_Toggle"];
 
     private void RefreshActivityState()
+    {
+        foreach (var chat in Workspace.Chats.ToArray()) chat.NotifyActivityState();
+    }
+
+    private void NotifyActivityState()
     {
         OnPropertyChanged(nameof(ActivityState));
         OnPropertyChanged(nameof(HasActivity));
@@ -80,8 +86,9 @@ public sealed partial class AssistantViewModel
     {
         foreach (var item in Sessions)
         {
-            item.IsRunning = item.Session == _runningSession;
-            item.NeedsDecision = item.IsRunning && _pendingDecisions > 0;
+            var owner = Workspace.Chats.FirstOrDefault(chat => chat._runningSession == item.Session);
+            item.IsRunning = owner is not null;
+            item.NeedsDecision = owner?._pendingDecisions > 0;
         }
     }
 

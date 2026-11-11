@@ -94,7 +94,8 @@ public sealed partial class AiVaultToolbox
         VaultSettingsService? vaultSettingsService = null,
         TagManagerService? tagManagerService = null,
         StatisticsAggregationService? statisticsService = null,
-        AiSemanticIndexService? semanticIndex = null)
+        AiSemanticIndexService? semanticIndex = null,
+        NotificationService? notificationService = null, ExternalCalendarService? externalCalendars = null)
     {
         _vault = vaultService;
         _sessions = sessionService;
@@ -116,7 +117,12 @@ public sealed partial class AiVaultToolbox
         _statistics = statisticsService ?? new StatisticsAggregationService(vaultService, kanbanService, polarTaskService,
             polarAuthService, _habits, reminderService, sessionService);
         _semantic = semanticIndex;
+        _safeSettings = new AiSafeSettingsService(settingsService, vaultSettingsService);
+        _notifications = notificationService;
+        _externalCalendars = externalCalendars;
 
+        RegisterSettingsTools();
+        RegisterCalendarTools();
         RegisterOverviewTools();
         RegisterNoteTools();
         RegisterFolderAndFileTools();
@@ -148,6 +154,7 @@ public sealed partial class AiVaultToolbox
 
     private bool IsAvailable(AiToolDefinition tool, AiToolContext context)
     {
+        if (context.AllowedTools is { } allowed && !allowed.Contains(tool.Name)) return false;
         if (tool.Effect != AiToolEffect.Read && !ChangesAllowed) return false;
         if (tool.Condition is { } condition && !condition()) return false;
         var scope = context.Scope;

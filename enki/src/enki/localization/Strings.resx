@@ -8828,4 +8828,61 @@ Happy writing.</value>
   <data name="Assistant_Review_DeselectAll" xml:space="preserve">
     <value>Deselect all</value>
   </data>
+  <data name="Assistant_Settings_Confirm" xml:space="preserve">
+    <value>Apply this visual setting?</value>
+  </data>
+  <data name="Assistant_Settings_Changed_Title" xml:space="preserve">
+    <value>Setting updated</value>
+  </data>
+  <data name="Assistant_Settings_Changed" xml:space="preserve">
+    <value>Changed {0}. You can revert this response.</value>
+  </data>
+  <data name="Assistant_Calendar_Confirm" xml:space="preserve">
+    <value>Change this layer’s visibility?</value>
+  </data>
+  <data name="Assistant_Tool_list_safe_settings" xml:space="preserve">
+    <value>List safe settings</value>
+  </data>
+  <data name="Assistant_Tool_change_safe_setting" xml:space="preserve">
+    <value>Change visual setting</value>
+  </data>
+  <data name="Assistant_Tool_list_calendar_layers" xml:space="preserve">
+    <value>List calendar layers</value>
+  </data>
+  <data name="Assistant_Tool_set_calendar_layer" xml:space="preserve">
+    <value>Change calendar layer</value>
+  </data>
+  <data name="Assistant_Tool_export_calendar_ics" xml:space="preserve">
+    <value>Export calendar to ICS</value>
+  </data>
+  <data name="Assistant_Evaluation_Title" xml:space="preserve">
+    <value>Model evaluation</value>
+  </data>
+  <data name="Assistant_Evaluation_Help" xml:space="preserve">
+    <value>Runs two synthetic tasks (edit a note and create a card) with the selected provider and model in a temporary vault. May use tokens from your account. Results stay on this device, with no telemetry. Closing cancels the evaluation. Requires a ready provider with tools and an idle chat.</value>
+  </data>
+  <data name="Assistant_Evaluation_Metrics" xml:space="preserve">
+    <value>Score out of 100 · successful/total calls · duration · input/output tokens. Scores reflect actual data; text without actions scores zero.</value>
+  </data>
+  <data name="Assistant_Evaluation_Empty" xml:space="preserve">
+    <value>No local evaluations yet.</value>
+  </data>
+  <data name="Assistant_Evaluation_Run" xml:space="preserve">
+    <value>Evaluate model</value>
+  </data>
+  <data name="Assistant_Evaluation_Clear" xml:space="preserve">
+    <value>Delete local results</value>
+  </data>
+  <data name="Assistant_Evaluation_DefaultModel" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Assistant_Evaluation_Progress" xml:space="preserve">
+    <value>Evaluating task {0} of {1}…</value>
+  </data>
+  <data name="Assistant_Evaluation_Success" xml:space="preserve">
+    <value>Evaluation finished and saved on this device.</value>
+  </data>
+  <data name="Assistant_Evaluation_Cancelled" xml:space="preserve">
+    <value>Evaluation cancelled. No partial result was saved.</value>
+  </data>
 </root>

@@ -10,6 +10,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- añadir ajustes visuales de lista blanca con confirmacion, notificacion y reversion, sin acceso a claves, proveedores ni privacidad
+- añadir capas y filtros de `get_agenda`, consulta de calendarios externos desde cache y exportacion `.ics` con selector de destino
+- añadir chats simultaneos con estado, permisos, consumo y cancelacion propios por turno e indicador global de actividad
+- añadir evaluacion por proveedor y modelo con tareas sinteticas, puntuacion y resultados locales, sin guardar prompts ni respuestas
 - añadir la revision de cambios por lotes del asistente (`ReviewChangesBeforeApplying`): los cambios de contenido de notas quedan bajo la respuesta con su diff para aplicar los marcados o descartarlos, sin pisar notas que cambiaron y con «revertir esta respuesta» tras aplicarlos
 - añadir `list_tags`, `rename_tag` y `merge_tags` sobre el gestor de etiquetas recortado al ambito del chat, con confirmacion y recuento, y `get_statistics` con el periodo, el tramo anterior y el desglose diario
 - añadir «exportar conversacion a una nota» en la cabecera del asistente y en la paleta, con mensajes, adjuntos, acciones y propiedades de origen (`AiChatExporter`)
@@ -142,6 +146,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - pruebas `ModuleProfileCatalogTests` y `HighContrastThemeTests`, guía `.docs/project-info/accesibilidad-y-alto-contraste.md` con el procedimiento de prueba con Orca, NVDA y VoiceOver (aún sin ejecutar) y `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` con la política de firma y notarización.
 
 #### CAMBIOS
+- ampliar las pruebas, actualizar `.docs/project-info/asistente-ia.md` y el indice del analisis, y añadir textos en los siete idiomas de la interfaz
 - sustituir `read_text_file` y `AiTextFiles` por `read_file` y `AiFileReader`, enviar las imagenes como contenido mcp a cada proveedor y mostrar en el selector de adjuntos un icono por formato y motivos traducidos
 - compartir el candado `PdfiumGate` entre `PdfRenderHelper` y la lectura del asistente, reutilizar la rasterizacion svg de `ImagePreviewService` y documentar la lectura en `.docs/project-info/asistente-ia.md`
 - exigir español de españa y conservar `ñ` y `Ñ`, incluso en formatos que pidan escribir sin acentos
@@ -246,6 +251,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - alinear a la derecha las columnas de cifras que la nota no alinea y resaltar en negrita sobre gris la fila final de total en las tablas del pdf (`DocumentTableRules`), sin cambiar el texto de las celdas ni el png
 
 #### CORREGIDO
+- impedir que finalizar un turno vuelva a guardar una conversacion borrada del historial
+- corregir la prueba de enlaces de `KanbanViewUiTests` para renderizar los modales fuera del arbol visual del tablero
 - corregir que la insignia de `recordatorios` contara cualquier recordatorio sin leer aunque fuera para la semana o el año siguiente: ahora solo cuenta los que han entrado en su ventana de aviso previo o han vencido y no se han visto; abrir uno antes de tiempo o `marcar todos como leidos` ya no silencia el aviso del dia antes, y reprogramarlo lo vuelve a contar.
 - eliminar el contorno circular que aparecía alrededor de la esfera de la sesión seleccionada en el grafo de sesiones (visor web y nativo); se mantiene el contorno tenue del hover.
 - corregir que un recordatorio completado antes de su hora siguiera avisando al llegar esta, y que vincular la cuenta de Polar soltara un aviso y sumara en la insignia por cada recordatorio antiguo descargado.
@@ -293,6 +300,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- add allowlisted visual settings with confirmation, notifications and undo, without access to keys, providers or privacy settings
+- add layers and filters to `get_agenda`, cached external calendar queries and `.ics` export with a destination picker
+- add simultaneous chats with independent state, permissions, usage and cancellation per turn and a global activity indicator
+- add provider and model evaluation with synthetic tasks, scoring and local results, without storing prompts or responses
 - add batch change review for the assistant (`ReviewChangesBeforeApplying`): note content changes wait under the reply with their diff to apply the ticked ones or discard them, never overwriting notes that changed, and «revert this reply» still works after applying
 - add `list_tags`, `rename_tag` and `merge_tags` on top of the tag manager limited to the chat scope, with confirmation and counts, and `get_statistics` with the period, the previous stretch and a daily breakdown
 - add «export conversation to a note» in the assistant header and the command palette, with messages, attachments, actions and source properties (`AiChatExporter`)
@@ -425,6 +436,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - `ModuleProfileCatalogTests` and `HighContrastThemeTests`, the `.docs/project-info/accesibilidad-y-alto-contraste.md` guide with the Orca, NVDA and VoiceOver test procedure (not yet run) and `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` with the signing and notarization policy.
 
 #### CHANGED
+- expand tests, update `.docs/project-info/asistente-ia.md` and the analysis index, and add text in all seven interface languages
 - replace `read_text_file` and `AiTextFiles` with `read_file` and `AiFileReader`, send images as mcp content to each provider and show a per-format icon and translated reasons in the attachment picker
 - share the `PdfiumGate` lock between `PdfRenderHelper` and the assistant reader, reuse the `ImagePreviewService` svg rasterisation and document reading in `.docs/project-info/asistente-ia.md`
 - require spanish from spain and preserve `ñ` and `Ñ`, including formats that omit vowel accents
@@ -528,6 +540,8 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - right-align figure columns the note leaves unaligned and highlight the final total row in bold on grey in pdf tables (`DocumentTableRules`), without changing the cell text or the png
 
 #### FIXED
+- prevent turn completion from saving a conversation deleted from history again
+- fix the link test in `KanbanViewUiTests` to render dialogs outside the board visual tree
 - fix the `reminders` badge counting every unread reminder even when it was due next week or next year: it now only counts reminders that have entered their advance-notice window or are overdue and unseen; opening one early or `mark all as read` no longer silences the day-before notice, and rescheduling makes it count again.
 - remove the circular outline drawn around the selected session sphere in the sessions graph (web and native viewers); the faint hover outline is kept.
 - fix reminders completed before their time still firing when it arrived, and linking a Polar account sending a notice and adding to the badge for every old reminder downloaded.

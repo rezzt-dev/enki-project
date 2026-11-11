@@ -880,3 +880,67 @@ Las acciones de cada respuesta se agrupan bajo una cabecera desplegable con el c
 en vivo. Nacen plegadas, también al reabrir el historial. Añadir o actualizar acciones durante un turno
 no cambia el estado elegido por el usuario. El detalle mantiene los accesos a notas y tarjetas. Las
 peticiones de permiso y las confirmaciones permanecen visibles fuera del bloque plegable.
+
+### Ajustes visuales con confirmación (AIA-17)
+
+`list_safe_settings` enumera una lista cerrada: tema incorporado (`Dark`/`Light`), zoom del vault
+(50–200 %, en pasos de 10) y visibilidad de calendario, Kanban, hábitos, estadísticas, archivos y
+etiquetas. `change_safe_setting` valida el tipo y el valor, enseña el valor anterior y el propuesto y
+espera la confirmación individual del usuario, incluso con la revisión por lotes activada. No admite
+rutas, claves, proveedores, permisos, sincronización ni ajustes de privacidad. Un tema personalizado
+activo se conserva: para usar esta herramienta hay que seleccionar antes un tema incorporado en Ajustes.
+
+`AiSafeSettingsService` escribe con los servicios compartidos y restaura el estado en memoria si falla el
+guardado. La composición del shell aplica inmediatamente el tema, zoom y navegación y emite una
+notificación. Cada cambio admite «Revertir esta respuesta»; se rechaza la reversión si el valor ya no
+coincide con el que dejó la herramienta. El modo de solo lectura también bloquea estos cambios.
+
+### Capas, calendarios externos y exportación (AIA-18)
+
+- `list_calendar_layers`: capas nativas, listas Polar vinculadas y suscripciones externas, con visibilidad
+y fecha de actualización de la caché. Nunca devuelve URL, tokens, ETag ni el ICS completo de la suscripción.
+- `set_calendar_layer`: muestra u oculta una capa existente, con confirmación, notificación y reversión.
+- `get_agenda`: conserva sus valores por defecto y añade `layer_keys`, `visible_only`, `include_completed`,
+`include_occurrences` e `include_external`. Los elementos incluyen capa, calendario y marca de solo lectura
+para eventos externos. El intervalo sigue limitado a 62 días, con extremo final excluido.
+- `export_calendar_ics`: abre el mismo selector de destino que el calendario y reutiliza
+`CalendarIcsExportService`. Solo el usuario elige el archivo; el modelo no puede proporcionar una ruta.
+Exporta los elementos nativos pendientes y sus reglas de repetición, sin duplicar calendarios suscritos.
+Devuelve `saved=false` si se cancela, no hay elementos o falla la escritura; cancelar el turno antes de
+guardar impide escribir. Los calendarios externos se consultan desde su caché, sin provocar conexiones nuevas.
+
+### Conversaciones en paralelo (AIA-20)
+
+`AssistantChatWorkspace` compone manualmente los viewmodels de las conversaciones vivas. Al crear o abrir
+otro chat mientras llega una respuesta se conserva el viewmodel de origen y se selecciona otro. Cada uno
+mantiene mensajes, borrador, proveedor, modelo, consumo, reintento, revisión y cancelación propios. El
+servidor MCP local comparte transporte, pero cada turno registra su propio contexto de ámbito y token;
+retirar un token no retira los demás. Los transportes crean el parser y el proceso o petición de cada turno.
+
+La sección y el panel lateral siguen la misma selección del workspace. «Detener» solo cancela el chat
+visible; cerrar la aplicación, apagar la IA o cambiar de vault cancela todos los turnos y evaluaciones.
+El historial permite cambiar de chat mientras se trabaja y marca la conversación que espera una decisión.
+El indicador global agrega decisiones pendientes, trabajo en curso y respuestas sin ver, por ese orden.
+Las confirmaciones permanecen en la respuesta de su chat de origen; no se aprueban al navegar a otro chat.
+Al cambiar de vault se descartan las revisiones y se retiran las suscripciones de los viewmodels secundarios.
+
+### Evaluación local de herramientas (AIA-22)
+
+El botón de evaluación junto al modelo abre una ventana con aviso de consumo antes de ejecutar. Evalúa
+el proveedor y modelo seleccionados, sin modificar esa selección ni añadir chats al historial. La batería
+v1 contiene dos tareas independientes: editar un fragmento conservando el resto de la nota y crear una
+única tarjeta con título, descripción, prioridad y columna concretos. Se puntúa el resultado de los
+servicios reales (0–100), no las afirmaciones de la respuesta. Una respuesta sin acciones obtiene cero.
+
+Cada tarea usa un vault temporal, servicios desechables, lista cerrada de herramientas y contexto MCP
+propio, sin navegación, red mediante herramientas ni acceso a datos reales. El proveedor elegido recibe
+únicamente las peticiones sintéticas y sus resultados sintéticos. El límite por tarea es de tres minutos;
+cerrar la ventana cancela la ejecución y no guarda una puntuación parcial.
+
+Los informes quedan en `ai/evaluations/` de la instalación: versión de la batería, fecha, proveedor,
+modelo solicitado (o predeterminado), puntuación, llamadas correctas/fallidas, duración y tokens. No se
+guardan prompts, respuestas, rutas temporales ni claves. La ventana permite comparar los últimos cien
+informes y borrar todos los resultados locales, incluso sin proveedor disponible. No hay telemetría ni
+recomendaciones universales: la puntuación mide estas dos tareas con la configuración de esa ejecución.
+
+La licencia existente en `license.md` no cambia. No se añaden dependencias ni servicios remotos nuevos.

@@ -19,7 +19,9 @@ public enum AiUndoKind
     ReminderChanged,
     ReminderTrashed,
     /// <summary>Marcó o desmarcó un hábito en un día.</summary>
-    HabitMarked
+    HabitMarked,
+    SafeSettingChanged,
+    CalendarLayerChanged
 }
 
 public enum AiUndoState

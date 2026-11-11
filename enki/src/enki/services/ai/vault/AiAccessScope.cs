@@ -90,6 +90,9 @@ public sealed class AiToolContext
     /// ella en vez de escribirse. <see langword="null"/>, se aplican al momento.</summary>
     public AiChangeReview? Review { get; init; }
 
+    /// <summary>Restricción adicional del banco de evaluación; se comprueba también al ejecutar.</summary>
+    public IReadOnlySet<string>? AllowedTools { get; init; }
+
     /// <summary>Skills leídas completas en este turno: su contenido original permite detectar conflictos.</summary>
     internal Dictionary<string, SkillFile> SkillReads { get; } = new(StringComparer.Ordinal);
 
@@ -170,6 +173,10 @@ public sealed class AiVaultHost
 
     /// <summary>Tras cualquier acción que cambie algo, para refrescar las pantallas afectadas.</summary>
     public Action VaultChanged { get; init; } = () => { };
+
+    public Func<CancellationToken, Task<bool>>? ExportCalendar { get; init; }
+
+    public Action SettingsChanged { get; init; } = () => { };
 
     // ----- Navegación: el asistente enseña algo en la interfaz, sin cambiar datos -----
     // Las tres devuelven false si la sección de destino está desactivada (perfil de uso) o no hay interfaz

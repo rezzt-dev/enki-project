@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:enki.ViewModels"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="clr-namespace:enki.Controls"
              xmlns:loc="clr-namespace:enki.Localization"
              mc:Ignorable="d"
@@ -50,5 +51,9 @@
         </StackPanel>
       </Border>
     </Popup>
+    <Button Classes="icon-btn" Command="{Binding OpenEvaluationCommand}"
+            ToolTip.Tip="{loc:Tr Assistant_Evaluation_Title}" AutomationProperties.Name="{loc:Tr Assistant_Evaluation_Title}">
+      <mi:MaterialIcon Kind="ChartBoxOutline" Width="16" Height="16" />
+    </Button>
   </StackPanel>
 </UserControl>

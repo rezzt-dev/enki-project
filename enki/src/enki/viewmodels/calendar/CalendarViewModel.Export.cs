@@ -49,10 +49,13 @@ public sealed partial class CalendarViewModel
     /// calendario. A diferencia de PNG y PDF no depende de la vista: exporta toda la agenda, no solo el
     /// rango que se ve. Es manual y local; no hay servidor ni suscripción.</summary>
     [RelayCommand]
-    private async Task ExportIcs()
+    private async Task ExportIcs() => await ExportIcsAsync();
+
+    /// <summary>Mismo selector de destino para la interfaz y el asistente; nunca acepta rutas del modelo.</summary>
+    public async Task<bool> ExportIcsAsync(System.Threading.CancellationToken cancellation = default)
     {
         var topLevel = App.MainWindowRef is not null ? TopLevel.GetTopLevel(App.MainWindowRef) : null;
-        if (topLevel?.StorageProvider is null) return;
+        if (topLevel?.StorageProvider is null) return false;
         var loc = LocalizationService.Instance;
 
         var exporter = new CalendarIcsExportService(_aggregationService, _reminderService, _polarTaskService);
@@ -61,7 +64,7 @@ public sealed partial class CalendarViewModel
         {
             _notificationService.PushLocalized(LocalizedTextFormatter.Format("Export_IcsEmptyTitle"),
                 LocalizedTextFormatter.Format("Export_IcsEmptyMessage"), NotificationSeverity.Info);
-            return;
+            return false;
         }
 
         var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
@@ -72,14 +75,16 @@ public sealed partial class CalendarViewModel
             FileTypeChoices = [new FilePickerFileType(loc["Export_IcsFileType"]) { Patterns = ["*.ics"] }]
         });
         var path = file?.TryGetLocalPath();
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (string.IsNullOrWhiteSpace(path)) return false;
 
+        cancellation.ThrowIfCancellationRequested();
         try
         {
             File.WriteAllText(path, CalendarIcsExportService.Write(entries, TimeZoneInfo.Local, DateTime.UtcNow), new UTF8Encoding(false));
             _notificationService.PushLocalized(LocalizedTextFormatter.Format("Export_IcsSuccessTitle"),
                 LocalizedTextFormatter.Format("Export_IcsSuccessMessage", entries.Count, Path.GetFileName(path)),
                 NotificationSeverity.Success);
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -87,6 +92,7 @@ public sealed partial class CalendarViewModel
             _notificationService.PushLocalized(LocalizedTextFormatter.Format("Export_IcsFailedTitle"),
                 LocalizedTextFormatter.Format(ex is UnauthorizedAccessException ? "Common_Error_AccessDenied" : "Common_Error_IOFailure"),
                 NotificationSeverity.Error);
+            return false;
         }
     }
 }

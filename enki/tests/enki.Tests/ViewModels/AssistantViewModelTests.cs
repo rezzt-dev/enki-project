@@ -460,4 +460,55 @@ public sealed class AssistantViewModelTests : IDisposable
         Assert.False(status.IsChecking);
     }
 
+    [Fact]
+    public async Task ParallelChats_KeepIndependentMessagesAndCancellation_AndAggregateActivity()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var first = await CreateAsync();
+        _fake.Hangs = true;
+        first.DraftText = "Primer chat";
+        var firstTurn = first.SendCommand.ExecuteAsync(null);
+        await WaitForAsync(() => first.IsSending);
+        first.NewChatCommand.Execute(null);
+        var second = first.Workspace.Current!;
+        Assert.NotSame(first, second);
+        Assert.True(first.IsSending);
+        Assert.False(second.IsSending);
+        Assert.False(second.IsPanelHistoryOpen);
+        Assert.Empty(second.Messages);
+        Assert.Equal(AssistantActivityState.Working, second.ActivityState);
+        second.DraftText = "Segundo chat";
+        var secondTurn = second.SendCommand.ExecuteAsync(null);
+        await WaitForAsync(() => second.IsSending);
+        first.StopCommand.Execute(null);
+        await firstTurn;
+        Assert.False(first.IsSending);
+        Assert.True(second.IsSending);
+        Assert.Equal("Segundo chat", second.Messages[0].Text);
+        second.StopCommand.Execute(null);
+        await secondTurn;
+        Assert.False(second.IsSending);
+        Assert.Equal(2, _chats.Sessions.Count);
+        first.IsPanelHistoryOpen = true;
+        second.SelectSessionCommand.Execute(second.Sessions.Single(item => item.Title == "Primer chat"));
+        Assert.False(first.IsPanelHistoryOpen);
+        Assert.Same(first, first.Workspace.Current);
+        Assert.Equal("Primer chat", first.Messages[0].Text);
+        first.DraftText = "No recrear el historial";
+        var deletedTurn = first.SendCommand.ExecuteAsync(null);
+        await WaitForAsync(() => first.IsSending);
+        _chats.DeleteAll();
+        await deletedTurn;
+        Assert.Empty(_chats.Sessions);
+        Assert.True(first.IsDraft);
+        first.CancelAll();
+    }
+
+    private static async Task WaitForAsync(Func<bool> predicate)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!predicate() && DateTime.UtcNow < deadline) await Task.Delay(10);
+        Assert.True(predicate());
+    }
+
 }

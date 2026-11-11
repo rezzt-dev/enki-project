@@ -34,9 +34,8 @@
 
     <Grid Grid.Row="1">
       <ScrollViewer Padding="0,0,1,10">
-        <!-- Durante una respuesta no se cambia de chat (la respuesta pertenece al abierto); la lista se sigue
-             pudiendo desplazar y leer. -->
-        <ItemsControl ItemsSource="{Binding ChatGroups}" Margin="8,0,9,0" IsEnabled="{Binding !IsSending}">
+        <!-- Cambiar de conversación conserva el turno y las decisiones pendientes en su chat de origen. -->
+        <ItemsControl ItemsSource="{Binding ChatGroups}" Margin="8,0,9,0">
           <ItemsControl.ItemTemplate>
             <DataTemplate DataType="vm:AiChatGroupViewModel">
               <StackPanel Spacing="4">

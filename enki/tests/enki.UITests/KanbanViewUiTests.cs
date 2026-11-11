@@ -113,7 +113,21 @@ public class KanbanViewUiTests : IDisposable
         editor.AddLinkCommand.Execute(null);
         view.Measure(new Size(1400, 900));
         view.Arrange(new Rect(0, 0, 1400, 900));
-        Assert.Contains("example.com/docs", view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+        // Los modales viven en un Popup fuera del árbol visual del tablero. En headless se mide su
+        // tarjeta explícitamente, igual que las otras pruebas de ModalOverlayHost.
+        var editorHost = view.GetLogicalDescendants().OfType<enki.Controls.ModalOverlayHost>()
+            .Single(h => h.Content is Border { DataContext: KanbanCardEditorViewModel });
+        Assert.True(editorHost.IsOpen);
+        var editorCard = (Border)editorHost.Content!;
+        editorHost.Content = null;
+        window.Content = null;
+        editorCard.DataContext = editor;
+        window.Content = editorCard;
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        Assert.Contains("example.com/docs", editorCard.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+        window.Content = null;
+        editorHost.Content = editorCard;
+        window.Content = view;
 
         viewModel.SaveCardEditorCommand.Execute(null);
         Assert.Equal(["https://www.example.com/docs/", "https://example.org/"], card.Card.Links);
@@ -123,7 +137,16 @@ public class KanbanViewUiTests : IDisposable
         view.Measure(new Size(1400, 900));
         view.Arrange(new Rect(0, 0, 1400, 900));
         var texts = view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
-        Assert.Contains("example.org", texts);
+        var detailHost = view.GetLogicalDescendants().OfType<enki.Controls.ModalOverlayHost>()
+            .Single(h => h.Content is Border { DataContext: KanbanCardDetailViewModel });
+        Assert.True(detailHost.IsOpen);
+        var detailCard = (Border)detailHost.Content!;
+        detailHost.Content = null;
+        window.Content = null;
+        detailCard.DataContext = viewModel.CardDetail;
+        window.Content = detailCard;
+        window.GetLayoutManager()!.ExecuteLayoutPass();
+        Assert.Contains("example.org", detailCard.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
         Assert.Contains("2", texts);
 
         window.Close();

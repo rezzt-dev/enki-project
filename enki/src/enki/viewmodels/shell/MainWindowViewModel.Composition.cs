@@ -563,9 +563,16 @@ public sealed partial class MainWindowViewModel
                 OpenKanbanBoard = OpenKanbanForAssistant,
                 OpenSection = OpenSectionForAssistant,
                 PrepareBulkNoteChange = PrepareBulkTagChange,
-                BulkNotesChanged = ReloadAfterBulkTagChange
+                BulkNotesChanged = ReloadAfterBulkTagChange,
+                ExportCalendar = token => Calendar!.ExportIcsAsync(token),
+                SettingsChanged = () =>
+                {
+                    ApplyVaultPreferences();
+                    OnUiZoomChanged(_vaultSettingsService.Settings.UiZoomPercent);
+                    Calendar?.ReloadPreferences();
+                }
             }, skillService, _aiWebService, _habitService, _noteTemplateService, _vaultSettingsService,
-            tagManagerService, statisticsAggregationService, _aiSemanticIndex);
+            tagManagerService, statisticsAggregationService, _aiSemanticIndex, _notificationService, externalCalendarService);
         // El índice semántico sigue al vault recién abierto (carga el suyo y lo pone al día, si está encendido).
         _aiSemanticIndex.SettingsChanged();
         _aiVaultTools = new EnkiMcpServer(aiVaultToolbox, work => Dispatcher.UIThread.InvokeAsync(work));
@@ -583,6 +590,14 @@ public sealed partial class MainWindowViewModel
             appendToNote: aiVaultToolbox.AppendToNote,
             revertActivities: aiVaultToolbox.RevertActivities,
             resolveReview: aiVaultToolbox.ResolveReview);
+        Assistant.Workspace.ChatSelected += chat =>
+        {
+            var wasPage = CurrentPage is AssistantViewModel;
+            Assistant = chat;
+            OnPropertyChanged(nameof(Assistant));
+            if (wasPage) CurrentPage = chat;
+            chat.OnActivated();
+        };
         // El botón del asistente de la barra de título y el panel lateral pueden enlazarse antes de que
         // exista (primer arranque, con la configuración del vault delante): se les avisa de que ya está.
         OnPropertyChanged(nameof(Assistant));

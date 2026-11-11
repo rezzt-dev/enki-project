@@ -8827,4 +8827,61 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Assistant_Review_DeselectAll" xml:space="preserve">
     <value>Alle abwählen</value>
   </data>
+  <data name="Assistant_Settings_Confirm" xml:space="preserve">
+    <value>Diese Darstellungseinstellung anwenden?</value>
+  </data>
+  <data name="Assistant_Settings_Changed_Title" xml:space="preserve">
+    <value>Einstellung aktualisiert</value>
+  </data>
+  <data name="Assistant_Settings_Changed" xml:space="preserve">
+    <value>{0} geändert. Diese Antwort kann rückgängig gemacht werden.</value>
+  </data>
+  <data name="Assistant_Calendar_Confirm" xml:space="preserve">
+    <value>Sichtbarkeit dieser Ebene ändern?</value>
+  </data>
+  <data name="Assistant_Tool_list_safe_settings" xml:space="preserve">
+    <value>Sichere Einstellungen anzeigen</value>
+  </data>
+  <data name="Assistant_Tool_change_safe_setting" xml:space="preserve">
+    <value>Darstellungseinstellung ändern</value>
+  </data>
+  <data name="Assistant_Tool_list_calendar_layers" xml:space="preserve">
+    <value>Kalenderebenen anzeigen</value>
+  </data>
+  <data name="Assistant_Tool_set_calendar_layer" xml:space="preserve">
+    <value>Kalenderebene ändern</value>
+  </data>
+  <data name="Assistant_Tool_export_calendar_ics" xml:space="preserve">
+    <value>Kalender als ICS exportieren</value>
+  </data>
+  <data name="Assistant_Evaluation_Title" xml:space="preserve">
+    <value>Modellbewertung</value>
+  </data>
+  <data name="Assistant_Evaluation_Help" xml:space="preserve">
+    <value>Führt zwei synthetische Aufgaben (Notiz bearbeiten und Karte erstellen) mit dem gewählten Anbieter und Modell in einem temporären Vault aus. Kann Tokens Ihres Kontos verbrauchen. Ergebnisse bleiben ohne Telemetrie auf diesem Gerät. Schließen bricht die Bewertung ab. Erfordert einen bereiten Anbieter mit Werkzeugen und einen inaktiven Chat.</value>
+  </data>
+  <data name="Assistant_Evaluation_Metrics" xml:space="preserve">
+    <value>Punkte von 100 · erfolgreiche/gesamte Aufrufe · Dauer · Eingabe-/Ausgabe-Tokens. Nur tatsächliche Daten werden bewertet; Text ohne Aktionen erhält null Punkte.</value>
+  </data>
+  <data name="Assistant_Evaluation_Empty" xml:space="preserve">
+    <value>Noch keine lokalen Bewertungen.</value>
+  </data>
+  <data name="Assistant_Evaluation_Run" xml:space="preserve">
+    <value>Modell bewerten</value>
+  </data>
+  <data name="Assistant_Evaluation_Clear" xml:space="preserve">
+    <value>Lokale Ergebnisse löschen</value>
+  </data>
+  <data name="Assistant_Evaluation_DefaultModel" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Assistant_Evaluation_Progress" xml:space="preserve">
+    <value>Aufgabe {0} von {1} wird bewertet…</value>
+  </data>
+  <data name="Assistant_Evaluation_Success" xml:space="preserve">
+    <value>Bewertung abgeschlossen und auf diesem Gerät gespeichert.</value>
+  </data>
+  <data name="Assistant_Evaluation_Cancelled" xml:space="preserve">
+    <value>Bewertung abgebrochen. Kein Teilergebnis gespeichert.</value>
+  </data>
 </root>

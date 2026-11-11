@@ -37,6 +37,20 @@ public sealed class AiBackendService
         };
     }
 
+    private AiBackendService(AiBackendService source)
+    {
+        _claude = source._claude;
+        _codex = source._codex;
+        _ollama = source._ollama;
+        _gemini = source._gemini;
+        Provider = source.Provider;
+        Model = source.Model;
+        Status = source.Status;
+    }
+
+    /// <summary>Selector y estado propios del chat; los transportes solo comparten sus clientes y catálogos.</summary>
+    public AiBackendService Fork() => new(this);
+
     public AiProvider Provider { get; private set; }
     public string? Model { get; set; }
     public ClaudeCliStatus Status { get; private set; }
@@ -55,7 +69,8 @@ public sealed class AiBackendService
     public event Action<ClaudeCliStatus>? StatusChanged;
     public event Action? ProviderChanged;
     public event Action? BusyChanged;
-    public bool IsBusy { get; private set; }
+    private int _activeTurns;
+    public bool IsBusy => System.Threading.Volatile.Read(ref _activeTurns) > 0;
 
     public void SelectProvider(AiProvider provider)
     {
@@ -84,18 +99,19 @@ public sealed class AiBackendService
             AiProvider.Gemini => await _gemini.DetectAsync().ConfigureAwait(false),
             _ => await _claude.DetectAsync().ConfigureAwait(false)
         };
-        if (generation == _generation && provider != AiProvider.Claude) Publish(status);
+        if (generation == _generation) Publish(status);
         return status;
     }
 
     public async Task<ClaudeTurnResult> RunTurnAsync(ClaudeTurnRequest request, Action<ClaudeStreamEvent>? onEvent,
         CancellationToken cancellation)
     {
-        IsBusy = true;
+        var provider = Provider;
+        System.Threading.Interlocked.Increment(ref _activeTurns);
         BusyChanged?.Invoke();
         try
         {
-            return Provider switch
+            return provider switch
             {
                 AiProvider.OpenAi => await _codex.RunTurnAsync(request, onEvent, cancellation).ConfigureAwait(false),
                 AiProvider.Ollama => await _ollama.RunTurnAsync(request, onEvent, cancellation).ConfigureAwait(false),
@@ -105,7 +121,7 @@ public sealed class AiBackendService
         }
         finally
         {
-            IsBusy = false;
+            System.Threading.Interlocked.Decrement(ref _activeTurns);
             BusyChanged?.Invoke();
         }
     }

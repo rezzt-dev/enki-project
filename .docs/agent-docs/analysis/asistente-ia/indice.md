@@ -18,6 +18,13 @@ ejecutado la aplicación. Si algo no coincide con el código real, manda el cód
 
 Referencia técnica previa (viva): [`.docs/project-info/asistente-ia.md`](../../../project-info/asistente-ia.md).
 
+## EVOLUCIÓN POSTERIOR
+
+AIA-17, AIA-18, AIA-20 y AIA-22 ya tienen implementación y pruebas. Los detalles y límites actuales
+figuran en [la referencia técnica](../../../project-info/asistente-ia.md): ajustes visuales confirmados,
+capas y exportación de calendario, turnos simultáneos y batería sintética con resultados locales.
+El análisis que sigue conserva el estado de su fecha original.
+
 ## CONCLUSIONES EN BREVE
 
 - **Fortaleza:** operador de datos muy completo y seguro (más de 50 herramientas, ámbitos, permisos, confirmaciones,
