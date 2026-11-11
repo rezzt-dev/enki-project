@@ -8425,4 +8425,130 @@ Happy writing.</value>
   <data name="Kanban_Links_Duplicate" xml:space="preserve">
     <value>This task already has that link.</value>
   </data>
+  <data name="Assistant_Tool_open_note" xml:space="preserve">
+    <value>Open note</value>
+  </data>
+  <data name="Assistant_Tool_open_kanban_board" xml:space="preserve">
+    <value>Open Kanban board</value>
+  </data>
+  <data name="Assistant_Tool_open_section" xml:space="preserve">
+    <value>Go to section</value>
+  </data>
+  <data name="Assistant_Tool_search_help" xml:space="preserve">
+    <value>Look up the Enki manual</value>
+  </data>
+  <data name="Assistant_Tool_list_habits" xml:space="preserve">
+    <value>Read habits</value>
+  </data>
+  <data name="Assistant_Tool_set_habit_done" xml:space="preserve">
+    <value>Mark habit</value>
+  </data>
+  <data name="Assistant_Tool_get_daily_note" xml:space="preserve">
+    <value>Read daily note</value>
+  </data>
+  <data name="Assistant_Tool_append_to_daily_note" xml:space="preserve">
+    <value>Add to daily note</value>
+  </data>
+  <data name="Assistant_Tool_list_note_templates" xml:space="preserve">
+    <value>List note templates</value>
+  </data>
+  <data name="Assistant_Tool_create_note_from_template" xml:space="preserve">
+    <value>Create note from template</value>
+  </data>
+  <data name="Assistant_Help_Shortcuts" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+  </data>
+  <data name="Assistant_Help_ShortcutsHint" xml:space="preserve">
+    <value>These are the user's current shortcuts. They can be changed in Settings › Keyboard shortcuts.</value>
+  </data>
+  <data name="Assistant_Usage_Message" xml:space="preserve">
+    <value>{0} input tokens · {1} output</value>
+  </data>
+  <data name="Assistant_Usage_MessageCost" xml:space="preserve">
+    <value>{0} input tokens · {1} output · {2}</value>
+  </data>
+  <data name="Assistant_Usage_Chat" xml:space="preserve">
+    <value>Chat total: {0} input tokens · {1} output</value>
+  </data>
+  <data name="Assistant_Usage_ChatCost" xml:space="preserve">
+    <value>Chat total: {0} input tokens · {1} output · {2}</value>
+  </data>
+  <data name="Settings_Ai_Usage_Label" xml:space="preserve">
+    <value>Show token usage</value>
+  </data>
+  <data name="Settings_Ai_Usage_Description" xml:space="preserve">
+    <value>Shows the tokens of each reply and the chat total when the provider reports them, and the cost when you pay with your own API key. Only figures are stored, never content.</value>
+  </data>
+  <data name="Assistant_Undo_Action" xml:space="preserve">
+    <value>Revert this reply</value>
+  </data>
+  <data name="Assistant_Undo_Tooltip" xml:space="preserve">
+    <value>Undo what the assistant changed in this reply. Anything you edited afterwards is left untouched.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Message" xml:space="preserve">
+    <value>What the assistant changed in this reply will be undone.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Hint" xml:space="preserve">
+    <value>Notes go back to their previous version, what was created goes to the trash, and what was moved or deleted returns to its place. Anything you edited afterwards is left as it is.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Action" xml:space="preserve">
+    <value>Revert</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_one" xml:space="preserve">
+    <value>{0} action can be reverted</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_other" xml:space="preserve">
+    <value>{0} actions can be reverted</value>
+  </data>
+  <data name="Assistant_Undo_Reverted" xml:space="preserve">
+    <value>Reverted</value>
+  </data>
+  <data name="Assistant_Undo_Reason_ChangedSince" xml:space="preserve">
+    <value>Not reverted: it was edited afterwards</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Missing" xml:space="preserve">
+    <value>Not reverted: it no longer exists</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Locked" xml:space="preserve">
+    <value>Not reverted: the session is locked</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Occupied" xml:space="preserve">
+    <value>Not reverted: its place is taken</value>
+  </data>
+  <data name="Assistant_Undo_Reason_HistoryMissing" xml:space="preserve">
+    <value>Not reverted: the previous version is no longer in the history</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Busy" xml:space="preserve">
+    <value>Not reverted: the note has unsaved changes or a pending conflict</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Failed" xml:space="preserve">
+    <value>Not reverted: the operation failed</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Title" xml:space="preserve">
+    <value>Reply reverted</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Failed_Title" xml:space="preserve">
+    <value>The reply could not be reverted</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_one" xml:space="preserve">
+    <value>{0} action was reverted.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_other" xml:space="preserve">
+    <value>{0} actions were reverted.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_one" xml:space="preserve">
+    <value>{0} action was left untouched because it changed afterwards or is no longer there; the reply shows the reason.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_other" xml:space="preserve">
+    <value>{0} actions were left untouched because they changed afterwards or are no longer there; the reply shows the reasons.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_one" xml:space="preserve">
+    <value>{0} action cannot be reverted from here and stays as it is.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_other" xml:space="preserve">
+    <value>{0} actions cannot be reverted from here and stay as they are.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Nothing" xml:space="preserve">
+    <value>There was nothing left to revert.</value>
+  </data>
 </root>

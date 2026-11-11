@@ -155,6 +155,19 @@ public sealed class AiVaultHost
 
     /// <summary>Tras cualquier acción que cambie algo, para refrescar las pantallas afectadas.</summary>
     public Action VaultChanged { get; init; } = () => { };
+
+    // ----- Navegación: el asistente enseña algo en la interfaz, sin cambiar datos -----
+    // Las tres devuelven false si la sección de destino está desactivada (perfil de uso) o no hay interfaz
+    // a la que llevar; la herramienta lo traduce a "no disponible".
+
+    /// <summary>Abre una nota en Documentos.</summary>
+    public Func<NoteFile, bool> OpenNote { get; init; } = _ => false;
+
+    /// <summary>Abre un tablero de Kanban (por id) y, si se indica, el detalle de una de sus tarjetas.</summary>
+    public Func<string, string?, bool> OpenKanbanBoard { get; init; } = (_, _) => false;
+
+    /// <summary>Lleva a una sección por su clave (ver <c>AiVaultToolbox.Sections</c>).</summary>
+    public Func<string, bool> OpenSection { get; init; } = _ => false;
 }
 
 /// <summary>Conjunto de direcciones web comparadas sin fragmento ni barra final y con el host en minúsculas

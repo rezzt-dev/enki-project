@@ -99,6 +99,8 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(CanChangeWorkspace));
         OnPropertyChanged(nameof(CanChangeAccess));
         OnPropertyChanged(nameof(CanChangeEffort));
+        OnPropertyChanged(nameof(CanRevertResponses));
+        if (value) PendingRevertMessage = null;
         RefreshActivityState();
     }
 
@@ -177,6 +179,7 @@ public sealed partial class AssistantViewModel
         IsPersonaEditorOpen = false;
         IsEffortPickerOpen = false;
         IsPanelHistoryOpen = false;
+        PendingRevertMessage = null;
         CancelAppendToNote();
         _confirmedNotes = null;
         _allPickerItems = [];
@@ -631,11 +634,14 @@ public sealed partial class AssistantViewModel
             session.SkillName, session.SkillInstructions, vaultTools: vaultTools);
         var model = string.IsNullOrWhiteSpace(session.Model) ? null : session.Model;
         ClaudeTurnResult? result = null;
+        // Lo que el usuario revirtió desde la última respuesta: el modelo aún lo da por hecho.
+        var reverted = UnannouncedReverts(session);
         try
         {
             if (vaultTools) _flushPendingEdits();
             toolAccess = vaultTools ? RegisterTurnTools(session, bubble, activitySignal, cancellation.Token) : null;
-            var turnPrompt = toolAccess is null ? prompt : AiPromptBuilder.WithScope(BuildScopeNotice(session), prompt);
+            var informedPrompt = AiPromptBuilder.WithRevertedActions(reverted, prompt);
+            var turnPrompt = toolAccess is null ? informedPrompt : AiPromptBuilder.WithScope(BuildScopeNotice(session), informedPrompt);
             // La personalidad va delante del ámbito y se lee ahora: lo que el usuario cambie entre turnos se aplica ya.
             turnPrompt = AiPromptBuilder.WithPersona(BuildPersonaNotice(session), turnPrompt);
             if (session.Provider != AiProvider.Claude)
@@ -692,8 +698,11 @@ public sealed partial class AssistantViewModel
         // conversación, pero ya no se pinta en la que esté abierta.
         var stillOpen = session == _activeSession;
 
+        RecordUsage(bubble, result);
         if (result is { Succeeded: true })
         {
+            // El modelo ya ha leído el aviso de lo revertido: no se le repite en el turno siguiente.
+            foreach (var activity in reverted) activity.Undo!.ModelInformed = true;
             bubble.Text = result.Text.Length > 0 ? result.Text : partial;
             // Una respuesta que solo actuó (sin texto) también es una respuesta: sus acciones son lo que cuenta.
             if (bubble.HasText || bubble.HasActivities)
@@ -863,6 +872,7 @@ public sealed partial class AssistantViewModel
         OnPropertyChanged(nameof(RetryLabel));
         RetryCommand.NotifyCanExecuteChanged();
         RebuildSessionList();
+        RefreshUsage();
         ScrollToEndRequested?.Invoke();
     }
 

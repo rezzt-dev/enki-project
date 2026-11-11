@@ -140,12 +140,15 @@ public sealed partial class VaultService
 
     /// <summary>Una restauración destructiva solo continúa cuando su contenido anterior es recuperable.
     /// CaptureSnapshot devuelve null tanto al fallar como si ya existía una copia idéntica.</summary>
-    internal void CaptureSnapshotChecked(NoteFile note, string content, NoteVersionTrigger trigger)
+    /// <returns>La versión del historial que conserva <paramref name="content"/>: la recién guardada o la que
+    /// ya lo tenía. Quien necesite volver exactamente a ese contenido (deshacer un cambio del asistente) la
+    /// recupera después con <see cref="ReadVersionContent"/>.</returns>
+    internal NoteVersion CaptureSnapshotChecked(NoteFile note, string content, NoteVersionTrigger trigger)
     {
-        if (CaptureSnapshot(note, content, trigger) is not null) return;
-        if (GetVersionHistory(note).Any(version =>
-                ReadFromDisk(SnapshotFilePath(VersionsFolderFor(note.FullPath), version.Id))?.Content == content)) return;
-        throw new IOException("No se pudo conservar el contenido anterior en el historial de versiones.");
+        if (CaptureSnapshot(note, content, trigger) is { } captured) return captured;
+        return GetVersionHistory(note).FirstOrDefault(version =>
+                ReadFromDisk(SnapshotFilePath(VersionsFolderFor(note.FullPath), version.Id))?.Content == content)
+            ?? throw new IOException("No se pudo conservar el contenido anterior en el historial de versiones.");
     }
 
     /// <summary>Deletes a single snapshot from <paramref name="note"/>'s history — lets the user prune an

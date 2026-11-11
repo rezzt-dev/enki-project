@@ -40,6 +40,12 @@
     <Style Selector="views|AssistantTranscriptView.compact StackPanel#SetupPanel">
       <Setter Property="Margin" Value="18,28" />
     </Style>
+    <Style Selector="TextBlock#ChatUsage">
+      <Setter Property="Margin" Value="32,0,32,8" />
+    </Style>
+    <Style Selector="views|AssistantTranscriptView.compact TextBlock#ChatUsage">
+      <Setter Property="Margin" Value="16,0,16,6" />
+    </Style>
     <Style Selector="views|AssistantTranscriptView.compact Border#ErrorBox">
       <Setter Property="Margin" Value="16,0,16,8" />
     </Style>
@@ -48,7 +54,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto">
+  <Grid RowDefinitions="*,Auto,Auto">
 
     <!-- · Comprobando el proveedor por primera vez · -->
     <StackPanel Grid.Row="0" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -58,7 +64,7 @@
     </StackPanel>
 
     <!-- · Puesta en marcha: instalar, iniciar sesión, guardar la clave de API o actualizar · -->
-    <ScrollViewer Grid.Row="0" Grid.RowSpan="2" IsVisible="{Binding ShowSetupPanel}">
+    <ScrollViewer Grid.Row="0" Grid.RowSpan="3" IsVisible="{Binding ShowSetupPanel}">
       <StackPanel x:Name="SetupPanel" MaxWidth="600" Spacing="22" HorizontalAlignment="Center">
         <StackPanel Spacing="10">
           <TextBlock Text="{loc:Tr Assistant_Setup_Eyebrow, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
@@ -222,15 +228,33 @@
                   <Border IsVisible="{Binding HasActivities}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1,0,0,0"
                           Padding="14,2,0,2">
                     <StackPanel Spacing="6">
-                      <Button Name="ActivitiesToggle" Classes="section-header" Command="{Binding ToggleActivitiesCommand}"
-                              ToolTip.Tip="{Binding ActivitiesToggleTooltip}" AutomationProperties.Name="{Binding ActivitiesToggleTooltip}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                          <mi:MaterialIcon Kind="{Binding IsActivitiesExpanded, Converter={StaticResource ExpandChevronConverter}}"
-                                           Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
-                          <TextBlock Text="{Binding ActivitiesLabel, Converter={StaticResource UpperCaseConverter}}"
-                                     Classes="eyebrow" FontSize="9" VerticalAlignment="Center" />
-                        </StackPanel>
-                      </Button>
+                      <!-- WrapPanel: en el panel lateral estrecho, "Revertir" baja a la línea siguiente. -->
+                      <WrapPanel Orientation="Horizontal">
+                        <Button Name="ActivitiesToggle" Classes="section-header" Command="{Binding ToggleActivitiesCommand}" Margin="0,0,14,0"
+                                ToolTip.Tip="{Binding ActivitiesToggleTooltip}" AutomationProperties.Name="{Binding ActivitiesToggleTooltip}">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="{Binding IsActivitiesExpanded, Converter={StaticResource ExpandChevronConverter}}"
+                                             Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ActivitiesLabel, Converter={StaticResource UpperCaseConverter}}"
+                                       Classes="eyebrow" FontSize="9" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                        <!-- Deshace lo que cambió esta respuesta. Pide confirmación; mientras llega otra respuesta no se ofrece. -->
+                        <Button Name="RevertButton" Classes="ghost" VerticalAlignment="Center"
+                                Command="{Binding #Root.((vm:AssistantViewModel)DataContext).RequestRevertMessageCommand}" CommandParameter="{Binding}"
+                                ToolTip.Tip="{loc:Tr Assistant_Undo_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Undo_Action}">
+                          <Button.IsVisible>
+                            <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+                              <Binding Path="CanRevert" />
+                              <Binding Path="#Root.((vm:AssistantViewModel)DataContext).CanRevertResponses" />
+                            </MultiBinding>
+                          </Button.IsVisible>
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <mi:MaterialIcon Kind="UndoVariant" Width="12" Height="12" />
+                            <TextBlock Text="{loc:Tr Assistant_Undo_Action, Converter={StaticResource UpperCaseConverter}}" />
+                          </StackPanel>
+                        </Button>
+                      </WrapPanel>
                       <ItemsControl Name="ActivitiesList" ItemsSource="{Binding Activities}" IsVisible="{Binding IsActivitiesExpanded}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
@@ -259,6 +283,9 @@
                                            TextTrimming="CharacterEllipsis" IsVisible="{Binding HasTarget}" ToolTip.Tip="{Binding TargetTooltip}" />
                                 <TextBlock Text="{Binding Error}" FontSize="11" Foreground="{DynamicResource DangerBrush}" MaxWidth="320"
                                            TextTrimming="CharacterEllipsis" IsVisible="{Binding HasError}" ToolTip.Tip="{Binding Error}" />
+                                <!-- Tras "Revertir esta respuesta": deshecha, o por qué se dejó como estaba. -->
+                                <TextBlock Text="{Binding RevertNote}" Classes="faint" FontSize="11" MaxWidth="320"
+                                           TextTrimming="CharacterEllipsis" IsVisible="{Binding HasRevertNote}" ToolTip.Tip="{Binding RevertNote}" />
                               </StackPanel>
                               <Button Grid.Column="4" Classes="icon-btn" Width="24" Height="24" IsVisible="{Binding CanOpen}"
                                       Command="{Binding #Root.((vm:AssistantViewModel)DataContext).OpenActivityCommand}" CommandParameter="{Binding}"
@@ -353,6 +380,15 @@
                       <mi:MaterialIcon Kind="NotePlusOutline" Width="14" Height="14" />
                     </Button>
                   </StackPanel>
+                  <!-- Tokens de esta respuesta, si el proveedor los dio y el usuario no los ha ocultado en Ajustes. -->
+                  <TextBlock Name="UsageLabel" Text="{Binding UsageLabel}" Classes="faint" FontSize="10" TextWrapping="Wrap">
+                    <TextBlock.IsVisible>
+                      <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+                        <Binding Path="HasUsage" />
+                        <Binding Path="#Root.((vm:AssistantViewModel)DataContext).ShowUsage" />
+                      </MultiBinding>
+                    </TextBlock.IsVisible>
+                  </TextBlock>
                 </StackPanel>
               </Panel>
             </DataTemplate>
@@ -380,8 +416,19 @@
       </Panel>
     </Grid>
 
+    <!-- · Consumo acumulado de la conversación · -->
+    <TextBlock x:Name="ChatUsage" Grid.Row="1" Text="{Binding ChatUsageLabel}" Classes="faint" FontSize="10.5"
+               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="860">
+      <TextBlock.IsVisible>
+        <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+          <Binding Path="HasChatUsage" />
+          <Binding Path="ShowTranscript" />
+        </MultiBinding>
+      </TextBlock.IsVisible>
+    </TextBlock>
+
     <!-- · Error del último turno · -->
-    <Border x:Name="ErrorBox" Grid.Row="1" MaxWidth="860" Padding="14,12" BorderThickness="1"
+    <Border x:Name="ErrorBox" Grid.Row="2" MaxWidth="860" Padding="14,12" BorderThickness="1"
             BorderBrush="{DynamicResource DangerBrush}" Background="{DynamicResource Ink05}"
             IsVisible="{Binding HasError}">
       <Grid ColumnDefinitions="Auto,*">

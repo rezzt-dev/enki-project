@@ -23,7 +23,10 @@ public enum AiToolScope
     /// <summary>Buscar en internet y leer páginas: solo con el acceso a internet del chat encendido
     /// (<see cref="AiToolContext.WebAccess"/>). No toca el vault, así que no depende del espacio del chat ni de
     /// su permiso de consulta.</summary>
-    Web
+    Web,
+    /// <summary>La propia aplicación: el manual integrado y abrir una sección de la interfaz. No lee ni cambia
+    /// el vault, así que se ofrece en cualquier chat y no depende del permiso de consulta.</summary>
+    App
 }
 
 public enum AiToolEffect
@@ -90,6 +93,10 @@ public sealed class AiToolCall(AiToolContext context, JsonElement arguments, AiT
         Activity.Target = label;
         Activity.TargetId = id;
     }
+
+    /// <summary>Deja apuntado cómo deshacer lo que esta llamada acaba de cambiar, para "Revertir esta
+    /// respuesta". Se llama una vez, con el cambio ya hecho.</summary>
+    public void Undoable(AiToolUndo undo) => Activity.Undo = undo;
 
     public bool Has(string name) =>
         arguments.ValueKind == JsonValueKind.Object && arguments.TryGetProperty(name, out _);

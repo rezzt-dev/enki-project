@@ -98,7 +98,7 @@ public sealed class AiBackendServiceTests : IDisposable
             Assert.Equal("qwen3:8b", body["model"]!.GetValue<string>());
             Assert.Equal("system", body["messages"]![0]!["role"]!.GetValue<string>());
             return Json("{\"message\":{\"thinking\":\"private\",\"content\":\"Hola\"},\"done\":false}\n"
-                + "{\"message\":{\"content\":\" mundo\"},\"done\":true}\n");
+                + "{\"message\":{\"content\":\" mundo\"},\"done\":true,\"prompt_eval_count\":31,\"eval_count\":7}\n");
         });
         using var http = new HttpClient(handler);
         var service = new OllamaService(_settings, http);
@@ -108,6 +108,7 @@ public sealed class AiBackendServiceTests : IDisposable
         Assert.True(result.Succeeded);
         Assert.Equal("Hola mundo", result.Text);
         Assert.Equal(result.Text, string.Concat(deltas));
+        Assert.Equal((31, 7), (result.Usage!.InputTokens, result.Usage.OutputTokens));
     }
 
     [Fact]

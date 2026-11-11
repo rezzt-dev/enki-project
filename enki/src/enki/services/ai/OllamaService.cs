@@ -11,6 +11,7 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using enki.Localization;
+using enki.Models;
 
 namespace enki.Services;
 
@@ -83,6 +84,8 @@ public sealed class OllamaService
         CancellationToken cancellation)
     {
         var text = new StringBuilder();
+        // Cada ronda de herramientas es otra petición al modelo: su consumo se suma al del turno.
+        AiTokenUsage? usage = null;
         using var idle = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         void Touch() => idle.CancelAfter(TimeSpan.FromSeconds(_settings.Settings.Ai.IdleTimeoutSeconds));
         try
@@ -142,10 +145,15 @@ public sealed class OllamaService
                             foreach (var call in toolCalls) calls.Add(call?.DeepClone());
                         if (calls.Count > 32) throw new JsonException();
                     }
-                    if (chunk["done"]?.GetValue<bool>() == true) { done = true; break; }
+                    if (chunk["done"]?.GetValue<bool>() == true)
+                    {
+                        usage = AiTokenUsage.Add(usage, ReadUsage(chunk));
+                        done = true;
+                        break;
+                    }
                 }
                 if (!done) throw new JsonException();
-                if (calls.Count == 0) return new(text.ToString(), null, ClaudeFailureKind.None);
+                if (calls.Count == 0) return new(text.ToString(), null, ClaudeFailureKind.None, Usage: usage);
                 messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content.ToString(), ["tool_calls"] = calls.DeepClone() });
                 // La espera de aprobación pertenece al MCP y tiene su propio límite; no es inactividad del modelo.
                 idle.CancelAfter(Timeout.InfiniteTimeSpan);
@@ -167,16 +175,25 @@ public sealed class OllamaService
                     messages.Add(toolMessage);
                 }
             }
-            return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]);
+            return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"], Usage: usage);
         }
         catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
         {
-            return new(text.ToString(), null, ClaudeFailureKind.Timeout);
+            return new(text.ToString(), null, ClaudeFailureKind.Timeout, Usage: usage);
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException or InvalidOperationException or ArgumentException)
         {
-            return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_LocalRequestFailed"]);
+            return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_LocalRequestFailed"], Usage: usage);
         }
+    }
+
+    /// <summary>Tokens del último fragmento de una respuesta (<c>prompt_eval_count</c>, <c>eval_count</c>). Un
+    /// servidor que no los dé —o los dé con otro tipo— simplemente no aporta cifras.</summary>
+    private static AiTokenUsage? ReadUsage(JsonObject chunk)
+    {
+        static long Read(JsonNode? node) => node is JsonValue value && value.TryGetValue<long>(out var number) && number > 0 ? number : 0;
+        var result = new AiTokenUsage { InputTokens = Read(chunk["prompt_eval_count"]), OutputTokens = Read(chunk["eval_count"]) };
+        return result.IsEmpty ? null : result;
     }
 
     private async Task<JsonArray> LoadToolsAsync(ClaudeToolAccess access, CancellationToken cancellation)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using enki.Models;
 
 namespace enki.Services;
 
@@ -49,7 +50,8 @@ public sealed record ClaudeResult(
     IReadOnlyList<string> Errors,
     string? SessionId,
     int? ApiErrorStatus,
-    string? TerminalReason) : ClaudeStreamEvent;
+    string? TerminalReason,
+    AiTokenUsage? Usage = null) : ClaudeStreamEvent;
 
 /// <summary>Traduce cada línea JSON de la salida del CLI a un <see cref="ClaudeStreamEvent"/>. Tolerante por
 /// diseño: los campos cambian entre versiones del CLI, así que una línea que no se entiende —o un tipo
@@ -149,8 +151,30 @@ internal static class ClaudeStreamParser
             Errors: errors,
             SessionId: GetString(root, "session_id"),
             ApiErrorStatus: apiStatus,
-            TerminalReason: GetString(root, "terminal_reason"));
+            TerminalReason: GetString(root, "terminal_reason"),
+            Usage: ParseUsage(root));
     }
+
+    /// <summary>Consumo del turno entero (<c>usage</c> y <c>total_cost_usd</c> del resultado). Anthropic cuenta
+    /// aparte lo que escribe y lo que lee de su caché: aquí se suman a la entrada.</summary>
+    private static AiTokenUsage? ParseUsage(JsonElement root)
+    {
+        if (!root.TryGetProperty("usage", out var usage) || usage.ValueKind != JsonValueKind.Object) return null;
+        var cached = GetLong(usage, "cache_read_input_tokens");
+        var result = new AiTokenUsage
+        {
+            InputTokens = GetLong(usage, "input_tokens") + GetLong(usage, "cache_creation_input_tokens") + cached,
+            OutputTokens = GetLong(usage, "output_tokens"),
+            CachedInputTokens = cached,
+            CostUsd = root.TryGetProperty("total_cost_usd", out var cost) && cost.ValueKind == JsonValueKind.Number
+                && cost.TryGetDecimal(out var dollars) && dollars > 0 ? dollars : null
+        };
+        return result.IsEmpty ? null : result;
+    }
+
+    private static long GetLong(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number)
+            && number > 0 ? number : 0;
 
     private static string? GetString(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value)

@@ -534,8 +534,11 @@ public sealed partial class MainWindowViewModel
                 NoteChanged = (oldPath, note) => Notes.ApplyAssistantNoteChange(oldPath, note),
                 PrepareSessionRemoval = session => Notes.CloseEditorsUnderSession(session, out _),
                 SessionsChanged = OnSessionsChanged,
-                VaultChanged = OnAssistantChangedVault
-            }, skillService, _aiWebService);
+                VaultChanged = OnAssistantChangedVault,
+                OpenNote = OpenNoteForAssistant,
+                OpenKanbanBoard = OpenKanbanForAssistant,
+                OpenSection = OpenSectionForAssistant
+            }, skillService, _aiWebService, _habitService, _noteTemplateService, _vaultSettingsService);
         _aiVaultTools = new EnkiMcpServer(aiVaultToolbox, work => Dispatcher.UIThread.InvokeAsync(work));
         Assistant = new AssistantViewModel(_claudeCliService, _aiChatService, _settingsService, _vaultService,
             _notificationService, AiCliStatus, _sessionService,
@@ -548,7 +551,8 @@ public sealed partial class MainWindowViewModel
             isVisible: () => IsAssistantVisible,
             isPolarLinked: () => _polarAuthService.IsLinked,
             vaultIdentity: create => create ? _vaultSettingsService.EnsureVaultId() : _vaultSettingsService.Settings.VaultId,
-            appendToNote: aiVaultToolbox.AppendToNote);
+            appendToNote: aiVaultToolbox.AppendToNote,
+            revertActivities: aiVaultToolbox.RevertActivities);
         // El botón del asistente de la barra de título y el panel lateral pueden enlazarse antes de que
         // exista (primer arranque, con la configuración del vault delante): se les avisa de que ya está.
         OnPropertyChanged(nameof(Assistant));

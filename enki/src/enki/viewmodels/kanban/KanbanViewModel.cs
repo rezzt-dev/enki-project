@@ -730,6 +730,10 @@ public sealed partial class KanbanViewModel : ViewModelBase
     /// <see cref="NavigateToBoard"/>: es el mismo camino que un clic en el selector, con su aviso de
     /// cambios sin guardar incluido. Antes de existir varios tableros bastaba con buscar entre las
     /// columnas dibujadas.</para>
+    /// <summary>Enseña un tablero por su id, por el mismo camino que un clic en el selector (con su aviso de
+    /// cambios sin guardar). Lo usa el asistente cuando el usuario le pide abrir un tablero.</summary>
+    public void OpenBoardById(string boardId) => NavigateToBoard(boardId);
+
     public void OpenCardById(string cardId)
     {
         if (_kanbanService.FindCardLocation(cardId) is not { } location) return;

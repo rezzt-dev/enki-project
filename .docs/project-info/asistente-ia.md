@@ -648,6 +648,23 @@ Cada herramienta describe su entrada JSON, su efecto (lectura, cambio recuperabl
 - **Recordatorios y agenda:** crear, listar, reprogramar, completar y enviar a la papelera; consultar
   el calendario agregado en intervalos de hasta 62 días.
 - **Papelera:** listar, restaurar y eliminar definitivamente elementos de los módulos anteriores.
+- **Hábitos:** `list_habits` (frecuencia, si toca hoy, marcas recientes) y `set_habit_done` sobre el mismo
+  `HabitService` que la sección, sin rachas ni puntuaciones. Viven en el vault: no se ofrecen en chats de sesión.
+- **Nota diaria y plantillas:** `get_daily_note` (no crea nada), `append_to_daily_note` (crea la nota del día con
+  la plantilla configurada si no existe, a través de `DailyNoteService.OpenOrCreate`, y escribe por el mismo
+  `ChangeNote` comprobado que `append_to_note`), `list_note_templates` y `create_note_from_template`
+  (`NoteTemplateService.Prepare`).
+- **Navegación (AIA-02):** `open_note`, `open_kanban_board` y `open_section` enseñan algo en la interfaz sin
+  cambiar datos ni pedir confirmación; se ofrecen también en solo lectura. Las dos primeras respetan ámbito y
+  permiso de consulta porque confirman que el elemento existe; `open_section` (`AiToolScope.App`) no lee el vault.
+  La navegación la hace el shell con los callbacks `OpenNote`, `OpenKanbanBoard` y `OpenSection` de
+  `AiVaultHost`; con la sección de destino desactivada devuelven `Unavailable`. Si la conversación ocupa la
+  sección Asistente, pasa antes al panel lateral para no perderla de vista.
+- **Ayuda sobre Enki (AIA-03):** `search_help` busca en el manual empaquetado (`src/enki/help/manual-es.md` y
+  `manual-en.md`, recurso incrustado; el resto de idiomas usan el inglés) troceado por apartados `##`, más un
+  apartado por categoría de atajos generado en cada consulta con el gesto vigente de `ShortcutRegistry`, no el
+  predeterminado. No depende del ámbito, del permiso de consulta ni de la red. Al cambiar una función de la
+  app hay que actualizar los dos manuales.
 
 El chip de la cabecera muestra el espacio del chat. Antes del primer mensaje permite elegir el vault o
 una sesión desbloqueada; después el espacio queda fijado. El historial agrupa las conversaciones del
@@ -672,6 +689,35 @@ Borrar definitivamente o sacar contenido de una sesión protegida exige una tarj
 el chat. Denegar, detener o agotar cinco minutos cancela esa acción. La espera no dispara el timeout
 de inactividad del CLI. Desactivar las escrituras durante la confirmación impide ejecutarla.
 
+### Revertir una respuesta (AIA-06)
+
+Cada herramienta que cambia algo recuperable deja en su `AiToolActivity.Undo` (`AiToolUndo`) cómo deshacerlo y
+la huella del estado en que lo dejó: de una nota, el identificador de la versión del historial que conserva lo
+anterior (`CaptureSnapshotChecked` devuelve ahora esa versión) y el hash del contenido escrito; de una tarjeta
+o un recordatorio, su estado anterior y un hash del resultado; de un hábito, el día marcado. No se guarda
+contenido de notas en el historial del chat.
+
+«Revertir esta respuesta» (botón en la cabecera de acciones, con confirmación) llama a
+`AiVaultToolbox.RevertActivities`, que recorre las acciones en orden inverso y solo deshace las que siguen
+exactamente como las dejó el asistente: las ediciones vuelven a su versión por `CommitNoteChange` (guardando
+antes la actual), lo creado va a la papelera, lo renombrado, movido o borrado vuelve a su ruta, y tarjetas,
+recordatorios y hábitos recuperan el estado guardado (un recordatorio que ya había sonado no se rearma). Lo
+que el usuario editó después, lo que ya no existe o tiene su sitio ocupado se deja como está y la fila explica
+por qué; una nota con cambios sin guardar o una sesión bloqueada se puede reintentar. Carpetas, archivos,
+sesiones, Polar, skills y papelera no tienen vuelta atrás desde aquí y se cuentan en el aviso. El turno
+siguiente lleva un bloque `<enki_reverted>` (`AiPromptBuilder.WithRevertedActions`) para que el modelo no dé
+por hechas esas acciones, y el historial reconstruido las marca como revertidas.
+
+### Uso y coste (AIA-05)
+
+Los cuatro proveedores devuelven el consumo en `ClaudeTurnResult.Usage` (`AiTokenUsage`): el CLI de Claude en
+su `result` (con la caché sumada a la entrada y `total_cost_usd`), Codex en `turn.completed`, Gemini en
+`usageMetadata` (la salida incluye el razonamiento) y Ollama en el último fragmento; las rondas de herramientas
+se suman. Se guarda en `AiChatMessage.Usage` y se muestra bajo cada respuesta y como total del chat. El coste
+solo se conserva con una clave de API propia (Claude con clave o Gemini cuando el proveedor lo calcula): con
+suscripción el CLI lo estima, pero nadie lo paga por respuesta. `AiSettings.ShowUsage` (Ajustes › Inteligencia
+artificial › Conversación) oculta las cifras sin dejar de guardarlas.
+
 ### Transporte y aislamiento
 
 `EnkiMcpServer` expone el catálogo por MCP sobre HTTP en `127.0.0.1`, con puerto efímero y un token
@@ -693,7 +739,8 @@ una nota entera exige haberla leído completa en ese turno y conservar su huella
 se guardan antes de actuar y se actualizan después, sin resolver conflictos por cuenta del modelo.
 
 Pruebas específicas: `Services/AiVaultToolboxTests` (servicios reales aislados, permisos, conflictos,
-papelera, cancelación y autenticación MCP), `ClaudeCliServiceTests` (restricción de herramientas y
+papelera, cancelación y autenticación MCP), `AiVaultToolboxAppTests` (navegación, manual, hábitos, nota
+diaria y plantillas), `AiVaultToolboxUndoTests` (revertir sin pisar ediciones posteriores), `ClaudeCliServiceTests` (restricción de herramientas y
 texto entre acciones) y `AssistantViewUiTests` (actividad y confirmación sobre el XAML real).
 
 

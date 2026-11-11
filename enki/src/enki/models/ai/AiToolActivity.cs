@@ -31,7 +31,13 @@ public enum AiToolTargetKind
     WebSearch,
     /// <summary>Una página web leída: <see cref="AiToolActivity.TargetId"/> es su dirección final, que se
     /// abre en el navegador desde el chat.</summary>
-    WebPage
+    WebPage,
+    // Los valores nuevos van siempre al final: el historial guarda el número, no el nombre.
+    Habit,
+    /// <summary>Una sección de la interfaz abierta por el asistente (<c>open_section</c>).</summary>
+    Section,
+    /// <summary>Una consulta al manual integrado: <see cref="AiToolActivity.Target"/> es lo que se buscó.</summary>
+    Help
 }
 
 /// <summary>Una llamada del asistente a una herramienta del vault (ver <see cref="Services.AiVaultToolbox"/>):
@@ -60,4 +66,9 @@ public sealed class AiToolActivity
     public string? Error { get; set; }
 
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Cómo deshacer esta acción, si cambió algo recuperable (ver <see cref="AiToolUndo"/>).
+    /// <see langword="null"/> en las lecturas, en las acciones sin vuelta atrás y en el historial anterior a
+    /// "Revertir esta respuesta".</summary>
+    public AiToolUndo? Undo { get; set; }
 }

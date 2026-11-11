@@ -232,6 +232,10 @@ public sealed partial class SettingsViewModel
     [ObservableProperty]
     private bool _aiAllowReadAccessByDefault;
 
+    /// <summary>Enseñar en el chat los tokens de cada respuesta y el total de la conversación.</summary>
+    [ObservableProperty]
+    private bool _aiShowUsage;
+
     [ObservableProperty]
     private bool _isClearAiHistoryConfirmOpen;
 
@@ -298,6 +302,7 @@ public sealed partial class SettingsViewModel
             AiConfirmBeforeSending = ai.ConfirmBeforeSendingContext;
             AiAllowVaultChanges = ai.AllowVaultChanges;
             AiAllowReadAccessByDefault = ai.AllowReadAccessByDefault;
+            AiShowUsage = ai.ShowUsage;
         }
         finally
         {
@@ -436,6 +441,15 @@ public sealed partial class SettingsViewModel
     {
         if (_loadingAiSettings) return;
         _settingsService.Settings.Ai.ConfirmBeforeSendingContext = value;
+        _settingsService.Save();
+    }
+
+    /// <summary>Se aplica en caliente: el chat abierto deja de enseñar (o vuelve a enseñar) las cifras, que se
+    /// siguen guardando con cada respuesta.</summary>
+    partial void OnAiShowUsageChanged(bool value)
+    {
+        if (_loadingAiSettings) return;
+        _settingsService.Settings.Ai.ShowUsage = value;
         _settingsService.Save();
     }
 

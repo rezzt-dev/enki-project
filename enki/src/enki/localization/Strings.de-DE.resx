@@ -8425,4 +8425,130 @@ Viel Erfolg beim Schreiben.</value>
   <data name="Kanban_Links_Duplicate" xml:space="preserve">
     <value>Diese Aufgabe hat diesen Link bereits.</value>
   </data>
+  <data name="Assistant_Tool_open_note" xml:space="preserve">
+    <value>Notiz öffnen</value>
+  </data>
+  <data name="Assistant_Tool_open_kanban_board" xml:space="preserve">
+    <value>Kanban-Board öffnen</value>
+  </data>
+  <data name="Assistant_Tool_open_section" xml:space="preserve">
+    <value>Zum Bereich wechseln</value>
+  </data>
+  <data name="Assistant_Tool_search_help" xml:space="preserve">
+    <value>Im Enki-Handbuch nachschlagen</value>
+  </data>
+  <data name="Assistant_Tool_list_habits" xml:space="preserve">
+    <value>Gewohnheiten lesen</value>
+  </data>
+  <data name="Assistant_Tool_set_habit_done" xml:space="preserve">
+    <value>Gewohnheit abhaken</value>
+  </data>
+  <data name="Assistant_Tool_get_daily_note" xml:space="preserve">
+    <value>Tagesnotiz lesen</value>
+  </data>
+  <data name="Assistant_Tool_append_to_daily_note" xml:space="preserve">
+    <value>Zur Tagesnotiz hinzufügen</value>
+  </data>
+  <data name="Assistant_Tool_list_note_templates" xml:space="preserve">
+    <value>Notizvorlagen auflisten</value>
+  </data>
+  <data name="Assistant_Tool_create_note_from_template" xml:space="preserve">
+    <value>Notiz aus Vorlage erstellen</value>
+  </data>
+  <data name="Assistant_Help_Shortcuts" xml:space="preserve">
+    <value>Tastenkürzel</value>
+  </data>
+  <data name="Assistant_Help_ShortcutsHint" xml:space="preserve">
+    <value>Das sind die aktuellen Tastenkürzel des Nutzers. Sie lassen sich unter Einstellungen › Tastenkürzel ändern.</value>
+  </data>
+  <data name="Assistant_Usage_Message" xml:space="preserve">
+    <value>{0} Eingabe-Tokens · {1} Ausgabe</value>
+  </data>
+  <data name="Assistant_Usage_MessageCost" xml:space="preserve">
+    <value>{0} Eingabe-Tokens · {1} Ausgabe · {2}</value>
+  </data>
+  <data name="Assistant_Usage_Chat" xml:space="preserve">
+    <value>Chat gesamt: {0} Eingabe-Tokens · {1} Ausgabe</value>
+  </data>
+  <data name="Assistant_Usage_ChatCost" xml:space="preserve">
+    <value>Chat gesamt: {0} Eingabe-Tokens · {1} Ausgabe · {2}</value>
+  </data>
+  <data name="Settings_Ai_Usage_Label" xml:space="preserve">
+    <value>Token-Verbrauch anzeigen</value>
+  </data>
+  <data name="Settings_Ai_Usage_Description" xml:space="preserve">
+    <value>Zeigt die Tokens jeder Antwort und die Summe des Chats, wenn der Anbieter sie meldet, sowie die Kosten, wenn du mit deinem eigenen API-Schlüssel zahlst. Gespeichert werden nur Zahlen, nie Inhalte.</value>
+  </data>
+  <data name="Assistant_Undo_Action" xml:space="preserve">
+    <value>Diese Antwort rückgängig machen</value>
+  </data>
+  <data name="Assistant_Undo_Tooltip" xml:space="preserve">
+    <value>Macht rückgängig, was der Assistent in dieser Antwort geändert hat. Was du danach bearbeitet hast, bleibt unberührt.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Message" xml:space="preserve">
+    <value>Was der Assistent in dieser Antwort geändert hat, wird rückgängig gemacht.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Hint" xml:space="preserve">
+    <value>Notizen kehren zu ihrer vorherigen Version zurück, Erstelltes wandert in den Papierkorb, Verschobenes oder Gelöschtes kommt an seinen Platz zurück. Was du danach bearbeitet hast, bleibt, wie es ist.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Action" xml:space="preserve">
+    <value>Rückgängig machen</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_one" xml:space="preserve">
+    <value>{0} Aktion kann rückgängig gemacht werden</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_other" xml:space="preserve">
+    <value>{0} Aktionen können rückgängig gemacht werden</value>
+  </data>
+  <data name="Assistant_Undo_Reverted" xml:space="preserve">
+    <value>Rückgängig gemacht</value>
+  </data>
+  <data name="Assistant_Undo_Reason_ChangedSince" xml:space="preserve">
+    <value>Nicht rückgängig gemacht: wurde danach bearbeitet</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Missing" xml:space="preserve">
+    <value>Nicht rückgängig gemacht: existiert nicht mehr</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Locked" xml:space="preserve">
+    <value>Nicht rückgängig gemacht: die Sitzung ist gesperrt</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Occupied" xml:space="preserve">
+    <value>Nicht rückgängig gemacht: der Platz ist belegt</value>
+  </data>
+  <data name="Assistant_Undo_Reason_HistoryMissing" xml:space="preserve">
+    <value>Nicht rückgängig gemacht: die vorherige Version ist nicht mehr im Verlauf</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Busy" xml:space="preserve">
+    <value>Nicht rückgängig gemacht: die Notiz hat ungespeicherte Änderungen oder einen offenen Konflikt</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Failed" xml:space="preserve">
+    <value>Nicht rückgängig gemacht: der Vorgang ist fehlgeschlagen</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Title" xml:space="preserve">
+    <value>Antwort rückgängig gemacht</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Failed_Title" xml:space="preserve">
+    <value>Die Antwort konnte nicht rückgängig gemacht werden</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_one" xml:space="preserve">
+    <value>{0} Aktion wurde rückgängig gemacht.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_other" xml:space="preserve">
+    <value>{0} Aktionen wurden rückgängig gemacht.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_one" xml:space="preserve">
+    <value>{0} Aktion blieb unberührt, weil sie sich danach geändert hat oder nicht mehr vorhanden ist; den Grund zeigt die Antwort.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_other" xml:space="preserve">
+    <value>{0} Aktionen blieben unberührt, weil sie sich danach geändert haben oder nicht mehr vorhanden sind; die Gründe zeigt die Antwort.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_one" xml:space="preserve">
+    <value>{0} Aktion lässt sich von hier aus nicht rückgängig machen und bleibt bestehen.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_other" xml:space="preserve">
+    <value>{0} Aktionen lassen sich von hier aus nicht rückgängig machen und bleiben bestehen.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Nothing" xml:space="preserve">
+    <value>Es gab nichts mehr rückgängig zu machen.</value>
+  </data>
 </root>

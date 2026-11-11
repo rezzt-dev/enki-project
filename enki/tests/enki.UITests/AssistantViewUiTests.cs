@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -64,7 +65,8 @@ public sealed class AssistantViewUiTests : IDisposable
     }
 
     private (AssistantView View, AssistantViewModel Vm, Window Window, AiChatService Chats) Create(string cliPath,
-        Action<AiChatService, SettingsService>? seed = null, Func<SettingsService, VaultService, EnkiMcpServer>? vaultTools = null)
+        Action<AiChatService, SettingsService>? seed = null, Func<SettingsService, VaultService, EnkiMcpServer>? vaultTools = null,
+        Func<IReadOnlyList<AiToolActivity>, AiRevertReport>? revertActivities = null)
     {
         var settings = new SettingsService(_directory);
         settings.Settings.Ai.ClaudeCliPath = cliPath;
@@ -76,7 +78,7 @@ public sealed class AssistantViewUiTests : IDisposable
         seed?.Invoke(chats, settings);
         var cli = new ClaudeCliService(settings, _directory);
         var vm = new AssistantViewModel(cli, chats, settings, vault, new NotificationService(settings, _directory),
-            vaultTools: vaultTools?.Invoke(settings, vault));
+            vaultTools: vaultTools?.Invoke(settings, vault), revertActivities: revertActivities);
         var view = new AssistantView { DataContext = vm };
         var window = new Window { Content = view, Width = 1280, Height = 860, Background = new SolidColorBrush(Color.Parse("#121212")) };
         window.Show();
@@ -686,6 +688,84 @@ public sealed class AssistantViewUiTests : IDisposable
             window.Close();
         }
     }
+    [Fact]
+    public void RevertAndUsage_ShowOnTheReply_ConfirmFirst_AndExplainWhatWasLeftAlone()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var created = new AiToolActivity
+        {
+            Tool = "create_note", Target = "Plan semanal", State = AiToolActivityState.Succeeded,
+            Undo = new AiToolUndo { Kind = AiUndoKind.NoteCreated, Target = "plan" }
+        };
+        var edited = new AiToolActivity
+        {
+            Tool = "edit_note", Target = "Diario", State = AiToolActivityState.Succeeded,
+            Undo = new AiToolUndo { Kind = AiUndoKind.NoteEdited, Target = "diario" }
+        };
+        SettingsService? appSettings = null;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true), (chats, settings) =>
+        {
+            appSettings = settings;
+            var chat = new AiChatSession { Title = "Organizar" };
+            chat.Messages.Add(new AiChatMessage { Role = AiChatRole.User, Text = "Organiza mis notas" });
+            chat.Messages.Add(new AiChatMessage
+            {
+                Role = AiChatRole.Assistant, Text = "Hecho.", Activities = [created, edited,
+                    new AiToolActivity { Tool = "list_notes", State = AiToolActivityState.Succeeded }],
+                Usage = new AiTokenUsage { InputTokens = 1500, OutputTokens = 80 }
+            });
+            chat.VaultId = VaultId;
+            chats.Save(chat);
+            settings.Settings.Ai.LastChatByVault[VaultId] = chat.Id;
+        }, revertActivities: activities =>
+        {
+            activities[0].Undo!.State = AiUndoState.Reverted;
+            activities[1].Undo!.State = AiUndoState.Skipped;
+            activities[1].Undo!.Reason = AiUndoSkipReason.ChangedSince;
+            return new AiRevertReport(1, 1, 0);
+        });
+        try
+        {
+            var reply = vm.Messages.Last();
+            Button RevertButton() => view.GetVisualDescendants().OfType<Button>()
+                .Single(button => button.Name == "RevertButton" && ReferenceEquals(button.DataContext, reply));
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(RevertButton().IsEffectivelyVisible);
+            var text = RenderedText(view);
+            Assert.Contains(reply.UsageLabel, text);
+            Assert.Contains(vm.ChatUsageLabel, text);
+            Assert.Contains("1,500", reply.UsageLabel);
+            SavePreview(view, "assistant-revert-available");
+
+            RevertButton().Command!.Execute(reply);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.Same(reply, vm.PendingRevertMessage);
+            Assert.Equal(AiUndoState.Available, created.Undo!.State);
+            // El diálogo lo monta el shell (AssistantDialogs), no esta vista: aquí basta con lo que enseñará.
+            Assert.Equal("2 actions can be reverted", vm.PendingRevertSummary);
+
+            vm.ConfirmRevertMessageCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            text = RenderedText(view);
+            Assert.False(RevertButton().IsEffectivelyVisible);
+            Assert.Contains(reply.Activities[0].RevertNote, text);
+            Assert.Contains(reply.Activities[1].RevertNote, text);
+            Assert.NotEqual(reply.Activities[0].RevertNote, reply.Activities[1].RevertNote);
+            Assert.DoesNotContain("[[", text);
+            SavePreview(view, "assistant-revert-done");
+
+            // Ocultar el consumo en Ajustes lo retira de la respuesta y del pie del chat.
+            appSettings!.Settings.Ai.ShowUsage = false;
+            appSettings.Save();
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.DoesNotContain(reply.UsageLabel, RenderedText(view));
+        }
+        finally { window.Close(); }
+    }
+
     [Fact]
     public void ToolActivityAndApproval_RenderInsideTheResponse()
     {

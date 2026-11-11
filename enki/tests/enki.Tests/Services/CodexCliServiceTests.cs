@@ -118,4 +118,17 @@ public sealed class CodexCliServiceTests : IDisposable
         settings.Settings.Ai.CodexCliPath = executable;
         Assert.Equal(ClaudeCliState.Unsupported, (await new CodexCliService(settings, _root).DetectAsync()).State);
     }
+
+    [Fact]
+    public void Parser_ReadsUsageFromTheCompletedTurn_WhenCodexReportsIt()
+    {
+        var parser = new CodexTurnAccumulator(null);
+        parser.OnLine("{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":\"Hola\"}}");
+        parser.OnLine("{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":2400,\"cached_input_tokens\":2000,\"output_tokens\":120}}");
+
+        var usage = parser.Complete(new(0, "", false)).Usage!;
+
+        Assert.Equal((2400, 2000, 120), (usage.InputTokens, usage.CachedInputTokens, usage.OutputTokens));
+        Assert.Null(usage.CostUsd);
+    }
 }

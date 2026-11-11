@@ -286,6 +286,20 @@ public sealed class GeminiApiServiceTests : IDisposable
         Assert.DoesNotContain(Key, File.ReadAllText(Path.Combine(_directory, "settings.json")), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Turn_ReportsUsage_FromTheLastChunk_IncludingThinkingTokens()
+    {
+        using var handler = new Handler(_ => Task.FromResult(Sse(
+            """{"candidates":[{"content":{"role":"model","parts":[{"text":"Ho"}]}}],"usageMetadata":{"promptTokenCount":40,"candidatesTokenCount":1}}""",
+            """{"candidates":[{"content":{"role":"model","parts":[{"text":"la"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":40,"cachedContentTokenCount":10,"candidatesTokenCount":6,"thoughtsTokenCount":20,"totalTokenCount":66}}""")));
+        using var http = new HttpClient(handler);
+
+        var result = await Create(http).RunTurnAsync(new("hi", "system", null, "gemini-2.5-pro"), null, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal((40, 10, 26), (result.Usage!.InputTokens, result.Usage.CachedInputTokens, result.Usage.OutputTokens));
+    }
+
     private static HttpResponseMessage Json(string text) => new(HttpStatusCode.OK)
         { Content = new StringContent(text, Encoding.UTF8, "application/json") };
 

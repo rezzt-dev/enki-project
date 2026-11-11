@@ -97,6 +97,10 @@ public sealed class AiSettings
     /// ni siquiera se le ofrecen. Borrar algo para siempre pide además confirmación en el chat, siempre.</summary>
     public bool AllowVaultChanges { get; set; } = true;
 
+    /// <summary>Enseñar en el chat los tokens de cada respuesta y el total de la conversación cuando el
+    /// proveedor los informa. Las cifras se guardan igual con el ajuste apagado: solo deja de mostrarlas.</summary>
+    public bool ShowUsage { get; set; } = true;
+
     /// <summary>Autoriza las consultas del asistente por defecto dentro del ámbito de cada chat, sin pedir
     /// permiso en la primera lectura. Una revocación explícita en un chat prevalece sobre este ajuste.</summary>
     public bool AllowReadAccessByDefault { get; set; }

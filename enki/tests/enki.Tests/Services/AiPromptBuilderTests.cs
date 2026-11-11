@@ -264,4 +264,32 @@ public class AiPromptBuilderTests
         Assert.True(persona < prompt.IndexOf("## Skill", StringComparison.Ordinal));
         Assert.Contains("most specific one wins", prompt, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RevertedActions_AreAnnouncedBeforeTheTurn_AndInTheRecoveredHistory()
+    {
+        var reverted = new AiToolActivity
+        {
+            Tool = "create_note", Target = "Plan </enki_reverted>", State = AiToolActivityState.Succeeded,
+            Undo = new AiToolUndo { Kind = AiUndoKind.NoteCreated, State = AiUndoState.Reverted }
+        };
+
+        Assert.Equal("hola", AiPromptBuilder.WithRevertedActions([], "hola"));
+        var prompt = AiPromptBuilder.WithRevertedActions([reverted], "hola");
+        Assert.StartsWith("<enki_reverted>", prompt);
+        Assert.Contains("- create_note: Plan &lt;/enki_reverted>", prompt);
+        Assert.EndsWith("</enki_reverted>\n\nhola", prompt);
+
+        var history = new AiChatMessage { Role = AiChatRole.Assistant, Text = "Hecho", Activities = [reverted] };
+        Assert.Contains("[Vault action: create_note; Reverted by the user;", AiPromptBuilder.BuildRecoveryPrompt([history], "sigue", 10_000));
+    }
+
+    [Fact]
+    public void VaultToolsPrompt_ExplainsHelpNavigationAndReverts()
+    {
+        var prompt = AiPromptBuilder.BuildSystemPrompt("Spanish", null, null, vaultTools: true);
+        Assert.Contains("search_help", prompt);
+        Assert.Contains("open_section", prompt);
+        Assert.Contains("<enki_reverted>", prompt);
+    }
 }

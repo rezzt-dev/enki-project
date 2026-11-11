@@ -10,6 +10,12 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- añadir herramientas de navegacion al asistente (`open_note`, `open_kanban_board`, `open_section`) que abren notas, tableros o secciones en la interfaz sin cambiar datos ni pedir confirmacion, respetan el ambito del chat y avisan si la seccion esta desactivada
+- añadir `search_help` y el manual integrado (`help/manual-es.md`, `help/manual-en.md`) para que el asistente conteste «¿como hago x?» con los atajos que el usuario tiene configurados, sin red ni vault
+- añadir herramientas de habitos, nota diaria y plantillas (`list_habits`, `set_habit_done`, `get_daily_note`, `append_to_daily_note`, `list_note_templates`, `create_note_from_template`) que escriben por las rutas comprobadas de siempre
+- mostrar los tokens de cada respuesta y el total del chat cuando el proveedor los informa (claude, codex, gemini y ollama), con el coste solo con clave de api propia y el ajuste `mostrar el uso de tokens`
+- añadir «revertir esta respuesta», que deshace notas, tarjetas, recordatorios y habitos cambiados por el asistente en orden inverso, explica lo que deja como esta y avisa al modelo en el turno siguiente
+- pruebas `AiVaultToolboxAppTests`, `AiVaultToolboxUndoTests` y nuevos casos de proveedores, `AiPromptBuilderTests`, `AssistantViewModelWorkspaceTests` y `AssistantViewUiTests`, textos en los siete recursos de idioma y secciones nuevas en `.docs/project-info/asistente-ia.md`
 - añadir la herramienta `read_file` del asistente (`AiFileReader`) para leer texto, codigo, pdf por paginas, word (`.docx`), powerpoint (`.pptx`), excel (`.xlsx`), opendocument, listados zip e imagenes de la seccion `archivos`, y rechazar audio y video con su motivo
 - reducir el consumo de tokens con texto compacto, hojas como filas separadas por tabuladores con numero de fila y fechas resueltas, tramos con `offset` y `next_offset`, paginas de pdf a elegir, imagenes jpeg de 512 a 1568 px y cache en memoria de la extraccion
 - permitir adjuntar pdf, documentos, hojas de calculo e imagenes al mensaje, enviarlos como texto extraido y dejar que `read_file` abra los adjuntos del turno sin el permiso de consulta del chat
@@ -279,6 +285,12 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- add assistant navigation tools (`open_note`, `open_kanban_board`, `open_section`) that open notes, boards or sections in the interface without changing data or asking for confirmation, respect the chat scope and report disabled sections
+- add `search_help` and the built-in manual (`help/manual-es.md`, `help/manual-en.md`) so the assistant answers «how do i…?» with the user's configured shortcuts, without network or vault access
+- add habit, daily note and template tools (`list_habits`, `set_habit_done`, `get_daily_note`, `append_to_daily_note`, `list_note_templates`, `create_note_from_template`) that write through the existing checked paths
+- show the tokens of each reply and the chat total when the provider reports them (claude, codex, gemini and ollama), with the cost only for your own api key and a `show token usage` setting
+- add «revert this reply», which undoes notes, cards, reminders and habits changed by the assistant in reverse order, explains what it leaves untouched and tells the model on the next turn
+- `AiVaultToolboxAppTests`, `AiVaultToolboxUndoTests` and new provider, `AiPromptBuilderTests`, `AssistantViewModelWorkspaceTests` and `AssistantViewUiTests` cases, strings in the seven language resources and new sections in `.docs/project-info/asistente-ia.md`
 - add the assistant `read_file` tool (`AiFileReader`) to read text, code, pdfs by page, word (`.docx`), powerpoint (`.pptx`), excel (`.xlsx`), opendocument, zip listings and images from the `files` section, and refuse audio and video with a reason
 - reduce token usage with compact text, sheets as tab-separated rows with row numbers and resolved dates, chunks with `offset` and `next_offset`, selectable pdf pages, 512 to 1568 px jpeg images and an in-memory extraction cache
 - allow attaching pdfs, documents, spreadsheets and images to a message, send them as extracted text and let `read_file` open the turn attachments without the chat read permission

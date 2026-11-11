@@ -99,22 +99,7 @@ public sealed partial class AiVaultToolbox
             call =>
             {
                 var (workspace, path) = FindNote(call);
-                var disk = _vault.ReadFromDisk(path) ?? throw NoteNotFound(call.GetText("path"));
-                call.Target(AiToolTargetKind.Note, disk.Note.Title, path);
-                var truncated = disk.Content.Length > MaxNoteChars;
-                if (!truncated) call.Context.CompleteReads[path] = disk.Stamp;
-                return new
-                {
-                    Workspace = WorkspaceKey(workspace),
-                    Path = RelativePath(workspace, path),
-                    disk.Note.Title,
-                    disk.Note.Tags,
-                    Properties = NotePropertyHelper.Extract(disk.Content),
-                    Modified = FormatInstant(disk.Note.ModifiedUtc),
-                    disk.Note.WordCount,
-                    Truncated = truncated,
-                    Content = truncated ? Truncate(disk.Content, MaxNoteChars) : disk.Content
-                };
+                return NoteReading(call, workspace, path);
             });
 
         Register("search_notes", AiToolScope.Content, AiToolEffect.Read,
@@ -172,6 +157,7 @@ public sealed partial class AiVaultToolbox
                 call.Target(AiToolTargetKind.Note, note.Title, note.FullPath);
                 // El modelo acaba de escribir la nota entera: la conoce igual que si la hubiera leído.
                 if (NoteDiskStamps.TryRead(note.FullPath) is { } stamp) call.Context.CompleteReads[note.FullPath] = stamp;
+                call.Undoable(UndoCreatedNote(note.FullPath));
                 return NoteSummary(workspace, note);
             });
 
@@ -245,6 +231,8 @@ public sealed partial class AiVaultToolbox
                 _kanban.RelinkNotePath(path, renamed.FullPath);
                 _host.NoteChanged(path, renamed);
                 call.Target(AiToolTargetKind.Note, Path.GetFileNameWithoutExtension(renamed.FullPath), renamed.FullPath);
+                if (!VaultService.PathsEqual(path, renamed.FullPath))
+                    call.Undoable(new AiToolUndo { Kind = AiUndoKind.NoteMoved, Target = renamed.FullPath, PreviousPath = path });
                 return NoteSummary(workspace, renamed);
             });
 
@@ -273,6 +261,10 @@ public sealed partial class AiVaultToolbox
                     _host.NoteChanged(path, result);
                 }
                 call.Target(AiToolTargetKind.Note, result.Title, result.FullPath);
+                // Una copia es una nota nueva; un traslado se deshace devolviéndola a su carpeta.
+                if (copy) call.Undoable(UndoCreatedNote(result.FullPath));
+                else if (!VaultService.PathsEqual(path, result.FullPath))
+                    call.Undoable(new AiToolUndo { Kind = AiUndoKind.NoteMoved, Target = result.FullPath, PreviousPath = path });
                 return NoteSummary(destinationWorkspace, result);
             });
 
@@ -285,8 +277,12 @@ public sealed partial class AiVaultToolbox
                 var note = _vault.GetNote(path) ?? throw NoteNotFound(call.GetText("path"));
                 call.Target(AiToolTargetKind.Note, note.Title);
                 PrepareNoteChange(path);
+                // La papelera pone un sufijo si ya hay otra con ese nombre: la que aparezca nueva es esta.
+                var trashedBefore = _vault.GetTrashedNotes().Select(n => n.FullPath).ToHashSet(PathComparer);
                 _vault.DeleteNote(note);
                 _host.NoteChanged(path, null);
+                if (_vault.GetTrashedNotes().Select(n => n.FullPath).Where(p => !trashedBefore.Contains(p)).ToList() is [var trashedPath])
+                    call.Undoable(new AiToolUndo { Kind = AiUndoKind.NoteTrashed, Target = trashedPath, PreviousPath = path });
                 return new { Trashed = true, note.Title };
             });
 
@@ -317,6 +313,28 @@ public sealed partial class AiVaultToolbox
             });
     }
 
+    /// <summary>Lo que devuelve la lectura de una nota, y el apunte de que el modelo ya la conoce entera si
+    /// no hubo que recortarla. Común a <c>read_note</c> y <c>get_daily_note</c>.</summary>
+    private object NoteReading(AiToolCall call, AiWorkspace workspace, string path)
+    {
+        var disk = _vault.ReadFromDisk(path) ?? throw NoteNotFound(Path.GetFileNameWithoutExtension(path));
+        call.Target(AiToolTargetKind.Note, disk.Note.Title, path);
+        var truncated = disk.Content.Length > MaxNoteChars;
+        if (!truncated) call.Context.CompleteReads[path] = disk.Stamp;
+        return new
+        {
+            Workspace = WorkspaceKey(workspace),
+            Path = RelativePath(workspace, path),
+            disk.Note.Title,
+            disk.Note.Tags,
+            Properties = NotePropertyHelper.Extract(disk.Content),
+            Modified = FormatInstant(disk.Note.ModifiedUtc),
+            disk.Note.WordCount,
+            Truncated = truncated,
+            Content = truncated ? Truncate(disk.Content, MaxNoteChars) : disk.Content
+        };
+    }
+
     // ===================== Escritura =====================
 
     /// <summary>El único camino por el que el asistente cambia el contenido de una nota: vuelca y comprueba la
@@ -340,24 +358,32 @@ public sealed partial class AiVaultToolbox
         if (!requireCompleteRead) updated = KeepLineEndings(fresh.Content, updated);
         if (updated == fresh.Content) return fresh.Note;
 
-        var (note, stamp) = CommitNoteChange(path, fresh.Note, fresh.Content, fresh.Stamp, updated);
+        var (note, stamp, version) = CommitNoteChange(path, fresh.Note, fresh.Content, fresh.Stamp, updated);
         // Lo que acaba de quedar escrito lo conoce el modelo entero si lo escribió entero o si ya lo había leído.
         if (stamp is { } written && (requireCompleteRead || reads.ContainsKey(path))) reads[path] = written;
         else reads.Remove(path);
         call.Target(AiToolTargetKind.Note, note.Title, path);
+        call.Undoable(new AiToolUndo
+        {
+            Kind = AiUndoKind.NoteEdited,
+            Target = path,
+            VersionId = version.Id,
+            ResultHash = (stamp ?? NoteDiskStamps.TryRead(path))?.ContentHash
+        });
         return note;
     }
 
     /// <summary>Guarda lo que había en el historial de la nota, escribe contra la huella leída y avisa a las
     /// pestañas abiertas. Común a las herramientas y a "Añadir a la nota activa".</summary>
-    private (NoteFile Note, NoteDiskStamp? Stamp) CommitNoteChange(string path, NoteFile current, string previousContent,
-        NoteDiskStamp baseline, string updated)
+    /// <returns>La nota tal como quedó, su huella y la versión del historial que conserva lo que había.</returns>
+    private (NoteFile Note, NoteDiskStamp? Stamp, NoteVersion Previous) CommitNoteChange(string path, NoteFile current,
+        string previousContent, NoteDiskStamp baseline, string updated)
     {
-        _vault.CaptureSnapshotChecked(current, previousContent, NoteVersionTrigger.Assistant);
+        var version = _vault.CaptureSnapshotChecked(current, previousContent, NoteVersionTrigger.Assistant);
         var stamp = _vault.WriteContentChecked(current, updated, baseline);
         var note = _vault.GetNote(path) ?? current;
         _host.NoteChanged(path, note);
-        return (note, stamp);
+        return (note, stamp, version);
     }
 
     private static string KeepLineEndings(string original, string updated) =>
@@ -375,7 +401,7 @@ public sealed partial class AiVaultToolbox
         var fresh = _vault.ReadFromDisk(path) ?? throw new FileNotFoundException(null, path);
         if (!string.Equals(fresh.Stamp.ContentHash, baseline.ContentHash, StringComparison.Ordinal))
             throw new ExternalModificationException(path, VaultExternalChangeKind.Modified);
-        var (note, _) = CommitNoteChange(path, fresh.Note, fresh.Content, fresh.Stamp,
+        var (note, _, _) = CommitNoteChange(path, fresh.Note, fresh.Content, fresh.Stamp,
             KeepLineEndings(fresh.Content, AppendAtEnd(fresh.Content, text.Trim('\n'))));
         _host.VaultChanged();
         return note;

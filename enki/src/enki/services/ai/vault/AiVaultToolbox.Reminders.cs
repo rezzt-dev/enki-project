@@ -47,6 +47,7 @@ public sealed partial class AiVaultToolbox
                 var reminder = _reminders.Create(title, call.GetText("description") ?? string.Empty, notifyAt, "BellRingOutline",
                     call.GetInteger("duration_minutes", 0, 24 * 60), Recurrence(call) ?? PolarRecurrence.None);
                 call.Target(AiToolTargetKind.Reminder, reminder.Title, reminder.Id);
+                call.Undoable(UndoReminder(AiUndoKind.ReminderCreated, reminder));
                 return ReminderSummary(reminder);
             });
 
@@ -59,9 +60,11 @@ public sealed partial class AiVaultToolbox
             call =>
             {
                 var reminder = Reminder(call);
+                var before = ReminderState(reminder);
                 if (Date(call, "notify_at") is { } notifyAt) _reminders.Reschedule(reminder.Id, notifyAt);
                 if (call.Has("duration_minutes")) _reminders.RescheduleDuration(reminder.Id, call.GetInteger("duration_minutes", 0, 24 * 60));
                 if (call.GetFlag("completed") is { } completed && completed != reminder.IsCompleted) _reminders.ToggleCompleted(reminder.Id);
+                call.Undoable(UndoReminder(AiUndoKind.ReminderChanged, reminder, before));
                 return ReminderSummary(reminder);
             });
 
@@ -72,6 +75,7 @@ public sealed partial class AiVaultToolbox
             {
                 var reminder = Reminder(call);
                 _reminders.Delete(reminder.Id);
+                call.Undoable(new AiToolUndo { Kind = AiUndoKind.ReminderTrashed, Target = reminder.Id });
                 return new { Trashed = true, reminder.Title };
             });
 

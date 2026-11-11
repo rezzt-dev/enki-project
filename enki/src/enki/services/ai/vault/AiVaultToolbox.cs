@@ -22,8 +22,9 @@ public sealed record AiToolOutcome(string Text, bool IsError, IReadOnlyList<AiFi
 
 /// <summary>Todo lo que el asistente puede hacer en el vault, como herramientas que se le sirven por MCP
 /// (<see cref="EnkiMcpServer"/>): leer, buscar, crear y organizar notas, carpetas y archivos; gestionar
-/// sesiones, tarjetas de Kanban, tareas de Polar y recordatorios; consultar la agenda; y recuperar o vaciar
-/// la papelera. Cada herramienta trabaja directamente sobre la entidad real a través de su servicio de
+/// sesiones, tarjetas de Kanban, tareas de Polar y recordatorios; consultar la agenda; marcar hábitos, usar la
+/// nota diaria y las plantillas; recuperar o vaciar la papelera; abrir en la interfaz lo que el usuario pide ver
+/// y consultar el manual de Enki. Cada herramienta trabaja directamente sobre la entidad real a través de su servicio de
 /// siempre (<see cref="VaultService"/>, <see cref="KanbanService"/>, <see cref="PolarTaskService"/>…), con las
 /// mismas reglas que la interfaz: no hay un segundo almacén ni copia de datos para la IA.
 ///
@@ -67,6 +68,9 @@ public sealed partial class AiVaultToolbox
     private readonly AiVaultHost _host;
     private readonly NoteSearchService _search;
     private readonly AiWebService? _web;
+    private readonly HabitService _habits;
+    private readonly NoteTemplateService _templates;
+    private readonly DailyNoteService _dailyNotes;
     private readonly Dictionary<string, AiToolDefinition> _tools = new(StringComparer.Ordinal);
 
     public AiVaultToolbox(
@@ -80,7 +84,10 @@ public sealed partial class AiVaultToolbox
         CalendarAggregationService? calendarAggregationService = null,
         AiVaultHost? host = null,
         SkillService? skillService = null,
-        AiWebService? webService = null)
+        AiWebService? webService = null,
+        HabitService? habitService = null,
+        NoteTemplateService? noteTemplateService = null,
+        VaultSettingsService? vaultSettingsService = null)
     {
         _vault = vaultService;
         _sessions = sessionService;
@@ -94,6 +101,10 @@ public sealed partial class AiVaultToolbox
         _host = host ?? new AiVaultHost();
         _search = new NoteSearchService(vaultService);
         _web = webService;
+        // El de hábitos guarda en memoria lo que leyó: en la app se comparte el de las pantallas.
+        _habits = habitService ?? new HabitService(vaultService);
+        _templates = noteTemplateService ?? new NoteTemplateService(vaultService);
+        _dailyNotes = new DailyNoteService(vaultService, _templates, vaultSettingsService);
 
         RegisterOverviewTools();
         RegisterNoteTools();
@@ -105,6 +116,10 @@ public sealed partial class AiVaultToolbox
         RegisterTrashTools();
         RegisterSkillTools();
         if (_web is not null) RegisterWebTools();
+        RegisterHabitTools();
+        RegisterDailyNoteAndTemplateTools();
+        RegisterNavigationTools();
+        RegisterHelpTools();
     }
 
     /// <summary>Todas las herramientas que existen, se ofrezcan o no en un chat concreto.</summary>
@@ -127,6 +142,7 @@ public sealed partial class AiVaultToolbox
             AiToolScope.Polar => scope.IncludesVault && _polarAuth.IsLinked,
             AiToolScope.Sessions => scope.IncludesVault && scope.FullVaultAccess,
             AiToolScope.Web => context.WebAccess(),
+            AiToolScope.App => true,
             _ => false
         };
     }
@@ -150,9 +166,11 @@ public sealed partial class AiVaultToolbox
         context.Activity?.Touch();
         try
         {
-            // El permiso de consulta es sobre el contenido del vault; la web tiene su propio interruptor.
+            // El permiso de consulta es sobre el contenido del vault; la web tiene su propio interruptor y el manual
+            // y las secciones de la app no leen el vault.
             // Un archivo que el usuario adjuntó a su mensaje ya está compartido: verlo no exige el permiso de consulta.
-            if (tool.Effect == AiToolEffect.Read && tool.Scope != AiToolScope.Web && !IsAttachedFileRead(name, arguments, context)
+            if (tool.Effect == AiToolEffect.Read && tool.Scope is not (AiToolScope.Web or AiToolScope.App)
+                && !IsAttachedFileRead(name, arguments, context)
                 && !await context.ReadAccess.EnsureAsync(request => WaitForUserAsync(context, request)))
                 throw new AiToolException(AiToolErrorKind.ReadDenied,
                     "The user has not allowed this chat to search or read content on its own. Work with what they wrote and attached, "

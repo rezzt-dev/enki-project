@@ -44,6 +44,14 @@
     <AvaloniaResource Include="assets/**" />
   </ItemGroup>
 
+  <!-- Manual de usuario que el asistente consulta con search_help (services/ai/AiHelpService.cs). Va como
+       recurso incrustado y no como AvaloniaResource para poder leerlo sin la plataforma de Avalonia levantada
+       (tests). El nombre lleva guion y no punto antes del idioma: "manual.es.md" se interpretaria como un
+       recurso de la cultura "es" y acabaria en un ensamblado satelite. -->
+  <ItemGroup>
+    <EmbeddedResource Include="help/manual-*.md" LogicalName="enki.help.%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <!-- Lets enki.Tests unit-test PolarSyncService's internal DTO<->model mapping (LWW field application,
        tombstone round-trip) directly, without needing a live Supabase connection. -->
   <ItemGroup>

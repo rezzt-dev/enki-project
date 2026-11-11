@@ -25,6 +25,7 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
             OnPropertyChanged(nameof(HasActivities));
             OnPropertyChanged(nameof(IsThinking));
             OnPropertyChanged(nameof(ActivitiesLabel));
+            OnPropertyChanged(nameof(CanRevert));
         };
     }
 
@@ -42,7 +43,7 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
 
     /// <summary>La respuesta está llegando todavía.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanAct), nameof(IsThinking))]
+    [NotifyPropertyChangedFor(nameof(CanAct), nameof(IsThinking), nameof(CanRevert))]
     private bool _isStreaming;
 
     /// <summary>Hay una respuesta en camino pero aún no ha llegado ni una palabra ni ninguna acción.</summary>
@@ -91,10 +92,38 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
         if (existing is not null)
         {
             existing.Refresh();
+            OnPropertyChanged(nameof(CanRevert));
             return;
         }
         if (!Model.Activities.Contains(activity)) Model.Activities.Add(activity);
         Activities.Add(new AiToolActivityViewModel(activity));
+    }
+
+    // ===================== Revertir y consumo =====================
+
+    /// <summary>Cuántas acciones de esta respuesta se pueden intentar deshacer todavía.</summary>
+    public int RevertibleCount => Activities.Count(a => a.CanRevert);
+
+    /// <summary>"Revertir esta respuesta" tiene algo que hacer: la respuesta terminó y cambió algo recuperable
+    /// que aún no se ha revertido.</summary>
+    public bool CanRevert => IsAssistant && !IsStreaming && RevertibleCount > 0;
+
+    /// <summary>Tras revertir: cada fila enseña si se deshizo o por qué no.</summary>
+    public void RefreshRevertState()
+    {
+        foreach (var activity in Activities) activity.Refresh();
+        OnPropertyChanged(nameof(CanRevert));
+    }
+
+    public bool HasUsage => Model.Usage is { IsEmpty: false };
+
+    /// <summary>"1.234 tokens de entrada · 567 de salida", con el coste si el proveedor lo dio.</summary>
+    public string UsageLabel => Model.Usage is { IsEmpty: false } usage ? AssistantViewModel.FormatUsage(usage, chatTotal: false) : string.Empty;
+
+    public void RefreshUsage()
+    {
+        OnPropertyChanged(nameof(HasUsage));
+        OnPropertyChanged(nameof(UsageLabel));
     }
 
     [ObservableProperty]
@@ -124,6 +153,7 @@ public sealed partial class AiChatMessageViewModel : ObservableObject
         OnPropertyChanged(nameof(TimeLabel));
         OnPropertyChanged(nameof(ActivitiesLabel));
         OnPropertyChanged(nameof(ActivitiesToggleTooltip));
+        OnPropertyChanged(nameof(UsageLabel));
         foreach (var attachment in Attachments) attachment.RefreshLocalizedLabels();
         foreach (var activity in Activities) activity.RefreshLocalizedLabels();
         PendingApproval?.RefreshLocalizedLabels();

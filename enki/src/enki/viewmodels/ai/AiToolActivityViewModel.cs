@@ -34,6 +34,26 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
     public bool CanOpen => IsSucceeded && !string.IsNullOrEmpty(Model.TargetId)
         && Model.TargetKind is AiToolTargetKind.Note or AiToolTargetKind.KanbanCard or AiToolTargetKind.WebPage;
 
+    // ===================== Revertir =====================
+
+    /// <summary>La acción cambió algo que todavía se puede intentar deshacer.</summary>
+    public bool CanRevert => IsSucceeded && Model.Undo is { CanAttempt: true };
+
+    public bool IsReverted => Model.Undo is { State: AiUndoState.Reverted };
+
+    /// <summary>Se intentó revertir y se dejó como estaba.</summary>
+    public bool IsRevertSkipped => Model.Undo is { State: AiUndoState.Skipped };
+
+    public bool HasRevertNote => IsReverted || IsRevertSkipped;
+
+    /// <summary>"Revertida", o por qué no se revirtió, en el idioma vigente.</summary>
+    public string RevertNote => Model.Undo switch
+    {
+        { State: AiUndoState.Reverted } => LocalizationService.Instance["Assistant_Undo_Reverted"],
+        { State: AiUndoState.Skipped, Reason: { } reason } => LocalizationService.Instance["Assistant_Undo_Reason_" + reason],
+        _ => string.Empty
+    };
+
     public MaterialIconKind Icon => Model.TargetKind switch
     {
         AiToolTargetKind.Note => MaterialIconKind.NoteTextOutline,
@@ -46,6 +66,9 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
         AiToolTargetKind.Trash => MaterialIconKind.TrashCanOutline,
         AiToolTargetKind.WebSearch => MaterialIconKind.SearchWeb,
         AiToolTargetKind.WebPage => MaterialIconKind.Web,
+        AiToolTargetKind.Habit => MaterialIconKind.ClipboardCheckOutline,
+        AiToolTargetKind.Section => MaterialIconKind.OpenInApp,
+        AiToolTargetKind.Help => MaterialIconKind.HelpCircleOutline,
         _ => Model.Tool.StartsWith("search", System.StringComparison.Ordinal) ? MaterialIconKind.Magnify : MaterialIconKind.Creation
     };
 
@@ -62,7 +85,16 @@ public sealed partial class AiToolActivityViewModel(AiToolActivity model) : Obse
         OnPropertyChanged(nameof(HasError));
         OnPropertyChanged(nameof(CanOpen));
         OnPropertyChanged(nameof(Icon));
+        OnPropertyChanged(nameof(CanRevert));
+        OnPropertyChanged(nameof(IsReverted));
+        OnPropertyChanged(nameof(IsRevertSkipped));
+        OnPropertyChanged(nameof(HasRevertNote));
+        OnPropertyChanged(nameof(RevertNote));
     }
 
-    public void RefreshLocalizedLabels() => OnPropertyChanged(nameof(Label));
+    public void RefreshLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(Label));
+        OnPropertyChanged(nameof(RevertNote));
+    }
 }

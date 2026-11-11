@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using enki.Localization;
+using enki.Models;
 
 namespace enki.Services;
 
@@ -163,6 +164,9 @@ public sealed class GeminiApiService
         var model = ResolveModel(request.Model);
         if (!IsValidModelId(model)) return new(string.Empty, null, ClaudeFailureKind.ModelUnavailable);
         var text = new StringBuilder();
+        // Cada ronda de herramientas es otra petición a la API: su consumo se suma al del turno, acabe como acabe.
+        AiTokenUsage? usage = null;
+        ClaudeTurnResult Billed(ClaudeTurnResult result) => result with { Usage = usage };
         using var idle = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         void Touch() => idle.CancelAfter(TimeSpan.FromSeconds(_settings.Settings.Ai.IdleTimeoutSeconds));
         try
@@ -204,17 +208,18 @@ public sealed class GeminiApiService
                         round--;
                         continue;
                     }
-                    return error.ToResult(text.ToString());
+                    return Billed(error.ToResult(text.ToString()));
                 }
                 var turn = await ReadStreamAsync(response, text, onEvent, Touch, idle.Token).ConfigureAwait(false);
-                if (turn.Error is { } streamError) return streamError.ToResult(text.ToString());
-                if (turn.Blocked) return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_Gemini_Blocked"]);
+                usage = AiTokenUsage.Add(usage, turn.Usage);
+                if (turn.Error is { } streamError) return Billed(streamError.ToResult(text.ToString()));
+                if (turn.Blocked) return Billed(new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_Gemini_Blocked"]));
                 if (turn.FinishReason is null) throw new JsonException("La respuesta terminó sin finishReason.");
                 if (turn.FinishReason == "MALFORMED_FUNCTION_CALL")
-                    return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_Gemini_RequestFailed"]);
-                if (turn.Calls.Count == 0) return new(text.ToString(), null, ClaudeFailureKind.None);
+                    return Billed(new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_Gemini_RequestFailed"]));
+                if (turn.Calls.Count == 0) return Billed(new(text.ToString(), null, ClaudeFailureKind.None));
                 if (request.Tools is null || turn.Calls.Count > MaxCallsPerRound)
-                    return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]);
+                    return Billed(new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]));
 
                 // Las partes del modelo vuelven tal cual: Gemini exige recibir sus firmas de razonamiento
                 // (thoughtSignature) junto a cada llamada a herramienta.
@@ -246,22 +251,38 @@ public sealed class GeminiApiService
                     results.Add(new JsonObject { ["inlineData"] = new JsonObject { ["mimeType"] = image.MimeType, ["data"] = image.Base64 } });
                 contents.Add(UserContent(results));
             }
-            return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]);
+            return Billed(new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_ToolLimit"]));
         }
         catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
         {
-            return new(text.ToString(), null, ClaudeFailureKind.Timeout);
+            return Billed(new(text.ToString(), null, ClaudeFailureKind.Timeout));
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException or InvalidOperationException or FormatException)
         {
-            return new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_Gemini_RequestFailed"]);
+            return Billed(new(text.ToString(), null, ClaudeFailureKind.Failed, LocalizationService.Instance["Ai_Gemini_RequestFailed"]));
         }
     }
 
     private static JsonObject UserContent(JsonArray parts) =>
         new() { ["role"] = "user", ["parts"] = parts };
 
-    private sealed record StreamedTurn(JsonArray Parts, List<JsonObject> Calls, string? FinishReason, bool Blocked, GeminiApiError? Error);
+    private sealed record StreamedTurn(JsonArray Parts, List<JsonObject> Calls, string? FinishReason, bool Blocked, GeminiApiError? Error,
+        AiTokenUsage? Usage = null);
+
+    /// <summary>Consumo de una respuesta (<c>usageMetadata</c>). Cada fragmento trae el acumulado, así que vale
+    /// el último. La salida incluye los tokens de razonamiento, que también se facturan.</summary>
+    private static AiTokenUsage? ReadUsage(JsonNode? metadata)
+    {
+        if (metadata is not JsonObject) return null;
+        static long Read(JsonNode? node) => node is JsonValue value && value.TryGetValue<long>(out var number) && number > 0 ? number : 0;
+        var result = new AiTokenUsage
+        {
+            InputTokens = Read(metadata["promptTokenCount"]),
+            OutputTokens = Read(metadata["candidatesTokenCount"]) + Read(metadata["thoughtsTokenCount"]),
+            CachedInputTokens = Read(metadata["cachedContentTokenCount"])
+        };
+        return result.IsEmpty ? null : result;
+    }
 
     /// <summary>Lee una respuesta SSE (<c>data: {GenerateContentResponse}</c> por evento). Solo el texto que no es
     /// razonamiento se enseña; todas las partes se conservan para devolverlas al modelo.</summary>
@@ -274,6 +295,7 @@ public sealed class GeminiApiService
         var calls = new List<JsonObject>();
         string? finishReason = null;
         var blocked = false;
+        AiTokenUsage? usage = null;
         // Entre rondas de herramientas el texto se separa en párrafos, como hace Codex entre mensajes.
         var needsSeparator = text.Length > 0;
         while (await reader.ReadLineAsync(cancellation).ConfigureAwait(false) is { } line)
@@ -283,7 +305,8 @@ public sealed class GeminiApiService
             var payload = line[5..].Trim();
             if (payload.Length == 0) continue;
             var chunk = JsonNode.Parse(payload)?.AsObject() ?? throw new JsonException();
-            if (chunk["error"] is JsonObject error) return new(parts, calls, finishReason, blocked, GeminiApiError.From(error, null));
+            if (chunk["error"] is JsonObject error) return new(parts, calls, finishReason, blocked, GeminiApiError.From(error, null), usage);
+            usage = ReadUsage(chunk["usageMetadata"]) ?? usage;
             if (chunk["promptFeedback"]?["blockReason"] is not null) blocked = true;
             if (chunk["candidates"]?.AsArray().FirstOrDefault() is not JsonObject candidate) continue;
             foreach (var part in candidate["content"]?["parts"]?.AsArray() ?? [])
@@ -308,7 +331,7 @@ public sealed class GeminiApiService
             }
         }
         if (blocked && finishReason is null) finishReason = "SAFETY";
-        return new(parts, calls, finishReason, blocked, null);
+        return new(parts, calls, finishReason, blocked, null, usage);
     }
 }
 

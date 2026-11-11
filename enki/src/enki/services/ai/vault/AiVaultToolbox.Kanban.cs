@@ -110,6 +110,7 @@ public sealed partial class AiVaultToolbox
                 ValidateCardDates(card);
                 _kanban.CreateCard(board.Id, column.Id, card);
                 call.Target(AiToolTargetKind.KanbanCard, card.Title, card.Id);
+                call.Undoable(UndoCard(AiUndoKind.KanbanCardCreated, card.Id));
                 return CardSummary(call.Context.Scope, card, includeDescription: true);
             });
 
@@ -143,8 +144,10 @@ public sealed partial class AiVaultToolbox
                     Links = [.. card.Links]
                 };
                 ValidateCardDates(draft);
+                var before = CardState(card.Id);
                 _kanban.SaveCardEdits(card.Id, location.Column.Id, draft);
                 call.Target(AiToolTargetKind.KanbanCard, card.Title, card.Id);
+                call.Undoable(UndoCard(AiUndoKind.KanbanCardChanged, card.Id, before));
                 return CardSummary(call.Context.Scope, card, includeDescription: true);
             });
 
@@ -159,7 +162,9 @@ public sealed partial class AiVaultToolbox
                 var location = Card(call);
                 var board = call.Has("board") ? Board(call) : location.Board;
                 var column = Column(board, call.RequireText("column"));
+                var before = CardState(location.Card.Id);
                 _kanban.MoveCardToBoard(location.Card.Id, board.Id, column.Id, call.GetText("before_card_id"));
+                call.Undoable(UndoCard(AiUndoKind.KanbanCardChanged, location.Card.Id, before));
                 return CardSummary(call.Context.Scope, location.Card, includeDescription: false);
             });
 
@@ -172,7 +177,9 @@ public sealed partial class AiVaultToolbox
                 var archive = call.GetFlag("archived") ?? true;
                 if (archive && location.Column.Role != CoreColumnRole.Done)
                     throw AiToolCall.Invalid("Only cards in the done column can be archived. Move it there first.");
+                var before = CardState(location.Card.Id);
                 _kanban.SetCardArchived(location.Card.Id, archive);
+                call.Undoable(UndoCard(AiUndoKind.KanbanCardChanged, location.Card.Id, before));
                 return CardSummary(call.Context.Scope, location.Card, includeDescription: false);
             });
 
@@ -182,7 +189,9 @@ public sealed partial class AiVaultToolbox
             call =>
             {
                 var location = Card(call);
+                var before = CardState(location.Card.Id);
                 _kanban.TrashCard(location.Card.Id);
+                call.Undoable(new AiToolUndo { Kind = AiUndoKind.KanbanCardTrashed, Target = location.Card.Id, Previous = before });
                 call.Target(AiToolTargetKind.KanbanCard, location.Card.Title);
                 return new { Trashed = true, location.Card.Title };
             });

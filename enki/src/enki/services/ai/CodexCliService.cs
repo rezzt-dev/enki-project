@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using enki.Localization;
+using enki.Models;
 
 namespace enki.Services;
 
@@ -149,6 +150,7 @@ internal sealed class CodexTurnAccumulator(Action<ClaudeStreamEvent>? onEvent)
     private readonly StringBuilder _text = new();
     private bool _completed;
     private string? _error;
+    private AiTokenUsage? _usage;
     public string Text => _text.ToString();
 
     public void OnLine(string line)
@@ -166,7 +168,10 @@ internal sealed class CodexTurnAccumulator(Action<ClaudeStreamEvent>? onEvent)
                     _text.Append(delta);
                     onEvent?.Invoke(new ClaudeTextDelta(delta));
                     break;
-                case "turn.completed": _completed = true; break;
+                case "turn.completed":
+                    _completed = true;
+                    _usage = ParseUsage(root);
+                    break;
                 case "turn.failed":
                     _error = root.TryGetProperty("error", out var error) ? error.ToString() : "failed";
                     break;
@@ -178,10 +183,26 @@ internal sealed class CodexTurnAccumulator(Action<ClaudeStreamEvent>? onEvent)
         catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException) { }
     }
 
+    /// <summary>Consumo que Codex informa al cerrar el turno. Su entrada ya incluye lo leído de la caché.</summary>
+    private static AiTokenUsage? ParseUsage(JsonElement root)
+    {
+        if (!root.TryGetProperty("usage", out var usage) || usage.ValueKind != JsonValueKind.Object) return null;
+        static long Read(JsonElement element, string name) =>
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number)
+                && number > 0 ? number : 0;
+        var result = new AiTokenUsage
+        {
+            InputTokens = Read(usage, "input_tokens"),
+            OutputTokens = Read(usage, "output_tokens"),
+            CachedInputTokens = Read(usage, "cached_input_tokens")
+        };
+        return result.IsEmpty ? null : result;
+    }
+
     public ClaudeTurnResult Complete(CliProcessResult result)
     {
         if (result.TimedOut) return new(Text, null, ClaudeFailureKind.Timeout);
-        if (result.ExitCode == 0 && _completed) return new(Text, null, ClaudeFailureKind.None);
+        if (result.ExitCode == 0 && _completed) return new(Text, null, ClaudeFailureKind.None, Usage: _usage);
         var error = (_error ?? string.Empty) + result.StandardError;
         var failure = error.Contains("429", StringComparison.OrdinalIgnoreCase) || error.Contains("usage limit", StringComparison.OrdinalIgnoreCase)
             || error.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ? ClaudeFailureKind.RateLimited

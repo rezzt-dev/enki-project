@@ -2843,7 +2843,7 @@
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_Chat_Title Settings_Ai_Model_Label Settings_Ai_Model_Description
                               Settings_Ai_Timeout_Label Settings_Ai_Timeout_Description Settings_Ai_Context_Label
-                              Settings_Ai_Context_Description Settings_Ai_Confirm_Label Settings_Ai_Confirm_Description">
+                              Settings_Ai_Context_Description Settings_Ai_Confirm_Label Settings_Ai_Confirm_Description Settings_Ai_Usage_Label Settings_Ai_Usage_Description">
               <Border Classes="card" Padding="22" IsEnabled="{Binding AiEnabled}">
                 <StackPanel Spacing="16">
                   <StackPanel Orientation="Horizontal" Spacing="9">
@@ -2889,6 +2889,14 @@
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding AiConfirmBeforeSending}" OnContent="" OffContent=""
                                   AutomationProperties.Name="{loc:Tr Settings_Ai_Confirm_Label}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
+                      <TextBlock Text="{loc:Tr Settings_Ai_Usage_Label}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Ai_Usage_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AiShowUsage}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Ai_Usage_Label}" />
                   </Grid>
                 </StackPanel>
               </Border>

@@ -8425,4 +8425,130 @@ Feliz escritura.</value>
   <data name="Kanban_Links_Duplicate" xml:space="preserve">
     <value>Esta tarea ya tiene ese enlace.</value>
   </data>
+  <data name="Assistant_Tool_open_note" xml:space="preserve">
+    <value>Abrir nota</value>
+  </data>
+  <data name="Assistant_Tool_open_kanban_board" xml:space="preserve">
+    <value>Abrir tablero de Kanban</value>
+  </data>
+  <data name="Assistant_Tool_open_section" xml:space="preserve">
+    <value>Ir a la sección</value>
+  </data>
+  <data name="Assistant_Tool_search_help" xml:space="preserve">
+    <value>Consultar el manual de Enki</value>
+  </data>
+  <data name="Assistant_Tool_list_habits" xml:space="preserve">
+    <value>Consultar hábitos</value>
+  </data>
+  <data name="Assistant_Tool_set_habit_done" xml:space="preserve">
+    <value>Marcar hábito</value>
+  </data>
+  <data name="Assistant_Tool_get_daily_note" xml:space="preserve">
+    <value>Leer nota diaria</value>
+  </data>
+  <data name="Assistant_Tool_append_to_daily_note" xml:space="preserve">
+    <value>Añadir a la nota diaria</value>
+  </data>
+  <data name="Assistant_Tool_list_note_templates" xml:space="preserve">
+    <value>Listar plantillas de notas</value>
+  </data>
+  <data name="Assistant_Tool_create_note_from_template" xml:space="preserve">
+    <value>Crear nota desde plantilla</value>
+  </data>
+  <data name="Assistant_Help_Shortcuts" xml:space="preserve">
+    <value>Atajos de teclado</value>
+  </data>
+  <data name="Assistant_Help_ShortcutsHint" xml:space="preserve">
+    <value>Estos son los atajos actuales del usuario. Se cambian en Ajustes › Atajos de teclado.</value>
+  </data>
+  <data name="Assistant_Usage_Message" xml:space="preserve">
+    <value>{0} tokens de entrada · {1} de salida</value>
+  </data>
+  <data name="Assistant_Usage_MessageCost" xml:space="preserve">
+    <value>{0} tokens de entrada · {1} de salida · {2}</value>
+  </data>
+  <data name="Assistant_Usage_Chat" xml:space="preserve">
+    <value>Total del chat: {0} tokens de entrada · {1} de salida</value>
+  </data>
+  <data name="Assistant_Usage_ChatCost" xml:space="preserve">
+    <value>Total del chat: {0} tokens de entrada · {1} de salida · {2}</value>
+  </data>
+  <data name="Settings_Ai_Usage_Label" xml:space="preserve">
+    <value>Mostrar el uso de tokens</value>
+  </data>
+  <data name="Settings_Ai_Usage_Description" xml:space="preserve">
+    <value>Enseña los tokens de cada respuesta y el total del chat cuando el proveedor los informa, y el coste cuando pagas con tu propia clave de API. Solo se guardan cifras, nunca contenido.</value>
+  </data>
+  <data name="Assistant_Undo_Action" xml:space="preserve">
+    <value>Revertir esta respuesta</value>
+  </data>
+  <data name="Assistant_Undo_Tooltip" xml:space="preserve">
+    <value>Deshace lo que el asistente cambió en esta respuesta. Lo que hayas editado después no se toca.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Message" xml:space="preserve">
+    <value>Se deshará lo que el asistente cambió en esta respuesta.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Hint" xml:space="preserve">
+    <value>Las notas vuelven a su versión anterior, lo creado va a la papelera y lo movido o borrado vuelve a su sitio. Lo que hayas editado después se deja como está.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Action" xml:space="preserve">
+    <value>Revertir</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_one" xml:space="preserve">
+    <value>{0} acción se puede revertir</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_other" xml:space="preserve">
+    <value>{0} acciones se pueden revertir</value>
+  </data>
+  <data name="Assistant_Undo_Reverted" xml:space="preserve">
+    <value>Revertida</value>
+  </data>
+  <data name="Assistant_Undo_Reason_ChangedSince" xml:space="preserve">
+    <value>No revertida: se editó después</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Missing" xml:space="preserve">
+    <value>No revertida: ya no existe</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Locked" xml:space="preserve">
+    <value>No revertida: la sesión está bloqueada</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Occupied" xml:space="preserve">
+    <value>No revertida: su sitio está ocupado</value>
+  </data>
+  <data name="Assistant_Undo_Reason_HistoryMissing" xml:space="preserve">
+    <value>No revertida: la versión anterior ya no está en el historial</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Busy" xml:space="preserve">
+    <value>No revertida: la nota tiene cambios sin guardar o un conflicto pendiente</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Failed" xml:space="preserve">
+    <value>No revertida: la operación falló</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Title" xml:space="preserve">
+    <value>Respuesta revertida</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Failed_Title" xml:space="preserve">
+    <value>No se pudo revertir la respuesta</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_one" xml:space="preserve">
+    <value>Se ha revertido {0} acción.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_other" xml:space="preserve">
+    <value>Se han revertido {0} acciones.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_one" xml:space="preserve">
+    <value>{0} acción se ha dejado como estaba porque cambió después o ya no existe; el motivo está en la respuesta.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_other" xml:space="preserve">
+    <value>{0} acciones se han dejado como estaban porque cambiaron después o ya no existen; el motivo está en la respuesta.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_one" xml:space="preserve">
+    <value>{0} acción no se puede revertir desde aquí y sigue como está.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_other" xml:space="preserve">
+    <value>{0} acciones no se pueden revertir desde aquí y siguen como están.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Nothing" xml:space="preserve">
+    <value>No quedaba nada que revertir.</value>
+  </data>
 </root>

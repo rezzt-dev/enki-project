@@ -22,7 +22,7 @@ namespace enki.ViewModels;
 /// lateral que se abre junto a cualquier otra sección—, así que cambiar de una a otra conserva chat, borrador,
 /// adjuntos, permisos y respuesta en curso. Este archivo lleva el estado del CLI, el historial y la
 /// conversación abierta; el resto vive en sus parciales (<c>.Composer</c>, <c>.Scope</c>, <c>.Drafts</c>,
-/// <c>.Vault</c>, <c>.Activity</c>, <c>.NoteInsert</c>, <c>.Effort</c>). Ver
+/// <c>.Vault</c>, <c>.Activity</c>, <c>.NoteInsert</c>, <c>.Effort</c>, <c>.Undo</c>, <c>.Usage</c>). Ver
 /// <c>.docs/project-info/asistente-ia.md</c>.</summary>
 public sealed partial class AssistantViewModel : ViewModelBase
 {
@@ -76,8 +76,10 @@ public sealed partial class AssistantViewModel : ViewModelBase
         Func<bool>? isVisible = null,
         Func<bool>? isPolarLinked = null,
         Func<bool, string?>? vaultIdentity = null,
-        Func<string, string, NoteDiskStamp, NoteFile>? appendToNote = null)
+        Func<string, string, NoteDiskStamp, NoteFile>? appendToNote = null,
+        Func<IReadOnlyList<AiToolActivity>, AiRevertReport>? revertActivities = null)
     {
+        _revertActivities = revertActivities;
         _vaultIdentity = vaultIdentity ?? (_ => VaultSettingsService.PathIdentity(vaultService.VaultPath));
         _appendToNote = appendToNote;
         _vaultTools = vaultTools;
@@ -111,6 +113,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         _chats.ChatsChanged += () => _dispatch(OnChatsChanged);
         _chats.Persona.PersonaChanged += () => _dispatch(RefreshPersona);
         _settingsService.SettingsChanged += () => _dispatch(RefreshScope);
+        _settingsService.SettingsChanged += () => _dispatch(RefreshUsage);
 
         Messages.CollectionChanged += (_, _) => RefreshConversationState();
         PendingAttachments.CollectionChanged += (_, _) => RefreshComposerState();
@@ -603,6 +606,7 @@ public sealed partial class AssistantViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanPickSkill));
         OnPropertyChanged(nameof(CanChangeWorkspace));
         RefreshPersona();
+        RefreshUsage();
     }
 
     private void RefreshConversationState()
@@ -666,6 +670,8 @@ public sealed partial class AssistantViewModel : ViewModelBase
         RefreshActivityLocalizedLabels();
         OnPropertyChanged(nameof(RetryLabel));
         OnPropertyChanged(nameof(DraftNotice));
+        OnPropertyChanged(nameof(PendingRevertSummary));
+        RefreshUsage();
         foreach (var session in Sessions) session.RefreshLocalizedLabels();
         foreach (var message in Messages) message.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(EffortLabel));

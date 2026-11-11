@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -387,5 +388,131 @@ public sealed class AssistantViewModelWorkspaceTests : IDisposable
         _settings.Settings.Ai.WebAccessForNewChats = false;
         vm.NewChatCommand.Execute(null);
         Assert.False(vm.WebAccessEnabled);
+    }
+
+    // ===================== Uso y coste =====================
+
+    private static IEnumerable<string> ReplyWithUsage(string sessionId, string text, int input, int output, string cost) =>
+        FakeClaudeCli.ReplyLines(sessionId, text).SkipLast(1).Append(
+            $$$"""{"type":"result","subtype":"success","is_error":false,"result":"{{{text}}}","session_id":"{{{sessionId}}}","total_cost_usd":{{{cost}}},"usage":{"input_tokens":{{{input}}},"output_tokens":{{{output}}}}}""");
+
+    [Fact]
+    public async Task Usage_IsShownPerReplyAndPerChat_WithoutCostOnASubscription_AndCanBeHidden()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var vm = await CreateAsync();
+        Assert.False(vm.HasChatUsage);
+
+        _fake.Output(ReplyWithUsage("s1", "Uno", 1200, 34, "0.05"));
+        await SendAsync(vm, "Primera");
+        _fake.Output(ReplyWithUsage("s1", "Dos", 800, 66, "0.02"));
+        await SendAsync(vm, "Segunda");
+
+        var reply = vm.Messages[1];
+        Assert.True(reply.HasUsage);
+        Assert.Equal("1,200 input tokens · 34 output", reply.UsageLabel);
+        // Con la suscripción el CLI estima un coste que nadie paga por respuesta: no se guarda ni se enseña.
+        Assert.Null(reply.Model.Usage!.CostUsd);
+        Assert.True(vm.HasChatUsage);
+        Assert.Equal("Chat total: 2,000 input tokens · 100 output", vm.ChatUsageLabel);
+        Assert.False(vm.Messages[0].HasUsage);
+
+        // Solo cifras, y sobreviven a recargar el historial.
+        var saved = new AiChatService(_storageDirectory).Sessions.Single();
+        Assert.Equal(34, saved.Messages[1].Usage!.OutputTokens);
+
+        _settings.Settings.Ai.ShowUsage = false;
+        _settings.Save();
+        Assert.False(vm.ShowUsage);
+        Assert.False(vm.HasChatUsage);
+
+        vm.NewChatCommand.Execute(null);
+        Assert.Equal(string.Empty, vm.ChatUsageLabel);
+    }
+
+    [Fact]
+    public async Task Usage_ProviderWithoutFigures_ShowsNothing()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var vm = await CreateAsync();
+        _fake.Reply("s1", "Hola");
+        await SendAsync(vm, "Hola");
+        Assert.False(vm.Messages[1].HasUsage);
+        Assert.Equal(string.Empty, vm.Messages[1].UsageLabel);
+        Assert.False(vm.HasChatUsage);
+    }
+
+    // ===================== Revertir una respuesta =====================
+
+    [Fact]
+    public async Task Revert_AsksFirst_MarksEachAction_SavesTheChat_AndTellsTheModelOnce()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var done = new AiToolActivity
+        {
+            Tool = "create_note", Target = "Plan", State = AiToolActivityState.Succeeded,
+            Undo = new AiToolUndo { Kind = AiUndoKind.NoteCreated, Target = "x" }
+        };
+        var edited = new AiToolActivity
+        {
+            Tool = "edit_note", Target = "Otra", State = AiToolActivityState.Succeeded,
+            Undo = new AiToolUndo { Kind = AiUndoKind.NoteEdited, Target = "y" }
+        };
+        IReadOnlyList<AiToolActivity>? asked = null;
+        _settings = new SettingsService(_storageDirectory);
+        _settings.Settings.Ai.ClaudeCliPath = _fake.ExecutablePath;
+        _settings.Settings.Ai.ConsentAcceptedUtc = DateTime.UtcNow;
+        _settings.Settings.Ai.Enabled = true;
+        _vault = new VaultService(_settings);
+        _vault.InitializeVault(Path.Combine(_storageDirectory, "vault"), seedWelcomeNote: false);
+        _chats = new AiChatService(_storageDirectory);
+        var notifications = new NotificationService(_settings, Path.Combine(_storageDirectory, "notifications"));
+        var vm = new AssistantViewModel(new ClaudeCliService(_settings, _storageDirectory), _chats, _settings, _vault, notifications,
+            dispatch: action => action(), vaultIdentity: _ => _vaultId,
+            revertActivities: activities =>
+            {
+                asked = activities;
+                done.Undo!.State = AiUndoState.Reverted;
+                edited.Undo!.State = AiUndoState.Skipped;
+                edited.Undo.Reason = AiUndoSkipReason.ChangedSince;
+                return new AiRevertReport(1, 1, 0);
+            });
+        await vm.Cli.RefreshAsync();
+        _fake.Reply("s1", "Hecho");
+        await SendAsync(vm, "Crea un plan");
+        var reply = vm.Messages[1];
+        reply.ReportActivity(done);
+        reply.ReportActivity(edited);
+        Assert.True(reply.CanRevert);
+        Assert.Equal(2, reply.RevertibleCount);
+
+        vm.RequestRevertMessageCommand.Execute(reply);
+        Assert.Same(reply, vm.PendingRevertMessage);
+        Assert.Null(asked);
+        vm.CancelRevertMessageCommand.Execute(null);
+        Assert.Null(asked);
+
+        vm.RequestRevertMessageCommand.Execute(reply);
+        vm.ConfirmRevertMessageCommand.Execute(null);
+
+        Assert.Equal(2, asked!.Count);
+        Assert.Null(vm.PendingRevertMessage);
+        Assert.False(reply.CanRevert);
+        Assert.True(reply.IsActivitiesExpanded);
+        Assert.True(reply.Activities[0].IsReverted);
+        Assert.True(reply.Activities[1].IsRevertSkipped);
+        Assert.Equal("Not reverted: it was edited afterwards", reply.Activities[1].RevertNote);
+        Assert.Equal(AiUndoState.Reverted, new AiChatService(_storageDirectory).Sessions.Single().Messages[1].Activities[0].Undo!.State);
+        Assert.Contains(notifications.Notifications, n => n.Severity == NotificationSeverity.Warning);
+
+        // El modelo se entera en el turno siguiente, y solo en ese.
+        _fake.Reply("s1", "Entendido");
+        await SendAsync(vm, "Sigue");
+        Assert.Contains("<enki_reverted>", _fake.Stdin(1), StringComparison.Ordinal);
+        Assert.Contains("- create_note: Plan", _fake.Stdin(1), StringComparison.Ordinal);
+        Assert.DoesNotContain("edit_note", _fake.Stdin(1), StringComparison.Ordinal);
+        _fake.Reply("s1", "Vale");
+        await SendAsync(vm, "Otra cosa");
+        Assert.DoesNotContain("<enki_reverted>", _fake.Stdin(2), StringComparison.Ordinal);
     }
 }

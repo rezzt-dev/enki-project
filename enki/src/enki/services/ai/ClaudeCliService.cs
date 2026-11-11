@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using enki.Models;
 
 namespace enki.Services;
 
@@ -84,7 +85,8 @@ public sealed record ClaudeTurnResult(
     string? SessionId,
     ClaudeFailureKind Failure,
     string? FailureDetail = null,
-    DateTimeOffset? RateLimitResetsAt = null)
+    DateTimeOffset? RateLimitResetsAt = null,
+    AiTokenUsage? Usage = null)
 {
     public bool Succeeded => Failure == ClaudeFailureKind.None;
 }
@@ -571,12 +573,12 @@ public sealed class ClaudeCliService
             var text = _deltas.Length > 0 ? _deltas.ToString()
                 : _messages.Length > 0 ? _messages.ToString()
                 : _result is { IsError: false, Text: { } final } ? final : string.Empty;
-            if (failure == ClaudeFailureKind.None) return new ClaudeTurnResult(text, _sessionId, failure);
+            if (failure == ClaudeFailureKind.None) return new ClaudeTurnResult(text, _sessionId, failure, Usage: _result?.Usage);
 
             var detail = FirstLine(_result is { Errors.Count: > 0 } errored ? errored.Errors[0] : null) ?? FirstLine(_result?.Text)
                 ?? FirstLine(process.StandardError) ?? (process.ExitCode != 0 ? $"exit {process.ExitCode}" : null);
             if (detail is { Length: > 300 }) detail = detail[..300] + "…";
-            return new ClaudeTurnResult(_deltas.ToString(), _sessionId, failure, detail, _rateLimit?.ResetsAt);
+            return new ClaudeTurnResult(_deltas.ToString(), _sessionId, failure, detail, _rateLimit?.ResetsAt, _result?.Usage);
         }
     }
 }

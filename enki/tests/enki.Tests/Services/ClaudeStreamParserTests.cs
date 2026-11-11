@@ -128,4 +128,23 @@ public class ClaudeStreamParserTests
     [InlineData("""{"type":"system","subtype":"status","status":"requesting"}""")]
     [InlineData("""{"type":"something_new","payload":1}""")]
     public void Parse_UnknownOrMalformedLines_ReturnNull(string line) => Assert.Null(ClaudeStreamParser.Parse(line));
+
+    [Fact]
+    public void Parse_Result_ReadsUsageAndCost_CountingCacheAsInput()
+    {
+        var result = Assert.IsType<ClaudeResult>(ClaudeStreamParser.Parse(
+            """{"type":"result","subtype":"success","is_error":false,"result":"ok","session_id":"s","total_cost_usd":0.0123,"usage":{"input_tokens":12,"cache_creation_input_tokens":300,"cache_read_input_tokens":1000,"output_tokens":45}}"""));
+
+        Assert.Equal(1312, result.Usage!.InputTokens);
+        Assert.Equal(1000, result.Usage.CachedInputTokens);
+        Assert.Equal(45, result.Usage.OutputTokens);
+        Assert.Equal(0.0123m, result.Usage.CostUsd);
+    }
+
+    [Theory]
+    [InlineData("""{"type":"result","subtype":"success","is_error":false,"result":"ok","session_id":"s"}""")]
+    [InlineData("""{"type":"result","subtype":"success","is_error":false,"result":"ok","usage":"n/a"}""")]
+    [InlineData("""{"type":"result","subtype":"success","is_error":false,"result":"ok","usage":{"input_tokens":0,"output_tokens":0}}""")]
+    public void Parse_ResultWithoutFigures_HasNoUsage(string line) =>
+        Assert.Null(Assert.IsType<ClaudeResult>(ClaudeStreamParser.Parse(line)).Usage);
 }

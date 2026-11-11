@@ -8425,4 +8425,130 @@ Bonne rédaction.</value>
   <data name="Kanban_Links_Duplicate" xml:space="preserve">
     <value>Cette tâche contient déjà ce lien.</value>
   </data>
+  <data name="Assistant_Tool_open_note" xml:space="preserve">
+    <value>Ouvrir la note</value>
+  </data>
+  <data name="Assistant_Tool_open_kanban_board" xml:space="preserve">
+    <value>Ouvrir le tableau Kanban</value>
+  </data>
+  <data name="Assistant_Tool_open_section" xml:space="preserve">
+    <value>Aller à la section</value>
+  </data>
+  <data name="Assistant_Tool_search_help" xml:space="preserve">
+    <value>Consulter le manuel d’Enki</value>
+  </data>
+  <data name="Assistant_Tool_list_habits" xml:space="preserve">
+    <value>Consulter les habitudes</value>
+  </data>
+  <data name="Assistant_Tool_set_habit_done" xml:space="preserve">
+    <value>Cocher l’habitude</value>
+  </data>
+  <data name="Assistant_Tool_get_daily_note" xml:space="preserve">
+    <value>Lire la note du jour</value>
+  </data>
+  <data name="Assistant_Tool_append_to_daily_note" xml:space="preserve">
+    <value>Ajouter à la note du jour</value>
+  </data>
+  <data name="Assistant_Tool_list_note_templates" xml:space="preserve">
+    <value>Lister les modèles de notes</value>
+  </data>
+  <data name="Assistant_Tool_create_note_from_template" xml:space="preserve">
+    <value>Créer une note à partir d’un modèle</value>
+  </data>
+  <data name="Assistant_Help_Shortcuts" xml:space="preserve">
+    <value>Raccourcis clavier</value>
+  </data>
+  <data name="Assistant_Help_ShortcutsHint" xml:space="preserve">
+    <value>Ce sont les raccourcis actuels de l’utilisateur. Ils se modifient dans Réglages › Raccourcis clavier.</value>
+  </data>
+  <data name="Assistant_Usage_Message" xml:space="preserve">
+    <value>{0} jetons en entrée · {1} en sortie</value>
+  </data>
+  <data name="Assistant_Usage_MessageCost" xml:space="preserve">
+    <value>{0} jetons en entrée · {1} en sortie · {2}</value>
+  </data>
+  <data name="Assistant_Usage_Chat" xml:space="preserve">
+    <value>Total de la conversation : {0} jetons en entrée · {1} en sortie</value>
+  </data>
+  <data name="Assistant_Usage_ChatCost" xml:space="preserve">
+    <value>Total de la conversation : {0} jetons en entrée · {1} en sortie · {2}</value>
+  </data>
+  <data name="Settings_Ai_Usage_Label" xml:space="preserve">
+    <value>Afficher la consommation de jetons</value>
+  </data>
+  <data name="Settings_Ai_Usage_Description" xml:space="preserve">
+    <value>Affiche les jetons de chaque réponse et le total de la conversation lorsque le fournisseur les communique, ainsi que le coût si vous payez avec votre propre clé d’API. Seuls des chiffres sont enregistrés, jamais de contenu.</value>
+  </data>
+  <data name="Assistant_Undo_Action" xml:space="preserve">
+    <value>Annuler cette réponse</value>
+  </data>
+  <data name="Assistant_Undo_Tooltip" xml:space="preserve">
+    <value>Annule ce que l’assistant a modifié dans cette réponse. Ce que vous avez modifié ensuite n’est pas touché.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Message" xml:space="preserve">
+    <value>Ce que l’assistant a modifié dans cette réponse sera annulé.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Hint" xml:space="preserve">
+    <value>Les notes reviennent à leur version précédente, ce qui a été créé part à la corbeille et ce qui a été déplacé ou supprimé retrouve sa place. Ce que vous avez modifié ensuite reste tel quel.</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Action" xml:space="preserve">
+    <value>Annuler les changements</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_one" xml:space="preserve">
+    <value>{0} action peut être annulée</value>
+  </data>
+  <data name="Assistant_Undo_Confirm_Count_other" xml:space="preserve">
+    <value>{0} actions peuvent être annulées</value>
+  </data>
+  <data name="Assistant_Undo_Reverted" xml:space="preserve">
+    <value>Annulée</value>
+  </data>
+  <data name="Assistant_Undo_Reason_ChangedSince" xml:space="preserve">
+    <value>Non annulée : modifiée depuis</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Missing" xml:space="preserve">
+    <value>Non annulée : n’existe plus</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Locked" xml:space="preserve">
+    <value>Non annulée : la session est verrouillée</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Occupied" xml:space="preserve">
+    <value>Non annulée : son emplacement est occupé</value>
+  </data>
+  <data name="Assistant_Undo_Reason_HistoryMissing" xml:space="preserve">
+    <value>Non annulée : la version précédente n’est plus dans l’historique</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Busy" xml:space="preserve">
+    <value>Non annulée : la note a des modifications non enregistrées ou un conflit en attente</value>
+  </data>
+  <data name="Assistant_Undo_Reason_Failed" xml:space="preserve">
+    <value>Non annulée : l’opération a échoué</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Title" xml:space="preserve">
+    <value>Réponse annulée</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Failed_Title" xml:space="preserve">
+    <value>Impossible d’annuler la réponse</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_one" xml:space="preserve">
+    <value>{0} action a été annulée.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Reverted_other" xml:space="preserve">
+    <value>{0} actions ont été annulées.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_one" xml:space="preserve">
+    <value>{0} action a été laissée telle quelle car elle a changé depuis ou n’existe plus ; la réponse en indique la raison.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Skipped_other" xml:space="preserve">
+    <value>{0} actions ont été laissées telles quelles car elles ont changé depuis ou n’existent plus ; la réponse en indique les raisons.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_one" xml:space="preserve">
+    <value>{0} action ne peut pas être annulée d’ici et reste en l’état.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_NotRevertible_other" xml:space="preserve">
+    <value>{0} actions ne peuvent pas être annulées d’ici et restent en l’état.</value>
+  </data>
+  <data name="Assistant_Undo_Notify_Nothing" xml:space="preserve">
+    <value>Il ne restait rien à annuler.</value>
+  </data>
 </root>

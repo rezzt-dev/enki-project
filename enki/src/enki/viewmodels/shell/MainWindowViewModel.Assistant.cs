@@ -124,6 +124,64 @@ public partial class MainWindowViewModel
         else Navigate(AppPage.Assistant);
     }
 
+    // ===================== Navegación pedida por el asistente =====================
+    // Herramientas open_note, open_kanban_board y open_section (AiVaultToolbox.Navigation.cs). Solo enseñan: no
+    // cambian datos. Devuelven false si la sección de destino está desactivada, y la herramienta se lo dice al
+    // modelo en vez de dejar al usuario mirando una pantalla que no cambió.
+
+    /// <summary>Secciones de <see cref="AiVaultToolbox.Sections"/> que son una página; Ajustes va aparte.</summary>
+    private static readonly System.Collections.Generic.Dictionary<string, AppPage> AssistantSections = new(StringComparer.Ordinal)
+    {
+        ["dashboard"] = AppPage.Dashboard, ["notes"] = AppPage.Notes, ["files"] = AppPage.Files, ["sessions"] = AppPage.Sessions,
+        ["kanban"] = AppPage.Kanban, ["calendar"] = AppPage.Calendar, ["reminders"] = AppPage.Reminders,
+        ["notifications"] = AppPage.Notifications, ["habits"] = AppPage.Habits, ["statistics"] = AppPage.Statistics,
+        ["tags"] = AppPage.TagManager, ["skills"] = AppPage.Skills, ["trash"] = AppPage.Trash
+    };
+
+    /// <summary>La misma condición con la que <see cref="Navigate"/> ignora una sección desactivada.</summary>
+    private bool CanAssistantReach(AppPage page) =>
+        page is AppPage.Dashboard or AppPage.Reminders or AppPage.Notifications || IsSidebarSectionEnabled(page);
+
+    /// <summary>Si la conversación ocupa la sección Asistente, pasa al panel lateral antes de navegar: el
+    /// usuario pidió ver otra cosa, no perder de vista el chat ni la respuesta que aún está llegando.</summary>
+    private void KeepAssistantInView()
+    {
+        if (CurrentPage is AssistantViewModel && AssistantPanelEnabled) IsAssistantPanelOpen = true;
+    }
+
+    private bool OpenSectionForAssistant(string section)
+    {
+        if (section == "settings")
+        {
+            KeepAssistantInView();
+            OpenSettings();
+            return true;
+        }
+        if (!AssistantSections.TryGetValue(section, out var page) || !CanAssistantReach(page)) return false;
+        KeepAssistantInView();
+        Navigate(page);
+        return true;
+    }
+
+    private bool OpenNoteForAssistant(NoteFile note)
+    {
+        if (Notes is null || !CanAssistantReach(AppPage.Notes)) return false;
+        KeepAssistantInView();
+        Navigate(AppPage.Notes);
+        Notes.OpenNote(note);
+        return true;
+    }
+
+    private bool OpenKanbanForAssistant(string boardId, string? cardId)
+    {
+        if (Kanban is null || !CanAssistantReach(AppPage.Kanban)) return false;
+        KeepAssistantInView();
+        Navigate(AppPage.Kanban);
+        if (cardId is not null) Kanban.OpenCardById(cardId);
+        else Kanban.OpenBoardById(boardId);
+        return true;
+    }
+
     private AppPage? PageOf(ViewModelBase page) => page switch
     {
         _ when ReferenceEquals(page, Dashboard) => AppPage.Dashboard,

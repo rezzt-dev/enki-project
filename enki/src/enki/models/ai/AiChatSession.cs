@@ -115,6 +115,10 @@ public sealed class AiChatMessage
 
     /// <summary>La respuesta se cortó antes de terminar (el usuario la detuvo, o falló a mitad).</summary>
     public bool IsInterrupted { get; set; }
+
+    /// <summary>Tokens que consumió esta respuesta, cuando el proveedor los informa (solo mensajes del
+    /// asistente). <see langword="null"/> si no los dio o en el historial anterior a esta propiedad.</summary>
+    public AiTokenUsage? Usage { get; set; }
 }
 
 /// <summary>Qué clase de elemento del vault se adjunta como contexto.</summary>
