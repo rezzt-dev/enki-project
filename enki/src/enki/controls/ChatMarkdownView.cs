@@ -143,8 +143,8 @@ public sealed class ChatMarkdownView : StackPanel
                 Kind = isChecked ? MaterialIconKind.CheckboxMarkedOutline : MaterialIconKind.CheckboxBlankOutline,
                 Width = 15,
                 Height = 15,
-                VerticalAlignment = VerticalAlignment.Top,
-                Margin = new Thickness(0, 3, 10, 0)
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0)
             }
             : new TextBlock
             {
@@ -156,6 +156,7 @@ public sealed class ChatMarkdownView : StackPanel
             };
         Themed(marker, block.IsChecked is null ? TextBlock.ForegroundProperty : MaterialIcon.ForegroundProperty, "Ink50");
         var content = BuildText(block.Text, BodyFontSize);
+        content.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(content, 1);
         grid.Children.Add(marker);
         grid.Children.Add(content);

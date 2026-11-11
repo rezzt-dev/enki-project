@@ -509,9 +509,9 @@
     <Border x:Name="ErrorBox" Grid.Row="2" MaxWidth="860" Padding="14,12" BorderThickness="1"
             BorderBrush="{DynamicResource DangerBrush}" Background="{DynamicResource Ink05}"
             IsVisible="{Binding HasError}">
-      <Grid ColumnDefinitions="Auto,*">
-        <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Margin="0,1,12,0"
-                         VerticalAlignment="Top" Foreground="{DynamicResource DangerBrush}" />
+      <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+        <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Margin="0,0,12,0"
+                         VerticalAlignment="Center" Foreground="{DynamicResource DangerBrush}" />
         <StackPanel Grid.Column="1" Spacing="8">
           <SelectableTextBlock Text="{Binding ErrorMessage}" FontSize="12.5" TextWrapping="Wrap" />
           <WrapPanel Orientation="Horizontal">

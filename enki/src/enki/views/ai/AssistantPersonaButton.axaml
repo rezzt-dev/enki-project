@@ -43,9 +43,9 @@
             <TextBlock Text="{loc:Tr Assistant_Persona_Intro}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
 
             <!-- Capa general: solo lectura aquí, para no tener dos editores del mismo texto. -->
-            <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Grid.Column="0" Kind="AccountCircleOutline" Width="14" Height="14" Margin="0,1,10,0"
-                               VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Grid.Column="0" Kind="AccountCircleOutline" Width="14" Height="14" Margin="0,0,10,0"
+                               VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
               <StackPanel Grid.Column="1" Spacing="3">
                 <TextBlock Text="{Binding AssistantName}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding PersonaGeneralPreview}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
@@ -91,9 +91,9 @@
               <TextBlock Text="{loc:Tr Assistant_Persona_Chat_Help}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>
 
-            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding HasPersonaError}">
-              <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="13" Height="13" Margin="0,1,8,0"
-                               VerticalAlignment="Top" Foreground="{DynamicResource DangerBrush}" />
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" IsVisible="{Binding HasPersonaError}">
+              <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="13" Height="13" Margin="0,0,8,0"
+                               VerticalAlignment="Center" Foreground="{DynamicResource DangerBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding PersonaError}" Foreground="{DynamicResource DangerBrush}"
                          FontSize="11.5" TextWrapping="Wrap" />
             </Grid>

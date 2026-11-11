@@ -41,7 +41,7 @@
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Center" IsChecked="False"
                           AutomationProperties.Name="{loc:Tr Skills_PackageFiles}">
-              <Grid ColumnDefinitions="*,Auto">
+              <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto">
                 <TextBlock Text="{loc:Tr Skills_PackageFiles, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
                 <mi:MaterialIcon Grid.Column="1" Width="16" Height="16" Margin="12,0,0,0"
                                  Kind="{Binding #PackageFilesToggle.IsChecked, Converter={StaticResource ExpandChevronConverter}}" />
@@ -80,7 +80,7 @@
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Center" IsChecked="False"
                           AutomationProperties.Name="{loc:Tr Skills_Metadata}">
-              <Grid ColumnDefinitions="*,Auto">
+              <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto">
                 <TextBlock Text="{loc:Tr Skills_Metadata, Converter={StaticResource UpperCaseConverter}}" VerticalAlignment="Center" />
                 <mi:MaterialIcon Grid.Column="1" Width="16" Height="16" Margin="12,0,0,0"
                                  Kind="{Binding #MetadataToggle.IsChecked, Converter={StaticResource ExpandChevronConverter}}" />

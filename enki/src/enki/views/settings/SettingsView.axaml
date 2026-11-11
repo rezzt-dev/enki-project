@@ -100,8 +100,8 @@
                       Classes.active="{Binding IsActive}"
                       Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).SelectSectionCommand}"
                       CommandParameter="{Binding Section}">
-                <Grid ColumnDefinitions="16,*" ColumnSpacing="12">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                <Grid Classes="icon-text-row" ColumnDefinitions="16,*" ColumnSpacing="12">
+                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,0,0" />
                   <StackPanel Grid.Column="1" Spacing="3">
                     <TextBlock Text="{Binding Label, Converter={StaticResource UpperCaseConverter}}" TextWrapping="Wrap" />
                   </StackPanel>
@@ -2677,9 +2677,9 @@
                   <StackPanel IsVisible="{Binding IsAiGemini}" Spacing="8">
                     <TextBlock Text="{loc:Tr Ai_GeminiHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     <Border Classes="trash-hint">
-                      <Grid ColumnDefinitions="Auto,*">
-                        <mi:MaterialIcon Grid.Column="0" Kind="SchoolOutline" Width="14" Height="14" Margin="0,1,10,0"
-                                         VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+                      <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                        <mi:MaterialIcon Grid.Column="0" Kind="SchoolOutline" Width="14" Height="14" Margin="0,0,10,0"
+                                         VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
                         <TextBlock Grid.Column="1" Text="{loc:Tr Ai_GeminiStudents}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                       </Grid>
                     </Border>
@@ -2739,14 +2739,14 @@
                     <mi:MaterialIcon Kind="ShieldLockOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
                     <TextBlock Text="{loc:Tr Settings_Ai_Usage_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
                   </StackPanel>
-                  <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
-                    <mi:MaterialIcon Grid.Row="0" Kind="ConsoleLine" Width="14" Height="14" Margin="0,2,12,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
+                    <mi:MaterialIcon Grid.Row="0" Kind="ConsoleLine" Width="14" Height="14" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_HowItWorks}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-                    <mi:MaterialIcon Grid.Row="1" Kind="AccountKeyOutline" Width="14" Height="14" Margin="0,2,12,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+                    <mi:MaterialIcon Grid.Row="1" Kind="AccountKeyOutline" Width="14" Height="14" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_SignIn}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-                    <mi:MaterialIcon Grid.Row="2" Kind="NoteTextOutline" Width="14" Height="14" Margin="0,2,12,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+                    <mi:MaterialIcon Grid.Row="2" Kind="NoteTextOutline" Width="14" Height="14" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
                     <TextBlock Grid.Row="2" Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Data}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
-                    <mi:MaterialIcon Grid.Row="3" Kind="ScaleBalance" Width="14" Height="14" Margin="0,2,12,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+                    <mi:MaterialIcon Grid.Row="3" Kind="ScaleBalance" Width="14" Height="14" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
                     <TextBlock Grid.Row="3" Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Terms}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
                   </Grid>
                   <WrapPanel Orientation="Horizontal">
@@ -2938,19 +2938,19 @@
                   </Grid>
                   <Rectangle Classes="section-rule" />
                   <StackPanel Spacing="10">
-                    <Grid ColumnDefinitions="Auto,*">
-                      <mi:MaterialIcon Grid.Column="0" Kind="SitemapOutline" Width="13" Height="13" Margin="0,2,10,0"
-                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                    <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="SitemapOutline" Width="13" Height="13" Margin="0,0,10,0"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                       <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Vault_Scopes}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     </Grid>
-                    <Grid ColumnDefinitions="Auto,*">
-                      <mi:MaterialIcon Grid.Column="0" Kind="LockOutline" Width="13" Height="13" Margin="0,2,10,0"
-                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                    <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="LockOutline" Width="13" Height="13" Margin="0,0,10,0"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                       <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Vault_Protected}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     </Grid>
-                    <Grid ColumnDefinitions="Auto,*">
-                      <mi:MaterialIcon Grid.Column="0" Kind="ShieldCheckOutline" Width="13" Height="13" Margin="0,2,10,0"
-                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                    <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="ShieldCheckOutline" Width="13" Height="13" Margin="0,0,10,0"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                       <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Vault_Confirmations}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     </Grid>
                   </StackPanel>
@@ -3019,14 +3019,14 @@
                   </StackPanel>
                   <Rectangle Classes="section-rule" />
                   <StackPanel Spacing="10">
-                    <Grid ColumnDefinitions="Auto,*">
-                      <mi:MaterialIcon Grid.Column="0" Kind="ShieldLockOutline" Width="13" Height="13" Margin="0,2,10,0"
-                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                    <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="ShieldLockOutline" Width="13" Height="13" Margin="0,0,10,0"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                       <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Web_Privacy}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     </Grid>
-                    <Grid ColumnDefinitions="Auto,*">
-                      <mi:MaterialIcon Grid.Column="0" Kind="ShieldCheckOutline" Width="13" Height="13" Margin="0,2,10,0"
-                                       VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                    <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                      <mi:MaterialIcon Grid.Column="0" Kind="ShieldCheckOutline" Width="13" Height="13" Margin="0,0,10,0"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                       <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Web_Safety}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     </Grid>
                   </StackPanel>
@@ -3065,8 +3065,8 @@
                     <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Model_Help}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                   </StackPanel>
                   <!-- Estado del índice: al día, indexando o por qué no se pudo actualizar. -->
-                  <Grid ColumnDefinitions="Auto,*">
-                    <Panel Grid.Column="0" Width="14" Margin="0,1,8,0" VerticalAlignment="Top">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                    <Panel Grid.Column="0" Width="14" Margin="0,0,8,0" VerticalAlignment="Center">
                       <controls:LoadingSpinner Width="12" Height="12" Foreground="{DynamicResource Ink40}" IsVisible="{Binding IsAiSemanticIndexing}" />
                       <mi:MaterialIcon Kind="AlertCircleOutline" Width="13" Height="13" Foreground="{DynamicResource DangerBrush}"
                                        IsVisible="{Binding HasAiSemanticProblem}" />
@@ -3099,9 +3099,9 @@
                     </Button>
                   </WrapPanel>
                   <Rectangle Classes="section-rule" />
-                  <Grid ColumnDefinitions="Auto,*">
-                    <mi:MaterialIcon Grid.Column="0" Kind="ShieldLockOutline" Width="13" Height="13" Margin="0,2,10,0"
-                                     VerticalAlignment="Top" Foreground="{DynamicResource Ink40}" />
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                    <mi:MaterialIcon Grid.Column="0" Kind="ShieldLockOutline" Width="13" Height="13" Margin="0,0,10,0"
+                                     VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                     <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Semantic_Privacy}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                   </Grid>
                 </StackPanel>
@@ -4043,20 +4043,20 @@
           </StackPanel>
           <TextBlock Text="{loc:Tr Settings_Ai_Consent_Intro}" FontSize="13.5" TextWrapping="Wrap" />
           <StackPanel Spacing="10">
-            <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="ConsoleLine" Width="13" Height="13" Margin="0,2,10,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Kind="ConsoleLine" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_HowItWorks}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="AccountKeyOutline" Width="13" Height="13" Margin="0,2,10,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Kind="AccountKeyOutline" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_SignIn}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="NoteTextOutline" Width="13" Height="13" Margin="0,2,10,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Kind="NoteTextOutline" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Data}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="ScaleBalance" Width="13" Height="13" Margin="0,2,10,0" VerticalAlignment="Top" Foreground="{DynamicResource Ink50}" />
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Kind="ScaleBalance" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Terms}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
             </Grid>
           </StackPanel>

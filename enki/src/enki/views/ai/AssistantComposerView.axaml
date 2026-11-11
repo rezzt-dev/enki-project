@@ -194,8 +194,8 @@
         <!-- Conversación de antes de separar el historial por vault: se lee, pero se continúa tras asociarla. -->
         <Border Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="12,10"
                 IsVisible="{Binding IsUnassignedChat}">
-          <Grid ColumnDefinitions="Auto,*,Auto">
-            <mi:MaterialIcon Grid.Column="0" Kind="LinkVariant" Width="14" Height="14" Margin="0,1,10,0" VerticalAlignment="Top"
+          <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
+            <mi:MaterialIcon Grid.Column="0" Kind="LinkVariant" Width="14" Height="14" Margin="0,0,10,0" VerticalAlignment="Center"
                              Foreground="{DynamicResource Ink50}" />
             <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Unassigned_Banner}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
             <Button Grid.Column="2" Classes="pill pill-compact" Margin="12,0,0,0" VerticalAlignment="Center"
@@ -208,8 +208,8 @@
         <!-- El espacio del chat no está disponible (sesión borrada o bloqueada): se dice antes de escribir. -->
         <Border Background="{DynamicResource Ink05}" BorderBrush="{DynamicResource Ink10}" BorderThickness="1" Padding="12,9"
                 IsVisible="{Binding HasScopeWarning}">
-          <Grid ColumnDefinitions="Auto,*">
-            <mi:MaterialIcon Grid.Column="0" Kind="LockOutline" Width="14" Height="14" Margin="0,1,10,0" VerticalAlignment="Top"
+          <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Grid.Column="0" Kind="LockOutline" Width="14" Height="14" Margin="0,0,10,0" VerticalAlignment="Center"
                              Foreground="{DynamicResource Ink50}" />
             <TextBlock Grid.Column="1" Text="{Binding ScopeWarning}" FontSize="12" TextWrapping="Wrap" />
           </Grid>
@@ -261,9 +261,9 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <!-- Imágenes y PDF adjuntos: a qué proveedor llegan y si el modelo podrá verlos, antes de enviar nada. -->
-            <Grid x:Name="AttachmentImageNotice" ColumnDefinitions="Auto,*" Margin="14,0,14,4" Cursor="Arrow"
+            <Grid Classes="icon-text-row" x:Name="AttachmentImageNotice" ColumnDefinitions="Auto,*" Margin="14,0,14,4" Cursor="Arrow"
                   IsVisible="{Binding HasAttachmentImageNotice}">
-              <Panel Grid.Column="0" Margin="0,1,8,0" VerticalAlignment="Top">
+              <Panel Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center">
                 <mi:MaterialIcon Kind="EyeOutline" Width="12" Height="12" Foreground="{DynamicResource Ink50}"
                                  IsVisible="{Binding !AttachmentImageNoticeIsWarning}" />
                 <mi:MaterialIcon Kind="EyeOffOutline" Width="12" Height="12" Foreground="{DynamicResource DangerBrush}"
@@ -346,9 +346,9 @@
         <Border Classes="dropdown-popover" Width="300" Focusable="True">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Tr Assistant_Composer_Help}" FontSize="12" FontWeight="SemiBold" />
-            <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="{Binding ScopeIcon}" Width="13" Height="13" Margin="0,2,8,0"
-                               VerticalAlignment="Top" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Kind="{Binding ScopeIcon}" Width="13" Height="13" Margin="0,0,8,0"
+                               VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding ScopeSummary}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
             </Grid>
             <TextBlock Text="{loc:Tr Assistant_Composer_Disclaimer}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
@@ -388,7 +388,7 @@
                     <Button Classes="dropdown-item" IsEnabled="{Binding IsEnabled}"
                             Command="{Binding #Root.((vm:AssistantViewModel)DataContext).PickNoteCommand}"
                             CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}">
-                      <Grid ColumnDefinitions="Auto,*">
+                      <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
                         <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="14" Height="14" Margin="0,0,10,0"
                                          Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1" Spacing="1">

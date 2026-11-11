@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- añadir pruebas en `IconTextAlignmentUiTests` y `SettingsSearchUiTests` para fuentes, tamaños, zoom, etiquetas de varias lineas, menus y estabilidad entre layouts
 - añadir ajustes visuales de lista blanca con confirmacion, notificacion y reversion, sin acceso a claves, proveedores ni privacidad
 - añadir capas y filtros de `get_agenda`, consulta de calendarios externos desde cache y exportacion `.ics` con selector de destino
 - añadir chats simultaneos con estado, permisos, consumo y cancelacion propios por turno e indicador global de actividad
@@ -146,6 +147,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - pruebas `ModuleProfileCatalogTests` y `HighContrastThemeTests`, guía `.docs/project-info/accesibilidad-y-alto-contraste.md` con el procedimiento de prueba con Orca, NVDA y VoiceOver (aún sin ejecutar) y `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` con la política de firma y notarización.
 
 #### CAMBIOS
+- documentar el centrado vertical y optico y su comprobacion con renderizado real en `.docs/project-info/sistema-diseno-web.md`
 - ampliar las pruebas, actualizar `.docs/project-info/asistente-ia.md` y el indice del analisis, y añadir textos en los siete idiomas de la interfaz
 - sustituir `read_text_file` y `AiTextFiles` por `read_file` y `AiFileReader`, enviar las imagenes como contenido mcp a cada proveedor y mostrar en el selector de adjuntos un icono por formato y motivos traducidos
 - compartir el candado `PdfiumGate` entre `PdfRenderHelper` y la lectura del asistente, reutilizar la rasterizacion svg de `ImagePreviewService` y documentar la lectura en `.docs/project-info/asistente-ia.md`
@@ -251,6 +253,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - alinear a la derecha las columnas de cifras que la nota no alinea y resaltar en negrita sobre gris la fila final de total en las tablas del pdf (`DocumentTableRules`), sin cambiar el texto de las celdas ni el png
 
 #### CORREGIDO
+- corregir la alineacion vertical de iconos y etiquetas con `IconTextAlignment` y estilos comunes, adaptandola a la fuente activa, el tamaño y las lineas del texto sin compensaciones fijas
 - impedir que finalizar un turno vuelva a guardar una conversacion borrada del historial
 - corregir la prueba de enlaces de `KanbanViewUiTests` para renderizar los modales fuera del arbol visual del tablero
 - corregir que la insignia de `recordatorios` contara cualquier recordatorio sin leer aunque fuera para la semana o el año siguiente: ahora solo cuenta los que han entrado en su ventana de aviso previo o han vencido y no se han visto; abrir uno antes de tiempo o `marcar todos como leidos` ya no silencia el aviso del dia antes, y reprogramarlo lo vuelve a contar.
@@ -300,6 +303,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- add tests in `IconTextAlignmentUiTests` and `SettingsSearchUiTests` for fonts, sizes, zoom, multiline labels, menus and stability across layouts
 - add allowlisted visual settings with confirmation, notifications and undo, without access to keys, providers or privacy settings
 - add layers and filters to `get_agenda`, cached external calendar queries and `.ics` export with a destination picker
 - add simultaneous chats with independent state, permissions, usage and cancellation per turn and a global activity indicator
@@ -436,6 +440,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - `ModuleProfileCatalogTests` and `HighContrastThemeTests`, the `.docs/project-info/accesibilidad-y-alto-contraste.md` guide with the Orca, NVDA and VoiceOver test procedure (not yet run) and `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` with the signing and notarization policy.
 
 #### CHANGED
+- document vertical and optical centering and its verification with real rendering in `.docs/project-info/sistema-diseno-web.md`
 - expand tests, update `.docs/project-info/asistente-ia.md` and the analysis index, and add text in all seven interface languages
 - replace `read_text_file` and `AiTextFiles` with `read_file` and `AiFileReader`, send images as mcp content to each provider and show a per-format icon and translated reasons in the attachment picker
 - share the `PdfiumGate` lock between `PdfRenderHelper` and the assistant reader, reuse the `ImagePreviewService` svg rasterisation and document reading in `.docs/project-info/asistente-ia.md`
@@ -540,6 +545,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - right-align figure columns the note leaves unaligned and highlight the final total row in bold on grey in pdf tables (`DocumentTableRules`), without changing the cell text or the png
 
 #### FIXED
+- fix vertical alignment of icons and labels with `IconTextAlignment` and shared styles, adapting it to the active font, size and text lines without fixed offsets
 - prevent turn completion from saving a conversation deleted from history again
 - fix the link test in `KanbanViewUiTests` to render dialogs outside the board visual tree
 - fix the `reminders` badge counting every unread reminder even when it was due next week or next year: it now only counts reminders that have entered their advance-notice window or are overdue and unseen; opening one early or `mark all as read` no longer silences the day-before notice, and rescheduling makes it count again.

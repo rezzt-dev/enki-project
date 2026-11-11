@@ -208,9 +208,9 @@
                               Command="{Binding $parent[ItemsControl].DataContext.GlobalSearchResultSelectedCommand}"
                               CommandParameter="{Binding}"
                               AutomationProperties.Name="{Binding Title}">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
                           <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16"
-                                            Margin="0,2,10,0" VerticalAlignment="Top" />
+                                            Margin="0,0,10,0" VerticalAlignment="Center" />
                           <StackPanel Grid.Column="1" Spacing="2">
                             <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding Subtitle}" Classes="faint" FontSize="11"
@@ -261,9 +261,9 @@
                               Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).QuickSwitcher.OpenNoteCommand}"
                               CommandParameter="{Binding .}"
                               AutomationProperties.Name="{Binding Title}">
-                        <Grid ColumnDefinitions="Auto,*">
+                        <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
                           <mi:MaterialIcon Grid.Column="0" Kind="NoteTextOutline" Width="16" Height="16"
-                                            Margin="0,2,10,0" VerticalAlignment="Top" />
+                                            Margin="0,0,10,0" VerticalAlignment="Center" />
                           <StackPanel Grid.Column="1" Spacing="2">
                             <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding Preview}" Classes="faint" FontSize="11"
@@ -316,9 +316,9 @@
                               Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).CommandPalette.ExecuteItemCommand}"
                               CommandParameter="{Binding .}"
                               AutomationProperties.Name="{Binding Title}">
-                        <Grid ColumnDefinitions="Auto,*">
+                        <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
                           <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="16" Height="16"
-                                            Margin="0,2,10,0" VerticalAlignment="Top" />
+                                            Margin="0,0,10,0" VerticalAlignment="Center" />
                           <TextBlock Grid.Column="1" Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" FontWeight="Bold" TextWrapping="Wrap" />
                         </Grid>
                       </Button>
@@ -428,9 +428,9 @@
                               Command="{Binding $parent[ItemsControl].DataContext.SelectItemCommand}"
                               CommandParameter="{Binding}"
                               AutomationProperties.Name="{Binding Title}">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto,Auto">
                           <mi:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIcon}" Width="15" Height="15"
-                                            Margin="0,2,10,0" VerticalAlignment="Top" Classes="severity-icon"
+                                            Margin="0,0,10,0" VerticalAlignment="Center" Classes="severity-icon"
                                             Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
                                             Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
                                             Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
@@ -460,7 +460,7 @@
                             <mi:MaterialIcon Kind="AlarmSnooze" Width="12" Height="12" />
                           </Button>
                           <TextBlock Grid.Column="3" Text="{Binding TimeLabel}" Classes="faint" FontSize="9.5"
-                                     Margin="8,2,0,0" VerticalAlignment="Top" />
+                                     Margin="8,0,0,0" VerticalAlignment="Center" />
                         </Grid>
                       </Button>
 

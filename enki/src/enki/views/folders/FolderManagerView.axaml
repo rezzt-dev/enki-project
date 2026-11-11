@@ -8,7 +8,7 @@
       <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="18">
           <StackPanel.KeyBindings><KeyBinding Gesture="Escape" Command="{Binding CloseCommand}" /></StackPanel.KeyBindings>
-          <Grid ColumnDefinitions="Auto,*,Auto">
+          <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
             <mi:MaterialIcon Kind="FolderOutline" Width="24" Height="24" Margin="0,0,12,0" />
             <TextBlock Grid.Column="1" Text="{Binding Title}" Classes="eyebrow" VerticalAlignment="Center" />
             <Button Grid.Column="2" Classes="icon-btn modal-cancel" Command="{Binding CloseCommand}"

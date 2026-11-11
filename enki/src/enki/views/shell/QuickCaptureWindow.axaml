@@ -23,7 +23,7 @@
     </LayoutTransformControl.LayoutTransform>
   <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="0">
     <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="22">
-      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16"
+      <Grid Classes="icon-text-row" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16"
             PointerPressed="Header_PointerPressed">
         <mi:MaterialIcon Kind="LightningBoltOutline" Width="20" Height="20"
                          Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />

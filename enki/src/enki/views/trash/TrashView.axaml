@@ -510,9 +510,9 @@
 
 
             <Border Classes="trash-hint" IsVisible="{Binding !IsPolarTasksEmpty}">
-              <Grid ColumnDefinitions="Auto,*">
+              <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
                 <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="14" Height="14"
-                                 Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                                 Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <TextBlock Grid.Column="1" Text="{loc:Tr Trash_PolarTasks_NoPurgeHint}" Classes="faint"
                            FontSize="11.5" TextWrapping="Wrap" />
               </Grid>
@@ -551,9 +551,9 @@
                  sí tienen el resto de categorías se puede leer como un bug en vez de una decisión deliberada
                  (ver el comentario en TrashViewModel.RestoreReminder). -->
             <Border Classes="trash-hint" IsVisible="{Binding !IsRemindersEmpty}">
-              <Grid ColumnDefinitions="Auto,*">
+              <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
                 <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="14" Height="14"
-                                 Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                                 Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <TextBlock Grid.Column="1" Text="{loc:Tr Trash_Reminders_NoDeleteForeverHint}" Classes="faint"
                            FontSize="11.5" TextWrapping="Wrap" />
               </Grid>

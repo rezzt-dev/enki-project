@@ -89,7 +89,7 @@
                       Command="{Binding $parent[ItemsControl].((vm:NotificationsViewModel)DataContext).OpenDetailCommand}"
                       CommandParameter="{Binding}"
                       AutomationProperties.Name="{Binding Title}">
-                <Grid ColumnDefinitions="Auto,*,Auto">
+                <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
                   <mi:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIcon}" Width="18" Height="18"
                                     Margin="0,0,14,0" VerticalAlignment="Center" Classes="severity-icon"
                                     Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
@@ -108,7 +108,7 @@
                   </StackPanel>
 
                   <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" ToolTip.Tip="{Binding CreatedAtLabel}" Classes="faint"
-                             HorizontalAlignment="Right" VerticalAlignment="Top" />
+                             HorizontalAlignment="Right" VerticalAlignment="Center" />
                 </Grid>
               </Button>
             </DataTemplate>
@@ -165,8 +165,8 @@
     <controls:ModalOverlayHost IsOpen="{Binding PendingClearAll}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
-          <Grid ColumnDefinitions="Auto,*">
-            <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="18" Height="18" Margin="0,1,10,0" Foreground="{DynamicResource DangerBrush}" />
+          <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="18" Height="18" Margin="0,0,10,0" Foreground="{DynamicResource DangerBrush}" />
             <TextBlock Grid.Column="1" Text="{loc:Tr Notifications_ClearAllModal_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
                        Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" LineHeight="16" />
           </Grid>

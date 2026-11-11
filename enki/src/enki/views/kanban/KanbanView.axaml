@@ -169,21 +169,21 @@
 
           <!-- Metadatos compactos; las etiquetas usan el ancho completo en su propia fila
                para poder desplegarse sin estrechar la fecha ni el progreso de las subtareas. -->
-          <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
+          <Grid Classes="icon-text-row" ColumnDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                         VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
-              <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+              <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
               <TextBlock Text="{Binding SubtaskProgressLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                         VerticalAlignment="Center" IsVisible="{Binding HasDueDate}">
-              <mi:MaterialIcon Kind="CalendarOutline" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center"
+              <mi:MaterialIcon Kind="CalendarOutline" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center"
                                 Classes.overdue="{Binding IsOverdue}" Foreground="{DynamicResource Ink40}" />
               <TextBlock Text="{Binding DueDateLabel}" Classes="faint" VerticalAlignment="Center" Classes.overdue="{Binding IsOverdue}" />
             </StackPanel>
 
-            <mi:MaterialIcon Grid.Column="2" Kind="{Binding LinkedNoteIcon}" Width="11" Height="11" Margin="0,1,12,0"
+            <mi:MaterialIcon Grid.Column="2" Kind="{Binding LinkedNoteIcon}" Width="11" Height="11" Margin="0,0,12,0"
                               VerticalAlignment="Center" Foreground="{DynamicResource Ink40}"
                               IsVisible="{Binding HasLinkedNote}"
                               ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
@@ -191,11 +191,11 @@
             <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" Margin="0,0,12,0"
                         VerticalAlignment="Center" IsVisible="{Binding HasLinks}"
                         ToolTip.Tip="{loc:Tr Kanban_Field_LinksLabel}">
-              <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+              <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
               <TextBlock Text="{Binding LinksCountLabel}" Classes="faint" VerticalAlignment="Center" />
             </StackPanel>
 
-            <mi:MaterialIcon Grid.Column="4" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="0,1,0,0"
+            <mi:MaterialIcon Grid.Column="4" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="0,0,0,0"
                               VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
                               IsVisible="{Binding HasDependencies}"
                               ToolTip.Tip="{Binding DependencyTooltip}" AutomationProperties.Name="{Binding DependencyTooltip}" />
@@ -632,20 +632,20 @@
                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2" />
 
             <!-- Mismos metadatos y etiquetas desplegables que en el tablero. -->
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
               <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                           VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
-                <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                 <TextBlock Text="{Binding SubtaskProgressLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
               </StackPanel>
 
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                           VerticalAlignment="Center" IsVisible="{Binding HasDueDate}">
-                <mi:MaterialIcon Kind="CalendarOutline" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                <mi:MaterialIcon Kind="CalendarOutline" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                 <TextBlock Text="{Binding DueDateLabel}" Classes="faint" VerticalAlignment="Center" />
               </StackPanel>
 
-              <mi:MaterialIcon Grid.Column="2" Kind="{Binding LinkedNoteIcon}" Width="11" Height="11" Margin="0,1,12,0"
+              <mi:MaterialIcon Grid.Column="2" Kind="{Binding LinkedNoteIcon}" Width="11" Height="11" Margin="0,0,12,0"
                                 VerticalAlignment="Center" Foreground="{DynamicResource Ink40}"
                                 IsVisible="{Binding HasLinkedNote}"
                                 ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
@@ -653,7 +653,7 @@
               <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Left"
                           VerticalAlignment="Center" IsVisible="{Binding HasLinks}"
                           ToolTip.Tip="{loc:Tr Kanban_Field_LinksLabel}">
-                <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                 <TextBlock Text="{Binding LinksCountLabel}" Classes="faint" VerticalAlignment="Center" />
               </StackPanel>
             </Grid>
@@ -661,7 +661,7 @@
           </StackPanel>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" Margin="14,0,0,0" VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="ArchiveOutline" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+            <mi:MaterialIcon Kind="ArchiveOutline" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
             <TextBlock Text="{Binding ArchivedAtLabel}" Classes="faint" VerticalAlignment="Center" />
           </StackPanel>
         </Grid>
@@ -764,36 +764,35 @@
                    Columnas Auto para lo de ancho previsible y una en estrella para las etiquetas, que son lo
                    único de longitud imprevisible y por tanto lo único que se recorta. El icono de nota
                    vinculada es nuevo en la tarjeta: antes no había forma de saber que una tarjeta tenía nota
-                   sin abrirla. Los iconos van 1px más abajo porque la fuente mono asienta sus glifos en la
-                   mitad baja de la caja de línea. -->
+                   sin abrirla. La alineación óptica usa las métricas de la fuente activa. -->
               <!-- Las etiquetas ocupan una fila independiente y pueden desplegarse completas. -->
               <controls:KanbanTags Grid.Row="3" Tags="{Binding Tags}" IsVisible="{Binding HasTags}" />
 
-              <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
+              <Grid Classes="icon-text-row" Grid.Row="4" ColumnDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="{Binding HasStatusMetadata}">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                             VerticalAlignment="Center" IsVisible="{Binding HasSubtasks}">
-                  <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                  <mi:MaterialIcon Kind="FormatListCheckbox" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                   <TextBlock Text="{Binding SubtaskProgressLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" Margin="0,0,12,0"
                             VerticalAlignment="Center" IsVisible="{Binding HasDueDate}">
-                  <mi:MaterialIcon Kind="CalendarOutline" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center"
+                  <mi:MaterialIcon Kind="CalendarOutline" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center"
                                     Classes.overdue="{Binding IsOverdue}" Foreground="{DynamicResource Ink40}" />
                   <TextBlock Text="{Binding DueDateLabel}" Classes="faint" VerticalAlignment="Center" Classes.overdue="{Binding IsOverdue}" />
                 </StackPanel>
 
-                <mi:MaterialIcon Grid.Column="2" Kind="{Binding LinkedNoteIcon}" Width="11" Height="11" Margin="0,1,0,0"
+                <mi:MaterialIcon Grid.Column="2" Kind="{Binding LinkedNoteIcon}" Width="11" Height="11" Margin="0,0,0,0"
                                   VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
                                   IsVisible="{Binding HasLinkedNote}"
                                   ToolTip.Tip="{Binding LinkedNoteLabel}" AutomationProperties.Name="{Binding LinkedNoteLabel}" />
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0"
                             VerticalAlignment="Center" IsVisible="{Binding HasLinks}"
                             ToolTip.Tip="{loc:Tr Kanban_Field_LinksLabel}">
-                  <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,1,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
+                  <mi:MaterialIcon Kind="LinkVariant" Width="11" Height="11" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
                   <TextBlock Text="{Binding LinksCountLabel}" Classes="faint" VerticalAlignment="Center" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="4" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="12,1,0,0"
+                <mi:MaterialIcon Grid.Column="4" Kind="{Binding DependencyIcon}" Width="12" Height="12" Margin="12,0,0,0"
                               VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource Ink40}"
                               IsVisible="{Binding HasDependencies}"
                               ToolTip.Tip="{Binding DependencyTooltip}" AutomationProperties.Name="{Binding DependencyTooltip}" />
@@ -933,7 +932,7 @@
         <Button Grid.Row="1" x:Name="BoardSelectorButton" Classes="board-title-selector" Classes.open="{Binding IsBoardSelectorOpen}" MaxWidth="460"
                 HorizontalAlignment="Left" IsVisible="{Binding MultipleBoardsEnabled}"
                 Command="{Binding ToggleBoardSelectorCommand}" AutomationProperties.Name="{loc:Tr Kanban_Multi_Select}">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto" ColumnSpacing="12">
             <TextBlock Text="{Binding BoardName, Converter={StaticResource UpperCaseSpacedBulletConverter}}"
                        Classes="page-title" FontSize="30" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding BoardName}" />
             <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="20" Height="20" VerticalAlignment="Center" />
@@ -1506,9 +1505,9 @@
         <Grid ColumnDefinitions="*,1,*,1,*,1,*" Background="{DynamicResource GridSeamBrush}">
 
           <Border Grid.Column="0" Classes="stat-card">
-            <Grid>
-              <mi:MaterialIcon Kind="FolderOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Top" />
-              <StackPanel Spacing="12" VerticalAlignment="Top">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <mi:MaterialIcon Grid.Column="1" Kind="FolderOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <StackPanel Spacing="12" VerticalAlignment="Center">
                 <TextBlock Text="{Binding TotalLists}" FontSize="28" FontWeight="Bold" LetterSpacing="-0.5" />
                 <TextBlock Text="{loc:Tr Kanban_Stat_Lists, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
@@ -1516,9 +1515,9 @@
       </Border>
 
           <Border Grid.Column="2" Classes="stat-card">
-            <Grid>
-              <mi:MaterialIcon Kind="ClipboardListOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Top" />
-              <StackPanel Spacing="12" VerticalAlignment="Top">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <mi:MaterialIcon Grid.Column="1" Kind="ClipboardListOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <StackPanel Spacing="12" VerticalAlignment="Center">
                 <TextBlock Text="{Binding TotalTasks}" FontSize="28" FontWeight="Bold" LetterSpacing="-0.5" />
                 <TextBlock Text="{loc:Tr Kanban_Stat_TotalTasks, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
@@ -1526,9 +1525,9 @@
       </Border>
 
           <Border Grid.Column="4" Classes="stat-card">
-            <Grid>
-              <mi:MaterialIcon Kind="ClipboardTextClockOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Top" />
-              <StackPanel Spacing="12" VerticalAlignment="Top">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <mi:MaterialIcon Grid.Column="1" Kind="ClipboardTextClockOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <StackPanel Spacing="12" VerticalAlignment="Center">
                 <TextBlock Text="{Binding PendingTasks}" FontSize="28" FontWeight="Bold" LetterSpacing="-0.5" />
                 <TextBlock Text="{loc:Tr Kanban_Stat_Pending, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
@@ -1536,9 +1535,9 @@
       </Border>
 
           <Border Grid.Column="6" Classes="stat-card">
-            <Grid>
-              <mi:MaterialIcon Kind="AlertCircleOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Top" />
-              <StackPanel Spacing="12" VerticalAlignment="Top">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <mi:MaterialIcon Grid.Column="1" Kind="AlertCircleOutline" Width="17" Height="17" Foreground="{DynamicResource Ink40}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <StackPanel Spacing="12" VerticalAlignment="Center">
                 <TextBlock Text="{Binding OverdueTasks}" FontSize="28" FontWeight="Bold" LetterSpacing="-0.5" />
                 <TextBlock Text="{loc:Tr Kanban_Stat_Overdue, Converter={StaticResource UpperCaseConverter}}" Classes="faint" LetterSpacing="1" />
               </StackPanel>
@@ -2532,7 +2531,7 @@
                   </Button>
                 </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasBlockedBy}">
-                  <mi:MaterialIcon Kind="LockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <mi:MaterialIcon Kind="LockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,0,0" />
                   <TextBlock Text="{Binding BlockedByText}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
                 </StackPanel>
               </StackPanel>
@@ -2653,7 +2652,7 @@
             <!-- El diálogo se abre también desde el buzón de recordatorios y desde el calendario, donde no
                  hay ninguna columna alrededor que diga en qué estado está la tarjeta. -->
             <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasColumnTitle}">
-              <mi:MaterialIcon Kind="ViewColumnOutline" Width="11" Height="11" Margin="0,1,0,0"
+              <mi:MaterialIcon Kind="ViewColumnOutline" Width="11" Height="11" Margin="0,0,0,0"
                                 VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
               <TextBlock Text="{Binding ColumnTitle, Converter={StaticResource UpperCaseConverter}}" Classes="faint"
                          LetterSpacing="1" VerticalAlignment="Center" />
@@ -2663,7 +2662,7 @@
                  desde la búsqueda global, donde nada alrededor dice que la tarjeta ya no está en el
                  tablero. La fecha de archivado va al lado porque es el dato que sitúa el "cuándo". -->
             <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsArchived}">
-              <mi:MaterialIcon Kind="ArchiveOutline" Width="11" Height="11" Margin="0,1,0,0"
+              <mi:MaterialIcon Kind="ArchiveOutline" Width="11" Height="11" Margin="0,0,0,0"
                                 VerticalAlignment="Center" Foreground="{DynamicResource Ink40}" />
               <TextBlock Text="{loc:Tr Kanban_Archive_Badge, Converter={StaticResource UpperCaseConverter}}" Classes="faint"
                          LetterSpacing="1" VerticalAlignment="Center" />
@@ -2723,7 +2722,7 @@
               <StackPanel Spacing="6" IsVisible="{Binding IsBlocked}">
                 <TextBlock Text="{loc:Tr Kanban_Field_DependenciesLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="LockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <mi:MaterialIcon Kind="LockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,0,0" />
                   <TextBlock Text="{Binding BlockedByLabel}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
                 </StackPanel>
               </StackPanel>
@@ -2731,7 +2730,7 @@
                 <TextBlock Text="{loc:Tr Kanban_Field_DependenciesLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5"
                            IsVisible="{Binding !IsBlocked}" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,0,0" />
                   <TextBlock Text="{Binding BlocksLabel}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
                 </StackPanel>
               </StackPanel>

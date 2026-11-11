@@ -454,3 +454,34 @@ Para listas/tablas y grids de la Stack section: contenedor `Border`/`Panel` con 
 - [ ] Transiciones de 300ms (`CubicEaseOut`) como duración por defecto de toda micro-interacción
 - [ ] Selección de texto invertida a blanco/negro
 - [ ] Contraste de escala tipográfica: titulares gigantes en negro (900) vs. labels minúsculos muy espaciados
+
+### Alineación vertical de iconos y etiquetas en Enki
+
+Las filas horizontales de `StackPanel` centran verticalmente sus hijos mediante
+`styles/Styles.axaml`. En una rejilla, usar `Classes="icon-text-row"` para aplicar
+la misma regla dentro de cada celda, también con textos de varias líneas. Los
+contenedores de insignias y de título/descripción se centran como una unidad.
+
+`views/behaviors/IconTextAlignment.cs` ajusta además el centro óptico de los
+`MaterialIcon` y de los indicadores `LoadingSpinner` con la tinta de la etiqueta: usa `TextLayout.Extent` y
+`TextLayout.OverhangAfter`, en lugar de suponer que los glifos ocupan el centro
+de la caja de línea. Se aplica desde el estilo común y recalcula después del
+layout cuando cambia la fuente, el peso, el tamaño, el texto o el ancho. Admite
+etiquetas agrupadas, iconos dentro de un contenedor con insignia y cabeceras de
+menús. Un icono sin etiqueta conserva su posición; las transformaciones explícitas
+del editor se respetan porque sus objetos inline siguen la línea del documento.
+
+No añadir márgenes verticales de uno o dos píxeles para compensar una fuente.
+La separación entre icono y etiqueta se expresa con `Spacing`, `ColumnSpacing`
+o márgenes horizontales. Mantener los fondos y separadores con
+`VerticalAlignment="Stretch"` cuando deban llenar la fila.
+
+Las pruebas `IconTextAlignmentUiTests` cubren las fuentes empaquetadas, cambios
+en caliente, mayúsculas, eñes y tildes, varias líneas, ajuste de ancho, contenedores
+con insignias y ausencia de deriva tras varios layouts. Para comprobar las
+métricas con Skia en lugar del dibujo simulado de headless:
+
+```bash
+cd enki
+ENKI_GRAPH_PREVIEW=1 dotnet test tests/enki.UITests/enki.UITests.csproj --filter FullyQualifiedName~IconTextAlignmentUiTests
+```

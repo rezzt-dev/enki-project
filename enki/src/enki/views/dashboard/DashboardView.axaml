@@ -34,7 +34,7 @@
       <Button Classes="dropdown-item"
               Command="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).OpenCardCommand}"
               CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}">
-        <Grid ColumnDefinitions="Auto,*,Auto">
+        <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
           <Ellipse Grid.Column="0" Width="5" Height="5" Fill="{DynamicResource Ink40}" Margin="1,0,10,0" VerticalAlignment="Center" />
           <StackPanel Grid.Column="1" Spacing="3">
             <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold"
@@ -206,25 +206,25 @@
         <TextBlock Grid.Row="0" Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" VerticalAlignment="Center" />
         <Border Grid.Row="1" Classes="card" Padding="18" Margin="0,16,0,0">
           <StackPanel Spacing="10" VerticalAlignment="Center" ToolTip.Tip="{loc:Tr Dashboard_Vault_InventoryHint}">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Grid.Column="0" Kind="NoteTextOutline" Width="15" Height="15"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_NotesLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
               <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).TotalNoteCount}" FontSize="19" FontWeight="Bold" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="15" Height="15"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_FilesLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
               <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).TotalFileCount}" FontSize="19" FontWeight="Bold" Margin="10,0,0,0" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Grid.Column="0" Kind="SitemapOutline" Width="15" Height="15"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SessionsLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
               <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).SessionCount}" FontSize="19" FontWeight="Bold" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,*,Auto" ToolTip.Tip="{loc:Tr Dashboard_Vault_SizeHint}">
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto" ToolTip.Tip="{loc:Tr Dashboard_Vault_SizeHint}">
               <mi:MaterialIcon Grid.Column="0" Kind="Harddisk" Width="15" Height="15"
                                 Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <TextBlock Grid.Column="1" Text="{loc:Tr Dashboard_Vault_SizeLabel}" Classes="faint" LetterSpacing="1" VerticalAlignment="Center" />
@@ -261,17 +261,17 @@
             <ItemsControl ItemsSource="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).RecentNotifications}" IsVisible="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).HasRecentNotifications}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="vm:NotificationItemViewModel">
-                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
                     <mi:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIcon}" Width="14" Height="14"
-                                      Margin="0,2,10,0" VerticalAlignment="Top" Classes="severity-icon"
+                                      Margin="0,0,10,0" VerticalAlignment="Center" Classes="severity-icon"
                                       Classes.success="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Success}"
                                       Classes.warning="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Warning}"
                                       Classes.error="{Binding Severity, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Error}" />
                     <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12"
                                TextTrimming="CharacterEllipsis" MaxLines="1"
-                               Classes.faint="{Binding IsRead}" VerticalAlignment="Top" />
+                               Classes.faint="{Binding IsRead}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" Classes="faint" FontSize="9"
-                               Margin="8,1,0,0" VerticalAlignment="Top" />
+                               Margin="8,0,0,0" VerticalAlignment="Center" />
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

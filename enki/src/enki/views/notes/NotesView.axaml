@@ -90,9 +90,9 @@
                             Command="{Binding #Root.((vm:NotesViewModel)DataContext).CreateNoteFromTemplateCommand}"
                             CommandParameter="{Binding}"
                             AutomationProperties.Name="{Binding Name}">
-                      <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
                         <mi:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="16" Height="16"
-                                         Margin="0,2,10,0" VerticalAlignment="Top" />
+                                         Margin="0,0,10,0" VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1" Spacing="2">
                           <TextBlock Text="{Binding Name}" FontWeight="Bold" TextWrapping="Wrap" />
                           <TextBlock Text="{Binding Description}" Classes="faint" FontSize="11"

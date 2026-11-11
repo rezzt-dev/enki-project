@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         xmlns:controls="clr-namespace:enki.Controls"
+        xmlns:views="clr-namespace:enki.Views"
         xmlns:charts="clr-namespace:enki.Controls.Charts">
 
   <!-- ===================================================================
@@ -59,6 +60,20 @@
 
   <Style Selector="TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Las filas horizontales comparten un centro vertical calculado por el layout.
+       El alto real del texto (fuente, tamaño y número de líneas) determina la fila;
+       no compensar iconos con márgenes o desplazamientos ligados a una fuente.
+       En Grid, icon-text-row aplica el mismo criterio dentro de cada celda.
+       Los valores locales Stretch conservan separadores y fondos de alto completo. -->
+  <Style Selector="StackPanel[Orientation=Horizontal] > :is(Control), Grid.icon-text-row > :is(Control)">
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="mi|MaterialIcon, controls|LoadingSpinner">
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="views:IconTextAlignment.IsEnabled" Value="True" />
   </Style>
 
   <Style Selector="TextBlock.muted">

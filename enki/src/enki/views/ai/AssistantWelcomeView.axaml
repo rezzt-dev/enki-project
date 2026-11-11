@@ -166,8 +166,8 @@
       </UniformGrid>
       <!-- Rejilla y no StackPanel horizontal: este da ancho infinito al texto, que no llegaba a partirse en el
            ancho del panel. -->
-      <Grid x:Name="PrivacyNote" ColumnDefinitions="Auto,*">
-        <mi:MaterialIcon Kind="ShieldLockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Top" Margin="0,2,8,0" />
+      <Grid Classes="icon-text-row" x:Name="PrivacyNote" ColumnDefinitions="Auto,*">
+        <mi:MaterialIcon Kind="ShieldLockOutline" Width="13" Height="13" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,8,0" />
         <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Welcome_Privacy}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"
                    IsVisible="{Binding !VaultToolsAvailable}" />
         <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Welcome_PrivacyTools}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" MaxWidth="600"

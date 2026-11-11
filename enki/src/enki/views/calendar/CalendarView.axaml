@@ -209,18 +209,15 @@
                       Background="{Binding ChipBackgroundColorHex, Converter={StaticResource HexColorToBrushConverter}, ConverterParameter=0.08}"
                       Initialized="Chip_Initialized">
           <Panel>
-            <!-- Icono y texto en la misma línea óptica: la fuente mono asienta sus glifos en la mitad
-                 baja de la caja de línea (mucho más hueco por encima que por debajo), así que un icono
-                 centrado en la fila quedaba visiblemente por encima del texto. Un empujón de 1px hacia
-                 abajo en el icono lo alinea con la masa visible del texto. -->
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-              <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="9" Height="9" Margin="0,1,4,0"
+            <!-- El centro óptico se calcula con las métricas del texto, también al cambiar de fuente. -->
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="9" Height="9" Margin="0,0,4,0"
                                 VerticalAlignment="Center"
                                 Foreground="{Binding EffectiveBorderColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
               <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="10.5" VerticalAlignment="Center"
                          TextTrimming="CharacterEllipsis" />
               <!-- Ocurrencia fantasma — doc 10 §4: glifo de repetición junto al título. -->
-              <mi:MaterialIcon Grid.Column="2" Kind="Repeat" Width="9" Height="9" Margin="4,1,0,0"
+              <mi:MaterialIcon Grid.Column="2" Kind="Repeat" Width="9" Height="9" Margin="4,0,0,0"
                                 VerticalAlignment="Center" IsVisible="{Binding IsGhostOccurrence}"
                                 Foreground="{DynamicResource Ink40}" />
               <TextBlock Grid.Column="3" Text="{Binding TimeLabel}" Classes="faint" FontSize="9"
@@ -335,18 +332,18 @@
                       Background="{Binding Item.ChipBackgroundColorHex, Converter={StaticResource HexColorToBrushConverter}, ConverterParameter=0.14}"
                       Initialized="TimedChip_Initialized">
           <Panel>
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid Classes="icon-text-row" VerticalAlignment="Top" ColumnDefinitions="Auto,*,Auto">
               <!-- Franja horaria (doc 10 §4): aquí arriba solo la hora de INICIO — la de fin va anclada
                    abajo (más abajo en este mismo Panel), para que ambas queden donde realmente ocurren en
                    vez de las dos apretadas en una sola línea. Para un item sin duración esto sigue
                    mostrando exactamente lo mismo que antes (una hora sola). -->
               <TextBlock Grid.Column="0" Text="{Binding Item.MomentLocal, StringFormat={}{0:HH:mm}}"
                          Classes="faint" FontSize="9.5" IsVisible="{Binding !Item.IsAllDay}"
-                         Margin="0,0,5,0" VerticalAlignment="Top" />
+                         Margin="0,0,5,0" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1" Text="{Binding Item.Title}" FontSize="11.5" FontWeight="Medium"
-                         TextTrimming="CharacterEllipsis" VerticalAlignment="Top" />
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
               <mi:MaterialIcon Grid.Column="2" Kind="Repeat" Width="10" Height="10" Margin="4,0,0,0"
-                                VerticalAlignment="Top" IsVisible="{Binding Item.IsGhostOccurrence}"
+                                VerticalAlignment="Center" IsVisible="{Binding Item.IsGhostOccurrence}"
                                 Foreground="{DynamicResource Ink40}" />
             </Grid>
 
@@ -498,7 +495,7 @@
                         HorizontalContentAlignment="Stretch" Padding="8,4"
                         IsChecked="{Binding IsLayersExpanded, Mode=TwoWay}"
                         AutomationProperties.Name="{loc:Tr Calendar_Sidebar_LayersHeader}">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto">
               <TextBlock Text="{loc:Tr Calendar_Sidebar_LayersHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsLayersExpanded}" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsLayersExpanded}" />
@@ -627,7 +624,7 @@
                         HorizontalContentAlignment="Stretch" Padding="8,4"
                         IsChecked="{Binding IsSearchExpanded, Mode=TwoWay}"
                         AutomationProperties.Name="{loc:Tr Calendar_Sidebar_SearchHeader}">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto">
               <TextBlock Text="{loc:Tr Calendar_Sidebar_SearchHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsSearchExpanded}" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsSearchExpanded}" />
@@ -644,7 +641,7 @@
                         HorizontalContentAlignment="Stretch" Padding="8,4"
                         IsChecked="{Binding IsFiltersExpanded, Mode=TwoWay}"
                         AutomationProperties.Name="{loc:Tr Calendar_Sidebar_FiltersHeader}">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto">
               <TextBlock Text="{loc:Tr Calendar_Sidebar_FiltersHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsFiltersExpanded}" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsFiltersExpanded}" />
@@ -722,7 +719,7 @@
                         HorizontalContentAlignment="Stretch" Padding="8,4"
                         IsChecked="{Binding IsUnscheduledExpanded, Mode=TwoWay}"
                         AutomationProperties.Name="{loc:Tr Calendar_Sidebar_UnscheduledHeader}">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid Classes="icon-text-row" ColumnDefinitions="*,Auto">
               <TextBlock Text="{loc:Tr Calendar_Sidebar_UnscheduledHeader, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" IsVisible="{Binding !IsUnscheduledExpanded}" />
               <mi:MaterialIcon Grid.Column="1" Kind="ChevronUp" Width="14" Height="14" IsVisible="{Binding IsUnscheduledExpanded}" />
@@ -739,9 +736,9 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarUnscheduledItemViewModel">
                     <Border Classes="calendar-unscheduled-item" Initialized="UnscheduledItem_Initialized">
-                      <Grid ColumnDefinitions="Auto,*">
+                      <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
                         <mi:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="10" Height="10"
-                                          Margin="0,2,6,0" VerticalAlignment="Top"
+                                          Margin="0,0,6,0" VerticalAlignment="Center"
                                           Foreground="{Binding EffectiveCalendarColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
                         <StackPanel Grid.Column="1" Spacing="1">
                           <TextBlock Text="{Binding Title}" FontSize="11" TextWrapping="Wrap" />

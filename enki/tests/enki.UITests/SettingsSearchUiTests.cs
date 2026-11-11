@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
@@ -50,6 +51,40 @@ public sealed class SettingsSearchUiTests : IDisposable
         var window = new Window { Content = view, Width = 1200, Height = 900 };
         window.Show();
         return (view, vm, window);
+    }
+
+    [Fact]
+    public void NavigationIcons_StayCenteredWithTheirLabels_WhenFontsChange()
+    {
+        var (view, _, window) = CreateView();
+        try
+        {
+            foreach (var family in new[] { "Space Grotesk", "JetBrainsMono Nerd Font Mono" })
+            {
+                var rows = view.GetVisualDescendants().OfType<Button>()
+                    .Where(button => button.Classes.Contains("nav-item"))
+                    .Select(button => (Icon: button.GetVisualDescendants().OfType<Material.Icons.Avalonia.MaterialIcon>().First(),
+                        Label: button.GetVisualDescendants().OfType<TextBlock>().First())).ToArray();
+                Assert.NotEmpty(rows);
+                foreach (var row in rows)
+                {
+                    row.Label.FontFamily = new Avalonia.Media.FontFamily("avares://enki/assets/fonts#" + family);
+                    row.Label.FontSize = 17;
+                }
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                foreach (var row in rows)
+                {
+                    var layout = row.Label.TextLayout;
+                    var inkCenter = layout.Extent > 0
+                        ? row.Label.Padding.Top + layout.Height + layout.OverhangAfter - layout.Extent / 2
+                        : row.Label.Bounds.Height / 2;
+                    var iconCenter = row.Icon.TranslatePoint(new Avalonia.Point(0, row.Icon.Bounds.Height / 2), row.Label)!.Value.Y;
+                    Assert.True(Math.Abs(iconCenter - inkCenter) <= (layout.Extent > 0 ? 0.1 : 1),
+                        $"{family}: {row.Label.Text}; icon={iconCenter}, ink={inkCenter}, bounds={row.Label.Bounds}, transform={row.Icon.RenderTransform}, visible={row.Icon.IsEffectivelyVisible}");
+                }
+            }
+        }
+        finally { window.Close(); }
     }
 
     private static bool Shown(Control control) => control.IsVisible &&
